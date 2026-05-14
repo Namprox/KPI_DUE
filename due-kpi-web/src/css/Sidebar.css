@@ -1,0 +1,184 @@
+.user-dropdown-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+
+.user-dropdown-wrapper.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.user-dropdown-inner {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 0 15px;
+}
+
+.user-dropdown-wrapper.open .user-dropdown-inner {
+    padding-bottom: 15px;
+}
+
+.user-dropdown-item {
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.user-dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.user-dropdown-item.active {
+    background-color: #007bff;
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.admin-container.collapsed .sidebar .user-info div.avatar {
+    display: flex !important;
+}
+
+.admin-container.collapsed .sidebar .menu-item.active {
+    margin: 0 10px !important;
+    padding: 10px 0 !important;
+    border-radius: 8px !important;
+}
+
+.admin-container.collapsed .sidebar.sidebar-hovered {
+    width: 280px !important;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15) !important;
+}
+
+.admin-container.collapsed .sidebar.sidebar-hovered .sidebar-logo span,
+.admin-container.collapsed .sidebar.sidebar-hovered .menu-item span,
+.admin-container.collapsed .sidebar.sidebar-hovered .user-details,
+.admin-container.collapsed .sidebar.sidebar-hovered .arrow {
+    display: inline-block !important;
+}
+
+.admin-container.collapsed .sidebar.sidebar-hovered .user-details {
+    display: block !important;
+}
+
+.admin-container.collapsed .sidebar.sidebar-hovered .user-info,
+.admin-container.collapsed .sidebar.sidebar-hovered .menu-item {
+    justify-content: flex-start !important;
+    padding: 15px 20px !important;
+}
+
+.admin-container.collapsed .sidebar.sidebar-hovered .menu-icon {
+    margin-right: 15px !important;
+    font-size: 18px !important;
+}
+
+.admin-container.collapsed .sidebar.sidebar-hovered .menu-item.active {
+    margin: 0 !important;
+    padding: 12px 20px !important;
+    border-radius: 5px !important;
+    background-color: #ffffff !important;
+    color: #003399 !important;
+}
+
+.admin-container.collapsed .sidebar.sidebar-hovered .menu-item.active .menu-icon {
+    color: #003399 !important;
+}
+
+.admin-container.collapsed .sidebar:not(.sidebar-hovered) .menu-item.active {
+    width: 45px !important;
+    height: 45px !important;
+    padding: 0 !important;
+    margin: 10px auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border-radius: 8px !important;
+}
+
+.admin-container.collapsed .sidebar:not(.sidebar-hovered) .menu-item.active .menu-icon {
+    margin: 0 !important;
+    width: auto !important;
+}
+
+.sidebar-logo-img {
+    height: 40px !important;
+    max-width: 100% !important;
+    width: auto !important;
+    object-fit: contain;
+}
+
+.sidebar-header-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    height: 60px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logo {
+    padding: 0 !important;
+    border-bottom: none !important;
+    min-width: auto !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.sidebar-toggle-btn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.sidebar-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.admin-container.collapsed .sidebar:not(.sidebar-hovered) .sidebar-header-wrapper {
+    justify-content: center;
+}
+
+.admin-container.collapsed .sidebar:not(.sidebar-hovered) .sidebar-logo-img {
+    display: none;
+}
+
+.admin-container.collapsed .sidebar:not(.sidebar-hovered) .sidebar-toggle-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+}
+
+@media screen and (max-width: 992px) {
+    .sidebar.sidebar-hovered {
+        width: 280px !important;
+    }
+
+    .sidebar .sidebar-logo span,
+    .sidebar .menu-item span,
+    .sidebar .user-details,
+    .sidebar .arrow {
+        display: inline-block !important;
+    }
+
+    .sidebar .user-info div.avatar {
+        display: flex !important;
+    }
+}

@@ -1,0 +1,43 @@
+@media screen and (max-width: 992px) {
+    .lich-su-table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .lich-su-table {
+        min-width: 900px !important;
+    }
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.badge-nhap {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.badge-cho-duyet {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.badge-da-duyet {
+    background: #dcfce3;
+    color: #15803d;
+}
+
+.badge-chua-ro {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.nowrap {
+    white-space: nowrap;
+}

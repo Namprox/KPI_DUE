@@ -1,0 +1,10 @@
+@media screen and (max-width: 992px) {
+    .nhom-tieu-chi-table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nhom-tieu-chi-table {
+        min-width: 900px !important;
+    }
+}

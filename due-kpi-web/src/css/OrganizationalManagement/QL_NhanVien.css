@@ -1,0 +1,10 @@
+@media screen and (max-width: 992px) {
+    .nhanvien-table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nhanvien-table {
+        min-width: 1300px !important;
+    }
+}

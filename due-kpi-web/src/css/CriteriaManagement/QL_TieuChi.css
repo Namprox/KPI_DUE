@@ -1,0 +1,10 @@
+@media screen and (max-width: 992px) {
+    .tieuchi-table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tieuchi-table {
+        min-width: 1200px !important;
+    }
+}

@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "hPKkV3xto+I=",
+  "success": true,
+  "projectFilePath": "D:\\DUE\\KPI\\KPI\\KPI.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\XV\\.nuget\\packages\\htmlagilitypack\\1.4.9.5\\htmlagilitypack.1.4.9.5.nupkg.sha512",
+    "C:\\Users\\XV\\.nuget\\packages\\jose-jwt\\2.4.0\\jose-jwt.2.4.0.nupkg.sha512",
+    "C:\\Users\\XV\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
+    "C:\\Users\\XV\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net40\\1.0.3\\microsoft.netframework.referenceassemblies.net40.1.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

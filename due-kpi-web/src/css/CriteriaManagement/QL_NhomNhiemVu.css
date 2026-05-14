@@ -1,0 +1,32 @@
+@media screen and (max-width: 992px) {
+    .nhom-nhiem-vu-table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nhom-nhiem-vu-table {
+        min-width: 800px !important;
+    }
+}
+
+.nhom-nhiem-vu-status-active {
+    background-color: #22c55e;
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.nhom-nhiem-vu-status-inactive {
+    background-color: #94a3b8;
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    display: inline-block;
+}

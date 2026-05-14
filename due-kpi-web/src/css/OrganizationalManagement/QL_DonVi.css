@@ -1,0 +1,81 @@
+.donvi-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.donvi-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1200px;
+}
+
+@media screen and (max-width: 992px) {
+    .donvi-table {
+        min-width: 1000px;
+    }
+}
+
+.donvi-action-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.donvi-action-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.donvi-edit-btn {
+    color: #3498db;
+}
+
+.donvi-edit-btn:hover {
+    background-color: #e7f1ff;
+}
+
+.donvi-delete-btn {
+    color: #e74c3c;
+}
+
+.donvi-delete-btn:hover {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.donvi-status-active {
+    background-color: #22c55e;
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.donvi-status-inactive {
+    background-color: #94a3b8;
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.donvi-user-count {
+    background-color: #f1f5f9;
+    color: #475569;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: bold;
+}

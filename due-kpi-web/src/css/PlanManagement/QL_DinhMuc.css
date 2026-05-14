@@ -1,0 +1,10 @@
+@media screen and (max-width: 992px) {
+    .dinh-muc-table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dinh-muc-table {
+        min-width: 800px !important;
+    }
+}

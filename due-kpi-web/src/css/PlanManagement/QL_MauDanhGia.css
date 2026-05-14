@@ -1,0 +1,10 @@
+@media screen and (max-width: 992px) {
+    .mau-danhgia-table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .mau-danhgia-table {
+        min-width: 900px !important;
+    }
+}
