@@ -3,6 +3,7 @@ import '../../css/Pages.css';
 import QL_ThangDiemListing from '../../components/CriteriaManagement/QL_ThangDiem/QL_ThangDiemListing';
 import QL_ThangDiemForm from '../../components/CriteriaManagement/QL_ThangDiem/QL_ThangDiemForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
+import { apiFetch } from '../../utils/api';
 
 const QL_ThangDiem = () => {
     const initialForm = {
@@ -21,17 +22,12 @@ const QL_ThangDiem = () => {
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-    const token = localStorage.getItem('accessToken');
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
     const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
     const canManage = isAdmin || isManager;
-
-    const authHeaders = {
-        'Authorization': `Bearer ${token}`
-    };
 
     useEffect(() => {
         fetchData();
@@ -41,8 +37,7 @@ const QL_ThangDiem = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${baseUrl}/thang-diem`, { headers: authHeaders });
+            const response = await apiFetch('thang-diem');
             if (response.ok) {
                 const result = await response.json();
                 setData(result);
@@ -58,8 +53,7 @@ const QL_ThangDiem = () => {
 
     const fetchTieuChi = async () => {
         try {
-            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${baseUrl}/tieu-chi`, { headers: authHeaders });
+            const response = await apiFetch('tieu-chi');
             if (response.ok) setTieuChiList(await response.json());
         } catch (error) {
             console.error("Lỗi tải danh sách tiêu chí:", error);
@@ -92,13 +86,8 @@ const QL_ThangDiem = () => {
         };
         if (editId) payload.IdThangDiem = editId;
 
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${baseUrl}/thang-diem`, {
+        const response = await apiFetch('thang-diem', {
             method,
-            headers: {
-                ...authHeaders,
-                'Content-Type': 'application/json; charset=UTF-8'
-            },
             body: JSON.stringify(payload)
         });
 
@@ -128,10 +117,8 @@ const QL_ThangDiem = () => {
             header: 'Xác nhận xóa',
             message: 'Bạn có chắc chắn muốn xóa mức thang điểm này?',
             accept: async () => {
-                const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-                const res = await fetch(`${baseUrl}/thang-diem?id=${id}`, {
-                    method: 'DELETE',
-                    headers: authHeaders
+                const res = await apiFetch(`thang-diem?id=${id}`, {
+                    method: 'DELETE'
                 });
                 if (res.ok) {
                     const result = await res.json();

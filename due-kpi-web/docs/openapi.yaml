@@ -1,0 +1,4690 @@
+openapi: 3.0.0
+info:
+  title: KPI - API Documentation
+  version: 1.0.0
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login
+      operationId: authLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /api/auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh tokens
+      operationId: authRefresh
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Logout
+      operationId: authLogout
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register
+      operationId: authRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /api/chucvu:
+    get:
+      tags:
+        - ChucVu
+      summary: Get all
+      operationId: chucVuGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucVuResponse"
+    post:
+      tags:
+        - ChucVu
+      summary: Create
+      operationId: chucVuCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChucVuCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucVuResponse"
+  /api/chucvu/{id}:
+    get:
+      tags:
+        - ChucVu
+      summary: Get by id
+      operationId: chucVuGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucVuResponse"
+    put:
+      tags:
+        - ChucVu
+      summary: Update
+      operationId: chucVuUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChucVuUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucVuResponse"
+    delete:
+      tags:
+        - ChucVu
+      summary: Delete
+      operationId: chucVuDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucVuResponse"
+  /api/donvi:
+    get:
+      tags:
+        - DonVi
+      summary: Get all
+      operationId: donViGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonViResponse"
+    post:
+      tags:
+        - DonVi
+      summary: Create
+      operationId: donViCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DonViCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonViResponse"
+  /api/donvi/{id}:
+    get:
+      tags:
+        - DonVi
+      summary: Get by id
+      operationId: donViGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonViResponse"
+    put:
+      tags:
+        - DonVi
+      summary: Update
+      operationId: donViUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DonViUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonViResponse"
+    delete:
+      tags:
+        - DonVi
+      summary: Delete
+      operationId: donViDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonViResponse"
+  /api/namdanhgia:
+    get:
+      tags:
+        - NamDanhGia
+      summary: Get all
+      operationId: namDanhGiaGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamDanhGiaResponse"
+    post:
+      tags:
+        - NamDanhGia
+      summary: Create
+      operationId: namDanhGiaCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NamDanhGiaCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamDanhGiaResponse"
+  /api/namdanhgia/{id}:
+    get:
+      tags:
+        - NamDanhGia
+      summary: Get by id
+      operationId: namDanhGiaGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamDanhGiaResponse"
+    put:
+      tags:
+        - NamDanhGia
+      summary: Update
+      operationId: namDanhGiaUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NamDanhGiaUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamDanhGiaResponse"
+    delete:
+      tags:
+        - NamDanhGia
+      summary: Delete
+      operationId: namDanhGiaDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamDanhGiaResponse"
+  /api/maudanhgia:
+    get:
+      tags:
+        - MauDanhGia
+      summary: Get all
+      operationId: mauDanhGiaGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaResponse"
+    post:
+      tags:
+        - MauDanhGia
+      summary: Create
+      operationId: mauDanhGiaCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MauDanhGiaCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaResponse"
+  /api/maudanhgia/{id}:
+    get:
+      tags:
+        - MauDanhGia
+      summary: Get by id
+      operationId: mauDanhGiaGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaResponse"
+    put:
+      tags:
+        - MauDanhGia
+      summary: Update
+      operationId: mauDanhGiaUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MauDanhGiaUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaResponse"
+    delete:
+      tags:
+        - MauDanhGia
+      summary: Delete
+      operationId: mauDanhGiaDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaResponse"
+  /api/maudanhgia/{id}/chi-tiet:
+    get:
+      tags:
+        - MauDanhGia
+      summary: Get details by id
+      operationId: mauDanhGiaGetChiTiet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaChiTietResponse"
+  /api/chitietmaudanhgia:
+    get:
+      tags:
+        - ChiTietMauDanhGia
+      summary: Get all
+      operationId: chiTietMauDanhGiaGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietMauDanhGiaResponse"
+    post:
+      tags:
+        - ChiTietMauDanhGia
+      summary: Create
+      operationId: chiTietMauDanhGiaCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChiTietMauDanhGiaCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietMauDanhGiaResponse"
+  /api/chitietmaudanhgia/{id}:
+    get:
+      tags:
+        - ChiTietMauDanhGia
+      summary: Get by id
+      operationId: chiTietMauDanhGiaGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietMauDanhGiaResponse"
+    put:
+      tags:
+        - ChiTietMauDanhGia
+      summary: Update
+      operationId: chiTietMauDanhGiaUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChiTietMauDanhGiaUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietMauDanhGiaResponse"
+    delete:
+      tags:
+        - ChiTietMauDanhGia
+      summary: Delete
+      operationId: chiTietMauDanhGiaDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietMauDanhGiaResponse"
+  /api/chitiet/{idChiTiet}/tu-danh-gia:
+    put:
+      tags:
+        - ChiTietDanhGia
+      summary: GV tu danh gia chi tiet
+      operationId: chiTietDanhGiaTuDanhGia
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChiTietDanhGiaTuDanhGiaRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaResponse"
+  /api/chitiet/{idChiTiet}/diem-khoa:
+    put:
+      tags:
+        - ChiTietDanhGia
+      summary: Khoa danh gia chi tiet
+      operationId: chiTietDanhGiaDiemKhoa
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChiTietDanhGiaDiemKhoaRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaResponse"
+  /api/chitiet/{idChiTiet}/diem-truong:
+    put:
+      tags:
+        - ChiTietDanhGia
+      summary: Truong danh gia chi tiet
+      operationId: chiTietDanhGiaDiemTruong
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChiTietDanhGiaDiemTruongRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaResponse"
+  /api/chitiet/{idChiTiet}/minh-chung/file:
+    post:
+      tags:
+        - MinhChung
+      summary: Upload file evidence for a chi_tiet
+      operationId: minhChungUploadFile
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Binary file (pdf, doc, docx, xls, xlsx, png, jpg, jpeg; max 10 MB)
+                tenHienThi:
+                  type: string
+                  description: Optional display name. Defaults to the file's base name.
+              required:
+                - file
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "400":
+          description: Bad Request (missing file, invalid extension, file too large)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "404":
+          description: chi_tiet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "409":
+          description: Phieu not in NHAP state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+  /api/chitiet/{idChiTiet}/minh-chung/link:
+    post:
+      tags:
+        - MinhChung
+      summary: Attach a URL or DOI as evidence for a chi_tiet
+      operationId: minhChungAddLink
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MinhChungAddLinkRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "400":
+          description: Bad Request (missing fields, invalid Loai)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "404":
+          description: chi_tiet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "409":
+          description: Phieu not in NHAP state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+  /api/chitiet/{idChiTiet}/minh-chung:
+    get:
+      tags:
+        - MinhChung
+      summary: List all non-deleted evidence for a chi_tiet
+      operationId: minhChungGetByChiTiet
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "404":
+          description: chi_tiet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+  /api/minhchung/{idMinhChung}:
+    delete:
+      tags:
+        - MinhChung
+      summary: Soft-delete an evidence record (physical file kept on disk)
+      operationId: minhChungDelete
+      parameters:
+        - name: idMinhChung
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "409":
+          description: Phieu not in NHAP state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+  /api/chitiet/{idChiTiet}/nhiem-vu:
+    post:
+      tags:
+        - NhiemVuCongDong
+      summary: Add a community-service task (Group III) to a chi_tiet
+      description: |
+        Validates that the parent phieu is in NHAP (1) state and the current user owns it.
+        Resolves the vai tro using the Phase-1.1 priority logic for the phieu's (don_vi, nam).
+        Snapshots diem_quy_doi at write time. Rejects with 422 if the new task would push
+        the Group-III total above the 20-point hard cap.
+      operationId: nhiemVuCreate
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhiemVuCongDongCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "400":
+          description: Bad Request (invalid fields, inactive nhom, or vai tro not in resolved set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "403":
+          description: Forbidden (not the GV who owns the phieu)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "404":
+          description: chi_tiet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "409":
+          description: Phieu not in NHAP state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "422":
+          description: Group-III 20-point cap would be exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PvcdCapExceededResponse"
+    get:
+      tags:
+        - NhiemVuCongDong
+      summary: List active community-service tasks for a chi_tiet
+      description: |
+        Returns all non-deleted tasks ordered by ngay_tao ASC.
+        Response includes summary header — tongDiemSnapshot, soNhiemVu, conLai (= 20 - tongDiemSnapshot).
+        GV sees only their own phieu; Khoa sees their scope; Truong sees all.
+      operationId: nhiemVuGetByChiTiet
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "404":
+          description: chi_tiet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+  /api/nhiemvu/{idNhiemVu}:
+    put:
+      tags:
+        - NhiemVuCongDong
+      summary: Update a community-service task
+      description: |
+        idVaiTro and/or idNhomNv may change; the snapshot is recomputed and the 20-point
+        cap is re-evaluated excluding the task itself from the running total.
+        Only allowed when the parent phieu is in NHAP (1) state and the caller owns it.
+      operationId: nhiemVuUpdate
+      parameters:
+        - name: idNhiemVu
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhiemVuCongDongUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "400":
+          description: Bad Request (invalid fields, inactive nhom, or vai tro not in resolved set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "404":
+          description: nhiem_vu not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "409":
+          description: Phieu not in NHAP state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "422":
+          description: Group-III 20-point cap would be exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PvcdCapExceededResponse"
+    delete:
+      tags:
+        - NhiemVuCongDong
+      summary: Soft-delete a community-service task
+      description: |
+        Sets da_xoa = 1. Only allowed when the parent phieu is in NHAP (1) state and
+        the caller owns it. No cap re-check needed — deletion only reduces the running total.
+      operationId: nhiemVuDelete
+      parameters:
+        - name: idNhiemVu
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "404":
+          description: nhiem_vu not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+        "409":
+          description: Phieu not in NHAP state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuCongDongResponse"
+  /api/thangdiem:
+    get:
+      tags:
+        - ThangDiem
+      summary: Get all
+      operationId: thangDiemGetAll
+      parameters:
+        - name: tieuChiId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThangDiemResponse"
+    post:
+      tags:
+        - ThangDiem
+      summary: Create
+      operationId: thangDiemCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThangDiemCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThangDiemResponse"
+  /api/thangdiem/{id}:
+    get:
+      tags:
+        - ThangDiem
+      summary: Get by id
+      operationId: thangDiemGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThangDiemResponse"
+    put:
+      tags:
+        - ThangDiem
+      summary: Update
+      operationId: thangDiemUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThangDiemUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThangDiemResponse"
+    delete:
+      tags:
+        - ThangDiem
+      summary: Delete
+      operationId: thangDiemDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThangDiemResponse"
+  /api/dinhmucgiangvien:
+    get:
+      tags:
+        - DinhMucGiangVien
+      summary: Get all or filter by nhom/nam
+      operationId: dinhMucGiangVienGetAll
+      parameters:
+        - name: chucDanhId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: namId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DinhMucGiangVienResponse"
+    post:
+      tags:
+        - DinhMucGiangVien
+      summary: Create
+      operationId: dinhMucGiangVienCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DinhMucGiangVienCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DinhMucGiangVienResponse"
+  /api/dinhmucgiangvien/{id}:
+    get:
+      tags:
+        - DinhMucGiangVien
+      summary: Get by id
+      operationId: dinhMucGiangVienGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DinhMucGiangVienResponse"
+    put:
+      tags:
+        - DinhMucGiangVien
+      summary: Update
+      operationId: dinhMucGiangVienUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DinhMucGiangVienUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DinhMucGiangVienResponse"
+    delete:
+      tags:
+        - DinhMucGiangVien
+      summary: Delete
+      operationId: dinhMucGiangVienDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DinhMucGiangVienResponse"
+  /api/giothuchiengv:
+    get:
+      tags:
+        - GioThucHienGv
+      summary: Get all
+      operationId: gioThucHienGvGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioThucHienGvResponse"
+    post:
+      tags:
+        - GioThucHienGv
+      summary: Create
+      operationId: gioThucHienGvCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GioThucHienGvCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioThucHienGvResponse"
+  /api/giothuchiengv/{id}:
+    get:
+      tags:
+        - GioThucHienGv
+      summary: Get by id
+      operationId: gioThucHienGvGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioThucHienGvResponse"
+    put:
+      tags:
+        - GioThucHienGv
+      summary: Update
+      operationId: gioThucHienGvUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GioThucHienGvUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioThucHienGvResponse"
+    delete:
+      tags:
+        - GioThucHienGv
+      summary: Delete
+      operationId: gioThucHienGvDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioThucHienGvResponse"
+  /api/phanhoisinhvien:
+    get:
+      tags:
+        - PhanHoiSinhVien
+      summary: Get all
+      operationId: phanHoiSinhVienGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhanHoiSinhVienResponse"
+    post:
+      tags:
+        - PhanHoiSinhVien
+      summary: Create
+      operationId: phanHoiSinhVienCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhanHoiSinhVienCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhanHoiSinhVienResponse"
+  /api/phanhoisinhvien/{id}:
+    get:
+      tags:
+        - PhanHoiSinhVien
+      summary: Get by id
+      operationId: phanHoiSinhVienGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhanHoiSinhVienResponse"
+    put:
+      tags:
+        - PhanHoiSinhVien
+      summary: Update
+      operationId: phanHoiSinhVienUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhanHoiSinhVienUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhanHoiSinhVienResponse"
+    delete:
+      tags:
+        - PhanHoiSinhVien
+      summary: Delete
+      operationId: phanHoiSinhVienDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhanHoiSinhVienResponse"
+  /api/phieu:
+    get:
+      tags:
+        - PhieuDanhGia
+      summary: Get phieu danh gia list
+      operationId: phieuDanhGiaGetPaged
+      parameters:
+        - name: idNam
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: trangThai
+          in: query
+          required: false
+          description: CSV list of trang_thai values (e.g. "1,2,3")
+          schema:
+            type: string
+        - name: tuNgay
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: denNgay
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ngay_tao
+              - ngay_gui
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Create phieu danh gia
+      operationId: phieuDanhGiaCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuDanhGiaCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+  /api/phieu/me/{idNam}:
+    get:
+      tags:
+        - PhieuDanhGia
+      summary: Get current user's phieu by year
+      operationId: phieuDanhGiaGetMe
+      parameters:
+        - name: idNam
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+  /api/phieu/khoa/pending:
+    get:
+      tags:
+        - PhieuDanhGia
+      summary: List phieu awaiting Khoa evaluation
+      operationId: phieuDanhGiaGetKhoaPending
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+  /api/phieu/truong/pending:
+    get:
+      tags:
+        - PhieuDanhGia
+      summary: List phieu awaiting Truong evaluation
+      operationId: phieuDanhGiaGetTruongPending
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+  /api/phieu/{id}/submit:
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Submit a GV self-evaluation to Khoa
+      description: |
+        Validates that the phieu is in NHAP (1), owned by the current GV,
+        and that all chi_tiet rows have diem_tu_danh_gia plus required minh_chung.
+      operationId: phieuDanhGiaSubmit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuSubmitRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "400":
+          description: Bad Request (invalid id)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "403":
+          description: Forbidden (not the GV who owns the phieu)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "409":
+          description: Conflict - phieu not in NHAP state, or concurrency conflict (phieu was modified by another user)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/PhieuDanhGiaResponse"
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: false
+                      message:
+                        type: string
+                        example: "Phieu da bi nguoi khac cap nhat. Vui long tai lai trang."
+        "422":
+          description: Missing diem_tu_danh_gia or required minh_chung
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuSubmitValidationResponse"
+  /api/phieu/{id}/khoa/duyet:
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Approve a phieu at the Khoa level
+      operationId: phieuDanhGiaKhoaDuyet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuDuyetKhoaRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "409":
+          description: Concurrency conflict - phieu was modified by another user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Phieu da bi nguoi khac cap nhat. Vui long tai lai trang."
+  /api/phieu/{id}/truong/duyet:
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Approve a phieu at the Truong level
+      operationId: phieuDanhGiaTruongDuyet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuDuyetTruongRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "409":
+          description: Concurrency conflict - phieu was modified by another user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Phieu da bi nguoi khac cap nhat. Vui long tai lai trang."
+        "422":
+          description: Missing diem_truong for Truong-evaluated items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuSubmitValidationResponse"
+  /api/phieu/{id}/khoa/tra-lai:
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Return a phieu to the GV for revision
+      operationId: phieuDanhGiaKhoaTraLai
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuTraLaiKhoaRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "409":
+          description: Concurrency conflict - phieu was modified by another user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Phieu da bi nguoi khac cap nhat. Vui long tai lai trang."
+  /api/phieu/{id}/truong/tra-lai:
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Return a phieu from Truong level
+      operationId: phieuDanhGiaTruongTraLai
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuTraLaiTruongRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "409":
+          description: Concurrency conflict - phieu was modified by another user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Phieu da bi nguoi khac cap nhat. Vui long tai lai trang."
+  /api/phieu/{id}/chot:
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Finalize a phieu (transition state 4 -> 5 HOAN_TAT)
+      description: |
+        Truong-only. Computes diem_chinh_thuc for each chi_tiet, totals
+        per group (Group A capped at 100, Group B uncapped),
+        xep_loai per thresholds (>=95, >=80, >=60), and writes
+        lich_su_cham_diem + lich_su_trang_thai_phieu in a single transaction.
+        If any vi_pham_giang_day row with la_nghiem_trong = 1 exists for
+        the GV in that year, xep_loai is forced to 'Khong hoan thanh'
+        and tong_diem_co_ban is set to 0.
+      operationId: phieuDanhGiaChot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuChotRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "409":
+          description: Conflict - phieu not in trang_thai = 4 (TRUONG_DA_DG), or concurrency conflict (phieu was modified by another user)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/PhieuDanhGiaResponse"
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: false
+                      message:
+                        type: string
+                        example: "Phieu da bi nguoi khac cap nhat. Vui long tai lai trang."
+        "422":
+          description: Missing scores for one or more chi_tiet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuSubmitValidationResponse"
+  /api/phieu/{id}/mo-lai:
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Reopen a finalized phieu (state 5 HOAN_TAT -> 1/2/3)
+      description: |
+        Truong-only. Most destructive operation in the system. In a single transaction:
+        1) Snapshots every non-NULL chi_tiet score column (tu DG, Khoa, Truong, chinh thuc)
+           into lich_su_cham_diem under the CURRENT lan_danh_gia (hanh_dong = 3) BEFORE clearing.
+        2) Clears chi_tiet scores selectively based on trangThaiMoi:
+              1 -> clear ALL (tu DG, Khoa, Truong, chinh thuc)
+              2 -> clear Khoa + Truong + chinh thuc (keep tu DG)
+              3 -> clear Truong + chinh thuc (keep tu DG + Khoa)
+        3) Updates phieu: trang_thai = trangThaiMoi, lan_danh_gia +=1, lan_mo_lai +=1,
+           sets tracking columns, clears totals/xep_loai/chot info.
+        4) Writes lich_su_trang_thai_phieu (hanh_dong = 5 Mo lai, cap_thuc_hien = 3).
+      operationId: phieuDanhGiaMoLai
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuMoLaiRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "400":
+          description: Invalid request (missing TrangThaiMoi / LyDo, out of range)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "403":
+          description: Caller is not Truong
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "409":
+          description: Conflict - phieu not in trang_thai = 5 (HOAN_TAT), or concurrency conflict (phieu was modified by another user)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/PhieuDanhGiaResponse"
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: false
+                      message:
+                        type: string
+                        example: "Phieu da bi nguoi khac cap nhat. Vui long tai lai trang."
+  /api/phieu/{id}:
+    get:
+      tags:
+        - PhieuDanhGia
+      summary: Get phieu danh gia detail
+      operationId: phieuDanhGiaGetDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+  /api/phieu/{id}/lich-su-trang-thai:
+    get:
+      tags:
+        - BaoCao
+      summary: Audit trail of phieu state transitions
+      description: |
+        Returns all rows from lich_su_trang_thai_phieu for the phieu, ordered by ngay_thuc_hien ASC.
+        Each row is one state transition (submit / approve / return / chot / mo-lai), with the
+        person's name joined from nhan_vien. ly_do and nhan_xet are returned verbatim.
+        Don_vi scoping mirrors GET /api/phieu (Khoa sees their tree; Truong sees all; GV sees own).
+      operationId: phieuGetLichSuTrangThai
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LichSuTrangThaiResponse"
+  /api/phieu/{id}/lich-su-cham-diem:
+    get:
+      tags:
+        - BaoCao
+      summary: Audit trail of score changes for a phieu, grouped by (lan_danh_gia, id_chi_tiet, cap)
+      description: |
+        Used by the UI to show "Round 1 Khoa scored X, after return Round 2 Khoa scored Y".
+        Each group contains its ordered list of entries (timestamps), so the consumer can render
+        a full timeline per criterion per evaluator level per round.
+      operationId: phieuGetLichSuChamDiem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LichSuChamDiemResponse"
+  /api/chitiet/{idChiTiet}/lich-su-cham-diem:
+    get:
+      tags:
+        - BaoCao
+      summary: Audit trail of score changes scoped to a single chi_tiet
+      description: |
+        Same shape as the phieu-scoped variant but filtered to one chi_tiet, ordered by
+        ngay_thuc_hien. Useful when the UI is already focused on a single criterion.
+      operationId: chiTietGetLichSuChamDiem
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LichSuChamDiemResponse"
+  /api/bao-cao/tong-quan:
+    get:
+      tags:
+        - BaoCao
+      summary: Overview report - phieu counts by trang_thai and xep_loai
+      description: |
+        Counts phieu by trang_thai (1..5) and, for trang_thai=5 only, also by xep_loai.
+        Khoa users are scoped to their don_vi tree; Truong sees all.
+      operationId: baoCaoTongQuan
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaoCaoTongQuanResponse"
+  /api/bao-cao/diem-trung-binh:
+    get:
+      tags:
+        - BaoCao
+      summary: Avg / min / max of tong_diem_tich_luy grouped by one-level-deep child don_vi
+      description: |
+        Only includes phieu with trang_thai=5 (HOAN_TAT). Buckets are the direct children of the
+        requested idDonVi. If idDonVi is omitted, Truong defaults to root (children = Khoa);
+        Khoa defaults to their own don_vi (children = Bo mon). Grandchild phieu (Bo mon under
+        a Khoa) roll up under their parent Khoa bucket.
+      operationId: baoCaoDiemTrungBinh
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaoCaoDiemTrungBinhResponse"
+  /api/bao-cao/chua-hoan-tat:
+    get:
+      tags:
+        - BaoCao
+      summary: List phieu where trang_thai != 5, with days elapsed since ngay_tao
+      description: |
+        Useful for chasing late submissions. Ordered by days-elapsed DESC so oldest stale
+        phieu come first. Don_vi scoping matches GET /api/phieu.
+      operationId: baoCaoChuaHoanTat
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaoCaoChuaHoanTatResponse"
+  /api/viphamgiangday:
+    get:
+      tags:
+        - ViPhamGiangDay
+      summary: Get all
+      operationId: viPhamGiangDayGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+    post:
+      tags:
+        - ViPhamGiangDay
+      summary: Create
+      operationId: viPhamGiangDayCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ViPhamGiangDayCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+  /api/viphamgiangday/{id}:
+    get:
+      tags:
+        - ViPhamGiangDay
+      summary: Get by id
+      operationId: viPhamGiangDayGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+    put:
+      tags:
+        - ViPhamGiangDay
+      summary: Update
+      operationId: viPhamGiangDayUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ViPhamGiangDayUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+    delete:
+      tags:
+        - ViPhamGiangDay
+      summary: Delete
+      operationId: viPhamGiangDayDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+  /api/chuc-danh-nghe-nghiep:
+    get:
+      tags:
+        - ChucDanhNgheNghiep
+      summary: Get all
+      operationId: chucDanhNgheNghiepGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucDanhNgheNghiepResponse"
+    post:
+      tags:
+        - ChucDanhNgheNghiep
+      summary: Create
+      operationId: chucDanhNgheNghiepCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChucDanhNgheNghiepCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucDanhNgheNghiepResponse"
+  /api/chuc-danh-nghe-nghiep/{id}:
+    get:
+      tags:
+        - ChucDanhNgheNghiep
+      summary: Get by id
+      operationId: chucDanhNgheNghiepGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucDanhNgheNghiepResponse"
+    put:
+      tags:
+        - ChucDanhNgheNghiep
+      summary: Update
+      operationId: chucDanhNgheNghiepUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChucDanhNgheNghiepUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucDanhNgheNghiepResponse"
+    delete:
+      tags:
+        - ChucDanhNgheNghiep
+      summary: Delete
+      operationId: chucDanhNgheNghiepDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucDanhNgheNghiepResponse"
+  /api/nhomtieuchi:
+    get:
+      tags:
+        - NhomTieuChi
+      summary: Get all
+      operationId: nhomTieuChiGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomTieuChiResponse"
+    post:
+      tags:
+        - NhomTieuChi
+      summary: Create
+      operationId: nhomTieuChiCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhomTieuChiCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomTieuChiResponse"
+  /api/nhomtieuchi/{id}:
+    get:
+      tags:
+        - NhomTieuChi
+      summary: Get by id
+      operationId: nhomTieuChiGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomTieuChiResponse"
+    put:
+      tags:
+        - NhomTieuChi
+      summary: Update
+      operationId: nhomTieuChiUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhomTieuChiUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomTieuChiResponse"
+    delete:
+      tags:
+        - NhomTieuChi
+      summary: Delete
+      operationId: nhomTieuChiDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomTieuChiResponse"
+  /api/tieuchidanhgia:
+    get:
+      tags:
+        - TieuChiDanhGia
+      summary: Get all
+      operationId: tieuChiDanhGiaGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TieuChiDanhGiaResponse"
+    post:
+      tags:
+        - TieuChiDanhGia
+      summary: Create
+      operationId: tieuChiDanhGiaCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TieuChiDanhGiaCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TieuChiDanhGiaResponse"
+  /api/tieuchidanhgia/{id}:
+    get:
+      tags:
+        - TieuChiDanhGia
+      summary: Get by id
+      operationId: tieuChiDanhGiaGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TieuChiDanhGiaResponse"
+    put:
+      tags:
+        - TieuChiDanhGia
+      summary: Update
+      operationId: tieuChiDanhGiaUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TieuChiDanhGiaUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TieuChiDanhGiaResponse"
+    delete:
+      tags:
+        - TieuChiDanhGia
+      summary: Delete
+      operationId: tieuChiDanhGiaDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TieuChiDanhGiaResponse"
+  /api/nhomnhiemvu:
+    get:
+      tags:
+        - NhomNhiemVu
+      summary: Get all
+      operationId: nhomNhiemVuGetAll
+      parameters:
+        - name: trangThai
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomNhiemVuResponse"
+    post:
+      tags:
+        - NhomNhiemVu
+      summary: Create
+      operationId: nhomNhiemVuCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhomNhiemVuCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomNhiemVuResponse"
+  /api/nhomnhiemvu/{id}:
+    get:
+      tags:
+        - NhomNhiemVu
+      summary: Get by id
+      operationId: nhomNhiemVuGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomNhiemVuResponse"
+    put:
+      tags:
+        - NhomNhiemVu
+      summary: Update
+      operationId: nhomNhiemVuUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhomNhiemVuUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomNhiemVuResponse"
+    delete:
+      tags:
+        - NhomNhiemVu
+      summary: Delete
+      operationId: nhomNhiemVuDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhomNhiemVuResponse"
+  /api/vaitropvcd:
+    get:
+      tags:
+        - VaiTroPvcd
+      summary: Get all
+      operationId: vaiTroPvcdGetAll
+      parameters:
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idNam
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: trangThai
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaiTroPvcdResponse"
+    post:
+      tags:
+        - VaiTroPvcd
+      summary: Create
+      operationId: vaiTroPvcdCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VaiTroPvcdCreateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaiTroPvcdResponse"
+  /api/vaitropvcd/{id}:
+    get:
+      tags:
+        - VaiTroPvcd
+      summary: Get by id
+      operationId: vaiTroPvcdGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaiTroPvcdResponse"
+    put:
+      tags:
+        - VaiTroPvcd
+      summary: Update
+      operationId: vaiTroPvcdUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VaiTroPvcdUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaiTroPvcdResponse"
+    delete:
+      tags:
+        - VaiTroPvcd
+      summary: Delete
+      operationId: vaiTroPvcdDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaiTroPvcdResponse"
+  /api/vaitropvcd/resolve:
+    get:
+      tags:
+        - VaiTroPvcd
+      summary: Resolve vai tro
+      operationId: vaiTroPvcdResolve
+      parameters:
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idNam
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaiTroPvcdResponse"
+components:
+  schemas:
+    LichSuTrangThaiPhieuDto:
+      type: object
+      properties:
+        Id:
+          type: integer
+          format: int64
+        IdPhieu:
+          type: integer
+        LanDanhGia:
+          type: integer
+        TrangThaiTruoc:
+          type: integer
+          nullable: true
+          description: NULL only on the initial creation row
+        TrangThaiSau:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+        HanhDong:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+          description: 1 Submit, 2 Approve & forward, 3 Return, 4 Chot, 5 Mo lai
+        CapThucHien:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: 1 GV, 2 Khoa, 3 Truong; NULL when system-initiated
+        IdNguoiThucHien:
+          type: integer
+        TenNguoiThucHien:
+          type: string
+          nullable: true
+        LyDo:
+          type: string
+          nullable: true
+        NhanXet:
+          type: string
+          nullable: true
+        NgayThucHien:
+          type: string
+          format: date-time
+    LichSuTrangThaiResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LichSuTrangThaiPhieuDto"
+    LichSuChamDiemDto:
+      type: object
+      properties:
+        IdLichSu:
+          type: integer
+          format: int64
+        IdChiTiet:
+          type: integer
+        IdPhieu:
+          type: integer
+        LanDanhGia:
+          type: integer
+        Cap:
+          type: integer
+          enum: [1, 2, 3]
+          description: 1 Tu DG, 2 Khoa, 3 Truong
+        HanhDong:
+          type: integer
+          enum: [1, 2, 3]
+          description: 1 Cham, 2 Sua, 3 Chot
+        Diem:
+          type: number
+          nullable: true
+        NhanXet:
+          type: string
+          nullable: true
+        IdNguoiThucHien:
+          type: integer
+        TenNguoiThucHien:
+          type: string
+          nullable: true
+        NgayThucHien:
+          type: string
+          format: date-time
+    LichSuChamDiemGroupDto:
+      type: object
+      description: One bucket = (LanDanhGia, IdChiTiet, Cap). Entries are the rows in chronological order.
+      properties:
+        LanDanhGia:
+          type: integer
+        IdChiTiet:
+          type: integer
+        Cap:
+          type: integer
+        Entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LichSuChamDiemDto"
+    LichSuChamDiemResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LichSuChamDiemGroupDto"
+    DemTrangThaiDto:
+      type: object
+      properties:
+        TrangThai:
+          type: integer
+        SoLuong:
+          type: integer
+    DemXepLoaiDto:
+      type: object
+      properties:
+        XepLoai:
+          type: string
+        SoLuong:
+          type: integer
+    BaoCaoTongQuanDto:
+      type: object
+      properties:
+        IdNam:
+          type: integer
+        IdDonVi:
+          type: integer
+          nullable: true
+        TongSoPhieu:
+          type: integer
+        DemTheoTrangThai:
+          type: array
+          items:
+            $ref: "#/components/schemas/DemTrangThaiDto"
+        DemTheoXepLoai:
+          type: array
+          items:
+            $ref: "#/components/schemas/DemXepLoaiDto"
+    BaoCaoTongQuanResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/BaoCaoTongQuanDto"
+    BaoCaoDiemTrungBinhDto:
+      type: object
+      properties:
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+          nullable: true
+        TenDonVi:
+          type: string
+          nullable: true
+        SoPhieu:
+          type: integer
+        DiemTrungBinh:
+          type: number
+          nullable: true
+        DiemThapNhat:
+          type: number
+          nullable: true
+        DiemCaoNhat:
+          type: number
+          nullable: true
+    BaoCaoDiemTrungBinhResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BaoCaoDiemTrungBinhDto"
+    BaoCaoChuaHoanTatDto:
+      type: object
+      properties:
+        IdPhieu:
+          type: integer
+        IdNam:
+          type: integer
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        IdDonVi:
+          type: integer
+        TenDonVi:
+          type: string
+          nullable: true
+        TrangThai:
+          type: integer
+          enum: [1, 2, 3, 4]
+        LanDanhGia:
+          type: integer
+        NgayTao:
+          type: string
+          format: date-time
+          nullable: true
+        NgayGui:
+          type: string
+          format: date-time
+          nullable: true
+        SoNgayTroi:
+          type: integer
+          description: DATEDIFF(DAY, ngay_tao, NOW())
+    BaoCaoChuaHoanTatResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BaoCaoChuaHoanTatDto"
+    LoginRequest:
+      type: object
+      required:
+        - Email
+        - Password
+      properties:
+        Email:
+          type: string
+        Password:
+          type: string
+    RefreshTokenRequest:
+      type: object
+      required:
+        - RefreshToken
+      properties:
+        RefreshToken:
+          type: string
+    RegisterRequest:
+      type: object
+      required:
+        - MaNhanVien
+        - HoTen
+        - Password
+      properties:
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        Email:
+          type: string
+        Password:
+          type: string
+        IdDonVi:
+          type: integer
+        IdChucVu:
+          type: integer
+          nullable: true
+        IdQuanLyTrucTiep:
+          type: integer
+          nullable: true
+        IdNhomGv:
+          type: integer
+          nullable: true
+        ScienceUserId:
+          type: integer
+          nullable: true
+    AuthUserDto:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        Email:
+          type: string
+        IdDonVi:
+          type: integer
+        IdChucVu:
+          type: integer
+          nullable: true
+        IdNhomGv:
+          type: integer
+          nullable: true
+        ScienceUserId:
+          type: integer
+          nullable: true
+    AuthResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        User:
+          $ref: "#/components/schemas/AuthUserDto"
+        Tokens:
+          $ref: "#/components/schemas/AuthTokenDto"
+    AuthTokenDto:
+      type: object
+      properties:
+        AccessToken:
+          type: string
+        RefreshToken:
+          type: string
+        AccessTokenExpiresAt:
+          type: string
+          format: date-time
+        RefreshTokenExpiresAt:
+          type: string
+          format: date-time
+    ChucVuCreateRequest:
+      type: object
+      required:
+        - MaChucVu
+        - TenChucVu
+      properties:
+        MaChucVu:
+          type: string
+        TenChucVu:
+          type: string
+        TrangThai:
+          type: boolean
+          nullable: true
+    ChucVuUpdateRequest:
+      type: object
+      required:
+        - MaChucVu
+        - TenChucVu
+      properties:
+        MaChucVu:
+          type: string
+        TenChucVu:
+          type: string
+        TrangThai:
+          type: boolean
+          nullable: true
+    ChucVuDto:
+      type: object
+      properties:
+        IdChucVu:
+          type: integer
+        MaChucVu:
+          type: string
+        TenChucVu:
+          type: string
+        TrangThai:
+          type: boolean
+    ChucVuResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/ChucVuDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChucVuDto"
+    DonViCreateRequest:
+      type: object
+      required:
+        - MaDonVi
+        - TenDonVi
+      properties:
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        IdDonViCha:
+          type: integer
+          nullable: true
+        CapDonVi:
+          type: integer
+        TrangThai:
+          type: boolean
+          nullable: true
+    DonViUpdateRequest:
+      type: object
+      required:
+        - MaDonVi
+        - TenDonVi
+      properties:
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        IdDonViCha:
+          type: integer
+          nullable: true
+        CapDonVi:
+          type: integer
+        TrangThai:
+          type: boolean
+          nullable: true
+    DonViDto:
+      type: object
+      properties:
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        IdDonViCha:
+          type: integer
+          nullable: true
+        MaDonViCha:
+          type: string
+        TenDonViCha:
+          type: string
+        CapDonVi:
+          type: integer
+        TrangThai:
+          type: boolean
+    DonViResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/DonViDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DonViDto"
+    NamDanhGiaCreateRequest:
+      type: object
+      properties:
+        IdNam:
+          type: integer
+        NgayBatDau:
+          type: string
+          format: date-time
+          nullable: true
+        NgayKetThuc:
+          type: string
+          format: date-time
+          nullable: true
+        NgayMoTuDanhGia:
+          type: string
+          format: date-time
+          nullable: true
+        NgayDongTuDanhGia:
+          type: string
+          format: date-time
+          nullable: true
+        NgayMoDanhGiaCapTren:
+          type: string
+          format: date-time
+          nullable: true
+        NgayDongDanhGiaCapTren:
+          type: string
+          format: date-time
+          nullable: true
+        TrangThai:
+          type: integer
+          nullable: true
+        GhiChu:
+          type: string
+    NamDanhGiaUpdateRequest:
+      type: object
+      properties:
+        NgayBatDau:
+          type: string
+          format: date-time
+          nullable: true
+        NgayKetThuc:
+          type: string
+          format: date-time
+          nullable: true
+        NgayMoTuDanhGia:
+          type: string
+          format: date-time
+          nullable: true
+        NgayDongTuDanhGia:
+          type: string
+          format: date-time
+          nullable: true
+        NgayMoDanhGiaCapTren:
+          type: string
+          format: date-time
+          nullable: true
+        NgayDongDanhGiaCapTren:
+          type: string
+          format: date-time
+          nullable: true
+        TrangThai:
+          type: integer
+          nullable: true
+        GhiChu:
+          type: string
+    NamDanhGiaDto:
+      type: object
+      properties:
+        IdNam:
+          type: integer
+        NgayBatDau:
+          type: string
+          format: date-time
+        NgayKetThuc:
+          type: string
+          format: date-time
+        NgayMoTuDanhGia:
+          type: string
+          format: date-time
+          nullable: true
+        NgayDongTuDanhGia:
+          type: string
+          format: date-time
+          nullable: true
+        NgayMoDanhGiaCapTren:
+          type: string
+          format: date-time
+          nullable: true
+        NgayDongDanhGiaCapTren:
+          type: string
+          format: date-time
+          nullable: true
+        TrangThai:
+          type: integer
+        GhiChu:
+          type: string
+    NamDanhGiaResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/NamDanhGiaDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NamDanhGiaDto"
+    MauDanhGiaCreateRequest:
+      type: object
+      required:
+        - TenMau
+      properties:
+        TenMau:
+          type: string
+        IdNam:
+          type: integer
+        MoTa:
+          type: string
+        TrangThai:
+          type: boolean
+          nullable: true
+    MauDanhGiaUpdateRequest:
+      type: object
+      required:
+        - TenMau
+      properties:
+        TenMau:
+          type: string
+        IdNam:
+          type: integer
+        MoTa:
+          type: string
+        TrangThai:
+          type: boolean
+          nullable: true
+    MauDanhGiaDto:
+      type: object
+      properties:
+        IdMau:
+          type: integer
+        TenMau:
+          type: string
+        IdNam:
+          type: integer
+        MoTa:
+          type: string
+        TrangThai:
+          type: boolean
+    MauDanhGiaResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/MauDanhGiaDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MauDanhGiaDto"
+    MauDanhGiaChiTietDto:
+      type: object
+      properties:
+        IdMau:
+          type: integer
+        TenMau:
+          type: string
+        IdNam:
+          type: integer
+        MoTa:
+          type: string
+        TrangThai:
+          type: boolean
+        Nhom:
+          type: array
+          items:
+            $ref: "#/components/schemas/MauDanhGiaNhomChaDto"
+    MauDanhGiaNhomChaDto:
+      type: object
+      properties:
+        IdNhom:
+          type: integer
+        TenNhom:
+          type: string
+        LoaiNhom:
+          type: integer
+        DiemToiDa:
+          type: number
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+        NhomCon:
+          type: array
+          items:
+            $ref: "#/components/schemas/MauDanhGiaNhomConDto"
+    MauDanhGiaNhomConDto:
+      type: object
+      properties:
+        IdNhom:
+          type: integer
+        TenNhom:
+          type: string
+        IdNhomCha:
+          type: integer
+          nullable: true
+        LoaiNhom:
+          type: integer
+        DiemToiDa:
+          type: number
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+        TieuChi:
+          type: array
+          items:
+            $ref: "#/components/schemas/MauDanhGiaTieuChiDto"
+    MauDanhGiaTieuChiDto:
+      type: object
+      properties:
+        IdChiTietMau:
+          type: integer
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+        IdNhom:
+          type: integer
+        TenNhom:
+          type: string
+        LoaiNhom:
+          type: integer
+        DiemToiDaNhom:
+          type: number
+          nullable: true
+        ThuTuHienThiNhom:
+          type: integer
+          nullable: true
+        IdNam:
+          type: integer
+          nullable: true
+        MoTa:
+          type: string
+        DiemToiDa:
+          type: number
+        LoaiThangDiem:
+          type: integer
+        CapDanhGia:
+          type: integer
+          nullable: true
+        CongThucTinhDiem:
+          type: string
+        BatBuocMinhChung:
+          type: boolean
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+        ThangDiem:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThangDiemDto"
+    MauDanhGiaChiTietResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/MauDanhGiaChiTietDto"
+    ChiTietMauDanhGiaCreateRequest:
+      type: object
+      properties:
+        IdMau:
+          type: integer
+        IdTieuChi:
+          type: integer
+    ChiTietMauDanhGiaUpdateRequest:
+      type: object
+      properties:
+        IdMau:
+          type: integer
+        IdTieuChi:
+          type: integer
+    ChiTietMauDanhGiaDto:
+      type: object
+      properties:
+        IdChiTietMau:
+          type: integer
+        IdMau:
+          type: integer
+        TenMau:
+          type: string
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+    ChiTietMauDanhGiaResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/ChiTietMauDanhGiaDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChiTietMauDanhGiaDto"
+    ThangDiemCreateRequest:
+      type: object
+      properties:
+        IdTieuChi:
+          type: integer
+        GiaTriDiem:
+          type: number
+        DieuKienDiem:
+          type: string
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+    ThangDiemUpdateRequest:
+      type: object
+      properties:
+        IdTieuChi:
+          type: integer
+        GiaTriDiem:
+          type: number
+        DieuKienDiem:
+          type: string
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+    ThangDiemDto:
+      type: object
+      properties:
+        IdThangDiem:
+          type: integer
+        IdTieuChi:
+          type: integer
+        GiaTriDiem:
+          type: number
+        DieuKienDiem:
+          type: string
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+    ThangDiemResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/ThangDiemDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThangDiemDto"
+    DinhMucGiangVienCreateRequest:
+      type: object
+      properties:
+        IdChucDanh:
+          type: integer
+        IdNam:
+          type: integer
+        GioGiangLyThuyet:
+          type: number
+        GioNckh:
+          type: number
+        MoTa:
+          type: string
+    DinhMucGiangVienUpdateRequest:
+      type: object
+      properties:
+        IdChucDanh:
+          type: integer
+        IdNam:
+          type: integer
+        GioGiangLyThuyet:
+          type: number
+        GioNckh:
+          type: number
+        MoTa:
+          type: string
+    DinhMucGiangVienDto:
+      type: object
+      properties:
+        IdDinhMuc:
+          type: integer
+        IdChucDanh:
+          type: integer
+        MaChucDanh:
+          type: string
+        TenChucDanh:
+          type: string
+        IdNam:
+          type: integer
+        GioGiangLyThuyet:
+          type: number
+        GioNckh:
+          type: number
+        MoTa:
+          type: string
+    DinhMucGiangVienResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/DinhMucGiangVienDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DinhMucGiangVienDto"
+    GioThucHienGvCreateRequest:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        GioGiangThucTe:
+          type: number
+        GioNckhThucTe:
+          type: number
+        Nguon:
+          type: integer
+          nullable: true
+    GioThucHienGvUpdateRequest:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        GioGiangThucTe:
+          type: number
+        GioNckhThucTe:
+          type: number
+        Nguon:
+          type: integer
+          nullable: true
+    GioThucHienGvDto:
+      type: object
+      properties:
+        IdGioThucHien:
+          type: integer
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        GioGiangThucTe:
+          type: number
+        GioNckhThucTe:
+          type: number
+        Nguon:
+          type: integer
+        NgayCapNhat:
+          type: string
+          format: date-time
+    GioThucHienGvResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/GioThucHienGvDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/GioThucHienGvDto"
+    PhanHoiSinhVienCreateRequest:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        DiemTrungBinh:
+          type: number
+        SoHocPhanDanhGia:
+          type: integer
+          nullable: true
+        HeThongNguon:
+          type: string
+          nullable: true
+    PhanHoiSinhVienUpdateRequest:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        DiemTrungBinh:
+          type: number
+        SoHocPhanDanhGia:
+          type: integer
+          nullable: true
+        HeThongNguon:
+          type: string
+          nullable: true
+    PhanHoiSinhVienDto:
+      type: object
+      properties:
+        IdPhanHoi:
+          type: integer
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        DiemTrungBinh:
+          type: number
+        SoHocPhanDanhGia:
+          type: integer
+        HeThongNguon:
+          type: string
+          nullable: true
+        NgayCapNhat:
+          type: string
+          format: date-time
+    PhanHoiSinhVienResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/PhanHoiSinhVienDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhanHoiSinhVienDto"
+    PhieuDanhGiaCreateRequest:
+      type: object
+      required:
+        - IdNam
+        - IdNhanVien
+        - IdMau
+      properties:
+        IdNam:
+          type: integer
+        IdNhanVien:
+          type: integer
+        IdMau:
+          type: integer
+    ChiTietDanhGiaDiemKhoaRequest:
+      type: object
+      properties:
+        Diem:
+          type: number
+          format: double
+          nullable: true
+        NhanXet:
+          type: string
+          nullable: true
+    PhieuDuyetKhoaRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuTraLaiKhoaRequest:
+      type: object
+      required:
+        - LyDo
+        - RowVersion
+      properties:
+        LyDo:
+          type: string
+        NhanXet:
+          type: string
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    ChiTietDanhGiaDiemTruongRequest:
+      type: object
+      properties:
+        Diem:
+          type: number
+          format: double
+          nullable: true
+        NhanXet:
+          type: string
+          nullable: true
+    PhieuDuyetTruongRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuTraLaiTruongRequest:
+      type: object
+      required:
+        - LyDo
+        - RowVersion
+      properties:
+        TrangThaiMoi:
+          type: integer
+          nullable: true
+        LyDo:
+          type: string
+        NhanXet:
+          type: string
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuChotRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+          maxLength: 2000
+          description: Optional comment recorded on the finalized phieu
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuMoLaiRequest:
+      type: object
+      required:
+        - LyDo
+        - RowVersion
+      properties:
+        TrangThaiMoi:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: Target state after reopening (1 NHAP, 2 CHO_KHOA_DG, 3 KHOA_DA_DG)
+        LyDo:
+          type: string
+          maxLength: 1000
+          description: Mandatory reason for reopening; stored in phieu.ly_do_mo_lai and lich_su_trang_thai_phieu.ly_do
+        NhanXet:
+          type: string
+          nullable: true
+          maxLength: 1000
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuSubmitRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuSubmitMissingItemDto:
+      type: object
+      properties:
+        idChiTiet:
+          type: integer
+        idTieuChi:
+          type: integer
+        tenTieuChi:
+          type: string
+        missingDiemTuDanhGia:
+          type: boolean
+        missingMinhChung:
+          type: boolean
+        batBuocMinhChung:
+          type: boolean
+    PhieuSubmitValidationResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: PHIEU_SUBMIT_VALIDATION_FAILED
+        message:
+          type: string
+        missingItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhieuSubmitMissingItemDto"
+    MinhChungDto:
+      type: object
+      properties:
+        IdMinhChung:
+          type: integer
+        IdChiTiet:
+          type: integer
+        LoaiMinhChung:
+          type: integer
+        TenHienThi:
+          type: string
+        TenFileGoc:
+          type: string
+          nullable: true
+        DuongDan:
+          type: string
+        LoaiFile:
+          type: string
+          nullable: true
+        KichThuocKb:
+          type: integer
+          nullable: true
+        NguoiTaiLen:
+          type: integer
+        NgayTaiLen:
+          type: string
+          format: date-time
+          nullable: true
+    MinhChungAddLinkRequest:
+      type: object
+      required:
+        - TenHienThi
+        - DuongDan
+      properties:
+        TenHienThi:
+          type: string
+          description: Display label for the link
+        DuongDan:
+          type: string
+          description: Full URL or DOI
+        Loai:
+          type: integer
+          enum:
+            - 2
+            - 3
+          description: "2 = generic URL, 3 = DOI / academic URL"
+    MinhChungResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/MinhChungDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MinhChungDto"
+    NhiemVuCongDongDto:
+      type: object
+      properties:
+        IdNhiemVu:
+          type: integer
+        IdChiTiet:
+          type: integer
+        TenNhiemVu:
+          type: string
+        IdNhomNv:
+          type: integer
+        TenNhom:
+          type: string
+        IdVaiTro:
+          type: integer
+        TenVaiTro:
+          type: string
+        DiemSnapshot:
+          type: number
+        MoTa:
+          type: string
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+    PheDuyetDto:
+      type: object
+      properties:
+        IdPheDuyet:
+          type: integer
+        IdPhieu:
+          type: integer
+        LanDanhGia:
+          type: integer
+        CapDuyet:
+          type: integer
+        IdNguoiDuyet:
+          type: integer
+        IdChucVuSnapshot:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: integer
+        NhanXet:
+          type: string
+          nullable: true
+        LyDoTuChoi:
+          type: string
+          nullable: true
+        NgayDuyet:
+          type: string
+          format: date-time
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+          nullable: true
+    ChiTietDanhGiaDto:
+      type: object
+      properties:
+        IdChiTiet:
+          type: integer
+        IdPhieu:
+          type: integer
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+          nullable: true
+        DiemToiDa:
+          type: number
+          nullable: true
+        CapDanhGiaSnapshot:
+          type: integer
+          nullable: true
+        DiemTuDanhGia:
+          type: number
+          nullable: true
+        NhanXetTuDanhGia:
+          type: string
+          nullable: true
+        NgayTuDanhGia:
+          type: string
+          format: date-time
+          nullable: true
+        IdThangDiemChon:
+          type: integer
+          nullable: true
+        DiemKhoa:
+          type: number
+          nullable: true
+        NhanXetKhoa:
+          type: string
+          nullable: true
+        IdNguoiDgKhoa:
+          type: integer
+          nullable: true
+        NgayDgKhoa:
+          type: string
+          format: date-time
+          nullable: true
+        DiemTruong:
+          type: number
+          nullable: true
+        NhanXetTruong:
+          type: string
+          nullable: true
+        IdNguoiDgTruong:
+          type: integer
+          nullable: true
+        NgayDgTruong:
+          type: string
+          format: date-time
+          nullable: true
+        DiemChinhThuc:
+          type: number
+          nullable: true
+        MoTaHoanThanh:
+          type: string
+          nullable: true
+        LaTruongHopDacBiet:
+          type: boolean
+        LyDoDacBiet:
+          type: string
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+          nullable: true
+        MinhChung:
+          type: array
+          items:
+            $ref: "#/components/schemas/MinhChungDto"
+        NhiemVuCongDong:
+          type: array
+          items:
+            $ref: "#/components/schemas/NhiemVuCongDongDto"
+    ChiTietDanhGiaTuDanhGiaRequest:
+      type: object
+      properties:
+        Diem:
+          type: number
+          nullable: true
+        NhanXet:
+          type: string
+          nullable: true
+        IdThangDiemChon:
+          type: integer
+          nullable: true
+    ChiTietDanhGiaResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/ChiTietDanhGiaDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChiTietDanhGiaDto"
+    PhieuDanhGiaChiTietDto:
+      type: object
+      properties:
+        IdPhieu:
+          type: integer
+        IdNam:
+          type: integer
+        IdNhanVien:
+          type: integer
+        IdDonVi:
+          type: integer
+        IdChucVu:
+          type: integer
+          nullable: true
+        IdNhomGv:
+          type: integer
+          nullable: true
+        TenChucVu:
+          type: string
+          nullable: true
+        TenNhomGv:
+          type: string
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+          description: "Base64-encoded ROWVERSION token for optimistic concurrency"
+        IdMau:
+          type: integer
+          nullable: true
+        LanDanhGia:
+          type: integer
+        TrangThai:
+          type: integer
+        IdNguoiDgKhoa:
+          type: integer
+          nullable: true
+        NgayKhoaDuyet:
+          type: string
+          format: date-time
+          nullable: true
+        NhanXetKhoa:
+          type: string
+          nullable: true
+        IdNguoiDgTruong:
+          type: integer
+          nullable: true
+        NgayTruongDuyet:
+          type: string
+          format: date-time
+          nullable: true
+        NhanXetTruong:
+          type: string
+          nullable: true
+        TongDiemCoBan:
+          type: number
+          nullable: true
+        TongDiemVuotTroi:
+          type: number
+          nullable: true
+        TongDiemTichLuy:
+          type: number
+          nullable: true
+        XepLoai:
+          type: string
+          nullable: true
+        IdNguoiChot:
+          type: integer
+          nullable: true
+        NgayChotKetQua:
+          type: string
+          format: date-time
+          nullable: true
+        LanMoLai:
+          type: integer
+        NgayMoLaiGanNhat:
+          type: string
+          format: date-time
+          nullable: true
+        IdNguoiMoLai:
+          type: integer
+          nullable: true
+        LyDoMoLai:
+          type: string
+          nullable: true
+        NgayGui:
+          type: string
+          format: date-time
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+          nullable: true
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+        DaXoa:
+          type: boolean
+        NgayXoa:
+          type: string
+          format: date-time
+          nullable: true
+        ChiTiet:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChiTietDanhGiaDto"
+        PheDuyet:
+          type: array
+          items:
+            $ref: "#/components/schemas/PheDuyetDto"
+    PhieuDanhGiaResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/PhieuDanhGiaChiTietDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhieuDanhGiaChiTietDto"
+    ViPhamGiangDayCreateRequest:
+      type: object
+      required:
+        - IdNhanVien
+        - IdNam
+        - MoTa
+        - IdNguoiGhiNhan
+      properties:
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        MoTa:
+          type: string
+        LaNghiemTrong:
+          type: boolean
+          nullable: true
+        NgayViPham:
+          type: string
+          format: date-time
+          nullable: true
+        IdNguoiGhiNhan:
+          type: integer
+    ViPhamGiangDayUpdateRequest:
+      type: object
+      required:
+        - IdNhanVien
+        - IdNam
+        - MoTa
+        - IdNguoiGhiNhan
+      properties:
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        MoTa:
+          type: string
+        LaNghiemTrong:
+          type: boolean
+          nullable: true
+        NgayViPham:
+          type: string
+          format: date-time
+          nullable: true
+        IdNguoiGhiNhan:
+          type: integer
+    ViPhamGiangDayDto:
+      type: object
+      properties:
+        IdViPham:
+          type: integer
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        MoTa:
+          type: string
+        LaNghiemTrong:
+          type: boolean
+        NgayViPham:
+          type: string
+          format: date-time
+          nullable: true
+        IdNguoiGhiNhan:
+          type: integer
+        NgayGhiNhan:
+          type: string
+          format: date-time
+    ViPhamGiangDayResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/ViPhamGiangDayDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ViPhamGiangDayDto"
+    ChucDanhNgheNghiepCreateRequest:
+      type: object
+      required:
+        - MaChucDanh
+        - TenChucDanh
+      properties:
+        MaChucDanh:
+          type: string
+        TenChucDanh:
+          type: string
+        MoTa:
+          type: string
+        TrangThai:
+          type: boolean
+          nullable: true
+    ChucDanhNgheNghiepUpdateRequest:
+      type: object
+      required:
+        - MaChucDanh
+        - TenChucDanh
+      properties:
+        MaChucDanh:
+          type: string
+        TenChucDanh:
+          type: string
+        MoTa:
+          type: string
+        TrangThai:
+          type: boolean
+          nullable: true
+    ChucDanhNgheNghiepDto:
+      type: object
+      properties:
+        IdChucDanh:
+          type: integer
+        MaChucDanh:
+          type: string
+        TenChucDanh:
+          type: string
+        MoTa:
+          type: string
+          nullable: true
+        TrangThai:
+          type: boolean
+    ChucDanhNgheNghiepResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/ChucDanhNgheNghiepDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChucDanhNgheNghiepDto"
+    NhomNhiemVuCreateRequest:
+      type: object
+      required:
+        - TenNhom
+      properties:
+        TenNhom:
+          type: string
+        ThuTu:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+    NhomNhiemVuUpdateRequest:
+      type: object
+      required:
+        - TenNhom
+      properties:
+        TenNhom:
+          type: string
+        ThuTu:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+    NhomNhiemVuDto:
+      type: object
+      properties:
+        IdNhomNv:
+          type: integer
+        TenNhom:
+          type: string
+        ThuTu:
+          type: integer
+        TrangThai:
+          type: boolean
+    NhomNhiemVuResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/NhomNhiemVuDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NhomNhiemVuDto"
+    VaiTroPvcdCreateRequest:
+      type: object
+      required:
+        - MaVaiTro
+        - TenVaiTro
+      properties:
+        IdDonVi:
+          type: integer
+          nullable: true
+        IdNam:
+          type: integer
+          nullable: true
+        MaVaiTro:
+          type: string
+        TenVaiTro:
+          type: string
+        DiemQuyDoi:
+          type: number
+        ThuTu:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+    VaiTroPvcdUpdateRequest:
+      type: object
+      required:
+        - MaVaiTro
+        - TenVaiTro
+      properties:
+        IdDonVi:
+          type: integer
+          nullable: true
+        IdNam:
+          type: integer
+          nullable: true
+        MaVaiTro:
+          type: string
+        TenVaiTro:
+          type: string
+        DiemQuyDoi:
+          type: number
+        ThuTu:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+    VaiTroPvcdDto:
+      type: object
+      properties:
+        IdVaiTro:
+          type: integer
+        IdDonVi:
+          type: integer
+          nullable: true
+        IdNam:
+          type: integer
+          nullable: true
+        MaVaiTro:
+          type: string
+        TenVaiTro:
+          type: string
+        DiemQuyDoi:
+          type: number
+        ThuTu:
+          type: integer
+        TrangThai:
+          type: boolean
+    VaiTroPvcdResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/VaiTroPvcdDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/VaiTroPvcdDto"
+    NhomTieuChiCreateRequest:
+      type: object
+      required:
+        - TenNhom
+      properties:
+        TenNhom:
+          type: string
+        IdNhomCha:
+          type: integer
+          nullable: true
+        LoaiNhom:
+          type: integer
+          nullable: true
+        DiemToiDa:
+          type: number
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+    NhomTieuChiUpdateRequest:
+      type: object
+      required:
+        - TenNhom
+      properties:
+        TenNhom:
+          type: string
+        IdNhomCha:
+          type: integer
+          nullable: true
+        LoaiNhom:
+          type: integer
+          nullable: true
+        DiemToiDa:
+          type: number
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+    NhomTieuChiDto:
+      type: object
+      properties:
+        IdNhom:
+          type: integer
+        TenNhom:
+          type: string
+        IdNhomCha:
+          type: integer
+          nullable: true
+        TenNhomCha:
+          type: string
+        LoaiNhom:
+          type: integer
+        DiemToiDa:
+          type: number
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+    NhomTieuChiResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/NhomTieuChiDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NhomTieuChiDto"
+    TieuChiDanhGiaCreateRequest:
+      type: object
+      required:
+        - TenTieuChi
+      properties:
+        TenTieuChi:
+          type: string
+        IdNhom:
+          type: integer
+        IdNam:
+          type: integer
+          nullable: true
+        MoTa:
+          type: string
+        DiemToiDa:
+          type: number
+        LoaiThangDiem:
+          type: integer
+        CapDanhGia:
+          type: integer
+          nullable: true
+        CongThucTinhDiem:
+          type: string
+        BatBuocMinhChung:
+          type: boolean
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+    TieuChiDanhGiaUpdateRequest:
+      type: object
+      required:
+        - TenTieuChi
+      properties:
+        TenTieuChi:
+          type: string
+        IdNhom:
+          type: integer
+        IdNam:
+          type: integer
+          nullable: true
+        MoTa:
+          type: string
+        DiemToiDa:
+          type: number
+        LoaiThangDiem:
+          type: integer
+        CapDanhGia:
+          type: integer
+          nullable: true
+        CongThucTinhDiem:
+          type: string
+        BatBuocMinhChung:
+          type: boolean
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+    TieuChiDanhGiaDto:
+      type: object
+      properties:
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+        IdNhom:
+          type: integer
+        TenNhom:
+          type: string
+        IdNam:
+          type: integer
+          nullable: true
+        MoTa:
+          type: string
+        DiemToiDa:
+          type: number
+        LoaiThangDiem:
+          type: integer
+        CapDanhGia:
+          type: integer
+          nullable: true
+        CongThucTinhDiem:
+          type: string
+        BatBuocMinhChung:
+          type: boolean
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+    TieuChiDanhGiaResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/TieuChiDanhGiaDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TieuChiDanhGiaDto"
+    NhiemVuCongDongCreateRequest:
+      type: object
+      required:
+        - TenNhiemVu
+        - IdNhomNv
+        - IdVaiTro
+      properties:
+        TenNhiemVu:
+          type: string
+          maxLength: 500
+        IdNhomNv:
+          type: integer
+          description: Must reference an active danh_muc_nhom_nhiem_vu row
+        IdVaiTro:
+          type: integer
+          description: |
+            Must be present in the resolved vai tro set for the phieu's (don_vi, nam).
+            Resolution priority: (don_vi, nam) > (don_vi, NULL) > (NULL, nam) > (NULL, NULL).
+            The diem_quy_doi of the resolved row is snapshotted into nhiem_vu_cong_dong.diem_snapshot.
+        MoTa:
+          type: string
+          nullable: true
+    NhiemVuCongDongUpdateRequest:
+      type: object
+      required:
+        - TenNhiemVu
+        - IdNhomNv
+        - IdVaiTro
+      properties:
+        TenNhiemVu:
+          type: string
+          maxLength: 500
+        IdNhomNv:
+          type: integer
+        IdVaiTro:
+          type: integer
+          description: Changing IdVaiTro recomputes the snapshot and re-checks the 20-point cap.
+        MoTa:
+          type: string
+          nullable: true
+    NhiemVuCongDongResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/NhiemVuCongDongDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NhiemVuCongDongDto"
+        TongDiemSnapshot:
+          type: number
+          nullable: true
+          description: Sum of diem_snapshot for all active tasks. Present only on GET list.
+        SoNhiemVu:
+          type: integer
+          nullable: true
+          description: Count of active tasks. Present only on GET list.
+        ConLai:
+          type: number
+          nullable: true
+          description: Remaining Group-III quota (= 20 - TongDiemSnapshot). Present only on GET list.
+    PvcdCapExceededResponse:
+      type: object
+      description: Returned with HTTP 422 when a create/update would exceed the 20-point Group-III cap.
+      properties:
+        error:
+          type: string
+          example: PVCD_CAP_EXCEEDED
+        currentTotal:
+          type: number
+          description: Current sum of diem_snapshot for non-deleted tasks on this chi_tiet (before the attempted write).
+        attemptedAdd:
+          type: number
+          description: The diem_snapshot value that was about to be added or applied.
+        remaining:
+          type: number
+          description: Points still available (= 20 - currentTotal).
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

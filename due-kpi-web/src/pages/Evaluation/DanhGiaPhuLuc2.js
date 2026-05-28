@@ -5,6 +5,7 @@ import '../../css/Evaluation/DanhGiaPhuLuc2.css';
 import DanhGiaPhuLuc2Form from '../../components/Evaluation/DanhGiaPhuLuc2/DanhGiaPhuLuc2Form';
 import { Toast } from 'primereact/toast';
 import { ConfirmDialog } from 'primereact/confirmdialog';
+import { apiFetch } from '../../utils/api';
 
 // Hàm hỗ trợ convert ngày tháng từ C#
 const parseNetDate = (dateString) => {
@@ -31,12 +32,6 @@ const DanhGiaPhuLuc2 = () => {
     const toast = useRef(null);
 
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-    const authHeaders = {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        'Content-Type': 'application/json'
-    };
-
-    const API_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -51,7 +46,7 @@ const DanhGiaPhuLuc2 = () => {
         const fetchYears = async () => {
             const currentRealYear = new Date().getFullYear();
             try {
-                const res = await fetch(`${API_URL}/nam-danh-gia`, { headers: authHeaders });
+                const res = await apiFetch('nam-danh-gia');
                 const result = await res.json();
 
                 if (Array.isArray(result) && result.length > 0) {
@@ -85,8 +80,8 @@ const DanhGiaPhuLuc2 = () => {
         const fetchScoringData = async () => {
             setIsLoading(true);
             try {
-                const url = `${API_URL}/scoring?idNam=${selectedYear}&idNhanVien=${currentUser.IdNhanVien || 0}`;
-                const res = await fetch(url, { headers: authHeaders });
+                const endpoint = `scoring?idNam=${selectedYear}&idNhanVien=${currentUser.IdNhanVien || 0}`;
+                const res = await apiFetch(endpoint);
 
                 if (!res.ok) throw new Error("Network response was not ok");
                 const result = await res.json();
@@ -292,10 +287,10 @@ const DanhGiaPhuLuc2 = () => {
 
                 for (const fileItem of filesToProcess) {
                     if (fileItem instanceof File) {
-                        const resUpload = await fetch(`${API_URL}/upload?fileName=${encodeURIComponent(fileItem.name)}`, {
+                        const resUpload = await apiFetch(`upload?fileName=${encodeURIComponent(fileItem.name)}`, {
                             method: 'POST',
                             headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                                'Content-Type': undefined
                             },
                             body: fileItem
                         });
@@ -337,8 +332,8 @@ const DanhGiaPhuLuc2 = () => {
                 ChiTiet: finalChiTiet
             };
 
-            const res = await fetch(`${API_URL}/scoring`, {
-                method: 'POST', headers: authHeaders, body: JSON.stringify(payload)
+            const res = await apiFetch('scoring', {
+                method: 'POST', body: JSON.stringify(payload)
             });
             const result = await res.json();
 
@@ -394,8 +389,8 @@ const DanhGiaPhuLuc2 = () => {
         };
 
         try {
-            const res = await fetch(`${API_URL}/scoring`, {
-                method: 'POST', headers: authHeaders, body: JSON.stringify(payload)
+            const res = await apiFetch('scoring', {
+                method: 'POST', body: JSON.stringify(payload)
             });
             const result = await res.json();
 

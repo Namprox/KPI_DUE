@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog } from 'primereact/dialog';
+import { apiFetch } from '../../../utils/api';
 
 const DanhGiaPhuLuc2Form = ({
     criteriaList, formData, tongDiemCoBan, isSubmitting,
@@ -13,7 +14,6 @@ const DanhGiaPhuLuc2Form = ({
     const [activeTieuChiId, setActiveTieuChiId] = useState(null);
 
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-    const API_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
     const groupedCriteria = criteriaList.reduce((groups, item) => {
         const group = (groups[item.TenNhom] || []);
@@ -38,9 +38,7 @@ const DanhGiaPhuLuc2Form = ({
         setIsLoadingScience(true);
         
         try {
-            const res = await fetch(`${API_URL}/science-data?email=${encodeURIComponent(userEmail)}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
-            });
+            const res = await apiFetch(`science-data?email=${encodeURIComponent(userEmail)}`);
             const result = await res.json();
             
             if (result.success) {

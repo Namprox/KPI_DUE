@@ -3,6 +3,7 @@ import '../../css/Pages.css';
 import QL_MauDanhGiaListing from '../../components/PlanManagement/QL_MauDanhGia/QL_MauDanhGiaListing';
 import QL_MauDanhGiaForm from '../../components/PlanManagement/QL_MauDanhGia/QL_MauDanhGiaForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
+import { apiFetch } from '../../utils/api';
 
 const QL_MauDanhGia = () => {
     const initialForm = {
@@ -22,15 +23,12 @@ const QL_MauDanhGia = () => {
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-    const token = localStorage.getItem('accessToken');
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
     const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
     const canManage = isAdmin || isManager;
-
-    const authHeaders = { 'Authorization': `Bearer ${token}` };
 
     useEffect(() => {
         fetchData();
@@ -41,8 +39,7 @@ const QL_MauDanhGia = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${baseUrl}/mau-danh-gia`, { headers: authHeaders });
+            const response = await apiFetch('mau-danh-gia');
             if (response.ok) {
                 const result = await response.json();
                 setData(result);
@@ -57,8 +54,7 @@ const QL_MauDanhGia = () => {
 
     const fetchNamDanhGia = async () => {
         try {
-            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${baseUrl}/nam-danh-gia`, { headers: authHeaders });
+            const response = await apiFetch('nam-danh-gia');
             if (response.ok) setNamList(await response.json());
         } catch (error) {
             console.error("Lỗi tải danh sách năm:", error);
@@ -67,8 +63,7 @@ const QL_MauDanhGia = () => {
 
     const fetchTieuChi = async () => {
         try {
-            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${baseUrl}/tieu-chi`, { headers: authHeaders });
+            const response = await apiFetch('tieu-chi');
             if (response.ok) setTieuChiList(await response.json());
         } catch (error) {
             console.error("Lỗi tải danh sách tiêu chí:", error);
@@ -99,10 +94,8 @@ const QL_MauDanhGia = () => {
         };
         if (editId) payload.IdMau = editId;
 
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${baseUrl}/mau-danh-gia`, {
+        const response = await apiFetch('mau-danh-gia', {
             method,
-            headers: { ...authHeaders, 'Content-Type': 'application/json; charset=UTF-8' },
             body: JSON.stringify(payload)
         });
 
@@ -130,10 +123,8 @@ const QL_MauDanhGia = () => {
             header: 'Xác nhận xóa',
             message: 'Bạn có chắc chắn muốn xóa Mẫu phiếu này? Tất cả các tiêu chí đã gán bên trong cũng sẽ bị hủy liên kết',
             accept: async () => {
-                const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-                const res = await fetch(`${baseUrl}/mau-danh-gia?id=${id}`, {
-                    method: 'DELETE',
-                    headers: authHeaders
+                const res = await apiFetch(`mau-danh-gia?id=${id}`, {
+                    method: 'DELETE'
                 });
                 if (res.ok) {
                     const result = await res.json();

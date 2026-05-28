@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../css/Pages.css';
 import '../../css/Evaluation/LichSuDanhGia.css';
+import { apiFetch } from '../../utils/api';
 
 const LichSuDanhGia = () => {
     const [historyList, setHistoryList] = useState([]);
@@ -9,17 +10,12 @@ const LichSuDanhGia = () => {
     const navigate = useNavigate();
 
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-    const authHeaders = {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        'Content-Type': 'application/json'
-    };
-    const API_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
     useEffect(() => {
         const fetchHistory = async () => {
             setIsLoading(true);
             try {
-                const res = await fetch(`${API_URL}/scoring?action=history&idNhanVien=${currentUser.IdNhanVien}`, { headers: authHeaders });
+                const res = await apiFetch(`scoring?action=history&idNhanVien=${currentUser.IdNhanVien}`);
                 const result = await res.json();
                 if (result.success) {
                     setHistoryList(result.data || []);

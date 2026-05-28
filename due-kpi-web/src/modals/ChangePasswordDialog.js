@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog } from 'primereact/dialog';
+import { apiFetch } from '../utils/api';
 
 const ChangePasswordDialog = ({ isOpen, onHide, user, toast }) => {
     const [passData, setPassData] = useState({ oldPass: '', newPass: '', confirmPass: '' });
@@ -25,9 +26,8 @@ const ChangePasswordDialog = ({ isOpen, onHide, user, toast }) => {
         }
 
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/changepassword`, {
+            const response = await apiFetch('changepassword', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     UserId: user.Id,
                     OldPassword: passData.oldPass,

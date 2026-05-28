@@ -26,7 +26,7 @@ const Login = () => {
         setIsLoading(true);
         setError('');
 
-        const apiUrl = `${process.env.REACT_APP_API_BASE_URL}/login`;
+        const apiUrl = `${process.env.REACT_APP_API_BASE_URL}/auth/login`;
         console.log("[DEBUG] Đang gọi API tại:", apiUrl);
 
         try {
@@ -38,9 +38,10 @@ const Login = () => {
 
             const result = await response.json();
 
-            if (response.ok && result.success) {
-                localStorage.setItem('user', JSON.stringify(result.user));
-                localStorage.setItem('accessToken', result.accessToken);
+            if (response.ok && result.Success) {
+                localStorage.setItem('user', JSON.stringify(result.User));
+                localStorage.setItem('accessToken', result.Tokens.AccessToken);
+                localStorage.setItem('refreshToken', result.Tokens.RefreshToken);
                 window.location.href = '/';
             } else {
                 setError(result.message || 'Sai thông tin đăng nhập!');

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../css/Pages.css';
 import { Toast } from 'primereact/toast';
+import { apiFetch } from '../../utils/api';
 
 const DanhSachDuyetPhieu = () => {
     const [approvalList, setApprovalList] = useState([]);
@@ -11,10 +12,6 @@ const DanhSachDuyetPhieu = () => {
     const navigate = useNavigate();
     const toast = useRef(null);
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-    const authHeaders = {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        'Content-Type': 'application/json'
-    };
     const API_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
     const roleName = (currentUser.RoleName || currentUser.TenChucVu || '').toLowerCase();
@@ -30,7 +27,7 @@ const DanhSachDuyetPhieu = () => {
             if (!isAdmin && !isManager) return;
 
             try {
-                const res = await fetch(`${API_URL}/nam-danh-gia`, { headers: authHeaders });
+                const res = await apiFetch('nam-danh-gia');
                 const result = await res.json();
 
                 if (Array.isArray(result) && result.length > 0) {
@@ -64,8 +61,8 @@ const DanhSachDuyetPhieu = () => {
 
             setIsLoading(true);
             try {
-                const url = `${API_URL}/approval?idQuanLy=${currentUser.IdNhanVien}&idNam=${selectedYear}&isTopLevel=${isAdmin}`;
-                const res = await fetch(url, { headers: authHeaders });
+                const endpoint = `approval?idQuanLy=${currentUser.IdNhanVien}&idNam=${selectedYear}&isTopLevel=${isAdmin}`;
+                const res = await apiFetch(endpoint);
                 const result = await res.json();
                 if (result.success) {
                     setApprovalList(result.data || []);

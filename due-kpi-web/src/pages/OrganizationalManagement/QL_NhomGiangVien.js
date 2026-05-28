@@ -3,6 +3,7 @@ import '../../css/Pages.css';
 import QL_NhomGiangVienListing from '../../components/OrganizationalManagement/QL_NhomGiangVien/QL_NhomGiangVienListing';
 import QL_NhomGiangVienForm from '../../components/OrganizationalManagement/QL_NhomGiangVien/QL_NhomGiangVienForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
+import { apiFetch } from '../../utils/api';
 
 const QL_NhomGiangVien = () => {
     const initialForm = { MaNhom: '', TenNhom: '', MoTa: '', TrangThai: true };
@@ -15,7 +16,6 @@ const QL_NhomGiangVien = () => {
     const [editId, setEditId] = useState(null);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
-    const token = localStorage.getItem('accessToken');
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
@@ -23,14 +23,12 @@ const QL_NhomGiangVien = () => {
     const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
     const canManage = isAdmin || isManager;
 
-    const authHeaders = { 'Authorization': `Bearer ${token}` };
-
     useEffect(() => { fetchData(); }, []);
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/nhom-giang-vien`, { headers: authHeaders });
+            const response = await apiFetch('nhom-giang-vien');
             if (response.ok) {
                 const result = await response.json();
                 setData(result); setFilteredData(result);
@@ -54,8 +52,8 @@ const QL_NhomGiangVien = () => {
         const method = editId ? 'PUT' : 'POST';
 
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/nhom-giang-vien`, {
-                method, headers: { ...authHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify(formData)
+            const response = await apiFetch('nhom-giang-vien', {
+                method, body: JSON.stringify(formData)
             });
 
             if (response.ok) {
@@ -85,7 +83,7 @@ const QL_NhomGiangVien = () => {
         confirmDeleteDialog({
             header: 'Xác nhận xóa', message: 'Bạn có chắc chắn muốn xóa Nhóm giảng viên này?',
             accept: async () => {
-                const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/nhom-giang-vien?id=${id}`, { method: 'DELETE', headers: authHeaders });
+                const res = await apiFetch(`nhom-giang-vien?id=${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     const result = await res.json();
                     if (result.status === "success") fetchData(); else alert(result.message);

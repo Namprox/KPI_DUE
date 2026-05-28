@@ -3,6 +3,7 @@ import '../../css/Pages.css';
 import QL_TieuChiListing from '../../components/CriteriaManagement/QL_TieuChi/QL_TieuChiListing';
 import QL_TieuChiForm from '../../components/CriteriaManagement/QL_TieuChi/QL_TieuChiForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
+import { apiFetch } from '../../utils/api';
 
 const QL_TieuChi = () => {
     const initialForm = {
@@ -35,17 +36,12 @@ const QL_TieuChi = () => {
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-    const token = localStorage.getItem('accessToken');
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
     const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
     const canManage = isAdmin || isManager;
-
-    const authHeaders = {
-        'Authorization': `Bearer ${token}`
-    };
 
     useEffect(() => {
         fetchData();
@@ -56,11 +52,7 @@ const QL_TieuChi = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${baseUrl}/tieu-chi`, {
-                method: 'GET',
-                headers: authHeaders
-            });
+            const response = await apiFetch('tieu-chi');
             if (response.ok) {
                 const result = await response.json();
                 setData(result);
@@ -75,11 +67,7 @@ const QL_TieuChi = () => {
 
     const fetchNhomTieuChi = async () => {
         try {
-            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${baseUrl}/tieu-chi?type=nhom-tieu-chi`, {
-                method: 'GET',
-                headers: authHeaders
-            });
+            const response = await apiFetch('tieu-chi?type=nhom-tieu-chi');
             if (response.ok) {
                 const result = await response.json();
                 setNhomTieuChiList(result);
@@ -91,11 +79,7 @@ const QL_TieuChi = () => {
 
     const fetchNamDanhGia = async () => {
         try {
-            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${baseUrl}/nam-danh-gia`, {
-                method: 'GET',
-                headers: authHeaders
-            });
+            const response = await apiFetch('nam-danh-gia');
             if (response.ok) {
                 const result = await response.json();
                 setNamDanhGiaList(result);
@@ -140,13 +124,8 @@ const QL_TieuChi = () => {
         };
         if (editId) payload.IdTieuChi = editId;
 
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${baseUrl}/tieu-chi`, {
+        const response = await apiFetch('tieu-chi', {
             method,
-            headers: {
-                ...authHeaders,
-                'Content-Type': 'application/json; charset=UTF-8'
-            },
             body: JSON.stringify(payload)
         });
 
@@ -177,10 +156,8 @@ const QL_TieuChi = () => {
             header: 'Xác nhận xóa',
             message: 'Bạn có chắc chắn muốn xóa Tiêu chí này?',
             accept: async () => {
-                const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-                const response = await fetch(`${baseUrl}/tieu-chi?id=${id}`, {
-                    method: 'DELETE',
-                    headers: authHeaders
+                const response = await apiFetch(`tieu-chi?id=${id}`, {
+                    method: 'DELETE'
                 });
 
                 if (response.ok) {

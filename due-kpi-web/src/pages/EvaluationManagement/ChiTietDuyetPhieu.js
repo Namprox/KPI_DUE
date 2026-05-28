@@ -5,6 +5,7 @@ import DanhGiaPhuLuc2Form from '../../components/Evaluation/DanhGiaPhuLuc2/DanhG
 import { Toast } from 'primereact/toast';
 import { ConfirmDialog } from 'primereact/confirmdialog';
 import { Dialog } from 'primereact/dialog';
+import { apiFetch } from '../../utils/api';
 
 const parseNetDate = (dateString) => {
     if (!dateString) return null;
@@ -39,12 +40,6 @@ const ChiTietDuyetPhieu = () => {
     const idNhanVien = queryParams.get('idNhanVien');
     const year = queryParams.get('year');
 
-    const authHeaders = {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        'Content-Type': 'application/json'
-    };
-    const API_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-
     useEffect(() => {
         if (!idNhanVien || !year) {
             navigate('/danh-sach-duyet-phieu');
@@ -55,8 +50,8 @@ const ChiTietDuyetPhieu = () => {
             setIsLoading(true);
             try {
                 const [resPhieu, resNam] = await Promise.all([
-                    fetch(`${API_URL}/scoring?idNam=${year}&idNhanVien=${idNhanVien}&t=${new Date().getTime()}`, { headers: authHeaders }),
-                    fetch(`${API_URL}/nam-danh-gia`, { headers: authHeaders })
+                    apiFetch(`scoring?idNam=${year}&idNhanVien=${idNhanVien}&t=${new Date().getTime()}`),
+                    apiFetch('nam-danh-gia')
                 ]);
 
                 const result = await resPhieu.json();
@@ -143,9 +138,8 @@ const ChiTietDuyetPhieu = () => {
                 LyDo: reason
             };
 
-            const res = await fetch(`${API_URL}/approval`, {
+            const res = await apiFetch('approval', {
                 method: 'POST',
-                headers: authHeaders,
                 body: JSON.stringify(payload)
             });
             const result = await res.json();
