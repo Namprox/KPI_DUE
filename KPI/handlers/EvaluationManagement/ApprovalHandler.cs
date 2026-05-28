@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Web.Script.Serialization;
 using System.Configuration;
@@ -33,10 +34,13 @@ namespace KPI.handlers
                         return;
                     }
 
-                    List<object> list = new List<object>();
+                    List<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
+                    List<int> phieuIds = new List<int>();
+
                     using (SqlConnection conn = new SqlConnection(connString))
                     {
                         conn.Open();
+
                         string sql = @"
                             SELECT nv.id_nhan_vien, nv.ma_nhan_vien, nv.ho_ten, cv.ten_chuc_vu,
                                    p.id_phieu, p.id_nam, p.tong_diem_tich_luy, p.trang_thai, p.ngay_gui
@@ -56,18 +60,54 @@ namespace KPI.handlers
                             {
                                 while (reader.Read())
                                 {
-                                    list.Add(new
+                                    int idPhieu = Convert.ToInt32(reader["id_phieu"]);
+                                    phieuIds.Add(idPhieu);
+
+                                    var item = new Dictionary<string, object>();
+                                    item["IdNhanVien"] = Convert.ToInt32(reader["id_nhan_vien"]);
+                                    item["MaNhanVien"] = reader["ma_nhan_vien"].ToString();
+                                    item["HoTen"] = reader["ho_ten"].ToString();
+                                    item["TenChucVu"] = reader["ten_chuc_vu"] != DBNull.Value ? reader["ten_chuc_vu"].ToString() : "Nhân viên";
+                                    item["IdPhieu"] = idPhieu;
+                                    item["IdNam"] = Convert.ToInt32(reader["id_nam"]);
+                                    item["TongDiemTichLuy"] = Convert.ToDecimal(reader["tong_diem_tich_luy"]);
+                                    item["TrangThai"] = Convert.ToInt32(reader["trang_thai"]);
+                                    item["NgayGui"] = reader["ngay_gui"] != DBNull.Value ? Convert.ToDateTime(reader["ngay_gui"]).ToString("dd/MM/yyyy HH:mm") : "";
+                                    item["DanhSachFile"] = new List<object>();
+
+                                    list.Add(item);
+                                }
+                            }
+                        }
+
+                        if (phieuIds.Count > 0)
+                        {
+                            string ids = string.Join(",", phieuIds);
+                            string fileSql = $@"
+                                SELECT c.id_phieu, m.ten_file, m.ten_file_goc
+                                FROM minh_chung m
+                                JOIN chi_tiet_danh_gia c ON m.id_chi_tiet = c.id_chi_tiet
+                                WHERE c.id_phieu IN ({ids})";
+
+                            using (SqlCommand cmdFile = new SqlCommand(fileSql, conn))
+                            {
+                                using (SqlDataReader fileReader = cmdFile.ExecuteReader())
+                                {
+                                    while (fileReader.Read())
                                     {
-                                        IdNhanVien = Convert.ToInt32(reader["id_nhan_vien"]),
-                                        MaNhanVien = reader["ma_nhan_vien"].ToString(),
-                                        HoTen = reader["ho_ten"].ToString(),
-                                        TenChucVu = reader["ten_chuc_vu"] != DBNull.Value ? reader["ten_chuc_vu"].ToString() : "Nhân viên",
-                                        IdPhieu = Convert.ToInt32(reader["id_phieu"]),
-                                        IdNam = Convert.ToInt32(reader["id_nam"]),
-                                        TongDiemTichLuy = Convert.ToDecimal(reader["tong_diem_tich_luy"]),
-                                        TrangThai = Convert.ToInt32(reader["trang_thai"]),
-                                        NgayGui = reader["ngay_gui"] != DBNull.Value ? Convert.ToDateTime(reader["ngay_gui"]).ToString("dd/MM/yyyy HH:mm") : ""
-                                    });
+                                        int pId = Convert.ToInt32(fileReader["id_phieu"]);
+                                        var fileObj = new
+                                        {
+                                            fileName = fileReader["ten_file"].ToString(),
+                                            originalName = fileReader["ten_file_goc"] != DBNull.Value ? fileReader["ten_file_goc"].ToString() : fileReader["ten_file"].ToString()
+                                        };
+
+                                        var phieu = list.FirstOrDefault(p => (int)p["IdPhieu"] == pId);
+                                        if (phieu != null)
+                                        {
+                                            ((List<object>)phieu["DanhSachFile"]).Add(fileObj);
+                                        }
+                                    }
                                 }
                             }
                         }

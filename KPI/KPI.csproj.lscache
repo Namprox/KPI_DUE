@@ -1,0 +1,119 @@
+version=1
+
+# This file caches language service data to improve the performance of C# Dev Kit.
+# It is not intended for manual editing. It can safely be deleted and will be
+# regenerated automatically. For more information, see https://aka.ms/lscache
+#
+# To control where cache files are stored, use the following VS Code setting:
+#   "dotnet.projectsystem.cacheInProjectFolder": true
+
+[project]
+language=C#
+primary
+lastDtbSucceeded
+
+[properties]
+AssemblyName=KPI
+CommandLineArgsForDesignTimeEvaluation=-langversion:7.3 -define:TRACE
+CompilerGeneratedFilesOutputPath=
+MaxSupportedLangVersion=7.3
+ProjectAssetsFile=<PATH>obj/project.assets.json
+RootNamespace=KPI
+RunAnalyzers=
+RunAnalyzersDuringLiveAnalysis=
+SolutionPath=*Undefined*
+TargetFrameworkIdentifier=.NETFramework
+TargetPath=<PATH>bin/Debug/net40/KPI.exe
+TargetRefPath=
+TemporaryDependencyNodeTargetIdentifier=net40
+
+[commandLineArguments]
+/noconfig
+/unsafe-
+/checked-
+/nowarn:1701,1702,1701,1702
+/fullpaths
+/nostdlib+
+/platform:AnyCPU
+/errorreport:prompt
+/warn:4
+/define:TRACE;DEBUG;NETFRAMEWORK;NET40;NET20_OR_GREATER;NET30_OR_GREATER;NET35_OR_GREATER;NET40_OR_GREATER
+/highentropyva-
+/debug+
+/debug:portable
+/filealign:512
+/optimize-
+/out:obj\Debug\net40\KPI.exe
+/target:exe
+/warnaserror-
+/utf8output
+/deterministic+
+/langversion:7.3
+/warnaserror+:NU1605
+
+[sourceFiles]
+handlers/
+ BaseHandler.cs
+ CriteriaManagement/
+  QL_NhomNhiemVuHandler.cs
+  QL_NhomTieuChiHandler.cs
+  QL_ThangDiemHandler.cs
+  QL_TieuChiHandler.cs
+ Evaluation/ScoringHandler.cs
+ EvaluationManagement/ApprovalHandler.cs
+ JwtHelper.cs
+ LoginHandler.cs
+ OrganizationalManagement/
+  QL_DonViHandler.cs
+  QL_NhanVienHandler.cs
+  QL_NhomGiangVienHandler.cs
+ PlanManagement/
+  QL_DinhMucGiangVienHandler.cs
+  QL_MauDanhGiaHandler.cs
+  QL_NamDanhGiaHandler.cs
+ UploadHandler.cs
+models/CriteriaManagement/
+ QL_NhomNhiemVu.cs
+ QL_NhomTieuChi.cs
+ QL_ThangDiem.cs
+ QL_TieuChi.cs
+models/Evaluation/
+ QL_ChiTietDanhGia.cs
+ QL_PhieuDanhGia.cs
+ ScoringDTO.cs
+models/
+ KpiModels.cs
+ OrganizationalManagement/
+  QL_DonVi.cs
+  QL_NhanVien.cs
+  QL_NhomGiangVien.cs
+ PlanManagement/
+  QL_DinhMucGiangVien.cs
+  QL_MauDanhGia.cs
+  QL_NamDanhGia.cs
+obj/Debug/net40/
+ .NETFramework,Version=v4.0.AssemblyAttributes.cs
+ KPI.AssemblyInfo.cs
+Program.cs
+services/KpiService.cs
+
+[metadataReferences]
+<NUGET>/
+ htmlagilitypack/1.4.9.5/lib/Net40/HtmlAgilityPack.dll
+ jose-jwt/2.4.0/lib/net40/jose-jwt.dll
+ microsoft.netframework.referenceassemblies.net40/1.0.3/build/.NETFramework/v4.0/
+  mscorlib.dll
+  System.Configuration.dll
+  System.Core.dll
+  System.Data.dll
+  System.dll
+  System.Drawing.dll
+  System.Numerics.dll
+  System.Runtime.Caching.dll
+  System.Runtime.Serialization.dll
+  System.Web.Extensions.dll
+  System.Xml.dll
+  System.Xml.Linq.dll
+
+[analyzerConfigFiles]
+obj/Debug/net40/KPI.GeneratedMSBuildEditorConfig.editorconfig

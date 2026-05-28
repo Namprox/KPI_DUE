@@ -11,3 +11,4 @@ D:\DUE\KPI\KPI\bin\Debug\net40\jose-jwt.dll
 D:\DUE\KPI\KPI\obj\Debug\net40\KPI.csproj.Up2Date
 D:\DUE\KPI\KPI\obj\Debug\net40\KPI.exe
 D:\DUE\KPI\KPI\obj\Debug\net40\KPI.pdb
+D:\DUE\KPI\KPI\obj\Debug\net40\KPI.sourcelink.json

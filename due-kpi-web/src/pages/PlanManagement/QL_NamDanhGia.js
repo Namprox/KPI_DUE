@@ -45,6 +45,33 @@ const QL_NamDanhGia = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (formData.NgayMoTuDanhGia && formData.NgayDongDanhGiaCapTren) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const startDate = new Date(formData.NgayMoTuDanhGia);
+            startDate.setHours(0, 0, 0, 0);
+
+            const endDate = new Date(formData.NgayDongDanhGiaCapTren);
+            endDate.setHours(23, 59, 59, 999);
+
+            let autoStatus = 1;
+
+            if (today < startDate) {
+                autoStatus = 1;
+            } else if (today >= startDate && today <= endDate) {
+                autoStatus = 2;
+            } else if (today > endDate) {
+                autoStatus = 3;
+            }
+
+            if (formData.TrangThai !== autoStatus) {
+                setFormData(prev => ({ ...prev, TrangThai: autoStatus }));
+            }
+        }
+    }, [formData.NgayMoTuDanhGia, formData.NgayDongDanhGiaCapTren]);
+
     const fetchData = async () => {
         setIsLoading(true);
         try {
@@ -96,6 +123,30 @@ const QL_NamDanhGia = () => {
 
         if (!canManage) {
             alert("Bạn không có quyền thực hiện chức năng này!");
+            return;
+        }
+
+        const dBatDau = new Date(formData.NgayBatDau);
+        const dKetThuc = new Date(formData.NgayKetThuc);
+        const dMoGV = new Date(formData.NgayMoTuDanhGia);
+        const dDongGV = new Date(formData.NgayDongTuDanhGia);
+        const dMoGD = new Date(formData.NgayMoDanhGiaCapTren);
+        const dDongGD = new Date(formData.NgayDongDanhGiaCapTren);
+
+        if (dBatDau > dKetThuc) {
+            alert("Lỗi logic: Ngày kết thúc NĂM HỌC không thể nằm trước Ngày bắt đầu!");
+            return;
+        }
+        if (dMoGV > dDongGV) {
+            alert("Lỗi logic: Hạn chót GIẢNG VIÊN ĐÁNH GIÁ không thể nằm trước Ngày bắt đầu mở hệ thống!");
+            return;
+        }
+        if (dMoGD > dDongGD) {
+            alert("Lỗi logic: Ngày đóng LỊCH DUYỆT ĐIỂM không thể nằm trước Ngày mở!");
+            return;
+        }
+        if (dDongGD < dMoGV) {
+            alert("Lỗi xung đột: Lịch duyệt điểm của Cấp trên không thể kết thúc trước khi Giảng viên được phép tự đánh giá!");
             return;
         }
 

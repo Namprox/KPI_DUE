@@ -46,8 +46,8 @@ const QL_NamDanhGiaListing = ({ data, onEdit, onDelete, isLoading, canManage }) 
     const renderStatus = (status) => {
         switch (status) {
             case 1: return <span style={{ backgroundColor: '#f59e0b', color: '#fff', padding: '5px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>Chuẩn bị</span>;
-            case 2: return <span style={{ backgroundColor: '#22c55e', color: '#fff', padding: '5px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>Đang mở KPI</span>;
-            case 3: return <span style={{ backgroundColor: '#64748b', color: '#fff', padding: '5px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>Đã đóng</span>;
+            case 2: return <span style={{ backgroundColor: '#22c55e', color: '#fff', padding: '5px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>Đang mở</span>;
+            case 3: return <span style={{ backgroundColor: '#64748b', color: '#fff', padding: '5px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>Kết thúc</span>;
             default: return '---';
         }
     };

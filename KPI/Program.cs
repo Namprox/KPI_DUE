@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -43,7 +44,7 @@ namespace KPI
             try
             {
                 response.AddHeader("Access-Control-Allow-Origin", "*");
-                response.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Role-Id, X-User-Dept-Id, X-User-Id");
+                response.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Role-Id, X-User-Dept-Id, X-User-Id, File-Name, file-name");
                 response.AddHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
 
                 if (request.HttpMethod == "OPTIONS")
@@ -52,7 +53,14 @@ namespace KPI
                     return;
                 }
 
-                string path = request.Url.LocalPath.Trim('/');
+                string path = Uri.UnescapeDataString(request.Url.LocalPath.Trim('/'));
+
+                if (path.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
+                {
+                    ServeStaticFile(context, path);
+                    return;
+                }
+
                 string endpoint = path.Split('/').LastOrDefault()?.ToLower() ?? "";
 
                 if (endpoint == "favicon.ico")
@@ -65,7 +73,6 @@ namespace KPI
                 {
                     new LoginHandler().ProcessRequest(context);
                 }
-
                 else if (endpoint == "nhan-vien" || endpoint == "chuc-vu")
                 {
                     new QL_NhanVienHandler().ProcessRequest(context);
@@ -74,7 +81,6 @@ namespace KPI
                 {
                     new QL_DonViHandler().ProcessRequest(context);
                 }
-
                 else if (endpoint == "tieu-chi")
                 {
                     new QL_TieuChiHandler().ProcessRequest(context);
@@ -107,7 +113,6 @@ namespace KPI
                 {
                     new QL_NhomGiangVienHandler().ProcessRequest(context);
                 }
-
                 else if (endpoint == "scoring")
                 {
                     new ScoringHandler().ProcessRequest(context);
@@ -115,6 +120,24 @@ namespace KPI
                 else if (endpoint == "approval")
                 {
                     new ApprovalHandler().ProcessRequest(context);
+                }
+                else if (endpoint == "upload")
+                {
+                    new UploadHandler().ProcessRequest(context);
+                }
+                else if (endpoint == "science-data")
+                {
+                    new ScienceDataHandler().ProcessRequest(context);
+                }
+                else if (endpoint == "download")
+                {
+                    string query = request.Url.Query;
+                    string fileName = "";
+                    if (query.Contains("file="))
+                    {
+                        fileName = Uri.UnescapeDataString(query.Substring(query.IndexOf("file=") + 5));
+                    }
+                    ServeStaticFile(context, fileName);
                 }
                 else
                 {
@@ -137,6 +160,58 @@ namespace KPI
             finally
             {
                 try { response.Close(); } catch { }
+            }
+        }
+
+        static void ServeStaticFile(HttpListenerContext context, string fileName)
+        {
+            var response = context.Response;
+            try
+            {
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    response.StatusCode = 400;
+                    return;
+                }
+
+                string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uploads", "minh_chung", fileName);
+
+                if (File.Exists(filePath))
+                {
+                    string ext = Path.GetExtension(filePath).ToLower();
+                    string contentType = "application/octet-stream";
+
+                    if (ext == ".pdf") contentType = "application/pdf";
+                    else if (ext == ".png") contentType = "image/png";
+                    else if (ext == ".jpg" || ext == ".jpeg") contentType = "image/jpeg";
+                    else if (ext == ".docx") contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                    else if (ext == ".doc") contentType = "application/msword";
+                    else if (ext == ".xlsx") contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+                    response.ContentType = contentType;
+
+                    string safeHeaderFileName = Uri.EscapeDataString(Path.GetFileName(filePath));
+                    response.AddHeader("Content-Disposition", "attachment; filename*=UTF-8''" + safeHeaderFileName);
+
+                    byte[] fileBytes = File.ReadAllBytes(filePath);
+                    response.ContentLength64 = fileBytes.Length;
+                    response.OutputStream.Write(fileBytes, 0, fileBytes.Length);
+                    response.StatusCode = 200;
+                }
+                else
+                {
+                    response.StatusCode = 404;
+                    response.ContentType = "text/plain";
+                    byte[] buffer = System.Text.Encoding.UTF8.GetBytes($"404 - Không tìm thấy file minh chứng: {fileName}");
+                    response.OutputStream.Write(buffer, 0, buffer.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                response.StatusCode = 500;
+                response.ContentType = "text/plain";
+                byte[] buffer = System.Text.Encoding.UTF8.GetBytes("Lỗi server: " + ex.Message);
+                response.OutputStream.Write(buffer, 0, buffer.Length);
             }
         }
     }

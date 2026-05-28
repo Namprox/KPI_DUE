@@ -37,6 +37,8 @@ namespace KPI.handlers
                     }
 
                     List<QL_NamDanhGia> list = new List<QL_NamDanhGia>();
+                    DateTime today = DateTime.Now.Date;
+
                     using (SqlConnection conn = new SqlConnection(connString))
                     {
                         conn.Open();
@@ -45,23 +47,38 @@ namespace KPI.handlers
                         {
                             while (reader.Read())
                             {
+                                DateTime? ngayMoTu = reader["ngay_mo_tu_danh_gia"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(reader["ngay_mo_tu_danh_gia"]) : null;
+                                DateTime? ngayDongCapTren = reader["ngay_dong_danh_gia_cap_tren"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(reader["ngay_dong_danh_gia_cap_tren"]) : null;
+                                byte trangThaiGoc = Convert.ToByte(reader["trang_thai"]);
+                                byte calculatedStatus = trangThaiGoc;
+
+                                if (ngayMoTu.HasValue && ngayDongCapTren.HasValue)
+                                {
+                                    DateTime startDate = ngayMoTu.Value.Date;
+                                    DateTime endDate = ngayDongCapTren.Value.Date;
+
+                                    if (today < startDate) calculatedStatus = 1;
+                                    else if (today >= startDate && today <= endDate) calculatedStatus = 2;
+                                    else if (today > endDate) calculatedStatus = 3;
+                                }
+
                                 list.Add(new QL_NamDanhGia
                                 {
                                     IdNam = Convert.ToInt32(reader["id_nam"]),
                                     NgayBatDau = Convert.ToDateTime(reader["ngay_bat_dau"]),
                                     NgayKetThuc = Convert.ToDateTime(reader["ngay_ket_thuc"]),
-                                    NgayMoTuDanhGia = reader["ngay_mo_tu_danh_gia"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(reader["ngay_mo_tu_danh_gia"]) : null,
+                                    NgayMoTuDanhGia = ngayMoTu,
                                     NgayDongTuDanhGia = reader["ngay_dong_tu_danh_gia"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(reader["ngay_dong_tu_danh_gia"]) : null,
                                     NgayMoDanhGiaCapTren = reader["ngay_mo_danh_gia_cap_tren"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(reader["ngay_mo_danh_gia_cap_tren"]) : null,
-                                    NgayDongDanhGiaCapTren = reader["ngay_dong_danh_gia_cap_tren"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(reader["ngay_dong_danh_gia_cap_tren"]) : null,
-                                    TrangThai = Convert.ToByte(reader["trang_thai"]),
+                                    NgayDongDanhGiaCapTren = ngayDongCapTren,
+                                    TrangThai = calculatedStatus,
                                     GhiChu = reader["ghi_chu"] != DBNull.Value ? reader["ghi_chu"].ToString() : ""
                                 });
                             }
                         }
                     }
                     string jsonResponse = serializer.Serialize(list);
-                    cache.Set(cacheKey, jsonResponse, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(15) });
+                    cache.Set(cacheKey, jsonResponse, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(5) });
                     BaseHandler.SendJsonResponse(response, jsonResponse);
                 }
                 catch (Exception ex) { BaseHandler.SendJsonResponse(response, $"{{\"status\":\"error\", \"message\":\"{ex.Message.Replace("\"", "'")}\"}}"); }
@@ -92,8 +109,23 @@ namespace KPI.handlers
                                 object ngayMoCapTren = payload.ContainsKey("NgayMoDanhGiaCapTren") && payload["NgayMoDanhGiaCapTren"] != null && payload["NgayMoDanhGiaCapTren"].ToString() != "" ? (object)Convert.ToDateTime(payload["NgayMoDanhGiaCapTren"]) : DBNull.Value;
                                 object ngayDongCapTren = payload.ContainsKey("NgayDongDanhGiaCapTren") && payload["NgayDongDanhGiaCapTren"] != null && payload["NgayDongDanhGiaCapTren"].ToString() != "" ? (object)Convert.ToDateTime(payload["NgayDongDanhGiaCapTren"]) : DBNull.Value;
 
-                                byte trangThai = payload.ContainsKey("TrangThai") && payload["TrangThai"] != null ? Convert.ToByte(payload["TrangThai"]) : (byte)1;
                                 string ghiChu = payload.ContainsKey("GhiChu") && payload["GhiChu"] != null ? payload["GhiChu"].ToString() : "";
+
+                                byte trangThai = 1;
+                                if (ngayMoTu != DBNull.Value && ngayDongCapTren != DBNull.Value)
+                                {
+                                    DateTime today = DateTime.Now.Date;
+                                    DateTime startDate = Convert.ToDateTime(ngayMoTu).Date;
+                                    DateTime endDate = Convert.ToDateTime(ngayDongCapTren).Date;
+
+                                    if (today < startDate) trangThai = 1;
+                                    else if (today >= startDate && today <= endDate) trangThai = 2;
+                                    else if (today > endDate) trangThai = 3;
+                                }
+                                else
+                                {
+                                    trangThai = payload.ContainsKey("TrangThai") && payload["TrangThai"] != null ? Convert.ToByte(payload["TrangThai"]) : (byte)1;
+                                }
 
                                 string sql = method == "POST"
                                     ? @"INSERT INTO nam_danh_gia (id_nam, ngay_bat_dau, ngay_ket_thuc, ngay_mo_tu_danh_gia, ngay_dong_tu_danh_gia, ngay_mo_danh_gia_cap_tren, ngay_dong_danh_gia_cap_tren, trang_thai, ghi_chu) 
@@ -131,7 +163,7 @@ namespace KPI.handlers
                             if (ex.Number == 2627)
                                 errorMessage = "Năm đánh giá này đã tồn tại!";
                             else if (ex.Number == 547)
-                                errorMessage = "Ngày bắt đầu phải nhỏ hơn ngày kết thúc!";
+                                errorMessage = "Lỗi vi phạm mốc thời gian (Kiểm tra lại tính hợp lý của các ngày đã nhập)!";
                             else
                                 errorMessage = ex.Message.Replace("\"", "'");
 

@@ -199,7 +199,13 @@ namespace KPI.handlers
 
                             if (idPhieu > 0)
                             {
-                                string checkChiTietSql = "SELECT id_tieu_chi, diem_tu_danh_gia, id_thang_diem_chon, mo_ta_hoan_thanh FROM chi_tiet_danh_gia WHERE id_phieu = @IdPhieu";
+                                // 1. LẤY DỮ LIỆU FILE CỨNG
+                                string checkChiTietSql = @"
+                                    SELECT c.id_chi_tiet, c.id_tieu_chi, c.diem_tu_danh_gia, c.id_thang_diem_chon, c.mo_ta_hoan_thanh,
+                                           m.ten_file, m.ten_file_goc, m.loai_file, m.kich_thuoc_kb
+                                    FROM chi_tiet_danh_gia c
+                                    LEFT JOIN minh_chung m ON c.id_chi_tiet = m.id_chi_tiet
+                                    WHERE c.id_phieu = @IdPhieu";
                                 using (SqlCommand cmd = new SqlCommand(checkChiTietSql, conn))
                                 {
                                     cmd.Parameters.AddWithValue("@IdPhieu", idPhieu);
@@ -212,7 +218,36 @@ namespace KPI.handlers
                                                 IdTieuChi = Convert.ToInt32(dr["id_tieu_chi"]),
                                                 DiemTuDanhGia = Convert.ToDecimal(dr["diem_tu_danh_gia"]),
                                                 IdThangDiemChon = dr["id_thang_diem_chon"] != DBNull.Value ? (int?)Convert.ToInt32(dr["id_thang_diem_chon"]) : null,
-                                                MoTaHoanThanh = dr["mo_ta_hoan_thanh"] != DBNull.Value ? dr["mo_ta_hoan_thanh"].ToString() : ""
+                                                MoTaHoanThanh = dr["mo_ta_hoan_thanh"] != DBNull.Value ? dr["mo_ta_hoan_thanh"].ToString() : "",
+                                                TenFile = dr["ten_file"] != DBNull.Value ? dr["ten_file"].ToString() : null,
+                                                TenFileGoc = dr["ten_file_goc"] != DBNull.Value ? dr["ten_file_goc"].ToString() : null,
+                                                LoaiFile = dr["loai_file"] != DBNull.Value ? dr["loai_file"].ToString() : null,
+                                                KichThuocKB = dr["kich_thuoc_kb"] != DBNull.Value ? Convert.ToInt32(dr["kich_thuoc_kb"]) : 0
+                                            });
+                                        }
+                                    }
+                                }
+
+                                // 2. LẤY DỮ LIỆU LIÊN KẾT NCKH VÀ ĐẨY VÀO MẢNG
+                                string checkNckhSql = @"
+                                    SELECT c.id_tieu_chi, n.science_record_id, n.bang_nguon, n.mo_ta, n.diem_ap_dung
+                                    FROM chi_tiet_danh_gia c
+                                    INNER JOIN chung_minh_tu_science_db n ON c.id_chi_tiet = n.id_chi_tiet
+                                    WHERE c.id_phieu = @IdPhieu";
+                                using (SqlCommand cmdNckh = new SqlCommand(checkNckhSql, conn))
+                                {
+                                    cmdNckh.Parameters.AddWithValue("@IdPhieu", idPhieu);
+                                    using (SqlDataReader drNckh = cmdNckh.ExecuteReader())
+                                    {
+                                        while (drNckh.Read())
+                                        {
+                                            chiTietData.Add(new
+                                            {
+                                                IdTieuChi = Convert.ToInt32(drNckh["id_tieu_chi"]),
+                                                DiemTuDanhGia = 0m, // Frontend sẽ tự bỏ qua do đã map ở trên
+                                                ScienceRecordId = Convert.ToInt32(drNckh["science_record_id"]),
+                                                BangNguon = drNckh["bang_nguon"].ToString(),
+                                                MoTaNckh = drNckh["mo_ta"] != DBNull.Value ? drNckh["mo_ta"].ToString() : "",
                                             });
                                         }
                                     }
@@ -328,6 +363,7 @@ namespace KPI.handlers
                                                         cmd.ExecuteNonQuery();
                                                     }
 
+                                                    // Xóa chi tiết cũ sẽ tự động trigger ON DELETE CASCADE xóa luôn file và NCKH
                                                     using (SqlCommand cmdDel = new SqlCommand("DELETE FROM chi_tiet_danh_gia WHERE id_phieu=@IdPhieu", conn, transaction))
                                                     {
                                                         cmdDel.Parameters.AddWithValue("@IdPhieu", idPhieu);
@@ -353,10 +389,18 @@ namespace KPI.handlers
                                                 }
 
                                                 string insertDetailSql = @"INSERT INTO chi_tiet_danh_gia (id_phieu, id_tieu_chi, diem_tu_danh_gia, id_thang_diem_chon, mo_ta_hoan_thanh) 
+                                                                           OUTPUT INSERTED.id_chi_tiet 
                                                                            VALUES (@IdPhieu, @IdTieuChi, @Diem, @IdThangDiem, @MoTa)";
+
+                                                string insertFileSql = @"INSERT INTO minh_chung (id_chi_tiet, ten_file, ten_file_goc, duong_dan, loai_file, kich_thuoc_kb, nguoi_tai_len) 
+                                                                         VALUES (@IdChiTiet, @TenFile, @TenFileGoc, @DuongDan, @LoaiFile, @KichThuoc, @NguoiTaiLen)";
+
+                                                string insertNckhSql = @"INSERT INTO chung_minh_tu_science_db (id_chi_tiet, bang_nguon, science_record_id, mo_ta) 
+                                                                         VALUES (@IdChiTiet, @BangNguon, @ScienceRecordId, @MoTa)";
 
                                                 foreach (Dictionary<string, object> item in chiTietList)
                                                 {
+                                                    int newIdChiTiet = 0;
                                                     using (SqlCommand cmd = new SqlCommand(insertDetailSql, conn, transaction))
                                                     {
                                                         cmd.Parameters.AddWithValue("@IdPhieu", idPhieu);
@@ -373,7 +417,44 @@ namespace KPI.handlers
                                                         else
                                                             cmd.Parameters.AddWithValue("@MoTa", DBNull.Value);
 
-                                                        cmd.ExecuteNonQuery();
+                                                        newIdChiTiet = (int)cmd.ExecuteScalar();
+                                                    }
+
+                                                    // Lưu file cứng
+                                                    if (item.ContainsKey("DanhSachFile") && item["DanhSachFile"] != null)
+                                                    {
+                                                        ArrayList files = (ArrayList)item["DanhSachFile"];
+                                                        foreach (Dictionary<string, object> f in files)
+                                                        {
+                                                            using (SqlCommand cmdF = new SqlCommand(insertFileSql, conn, transaction))
+                                                            {
+                                                                cmdF.Parameters.AddWithValue("@IdChiTiet", newIdChiTiet);
+                                                                cmdF.Parameters.AddWithValue("@TenFile", f["fileName"]);
+                                                                cmdF.Parameters.AddWithValue("@TenFileGoc", f["originalName"]);
+                                                                cmdF.Parameters.AddWithValue("@DuongDan", "/uploads/minh_chung/" + f["fileName"]);
+                                                                cmdF.Parameters.AddWithValue("@LoaiFile", f.ContainsKey("fileType") && f["fileType"] != null ? f["fileType"] : "");
+                                                                cmdF.Parameters.AddWithValue("@KichThuoc", f.ContainsKey("fileSizeKB") && f["fileSizeKB"] != null ? Convert.ToInt32(f["fileSizeKB"]) : 0);
+                                                                cmdF.Parameters.AddWithValue("@NguoiTaiLen", idNhanVien);
+                                                                cmdF.ExecuteNonQuery();
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // LƯU MINH CHỨNG TỪ NCKH
+                                                    if (item.ContainsKey("DanhSachNCKH") && item["DanhSachNCKH"] != null)
+                                                    {
+                                                        ArrayList nckhList = (ArrayList)item["DanhSachNCKH"];
+                                                        foreach (Dictionary<string, object> nckh in nckhList)
+                                                        {
+                                                            using (SqlCommand cmdNckh = new SqlCommand(insertNckhSql, conn, transaction))
+                                                            {
+                                                                cmdNckh.Parameters.AddWithValue("@IdChiTiet", newIdChiTiet);
+                                                                cmdNckh.Parameters.AddWithValue("@BangNguon", nckh.ContainsKey("BangNguon") && nckh["BangNguon"] != null ? nckh["BangNguon"].ToString() : "ScientificArticles");
+                                                                cmdNckh.Parameters.AddWithValue("@ScienceRecordId", Convert.ToInt32(nckh["ScienceRecordId"]));
+                                                                cmdNckh.Parameters.AddWithValue("@MoTa", nckh.ContainsKey("MoTa") && nckh["MoTa"] != null ? nckh["MoTa"].ToString() : (object)DBNull.Value);
+                                                                cmdNckh.ExecuteNonQuery();
+                                                            }
+                                                        }
                                                     }
                                                 }
 

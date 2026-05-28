@@ -67,8 +67,22 @@ const QL_NamDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, i
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Trạng thái hệ thống <span className="text-red">*</span></label>
-                                <select name="TrangThai" className="form-input" value={formData.TrangThai || 1} onChange={handleChange} required>
+                                <label>Trạng thái hệ thống (Tự động) <span className="text-red">*</span></label>
+                                <select
+                                    name="TrangThai"
+                                    className="form-input"
+                                    value={formData.TrangThai || 1}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={true}
+                                    style={{
+                                        backgroundColor: '#f1f5f9',
+                                        cursor: 'not-allowed',
+                                        color: '#475569',
+                                        fontWeight: 'bold',
+                                        border: '1px solid #cbd5e1'
+                                    }}
+                                >
                                     <option value={1}>1 - Đang cấu hình (Chuẩn bị)</option>
                                     <option value={2}>2 - Mở hệ thống (Đang chạy)</option>
                                     <option value={3}>3 - Đóng hệ thống (Kết thúc)</option>

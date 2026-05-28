@@ -6,6 +6,14 @@ import { Toast } from 'primereact/toast';
 import { ConfirmDialog } from 'primereact/confirmdialog';
 import { Dialog } from 'primereact/dialog';
 
+const parseNetDate = (dateString) => {
+    if (!dateString) return null;
+    if (typeof dateString === 'string' && dateString.includes('/Date(')) {
+        return new Date(parseInt(dateString.match(/\d+/)[0], 10));
+    }
+    return new Date(dateString);
+};
+
 const ChiTietDuyetPhieu = () => {
     const [criteriaList, setCriteriaList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -19,6 +27,9 @@ const ChiTietDuyetPhieu = () => {
 
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [confirmAction, setConfirmAction] = useState("");
+
+    const [isWithinTime, setIsWithinTime] = useState(true);
+    const [timeMessage, setTimeMessage] = useState("");
 
     const toast = useRef(null);
     const location = useLocation();
@@ -43,8 +54,35 @@ const ChiTietDuyetPhieu = () => {
         const fetchChiTiet = async () => {
             setIsLoading(true);
             try {
-                const res = await fetch(`${API_URL}/scoring?idNam=${year}&idNhanVien=${idNhanVien}`, { headers: authHeaders });
-                const result = await res.json();
+                const [resPhieu, resNam] = await Promise.all([
+                    fetch(`${API_URL}/scoring?idNam=${year}&idNhanVien=${idNhanVien}&t=${new Date().getTime()}`, { headers: authHeaders }),
+                    fetch(`${API_URL}/nam-danh-gia`, { headers: authHeaders })
+                ]);
+
+                const result = await resPhieu.json();
+                const resultNam = await resNam.json();
+
+                if (Array.isArray(resultNam)) {
+                    const activeYear = resultNam.find(y => y.IdNam === parseInt(year));
+                    if (activeYear) {
+                        const now = new Date().getTime();
+                        const start = activeYear.NgayMoDanhGiaCapTren ? parseNetDate(activeYear.NgayMoDanhGiaCapTren).getTime() : 0;
+                        const end = activeYear.NgayDongDanhGiaCapTren ? parseNetDate(activeYear.NgayDongDanhGiaCapTren).setHours(23, 59, 59, 999) : 0;
+
+                        if (!activeYear.NgayMoDanhGiaCapTren || !activeYear.NgayDongDanhGiaCapTren) {
+                            setIsWithinTime(false);
+                            setTimeMessage("Hệ thống chưa thiết lập lịch Duyệt phiếu cho năm này");
+                        } else if (now < start) {
+                            setIsWithinTime(false);
+                            setTimeMessage(`Chưa đến thời gian Duyệt phiếu. (Bắt đầu từ ${parseNetDate(activeYear.NgayMoDanhGiaCapTren).toLocaleDateString('vi-VN')})`);
+                        } else if (now > end) {
+                            setIsWithinTime(false);
+                            setTimeMessage(`Đã hết hạn Duyệt phiếu! Cổng phê duyệt đã đóng vào lúc 23:59 ngày ${parseNetDate(activeYear.NgayDongDanhGiaCapTren).toLocaleDateString('vi-VN')}`);
+                        } else {
+                            setIsWithinTime(true);
+                        }
+                    }
+                }
 
                 if (result.success) {
                     setCriteriaList(result.data || []);
@@ -55,12 +93,29 @@ const ChiTietDuyetPhieu = () => {
                         if (result.chiTiet && result.chiTiet.length > 0) {
                             const initialFormData = {};
                             result.chiTiet.forEach(item => {
-                                initialFormData[item.IdTieuChi] = {
-                                    IdTieuChi: item.IdTieuChi,
-                                    IdThangDiemChon: item.IdThangDiemChon,
-                                    DiemTuDanhGia: item.DiemTuDanhGia,
-                                    MoTaHoanThanh: item.MoTaHoanThanh
-                                };
+                                if (!initialFormData[item.IdTieuChi]) {
+                                    initialFormData[item.IdTieuChi] = {
+                                        IdTieuChi: item.IdTieuChi,
+                                        IdThangDiemChon: item.IdThangDiemChon,
+                                        DiemTuDanhGia: item.DiemTuDanhGia,
+                                        MoTaHoanThanh: item.MoTaHoanThanh,
+                                        DanhSachFile: []
+                                    };
+                                }
+
+                                const fileName = item.TenFile || item.ten_file || item.FileMinhChung || item.file_minh_chung;
+                                const originalName = item.TenFileGoc || item.ten_file_goc || fileName;
+
+                                if (fileName) {
+                                    initialFormData[item.IdTieuChi].DanhSachFile.push({
+                                        fileName: fileName,
+                                        originalName: originalName,
+                                        fileType: item.LoaiFile || item.loai_file || '',
+                                        fileSizeKB: item.KichThuocKB || item.kich_thuoc_kb || 0
+                                    });
+
+                                    initialFormData[item.IdTieuChi].FileMinhChung = fileName;
+                                }
                             });
                             setFormData(initialFormData);
                         }
@@ -196,40 +251,49 @@ const ChiTietDuyetPhieu = () => {
                     </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {thongTinPhieu?.TrangThai === 2 && (
-                        <>
+                {isWithinTime && (
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        {thongTinPhieu?.TrangThai === 2 && (
+                            <>
+                                <button
+                                    disabled={isSubmitting}
+                                    className="btn-cancel"
+                                    style={{ border: '1px solid #ef4444', color: '#ef4444', padding: '10px 20px', background: '#fef2f2' }}
+                                    onClick={handleOpenReject}
+                                >
+                                    <i className="fa-solid fa-rotate-left"></i> Yêu cầu làm lại
+                                </button>
+                                <button
+                                    disabled={isSubmitting}
+                                    className="btn-submit"
+                                    style={{ padding: '10px 25px' }}
+                                    onClick={handleApprove}
+                                >
+                                    <i className="fa-solid fa-check-double"></i> Phê duyệt
+                                </button>
+                            </>
+                        )}
+
+                        {thongTinPhieu?.TrangThai === 3 && (
                             <button
                                 disabled={isSubmitting}
                                 className="btn-cancel"
-                                style={{ border: '1px solid #ef4444', color: '#ef4444', padding: '10px 20px', background: '#fef2f2' }}
-                                onClick={handleOpenReject}
+                                style={{ border: '1px solid #f59e0b', color: '#d97706', padding: '10px 20px', background: '#fefce8' }}
+                                onClick={handleCancelApprove}
                             >
-                                <i className="fa-solid fa-rotate-left"></i> Yêu cầu làm lại
+                                <i className="fa-solid fa-undo"></i> Hủy duyệt phiếu
                             </button>
-                            <button
-                                disabled={isSubmitting}
-                                className="btn-submit"
-                                style={{ padding: '10px 25px' }}
-                                onClick={handleApprove}
-                            >
-                                <i className="fa-solid fa-check-double"></i> Phê duyệt
-                            </button>
-                        </>
-                    )}
-
-                    {thongTinPhieu?.TrangThai === 3 && (
-                        <button
-                            disabled={isSubmitting}
-                            className="btn-cancel"
-                            style={{ border: '1px solid #f59e0b', color: '#d97706', padding: '10px 20px', background: '#fefce8' }}
-                            onClick={handleCancelApprove}
-                        >
-                            <i className="fa-solid fa-undo"></i> Hủy duyệt phiếu
-                        </button>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
             </div>
+
+            {!isWithinTime && timeMessage && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', padding: '15px 20px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <i className="fa-solid fa-lock" style={{ fontSize: '20px' }}></i>
+                    <span style={{ fontWeight: '500' }}>{timeMessage} Hiện tại không thể thao tác phê duyệt hay hủy duyệt phiếu</span>
+                </div>
+            )}
 
             <DanhGiaPhuLuc2Form
                 criteriaList={criteriaList}
@@ -240,6 +304,8 @@ const ChiTietDuyetPhieu = () => {
                 onSubmit={() => { }}
                 onScoreChange={() => { }}
                 onTextChange={() => { }}
+                onFileChange={() => { }}
+                onRemoveFile={() => { }}
                 onRecall={() => { }}
             />
         </div>

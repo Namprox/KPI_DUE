@@ -4,7 +4,16 @@ import '../../css/Pages.css';
 import '../../css/Evaluation/DanhGiaPhuLuc2.css';
 import DanhGiaPhuLuc2Form from '../../components/Evaluation/DanhGiaPhuLuc2/DanhGiaPhuLuc2Form';
 import { Toast } from 'primereact/toast';
-import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
+import { ConfirmDialog } from 'primereact/confirmdialog';
+
+// Hàm hỗ trợ convert ngày tháng từ C#
+const parseNetDate = (dateString) => {
+    if (!dateString) return null;
+    if (typeof dateString === 'string' && dateString.includes('/Date(')) {
+        return new Date(parseInt(dateString.match(/\d+/)[0], 10));
+    }
+    return new Date(dateString);
+};
 
 const DanhGiaPhuLuc2 = () => {
     const [criteriaList, setCriteriaList] = useState([]);
@@ -35,6 +44,7 @@ const DanhGiaPhuLuc2 = () => {
     const yearParam = queryParams.get('year');
 
     const [listYears, setListYears] = useState([]);
+    const [yearDetails, setYearDetails] = useState([]); 
     const [selectedYear, setSelectedYear] = useState(yearParam ? parseInt(yearParam) : new Date().getFullYear());
 
     useEffect(() => {
@@ -45,8 +55,8 @@ const DanhGiaPhuLuc2 = () => {
                 const result = await res.json();
 
                 if (Array.isArray(result) && result.length > 0) {
-
-                    const years = result.map(item => item.IdNam).filter(y => y != null);
+                    setYearDetails(result); 
+                    const years = result.map(item => item.IdNam || item.id_nam || item.NamHoc || item.nam).filter(y => y != null && !isNaN(y));
                     const uniqueYears = [...new Set(years)].sort((a, b) => b - a);
 
                     if (uniqueYears.length > 0) {
@@ -96,12 +106,34 @@ const DanhGiaPhuLuc2 = () => {
                         if (result.chiTiet && result.chiTiet.length > 0) {
                             const initialFormData = {};
                             result.chiTiet.forEach(item => {
-                                initialFormData[item.IdTieuChi] = {
-                                    IdTieuChi: item.IdTieuChi,
-                                    IdThangDiemChon: item.IdThangDiemChon,
-                                    DiemTuDanhGia: item.DiemTuDanhGia,
-                                    MoTaHoanThanh: item.MoTaHoanThanh
-                                };
+                                if (!initialFormData[item.IdTieuChi]) {
+                                    initialFormData[item.IdTieuChi] = {
+                                        IdTieuChi: item.IdTieuChi,
+                                        IdThangDiemChon: item.IdThangDiemChon,
+                                        DiemTuDanhGia: item.DiemTuDanhGia,
+                                        MoTaHoanThanh: item.MoTaHoanThanh,
+                                        DanhSachFile: [],
+                                        DanhSachNCKH: [] // Khởi tạo mảng rỗng chứa bài báo khoa học
+                                    };
+                                }
+
+                                if (item.TenFile) {
+                                    initialFormData[item.IdTieuChi].DanhSachFile.push({
+                                        fileName: item.TenFile,
+                                        originalName: item.TenFileGoc || item.TenFile,
+                                        fileType: item.LoaiFile,
+                                        fileSizeKB: item.KichThuocKB
+                                    });
+                                }
+
+                                // Gợi ý: Nếu API đổ dữ liệu liên kết khoa học về, ta sẽ push vào DanhSachNCKH ở đây
+                                if (item.ScienceRecordId) {
+                                    initialFormData[item.IdTieuChi].DanhSachNCKH.push({
+                                        ScienceRecordId: item.ScienceRecordId,
+                                        BangNguon: item.BangNguon || 'ScientificArticles',
+                                        MoTa: item.MoTaNckh || ''
+                                    });
+                                }
                             });
                             setFormData(initialFormData);
                         }
@@ -119,6 +151,28 @@ const DanhGiaPhuLuc2 = () => {
         }
     }, [selectedYear, currentUser.IdNhanVien, listYears.length]);
 
+    const activeYear = yearDetails.find(y => y.IdNam === selectedYear);
+    let isWithinTime = false;
+    let timeMessage = "";
+
+    if (activeYear) {
+        const now = new Date().getTime();
+        const start = activeYear.NgayMoTuDanhGia ? parseNetDate(activeYear.NgayMoTuDanhGia).getTime() : 0;
+        const end = activeYear.NgayDongTuDanhGia ? parseNetDate(activeYear.NgayDongTuDanhGia).setHours(23, 59, 59, 999) : 0;
+
+        if (!activeYear.NgayMoTuDanhGia || !activeYear.NgayDongTuDanhGia) {
+            timeMessage = "Hệ thống chưa thiết lập lịch tự đánh giá cho năm này.";
+        } else if (now < start) {
+            timeMessage = `Chưa đến thời gian mở hệ thống. Lịch tự đánh giá sẽ bắt đầu từ ${parseNetDate(activeYear.NgayMoTuDanhGia).toLocaleDateString('vi-VN')}.`;
+        } else if (now > end) {
+            timeMessage = `Đã hết hạn tự đánh giá! Hệ thống đã đóng vào lúc 23:59 ngày ${parseNetDate(activeYear.NgayDongTuDanhGia).toLocaleDateString('vi-VN')}.`;
+        } else {
+            isWithinTime = true;
+        }
+    }
+
+    const displayTrangThai = !isWithinTime ? Math.max(trangThaiPhieu, 2.5) : trangThaiPhieu;
+
     const handleYearChange = (e) => {
         const newYear = parseInt(e.target.value);
         setSelectedYear(newYear);
@@ -131,7 +185,7 @@ const DanhGiaPhuLuc2 = () => {
     }, [formData]);
 
     const handleScoreChange = (idTieuChi, idThangDiem, score) => {
-        if (trangThaiPhieu >= 2) return;
+        if (displayTrangThai >= 2) return;
         setFormData(prev => ({
             ...prev,
             [idTieuChi]: { ...prev[idTieuChi], IdTieuChi: idTieuChi, IdThangDiemChon: idThangDiem, DiemTuDanhGia: score }
@@ -139,31 +193,156 @@ const DanhGiaPhuLuc2 = () => {
     };
 
     const handleTextChange = (idTieuChi, text) => {
-        if (trangThaiPhieu >= 2) return;
+        if (displayTrangThai >= 2) return;
         setFormData(prev => ({
             ...prev,
             [idTieuChi]: { ...prev[idTieuChi], IdTieuChi: idTieuChi, MoTaHoanThanh: text }
         }));
     };
 
+    const handleFileChange = (idTieuChi, newFilesArray) => {
+        if (displayTrangThai >= 2 || !newFilesArray || newFilesArray.length === 0) return;
+
+        setFormData(prev => {
+            const currentData = prev[idTieuChi] || { IdTieuChi: idTieuChi, DanhSachFile: [], DanhSachNCKH: [] };
+            const currentFiles = currentData.DanhSachFile || [];
+
+            return {
+                ...prev,
+                [idTieuChi]: {
+                    ...currentData,
+                    DanhSachFile: [...currentFiles, ...newFilesArray]
+                }
+            };
+        });
+    };
+
+    const handleRemoveFile = (idTieuChi, indexToRemove) => {
+        if (displayTrangThai >= 2) return;
+
+        setFormData(prev => {
+            const currentData = prev[idTieuChi];
+            if (!currentData || !currentData.DanhSachFile) return prev;
+
+            const newFilesList = currentData.DanhSachFile.filter((_, idx) => idx !== indexToRemove);
+
+            return {
+                ...prev,
+                [idTieuChi]: {
+                    ...currentData,
+                    DanhSachFile: newFilesList
+                }
+            };
+        });
+    };
+
+    // ĐÃ THÊM: Hàm xử lý thêm bài báo NCKH
+    const handleNckhChange = (idTieuChi, articleObj) => {
+        if (displayTrangThai >= 2) return;
+
+        setFormData(prev => {
+            const currentData = prev[idTieuChi] || { IdTieuChi: idTieuChi, DanhSachFile: [], DanhSachNCKH: [] };
+            const currentNckh = currentData.DanhSachNCKH || [];
+
+            // Chống chọn trùng bài báo trên cùng một tiêu chí
+            if (currentNckh.some(item => item.ScienceRecordId === articleObj.ScienceRecordId)) {
+                return prev;
+            }
+
+            return {
+                ...prev,
+                [idTieuChi]: {
+                    ...currentData,
+                    DanhSachNCKH: [...currentNckh, articleObj]
+                }
+            };
+        });
+    };
+
+    // ĐÃ THÊM: Hàm xử lý gỡ bỏ bài báo NCKH khỏi danh sách chọn
+    const handleRemoveNckh = (idTieuChi, indexToRemove) => {
+        if (displayTrangThai >= 2) return;
+
+        setFormData(prev => {
+            const currentData = prev[idTieuChi];
+            if (!currentData || !currentData.DanhSachNCKH) return prev;
+
+            const newNckhList = currentData.DanhSachNCKH.filter((_, idx) => idx !== indexToRemove);
+
+            return {
+                ...prev,
+                [idTieuChi]: {
+                    ...currentData,
+                    DanhSachNCKH: newNckhList
+                }
+            };
+        });
+    };
+
     const executeSubmit = async (status) => {
         setIsSubmitting(true);
-        const payload = {
-            Action: 'SUBMIT',
-            IdNam: selectedYear,
-            IdNhanVien: currentUser.IdNhanVien,
-            IdDonVi: currentUser.IdDonVi,
-            TrangThai: status,
-            TongDiemCoBan: tongDiemCoBan,
-            TongDiemTichLuy: tongDiemCoBan,
-            ChiTiet: Object.values(formData)
-        };
+        toast.current.show({ severity: 'info', summary: 'Đang xử lý', detail: 'Đang tải tệp tin và lưu dữ liệu', sticky: true });
 
         try {
+            const finalChiTiet = [];
+
+            for (const item of Object.values(formData)) {
+                const uploadedFilesList = [];
+                const filesToProcess = item.DanhSachFile || [];
+
+                for (const fileItem of filesToProcess) {
+                    if (fileItem instanceof File) {
+                        const resUpload = await fetch(`${API_URL}/upload?fileName=${encodeURIComponent(fileItem.name)}`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                            },
+                            body: fileItem
+                        });
+
+                        if (!resUpload.ok) throw new Error("Upload file thất bại");
+
+                        const uploadResult = await resUpload.json();
+                        if (uploadResult.success) {
+                            uploadedFilesList.push({
+                                fileName: uploadResult.fileName,
+                                originalName: uploadResult.originalName,
+                                fileType: uploadResult.fileType,
+                                fileSizeKB: uploadResult.fileSizeKB
+                            });
+                        } else {
+                            throw new Error(uploadResult.message);
+                        }
+                    }
+                    else {
+                        uploadedFilesList.push(fileItem);
+                    }
+                }
+
+                finalChiTiet.push({
+                    ...item,
+                    DanhSachFile: uploadedFilesList,
+                    DanhSachNCKH: item.DanhSachNCKH || [] // GỬI KÈM MẢNG NCKH LÊN SERVER C#
+                });
+            }
+
+            const payload = {
+                Action: 'SUBMIT',
+                IdNam: selectedYear,
+                IdNhanVien: currentUser.IdNhanVien,
+                IdDonVi: currentUser.IdDonVi,
+                TrangThai: status,
+                TongDiemCoBan: tongDiemCoBan,
+                TongDiemTichLuy: tongDiemCoBan,
+                ChiTiet: finalChiTiet
+            };
+
             const res = await fetch(`${API_URL}/scoring`, {
                 method: 'POST', headers: authHeaders, body: JSON.stringify(payload)
             });
             const result = await res.json();
+
+            toast.current.clear();
 
             if (result.status === 'success') {
                 toast.current.show({ severity: 'success', summary: 'Thành công', detail: result.message, life: 3000 });
@@ -172,8 +351,9 @@ const DanhGiaPhuLuc2 = () => {
                 toast.current.show({ severity: 'error', summary: 'Lỗi', detail: result.message || "Lỗi lưu phiếu!", life: 4000 });
             }
         } catch (err) {
-            console.error("Lỗi khi nộp phiếu:", err);
-            toast.current.show({ severity: 'error', summary: 'Lỗi kết nối', detail: 'Không thể kết nối đến máy chủ!', life: 4000 });
+            console.error("Lỗi khi nộp phiếu/upload file:", err);
+            toast.current.clear();
+            toast.current.show({ severity: 'error', summary: 'Lỗi', detail: 'Quá trình tải tệp tin hoặc lưu phiếu thất bại!', life: 4000 });
         } finally {
             setIsSubmitting(false);
         }
@@ -182,14 +362,17 @@ const DanhGiaPhuLuc2 = () => {
     const handleSubmit = (status) => {
         if (status === 2) {
             const hasEvaluated = Object.values(formData).some(item =>
-                item.IdThangDiemChon != null || (item.MoTaHoanThanh && item.MoTaHoanThanh.trim() !== '')
+                item.IdThangDiemChon != null ||
+                (item.MoTaHoanThanh && item.MoTaHoanThanh.trim() !== '') ||
+                (item.DanhSachFile && item.DanhSachFile.length > 0) ||
+                (item.DanhSachNCKH && item.DanhSachNCKH.length > 0)
             );
 
             if (!hasEvaluated) {
                 toast.current.show({
                     severity: 'error',
                     summary: 'Không thể nộp phiếu',
-                    detail: 'Bạn chưa chọn mục đánh giá nào! Vui lòng đánh giá ít nhất 1 tiêu chí trước khi nộp.',
+                    detail: 'Bạn chưa chọn mục đánh giá hoặc tải file nào! Vui lòng đánh giá ít nhất 1 tiêu chí trước khi nộp.',
                     life: 4000
                 });
                 return;
@@ -235,15 +418,6 @@ const DanhGiaPhuLuc2 = () => {
         setDialogVisible(true);
     };
 
-    if (isLoading) {
-        return (
-            <div className="page-container" style={{ textAlign: 'center', paddingTop: '50px' }}>
-                <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '30px', color: '#003399' }}></i>
-                <p style={{ marginTop: '15px' }}>Đang tải biểu mẫu đánh giá</p>
-            </div>
-        );
-    }
-
     return (
         <div className="page-container">
             <Toast ref={toast} position="top-right" />
@@ -288,17 +462,28 @@ const DanhGiaPhuLuc2 = () => {
                     </div>
                 </div>
 
+                {!isWithinTime && timeMessage && (
+                    <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', padding: '15px 20px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="fa-solid fa-lock" style={{ fontSize: '20px' }}></i>
+                        <span style={{ fontWeight: '500' }}>{timeMessage} Hiện tại bạn không thể thao tác nộp hoặc chỉnh sửa phiếu.</span>
+                    </div>
+                )}
+
                 <div className="phu-luc-2-content">
                     <DanhGiaPhuLuc2Form
                         criteriaList={criteriaList}
                         formData={formData}
                         tongDiemCoBan={tongDiemCoBan}
                         isSubmitting={isSubmitting}
-                        trangThaiPhieu={trangThaiPhieu}
+                        trangThaiPhieu={displayTrangThai}
                         lyDoTraVe={lyDoTraVe}
                         onSubmit={handleSubmit}
                         onScoreChange={handleScoreChange}
                         onTextChange={handleTextChange}
+                        onFileChange={handleFileChange}
+                        onRemoveFile={handleRemoveFile}
+                        onNckhChange={handleNckhChange}    // ĐÃ THÊM TRUYỀN HÀM XUỐNG FORM
+                        onRemoveNckh={handleRemoveNckh}  // ĐÃ THÊM TRUYỀN HÀM XUỐNG FORM
                         onRecall={handleRecall}
                     />
                 </div>
