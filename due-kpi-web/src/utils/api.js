@@ -23,6 +23,7 @@ const handleRefreshToken = async () => {
             if (response.ok) {
                 const data = await response.json();
                 if (data.Success && data.Tokens) {
+                    localStorage.setItem('user', data.User)
                     localStorage.setItem('accessToken', data.Tokens.AccessToken);
                     localStorage.setItem('refreshToken', data.Tokens.RefreshToken);
                     return data.Tokens.AccessToken;

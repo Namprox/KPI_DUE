@@ -32,7 +32,7 @@ const TopBar = ({
                         onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}>
                         <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>
-                                {user?.FullName || user?.Username || "Người dùng"}
+                                {user?.HoTen || "Người dùng"}
                             </div>
                         </div>
                         <div className="user-avatar-circle">
@@ -52,7 +52,7 @@ const TopBar = ({
                                 </div>
                                 <div style={{ overflow: 'hidden' }}>
                                     <strong style={{ display: 'block', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                        {user?.LastName} {user?.FirstName}
+                                        {user?.HoTen}
                                     </strong>
                                     <p style={{ margin: 0, fontSize: '12px', color: '#888', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                                         {user?.Email}

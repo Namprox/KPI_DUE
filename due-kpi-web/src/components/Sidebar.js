@@ -42,10 +42,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
 
     const isExpanded = !isCollapsed || isHovered;
 
-    const roleId = user?.IdChucVu || user?.RoleId || 0;
-    const userRoleName = (user?.RoleName || '').toLowerCase();
-    const isAdmin = roleId === 5 || roleId === 4 || userRoleName.includes('hiệu trưởng');
-    const isManager = roleId === 3 || roleId === 2 || userRoleName.includes('trưởng khoa') || userRoleName.includes('trưởng bộ môn');
+    const ADMIN_ROLES = new Set(["Admin", "HT", "PHT"]);
+    const MANAGER_ROLES = new Set(["TK", "PTK", "TBM", "PTBM", "TP", "PTP"]);
+
+    const roleCode = user?.MaChucVu;
+    const isAdmin = ADMIN_ROLES.has(roleCode);
+    const isManager = MANAGER_ROLES.has(roleCode);
     const canManageSystem = isAdmin || isManager;
 
     useEffect(() => {
@@ -156,7 +158,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
                         {isExpanded && (
                             <div style={{ marginLeft: '12px', overflow: 'hidden', flex: 1 }}>
                                 <div style={{ fontWeight: '600', fontSize: '14px', whiteSpace: 'nowrap', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span className="text-truncate">{user.FullName || user.Username || 'Người dùng'}</span>
+                                    <span className="text-truncate">{user.HoTen || 'Người dùng'}</span>
                                     <i className={`fa-solid fa-caret-down arrow ${isUserMenuOpen ? 'open' : ''}`} style={{ margin: 0 }}></i>
                                 </div>
                                 <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }} className="text-truncate">
