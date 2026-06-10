@@ -83,7 +83,6 @@ const ChiTietDuyetPhieu = () => {
                     setCriteriaList(result.data || []);
                     if (result.phieu) {
                         setThongTinPhieu(result.phieu);
-                        setTongDiemCoBan(result.phieu.TongDiemCoBan);
 
                         if (result.chiTiet && result.chiTiet.length > 0) {
                             const initialFormData = {};
@@ -94,7 +93,8 @@ const ChiTietDuyetPhieu = () => {
                                         IdThangDiemChon: item.IdThangDiemChon,
                                         DiemTuDanhGia: item.DiemTuDanhGia,
                                         MoTaHoanThanh: item.MoTaHoanThanh,
-                                        DanhSachFile: []
+                                        DanhSachFile: [],
+                                        DanhSachNCKH: []
                                     };
                                 }
 
@@ -108,8 +108,15 @@ const ChiTietDuyetPhieu = () => {
                                         fileType: item.LoaiFile || item.loai_file || '',
                                         fileSizeKB: item.KichThuocKB || item.kich_thuoc_kb || 0
                                     });
+                                }
 
-                                    initialFormData[item.IdTieuChi].FileMinhChung = fileName;
+                                if (item.ScienceRecordId) {
+                                    initialFormData[item.IdTieuChi].DanhSachNCKH.push({
+                                        ScienceRecordId: item.ScienceRecordId,
+                                        BangNguon: item.BangNguon || 'ScientificArticles',
+                                        MoTa: item.MoTaNckh || '',
+                                        QRanking: item.QRanking || 'NCKH'
+                                    });
                                 }
                             });
                             setFormData(initialFormData);
@@ -127,15 +134,46 @@ const ChiTietDuyetPhieu = () => {
         fetchChiTiet();
     }, [idNhanVien, year, navigate]);
 
+    useEffect(() => {
+        const total = Object.values(formData).reduce((sum, item) => sum + (item.DiemTuDanhGia || 0), 0);
+        setTongDiemCoBan(total);
+    }, [formData]);
+
+    const handleScoreChange = (idTieuChi, idThangDiem, score) => {
+        if (thongTinPhieu?.TrangThai >= 3) return;
+        setFormData(prev => ({
+            ...prev,
+            [idTieuChi]: { ...prev[idTieuChi], IdTieuChi: idTieuChi, IdThangDiemChon: idThangDiem, DiemTuDanhGia: score }
+        }));
+    };
+
+    const handleTextChange = (idTieuChi, text) => {
+        if (thongTinPhieu?.TrangThai >= 3) return;
+        setFormData(prev => ({
+            ...prev,
+            [idTieuChi]: { ...prev[idTieuChi], IdTieuChi: idTieuChi, MoTaHoanThanh: text }
+        }));
+    };
+
     const executeApproval = async (actionType, reason = "") => {
         setIsSubmitting(true);
         try {
+            const finalChiTiet = Object.values(formData).map(item => ({
+                IdTieuChi: item.IdTieuChi,
+                IdThangDiemChon: item.IdThangDiemChon,
+                DiemTuDanhGia: item.DiemTuDanhGia,
+                MoTaHoanThanh: item.MoTaHoanThanh
+            }));
+
             const payload = {
                 Action: actionType,
                 IdPhieu: idPhieu,
                 IdNhanVien: idNhanVien,
                 IdNam: year,
-                LyDo: reason
+                LyDo: reason,
+                TongDiemCoBan: tongDiemCoBan,
+                TongDiemTichLuy: tongDiemCoBan,
+                ChiTiet: finalChiTiet
             };
 
             const res = await apiFetch('approval', {
@@ -293,11 +331,12 @@ const ChiTietDuyetPhieu = () => {
                 criteriaList={criteriaList}
                 formData={formData}
                 tongDiemCoBan={tongDiemCoBan}
-                isSubmitting={true}
+                isSubmitting={isSubmitting}
                 trangThaiPhieu={thongTinPhieu?.TrangThai === 3 ? 3 : 2.5}
+                isKhoaEvaluating={true}
                 onSubmit={() => { }}
-                onScoreChange={() => { }}
-                onTextChange={() => { }}
+                onScoreChange={handleScoreChange}
+                onTextChange={handleTextChange}
                 onFileChange={() => { }}
                 onRemoveFile={() => { }}
                 onRecall={() => { }}

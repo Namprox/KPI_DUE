@@ -40,7 +40,7 @@ namespace KPI.handlers
                     using (SqlConnection conn = new SqlConnection(connString))
                     {
                         conn.Open();
-                        using (SqlCommand cmd = new SqlCommand("SELECT id_nhom_nv, ma_nhom, ten_nhom, thu_tu, trang_thai FROM danh_muc_nhom_nhiem_vu ORDER BY thu_tu ASC", conn))
+                        using (SqlCommand cmd = new SqlCommand("SELECT id_nhom_nv, ten_nhom, thu_tu, trang_thai FROM danh_muc_nhom_nhiem_vu ORDER BY thu_tu ASC", conn))
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
@@ -48,7 +48,6 @@ namespace KPI.handlers
                                 list.Add(new QL_NhomNhiemVu
                                 {
                                     IdNhomNv = Convert.ToInt32(reader["id_nhom_nv"]),
-                                    MaNhom = reader["ma_nhom"].ToString(),
                                     TenNhom = reader["ten_nhom"].ToString(),
                                     ThuTu = reader["thu_tu"] != DBNull.Value ? Convert.ToInt32(reader["thu_tu"]) : 0,
                                     TrangThai = reader["trang_thai"] != DBNull.Value ? Convert.ToBoolean(reader["trang_thai"]) : true
@@ -60,7 +59,7 @@ namespace KPI.handlers
                     cache.Set(cacheKey, jsonResponse, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(15) });
                     BaseHandler.SendJsonResponse(response, jsonResponse);
                 }
-                catch (Exception ex) { BaseHandler.SendJsonResponse(response, $"{{\"status\":\"error\", \"message\":\"{ex.Message.Replace("\"", "'")}\"}}"); }
+                catch (Exception) { BaseHandler.SendJsonResponse(response, "[]"); }
             }
 
             else if (method == "POST" || method == "PUT")
@@ -78,19 +77,17 @@ namespace KPI.handlers
                             using (SqlConnection conn = new SqlConnection(connString))
                             {
                                 conn.Open();
-                                string maNhom = payload.ContainsKey("MaNhom") && payload["MaNhom"] != null ? payload["MaNhom"].ToString() : "";
                                 string tenNhom = payload.ContainsKey("TenNhom") && payload["TenNhom"] != null ? payload["TenNhom"].ToString() : "";
                                 int thuTu = payload.ContainsKey("ThuTu") && payload["ThuTu"] != null ? Convert.ToInt32(payload["ThuTu"]) : 0;
                                 bool trangThai = payload.ContainsKey("TrangThai") && payload["TrangThai"] != null ? Convert.ToBoolean(payload["TrangThai"]) : true;
                                 int id = payload.ContainsKey("IdNhomNv") && payload["IdNhomNv"] != null ? Convert.ToInt32(payload["IdNhomNv"]) : 0;
 
                                 string sql = method == "POST"
-                                    ? "INSERT INTO danh_muc_nhom_nhiem_vu (ma_nhom, ten_nhom, thu_tu, trang_thai) VALUES (@Ma, @Ten, @ThuTu, @TrangThai)"
-                                    : "UPDATE danh_muc_nhom_nhiem_vu SET ma_nhom=@Ma, ten_nhom=@Ten, thu_tu=@ThuTu, trang_thai=@TrangThai WHERE id_nhom_nv=@Id";
+                                    ? "INSERT INTO danh_muc_nhom_nhiem_vu (ten_nhom, thu_tu, trang_thai) VALUES (@Ten, @ThuTu, @TrangThai)"
+                                    : "UPDATE danh_muc_nhom_nhiem_vu SET ten_nhom=@Ten, thu_tu=@ThuTu, trang_thai=@TrangThai WHERE id_nhom_nv=@Id";
 
                                 using (SqlCommand cmd = new SqlCommand(sql, conn))
                                 {
-                                    cmd.Parameters.AddWithValue("@Ma", maNhom);
                                     cmd.Parameters.AddWithValue("@Ten", tenNhom);
                                     cmd.Parameters.AddWithValue("@ThuTu", thuTu);
                                     cmd.Parameters.AddWithValue("@TrangThai", trangThai);
@@ -109,9 +106,7 @@ namespace KPI.handlers
                         }
                         catch (SqlException ex)
                         {
-                            if (ex.Number == 2627) errorMessage = "Mã nhóm nhiệm vụ này đã tồn tại!";
-                            else errorMessage = ex.Message.Replace("\"", "'");
-
+                            errorMessage = ex.Message.Replace("\"", "'");
                             if (attempt == 2) isSuccess = false;
                             break;
                         }

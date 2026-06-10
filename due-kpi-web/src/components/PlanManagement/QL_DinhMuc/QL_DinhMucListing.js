@@ -20,16 +20,7 @@ const QL_DinhMucListing = ({ data, onEdit, onDelete, isLoading }) => {
     const onPageChange = (event) => setFirst(event.first);
 
     return (
-        <div
-            className="table-card dinh-muc-table-container"
-            style={{
-                overflowX: 'auto',
-                background: '#fff',
-                borderRadius: '8px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                paddingBottom: '10px'
-            }}
-        >
+        <div className="table-card dinh-muc-table-container" style={{ overflowX: 'auto', background: '#fff', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', paddingBottom: '10px' }}>
             {isLoading ? (
                 <div style={{ textAlign: 'center', padding: '50px' }}>
                     <i className="fa-solid fa-circle-notch fa-spin fa-2x" style={{ color: '#3498db', marginRight: '10px' }}></i>
@@ -42,14 +33,11 @@ const QL_DinhMucListing = ({ data, onEdit, onDelete, isLoading }) => {
                 </div>
             ) : (
                 <>
-                    <table
-                        className="custom-table dinh-muc-table"
-                        style={{ minWidth: isDesktop ? '800px' : '100%' }}
-                    >
+                    <table className="custom-table dinh-muc-table" style={{ minWidth: isDesktop ? '800px' : '100%' }}>
                         <thead>
                             <tr>
                                 <th width="10%" style={{ textAlign: 'center' }}>NĂM</th>
-                                <th width="30%">NHÓM GIẢNG VIÊN</th>
+                                <th width="30%">CHỨC DANH NGHỀ NGHIỆP</th> {/* ĐÃ SỬA TIÊU ĐỀ */}
                                 <th width="20%" style={{ textAlign: 'center' }}>GIỜ GIẢNG DẠY</th>
                                 <th width="20%" style={{ textAlign: 'center' }}>GIỜ NCKH</th>
                                 <th width="20%" style={{ textAlign: 'center' }}>THAO TÁC</th>
@@ -59,7 +47,8 @@ const QL_DinhMucListing = ({ data, onEdit, onDelete, isLoading }) => {
                             {paginatedData.map((item) => (
                                 <tr key={item.IdDinhMuc}>
                                     <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.IdNam}</td>
-                                    <td style={{ fontWeight: '600', color: '#003399' }}>{item.TenNhomGv || '---'}</td>
+                                    {/* ĐÃ SỬA TÊN BIẾN */}
+                                    <td style={{ fontWeight: '600', color: '#003399' }}>{item.TenChucDanh || '---'}</td>
                                     <td style={{ textAlign: 'center' }}>{item.GioGiangLyThuyet} giờ</td>
                                     <td style={{ textAlign: 'center' }}>{item.GioNckh} giờ</td>
                                     <td>
@@ -74,14 +63,7 @@ const QL_DinhMucListing = ({ data, onEdit, onDelete, isLoading }) => {
                     </table>
                     {data.length > rows && (
                         <div style={{ marginTop: '15px', borderTop: '1px solid #e9ecef', paddingTop: '10px' }}>
-                            <Paginator
-                                first={first}
-                                rows={rows}
-                                totalRecords={data.length}
-                                onPageChange={onPageChange}
-                                template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport"
-                                style={{ background: 'transparent', border: 'none' }}
-                            />
+                            <Paginator first={first} rows={rows} totalRecords={data.length} onPageChange={onPageChange} template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport" style={{ background: 'transparent', border: 'none' }} />
                         </div>
                     )}
                 </>

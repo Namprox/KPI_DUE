@@ -1,6 +1,6 @@
 import React from 'react';
 
-const QL_DinhMucForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, namList, nhomList }) => {
+const QL_DinhMucForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, namList, chucDanhList }) => {
     if (!isOpen) return null;
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -24,10 +24,10 @@ const QL_DinhMucForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Nhóm Giảng viên</label>
-                                <select name="IdNhomGv" className="form-input" value={formData.IdNhomGv || ''} onChange={handleChange} required>
-                                    <option value="">Chọn nhóm</option>
-                                    {nhomList.map(nh => <option key={nh.IdNhomGv} value={nh.IdNhomGv}>{nh.TenNhom}</option>)}
+                                <label>Chức danh nghề nghiệp</label>
+                                <select name="IdChucDanh" className="form-input" value={formData.IdChucDanh || ''} onChange={handleChange} required>
+                                    <option value="">Chọn chức danh</option>
+                                    {chucDanhList.map(cd => <option key={cd.IdChucDanh} value={cd.IdChucDanh}>{cd.TenChucDanh}</option>)}
                                 </select>
                             </div>
                         </div>

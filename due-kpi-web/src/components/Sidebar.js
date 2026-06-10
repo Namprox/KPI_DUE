@@ -13,6 +13,7 @@ const menuStructure = {
         { name: 'Quản lý năm đánh giá', icon: 'fa-solid fa-calendar-days', path: '/quan-ly-nam-danh-gia' },
         { name: 'Mẫu phiếu đánh giá', icon: 'fa-solid fa-file-invoice', path: '/quan-ly-mau-danh-gia' },
         { name: 'Định mức giảng viên', icon: 'fa-solid fa-scale-balanced', path: '/quan-ly-dinh-muc-giang-vien' },
+        { name: 'Quản lý giờ thực hiện', icon: 'fa-solid fa-scale-balanced', path: '/quan-ly-gio-thuc-hien' },
     ],
     criteriaMgmt: [
         { name: 'Nhóm tiêu chí', icon: 'fa-solid fa-layer-group', path: '/quan-ly-nhom-tieu-chi' },
@@ -23,7 +24,7 @@ const menuStructure = {
     orgMgmt: [
         { name: 'Cơ cấu đơn vị', icon: 'fa-solid fa-sitemap', path: '/quan-ly-don-vi' },
         { name: 'Người dùng', icon: 'fa-solid fa-users', path: '/quan-ly-nguoi-dung' },
-        { name: 'Nhóm giảng viên', icon: 'fa-solid fa-chalkboard-user', path: '/quan-ly-nhom-giang-vien' },
+        { name: 'Chức danh nghề nghiệp', icon: 'fa-solid fa-chalkboard-user', path: '/quan-ly-chuc-danh' },
     ],
     evaluationMgmt: [
         { name: 'Danh sách duyệt phiếu', icon: 'fa-solid fa-file-pen', path: '/danh-sach-duyet-phieu' },

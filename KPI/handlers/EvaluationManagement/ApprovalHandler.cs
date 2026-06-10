@@ -84,7 +84,7 @@ namespace KPI.handlers
                         {
                             string ids = string.Join(",", phieuIds);
                             string fileSql = $@"
-                                SELECT c.id_phieu, m.ten_file, m.ten_file_goc
+                                SELECT c.id_phieu, m.ten_hien_thi, m.ten_file_goc
                                 FROM minh_chung m
                                 JOIN chi_tiet_danh_gia c ON m.id_chi_tiet = c.id_chi_tiet
                                 WHERE c.id_phieu IN ({ids})";
@@ -98,8 +98,8 @@ namespace KPI.handlers
                                         int pId = Convert.ToInt32(fileReader["id_phieu"]);
                                         var fileObj = new
                                         {
-                                            fileName = fileReader["ten_file"].ToString(),
-                                            originalName = fileReader["ten_file_goc"] != DBNull.Value ? fileReader["ten_file_goc"].ToString() : fileReader["ten_file"].ToString()
+                                            fileName = fileReader["ten_hien_thi"].ToString(),
+                                            originalName = fileReader["ten_file_goc"] != DBNull.Value ? fileReader["ten_file_goc"].ToString() : fileReader["ten_hien_thi"].ToString()
                                         };
 
                                         var phieu = list.FirstOrDefault(p => (int)p["IdPhieu"] == pId);

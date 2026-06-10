@@ -11,10 +11,8 @@ const QL_NhomNhiemVuListing = ({ data, onEdit, onDelete, isLoading, canManage })
         const handleResize = () => {
             setIsDesktop(window.innerWidth > 992);
         };
-
         handleResize();
         window.addEventListener('resize', handleResize);
-
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
@@ -22,7 +20,7 @@ const QL_NhomNhiemVuListing = ({ data, onEdit, onDelete, isLoading, canManage })
         setFirst(0);
     }, [data]);
 
-    const paginatedData = data.slice(first, first + rows);
+    const paginatedData = Array.isArray(data) ? data.slice(first, first + rows) : [];
 
     const onPageChange = (event) => {
         setFirst(event.first);
@@ -44,7 +42,7 @@ const QL_NhomNhiemVuListing = ({ data, onEdit, onDelete, isLoading, canManage })
                     <i className="fa-solid fa-circle-notch fa-spin fa-2x" style={{ color: '#3498db', marginRight: '10px' }}></i>
                     <p style={{ marginTop: '10px', color: '#666' }}>Đang tải dữ liệu nhóm nhiệm vụ</p>
                 </div>
-            ) : data.length === 0 ? (
+            ) : (!Array.isArray(data) || data.length === 0) ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: '#666' }}>
                     <i className="fa-solid fa-layer-group" style={{ fontSize: '60px', color: '#5dade2', marginBottom: '15px' }}></i>
                     <h3 style={{ color: '#e74c3c', margin: '0 0 10px 0' }}>Chưa có nhóm nhiệm vụ nào được tạo</h3>
@@ -58,10 +56,10 @@ const QL_NhomNhiemVuListing = ({ data, onEdit, onDelete, isLoading, canManage })
                         <thead>
                             <tr>
                                 <th width="10%" style={{ textAlign: 'center' }}>STT</th>
-                                <th width="15%">MÃ NHÓM</th>
-                                <th width="40%">TÊN NHÓM NHIỆM VỤ</th>
+                                <th width="50%">TÊN NHÓM NHIỆM VỤ</th>
+                                <th width="15%" style={{ textAlign: 'center' }}>THỨ TỰ</th>
                                 <th width="15%" style={{ textAlign: 'center' }}>TRẠNG THÁI</th>
-                                <th width="20%" style={{ textAlign: 'center' }}>THAO TÁC</th>
+                                <th width="10%" style={{ textAlign: 'center' }}>THAO TÁC</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -70,13 +68,13 @@ const QL_NhomNhiemVuListing = ({ data, onEdit, onDelete, isLoading, canManage })
                                 return (
                                     <tr key={item.IdNhomNv}>
                                         <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{actualIndex}</td>
-                                        <td style={{ fontWeight: 'bold', color: '#003399' }}>{item.MaNhom}</td>
-                                        <td style={{ fontWeight: '600', color: '#333' }}>{item.TenNhom}</td>
+                                        <td style={{ fontWeight: '600', color: '#0f172a' }}>{item.TenNhom}</td>
+                                        <td style={{ textAlign: 'center', fontWeight: 'bold', color: '#3b82f6' }}>{item.ThuTu}</td>
                                         <td style={{ textAlign: 'center' }}>
                                             {item.TrangThai ? (
-                                                <span className="nhom-nhiem-vu-status-active">Hoạt động</span>
+                                                <span className="nhom-nhiem-vu-status-active" style={{ backgroundColor: '#22c55e', color: '#fff', padding: '5px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>Hoạt động</span>
                                             ) : (
-                                                <span className="nhom-nhiem-vu-status-inactive">Đã khóa</span>
+                                                <span className="nhom-nhiem-vu-status-inactive" style={{ backgroundColor: '#94a3b8', color: '#fff', padding: '5px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>Đã khóa</span>
                                             )}
                                         </td>
                                         <td>

@@ -6,10 +6,10 @@ import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
 const QL_DinhMucGiangVien = () => {
-    const initialForm = { IdNhomGv: '', IdNam: '', GioGiangLyThuyet: '', GioNckh: '', MoTa: '' };
+    const initialForm = { IdChucDanh: '', IdNam: '', GioGiangLyThuyet: '', GioNckh: '', MoTa: '' };
     const [data, setData] = useState([]);
     const [namList, setNamList] = useState([]);
-    const [nhomList, setNhomList] = useState([]);
+    const [chucDanhList, setChucDanhList] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -24,11 +24,12 @@ const QL_DinhMucGiangVien = () => {
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
     const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
     const canManage = isAdmin || isManager;
+    const authHeaders = { 'Authorization': `Bearer ${token}` };
 
     useEffect(() => {
         fetchData();
         fetchNamList();
-        fetchNhomList();
+        fetchChucDanhList();
     }, []);
 
     const fetchData = async () => {
@@ -37,8 +38,7 @@ const QL_DinhMucGiangVien = () => {
             const response = await apiFetch('dinh-muc-gv');
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
-                setFilteredData(result);
+                setData(result); setFilteredData(result);
             }
         } catch (error) { console.error(error); }
         finally { setIsLoading(false); }
@@ -51,10 +51,10 @@ const QL_DinhMucGiangVien = () => {
         } catch (error) { console.error(error); }
     };
 
-    const fetchNhomList = async () => {
+    const fetchChucDanhList = async () => {
         try {
-            const response = await apiFetch('nhom-giang-vien');
-            if (response.ok) setNhomList(await response.json());
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/chuc-danh`, { headers: authHeaders });
+            if (response.ok) setChucDanhList(await response.json());
         } catch (error) { console.error(error); }
     };
 
@@ -62,7 +62,7 @@ const QL_DinhMucGiangVien = () => {
         const query = e.target.value.toLowerCase();
         setSearchQuery(query);
         setFilteredData(data.filter(item =>
-            (item.TenNhomGv && item.TenNhomGv.toLowerCase().includes(query)) ||
+            (item.TenChucDanh && item.TenChucDanh.toLowerCase().includes(query)) ||
             (item.IdNam && item.IdNam.toString().includes(query))
         ));
     };
@@ -92,49 +92,39 @@ const QL_DinhMucGiangVien = () => {
         });
     };
 
+    const handleSyncData = async () => {
+        if (!window.confirm("Bạn có muốn đồng bộ Giờ NCKH thực tế của năm hiện tại từ Hệ thống DueScience không?")) return;
+        setIsLoading(true);
+        try {
+            const currentYear = new Date().getFullYear();
+            const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/sync-data?idNam=${currentYear}`, { method: 'POST', headers: authHeaders });
+            const result = await res.json();
+            if (result.success) { alert(result.message); fetchData(); } else alert("Lỗi: " + result.message);
+        } catch (error) { alert("Lỗi kết nối đến máy chủ!"); } finally { setIsLoading(false); }
+    };
+
     const closeModal = () => { setIsModalOpen(false); setFormData(initialForm); setEditId(null); };
 
     return (
         <div className="page-container">
-            <div className="page-header">
-                <div className="header-title">
-                    <h2>ĐỊNH MỨC GIỜ CHUẨN</h2>
-                </div>
-            </div>
-
+            <div className="page-header"><div className="header-title"><h2>ĐỊNH MỨC GIỜ CHUẨN</h2></div></div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
-                {canManage && (
-                    <button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}>
-                        <i className="fa-solid fa-plus"></i> Thêm mới
-                    </button>
-                )}
+                {canManage && (<button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}><i className="fa-solid fa-plus"></i> Thêm mới</button>)}
+                {isAdmin && (<button className="btn-add-new" onClick={handleSyncData} style={{ margin: 0, backgroundColor: '#8b5cf6', borderColor: '#7c3aed' }}><i className="fa-solid fa-rotate-solid fa-spin-hover" style={{ marginRight: '5px' }}></i> Đồng bộ Giờ NCKH</button>)}
             </div>
-
             <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '5px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
                     <p className="sub-title" style={{ margin: 0 }}>DANH SÁCH ĐỊNH MỨC</p>
                     <div className="search-wrapper" style={{ position: 'relative', width: '100%', maxWidth: '350px' }}>
                         <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '10px', top: '12px', color: '#888' }}></i>
-                        <input
-                            type="text"
-                            placeholder="Tìm theo năm hoặc nhóm"
-                            className="form-input"
-                            style={{ width: '100%', paddingLeft: '35px' }}
-                            value={searchQuery}
-                            onChange={handleSearch}
-                        />
+                        <input type="text" placeholder="Tìm theo năm hoặc chức danh" className="form-input" style={{ width: '100%', paddingLeft: '35px' }} value={searchQuery} onChange={handleSearch} />
                     </div>
                 </div>
             </div>
 
             <QL_DinhMucListing
                 data={filteredData}
-                onEdit={(item) => {
-                    if (!canManage) return;
-                    setEditId(item.IdDinhMuc);
-                    setFormData(item);
-                    setIsModalOpen(true);
-                }}
+                onEdit={(item) => { if (!canManage) return; setEditId(item.IdDinhMuc); setFormData(item); setIsModalOpen(true); }}
                 onDelete={canManage ? handleDelete : () => { }}
                 isLoading={isLoading}
             />
@@ -147,7 +137,7 @@ const QL_DinhMucGiangVien = () => {
                 setFormData={setFormData}
                 isEditing={!!editId}
                 namList={namList}
-                nhomList={nhomList}
+                chucDanhList={chucDanhList}
             />
         </div>
     );

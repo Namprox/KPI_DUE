@@ -16,8 +16,6 @@ const QL_TieuChi = () => {
         LoaiThangDiem: 1,
         CongThucTinhDiem: '',
         BatBuocMinhChung: false,
-        CoTheDongBoScience: false,
-        BangNguonScience: '',
         ThuTuHienThi: 1,
         TrangThai: true
     };
@@ -110,17 +108,16 @@ const QL_TieuChi = () => {
 
         const payload = {
             ...formData,
-            IdNhom: parseInt(formData.IdNhom),
+            IdNhom: parseInt(formData.IdNhom) || 0,
             IdNam: formData.IdNam ? parseInt(formData.IdNam) : null,
             CapDanhGia: formData.CapDanhGia ? parseInt(formData.CapDanhGia) : null,
-            DiemToiDa: parseFloat(formData.DiemToiDa),
-            LoaiThangDiem: parseInt(formData.LoaiThangDiem),
+            DiemToiDa: parseFloat(formData.DiemToiDa) || 0,
+            LoaiThangDiem: parseInt(formData.LoaiThangDiem) || 1,
             ThuTuHienThi: parseInt(formData.ThuTuHienThi) || 1,
             TrangThai: !!formData.TrangThai,
             BatBuocMinhChung: !!formData.BatBuocMinhChung,
-            CoTheDongBoScience: !!formData.CoTheDongBoScience,
             CongThucTinhDiem: formData.CongThucTinhDiem || '',
-            BangNguonScience: formData.BangNguonScience || ''
+            MoTa: formData.MoTa || ''
         };
         if (editId) payload.IdTieuChi = editId;
 
@@ -144,8 +141,7 @@ const QL_TieuChi = () => {
             ...item,
             IdNam: item.IdNam || '',
             CapDanhGia: item.CapDanhGia || '',
-            CongThucTinhDiem: item.CongThucTinhDiem || '',
-            BangNguonScience: item.BangNguonScience || ''
+            CongThucTinhDiem: item.CongThucTinhDiem || ''
         });
         setIsModalOpen(true);
     };

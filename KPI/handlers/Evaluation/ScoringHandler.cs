@@ -199,10 +199,9 @@ namespace KPI.handlers
 
                             if (idPhieu > 0)
                             {
-                                // 1. LẤY DỮ LIỆU FILE CỨNG
                                 string checkChiTietSql = @"
                                     SELECT c.id_chi_tiet, c.id_tieu_chi, c.diem_tu_danh_gia, c.id_thang_diem_chon, c.mo_ta_hoan_thanh,
-                                           m.ten_file, m.ten_file_goc, m.loai_file, m.kich_thuoc_kb
+                                           m.ten_hien_thi, m.ten_file_goc, m.loai_file, m.kich_thuoc_kb
                                     FROM chi_tiet_danh_gia c
                                     LEFT JOIN minh_chung m ON c.id_chi_tiet = m.id_chi_tiet
                                     WHERE c.id_phieu = @IdPhieu";
@@ -219,7 +218,7 @@ namespace KPI.handlers
                                                 DiemTuDanhGia = Convert.ToDecimal(dr["diem_tu_danh_gia"]),
                                                 IdThangDiemChon = dr["id_thang_diem_chon"] != DBNull.Value ? (int?)Convert.ToInt32(dr["id_thang_diem_chon"]) : null,
                                                 MoTaHoanThanh = dr["mo_ta_hoan_thanh"] != DBNull.Value ? dr["mo_ta_hoan_thanh"].ToString() : "",
-                                                TenFile = dr["ten_file"] != DBNull.Value ? dr["ten_file"].ToString() : null,
+                                                TenFile = dr["ten_hien_thi"] != DBNull.Value ? dr["ten_hien_thi"].ToString() : null,
                                                 TenFileGoc = dr["ten_file_goc"] != DBNull.Value ? dr["ten_file_goc"].ToString() : null,
                                                 LoaiFile = dr["loai_file"] != DBNull.Value ? dr["loai_file"].ToString() : null,
                                                 KichThuocKB = dr["kich_thuoc_kb"] != DBNull.Value ? Convert.ToInt32(dr["kich_thuoc_kb"]) : 0
@@ -228,11 +227,11 @@ namespace KPI.handlers
                                     }
                                 }
 
-                                // 2. LẤY DỮ LIỆU LIÊN KẾT NCKH VÀ ĐẨY VÀO MẢNG
                                 string checkNckhSql = @"
-                                    SELECT c.id_tieu_chi, n.science_record_id, n.bang_nguon, n.mo_ta, n.diem_ap_dung
+                                    SELECT c.id_tieu_chi, n.science_record_id, n.bang_nguon, n.mo_ta, n.diem_ap_dung, sa.QRanking
                                     FROM chi_tiet_danh_gia c
                                     INNER JOIN chung_minh_tu_science_db n ON c.id_chi_tiet = n.id_chi_tiet
+                                    LEFT JOIN DueScienceDB.dbo.ScientificArticles sa ON n.science_record_id = sa.Id AND n.bang_nguon = 'ScientificArticles'
                                     WHERE c.id_phieu = @IdPhieu";
                                 using (SqlCommand cmdNckh = new SqlCommand(checkNckhSql, conn))
                                 {
@@ -244,10 +243,11 @@ namespace KPI.handlers
                                             chiTietData.Add(new
                                             {
                                                 IdTieuChi = Convert.ToInt32(drNckh["id_tieu_chi"]),
-                                                DiemTuDanhGia = 0m, // Frontend sẽ tự bỏ qua do đã map ở trên
+                                                DiemTuDanhGia = 0m,
                                                 ScienceRecordId = Convert.ToInt32(drNckh["science_record_id"]),
                                                 BangNguon = drNckh["bang_nguon"].ToString(),
                                                 MoTaNckh = drNckh["mo_ta"] != DBNull.Value ? drNckh["mo_ta"].ToString() : "",
+                                                QRanking = drNckh["QRanking"] != DBNull.Value ? drNckh["QRanking"].ToString() : "NCKH"
                                             });
                                         }
                                     }
@@ -363,7 +363,6 @@ namespace KPI.handlers
                                                         cmd.ExecuteNonQuery();
                                                     }
 
-                                                    // Xóa chi tiết cũ sẽ tự động trigger ON DELETE CASCADE xóa luôn file và NCKH
                                                     using (SqlCommand cmdDel = new SqlCommand("DELETE FROM chi_tiet_danh_gia WHERE id_phieu=@IdPhieu", conn, transaction))
                                                     {
                                                         cmdDel.Parameters.AddWithValue("@IdPhieu", idPhieu);
@@ -392,7 +391,7 @@ namespace KPI.handlers
                                                                            OUTPUT INSERTED.id_chi_tiet 
                                                                            VALUES (@IdPhieu, @IdTieuChi, @Diem, @IdThangDiem, @MoTa)";
 
-                                                string insertFileSql = @"INSERT INTO minh_chung (id_chi_tiet, ten_file, ten_file_goc, duong_dan, loai_file, kich_thuoc_kb, nguoi_tai_len) 
+                                                string insertFileSql = @"INSERT INTO minh_chung (id_chi_tiet, ten_hien_thi, ten_file_goc, duong_dan, loai_file, kich_thuoc_kb, nguoi_tai_len) 
                                                                          VALUES (@IdChiTiet, @TenFile, @TenFileGoc, @DuongDan, @LoaiFile, @KichThuoc, @NguoiTaiLen)";
 
                                                 string insertNckhSql = @"INSERT INTO chung_minh_tu_science_db (id_chi_tiet, bang_nguon, science_record_id, mo_ta) 
@@ -420,7 +419,6 @@ namespace KPI.handlers
                                                         newIdChiTiet = (int)cmd.ExecuteScalar();
                                                     }
 
-                                                    // Lưu file cứng
                                                     if (item.ContainsKey("DanhSachFile") && item["DanhSachFile"] != null)
                                                     {
                                                         ArrayList files = (ArrayList)item["DanhSachFile"];
@@ -440,7 +438,6 @@ namespace KPI.handlers
                                                         }
                                                     }
 
-                                                    // LƯU MINH CHỨNG TỪ NCKH
                                                     if (item.ContainsKey("DanhSachNCKH") && item["DanhSachNCKH"] != null)
                                                     {
                                                         ArrayList nckhList = (ArrayList)item["DanhSachNCKH"];

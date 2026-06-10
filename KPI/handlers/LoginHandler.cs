@@ -42,7 +42,7 @@ namespace KPI.handlers
                                 {
                                     conn.Open();
                                     string sql = @"
-                                        SELECT nv.*, cv.ten_chuc_vu 
+                                        SELECT nv.*, cv.ten_chuc_vu, cv.ty_le_dinh_muc_giang, cv.ty_le_dinh_muc_nckh 
                                         FROM nhan_vien nv 
                                         LEFT JOIN chuc_vu cv ON nv.id_chuc_vu = cv.id_chuc_vu 
                                         WHERE (nv.email = @Username OR nv.ma_nhan_vien = @Username) 
@@ -74,9 +74,11 @@ namespace KPI.handlers
                                                     RoleId = dbReader["id_chuc_vu"] != DBNull.Value ? (int)dbReader["id_chuc_vu"] : 0,
                                                     RoleName = dbReader["ten_chuc_vu"] != DBNull.Value ? dbReader["ten_chuc_vu"].ToString() : "Giảng viên",
                                                     IdDonVi = dbReader["id_don_vi"] != DBNull.Value ? (int)dbReader["id_don_vi"] : 0,
-                                                    IdNhomGv = dbReader["id_nhom_gv"] != DBNull.Value ? (int)dbReader["id_nhom_gv"] : 0,
+                                                    IdChucDanh = dbReader["id_chuc_danh"] != DBNull.Value ? (int)dbReader["id_chuc_danh"] : 0,
                                                     ScienceUserId = dbReader["science_user_id"] != DBNull.Value ? (int)dbReader["science_user_id"] : 0,
-                                                    IdQuanLyTrucTiep = dbReader["id_quan_ly_truc_tiep"] != DBNull.Value ? (int)dbReader["id_quan_ly_truc_tiep"] : 0
+                                                    IdQuanLyTrucTiep = dbReader["id_quan_ly_truc_tiep"] != DBNull.Value ? (int)dbReader["id_quan_ly_truc_tiep"] : 0,
+                                                    TyLeGiamGiang = dbReader["ty_le_dinh_muc_giang"] != DBNull.Value ? Convert.ToDecimal(dbReader["ty_le_dinh_muc_giang"]) : 1.0m,
+                                                    TyLeGiamNckh = dbReader["ty_le_dinh_muc_nckh"] != DBNull.Value ? Convert.ToDecimal(dbReader["ty_le_dinh_muc_nckh"]) : 1.0m
                                                 };
                                             }
                                         }

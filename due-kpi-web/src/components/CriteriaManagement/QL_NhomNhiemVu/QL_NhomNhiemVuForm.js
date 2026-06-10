@@ -16,31 +16,7 @@ const QL_NhomNhiemVuForm = ({ isOpen, onClose, onSubmit, formData, setFormData, 
                 </div>
                 <div className="modal-body">
                     <form id="nhiemVuForm" onSubmit={onSubmit}>
-                        <div className="form-grid-2">
-                            <div className="form-group">
-                                <label>Mã Nhóm <span className="text-red">*</span></label>
-                                <input
-                                    type="text"
-                                    name="MaNhom"
-                                    className="form-input"
-                                    value={formData.MaNhom || ''}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Thứ tự hiển thị</label>
-                                <input
-                                    type="number"
-                                    name="ThuTu"
-                                    className="form-input"
-                                    value={formData.ThuTu || 1}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-group">
+                        <div className="form-group" style={{ marginBottom: '20px' }}>
                             <label>Tên Nhóm nhiệm vụ <span className="text-red">*</span></label>
                             <input
                                 type="text"
@@ -49,6 +25,18 @@ const QL_NhomNhiemVuForm = ({ isOpen, onClose, onSubmit, formData, setFormData, 
                                 value={formData.TenNhom || ''}
                                 onChange={handleChange}
                                 required
+                                placeholder="VD: Nhiệm vụ Giảng dạy, Nghiên cứu khoa học..."
+                            />
+                        </div>
+
+                        <div className="form-group" style={{ marginBottom: '20px' }}>
+                            <label>Thứ tự hiển thị</label>
+                            <input
+                                type="number"
+                                name="ThuTu"
+                                className="form-input"
+                                value={formData.ThuTu || 1}
+                                onChange={handleChange}
                             />
                         </div>
 

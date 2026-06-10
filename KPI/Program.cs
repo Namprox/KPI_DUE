@@ -109,9 +109,9 @@ namespace KPI
                 {
                     new QL_DinhMucGiangVienHandler().ProcessRequest(context);
                 }
-                else if (endpoint == "nhom-giang-vien")
+                else if (endpoint == "chuc-danh")
                 {
-                    new QL_NhomGiangVienHandler().ProcessRequest(context);
+                    new QL_ChucDanhHandler().ProcessRequest(context);
                 }
                 else if (endpoint == "scoring")
                 {
@@ -128,6 +128,14 @@ namespace KPI
                 else if (endpoint == "science-data")
                 {
                     new ScienceDataHandler().ProcessRequest(context);
+                }
+                else if (endpoint == "gio-thuc-hien")
+                {
+                    new QL_GioThucHienHandler().ProcessRequest(context);
+                }
+                else if (endpoint == "sync-data")
+                {
+                    new SyncHandler().ProcessRequest(context);
                 }
                 else if (endpoint == "download")
                 {

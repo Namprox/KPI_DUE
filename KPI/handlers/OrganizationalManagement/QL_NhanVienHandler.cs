@@ -16,6 +16,7 @@ namespace KPI.handlers
     {
         public static string UserCacheVersion = Guid.NewGuid().ToString("N");
         public static void InvalidateUserCache() => UserCacheVersion = Guid.NewGuid().ToString("N");
+        public static string ChucDanhCacheVersion = Guid.NewGuid().ToString("N");
 
         public void ProcessRequest(HttpListenerContext context)
         {
@@ -35,9 +36,9 @@ namespace KPI.handlers
             {
                 HandleChucVuLogic(request, response, connectionString, serializer);
             }
-            else if (endpoint == "nhom-giang-vien")
+            else if (endpoint == "chuc-danh")
             {
-                HandleNhomGvLogic(request, response, connectionString, serializer);
+                HandleChucDanhLogic(request, response, connectionString, serializer);
             }
         }
 
@@ -63,12 +64,12 @@ namespace KPI.handlers
                     string sql = @"
                         SELECT nv.id_nhan_vien, nv.ma_nhan_vien, nv.ho_ten, nv.email, 
                                nv.id_don_vi, nv.id_chuc_vu, nv.id_quan_ly_truc_tiep, 
-                               nv.id_nhom_gv, nv.science_user_id, nv.trang_thai,
-                               dv.ten_don_vi, cv.ten_chuc_vu, ngv.ten_nhom 
+                               nv.id_chuc_danh, nv.science_user_id, nv.trang_thai,
+                               dv.ten_don_vi, cv.ten_chuc_vu, cd.ten_chuc_danh 
                         FROM nhan_vien nv 
                         LEFT JOIN don_vi dv ON nv.id_don_vi = dv.id_don_vi
                         LEFT JOIN chuc_vu cv ON nv.id_chuc_vu = cv.id_chuc_vu
-                        LEFT JOIN nhom_giang_vien ngv ON nv.id_nhom_gv = ngv.id_nhom_gv";
+                        LEFT JOIN chuc_danh_nghe_nghiep cd ON nv.id_chuc_danh = cd.id_chuc_danh";
 
                     using (SqlCommand cmd = new SqlCommand(sql, conn))
                     using (SqlDataReader reader = cmd.ExecuteReader())
@@ -84,13 +85,13 @@ namespace KPI.handlers
                                 MatKhau = "",
                                 IdDonVi = (int)reader["id_don_vi"],
                                 IdChucVu = reader["id_chuc_vu"] != DBNull.Value ? (int)reader["id_chuc_vu"] : (int?)null,
-                                IdNhomGv = reader["id_nhom_gv"] != DBNull.Value ? (int)reader["id_nhom_gv"] : (int?)null,
                                 IdQuanLyTrucTiep = reader["id_quan_ly_truc_tiep"] != DBNull.Value ? (int)reader["id_quan_ly_truc_tiep"] : (int?)null,
                                 ScienceUserId = reader["science_user_id"] != DBNull.Value ? (int)reader["science_user_id"] : (int?)null,
                                 TrangThai = reader["trang_thai"] != DBNull.Value && (bool)reader["trang_thai"],
                                 TenDonVi = reader["ten_don_vi"] != DBNull.Value ? reader["ten_don_vi"].ToString() : "",
                                 TenChucVu = reader["ten_chuc_vu"] != DBNull.Value ? reader["ten_chuc_vu"].ToString() : "Chưa cập nhật",
-                                TenNhomGv = reader["ten_nhom"] != DBNull.Value ? reader["ten_nhom"].ToString() : ""
+                                IdChucDanh = reader["id_chuc_danh"] != DBNull.Value ? (int)reader["id_chuc_danh"] : (int?)null,
+                                TenChucDanh = reader["ten_chuc_danh"] != DBNull.Value ? reader["ten_chuc_danh"].ToString() : ""
                             });
                         }
                     }
@@ -100,6 +101,7 @@ namespace KPI.handlers
                 cache.Set(cacheKey, jsonResponse, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(15) });
                 BaseHandler.SendJsonResponse(response, jsonResponse);
             }
+
             else if (method == "POST" || method == "PUT")
             {
                 using (var reader = new StreamReader(request.InputStream, Encoding.UTF8))
@@ -125,28 +127,29 @@ namespace KPI.handlers
 
                                 int? idDv = payload.ContainsKey("IdDonVi") && payload["IdDonVi"] != null ? (int?)Convert.ToInt32(payload["IdDonVi"]) : null;
                                 int? idCv = payload.ContainsKey("IdChucVu") && payload["IdChucVu"] != null ? (int?)Convert.ToInt32(payload["IdChucVu"]) : null;
-                                int? idNgv = payload.ContainsKey("IdNhomGv") && payload["IdNhomGv"] != null ? (int?)Convert.ToInt32(payload["IdNhomGv"]) : null;
                                 int? idQl = payload.ContainsKey("IdQuanLyTrucTiep") && payload["IdQuanLyTrucTiep"] != null ? (int?)Convert.ToInt32(payload["IdQuanLyTrucTiep"]) : null;
                                 int? idScience = payload.ContainsKey("ScienceUserId") && payload["ScienceUserId"] != null ? (int?)Convert.ToInt32(payload["ScienceUserId"]) : null;
                                 int idNhanVien = payload.ContainsKey("IdNhanVien") && payload["IdNhanVien"] != null ? Convert.ToInt32(payload["IdNhanVien"]) : 0;
 
+                                int? idChucDanh = payload.ContainsKey("IdChucDanh") && payload["IdChucDanh"] != null ? (int?)Convert.ToInt32(payload["IdChucDanh"]) : null;
+
                                 string sql = "";
                                 if (method == "POST")
                                 {
-                                    sql = @"INSERT INTO nhan_vien (ma_nhan_vien, ho_ten, email, mat_khau, id_don_vi, id_chuc_vu, id_quan_ly_truc_tiep, id_nhom_gv, science_user_id, trang_thai) 
-                                            VALUES (@Ma, @Ten, @Email, @Pass, @IdDv, @IdCv, @IdQuanLy, @IdNgv, @IdScience, @TrangThai)";
+                                    sql = @"INSERT INTO nhan_vien (ma_nhan_vien, ho_ten, email, mat_khau, id_don_vi, id_chuc_vu, id_quan_ly_truc_tiep, id_chuc_danh, science_user_id, trang_thai) 
+                                            VALUES (@Ma, @Ten, @Email, @Pass, @IdDv, @IdCv, @IdQuanLy, @IdCd, @IdScience, @TrangThai)";
                                     if (string.IsNullOrEmpty(pass)) pass = "123456";
                                 }
                                 else
                                 {
                                     if (!string.IsNullOrEmpty(pass))
                                     {
-                                        sql = @"UPDATE nhan_vien SET ma_nhan_vien=@Ma, ho_ten=@Ten, email=@Email, mat_khau=@Pass, id_don_vi=@IdDv, id_chuc_vu=@IdCv, id_quan_ly_truc_tiep=@IdQuanLy, id_nhom_gv=@IdNgv, science_user_id=@IdScience, trang_thai=@TrangThai 
+                                        sql = @"UPDATE nhan_vien SET ma_nhan_vien=@Ma, ho_ten=@Ten, email=@Email, mat_khau=@Pass, id_don_vi=@IdDv, id_chuc_vu=@IdCv, id_quan_ly_truc_tiep=@IdQuanLy, id_chuc_danh=@IdCd, science_user_id=@IdScience, trang_thai=@TrangThai 
                                                 WHERE id_nhan_vien=@Id";
                                     }
                                     else
                                     {
-                                        sql = @"UPDATE nhan_vien SET ma_nhan_vien=@Ma, ho_ten=@Ten, email=@Email, id_don_vi=@IdDv, id_chuc_vu=@IdCv, id_quan_ly_truc_tiep=@IdQuanLy, id_nhom_gv=@IdNgv, science_user_id=@IdScience, trang_thai=@TrangThai 
+                                        sql = @"UPDATE nhan_vien SET ma_nhan_vien=@Ma, ho_ten=@Ten, email=@Email, id_don_vi=@IdDv, id_chuc_vu=@IdCv, id_quan_ly_truc_tiep=@IdQuanLy, id_chuc_danh=@IdCd, science_user_id=@IdScience, trang_thai=@TrangThai 
                                                 WHERE id_nhan_vien=@Id";
                                     }
                                 }
@@ -165,7 +168,7 @@ namespace KPI.handlers
                                     cmd.Parameters.AddWithValue("@IdDv", idDv ?? (object)DBNull.Value);
                                     cmd.Parameters.AddWithValue("@IdCv", idCv ?? (object)DBNull.Value);
                                     cmd.Parameters.AddWithValue("@IdQuanLy", idQl ?? (object)DBNull.Value);
-                                    cmd.Parameters.AddWithValue("@IdNgv", idNgv ?? (object)DBNull.Value);
+                                    cmd.Parameters.AddWithValue("@IdCd", idChucDanh ?? (object)DBNull.Value);
                                     cmd.Parameters.AddWithValue("@IdScience", idScience ?? (object)DBNull.Value);
                                     cmd.Parameters.AddWithValue("@TrangThai", trangThai);
 
@@ -196,6 +199,7 @@ namespace KPI.handlers
                     if (!isSuccess) BaseHandler.SendJsonResponse(response, "{\"status\":\"error\", \"message\":\"" + errorMessage.Replace("\"", "'") + "\"}");
                 }
             }
+
             else if (method == "DELETE")
             {
                 BaseHandler.HandleDelete(request, response, connString, "nhan_vien", "id_nhan_vien", () =>
@@ -237,11 +241,11 @@ namespace KPI.handlers
             }
         }
 
-        private void HandleNhomGvLogic(HttpListenerRequest request, HttpListenerResponse response, string connString, JavaScriptSerializer serializer)
+        private void HandleChucDanhLogic(HttpListenerRequest request, HttpListenerResponse response, string connString, JavaScriptSerializer serializer)
         {
             if (request.HttpMethod == "GET")
             {
-                string cacheKey = $"NhomGvDropdownList_{QL_NhomGiangVienHandler.NhomGiangVienCacheVersion}";
+                string cacheKey = $"ChucDanhDropdownList_{ChucDanhCacheVersion}";
                 ObjectCache cache = MemoryCache.Default;
                 if (cache.Contains(cacheKey))
                 {
@@ -253,12 +257,12 @@ namespace KPI.handlers
                 using (SqlConnection conn = new SqlConnection(connString))
                 {
                     conn.Open();
-                    using (SqlCommand cmd = new SqlCommand("SELECT id_nhom_gv, ten_nhom FROM nhom_giang_vien WHERE trang_thai = 1", conn))
+                    using (SqlCommand cmd = new SqlCommand("SELECT id_chuc_danh, ten_chuc_danh FROM chuc_danh_nghe_nghiep WHERE trang_thai = 1", conn))
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            list.Add(new { IdNhomGv = (int)reader["id_nhom_gv"], TenNhom = reader["ten_nhom"].ToString() });
+                            list.Add(new { IdChucDanh = (int)reader["id_chuc_danh"], TenChucDanh = reader["ten_chuc_danh"].ToString() });
                         }
                     }
                 }

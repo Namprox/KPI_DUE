@@ -7,7 +7,6 @@ import { apiFetch } from '../../utils/api';
 
 const QL_NhomNhiemVu = () => {
     const initialForm = {
-        MaNhom: '',
         TenNhom: '',
         ThuTu: 1,
         TrangThai: true
@@ -42,11 +41,18 @@ const QL_NhomNhiemVu = () => {
             const response = await apiFetch('nhom-nhiem-vu');
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
-                setFilteredData(result);
+                if (Array.isArray(result)) {
+                    setData(result);
+                    setFilteredData(result);
+                } else {
+                    setData([]); setFilteredData([]);
+                }
+            } else {
+                setData([]); setFilteredData([]);
             }
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
+            setData([]); setFilteredData([]);
         } finally {
             setIsLoading(false);
         }
@@ -56,8 +62,7 @@ const QL_NhomNhiemVu = () => {
         const query = e.target.value.toLowerCase();
         setSearchQuery(query);
         setFilteredData(data.filter(item =>
-            (item.TenNhom && item.TenNhom.toLowerCase().includes(query)) ||
-            (item.MaNhom && item.MaNhom.toLowerCase().includes(query))
+            (item.TenNhom && item.TenNhom.toLowerCase().includes(query))
         ));
     };
 
@@ -84,8 +89,13 @@ const QL_NhomNhiemVu = () => {
         });
 
         if (response.ok) {
-            fetchData();
-            closeModal();
+            const res = await response.json();
+            if (res.status === 'success') {
+                fetchData();
+                closeModal();
+            } else {
+                alert("Lưu thất bại! " + (res.message || ""));
+            }
         } else {
             alert("Lưu thất bại! Vui lòng kiểm tra lại dữ liệu");
         }
@@ -94,9 +104,7 @@ const QL_NhomNhiemVu = () => {
     const handleEdit = (item) => {
         if (!canManage) return;
         setEditId(item.IdNhomNv);
-        setFormData({
-            ...item
-        });
+        setFormData({ ...item });
         setIsModalOpen(true);
     };
 
@@ -153,7 +161,7 @@ const QL_NhomNhiemVu = () => {
                         <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '10px', top: '12px', color: '#888' }}></i>
                         <input
                             type="text"
-                            placeholder="Tìm mã hoặc tên nhiệm vụ"
+                            placeholder="Tìm tên nhiệm vụ"
                             className="form-input"
                             style={{ width: '100%', paddingLeft: '35px' }}
                             value={searchQuery}

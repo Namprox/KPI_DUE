@@ -14,7 +14,7 @@ const QL_NhanVien = () => {
         IdDonVi: '',
         IdChucVu: '',
         IdQuanLyTrucTiep: '',
-        IdNhomGv: '',
+        IdChucDanh: '',
         ScienceUserId: '',
         TrangThai: true
     };
@@ -30,18 +30,18 @@ const QL_NhanVien = () => {
 
     const [donViList, setDonViList] = useState([]);
     const [chucVuList, setChucVuList] = useState([]);
-    const [nhomGvList, setNhomGvList] = useState([]);
+    const [chucDanhList, setChucDanhList] = useState([]);
     const [quanLyList, setQuanLyList] = useState([]);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
-
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-
+    const token = localStorage.getItem('accessToken');
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
     const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
     const canManage = isAdmin || isManager;
+    const authHeaders = { 'Authorization': `Bearer ${token}` };
 
     useEffect(() => {
         fetchData();
@@ -50,30 +50,28 @@ const QL_NhanVien = () => {
 
     const fetchDropdownData = async () => {
         try {
-            const [dvRes, cvRes, nhomRes, qlRes] = await Promise.all([
-                apiFetch('don-vi'),
-                apiFetch('chuc-vu'),
-                apiFetch('nhom-giang-vien'),
-                apiFetch('nhan-vien')
+            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
+            const [dvRes, cvRes, cdRes, qlRes] = await Promise.all([
+                fetch(`${baseUrl}/don-vi`, { headers: authHeaders }),
+                fetch(`${baseUrl}/chuc-vu`, { headers: authHeaders }),
+                fetch(`${baseUrl}/chuc-danh`, { headers: authHeaders }),
+                fetch(`${baseUrl}/nhan-vien`, { headers: authHeaders })
             ]);
 
             if (dvRes.ok) setDonViList(await dvRes.json());
             if (cvRes.ok) setChucVuList(await cvRes.json());
-            if (nhomRes.ok) setNhomGvList(await nhomRes.json());
+            if (cdRes.ok) setChucDanhList(await cdRes.json());
             if (qlRes.ok) setQuanLyList(await qlRes.json());
-        } catch (error) {
-            console.error("Lỗi tải dữ liệu dropdown:", error);
-        }
+        } catch (error) { console.error("Lỗi tải dữ liệu dropdown:", error); }
     };
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('nhan-vien');
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/nhan-vien`, { headers: authHeaders });
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
-                setFilteredData(result);
+                setData(result); setFilteredData(result);
             }
         } catch (error) { console.error(error); }
         finally { setIsLoading(false); }
@@ -82,52 +80,41 @@ const QL_NhanVien = () => {
     const handleSearch = (e) => {
         const query = e.target.value.toLowerCase();
         setSearchQuery(query);
-        setFilteredData(data.filter(item =>
-            (item.HoTen && item.HoTen.toLowerCase().includes(query)) ||
-            (item.MaNhanVien && item.MaNhanVien.toLowerCase().includes(query))
-        ));
+        setFilteredData(data.filter(item => (item.HoTen && item.HoTen.toLowerCase().includes(query)) || (item.MaNhanVien && item.MaNhanVien.toLowerCase().includes(query))));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (!canManage) {
-            alert("Bạn không có quyền thực hiện chức năng này!");
-            return;
-        }
-
+        if (!canManage) return alert("Bạn không có quyền thực hiện chức năng này!");
         const method = editId ? 'PUT' : 'POST';
 
         const payload = {
             ...formData,
             IdDonVi: formData.IdDonVi ? parseInt(formData.IdDonVi) : null,
             IdChucVu: formData.IdChucVu ? parseInt(formData.IdChucVu) : null,
-            IdNhomGv: formData.IdNhomGv ? parseInt(formData.IdNhomGv) : null,
+            IdChucDanh: formData.IdChucDanh ? parseInt(formData.IdChucDanh) : null,
             IdQuanLyTrucTiep: formData.IdQuanLyTrucTiep ? parseInt(formData.IdQuanLyTrucTiep) : null,
             ScienceUserId: formData.ScienceUserId ? parseInt(formData.ScienceUserId) : null,
             TrangThai: !!formData.TrangThai
         };
         if (editId) payload.IdNhanVien = editId;
 
-        const response = await apiFetch('nhan-vien', {
-            method,
-            body: JSON.stringify(payload)
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/nhan-vien`, {
+            method, headers: { ...authHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
 
-        if (response.ok) { fetchData(); closeModal(); }
-        else { alert("Lưu thất bại! Vui lòng kiểm tra lại dữ liệu"); }
+        if (response.ok) { fetchData(); closeModal(); } else alert("Lưu thất bại! Vui lòng kiểm tra lại dữ liệu");
     };
 
     const handleEdit = (item) => {
         if (!canManage) return;
         setEditId(item.IdNhanVien);
-
         setFormData({
             ...item,
             ConfirmPassword: item.MatKhau,
             IdDonVi: item.IdDonVi || '',
             IdChucVu: item.IdChucVu || '',
-            IdNhomGv: item.IdNhomGv || '',
+            IdChucDanh: item.IdChucDanh || '',
             IdQuanLyTrucTiep: item.IdQuanLyTrucTiep || '',
             ScienceUserId: item.ScienceUserId || ''
         });
@@ -137,12 +124,9 @@ const QL_NhanVien = () => {
     const handleDelete = (id) => {
         if (!canManage) return;
         confirmDeleteDialog({
-            header: 'Xác nhận xóa',
-            message: 'Bạn có chắc chắn muốn xóa nhân viên này?',
+            header: 'Xác nhận xóa', message: 'Bạn có chắc chắn muốn xóa nhân viên này?',
             accept: async () => {
-                await apiFetch(`nhan-vien?id=${id}`, {
-                    method: 'DELETE'
-                });
+                await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/nhan-vien?id=${id}`, { method: 'DELETE', headers: authHeaders });
                 fetchData();
             }
         });
@@ -152,33 +136,16 @@ const QL_NhanVien = () => {
 
     return (
         <div className="page-container">
-            <div className="page-header">
-                <div className="header-title">
-                    <h2>QUẢN LÝ NHÂN VIÊN / GIẢNG VIÊN</h2>
-                </div>
-            </div>
-
+            <div className="page-header"><div className="header-title"><h2>QUẢN LÝ NHÂN VIÊN / GIẢNG VIÊN</h2></div></div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
-                {canManage && (
-                    <button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}>
-                        <i className="fa-solid fa-plus"></i> Thêm mới
-                    </button>
-                )}
+                {canManage && (<button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}><i className="fa-solid fa-plus"></i> Thêm mới</button>)}
             </div>
-
             <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '5px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
                     <p className="sub-title" style={{ margin: 0 }}>DANH SÁCH NHÂN VIÊN</p>
                     <div className="search-wrapper" style={{ position: 'relative', width: '100%', maxWidth: '350px' }}>
                         <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '10px', top: '12px', color: '#888' }}></i>
-                        <input
-                            type="text"
-                            placeholder="Tìm tên, mã nhân viên"
-                            className="form-input"
-                            style={{ width: '100%', paddingLeft: '35px' }}
-                            value={searchQuery}
-                            onChange={handleSearch}
-                        />
+                        <input type="text" placeholder="Tìm tên, mã nhân viên" className="form-input" style={{ width: '100%', paddingLeft: '35px' }} value={searchQuery} onChange={handleSearch} />
                     </div>
                 </div>
             </div>
@@ -200,7 +167,7 @@ const QL_NhanVien = () => {
                 isEditing={!!editId}
                 donViList={donViList}
                 chucVuList={chucVuList}
-                nhomGvList={nhomGvList}
+                chucDanhList={chucDanhList}
                 quanLyList={quanLyList}
                 currentUser={currentUser}
             />

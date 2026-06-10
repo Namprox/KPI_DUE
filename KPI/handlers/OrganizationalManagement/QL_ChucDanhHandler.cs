@@ -11,10 +11,10 @@ using System.Configuration;
 
 namespace KPI.handlers
 {
-    public class QL_NhomGiangVienHandler
+    public class QL_ChucDanhHandler
     {
-        public static string NhomGiangVienCacheVersion = Guid.NewGuid().ToString("N");
-        public static void InvalidateCache() => NhomGiangVienCacheVersion = Guid.NewGuid().ToString("N");
+        public static string ChucDanhCacheVersion = Guid.NewGuid().ToString("N");
+        public static void InvalidateCache() => ChucDanhCacheVersion = Guid.NewGuid().ToString("N");
 
         public void ProcessRequest(HttpListenerContext context)
         {
@@ -28,7 +28,7 @@ namespace KPI.handlers
             {
                 try
                 {
-                    string cacheKey = $"NhomGiangVienList_{NhomGiangVienCacheVersion}";
+                    string cacheKey = $"ChucDanhList_{ChucDanhCacheVersion}";
                     ObjectCache cache = MemoryCache.Default;
                     if (cache.Contains(cacheKey))
                     {
@@ -36,20 +36,20 @@ namespace KPI.handlers
                         return;
                     }
 
-                    List<QL_NhomGiangVien> list = new List<QL_NhomGiangVien>();
+                    List<QL_ChucDanh> list = new List<QL_ChucDanh>();
                     using (SqlConnection conn = new SqlConnection(connString))
                     {
                         conn.Open();
-                        using (SqlCommand cmd = new SqlCommand("SELECT * FROM nhom_giang_vien ORDER BY id_nhom_gv DESC", conn))
+                        using (SqlCommand cmd = new SqlCommand("SELECT * FROM chuc_danh_nghe_nghiep ORDER BY id_chuc_danh DESC", conn))
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
                             {
-                                list.Add(new QL_NhomGiangVien
+                                list.Add(new QL_ChucDanh
                                 {
-                                    IdNhomGv = Convert.ToInt32(reader["id_nhom_gv"]),
-                                    MaNhom = reader["ma_nhom"].ToString(),
-                                    TenNhom = reader["ten_nhom"].ToString(),
+                                    IdChucDanh = Convert.ToInt32(reader["id_chuc_danh"]),
+                                    MaChucDanh = reader["ma_chuc_danh"].ToString(),
+                                    TenChucDanh = reader["ten_chuc_danh"].ToString(),
                                     MoTa = reader["mo_ta"] != DBNull.Value ? reader["mo_ta"].ToString() : "",
                                     TrangThai = Convert.ToBoolean(reader["trang_thai"])
                                 });
@@ -77,32 +77,33 @@ namespace KPI.handlers
                         {
                             var payload = serializer.Deserialize<Dictionary<string, object>>(reader.ReadToEnd());
 
-                            string maNhom = payload.ContainsKey("MaNhom") && payload["MaNhom"] != null ? payload["MaNhom"].ToString() : "";
-                            string tenNhom = payload.ContainsKey("TenNhom") && payload["TenNhom"] != null ? payload["TenNhom"].ToString() : "";
+                            string maChucDanh = payload.ContainsKey("MaChucDanh") && payload["MaChucDanh"] != null ? payload["MaChucDanh"].ToString() : "";
+                            string tenChucDanh = payload.ContainsKey("TenChucDanh") && payload["TenChucDanh"] != null ? payload["TenChucDanh"].ToString() : "";
                             string moTa = payload.ContainsKey("MoTa") && payload["MoTa"] != null ? payload["MoTa"].ToString() : "";
                             bool trangThai = payload.ContainsKey("TrangThai") && payload["TrangThai"] != null ? Convert.ToBoolean(payload["TrangThai"]) : true;
-                            int idNhom = payload.ContainsKey("IdNhomGv") && payload["IdNhomGv"] != null ? Convert.ToInt32(payload["IdNhomGv"]) : 0;
+                            int idChucDanh = payload.ContainsKey("IdChucDanh") && payload["IdChucDanh"] != null ? Convert.ToInt32(payload["IdChucDanh"]) : 0;
 
                             using (SqlConnection conn = new SqlConnection(connString))
                             {
                                 conn.Open();
                                 string sql = method == "POST"
-                                    ? "INSERT INTO nhom_giang_vien (ma_nhom, ten_nhom, mo_ta, trang_thai) VALUES (@Ma, @Ten, @MoTa, @TrangThai)"
-                                    : "UPDATE nhom_giang_vien SET ma_nhom=@Ma, ten_nhom=@Ten, mo_ta=@MoTa, trang_thai=@TrangThai WHERE id_nhom_gv=@Id";
+                                    ? "INSERT INTO chuc_danh_nghe_nghiep (ma_chuc_danh, ten_chuc_danh, mo_ta, trang_thai) VALUES (@Ma, @Ten, @MoTa, @TrangThai)"
+                                    : "UPDATE chuc_danh_nghe_nghiep SET ma_chuc_danh=@Ma, ten_chuc_danh=@Ten, mo_ta=@MoTa, trang_thai=@TrangThai WHERE id_chuc_danh=@Id";
 
                                 using (SqlCommand cmd = new SqlCommand(sql, conn))
                                 {
-                                    cmd.Parameters.AddWithValue("@Ma", maNhom);
-                                    cmd.Parameters.AddWithValue("@Ten", tenNhom);
+                                    cmd.Parameters.AddWithValue("@Ma", maChucDanh);
+                                    cmd.Parameters.AddWithValue("@Ten", tenChucDanh);
                                     cmd.Parameters.AddWithValue("@MoTa", moTa);
                                     cmd.Parameters.AddWithValue("@TrangThai", trangThai);
-                                    if (method == "PUT") cmd.Parameters.AddWithValue("@Id", idNhom);
+                                    if (method == "PUT") cmd.Parameters.AddWithValue("@Id", idChucDanh);
 
                                     cmd.ExecuteNonQuery();
                                 }
                             }
 
                             InvalidateCache();
+                            QL_NhanVienHandler.InvalidateUserCache();
                             isSuccess = true;
                             BaseHandler.SendJsonResponse(response, "{\"status\":\"success\"}");
                             break;
@@ -114,7 +115,7 @@ namespace KPI.handlers
                         catch (SqlException ex)
                         {
                             if (ex.Number == 2627)
-                                errorMessage = "Mã nhóm này đã tồn tại!";
+                                errorMessage = "Mã chức danh này đã tồn tại!";
                             else
                                 errorMessage = ex.Message.Replace("\"", "'");
 
@@ -138,7 +139,7 @@ namespace KPI.handlers
 
             else if (method == "DELETE")
             {
-                BaseHandler.HandleDelete(request, response, connString, "nhom_giang_vien", "id_nhom_gv", () =>
+                BaseHandler.HandleDelete(request, response, connString, "chuc_danh_nghe_nghiep", "id_chuc_danh", () =>
                 {
                     InvalidateCache();
                 });

@@ -3,7 +3,7 @@ import '../../../css/Pages.css';
 
 const QL_NhanVienForm = ({
     isOpen, onClose, onSubmit, formData, setFormData, isEditing,
-    donViList = [], chucVuList = [], nhomGvList = [], quanLyList = []
+    donViList = [], chucVuList = [], chucDanhList = [], quanLyList = []
 }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -22,7 +22,6 @@ const QL_NhanVienForm = ({
             alert("Mật khẩu và Xác nhận mật khẩu không khớp!");
             return;
         }
-
         onSubmit(e);
     };
 
@@ -44,50 +43,22 @@ const QL_NhanVienForm = ({
                         <div className="form-grid-2">
                             <div className="form-group">
                                 <label>Mã nhân viên <span className="text-red">*</span></label>
-                                <input
-                                    type="text"
-                                    name="MaNhanVien"
-                                    className="form-input"
-                                    value={formData.MaNhanVien || ''}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={isEditing}
-                                />
+                                <input type="text" name="MaNhanVien" className="form-input" value={formData.MaNhanVien || ''} onChange={handleChange} required disabled={isEditing} />
                             </div>
                             <div className="form-group">
                                 <label>Họ và Tên <span className="text-red">*</span></label>
-                                <input
-                                    type="text"
-                                    name="HoTen"
-                                    className="form-input"
-                                    value={formData.HoTen || ''}
-                                    onChange={handleChange}
-                                    required
-                                />
+                                <input type="text" name="HoTen" className="form-input" value={formData.HoTen || ''} onChange={handleChange} required />
                             </div>
                         </div>
 
                         <div className="form-grid-2">
                             <div className="form-group">
                                 <label>Email liên hệ</label>
-                                <input
-                                    type="email"
-                                    name="Email"
-                                    className="form-input"
-                                    value={formData.Email || ''}
-                                    onChange={handleChange}
-                                />
+                                <input type="email" name="Email" className="form-input" value={formData.Email || ''} onChange={handleChange} />
                             </div>
                             <div className="form-group">
                                 <label>Mã liên kết DueScience</label>
-                                <input
-                                    type="number"
-                                    name="ScienceUserId"
-                                    className="form-input"
-                                    value={formData.ScienceUserId || ''}
-                                    onChange={handleChange}
-                                    placeholder="Nhập ID tài khoản DueScience"
-                                />
+                                <input type="number" name="ScienceUserId" className="form-input" value={formData.ScienceUserId || ''} onChange={handleChange} placeholder="Nhập ID tài khoản DueScience" />
                             </div>
                         </div>
 
@@ -96,72 +67,39 @@ const QL_NhanVienForm = ({
                         <div className="form-grid-2">
                             <div className="form-group">
                                 <label>Đơn vị trực thuộc <span className="text-red">*</span></label>
-                                <select
-                                    name="IdDonVi"
-                                    className="form-input"
-                                    value={formData.IdDonVi || ''}
-                                    onChange={handleChange}
-                                    required
-                                >
+                                <select name="IdDonVi" className="form-input" value={formData.IdDonVi || ''} onChange={handleChange} required>
                                     <option value="">Chọn đơn vị</option>
-                                    {donViList.map(dv => (
-                                        <option key={dv.id_don_vi || dv.IdDonVi} value={dv.id_don_vi || dv.IdDonVi}>
-                                            {dv.ten_don_vi || dv.TenDonVi}
-                                        </option>
-                                    ))}
+                                    {donViList.map(dv => <option key={dv.id_don_vi || dv.IdDonVi} value={dv.id_don_vi || dv.IdDonVi}>{dv.ten_don_vi || dv.TenDonVi}</option>)}
                                 </select>
                             </div>
                             <div className="form-group">
                                 <label>Chức vụ (Quyền hạn)</label>
-                                <select
-                                    name="IdChucVu"
-                                    className="form-input"
-                                    value={formData.IdChucVu || ''}
-                                    onChange={handleChange}
-                                >
+                                <select name="IdChucVu" className="form-input" value={formData.IdChucVu || ''} onChange={handleChange}>
                                     <option value="">Chọn chức vụ</option>
-                                    {chucVuList.map(cv => (
-                                        <option key={cv.id_chuc_vu || cv.IdChucVu} value={cv.id_chuc_vu || cv.IdChucVu}>
-                                            {cv.ten_chuc_vu || cv.TenChucVu}
-                                        </option>
-                                    ))}
+                                    {chucVuList.map(cv => <option key={cv.id_chuc_vu || cv.IdChucVu} value={cv.id_chuc_vu || cv.IdChucVu}>{cv.ten_chuc_vu || cv.TenChucVu}</option>)}
                                 </select>
                             </div>
                         </div>
 
                         <div className="form-grid-2">
                             <div className="form-group">
-                                <label>Nhóm định mức (Dành cho Giảng viên)</label>
-                                <select
-                                    name="IdNhomGv"
-                                    className="form-input"
-                                    value={formData.IdNhomGv || ''}
-                                    onChange={handleChange}
-                                >
-                                    <option value="">Không thuộc nhóm GV</option>
-                                    {nhomGvList.map(nhom => (
-                                        <option key={nhom.id_nhom_gv || nhom.IdNhomGv} value={nhom.id_nhom_gv || nhom.IdNhomGv}>
-                                            {nhom.ten_nhom || nhom.TenNhom}
+                                <label>Chức danh nghề nghiệp</label>
+                                <select name="IdChucDanh" className="form-input" value={formData.IdChucDanh || ''} onChange={handleChange}>
+                                    <option value="">Không có chức danh</option>
+                                    {chucDanhList.map(cd => (
+                                        <option key={cd.id_chuc_danh || cd.IdChucDanh} value={cd.id_chuc_danh || cd.IdChucDanh}>
+                                            {cd.ten_chuc_danh || cd.TenChucDanh}
                                         </option>
                                     ))}
                                 </select>
                             </div>
                             <div className="form-group">
                                 <label>Người quản lý trực tiếp</label>
-                                <select
-                                    name="IdQuanLyTrucTiep"
-                                    className="form-input"
-                                    value={formData.IdQuanLyTrucTiep || ''}
-                                    onChange={handleChange}
-                                >
+                                <select name="IdQuanLyTrucTiep" className="form-input" value={formData.IdQuanLyTrucTiep || ''} onChange={handleChange}>
                                     <option value="">Không có</option>
-                                    {quanLyList
-                                        .filter(nv => nv.IdNhanVien !== formData.IdNhanVien)
-                                        .map(nv => (
-                                            <option key={nv.IdNhanVien} value={nv.IdNhanVien}>
-                                                {nv.MaNhanVien} - {nv.HoTen}
-                                            </option>
-                                        ))}
+                                    {quanLyList.filter(nv => nv.IdNhanVien !== formData.IdNhanVien).map(nv => (
+                                        <option key={nv.IdNhanVien} value={nv.IdNhanVien}>{nv.MaNhanVien} - {nv.HoTen}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -170,74 +108,31 @@ const QL_NhanVienForm = ({
 
                         <div className="form-grid-2">
                             <div className="form-group">
-                                <label>
-                                    Mật khẩu đăng nhập <span className="text-red">*</span>
-                                </label>
+                                <label>Mật khẩu đăng nhập <span className="text-red">*</span></label>
                                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="MatKhau"
-                                        className="form-input"
-                                        value={formData.MatKhau || ''}
-                                        onChange={handleChange}
-                                        required={!isEditing}
-                                        placeholder={isEditing ? "Bỏ trống nếu không đổi mật khẩu" : "Nhập mật khẩu"}
-                                        style={{ width: '100%', paddingRight: '40px', margin: 0 }}
-                                    />
-                                    <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}
-                                        style={{ position: 'absolute', right: '12px', cursor: 'pointer', color: '#666' }}
-                                        onClick={() => setShowPassword(!showPassword)}>
-                                    </i>
+                                    <input type={showPassword ? "text" : "password"} name="MatKhau" className="form-input" value={formData.MatKhau || ''} onChange={handleChange} required={!isEditing} placeholder={isEditing ? "Bỏ trống nếu không đổi mật khẩu" : "Nhập mật khẩu"} style={{ width: '100%', paddingRight: '40px', margin: 0 }} />
+                                    <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} style={{ position: 'absolute', right: '12px', cursor: 'pointer', color: '#666' }} onClick={() => setShowPassword(!showPassword)}></i>
                                 </div>
                             </div>
-
                             <div className="form-group">
-                                <label>
-                                    Nhập lại mật khẩu <span className="text-red">*</span>
-                                </label>
+                                <label>Nhập lại mật khẩu <span className="text-red">*</span></label>
                                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        name="ConfirmPassword"
-                                        className="form-input"
-                                        value={formData.ConfirmPassword || ''}
-                                        onChange={handleChange}
-                                        required={!isEditing || !!formData.MatKhau}
-                                        placeholder="Xác nhận mật khẩu"
-                                        style={{ width: '100%', paddingRight: '40px', margin: 0 }}
-                                    />
-                                    <i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}
-                                        style={{ position: 'absolute', right: '12px', cursor: 'pointer', color: '#666' }}
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                                    </i>
+                                    <input type={showConfirmPassword ? "text" : "password"} name="ConfirmPassword" className="form-input" value={formData.ConfirmPassword || ''} onChange={handleChange} required={!isEditing || !!formData.MatKhau} placeholder="Xác nhận mật khẩu" style={{ width: '100%', paddingRight: '40px', margin: 0 }} />
+                                    <i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`} style={{ position: 'absolute', right: '12px', cursor: 'pointer', color: '#666' }} onClick={() => setShowConfirmPassword(!showConfirmPassword)}></i>
                                 </div>
                             </div>
                         </div>
 
                         <div className="form-group" style={{ display: 'flex', alignItems: 'center', marginTop: '15px' }}>
-                            <input
-                                type="checkbox"
-                                name="TrangThai"
-                                id="trangThaiCheck"
-                                checked={formData.TrangThai !== false}
-                                onChange={handleChange}
-                                style={{ width: '18px', height: '18px', marginRight: '10px' }}
-                            />
-                            <label htmlFor="trangThaiCheck" style={{ margin: 0, cursor: 'pointer', fontWeight: '500' }}>
-                                Cho phép tài khoản hoạt động
-                            </label>
+                            <input type="checkbox" name="TrangThai" id="trangThaiCheck" checked={formData.TrangThai !== false} onChange={handleChange} style={{ width: '18px', height: '18px', marginRight: '10px' }} />
+                            <label htmlFor="trangThaiCheck" style={{ margin: 0, cursor: 'pointer', fontWeight: '500' }}>Cho phép tài khoản hoạt động</label>
                         </div>
-
                     </form>
                 </div>
 
                 <div className="modal-footer" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    <button type="button" className="btn-cancel" onClick={onClose}>
-                        <i className="fa-solid fa-times" style={{ marginRight: '5px' }}></i> Hủy
-                    </button>
-                    <button type="submit" form="nhanVienForm" className="btn-submit">
-                        <i className="fa-solid fa-floppy-disk" style={{ marginRight: '5px' }}></i> Lưu dữ liệu
-                    </button>
+                    <button type="button" className="btn-cancel" onClick={onClose}><i className="fa-solid fa-times" style={{ marginRight: '5px' }}></i> Hủy</button>
+                    <button type="submit" form="nhanVienForm" className="btn-submit"><i className="fa-solid fa-floppy-disk" style={{ marginRight: '5px' }}></i> Lưu dữ liệu</button>
                 </div>
             </div>
         </div>

@@ -41,10 +41,10 @@ namespace KPI.handlers
                     {
                         conn.Open();
                         string sql = @"
-                            SELECT dm.*, n.ten_nhom 
+                            SELECT dm.*, cd.ten_chuc_danh 
                             FROM dinh_muc_giang_vien dm
-                            INNER JOIN nhom_giang_vien n ON dm.id_nhom_gv = n.id_nhom_gv
-                            ORDER BY dm.id_nam DESC, n.ten_nhom ASC";
+                            INNER JOIN chuc_danh_nghe_nghiep cd ON dm.id_chuc_danh = cd.id_chuc_danh
+                            ORDER BY dm.id_nam DESC, cd.ten_chuc_danh ASC";
 
                         using (SqlCommand cmd = new SqlCommand(sql, conn))
                         using (SqlDataReader reader = cmd.ExecuteReader())
@@ -54,12 +54,12 @@ namespace KPI.handlers
                                 list.Add(new QL_DinhMucGiangVien
                                 {
                                     IdDinhMuc = Convert.ToInt32(reader["id_dinh_muc"]),
-                                    IdNhomGv = Convert.ToInt32(reader["id_nhom_gv"]),
+                                    IdChucDanh = Convert.ToInt32(reader["id_chuc_danh"]),
                                     IdNam = Convert.ToInt32(reader["id_nam"]),
                                     GioGiangLyThuyet = Convert.ToDecimal(reader["gio_giang_ly_thuyet"]),
                                     GioNckh = Convert.ToDecimal(reader["gio_nckh"]),
                                     MoTa = reader["mo_ta"] != DBNull.Value ? reader["mo_ta"].ToString() : "",
-                                    TenNhomGv = reader["ten_nhom"].ToString()
+                                    TenChucDanh = reader["ten_chuc_danh"].ToString()
                                 });
                             }
                         }
@@ -85,7 +85,7 @@ namespace KPI.handlers
                         {
                             var payload = serializer.Deserialize<Dictionary<string, object>>(reader.ReadToEnd());
 
-                            int idNhomGv = Convert.ToInt32(payload["IdNhomGv"]);
+                            int idChucDanh = Convert.ToInt32(payload["IdChucDanh"]);
                             int idNam = Convert.ToInt32(payload["IdNam"]);
                             decimal gioDay = Convert.ToDecimal(payload["GioGiangLyThuyet"]);
                             decimal gioNC = Convert.ToDecimal(payload["GioNckh"]);
@@ -96,12 +96,12 @@ namespace KPI.handlers
                             {
                                 conn.Open();
                                 string sql = method == "POST"
-                                    ? "INSERT INTO dinh_muc_giang_vien (id_nhom_gv, id_nam, gio_giang_ly_thuyet, gio_nckh, mo_ta) VALUES (@Nhom, @Nam, @GioDay, @GioNC, @MoTa)"
-                                    : "UPDATE dinh_muc_giang_vien SET id_nhom_gv=@Nhom, id_nam=@Nam, gio_giang_ly_thuyet=@GioDay, gio_nckh=@GioNC, mo_ta=@MoTa WHERE id_dinh_muc=@Id";
+                                    ? "INSERT INTO dinh_muc_giang_vien (id_chuc_danh, id_nam, gio_giang_ly_thuyet, gio_nckh, mo_ta) VALUES (@ChucDanh, @Nam, @GioDay, @GioNC, @MoTa)"
+                                    : "UPDATE dinh_muc_giang_vien SET id_chuc_danh=@ChucDanh, id_nam=@Nam, gio_giang_ly_thuyet=@GioDay, gio_nckh=@GioNC, mo_ta=@MoTa WHERE id_dinh_muc=@Id";
 
                                 using (SqlCommand cmd = new SqlCommand(sql, conn))
                                 {
-                                    cmd.Parameters.AddWithValue("@Nhom", idNhomGv);
+                                    cmd.Parameters.AddWithValue("@ChucDanh", idChucDanh);
                                     cmd.Parameters.AddWithValue("@Nam", idNam);
                                     cmd.Parameters.AddWithValue("@GioDay", gioDay);
                                     cmd.Parameters.AddWithValue("@GioNC", gioNC);
@@ -125,7 +125,7 @@ namespace KPI.handlers
                         catch (SqlException ex)
                         {
                             if (ex.Number == 2627)
-                                errorMessage = "Định mức cho nhóm này trong năm này đã tồn tại!";
+                                errorMessage = "Định mức cho chức danh này trong năm này đã tồn tại!";
                             else
                                 errorMessage = ex.Message.Replace("\"", "'");
 

@@ -21,41 +21,34 @@ namespace KPI.handlers
             var request = context.Request;
             var response = context.Response;
             string connString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
-            var serializer = new JavaScriptSerializer() { MaxJsonLength = Int32.MaxValue };
+            var serializer = new JavaScriptSerializer();
             string method = request.HttpMethod;
-            string type = BaseHandler.GetQueryParam(request, "type") ?? request.QueryString["type"];
-
-            if (method == "GET")
+            string type = BaseHandler.GetQueryParam(request, "type");
+            if (method == "GET" && type == "nhom-tieu-chi")
             {
-                if (type == "nhom-tieu-chi")
+                try
                 {
-                    string nhomCacheKey = $"NhomTieuChiList_{TieuChiCacheVersion}";
-                    ObjectCache nhomCache = MemoryCache.Default;
-                    if (nhomCache.Contains(nhomCacheKey))
-                    {
-                        BaseHandler.SendJsonResponse(response, nhomCache.Get(nhomCacheKey).ToString());
-                        return;
-                    }
-
-                    List<object> nhomList = new List<object>();
+                    List<object> list = new List<object>();
                     using (SqlConnection conn = new SqlConnection(connString))
                     {
                         conn.Open();
-                        using (SqlCommand cmd = new SqlCommand("SELECT id_nhom, ten_nhom FROM nhom_tieu_chi WHERE trang_thai = 1 ORDER BY loai_nhom, thu_tu_hien_thi", conn))
+                        using (SqlCommand cmd = new SqlCommand("SELECT id_nhom, ten_nhom FROM nhom_tieu_chi WHERE trang_thai = 1 ORDER BY thu_tu_hien_thi ASC", conn))
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
                             {
-                                nhomList.Add(new { IdNhom = (int)reader["id_nhom"], TenNhom = reader["ten_nhom"].ToString() });
+                                list.Add(new { IdNhom = reader["id_nhom"], TenNhom = reader["ten_nhom"].ToString() });
                             }
                         }
                     }
-                    string nhomJson = serializer.Serialize(nhomList);
-                    nhomCache.Set(nhomCacheKey, nhomJson, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(30) });
-                    BaseHandler.SendJsonResponse(response, nhomJson);
+                    BaseHandler.SendJsonResponse(response, serializer.Serialize(list));
                     return;
                 }
+                catch { BaseHandler.SendJsonResponse(response, "[]"); return; }
+            }
 
+            if (method == "GET")
+            {
                 try
                 {
                     string cacheKey = $"TieuChiList_{TieuChiCacheVersion}";
@@ -70,12 +63,10 @@ namespace KPI.handlers
                     using (SqlConnection conn = new SqlConnection(connString))
                     {
                         conn.Open();
-                        string sql = @"
-                            SELECT tc.*, ntc.ten_nhom as TenNhom
-                            FROM tieu_chi_danh_gia tc
-                            LEFT JOIN nhom_tieu_chi ntc ON tc.id_nhom = ntc.id_nhom
-                            ORDER BY ntc.thu_tu_hien_thi ASC, tc.thu_tu_hien_thi ASC";
-
+                        string sql = @"SELECT tc.*, n.ten_nhom 
+                                       FROM tieu_chi_danh_gia tc
+                                       LEFT JOIN nhom_tieu_chi n ON tc.id_nhom = n.id_nhom
+                                       ORDER BY n.thu_tu_hien_thi ASC, tc.thu_tu_hien_thi ASC";
                         using (SqlCommand cmd = new SqlCommand(sql, conn))
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
@@ -89,15 +80,13 @@ namespace KPI.handlers
                                     IdNam = reader["id_nam"] != DBNull.Value ? (int?)Convert.ToInt32(reader["id_nam"]) : null,
                                     MoTa = reader["mo_ta"] != DBNull.Value ? reader["mo_ta"].ToString() : "",
                                     DiemToiDa = Convert.ToDecimal(reader["diem_toi_da"]),
-                                    LoaiThangDiem = Convert.ToByte(reader["loai_thang_diem"]),
+                                    LoaiThangDiem = reader["loai_thang_diem"] != DBNull.Value ? (byte?)Convert.ToByte(reader["loai_thang_diem"]) : (byte)1,
                                     CapDanhGia = reader["cap_danh_gia"] != DBNull.Value ? (byte?)Convert.ToByte(reader["cap_danh_gia"]) : null,
                                     CongThucTinhDiem = reader["cong_thuc_tinh_diem"] != DBNull.Value ? reader["cong_thuc_tinh_diem"].ToString() : "",
                                     BatBuocMinhChung = reader["bat_buoc_minh_chung"] != DBNull.Value && Convert.ToBoolean(reader["bat_buoc_minh_chung"]),
-                                    CoTheDongBoScience = reader["co_the_dong_bo_science"] != DBNull.Value && Convert.ToBoolean(reader["co_the_dong_bo_science"]),
-                                    BangNguonScience = reader["bang_nguon_science"] != DBNull.Value ? reader["bang_nguon_science"].ToString() : "",
                                     ThuTuHienThi = reader["thu_tu_hien_thi"] != DBNull.Value ? Convert.ToInt32(reader["thu_tu_hien_thi"]) : 0,
-                                    TrangThai = reader["trang_thai"] != DBNull.Value && Convert.ToBoolean(reader["trang_thai"]),
-                                    TenNhom = reader["TenNhom"] != DBNull.Value ? reader["TenNhom"].ToString() : "Chưa rõ"
+                                    TrangThai = reader["trang_thai"] != DBNull.Value ? Convert.ToBoolean(reader["trang_thai"]) : true,
+                                    TenNhom = reader["ten_nhom"] != DBNull.Value ? reader["ten_nhom"].ToString() : ""
                                 });
                             }
                         }
@@ -120,58 +109,67 @@ namespace KPI.handlers
                     {
                         try
                         {
-                            var payload = serializer.Deserialize<Dictionary<string, object>>(reader.ReadToEnd());
+                            var body = reader.ReadToEnd();
+                            var payload = serializer.Deserialize<Dictionary<string, object>>(body);
+
+                            string tenTieuChi = payload.ContainsKey("TenTieuChi") && payload["TenTieuChi"] != null ? payload["TenTieuChi"].ToString() : "";
+                            int idNhom = payload.ContainsKey("IdNhom") && payload["IdNhom"] != null ? Convert.ToInt32(payload["IdNhom"]) : 0;
+
+                            int? idNam = null;
+                            if (payload.ContainsKey("IdNam") && payload["IdNam"] != null && payload["IdNam"].ToString() != "")
+                                idNam = Convert.ToInt32(payload["IdNam"]);
+
+                            string moTa = payload.ContainsKey("MoTa") && payload["MoTa"] != null ? payload["MoTa"].ToString() : "";
+
+                            decimal diemToiDa = 0;
+                            if (payload.ContainsKey("DiemToiDa") && payload["DiemToiDa"] != null && payload["DiemToiDa"].ToString() != "")
+                                diemToiDa = Convert.ToDecimal(payload["DiemToiDa"]);
+
+                            byte loaiThangDiem = 1;
+                            if (payload.ContainsKey("LoaiThangDiem") && payload["LoaiThangDiem"] != null && payload["LoaiThangDiem"].ToString() != "")
+                                loaiThangDiem = Convert.ToByte(payload["LoaiThangDiem"]);
+
+                            byte? capDanhGia = null;
+                            if (payload.ContainsKey("CapDanhGia") && payload["CapDanhGia"] != null && payload["CapDanhGia"].ToString() != "")
+                                capDanhGia = Convert.ToByte(payload["CapDanhGia"]);
+
+                            string congThuc = payload.ContainsKey("CongThucTinhDiem") && payload["CongThucTinhDiem"] != null ? payload["CongThucTinhDiem"].ToString() : "";
+                            bool batBuocMC = payload.ContainsKey("BatBuocMinhChung") && payload["BatBuocMinhChung"] != null ? Convert.ToBoolean(payload["BatBuocMinhChung"]) : false;
+                            int thuTu = payload.ContainsKey("ThuTuHienThi") && payload["ThuTuHienThi"] != null ? Convert.ToInt32(payload["ThuTuHienThi"]) : 0;
+                            bool trangThai = payload.ContainsKey("TrangThai") && payload["TrangThai"] != null ? Convert.ToBoolean(payload["TrangThai"]) : true;
+
+                            int idTieuChi = payload.ContainsKey("IdTieuChi") && payload["IdTieuChi"] != null ? Convert.ToInt32(payload["IdTieuChi"]) : 0;
+
                             using (SqlConnection conn = new SqlConnection(connString))
                             {
                                 conn.Open();
-
-                                int id = payload.ContainsKey("IdTieuChi") && payload["IdTieuChi"] != null ? Convert.ToInt32(payload["IdTieuChi"]) : 0;
-                                string ten = payload.ContainsKey("TenTieuChi") && payload["TenTieuChi"] != null ? payload["TenTieuChi"].ToString() : "";
-                                int idNhom = payload.ContainsKey("IdNhom") && payload["IdNhom"] != null ? Convert.ToInt32(payload["IdNhom"]) : 0;
-                                decimal diemToiDa = payload.ContainsKey("DiemToiDa") && payload["DiemToiDa"] != null ? Convert.ToDecimal(payload["DiemToiDa"]) : 0;
-                                byte loaiThang = payload.ContainsKey("LoaiThangDiem") && payload["LoaiThangDiem"] != null ? Convert.ToByte(payload["LoaiThangDiem"]) : (byte)1;
-                                string moTa = payload.ContainsKey("MoTa") && payload["MoTa"] != null ? payload["MoTa"].ToString() : "";
-                                bool bbMc = payload.ContainsKey("BatBuocMinhChung") && payload["BatBuocMinhChung"] != null && Convert.ToBoolean(payload["BatBuocMinhChung"]);
-                                bool syncSc = payload.ContainsKey("CoTheDongBoScience") && payload["CoTheDongBoScience"] != null && Convert.ToBoolean(payload["CoTheDongBoScience"]);
-                                int thuTu = payload.ContainsKey("ThuTuHienThi") && payload["ThuTuHienThi"] != null ? Convert.ToInt32(payload["ThuTuHienThi"]) : 0;
-                                bool trangThai = payload.ContainsKey("TrangThai") && payload["TrangThai"] != null ? Convert.ToBoolean(payload["TrangThai"]) : true;
-                                int? idNam = payload.ContainsKey("IdNam") && payload["IdNam"] != null && payload["IdNam"].ToString() != "" ? (int?)Convert.ToInt32(payload["IdNam"]) : null;
-                                byte? capDanhGia = payload.ContainsKey("CapDanhGia") && payload["CapDanhGia"] != null && payload["CapDanhGia"].ToString() != "" ? (byte?)Convert.ToByte(payload["CapDanhGia"]) : null;
-                                string congThuc = payload.ContainsKey("CongThucTinhDiem") && payload["CongThucTinhDiem"] != null ? payload["CongThucTinhDiem"].ToString() : "";
-                                string bangNguon = payload.ContainsKey("BangNguonScience") && payload["BangNguonScience"] != null ? payload["BangNguonScience"].ToString() : "";
-
                                 string sql = method == "POST"
-                                    ? @"INSERT INTO tieu_chi_danh_gia 
-                                        (ten_tieu_chi, id_nhom, id_nam, mo_ta, diem_toi_da, loai_thang_diem, cap_danh_gia, cong_thuc_tinh_diem, bat_buoc_minh_chung, co_the_dong_bo_science, bang_nguon_science, thu_tu_hien_thi, trang_thai) 
-                                        VALUES (@Ten, @IdNhom, @IdNam, @MoTa, @Diem, @Loai, @Cap, @CongThuc, @Bb, @Sync, @BangNguon, @ThuTu, @Tt)"
+                                    ? @"INSERT INTO tieu_chi_danh_gia (ten_tieu_chi, id_nhom, id_nam, mo_ta, diem_toi_da, loai_thang_diem, cap_danh_gia, cong_thuc_tinh_diem, bat_buoc_minh_chung, thu_tu_hien_thi, trang_thai) 
+                                        VALUES (@Ten, @Nhom, @Nam, @MoTa, @Diem, @Loai, @Cap, @CongThuc, @MinhChung, @ThuTu, @TrangThai)"
                                     : @"UPDATE tieu_chi_danh_gia 
-                                        SET ten_tieu_chi=@Ten, id_nhom=@IdNhom, id_nam=@IdNam, mo_ta=@MoTa, diem_toi_da=@Diem, loai_thang_diem=@Loai, cap_danh_gia=@Cap, cong_thuc_tinh_diem=@CongThuc, bat_buoc_minh_chung=@Bb, co_the_dong_bo_science=@Sync, bang_nguon_science=@BangNguon, thu_tu_hien_thi=@ThuTu, trang_thai=@Tt 
+                                        SET ten_tieu_chi=@Ten, id_nhom=@Nhom, id_nam=@Nam, mo_ta=@MoTa, diem_toi_da=@Diem, loai_thang_diem=@Loai, cap_danh_gia=@Cap, cong_thuc_tinh_diem=@CongThuc, bat_buoc_minh_chung=@MinhChung, thu_tu_hien_thi=@ThuTu, trang_thai=@TrangThai 
                                         WHERE id_tieu_chi=@Id";
 
                                 using (SqlCommand cmd = new SqlCommand(sql, conn))
                                 {
-                                    cmd.Parameters.AddWithValue("@Ten", ten);
-                                    cmd.Parameters.AddWithValue("@IdNhom", idNhom);
-                                    cmd.Parameters.AddWithValue("@IdNam", idNam ?? (object)DBNull.Value);
-                                    cmd.Parameters.AddWithValue("@MoTa", moTa);
+                                    cmd.Parameters.AddWithValue("@Ten", tenTieuChi);
+                                    cmd.Parameters.AddWithValue("@Nhom", idNhom);
+                                    cmd.Parameters.AddWithValue("@Nam", idNam ?? (object)DBNull.Value);
+                                    cmd.Parameters.AddWithValue("@MoTa", string.IsNullOrEmpty(moTa) ? (object)DBNull.Value : moTa);
                                     cmd.Parameters.AddWithValue("@Diem", diemToiDa);
-                                    cmd.Parameters.AddWithValue("@Loai", loaiThang);
+                                    cmd.Parameters.AddWithValue("@Loai", loaiThangDiem);
                                     cmd.Parameters.AddWithValue("@Cap", capDanhGia ?? (object)DBNull.Value);
                                     cmd.Parameters.AddWithValue("@CongThuc", string.IsNullOrEmpty(congThuc) ? (object)DBNull.Value : congThuc);
-                                    cmd.Parameters.AddWithValue("@Bb", bbMc);
-                                    cmd.Parameters.AddWithValue("@Sync", syncSc);
-                                    cmd.Parameters.AddWithValue("@BangNguon", string.IsNullOrEmpty(bangNguon) ? (object)DBNull.Value : bangNguon);
+                                    cmd.Parameters.AddWithValue("@MinhChung", batBuocMC);
                                     cmd.Parameters.AddWithValue("@ThuTu", thuTu);
-                                    cmd.Parameters.AddWithValue("@Tt", trangThai);
+                                    cmd.Parameters.AddWithValue("@TrangThai", trangThai);
 
-                                    if (method == "PUT") cmd.Parameters.AddWithValue("@Id", id);
+                                    if (method == "PUT") cmd.Parameters.AddWithValue("@Id", idTieuChi);
+
                                     cmd.ExecuteNonQuery();
                                 }
                             }
-
                             InvalidateTieuChiCache();
-                            ScoringHandler.InvalidateCache();
-
                             isSuccess = true;
                             BaseHandler.SendJsonResponse(response, "{\"status\":\"success\"}");
                             break;
@@ -196,7 +194,6 @@ namespace KPI.handlers
                 BaseHandler.HandleDelete(request, response, connString, "tieu_chi_danh_gia", "id_tieu_chi", () =>
                 {
                     InvalidateTieuChiCache();
-                    ScoringHandler.InvalidateCache();
                 });
             }
         }
