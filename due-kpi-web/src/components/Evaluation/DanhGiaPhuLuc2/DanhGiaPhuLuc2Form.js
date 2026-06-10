@@ -61,9 +61,7 @@ const DanhGiaPhuLuc2Form = ({
         setScienceArticles([]);
 
         try {
-            const res = await fetch(`${API_URL}/science-data?email=${encodeURIComponent(userEmail)}&type=${dataType}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
-            });
+            const res = await apiFetch(`science-data?email=${encodeURIComponent(userEmail)}&type=${dataType}`);
             const result = await res.json();
 
             if (result.success) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../css/Pages.css';
-import QL_DinhMucListing from '../../components/PlanManagement/QL_DinhMuc/QL_DinhMucListing';
-import QL_DinhMucForm from '../../components/PlanManagement/QL_DinhMuc/QL_DinhMucForm';
+import QLDinhMucListing from '../../components/PlanManagement/QL_DinhMuc/QL_DinhMucListing';
+import QLDinhMucForm from '../../components/PlanManagement/QL_DinhMuc/QL_DinhMucForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
@@ -24,12 +24,12 @@ const QL_DinhMucGiangVien = () => {
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
     const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
     const canManage = isAdmin || isManager;
-    const authHeaders = { 'Authorization': `Bearer ${token}` };
 
     useEffect(() => {
         fetchData();
         fetchNamList();
         fetchChucDanhList();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchData = async () => {
@@ -53,7 +53,7 @@ const QL_DinhMucGiangVien = () => {
 
     const fetchChucDanhList = async () => {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/chuc-danh`, { headers: authHeaders });
+            const response = await apiFetch('chuc-danh');
             if (response.ok) setChucDanhList(await response.json());
         } catch (error) { console.error(error); }
     };
@@ -97,7 +97,7 @@ const QL_DinhMucGiangVien = () => {
         setIsLoading(true);
         try {
             const currentYear = new Date().getFullYear();
-            const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/sync-data?idNam=${currentYear}`, { method: 'POST', headers: authHeaders });
+            const res = await apiFetch(`sync-data?idNam=${currentYear}`, { method: 'POST' });
             const result = await res.json();
             if (result.success) { alert(result.message); fetchData(); } else alert("Lỗi: " + result.message);
         } catch (error) { alert("Lỗi kết nối đến máy chủ!"); } finally { setIsLoading(false); }
@@ -122,14 +122,14 @@ const QL_DinhMucGiangVien = () => {
                 </div>
             </div>
 
-            <QL_DinhMucListing
+            <QLDinhMucListing
                 data={filteredData}
                 onEdit={(item) => { if (!canManage) return; setEditId(item.IdDinhMuc); setFormData(item); setIsModalOpen(true); }}
                 onDelete={canManage ? handleDelete : () => { }}
                 isLoading={isLoading}
             />
 
-            <QL_DinhMucForm
+            <QLDinhMucForm
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 onSubmit={handleSubmit}

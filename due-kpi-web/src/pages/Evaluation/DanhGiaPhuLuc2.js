@@ -76,13 +76,13 @@ const DanhGiaPhuLuc2 = () => {
         };
 
         fetchYears();
-    }, []);
+    }, [navigate, yearParam]);
 
     useEffect(() => {
         const fetchDinhMuc = async () => {
             if (!currentUser.IdChucDanh) return;
             try {
-                const res = await fetch(`${API_URL}/dinh-muc-gv`, { headers: authHeaders });
+                const res = await apiFetch('dinh-muc-gv');
                 if (res.ok) {
                     const listDinhMuc = await res.json();
                     const dm = listDinhMuc.find(x => x.IdNam === selectedYear && x.IdChucDanh === currentUser.IdChucDanh);
@@ -98,16 +98,16 @@ const DanhGiaPhuLuc2 = () => {
         const fetchGioThucTe = async () => {
             if (!currentUser.IdNhanVien || !selectedYear) return;
             try {
-                const url = `${API_URL}/gio-thuc-hien?idNhanVien=${currentUser.IdNhanVien}&idNam=${selectedYear}`;
-                const res = await fetch(url, { headers: authHeaders });
+                const url = `gio-thuc-hien?idNhanVien=${currentUser.IdNhanVien}&idNam=${selectedYear}`;
+                const res = await apiFetch(url);
 
                 if (res.ok) {
                     const result = await res.json();
                     if (result.success && result.data) {
                         setGioThucTe({
-                            gioGiang: parseFloat(result.data.gio_giang_thuc_te) || 0,
-                            gioNckh: parseFloat(result.data.gio_nckh_thuc_te) || 0,
-                            soLopVuot: parseInt(result.data.so_lop_vuot) || 0
+                             gioGiang: parseFloat(result.data.gio_giang_thuc_te) || 0,
+                             gioNckh: parseFloat(result.data.gio_nckh_thuc_te) || 0,
+                             soLopVuot: parseInt(result.data.so_lop_vuot) || 0
                         });
                     }
                 }
@@ -120,7 +120,7 @@ const DanhGiaPhuLuc2 = () => {
             fetchDinhMuc();
             fetchGioThucTe();
         }
-    }, [selectedYear, currentUser.IdChucDanh]);
+    }, [selectedYear, currentUser.IdChucDanh, currentUser.IdNhanVien]);
 
     useEffect(() => {
         const fetchScoringData = async () => {
@@ -443,6 +443,7 @@ const DanhGiaPhuLuc2 = () => {
                 setFormData(newState);
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [criteriaList.length, dinhMucHienTai, gioThucTe]);
 
     const handleYearChange = (e) => {

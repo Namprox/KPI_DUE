@@ -1,20 +1,20 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import QL_NhanVien from '../pages/OrganizationalManagement/QL_NhanVien';
-import QL_DonVi from '../pages/OrganizationalManagement/QL_DonVi';
-import QL_TieuChi from '../pages/CriteriaManagement/QL_TieuChi';
-import QL_NhomTieuChi from '../pages/CriteriaManagement/QL_NhomTieuChi';
-import QL_NhomNhiemVu from '../pages/CriteriaManagement/QL_NhomNhiemVu';
-import QL_NamDanhGia from '../pages/PlanManagement/QL_NamDanhGia';
-import QL_MauDanhGia from '../pages/PlanManagement/QL_MauDanhGia';
-import QL_ThangDiem from '../pages/CriteriaManagement/QL_ThangDiem';
-import QL_DinhMucGiangVien from '../pages/PlanManagement/QL_DinhMucGiangVien';
+import QLNhanVien from '../pages/OrganizationalManagement/QL_NhanVien';
+import QLDonVi from '../pages/OrganizationalManagement/QL_DonVi';
+import QLTieuChi from '../pages/CriteriaManagement/QL_TieuChi';
+import QLNhomTieuChi from '../pages/CriteriaManagement/QL_NhomTieuChi';
+import QLNhomNhiemVu from '../pages/CriteriaManagement/QL_NhomNhiemVu';
+import QLNamDanhGia from '../pages/PlanManagement/QL_NamDanhGia';
+import QLMauDanhGia from '../pages/PlanManagement/QL_MauDanhGia';
+import QLThangDiem from '../pages/CriteriaManagement/QL_ThangDiem';
+import QLDinhMucGiangVien from '../pages/PlanManagement/QL_DinhMucGiangVien';
 import DanhGiaPhuLuc2 from '../pages/Evaluation/DanhGiaPhuLuc2';
 import LichSuDanhGia from '../pages/Evaluation/LichSuDanhGia';
 import DanhSachDuyetPhieu from '../pages/EvaluationManagement/DanhSachDuyetPhieu';
 import ChiTietDuyetPhieu from '../pages/EvaluationManagement/ChiTietDuyetPhieu';
-import QL_GioThucHien from '../pages/PlanManagement/QL_GioThucHien';
-import QL_ChucDanh from '../pages/OrganizationalManagement/QL_ChucDanh';
+import QLGioThucHien from '../pages/PlanManagement/QL_GioThucHien';
+import QLChucDanh from '../pages/OrganizationalManagement/QL_ChucDanh';
 
 const Overview = () => (
     <div className="content-body" style={{ padding: '20px' }}>
@@ -29,19 +29,19 @@ const AppRoutes = ({ triggerNotification }) => {
             <Route path="/" element={<Overview />} />
             <Route path="/danh-gia-phu-luc-2" element={<DanhGiaPhuLuc2 />} />
             <Route path="/lich-su-danh-gia" element={<LichSuDanhGia />} />
-            <Route path="/quan-ly-nguoi-dung" element={<QL_NhanVien />} />
-            <Route path="/quan-ly-don-vi" element={<QL_DonVi />} />
-            <Route path="/quan-ly-tieu-chi" element={<QL_TieuChi />} />
-            <Route path="/quan-ly-nhom-tieu-chi" element={<QL_NhomTieuChi />} />
-            <Route path="/quan-ly-nhom-nhiem-vu" element={<QL_NhomNhiemVu />} />
-            <Route path="/quan-ly-nam-danh-gia" element={<QL_NamDanhGia />} />
-            <Route path="/quan-ly-mau-danh-gia" element={<QL_MauDanhGia />} />
-            <Route path="/quan-ly-thang-diem" element={<QL_ThangDiem />} />
-            <Route path="/quan-ly-dinh-muc-giang-vien" element={<QL_DinhMucGiangVien />} />
-            <Route path="/quan-ly-chuc-danh" element={<QL_ChucDanh />} />
+            <Route path="/quan-ly-nguoi-dung" element={<QLNhanVien />} />
+            <Route path="/quan-ly-don-vi" element={<QLDonVi />} />
+            <Route path="/quan-ly-tieu-chi" element={<QLTieuChi />} />
+            <Route path="/quan-ly-nhom-tieu-chi" element={<QLNhomTieuChi />} />
+            <Route path="/quan-ly-nhom-nhiem-vu" element={<QLNhomNhiemVu />} />
+            <Route path="/quan-ly-nam-danh-gia" element={<QLNamDanhGia />} />
+            <Route path="/quan-ly-mau-danh-gia" element={<QLMauDanhGia />} />
+            <Route path="/quan-ly-thang-diem" element={<QLThangDiem />} />
+            <Route path="/quan-ly-dinh-muc-giang-vien" element={<QLDinhMucGiangVien />} />
+            <Route path="/quan-ly-chuc-danh" element={<QLChucDanh />} />
             <Route path="/danh-sach-duyet-phieu" element={<DanhSachDuyetPhieu />} />
             <Route path="/chi-tiet-duyet-phieu" element={<ChiTietDuyetPhieu />} />
-            <Route path="/quan-ly-gio-thuc-hien" element={<QL_GioThucHien />} />
+            <Route path="/quan-ly-gio-thuc-hien" element={<QLGioThucHien />} />
         </Routes>
     );
 };

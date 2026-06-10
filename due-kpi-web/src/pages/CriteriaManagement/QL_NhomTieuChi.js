@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../css/Pages.css';
-import QL_NhomTieuChiListing from '../../components/CriteriaManagement/QL_NhomTieuChi/QL_NhomTieuChiListing';
-import QL_NhomTieuChiForm from '../../components/CriteriaManagement/QL_NhomTieuChi/QL_NhomTieuChiForm';
+import QLNhomTieuChiListing from '../../components/CriteriaManagement/QL_NhomTieuChi/QL_NhomTieuChiListing';
+import QLNhomTieuChiForm from '../../components/CriteriaManagement/QL_NhomTieuChi/QL_NhomTieuChiForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
@@ -169,7 +169,7 @@ const QL_NhomTieuChi = () => {
                 </div>
             </div>
 
-            <QL_NhomTieuChiListing
+            <QLNhomTieuChiListing
                 data={filteredData}
                 onEdit={canManage ? handleEdit : () => { }}
                 onDelete={canManage ? handleDelete : () => { }}
@@ -177,7 +177,7 @@ const QL_NhomTieuChi = () => {
                 canManage={canManage}
             />
 
-            <QL_NhomTieuChiForm
+            <QLNhomTieuChiForm
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 onSubmit={handleSubmit}

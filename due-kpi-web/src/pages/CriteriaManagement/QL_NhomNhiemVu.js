@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../css/Pages.css';
-import QL_NhomNhiemVuListing from '../../components/CriteriaManagement/QL_NhomNhiemVu/QL_NhomNhiemVuListing';
-import QL_NhomNhiemVuForm from '../../components/CriteriaManagement/QL_NhomNhiemVu/QL_NhomNhiemVuForm';
+import QLNhomNhiemVuListing from '../../components/CriteriaManagement/QL_NhomNhiemVu/QL_NhomNhiemVuListing';
+import QLNhomNhiemVuForm from '../../components/CriteriaManagement/QL_NhomNhiemVu/QL_NhomNhiemVuForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
@@ -171,7 +171,7 @@ const QL_NhomNhiemVu = () => {
                 </div>
             </div>
 
-            <QL_NhomNhiemVuListing
+            <QLNhomNhiemVuListing
                 data={filteredData}
                 onEdit={canManage ? handleEdit : () => { }}
                 onDelete={canManage ? handleDelete : () => { }}
@@ -179,7 +179,7 @@ const QL_NhomNhiemVu = () => {
                 canManage={canManage}
             />
 
-            <QL_NhomNhiemVuForm
+            <QLNhomNhiemVuForm
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 onSubmit={handleSubmit}

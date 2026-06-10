@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../css/Pages.css';
-import QL_MauDanhGiaListing from '../../components/PlanManagement/QL_MauDanhGia/QL_MauDanhGiaListing';
-import QL_MauDanhGiaForm from '../../components/PlanManagement/QL_MauDanhGia/QL_MauDanhGiaForm';
+import QLMauDanhGiaListing from '../../components/PlanManagement/QL_MauDanhGia/QL_MauDanhGiaListing';
+import QLMauDanhGiaForm from '../../components/PlanManagement/QL_MauDanhGia/QL_MauDanhGiaForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
@@ -179,7 +179,7 @@ const QL_MauDanhGia = () => {
                 </div>
             </div>
 
-            <QL_MauDanhGiaListing
+            <QLMauDanhGiaListing
                 data={filteredData}
                 onEdit={canManage ? handleEdit : () => { }}
                 onDelete={canManage ? handleDelete : () => { }}
@@ -187,7 +187,7 @@ const QL_MauDanhGia = () => {
                 canManage={canManage}
             />
 
-            <QL_MauDanhGiaForm
+            <QLMauDanhGiaForm
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 onSubmit={handleSubmit}

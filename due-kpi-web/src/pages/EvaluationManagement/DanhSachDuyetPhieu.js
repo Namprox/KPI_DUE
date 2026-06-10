@@ -50,7 +50,7 @@ const DanhSachDuyetPhieu = () => {
         };
 
         fetchYears();
-    }, [isAdmin, isManager]);
+    }, [isAdmin, isManager, currentRealYear]);
 
     useEffect(() => {
         const fetchApprovalList = async () => {

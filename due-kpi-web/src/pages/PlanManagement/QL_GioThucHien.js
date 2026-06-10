@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Toast } from 'primereact/toast';
 import * as XLSX from 'xlsx';
 import '../../css/Pages.css';
+import { apiFetch } from '../../utils/api';
 
 const QL_GioThucHien = () => {
     const toast = useRef(null);
@@ -13,22 +14,21 @@ const QL_GioThucHien = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
-    const API_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
-    const authHeaders = { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` };
-
     useEffect(() => {
         fetchNamList();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         if (selectedYear) {
             fetchData();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedYear]);
 
     const fetchNamList = async () => {
         try {
-            const response = await fetch(`${API_URL}/nam-danh-gia`, { headers: authHeaders });
+            const response = await apiFetch('nam-danh-gia');
             if (response.ok) {
                 const list = await response.json();
                 setNamList(list);
@@ -40,7 +40,7 @@ const QL_GioThucHien = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_URL}/gio-thuc-hien?idNam=${selectedYear}`, { headers: authHeaders });
+            const response = await apiFetch(`gio-thuc-hien?idNam=${selectedYear}`);
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
@@ -162,9 +162,8 @@ const QL_GioThucHien = () => {
         };
 
         try {
-            const res = await fetch(`${API_URL}/gio-thuc-hien`, {
+            const res = await apiFetch('gio-thuc-hien', {
                 method: 'POST',
-                headers: { ...authHeaders, 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             const result = await res.json();

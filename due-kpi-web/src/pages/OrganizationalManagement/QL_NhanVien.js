@@ -35,27 +35,25 @@ const QL_NhanVien = () => {
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-    const token = localStorage.getItem('accessToken');
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
     const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
     const canManage = isAdmin || isManager;
-    const authHeaders = { 'Authorization': `Bearer ${token}` };
 
     useEffect(() => {
         fetchData();
         fetchDropdownData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchDropdownData = async () => {
         try {
-            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
             const [dvRes, cvRes, cdRes, qlRes] = await Promise.all([
-                fetch(`${baseUrl}/don-vi`, { headers: authHeaders }),
-                fetch(`${baseUrl}/chuc-vu`, { headers: authHeaders }),
-                fetch(`${baseUrl}/chuc-danh`, { headers: authHeaders }),
-                fetch(`${baseUrl}/nhan-vien`, { headers: authHeaders })
+                apiFetch('don-vi'),
+                apiFetch('chuc-vu'),
+                apiFetch('chuc-danh'),
+                apiFetch('nhan-vien')
             ]);
 
             if (dvRes.ok) setDonViList(await dvRes.json());
@@ -68,7 +66,7 @@ const QL_NhanVien = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/nhan-vien`, { headers: authHeaders });
+            const response = await apiFetch('nhan-vien');
             if (response.ok) {
                 const result = await response.json();
                 setData(result); setFilteredData(result);
@@ -99,8 +97,8 @@ const QL_NhanVien = () => {
         };
         if (editId) payload.IdNhanVien = editId;
 
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/nhan-vien`, {
-            method, headers: { ...authHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        const response = await apiFetch('nhan-vien', {
+            method, body: JSON.stringify(payload)
         });
 
         if (response.ok) { fetchData(); closeModal(); } else alert("Lưu thất bại! Vui lòng kiểm tra lại dữ liệu");
@@ -126,7 +124,7 @@ const QL_NhanVien = () => {
         confirmDeleteDialog({
             header: 'Xác nhận xóa', message: 'Bạn có chắc chắn muốn xóa nhân viên này?',
             accept: async () => {
-                await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/nhan-vien?id=${id}`, { method: 'DELETE', headers: authHeaders });
+                await apiFetch(`nhan-vien?id=${id}`, { method: 'DELETE' });
                 fetchData();
             }
         });

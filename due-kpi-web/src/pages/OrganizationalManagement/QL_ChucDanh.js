@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import '../../css/Pages.css';
-import QL_ChucDanhListing from '../../components/OrganizationalManagement/QL_ChucDanh/QL_ChucDanhListing';
-import QL_ChucDanhForm from '../../components/OrganizationalManagement/QL_ChucDanh/QL_ChucDanhForm';
+import QLChucDanhListing from '../../components/OrganizationalManagement/QL_ChucDanh/QL_ChucDanhListing';
+import QLChucDanhForm from '../../components/OrganizationalManagement/QL_ChucDanh/QL_ChucDanhForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
+import { apiFetch } from '../../utils/api';
 
 const QL_ChucDanh = () => {
     const initialForm = { MaChucDanh: '', TenChucDanh: '', MoTa: '', TrangThai: true };
@@ -15,7 +16,6 @@ const QL_ChucDanh = () => {
     const [editId, setEditId] = useState(null);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
-    const token = localStorage.getItem('accessToken');
     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
@@ -23,14 +23,15 @@ const QL_ChucDanh = () => {
     const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
     const canManage = isAdmin || isManager;
 
-    const authHeaders = { 'Authorization': `Bearer ${token}` };
-
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => {
+        fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/chuc-danh`, { headers: authHeaders });
+            const response = await apiFetch('chuc-danh');
             if (response.ok) {
                 const result = await response.json();
                 setData(result); setFilteredData(result);
@@ -51,8 +52,8 @@ const QL_ChucDanh = () => {
         const method = editId ? 'PUT' : 'POST';
 
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api'}/chuc-danh`, {
-                method, headers: { ...authHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify(formData)
+            const response = await apiFetch('chuc-danh', {
+                method, body: JSON.stringify(formData)
             });
 
             if (response.ok) {
@@ -69,7 +70,7 @@ const QL_ChucDanh = () => {
         confirmDeleteDialog({
             header: 'Xác nhận xóa', message: 'Bạn có chắc chắn muốn xóa Chức danh này?',
             accept: async () => {
-                const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/chuc-danh?id=${id}`, { method: 'DELETE', headers: authHeaders });
+                const res = await apiFetch(`chuc-danh?id=${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     const result = await res.json();
                     if (result.status === "success") fetchData(); else alert(result.message);
@@ -98,14 +99,14 @@ const QL_ChucDanh = () => {
                 </div>
             </div>
 
-            <QL_ChucDanhListing
+            <QLChucDanhListing
                 data={filteredData}
                 onEdit={(item) => { if (!canManage) return; setEditId(item.IdChucDanh); setFormData(item); setIsModalOpen(true); }}
                 onDelete={canManage ? handleDelete : () => { }}
                 isLoading={isLoading}
             />
 
-            <QL_ChucDanhForm
+            <QLChucDanhForm
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 onSubmit={handleSubmit}

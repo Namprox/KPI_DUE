@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../css/Pages.css';
-import QL_ThangDiemListing from '../../components/CriteriaManagement/QL_ThangDiem/QL_ThangDiemListing';
-import QL_ThangDiemForm from '../../components/CriteriaManagement/QL_ThangDiem/QL_ThangDiemForm';
+import QLThangDiemListing from '../../components/CriteriaManagement/QL_ThangDiem/QL_ThangDiemListing';
+import QLThangDiemForm from '../../components/CriteriaManagement/QL_ThangDiem/QL_ThangDiemForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
@@ -171,7 +171,7 @@ const QL_ThangDiem = () => {
                 </div>
             </div>
 
-            <QL_ThangDiemListing
+            <QLThangDiemListing
                 data={filteredData}
                 onEdit={canManage ? handleEdit : () => { }}
                 onDelete={canManage ? handleDelete : () => { }}
@@ -179,7 +179,7 @@ const QL_ThangDiem = () => {
                 canManage={canManage}
             />
 
-            <QL_ThangDiemForm
+            <QLThangDiemForm
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 onSubmit={handleSubmit}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../css/Pages.css';
-import QL_NamDanhGiaListing from '../../components/PlanManagement/QL_NamDanhGia/QL_NamDanhGiaListing';
-import QL_NamDanhGiaForm from '../../components/PlanManagement/QL_NamDanhGia/QL_NamDanhGiaForm';
+import QLNamDanhGiaListing from '../../components/PlanManagement/QL_NamDanhGia/QL_NamDanhGiaListing';
+import QLNamDanhGiaForm from '../../components/PlanManagement/QL_NamDanhGia/QL_NamDanhGiaForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
@@ -66,7 +66,7 @@ const QL_NamDanhGia = () => {
                 setFormData(prev => ({ ...prev, TrangThai: autoStatus }));
             }
         }
-    }, [formData.NgayMoTuDanhGia, formData.NgayDongDanhGiaCapTren]);
+    }, [formData.NgayMoTuDanhGia, formData.NgayDongDanhGiaCapTren, formData.TrangThai]);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -242,7 +242,7 @@ const QL_NamDanhGia = () => {
                 </div>
             </div>
 
-            <QL_NamDanhGiaListing
+            <QLNamDanhGiaListing
                 data={filteredData}
                 onEdit={canManage ? handleEdit : () => { }}
                 onDelete={canManage ? handleDelete : () => { }}
@@ -250,7 +250,7 @@ const QL_NamDanhGia = () => {
                 canManage={canManage}
             />
 
-            <QL_NamDanhGiaForm
+            <QLNamDanhGiaForm
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 onSubmit={handleSubmit}

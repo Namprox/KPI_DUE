@@ -4,15 +4,7 @@ import '../../../css/OrganizationalManagement/QL_DonVi.css';
 
 const QL_DonViListing = ({ data, onEdit, onDelete, isLoading, canManage }) => {
     const [first, setFirst] = useState(0);
-    const [isDesktop, setIsDesktop] = useState(true);
     const rows = 20;
-
-    useEffect(() => {
-        const handleResize = () => setIsDesktop(window.innerWidth > 992);
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     useEffect(() => { setFirst(0); }, [data]);
 
