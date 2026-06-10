@@ -38,7 +38,8 @@ const QL_DinhMucGiangVien = () => {
             const response = await apiFetch('dinh-muc-gv');
             if (response.ok) {
                 const result = await response.json();
-                setData(result); setFilteredData(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setData(list); setFilteredData(list);
             }
         } catch (error) { console.error(error); }
         finally { setIsLoading(false); }
@@ -47,14 +48,20 @@ const QL_DinhMucGiangVien = () => {
     const fetchNamList = async () => {
         try {
             const response = await apiFetch('nam-danh-gia');
-            if (response.ok) setNamList(await response.json());
+            if (response.ok) {
+                const result = await response.json();
+                setNamList(result.Items || (Array.isArray(result) ? result : []));
+            }
         } catch (error) { console.error(error); }
     };
 
     const fetchChucDanhList = async () => {
         try {
-            const response = await apiFetch('chuc-danh');
-            if (response.ok) setChucDanhList(await response.json());
+            const response = await apiFetch('chuc-danh-nghe-nghiep');
+            if (response.ok) {
+                const result = await response.json();
+                setChucDanhList(result.Items || (Array.isArray(result) ? result : []));
+            }
         } catch (error) { console.error(error); }
     };
 

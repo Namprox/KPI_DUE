@@ -31,10 +31,11 @@ const QL_ChucDanh = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('chuc-danh');
+            const response = await apiFetch('chuc-danh-nghe-nghiep');
             if (response.ok) {
                 const result = await response.json();
-                setData(result); setFilteredData(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setData(list); setFilteredData(list);
             }
         } catch (error) { console.error(error); }
         finally { setIsLoading(false); }
@@ -52,14 +53,14 @@ const QL_ChucDanh = () => {
         const method = editId ? 'PUT' : 'POST';
 
         try {
-            const response = await apiFetch('chuc-danh', {
+            const response = await apiFetch('chuc-danh-nghe-nghiep', {
                 method, body: JSON.stringify(formData)
             });
 
             if (response.ok) {
                 try {
                     const res = await response.json();
-                    if (res.status === 'success') { fetchData(); closeModal(); } else alert(res.message);
+                    if (res.status === 'success' || res.Success === true) { fetchData(); closeModal(); } else alert(res.message || res.Message);
                 } catch (jsonError) { fetchData(); closeModal(); }
             } else alert("Lưu thất bại! Mã lỗi: " + response.status);
         } catch (error) { alert("Không thể kết nối đến máy chủ!"); }
@@ -70,10 +71,10 @@ const QL_ChucDanh = () => {
         confirmDeleteDialog({
             header: 'Xác nhận xóa', message: 'Bạn có chắc chắn muốn xóa Chức danh này?',
             accept: async () => {
-                const res = await apiFetch(`chuc-danh?id=${id}`, { method: 'DELETE' });
+                const res = await apiFetch(`chuc-danh-nghe-nghiep?id=${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     const result = await res.json();
-                    if (result.status === "success") fetchData(); else alert(result.message);
+                    if (result.status === "success" || result.Success === true) fetchData(); else alert(result.message || result.Message);
                 }
             }
         });

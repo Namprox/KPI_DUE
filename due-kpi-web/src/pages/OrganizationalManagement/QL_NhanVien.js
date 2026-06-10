@@ -52,14 +52,26 @@ const QL_NhanVien = () => {
             const [dvRes, cvRes, cdRes, qlRes] = await Promise.all([
                 apiFetch('don-vi'),
                 apiFetch('chuc-vu'),
-                apiFetch('chuc-danh'),
+                apiFetch('chuc-danh-nghe-nghiep'),
                 apiFetch('nhan-vien')
             ]);
 
-            if (dvRes.ok) setDonViList(await dvRes.json());
-            if (cvRes.ok) setChucVuList(await cvRes.json());
-            if (cdRes.ok) setChucDanhList(await cdRes.json());
-            if (qlRes.ok) setQuanLyList(await qlRes.json());
+            if (dvRes.ok) {
+                const res = await dvRes.json();
+                setDonViList(res.Items || (Array.isArray(res) ? res : []));
+            }
+            if (cvRes.ok) {
+                const res = await cvRes.json();
+                setChucVuList(res.Items || (Array.isArray(res) ? res : []));
+            }
+            if (cdRes.ok) {
+                const res = await cdRes.json();
+                setChucDanhList(res.Items || (Array.isArray(res) ? res : []));
+            }
+            if (qlRes.ok) {
+                const res = await qlRes.json();
+                setQuanLyList(res.Items || (Array.isArray(res) ? res : []));
+            }
         } catch (error) { console.error("Lỗi tải dữ liệu dropdown:", error); }
     };
 
@@ -69,7 +81,8 @@ const QL_NhanVien = () => {
             const response = await apiFetch('nhan-vien');
             if (response.ok) {
                 const result = await response.json();
-                setData(result); setFilteredData(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setData(list); setFilteredData(list);
             }
         } catch (error) { console.error(error); }
         finally { setIsLoading(false); }
