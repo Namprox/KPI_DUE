@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLNhomTieuChiListing from '../../components/CriteriaManagement/QL_NhomTieuChi/QL_NhomTieuChiListing';
 import QLNhomTieuChiForm from '../../components/CriteriaManagement/QL_NhomTieuChi/QL_NhomTieuChiForm';
@@ -26,7 +27,8 @@ const QL_NhomTieuChi = () => {
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
@@ -41,11 +43,12 @@ const QL_NhomTieuChi = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('nhom-tieu-chi');
+            const response = await apiFetch('nhomtieuchi');
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
-                setFilteredData(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setData(list);
+                setFilteredData(list);
             }
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
@@ -82,7 +85,7 @@ const QL_NhomTieuChi = () => {
         };
         if (editId) payload.IdNhom = editId;
 
-        const response = await apiFetch('nhom-tieu-chi', {
+        const response = await apiFetch('nhomtieuchi', {
             method,
             body: JSON.stringify(payload)
         });

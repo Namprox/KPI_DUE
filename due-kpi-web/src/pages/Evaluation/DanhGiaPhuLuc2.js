@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../../css/Pages.css';
 import '../../css/Evaluation/DanhGiaPhuLuc2.css';
@@ -33,7 +34,8 @@ const DanhGiaPhuLuc2 = () => {
 
     const toast = useRef(null);
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -48,12 +50,13 @@ const DanhGiaPhuLuc2 = () => {
         const fetchYears = async () => {
             const currentRealYear = new Date().getFullYear();
             try {
-                const res = await apiFetch('nam-danh-gia');
+                const res = await apiFetch('namdanhgia');
                 const result = await res.json();
+                const listNam = result.Items || (Array.isArray(result) ? result : []);
 
-                if (Array.isArray(result) && result.length > 0) {
-                    setYearDetails(result);
-                    const years = result.map(item => item.IdNam || item.id_nam || item.NamHoc || item.nam).filter(y => y != null && !isNaN(y));
+                if (listNam.length > 0) {
+                    setYearDetails(listNam);
+                    const years = listNam.map(item => item.IdNam || item.id_nam || item.NamHoc || item.nam).filter(y => y != null && !isNaN(y));
                     const uniqueYears = [...new Set(years)].sort((a, b) => b - a);
 
                     if (uniqueYears.length > 0) {
@@ -82,9 +85,10 @@ const DanhGiaPhuLuc2 = () => {
         const fetchDinhMuc = async () => {
             if (!currentUser.IdChucDanh) return;
             try {
-                const res = await apiFetch('dinh-muc-gv');
+                const res = await apiFetch('dinhmucgiangvien');
                 if (res.ok) {
-                    const listDinhMuc = await res.json();
+                    const resJson = await res.json();
+                    const listDinhMuc = resJson.Items || (Array.isArray(resJson) ? resJson : []);
                     const dm = listDinhMuc.find(x => x.IdNam === selectedYear && x.IdChucDanh === currentUser.IdChucDanh);
                     if (dm) {
                         setDinhMucHienTai({ gioGiang: dm.GioGiangLyThuyet, gioNckh: dm.GioNckh });
@@ -98,16 +102,16 @@ const DanhGiaPhuLuc2 = () => {
         const fetchGioThucTe = async () => {
             if (!currentUser.IdNhanVien || !selectedYear) return;
             try {
-                const url = `gio-thuc-hien?idNhanVien=${currentUser.IdNhanVien}&idNam=${selectedYear}`;
+                const url = `giothuchiengv?idNhanVien=${currentUser.IdNhanVien}&idNam=${selectedYear}`;
                 const res = await apiFetch(url);
 
                 if (res.ok) {
                     const result = await res.json();
                     if (result.success && result.data) {
                         setGioThucTe({
-                             gioGiang: parseFloat(result.data.gio_giang_thuc_te) || 0,
-                             gioNckh: parseFloat(result.data.gio_nckh_thuc_te) || 0,
-                             soLopVuot: parseInt(result.data.so_lop_vuot) || 0
+                            gioGiang: parseFloat(result.data.gio_giang_thuc_te) || 0,
+                            gioNckh: parseFloat(result.data.gio_nckh_thuc_te) || 0,
+                            soLopVuot: parseInt(result.data.so_lop_vuot) || 0
                         });
                     }
                 }
@@ -748,7 +752,7 @@ const DanhGiaPhuLuc2 = () => {
                     <div>
                         <h2 style={{ margin: 0 }}>ĐÁNH GIÁ PHỤ LỤC 2</h2>
                         <span className="breadcrumb phu-luc-2-breadcrumb">
-                            Giảng viên: {currentUser.FullName || 'Người dùng'}
+                            Giảng viên: {currentUser.HoTen || 'Người dùng'}
                         </span>
                     </div>
 

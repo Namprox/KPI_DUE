@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLTieuChiListing from '../../components/CriteriaManagement/QL_TieuChi/QL_TieuChiListing';
 import QLTieuChiForm from '../../components/CriteriaManagement/QL_TieuChi/QL_TieuChiForm';
@@ -33,7 +34,8 @@ const QL_TieuChi = () => {
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
@@ -50,11 +52,12 @@ const QL_TieuChi = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('tieu-chi');
+            const response = await apiFetch('tieuchidanhgia');
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
-                setFilteredData(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setData(list);
+                setFilteredData(list);
             }
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
@@ -65,10 +68,11 @@ const QL_TieuChi = () => {
 
     const fetchNhomTieuChi = async () => {
         try {
-            const response = await apiFetch('tieu-chi?type=nhom-tieu-chi');
+            const response = await apiFetch('nhomtieuchi');
             if (response.ok) {
                 const result = await response.json();
-                setNhomTieuChiList(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setNhomTieuChiList(list);
             }
         } catch (error) {
             console.error("Lỗi tải danh sách nhóm tiêu chí:", error);
@@ -77,10 +81,11 @@ const QL_TieuChi = () => {
 
     const fetchNamDanhGia = async () => {
         try {
-            const response = await apiFetch('nam-danh-gia');
+            const response = await apiFetch('namdanhgia');
             if (response.ok) {
                 const result = await response.json();
-                setNamDanhGiaList(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setNamDanhGiaList(list);
             }
         } catch (error) {
             console.error("Lỗi tải danh sách năm đánh giá:", error);
@@ -121,7 +126,7 @@ const QL_TieuChi = () => {
         };
         if (editId) payload.IdTieuChi = editId;
 
-        const response = await apiFetch('tieu-chi', {
+        const response = await apiFetch('tieuchidanhgia', {
             method,
             body: JSON.stringify(payload)
         });

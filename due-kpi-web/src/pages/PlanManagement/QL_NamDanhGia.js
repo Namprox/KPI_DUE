@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLNamDanhGiaListing from '../../components/PlanManagement/QL_NamDanhGia/QL_NamDanhGiaListing';
 import QLNamDanhGiaForm from '../../components/PlanManagement/QL_NamDanhGia/QL_NamDanhGiaForm';
@@ -29,7 +30,8 @@ const QL_NamDanhGia = () => {
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
@@ -71,11 +73,12 @@ const QL_NamDanhGia = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('nam-danh-gia');
+            const response = await apiFetch('namdanhgia');
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
-                setFilteredData(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setData(list);
+                setFilteredData(list);
             }
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
@@ -149,7 +152,7 @@ const QL_NamDanhGia = () => {
             TrangThai: parseInt(formData.TrangThai)
         };
 
-        const response = await apiFetch('nam-danh-gia', {
+        const response = await apiFetch('namdanhgia', {
             method,
             body: JSON.stringify(payload)
         });

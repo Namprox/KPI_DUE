@@ -1,30 +1,52 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import 'primereact/resources/themes/lara-light-blue/theme.css';
-import 'primereact/resources/primereact.min.css';
-import 'primeicons/primeicons.css';
-import { PrimeReactProvider } from 'primereact/api';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import "primereact/resources/themes/lara-light-blue/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
+import { PrimeReactProvider } from "primereact/api";
 
-import { ConfirmDialog } from 'primereact/confirmdialog';
-import { Toast } from 'primereact/toast';
-import './App.css';
+import { ConfirmDialog } from "primereact/confirmdialog";
+import { Toast } from "primereact/toast";
+import "./App.css";
 
-import Sidebar from './components/Sidebar';
-import Login from './pages/Login';
-import TopBar from './layout/TopBar';
-import AppRoutes from './routes/AppRoutes';
-import ChangePasswordDialog from './modals/ChangePasswordDialog';
-import { useConfirmLogoutDialog } from './hooks/useConfirmLogoutDialog';
+import Sidebar from "./components/Sidebar";
+import Login from "./pages/Login";
+import TopBar from "./layout/TopBar";
+import AppRoutes from "./routes/AppRoutes";
+import ChangePasswordDialog from "./modals/ChangePasswordDialog";
+import { useConfirmLogoutDialog } from "./hooks/useConfirmLogoutDialog";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+
+const FullScreenLoader = () => (
+  <div
+    style={{
+      height: "100vh",
+      width: "100vw",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#003399",
+    }}
+  >
+    <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: "32px" }}></i>
+  </div>
+);
 
 const AppContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const toast = useRef(null);
   const userMenuRef = useRef(null);
-  const isLoginPage = location.pathname === '/login';
+  const isLoginPage = location.pathname === "/login";
 
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
-  const isAuthenticated = !!user;
+  const { user, isAuthenticated, loading, logout } = useAuth();
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
@@ -34,10 +56,9 @@ const AppContent = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 992);
 
   useEffect(() => {
-    const handleStorageChange = () => setUser(JSON.parse(localStorage.getItem('user')));
-
     const handleClickOutside = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setIsUserDropdownOpen(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target))
+        setIsUserDropdownOpen(false);
     };
 
     const handleResize = () => {
@@ -47,23 +68,27 @@ const AppContent = () => {
       else setIsSidebarCollapsed(true);
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('resize', handleResize);
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("resize", handleResize);
 
     handleResize();
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('resize', handleResize);
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
   const { confirmLogoutDialog } = useConfirmLogoutDialog();
-  const handleLogout = () => confirmLogoutDialog({
-    accept: () => { localStorage.removeItem('user'); window.location.href = '/login'; }
-  });
+  const handleLogout = () =>
+    confirmLogoutDialog({
+      accept: async () => {
+        await logout();
+        navigate("/login");
+      },
+    });
+
+  if (loading) return <FullScreenLoader />;
 
   if (!isAuthenticated && !isLoginPage) return <Navigate to="/login" replace />;
   if (isAuthenticated && isLoginPage) return <Navigate to="/" replace />;
@@ -74,12 +99,18 @@ const AppContent = () => {
       <ConfirmDialog />
 
       {isLoginPage ? (
-        <Routes><Route path="/login" element={<Login />} /></Routes>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+        </Routes>
       ) : (
-        <div className={`admin-container ${isSidebarCollapsed && !isMobile ? 'collapsed' : ''}`}>
-
+        <div
+          className={`admin-container ${isSidebarCollapsed && !isMobile ? "collapsed" : ""}`}
+        >
           {isMobile && !isSidebarCollapsed && (
-            <div className="mobile-backdrop" onClick={() => setIsSidebarCollapsed(true)}></div>
+            <div
+              className="mobile-backdrop"
+              onClick={() => setIsSidebarCollapsed(true)}
+            ></div>
           )}
 
           <Sidebar
@@ -110,7 +141,9 @@ const AppContent = () => {
               setIsPassModalOpen={setIsPassModalOpen}
             />
             <div className="page-wrapper">
-              <AppRoutes triggerNotification={() => setNotifCount(prev => prev + 1)} />
+              <AppRoutes
+                triggerNotification={() => setNotifCount((prev) => prev + 1)}
+              />
             </div>
           </div>
         </div>
@@ -129,9 +162,11 @@ const AppContent = () => {
 export default function App() {
   return (
     <PrimeReactProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
     </PrimeReactProvider>
   );
 }

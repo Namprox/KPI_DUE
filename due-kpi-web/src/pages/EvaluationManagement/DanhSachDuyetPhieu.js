@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../../css/Pages.css';
 import { Toast } from 'primereact/toast';
@@ -11,7 +12,8 @@ const DanhSachDuyetPhieu = () => {
 
     const navigate = useNavigate();
     const toast = useRef(null);
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
     const API_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
     const roleName = (currentUser.RoleName || currentUser.TenChucVu || '').toLowerCase();
@@ -27,11 +29,12 @@ const DanhSachDuyetPhieu = () => {
             if (!isAdmin && !isManager) return;
 
             try {
-                const res = await apiFetch('nam-danh-gia');
+                const res = await apiFetch('namdanhgia');
                 const result = await res.json();
+                const list = result.Items || (Array.isArray(result) ? result : []);
 
-                if (Array.isArray(result) && result.length > 0) {
-                    const years = result.map(item => item.IdNam || item.id_nam || item.NamHoc || item.nam).filter(y => y != null && !isNaN(y));
+                if (list.length > 0) {
+                    const years = list.map(item => item.IdNam || item.id_nam || item.NamHoc || item.nam).filter(y => y != null && !isNaN(y));
                     const uniqueYears = [...new Set(years)].sort((a, b) => b - a);
 
                     if (uniqueYears.length > 0) {

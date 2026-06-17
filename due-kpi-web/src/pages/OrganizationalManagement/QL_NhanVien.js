@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import UserListing from '../../components/OrganizationalManagement/QL_NhanVien/QL_NhanVienListing';
 import UserForm from '../../components/OrganizationalManagement/QL_NhanVien/QL_NhanVienForm';
@@ -34,7 +35,8 @@ const QL_NhanVien = () => {
     const [quanLyList, setQuanLyList] = useState([]);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
@@ -50,8 +52,8 @@ const QL_NhanVien = () => {
     const fetchDropdownData = async () => {
         try {
             const [dvRes, cvRes, cdRes, qlRes] = await Promise.all([
-                apiFetch('don-vi'),
-                apiFetch('chuc-vu'),
+                apiFetch('donvi'),
+                apiFetch('chucvu'),
                 apiFetch('chuc-danh-nghe-nghiep'),
                 apiFetch('nhan-vien')
             ]);
@@ -137,7 +139,7 @@ const QL_NhanVien = () => {
         confirmDeleteDialog({
             header: 'Xác nhận xóa', message: 'Bạn có chắc chắn muốn xóa nhân viên này?',
             accept: async () => {
-                await apiFetch(`nhan-vien?id=${id}`, { method: 'DELETE' });
+                await apiFetch(`nhanvien?id=${id}`, { method: 'DELETE' });
                 fetchData();
             }
         });

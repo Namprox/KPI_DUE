@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLDinhMucListing from '../../components/PlanManagement/QL_DinhMuc/QL_DinhMucListing';
 import QLDinhMucForm from '../../components/PlanManagement/QL_DinhMuc/QL_DinhMucForm';
@@ -18,7 +19,8 @@ const QL_DinhMucGiangVien = () => {
     const [editId, setEditId] = useState(null);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
@@ -35,7 +37,7 @@ const QL_DinhMucGiangVien = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('dinh-muc-gv');
+            const response = await apiFetch('dinhmucgiangvien');
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);
@@ -47,7 +49,7 @@ const QL_DinhMucGiangVien = () => {
 
     const fetchNamList = async () => {
         try {
-            const response = await apiFetch('nam-danh-gia');
+            const response = await apiFetch('namdanhgia');
             if (response.ok) {
                 const result = await response.json();
                 setNamList(result.Items || (Array.isArray(result) ? result : []));
@@ -79,7 +81,7 @@ const QL_DinhMucGiangVien = () => {
         if (!canManage) return;
         const method = editId ? 'PUT' : 'POST';
         try {
-            const response = await apiFetch('dinh-muc-gv', {
+            const response = await apiFetch('dinhmucgiangvien', {
                 method, body: JSON.stringify(formData)
             });
             if (response.ok) { fetchData(); closeModal(); } else alert("Lưu thất bại!");

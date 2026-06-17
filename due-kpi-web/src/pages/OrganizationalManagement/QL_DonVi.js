@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import DonViListing from '../../components/OrganizationalManagement/QL_DonVi/QL_DonViListing';
 import DonViForm from '../../components/OrganizationalManagement/QL_DonVi/QL_DonViForm';
@@ -26,7 +27,8 @@ const QL_DonVi = () => {
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
@@ -41,11 +43,12 @@ const QL_DonVi = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('don-vi');
+            const response = await apiFetch('donvi');
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
-                setFilteredData(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setData(list);
+                setFilteredData(list);
             }
         } catch (error) { console.error(error); }
         finally { setIsLoading(false); }
@@ -75,7 +78,7 @@ const QL_DonVi = () => {
         };
         if (editId) payload.IdDonVi = editId;
 
-        const response = await apiFetch('don-vi', {
+        const response = await apiFetch('donvi', {
             method,
             body: JSON.stringify(payload)
         });

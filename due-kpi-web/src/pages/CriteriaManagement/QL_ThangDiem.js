@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLThangDiemListing from '../../components/CriteriaManagement/QL_ThangDiem/QL_ThangDiemListing';
 import QLThangDiemForm from '../../components/CriteriaManagement/QL_ThangDiem/QL_ThangDiemForm';
@@ -21,7 +22,8 @@ const QL_ThangDiem = () => {
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
@@ -37,11 +39,12 @@ const QL_ThangDiem = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('thang-diem');
+            const response = await apiFetch('thangdiem');
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
-                setFilteredData(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setData(list);
+                setFilteredData(list);
             }
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
@@ -53,8 +56,11 @@ const QL_ThangDiem = () => {
 
     const fetchTieuChi = async () => {
         try {
-            const response = await apiFetch('tieu-chi');
-            if (response.ok) setTieuChiList(await response.json());
+            const response = await apiFetch('tieuchidanhgia');
+            if (response.ok) {
+                const res = await response.json();
+                setTieuChiList(res.Items || (Array.isArray(res) ? res : []));
+            }
         } catch (error) {
             console.error("Lỗi tải danh sách tiêu chí:", error);
         }
@@ -86,7 +92,7 @@ const QL_ThangDiem = () => {
         };
         if (editId) payload.IdThangDiem = editId;
 
-        const response = await apiFetch('thang-diem', {
+        const response = await apiFetch('thangdiem', {
             method,
             body: JSON.stringify(payload)
         });

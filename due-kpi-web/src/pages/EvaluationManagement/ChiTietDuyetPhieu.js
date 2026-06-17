@@ -51,14 +51,15 @@ const ChiTietDuyetPhieu = () => {
             try {
                 const [resPhieu, resNam] = await Promise.all([
                     apiFetch(`scoring?idNam=${year}&idNhanVien=${idNhanVien}&t=${new Date().getTime()}`),
-                    apiFetch('nam-danh-gia')
+                    apiFetch('namdanhgia')
                 ]);
 
                 const result = await resPhieu.json();
                 const resultNam = await resNam.json();
+                const listNam = resultNam.Items || (Array.isArray(resultNam) ? resultNam : []);
 
-                if (Array.isArray(resultNam)) {
-                    const activeYear = resultNam.find(y => y.IdNam === parseInt(year));
+                if (listNam.length > 0) {
+                    const activeYear = listNam.find(y => y.IdNam === parseInt(year));
                     if (activeYear) {
                         const now = new Date().getTime();
                         const start = activeYear.NgayMoDanhGiaCapTren ? parseNetDate(activeYear.NgayMoDanhGiaCapTren).getTime() : 0;

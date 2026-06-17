@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLChucDanhListing from '../../components/OrganizationalManagement/QL_ChucDanh/QL_ChucDanhListing';
 import QLChucDanhForm from '../../components/OrganizationalManagement/QL_ChucDanh/QL_ChucDanhForm';
@@ -16,7 +17,8 @@ const QL_ChucDanh = () => {
     const [editId, setEditId] = useState(null);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
     const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');

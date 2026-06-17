@@ -38,7 +38,7 @@ const TopBar = ({
                         <div className="user-avatar-circle">
                             {user?.AvatarUrl ? (
                                 <img src={user.AvatarUrl} alt="Avatar" />
-                            ) : (user?.FirstName?.charAt(0) || 'U')}
+                            ) : (user?.HoTen.trim().split(/\s+/).pop()[0] || 'U')}
                         </div>
                     </div>
 
@@ -48,7 +48,7 @@ const TopBar = ({
                                 <div className="avatar-large">
                                     {user?.AvatarUrl ? (
                                         <img src={user.AvatarUrl} alt="Avatar" />
-                                    ) : (user?.FirstName?.charAt(0) || 'U')}
+                                    ) : (user?.HoTen.trim().split(/\s+/).pop()[0] || 'U')}
                                 </div>
                                 <div style={{ overflow: 'hidden' }}>
                                     <strong style={{ display: 'block', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>

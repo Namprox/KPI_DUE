@@ -28,9 +28,10 @@ const QL_GioThucHien = () => {
 
     const fetchNamList = async () => {
         try {
-            const response = await apiFetch('nam-danh-gia');
+            const response = await apiFetch('namdanhgia');
             if (response.ok) {
-                const list = await response.json();
+                const res = await response.json();
+                const list = res.Items || (Array.isArray(res) ? res : []);
                 setNamList(list);
                 if (list.length > 0) setSelectedYear(list[0].IdNam);
             }
@@ -40,7 +41,7 @@ const QL_GioThucHien = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch(`gio-thuc-hien?idNam=${selectedYear}`);
+            const response = await apiFetch(`giothuchiengv?idNam=${selectedYear}`);
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
@@ -162,7 +163,7 @@ const QL_GioThucHien = () => {
         };
 
         try {
-            const res = await apiFetch('gio-thuc-hien', {
+            const res = await apiFetch('giothuchiengv', {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });

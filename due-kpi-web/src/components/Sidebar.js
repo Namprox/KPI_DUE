@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../css/Sidebar.css';
 import logoImage from '../images/logo.png';
+import { useAuth } from '../context/AuthContext';
 
 const menuStructure = {
     evaluation: [
@@ -32,7 +33,8 @@ const menuStructure = {
 };
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
-    const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || {});
+    const { user: authUser, logout } = useAuth();
+    const user = authUser || {};
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -49,15 +51,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
     const isAdmin = ADMIN_ROLES.has(roleCode);
     const isManager = MANAGER_ROLES.has(roleCode);
     const canManageSystem = isAdmin || isManager;
-
-    useEffect(() => {
-        const handleSyncUser = () => {
-            const updatedUser = JSON.parse(localStorage.getItem('user')) || {};
-            setUser(updatedUser);
-        };
-        window.addEventListener('storage', handleSyncUser);
-        return () => window.removeEventListener('storage', handleSyncUser);
-    }, []);
 
     useEffect(() => {
         const currentPath = location.pathname;
@@ -78,10 +71,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         return menuStructure[menuKey].some(item => item.path === location.pathname);
     };
 
-    const handleLogout = (e) => {
+    const handleLogout = async (e) => {
         e.stopPropagation();
-        localStorage.removeItem('user');
-        localStorage.removeItem('accessToken');
+        // Gọi POST /api/auth/logout (server thu hồi token + xoá cookie httpOnly).
+        await logout();
         navigate('/login');
     };
 

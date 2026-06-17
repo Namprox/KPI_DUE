@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLMauDanhGiaListing from '../../components/PlanManagement/QL_MauDanhGia/QL_MauDanhGiaListing';
 import QLMauDanhGiaForm from '../../components/PlanManagement/QL_MauDanhGia/QL_MauDanhGiaForm';
@@ -22,7 +23,8 @@ const QL_MauDanhGia = () => {
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
@@ -39,11 +41,12 @@ const QL_MauDanhGia = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('mau-danh-gia');
+            const response = await apiFetch('maudanhgia');
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
-                setFilteredData(result);
+                const list = result.Items || (Array.isArray(result) ? result : []);
+                setData(list);
+                setFilteredData(list);
             }
         } catch (error) {
             console.error("Lỗi tải dữ liệu:", error);
@@ -54,8 +57,11 @@ const QL_MauDanhGia = () => {
 
     const fetchNamDanhGia = async () => {
         try {
-            const response = await apiFetch('nam-danh-gia');
-            if (response.ok) setNamList(await response.json());
+            const response = await apiFetch('namdanhgia');
+            if (response.ok) {
+                const res = await response.json();
+                setNamList(res.Items || (Array.isArray(res) ? res : []));
+            }
         } catch (error) {
             console.error("Lỗi tải danh sách năm:", error);
         }
@@ -63,8 +69,11 @@ const QL_MauDanhGia = () => {
 
     const fetchTieuChi = async () => {
         try {
-            const response = await apiFetch('tieu-chi');
-            if (response.ok) setTieuChiList(await response.json());
+            const response = await apiFetch('tieuchidanhgia');
+            if (response.ok) {
+                const res = await response.json();
+                setTieuChiList(res.Items || (Array.isArray(res) ? res : []));
+            }
         } catch (error) {
             console.error("Lỗi tải danh sách tiêu chí:", error);
         }
@@ -94,7 +103,7 @@ const QL_MauDanhGia = () => {
         };
         if (editId) payload.IdMau = editId;
 
-        const response = await apiFetch('mau-danh-gia', {
+        const response = await apiFetch('maudanhgia', {
             method,
             body: JSON.stringify(payload)
         });

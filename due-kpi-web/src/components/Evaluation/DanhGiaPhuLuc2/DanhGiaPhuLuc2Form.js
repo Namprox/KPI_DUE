@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import { Dialog } from 'primereact/dialog';
 import { apiFetch } from '../../../utils/api';
 
@@ -13,7 +14,8 @@ const DanhGiaPhuLuc2Form = ({
     const [isLoadingScience, setIsLoadingScience] = useState(false);
     const [activeTieuChiId, setActiveTieuChiId] = useState(null);
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     const groupedCriteria = criteriaList.reduce((groups, item) => {
         const group = (groups[item.TenNhom] || []);

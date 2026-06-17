@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLNhomNhiemVuListing from '../../components/CriteriaManagement/QL_NhomNhiemVu/QL_NhomNhiemVuListing';
 import QLNhomNhiemVuForm from '../../components/CriteriaManagement/QL_NhomNhiemVu/QL_NhomNhiemVuForm';
@@ -23,7 +24,8 @@ const QL_NhomNhiemVu = () => {
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
     const roleName = (currentUser?.RoleName || '').toLowerCase();
@@ -38,7 +40,7 @@ const QL_NhomNhiemVu = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('nhom-nhiem-vu');
+            const response = await apiFetch('nhomnhiemvu');
             if (response.ok) {
                 const result = await response.json();
                 if (Array.isArray(result)) {
@@ -83,7 +85,7 @@ const QL_NhomNhiemVu = () => {
         };
         if (editId) payload.IdNhomNv = editId;
 
-        const response = await apiFetch('nhom-nhiem-vu', {
+        const response = await apiFetch('nhomnhiemvu', {
             method,
             body: JSON.stringify(payload)
         });

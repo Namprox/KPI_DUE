@@ -1,69 +1,60 @@
-import { isTokenExpired } from './jwtUtils';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
+let onSessionExpired = null;
+export const setSessionExpiredHandler = (fn) => {
+  onSessionExpired = fn;
+};
 
-let refreshTokenPromise = null;
+let refreshPromise = null;
 
-const handleRefreshToken = async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return null;
+const refreshSession = async () => {
+  if (refreshPromise) return refreshPromise;
 
-    if (refreshTokenPromise) {
-        return refreshTokenPromise;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+      return res.ok;
+    } catch (err) {
+      console.error("Lỗi refresh phiên:", err);
+      return false;
+    } finally {
+      refreshPromise = null;
     }
+  })();
 
-    refreshTokenPromise = (async () => {
-        try {
-            const response = await fetch(`${BASE_URL}/auth/refresh`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 'RefreshToken': refreshToken })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.Success && data.Tokens) {
-                    localStorage.setItem('user', data.User)
-                    localStorage.setItem('accessToken', data.Tokens.AccessToken);
-                    localStorage.setItem('refreshToken', data.Tokens.RefreshToken);
-                    return data.Tokens.AccessToken;
-                }
-            }
-        } catch (err) {
-            console.error("Lỗi refresh token:", err);
-        } finally {
-            refreshTokenPromise = null;
-        }
-        return null;
-    })();
-
-    return refreshTokenPromise;
+  return refreshPromise;
 };
 
 export const apiFetch = async (endpoint, options = {}) => {
-    let token = localStorage.getItem('accessToken');
+  const url = `${BASE_URL}/${endpoint}`;
 
-    if (isTokenExpired(token)) {
-        console.warn("[API Fetch] Token hết hạn. Đang làm mới...");
-        const newToken = await handleRefreshToken();
+  const isAuthEndpoint =
+    endpoint === "auth/refresh" || endpoint === "auth/login";
 
-        if (newToken) {
-            token = newToken;
-        } else {
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            window.location.href = '/login';
-            throw new Error("Session expired");
-        }
+  const buildInit = () => ({
+    ...options,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+  let response = await fetch(url, buildInit());
+
+  if (response.status === 401 && !isAuthEndpoint) {
+    const refreshed = await refreshSession();
+
+    if (refreshed) {
+      response = await fetch(url, buildInit());
+    } else {
+      if (onSessionExpired) onSessionExpired();
     }
+  }
 
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...options.headers
-    };
-
-    const url = `${BASE_URL}/${endpoint}`;
-    return fetch(url, { ...options, headers });
+  return response;
 };

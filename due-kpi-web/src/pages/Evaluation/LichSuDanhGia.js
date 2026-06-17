@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../../css/Pages.css';
 import '../../css/Evaluation/LichSuDanhGia.css';
@@ -9,7 +10,8 @@ const LichSuDanhGia = () => {
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
-    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+    const { user } = useAuth();
+    const currentUser = user || {};
 
     useEffect(() => {
         const fetchHistory = async () => {
