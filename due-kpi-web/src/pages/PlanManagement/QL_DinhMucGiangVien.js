@@ -21,10 +21,9 @@ const QL_DinhMucGiangVien = () => {
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
     const { user } = useAuth();
     const currentUser = user || {};
-    const roleId = currentUser?.IdChucVu || currentUser?.RoleId || 0;
-    const roleName = (currentUser?.RoleName || '').toLowerCase();
-    const isAdmin = roleId === 5 || roleId === 4 || roleName.includes('hiệu trưởng');
-    const isManager = roleId === 3 || roleId === 2 || roleName.includes('trưởng khoa') || roleName.includes('trưởng bộ môn');
+    const roleCode = currentUser?.MaChucVu || '';
+    const isAdmin = roleCode === 'Admin';
+    const isManager = ['HT', 'PHT', 'TK', 'TBM'].includes(roleCode);
     const canManage = isAdmin || isManager;
 
     useEffect(() => {

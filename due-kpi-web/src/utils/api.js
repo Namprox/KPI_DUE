@@ -17,7 +17,9 @@ const refreshSession = async () => {
         method: "POST",
         credentials: "include",
       });
-      return res.ok;
+      if (!res.ok) return false;
+      const data = await res.json().catch(() => null);
+      return data?.Success === true;
     } catch (err) {
       console.error("Lỗi refresh phiên:", err);
       return false;
@@ -51,6 +53,7 @@ export const apiFetch = async (endpoint, options = {}) => {
 
     if (refreshed) {
       response = await fetch(url, buildInit());
+      if (response.status === 401 && onSessionExpired) onSessionExpired();
     } else {
       if (onSessionExpired) onSessionExpired();
     }

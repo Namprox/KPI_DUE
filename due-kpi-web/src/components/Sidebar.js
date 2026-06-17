@@ -44,12 +44,9 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
 
     const isExpanded = !isCollapsed || isHovered;
 
-    const ADMIN_ROLES = new Set(["Admin", "HT", "PHT"]);
-    const MANAGER_ROLES = new Set(["TK", "PTK", "TBM", "PTBM", "TP", "PTP"]);
-
-    const roleCode = user?.MaChucVu;
-    const isAdmin = ADMIN_ROLES.has(roleCode);
-    const isManager = MANAGER_ROLES.has(roleCode);
+    const roleCode = user?.MaChucVu || '';
+    const isAdmin = roleCode === 'Admin';
+    const isManager = ['HT', 'PHT', 'TK', 'TBM'].includes(roleCode);
     const canManageSystem = isAdmin || isManager;
 
     useEffect(() => {

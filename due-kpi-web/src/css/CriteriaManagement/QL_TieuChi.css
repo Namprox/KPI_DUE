@@ -1,10 +1,66 @@
 @media screen and (max-width: 992px) {
-    .tieuchi-table-container {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch;
-    }
+  .tieuchi-table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 
-    .tieuchi-table {
-        min-width: 1200px !important;
-    }
+  .tieuchi-table {
+    min-width: 1200px !important;
+  }
+}
+
+.thangdiem-cell {
+  text-align: center;
+  padding: 10px 8px;
+}
+
+.thangdiem-value {
+  display: inline-flex;
+  padding: 4px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  user-select: none;
+}
+
+.thangdiem-value:not(:last-child) {
+  margin-bottom: 6px;
+}
+
+.thangdiem-value.type-1 {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.thangdiem-value.type-2 {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.thangdiem-value.type-3 {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+}
+
+.thangdiem-value.type-4 {
+  background-color: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.thangdiem-action-link {
+  color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+  display: block;
+  text-decoration: none;
+}
+
+.thangdiem-action-link:hover {
+  color: #0284c7;
+  text-decoration: underline;
 }

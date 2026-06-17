@@ -4,12 +4,18 @@ info:
   version: 1.0.0
 security:
   - bearerAuth: []
+  - cookieAuth: []
 paths:
   /api/auth/login:
     post:
       tags:
         - Auth
       summary: Login
+      description: >-
+        Dang nhap. Khi thanh cong, access token va refresh token duoc set vao
+        2 cookie httpOnly (kpi_access_token, kpi_refresh_token; Path=/;
+        SameSite=Lax; Secure khi HTTPS). Body KHONG con tra Tokens — chi gom
+        Success va User.
       operationId: authLogin
       security: []
       requestBody:
@@ -20,7 +26,15 @@ paths:
               $ref: "#/components/schemas/LoginRequest"
       responses:
         "200":
-          description: OK
+          description: >-
+            OK — set cookie httpOnly kpi_access_token va kpi_refresh_token.
+            Body chi gom Success va User (khong co Tokens).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Thong tin dang nhap khong hop le
           content:
             application/json:
               schema:
@@ -30,17 +44,24 @@ paths:
       tags:
         - Auth
       summary: Refresh tokens
+      description: >-
+        Doc refresh token tu cookie httpOnly kpi_refresh_token (khong nhan
+        body). Neu hop le: cap access token moi, xoay (rotate) refresh token
+        va set lai ca 2 cookie httpOnly. Body chi tra Success. Refresh
+        hong/het han tra 401 va xoa cookie.
       operationId: authRefresh
       security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RefreshTokenRequest"
       responses:
         "200":
-          description: OK
+          description: >-
+            OK — set lai cookie httpOnly kpi_access_token va
+            kpi_refresh_token (da rotate). Body chi gom Success.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Refresh token thieu, khong hop le hoac da het han
           content:
             application/json:
               schema:
@@ -50,21 +71,38 @@ paths:
       tags:
         - Auth
       summary: Logout
+      description: >-
+        Doc refresh token tu cookie httpOnly kpi_refresh_token (khong nhan
+        body) de thu hoi phia server, sau do xoa ca 2 cookie phien
+        (Max-Age=0). Idempotent — khong co cookie van tra 200.
       operationId: authLogout
       security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RefreshTokenRequest"
       responses:
         "200":
-          description: OK
+          description: OK — da thu hoi refresh token va xoa cookie phien
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+  /api/auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Get current user
+      description: >-
+        Tra thong tin nguoi dung dang dang nhap. Access token doc tu cookie
+        httpOnly kpi_access_token hoac header Authorization Bearer (uu tien
+        header). Khong co/khong hop le tra 401.
+      operationId: authMe
+      responses:
+        "200":
+          description: OK — body gom Success va User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Khong co token hoac token khong hop le/het han
   /api/auth/register:
     post:
       tags:
@@ -77,6 +115,29 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /api/auth/change-password:
+    post:
+      tags:
+        - Auth
+      summary: Change password
+      description: >-
+        Doi mat khau cua nguoi dung dang dang nhap. id_nhan_vien lay tu access
+        token (khong nhan tu body). Khi thanh cong, refresh token hien tai bi thu
+        hoi nen client phai dang nhap lai.
+      operationId: authChangePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
       responses:
         "200":
           description: OK
@@ -1010,12 +1071,17 @@ paths:
     get:
       tags:
         - ThangDiem
-      summary: Get all
+      summary: Get all (optionally filter by tieu chi)
+      description: >-
+        Lay danh sach thang diem. Neu truyen tieuChiId se loc thang diem theo
+        tieu chi tuong ung (sap xep theo thu_tu_hien_thi, id_thang_diem);
+        neu khong truyen se tra ve toan bo thang diem.
       operationId: thangDiemGetAll
       parameters:
         - name: tieuChiId
           in: query
           required: false
+          description: Id tieu chi can lay thang diem. Bo trong de lay tat ca.
           schema:
             type: integer
       responses:
@@ -1758,13 +1824,27 @@ paths:
         - PhieuDanhGia
       summary: Finalize a phieu (transition state 4 -> 5 HOAN_TAT)
       description: |
-        Truong-only. Computes diem_chinh_thuc for each chi_tiet, totals
-        per group (Group A capped at 100, Group B uncapped),
-        xep_loai per thresholds (>=95, >=80, >=60), and writes
-        lich_su_cham_diem + lich_su_trang_thai_phieu in a single transaction.
-        If any vi_pham_giang_day row with la_nghiem_trong = 1 exists for
-        the GV in that year, xep_loai is forced to 'Khong hoan thanh'
-        and tong_diem_co_ban is set to 0.
+        Truong-only. In a single transaction the server:
+        - Snapshots the applied dinh muc (after exceptions) and the actual
+          gio giang / gio NCKH into the phieu (gio_*_dinh_muc_ap_dung,
+          he_so_nckh_ap_dung, gio_*_thuc_te_snapshot, ly_do_dieu_chinh_dinh_muc).
+        - Computes xep_loai (1..4) via the fixed QD DHKT rule, NOT raw thresholds:
+            1 Khong hoan thanh: tong_diem_tich_luy < 80, OR DuDinhMucGioNckh = false,
+              OR KhongViPhamPhapLuat = false.
+            2 Hoan thanh: 80 <= tong_diem_tich_luy <= 100 and both conditions met.
+            3 Hoan thanh tot: tong_diem_tich_luy > 100, MucNckhcnQd838 = 1 (year >= 2025).
+            4 Hoan thanh xuat sac: tong_diem_tich_luy > 100, MucNckhcnQd838 = 2 (year >= 2025).
+          For year < 2025 (QD 838 not yet in force) the result is capped at 2 (Hoan thanh)
+          regardless of MucNckhcnQd838.
+        - DuDinhMucGioNckh / KhongViPhamPhapLuat are the Truong's (council) decision and
+          take priority over the server's auto-check (gio NCKH thuc te vs dinh muc, or
+          MienNckh for tap su); a discrepancy is appended to ghi_chu_xep_loai.
+        - Sets diem_chinh_thuc per chi_tiet (snapshot=2 -> diem_khoa first, else diem_truong
+          first), writes lich_su_cham_diem (hanh_dong=3) and lich_su_trang_thai_phieu (4->5,
+          hanh_dong=4). The server recomputes the totals it stores (anti-tamper).
+        Totals are NOT capped and there is no vi_pham_giang_day override (violations are
+        expressed solely via KhongViPhamPhapLuat).
+        On success returns the full phieu detail (xep_loai + all snapshot columns).
       operationId: phieuDanhGiaChot
       parameters:
         - name: id
@@ -1780,7 +1860,15 @@ paths:
               $ref: "#/components/schemas/PhieuChotRequest"
       responses:
         "200":
-          description: OK
+          description: OK - full phieu detail after finalize (xep_loai + snapshot columns populated)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "400":
+          description: >-
+            Bad request - MucNckhcnQd838 missing while year >= 2025-2026,
+            or the GV has no chuc danh / no dinh muc configured for the year.
           content:
             application/json:
               schema:
@@ -2638,6 +2726,534 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VaiTroPvcdResponse"
+  /api/nhan-vien:
+    get:
+      tags:
+        - NhanVien
+      summary: Danh sách nhân viên (danh bạ) có phân trang + lọc
+      description: >
+        Trả về danh sách nhân viên dạng danh bạ, có phân trang. KHÔNG trả các
+        trường nhạy cảm (mat_khau, he_so_phu_cap, refresh_token). Các tham số lọc
+        đều tùy chọn; tham số nào bỏ trống thì không áp dụng điều kiện đó.
+      operationId: nhanVienGetList
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Tìm theo ma_nhan_vien / ho_ten / email (LIKE, không phân biệt vị trí)
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Lọc theo đơn vị
+        - name: idChucVu
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Lọc theo chức vụ áp dụng hiện tại
+        - name: trangThai
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: "Lọc theo trạng thái (true: đang làm việc). Bỏ trống = lấy tất cả."
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Trang hiện tại (mặc định 1)
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 200
+          description: Số dòng mỗi trang (mặc định 20, tối đa 200)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienListResponse"
+        "400":
+          description: Tham số lọc không hợp lệ (idDonVi / idChucVu)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienListResponse"
+        "401":
+          description: Chưa xác thực
+  /api/nhan-vien/{id}/ho-so:
+    put:
+      tags:
+        - NhanVien
+      summary: Cập nhật hồ sơ nhân viên (he_so_phu_cap, gioi_tinh, ngay_sinh)
+      description: >
+        Cập nhật bộ phận: field nào null thì GIỮ NGUYÊN giá trị hiện tại.
+        Phân quyền: he_so_phu_cap CHỈ HR/Admin (Admin/HT/PHT) được cập nhật
+        (ảnh hưởng KPI I.1 — quy tắc phụ cấp ≥ 0.4). gioi_tinh / ngay_sinh: GV
+        tự cập nhật hồ sơ của CHÍNH MÌNH; HR/Admin cập nhật bất kỳ ai.
+      operationId: nhanVienCapNhatHoSo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID nhân viên cần cập nhật
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HoSoNhanVienUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoSoNhanVienResponse"
+        "400":
+          description: Id / giới tính / hệ số phụ cấp không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoSoNhanVienResponse"
+        "401":
+          description: Chưa xác thực
+        "403":
+          description: Không có quyền (GV sửa hồ sơ người khác, hoặc sửa hệ số phụ cấp mà không phải HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoSoNhanVienResponse"
+        "404":
+          description: Không tìm thấy nhân viên
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoSoNhanVienResponse"
+        "409":
+          description: Lỗi nghiệp vụ khi cập nhật hồ sơ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoSoNhanVienResponse"
+  /api/nhan-vien-chuc-vu/by-nhan-vien/{idNv}:
+    get:
+      tags:
+        - NhanVienChucVu
+      summary: List chức vụ kiêm nhiệm của nhân viên active tại ngày cho trước
+      operationId: nhanVienChucVuListByNhanVien
+      parameters:
+        - name: idNv
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID nhân viên
+        - name: atDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2026-05-29"
+          description: Ngày xét (YYYY-MM-DD). Không truyền = hôm nay (GETDATE()).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "400":
+          description: atDate sai định dạng hoặc idNv không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "401":
+          description: Chưa xác thực
+  /api/nhan-vien-chuc-vu:
+    post:
+      tags:
+        - NhanVienChucVu
+      summary: Thêm chức vụ kiêm nhiệm cho nhân viên (HR/Admin)
+      operationId: nhanVienChucVuCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhanVienChucVuCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "400":
+          description: Dữ liệu không hợp lệ (TuNgay > DenNgay, …)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "403":
+          description: Không có quyền (chỉ HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "409":
+          description: Lỗi nghiệp vụ (nhân viên / chức vụ không tìm thấy, …)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+  /api/nhan-vien-chuc-vu/{id}:
+    put:
+      tags:
+        - NhanVienChucVu
+      summary: Cập nhật DenNgay / GhiChu (HR/Admin)
+      operationId: nhanVienChucVuUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_nv_chuc_vu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhanVienChucVuUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "400":
+          description: DenNgay < TuNgay hoặc GhiChu quá dài
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "403":
+          description: Không có quyền (chỉ HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "404":
+          description: Không tìm thấy bản ghi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+    delete:
+      tags:
+        - NhanVienChucVu
+      summary: Xóa cứng bản ghi chức vụ kiêm nhiệm (HR/Admin)
+      operationId: nhanVienChucVuDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_nv_chuc_vu
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "403":
+          description: Không có quyền (chỉ HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+        "404":
+          description: Không tìm thấy bản ghi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuResponse"
+  # ── Session 5a: NgoaiLeDinhMuc ──────────────────────────────────────────────
+  /api/ngoai-le-dinh-muc/by-nhan-vien-nam/{idNv}/{idNam}:
+    get:
+      tags:
+        - NgoaiLeDinhMuc
+      summary: Lấy toàn bộ ngoại lệ định mức của một GV trong năm (kể cả đã vô hiệu)
+      operationId: ngoaiLeDinhMucListByNhanVienNam
+      parameters:
+        - name: idNv
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_nhan_vien
+        - name: idNam
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Năm đánh giá (VD: 2025)"
+      responses:
+        "200":
+          description: Danh sách ngoại lệ (cả active và inactive)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+        "401":
+          description: Chưa xác thực
+  /api/ngoai-le-dinh-muc:
+    post:
+      tags:
+        - NgoaiLeDinhMuc
+      summary: Tạo ngoại lệ định mức mới (HR/Admin)
+      operationId: ngoaiLeDinhMucCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NgoaiLeDinhMucCreateRequest"
+      responses:
+        "201":
+          description: Tạo thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+        "400":
+          description: Dữ liệu không hợp lệ hoặc vi phạm ràng buộc nghiệp vụ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+        "403":
+          description: Không có quyền (chỉ HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+  /api/ngoai-le-dinh-muc/{id}:
+    get:
+      tags:
+        - NgoaiLeDinhMuc
+      summary: Lấy chi tiết một ngoại lệ theo id
+      operationId: ngoaiLeDinhMucGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_ngoai_le
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+        "404":
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+    put:
+      tags:
+        - NgoaiLeDinhMuc
+      summary: Cập nhật LyDo / MinhChungUrl / DenNgay / TrangThai (HR/Admin)
+      operationId: ngoaiLeDinhMucUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_ngoai_le
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NgoaiLeDinhMucUpdateRequest"
+      responses:
+        "200":
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+        "400":
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+        "403":
+          description: Không có quyền (chỉ HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+        "404":
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+    delete:
+      tags:
+        - NgoaiLeDinhMuc
+      summary: Vô hiệu hóa ngoại lệ — xóa mềm trang_thai=0 (HR/Admin)
+      operationId: ngoaiLeDinhMucDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_ngoai_le
+      responses:
+        "200":
+          description: Đã vô hiệu hóa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+        "403":
+          description: Không có quyền (chỉ HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+        "404":
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
+  # ── Session 5b: DinhMucGiangVien — định mức áp dụng ─────────────────────────
+  /api/dinh-muc-giang-vien/ap-dung/{idNv}/{idNam}:
+    get:
+      tags:
+        - DinhMucGiangVien
+      summary: Tính định mức áp dụng sau ngoại lệ cho một GV trong năm
+      description: >
+        Trả về định mức gốc (base) và định mức đã áp dụng các ngoại lệ active.
+        Công thức:
+        GioGiangApDung = max(0, base − SoGioGiamGiang − base × ΣHeSoGiamGiang).
+        GioNckhApDung  = max(0, base × max(HeSoNckh) − base × ΣHeSoGiamNckh).
+        GioPvcdApDung  = max(0, base − base × ΣHeSoGiamPvcd).
+        GV chỉ xem của chính mình; HR/Admin (chucVu 1, 7, 8) xem mọi người.
+      operationId: dinhMucGiangVienGetApDung
+      parameters:
+        - name: idNv
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_nhan_vien
+        - name: idNam
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Năm đánh giá (VD: 2025)"
+      responses:
+        "200":
+          description: Định mức áp dụng
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DinhMucApDungResponse"
+        "400":
+          description: GV chưa có chức danh hoặc chưa cấu hình định mức
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DinhMucApDungResponse"
+        "403":
+          description: Không có quyền xem định mức của người khác
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DinhMucApDungResponse"
+  /api/dinh-muc-giang-vien/gio-nckh-thuc-te/{idNv}/{idNam}:
+    get:
+      tags:
+        - DinhMucGiangVien
+      summary: Giờ NCKH thực tế đã tính thêm so_gio_them_nckh từ ngoại lệ
+      description: >
+        = gio_thuc_hien_gv.gio_nckh_thuc_te (0 nếu chưa nhập)
+          + Σ ngoai_le_active.so_gio_them_nckh (loại 6 — quân nhân dự bị).
+        Session 7 dùng giá trị này khi chốt phiếu.
+      operationId: dinhMucGiangVienGetGioNckhThucTe
+      parameters:
+        - name: idNv
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_nhan_vien
+        - name: idNam
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Năm đánh giá
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Success:
+                    type: boolean
+                  Message:
+                    type: string
+                  Data:
+                    type: object
+                    properties:
+                      IdNhanVien:
+                        type: integer
+                      IdNam:
+                        type: integer
+                      GioNckhThucTe:
+                        type: number
+                        format: decimal
+                        description: Giờ NCKH thực tế (gio_thuc_hien + so_gio_them_nckh)
+        "400":
+          description: Không tìm thấy nhân viên
+        "403":
+          description: Không có quyền
 components:
   schemas:
     LichSuTrangThaiPhieuDto:
@@ -2888,6 +3504,17 @@ components:
       properties:
         RefreshToken:
           type: string
+    ChangePasswordRequest:
+      type: object
+      required:
+        - OldPassword
+        - NewPassword
+      properties:
+        OldPassword:
+          type: string
+        NewPassword:
+          type: string
+          minLength: 8
     RegisterRequest:
       type: object
       required:
@@ -2933,6 +3560,9 @@ components:
         IdChucVu:
           type: integer
           nullable: true
+        MaChucVu:
+          type: string
+          nullable: true
         IdNhomGv:
           type: integer
           nullable: true
@@ -2971,8 +3601,28 @@ components:
       properties:
         MaChucVu:
           type: string
+          maxLength: 20
         TenChucVu:
           type: string
+          maxLength: 100
+        TyLeDinhMucGiang:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: "Ty le gio chuan giang day con phai hoan thanh (0.0000-1.0000). Null neu khong ap."
+        HeSoPhuCap:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          description: "He so phu cap chuc vu (>= 0). Null neu khong co phu cap."
+        GhiChuDieuKien:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: "Dieu kien ap dung chuc vu. Vi du: 'Khoa >= 40 GV hoac >= 800 SV'."
         TrangThai:
           type: boolean
           nullable: true
@@ -2984,8 +3634,28 @@ components:
       properties:
         MaChucVu:
           type: string
+          maxLength: 20
         TenChucVu:
           type: string
+          maxLength: 100
+        TyLeDinhMucGiang:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: "Ty le gio chuan giang day con phai hoan thanh (0.0000-1.0000). Null neu khong ap."
+        HeSoPhuCap:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          description: "He so phu cap chuc vu (>= 0). Null neu khong co phu cap."
+        GhiChuDieuKien:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: "Dieu kien ap dung chuc vu. Vi du: 'Khoa >= 40 GV hoac >= 800 SV'."
         TrangThai:
           type: boolean
           nullable: true
@@ -2998,6 +3668,20 @@ components:
           type: string
         TenChucVu:
           type: string
+        TyLeDinhMucGiang:
+          type: number
+          format: decimal
+          nullable: true
+          description: "Ty le gio chuan giang day con phai hoan thanh (0.0000-1.0000)."
+        HeSoPhuCap:
+          type: number
+          format: decimal
+          nullable: true
+          description: "He so phu cap chuc vu."
+        GhiChuDieuKien:
+          type: string
+          nullable: true
+          description: "Dieu kien ap dung."
         TrangThai:
           type: boolean
     ChucVuResponse:
@@ -3733,6 +4417,26 @@ components:
           nullable: true
           maxLength: 2000
           description: Optional comment recorded on the finalized phieu
+        MucNckhcnQd838:
+          type: integer
+          format: int32
+          nullable: true
+          enum: [0, 1, 2]
+          description: >-
+            Muc NCKHCN theo QD 838 (0 Chua/Khong dat, 1 HT Tot, 2 HT Xuat sac).
+            Bat buoc khi nam hoc >= 2025-2026 (id_nam >= 2025); BadRequest neu thieu.
+            Co the null voi nam < 2025.
+        DuDinhMucGioNckh:
+          type: boolean
+          description: Co dat dinh muc gio NCKH (dieu kien xep loai >= 2)
+        KhongViPhamPhapLuat:
+          type: boolean
+          description: Khong vi pham phap luat (dieu kien xep loai >= 2)
+        GhiChuXepLoai:
+          type: string
+          nullable: true
+          maxLength: 1000
+          description: Optional note for the classification
         RowVersion:
           type: string
           format: byte
@@ -4034,13 +4738,13 @@ components:
         IdChucVu:
           type: integer
           nullable: true
-        IdNhomGv:
+        IdChucDanh:
           type: integer
           nullable: true
         TenChucVu:
           type: string
           nullable: true
-        TenNhomGv:
+        TenChucDanh:
           type: string
           nullable: true
         RowVersion:
@@ -4084,6 +4788,52 @@ components:
           type: number
           nullable: true
         XepLoai:
+          type: integer
+          format: int32
+          nullable: true
+          enum: [1, 2, 3, 4]
+          description: >-
+            Xep loai cuoi nam (TINYINT): 1 Khong hoan thanh, 2 Hoan thanh,
+            3 Hoan thanh tot, 4 Hoan thanh xuat sac. Null khi chua chot.
+        XepLoaiText:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Computed display text derived from XepLoai (no DB column)
+        GhiChuXepLoai:
+          type: string
+          nullable: true
+        DuDinhMucGioNckh:
+          type: boolean
+          nullable: true
+        KhongViPhamPhapLuat:
+          type: boolean
+          nullable: true
+        MucNckhcnQd838:
+          type: integer
+          format: int32
+          nullable: true
+          enum: [0, 1, 2]
+          description: "Muc NCKHCN theo QD 838: 0/1/2; null khi nam < 2025-2026"
+        GioGiangDinhMucApDung:
+          type: number
+          nullable: true
+        GioNckhDinhMucApDung:
+          type: number
+          nullable: true
+        GioPvcdDinhMucApDung:
+          type: number
+          nullable: true
+        HeSoNckhApDung:
+          type: number
+          nullable: true
+        GioGiangThucTeSnapshot:
+          type: number
+          nullable: true
+        GioNckhThucTeSnapshot:
+          type: number
+          nullable: true
+        LyDoDieuChinhDinhMuc:
           type: string
           nullable: true
         IdNguoiChot:
@@ -4683,8 +5433,471 @@ components:
         remaining:
           type: number
           description: Points still available (= 20 - currentTotal).
+    NhanVienListItemDto:
+      type: object
+      description: >
+        Một dòng trong danh sách nhân viên (thông tin danh bạ). KHÔNG chứa trường
+        nhạy cảm (mat_khau, he_so_phu_cap, refresh_token).
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        Email:
+          type: string
+          nullable: true
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+          nullable: true
+        TenDonVi:
+          type: string
+          nullable: true
+        IdChucVu:
+          type: integer
+          nullable: true
+        TenChucVu:
+          type: string
+          nullable: true
+        IdChucDanh:
+          type: integer
+          nullable: true
+        TenChucDanh:
+          type: string
+          nullable: true
+        GioiTinh:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: "1: Nam, 2: Nữ, 3: Khác"
+        NgaySinh:
+          type: string
+          format: date
+          nullable: true
+        TrangThai:
+          type: boolean
+    NhanVienListResponse:
+      type: object
+      description: Response phân trang cho danh sách nhân viên
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NhanVienListItemDto"
+        Page:
+          type: integer
+          description: Trang hiện tại
+        PageSize:
+          type: integer
+          description: Số dòng mỗi trang
+        TotalCount:
+          type: integer
+          description: Tổng số nhân viên khớp bộ lọc (trước phân trang)
+        TotalPages:
+          type: integer
+          description: Tổng số trang (ceil(TotalCount / PageSize))
+    HoSoNhanVienUpdateRequest:
+      type: object
+      description: >
+        Body cho PUT /api/nhan-vien/{id}/ho-so. Tất cả field là tùy chọn —
+        field nào null thì giữ nguyên giá trị hiện tại (cập nhật bộ phận).
+      properties:
+        HeSoPhuCap:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          description: Hệ số phụ cấp chức vụ DECIMAL(3,2). CHỈ HR/Admin được set.
+        GioiTinh:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: "1: Nam, 2: Nữ, 3: Khác"
+        NgaySinh:
+          type: string
+          format: date
+          nullable: true
+    HoSoNhanVienDto:
+      type: object
+      description: Snapshot hồ sơ nhân viên trả về sau khi cập nhật
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        HeSoPhuCap:
+          type: number
+          format: decimal
+          nullable: true
+        GioiTinh:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+        NgaySinh:
+          type: string
+          format: date
+          nullable: true
+    HoSoNhanVienResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/HoSoNhanVienDto"
+          nullable: true
+    NhanVienChucVuDto:
+      type: object
+      description: Một nhiệm kỳ chức vụ kiêm nhiệm của nhân viên
+      properties:
+        IdNvChucVu:
+          type: integer
+          description: PK của bản ghi lịch sử chức vụ
+        IdNhanVien:
+          type: integer
+        IdChucVu:
+          type: integer
+        TenChucVu:
+          type: string
+          description: Tên chức vụ (join từ bảng chuc_vu)
+        TyLeDinhMucGiang:
+          type: number
+          format: decimal
+          nullable: true
+          description: Tỷ lệ giờ giảng còn phải hoàn thành (0.00–1.00). NULL = không áp dụng giảm trừ.
+        TuNgay:
+          type: string
+          format: date
+          description: Ngày bắt đầu nhiệm kỳ
+        DenNgay:
+          type: string
+          format: date
+          nullable: true
+          description: Ngày kết thúc nhiệm kỳ. NULL = đang giữ.
+        GhiChu:
+          type: string
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+    NhanVienChucVuCreateRequest:
+      type: object
+      required:
+        - IdNhanVien
+        - IdChucVu
+        - TuNgay
+      properties:
+        IdNhanVien:
+          type: integer
+        IdChucVu:
+          type: integer
+        TuNgay:
+          type: string
+          format: date
+          description: Ngày bắt đầu nhiệm kỳ (YYYY-MM-DD)
+        DenNgay:
+          type: string
+          format: date
+          nullable: true
+          description: Ngày kết thúc nhiệm kỳ. Phải ≥ TuNgay.
+        GhiChu:
+          type: string
+          nullable: true
+          maxLength: 500
+    NhanVienChucVuUpdateRequest:
+      type: object
+      description: Chỉ cho phép cập nhật DenNgay và GhiChu
+      properties:
+        DenNgay:
+          type: string
+          format: date
+          nullable: true
+          description: Ngày kết thúc nhiệm kỳ. Phải ≥ TuNgay của bản ghi gốc.
+        GhiChu:
+          type: string
+          nullable: true
+          maxLength: 500
+    NhanVienChucVuResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/NhanVienChucVuDto"
+        Items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/NhanVienChucVuDto"
+    # ── Session 5a schemas: NgoaiLeDinhMuc ──────────────────────────────────────
+    NgoaiLeDinhMucCreateRequest:
+      type: object
+      required:
+        - IdNhanVien
+        - IdNam
+        - LoaiNgoaiLe
+      properties:
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+          description: "Năm đánh giá (VD: 2025)"
+        LoaiNgoaiLe:
+          type: integer
+          minimum: 1
+          maximum: 8
+          description: >
+            1: Tập sự / thử việc (MienNckh bắt buộc = true).
+            2: Nghỉ BHXH / nghỉ LĐ.
+            3: Cử đi đào tạo TS tập trung.
+            4: GV nữ nuôi con 7-12 tháng (default SoGioGiamGiang = 40 giờ chuẩn).
+            5: GV nữ nuôi con 13-36 tháng (default HeSoGiamGiang = 0.10).
+            6: Quân nhân dự bị / tự vệ huấn luyện (dùng SoGioThemNckh).
+            7: Hệ số NCKH nữ (default HeSoNckh = 1.20).
+            8: Khác (LyDo bắt buộc).
+        HeSoGiamGiang:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Tỷ lệ giảm giờ giảng (0.00–1.00)
+        SoGioGiamGiang:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          description: Số giờ HC giảm tuyệt đối (cùng đơn vị với dinh_muc_giang_vien)
+        HeSoNckh:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          description: Hệ số nhân áp lên giờ NCKH (multiplier, VD 1.20). Lấy MAX khi nhiều ngoại lệ.
+        HeSoGiamNckh:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Tỷ lệ giảm giờ NCKH (0.00–1.00)
+        SoGioThemNckh:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          description: Số giờ NCKH cộng thêm vào thực tế (loại 6)
+        HeSoGiamPvcd:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Tỷ lệ giảm giờ PVCĐ (0.00–1.00)
+        MienNckh:
+          type: boolean
+          description: true = tập sự, bỏ qua điều kiện đủ NCKH khi xếp loại (Session 7)
+        TuNgay:
+          type: string
+          format: date
+          nullable: true
+          description: Ngày bắt đầu hiệu lực (YYYY-MM-DD)
+        DenNgay:
+          type: string
+          format: date
+          nullable: true
+          description: Ngày kết thúc hiệu lực. NULL = không giới hạn.
+        LyDo:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: Bắt buộc khi loai_ngoai_le = 8 (Khác)
+        MinhChungUrl:
+          type: string
+          nullable: true
+          maxLength: 500
+    NgoaiLeDinhMucUpdateRequest:
+      type: object
+      description: Chỉ cho phép cập nhật LyDo, MinhChungUrl, DenNgay, TrangThai
+      properties:
+        LyDo:
+          type: string
+          nullable: true
+          maxLength: 500
+        MinhChungUrl:
+          type: string
+          nullable: true
+          maxLength: 500
+        DenNgay:
+          type: string
+          format: date
+          nullable: true
+        TrangThai:
+          type: boolean
+          description: false = vô hiệu hóa ngoại lệ
+    NgoaiLeDinhMucDto:
+      type: object
+      properties:
+        IdNgoaiLe:
+          type: integer
+        IdNhanVien:
+          type: integer
+        HoTen:
+          type: string
+        IdNam:
+          type: integer
+        LoaiNgoaiLe:
+          type: integer
+        LoaiNgoaiLeText:
+          type: string
+          description: Mô tả loại ngoại lệ bằng tiếng Việt
+        HeSoGiamGiang:
+          type: number
+          format: decimal
+          nullable: true
+        SoGioGiamGiang:
+          type: number
+          format: decimal
+          nullable: true
+          description: Đơn vị giờ HC (khớp với dinh_muc_giang_vien.gio_giang_ly_thuyet)
+        HeSoNckh:
+          type: number
+          format: decimal
+          nullable: true
+          description: Multiplier NCKH (VD 1.20). Lấy MAX khi nhiều ngoại lệ.
+        HeSoGiamNckh:
+          type: number
+          format: decimal
+          nullable: true
+        SoGioThemNckh:
+          type: number
+          format: decimal
+          nullable: true
+          description: Giờ NCKH cộng thêm vào thực tế (loại 6)
+        HeSoGiamPvcd:
+          type: number
+          format: decimal
+          nullable: true
+        MienNckh:
+          type: boolean
+        TuNgay:
+          type: string
+          format: date
+          nullable: true
+        DenNgay:
+          type: string
+          format: date
+          nullable: true
+        LyDo:
+          type: string
+          nullable: true
+        MinhChungUrl:
+          type: string
+          nullable: true
+        IdNguoiTao:
+          type: integer
+        NgayTao:
+          type: string
+          format: date-time
+        TrangThai:
+          type: boolean
+    NgoaiLeDinhMucResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/NgoaiLeDinhMucDto"
+          nullable: true
+        Items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/NgoaiLeDinhMucDto"
+    # ── Session 5b schemas: DinhMucApDung ────────────────────────────────────────
+    DinhMucApDungDto:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        IdNam:
+          type: integer
+        IdChucDanh:
+          type: integer
+          nullable: true
+        TenChucDanh:
+          type: string
+          nullable: true
+        GioGiangBase:
+          type: number
+          format: decimal
+          description: Giờ giảng gốc (HC) theo chức danh + năm
+        GioNckhBase:
+          type: number
+          format: decimal
+          description: Giờ NCKH gốc theo chức danh + năm
+        GioPvcdBase:
+          type: number
+          format: decimal
+          description: Giờ PVCĐ gốc theo chức danh + năm
+        GioGiangApDung:
+          type: number
+          format: decimal
+          description: "Giờ giảng sau ngoại lệ: max(0, base − SoGioGiam − base × ΣHeSoGiam)"
+        GioNckhApDung:
+          type: number
+          format: decimal
+          description: "Giờ NCKH sau ngoại lệ: max(0, base × MAX(HeSoNckh) − base × ΣHeSoGiamNckh)"
+        GioPvcdApDung:
+          type: number
+          format: decimal
+          description: "Giờ PVCĐ sau ngoại lệ: max(0, base − base × ΣHeSoGiamPvcd)"
+        HeSoNckhApDung:
+          type: number
+          format: decimal
+          description: Hệ số nhân cuối (MAX từ các ngoại lệ; mặc định 1.0)
+        MienNckh:
+          type: boolean
+          description: true = tập sự, điều kiện NCKH bị bỏ qua khi xếp loại
+        LyDoDieuChinh:
+          type: string
+          nullable: true
+          description: 'Tổng hợp "[Loại]: lý do" từng ngoại lệ, phân tách bằng "; "'
+        NgoaiLeApDung:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/NgoaiLeDinhMucDto"
+    DinhMucApDungResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Data:
+          $ref: "#/components/schemas/DinhMucApDungDto"
+          nullable: true
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: kpi_access_token

@@ -8,6 +8,7 @@ import QLNhomNhiemVu from '../pages/CriteriaManagement/QL_NhomNhiemVu';
 import QLNamDanhGia from '../pages/PlanManagement/QL_NamDanhGia';
 import QLMauDanhGia from '../pages/PlanManagement/QL_MauDanhGia';
 import QLThangDiem from '../pages/CriteriaManagement/QL_ThangDiem';
+import QLThangDiemByTieuChi from '../pages/CriteriaManagement/QL_ThangDiemByTieuChi';
 import QLDinhMucGiangVien from '../pages/PlanManagement/QL_DinhMucGiangVien';
 import DanhGiaPhuLuc2 from '../pages/Evaluation/DanhGiaPhuLuc2';
 import LichSuDanhGia from '../pages/Evaluation/LichSuDanhGia';
@@ -37,6 +38,7 @@ const AppRoutes = ({ triggerNotification }) => {
             <Route path="/quan-ly-nam-danh-gia" element={<QLNamDanhGia />} />
             <Route path="/quan-ly-mau-danh-gia" element={<QLMauDanhGia />} />
             <Route path="/quan-ly-thang-diem" element={<QLThangDiem />} />
+            <Route path="/:tieuChiId/thang-diem" element={<QLThangDiemByTieuChi />} />
             <Route path="/quan-ly-dinh-muc-giang-vien" element={<QLDinhMucGiangVien />} />
             <Route path="/quan-ly-chuc-danh" element={<QLChucDanh />} />
             <Route path="/danh-sach-duyet-phieu" element={<DanhSachDuyetPhieu />} />
