@@ -16,6 +16,7 @@ import DanhSachDuyetPhieu from '../pages/EvaluationManagement/DanhSachDuyetPhieu
 import ChiTietDuyetPhieu from '../pages/EvaluationManagement/ChiTietDuyetPhieu';
 import QLGioThucHien from '../pages/PlanManagement/QL_GioThucHien';
 import QLChucDanh from '../pages/OrganizationalManagement/QL_ChucDanh';
+import DanhSachThanhVien from '../pages/OrganizationalManagement/DanhSachThanhVien';
 
 const Overview = () => (
     <div className="content-body" style={{ padding: '20px' }}>
@@ -32,6 +33,7 @@ const AppRoutes = ({ triggerNotification }) => {
             <Route path="/lich-su-danh-gia" element={<LichSuDanhGia />} />
             <Route path="/quan-ly-nguoi-dung" element={<QLNhanVien />} />
             <Route path="/quan-ly-don-vi" element={<QLDonVi />} />
+            <Route path="/quan-ly-don-vi/:maDonVi/danh-sach-thanh-vien" element={<DanhSachThanhVien />} />
             <Route path="/quan-ly-tieu-chi" element={<QLTieuChi />} />
             <Route path="/quan-ly-nhom-tieu-chi" element={<QLNhomTieuChi />} />
             <Route path="/quan-ly-nhom-nhiem-vu" element={<QLNhomNhiemVu />} />
