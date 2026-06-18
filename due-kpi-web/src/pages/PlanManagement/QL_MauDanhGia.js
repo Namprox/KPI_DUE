@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLMauDanhGiaListing from '../../components/PlanManagement/QL_MauDanhGia/QL_MauDanhGiaListing';
@@ -20,6 +20,8 @@ const QL_MauDanhGia = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState(initialForm);
     const [editId, setEditId] = useState(null);
+    const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+    const editIdRef = useRef(null);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
@@ -115,14 +117,57 @@ const QL_MauDanhGia = () => {
         }
     };
 
-    const handleEdit = (item) => {
+    const handleEdit = async (item) => {
         if (!canManage) return;
+        editIdRef.current = item.IdMau;
         setEditId(item.IdMau);
+        setIsModalOpen(true);
+        setIsLoadingDetails(true);
         setFormData({
             ...item,
-            DanhSachIdTieuChi: item.DanhSachIdTieuChi || []
+            DanhSachIdTieuChi: []
         });
-        setIsModalOpen(true);
+
+        try {
+            const response = await apiFetch(`maudanhgia/${item.IdMau}/chi-tiet`);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.Success && result.Item && editIdRef.current === item.IdMau) {
+                    const detailItem = result.Item;
+                    const extractTieuChiIds = (nhomList) => {
+                        let ids = [];
+                        if (!Array.isArray(nhomList)) return ids;
+                        for (const nhom of nhomList) {
+                            if (Array.isArray(nhom.TieuChi)) {
+                                for (const tc of nhom.TieuChi) {
+                                    if (tc.IdTieuChi) {
+                                        ids.push(tc.IdTieuChi);
+                                    }
+                                }
+                            }
+                            if (Array.isArray(nhom.NhomCon)) {
+                                ids = ids.concat(extractTieuChiIds(nhom.NhomCon));
+                            }
+                        }
+                        return ids;
+                    };
+                    const ids = extractTieuChiIds(detailItem.Nhom);
+                    setFormData({
+                        TenMau: detailItem.TenMau || item.TenMau || '',
+                        IdNam: detailItem.IdNam || item.IdNam || '',
+                        MoTa: detailItem.MoTa || item.MoTa || '',
+                        TrangThai: detailItem.TrangThai !== undefined ? detailItem.TrangThai : item.TrangThai,
+                        DanhSachIdTieuChi: ids
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Lỗi tải chi tiết mẫu đánh giá:", error);
+        } finally {
+            if (editIdRef.current === item.IdMau) {
+                setIsLoadingDetails(false);
+            }
+        }
     };
 
     const handleDelete = (id) => {
@@ -152,6 +197,7 @@ const QL_MauDanhGia = () => {
         setIsModalOpen(false);
         setFormData(initialForm);
         setEditId(null);
+        editIdRef.current = null;
     };
 
     return (
@@ -204,6 +250,7 @@ const QL_MauDanhGia = () => {
                 isEditing={!!editId}
                 namList={namList}
                 tieuChiList={tieuChiList}
+                isLoadingDetails={isLoadingDetails}
             />
         </div>
     );

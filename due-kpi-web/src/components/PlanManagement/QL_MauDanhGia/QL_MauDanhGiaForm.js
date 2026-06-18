@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 
-const QL_MauDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, namList = [], tieuChiList = [] }) => {
+const QL_MauDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, namList = [], tieuChiList = [], isLoadingDetails = false }) => {
 
     const groupedTieuChi = useMemo(() => {
         return tieuChiList.reduce((groups, item) => {
@@ -71,32 +71,41 @@ const QL_MauDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, i
                             </label>
 
                             <div style={{ border: '1px solid #cbd5e1', borderRadius: '6px', maxHeight: '350px', overflowY: 'auto', backgroundColor: '#f8fafc', padding: '10px' }}>
-                                {Object.keys(groupedTieuChi).map((groupName, idx) => (
-                                    <div key={idx} style={{ marginBottom: '15px' }}>
-                                        <div style={{ backgroundColor: '#e2e8f0', padding: '6px 12px', borderRadius: '4px', fontWeight: 'bold', color: '#334155', fontSize: '13px', marginBottom: '8px' }}>
-                                            {groupName}
-                                        </div>
-                                        {groupedTieuChi[groupName].map(tc => {
-                                            const isChecked = (formData.DanhSachIdTieuChi || []).includes(tc.IdTieuChi);
-                                            return (
-                                                <div key={tc.IdTieuChi} style={{ display: 'flex', alignItems: 'flex-start', padding: '6px 10px', gap: '10px', transition: 'background 0.2s', borderRadius: '4px', backgroundColor: isChecked ? '#eff6ff' : 'transparent' }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        id={`tc_${tc.IdTieuChi}`}
-                                                        checked={isChecked}
-                                                        onChange={(e) => handleCheckboxChange(tc.IdTieuChi, e.target.checked)}
-                                                        style={{ width: '16px', height: '16px', marginTop: '2px', cursor: 'pointer' }}
-                                                    />
-                                                    <label htmlFor={`tc_${tc.IdTieuChi}`} style={{ margin: 0, cursor: 'pointer', fontWeight: isChecked ? 'bold' : 'normal', color: isChecked ? '#1d4ed8' : '#475569', fontSize: '14px', flex: 1 }}>
-                                                        {tc.TenTieuChi}
-                                                        {tc.DiemToiDa > 0 && <span style={{ color: '#ef4444', marginLeft: '5px', fontSize: '12px' }}>(Max: {tc.DiemToiDa}đ)</span>}
-                                                    </label>
-                                                </div>
-                                            );
-                                        })}
+                                {isLoadingDetails ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
+                                        <i className="fa-solid fa-spinner fa-spin fa-2x" style={{ color: '#003399', marginBottom: '10px' }}></i>
+                                        <span style={{ color: '#64748b', fontSize: '14px' }}>Đang tải danh sách tiêu chí...</span>
                                     </div>
-                                ))}
-                                {tieuChiList.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>Chưa có tiêu chí nào trong kho dữ liệu</div>}
+                                ) : (
+                                    <>
+                                        {Object.keys(groupedTieuChi).map((groupName, idx) => (
+                                            <div key={idx} style={{ marginBottom: '15px' }}>
+                                                <div style={{ backgroundColor: '#e2e8f0', padding: '6px 12px', borderRadius: '4px', fontWeight: 'bold', color: '#334155', fontSize: '13px', marginBottom: '8px' }}>
+                                                    {groupName}
+                                                </div>
+                                                {groupedTieuChi[groupName].map(tc => {
+                                                    const isChecked = (formData.DanhSachIdTieuChi || []).includes(tc.IdTieuChi);
+                                                    return (
+                                                        <div key={tc.IdTieuChi} style={{ display: 'flex', alignItems: 'flex-start', padding: '6px 10px', gap: '10px', transition: 'background 0.2s', borderRadius: '4px', backgroundColor: isChecked ? '#eff6ff' : 'transparent' }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                id={`tc_${tc.IdTieuChi}`}
+                                                                checked={isChecked}
+                                                                onChange={(e) => handleCheckboxChange(tc.IdTieuChi, e.target.checked)}
+                                                                style={{ width: '16px', height: '16px', marginTop: '2px', cursor: 'pointer' }}
+                                                            />
+                                                            <label htmlFor={`tc_${tc.IdTieuChi}`} style={{ margin: 0, cursor: 'pointer', fontWeight: isChecked ? 'bold' : 'normal', color: isChecked ? '#1d4ed8' : '#475569', fontSize: '14px', flex: 1 }}>
+                                                                {tc.TenTieuChi}
+                                                                {tc.DiemToiDa > 0 && <span style={{ color: '#ef4444', marginLeft: '5px', fontSize: '12px' }}>(Max: {tc.DiemToiDa}đ)</span>}
+                                                            </label>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ))}
+                                        {tieuChiList.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>Chưa có tiêu chí nào trong kho dữ liệu</div>}
+                                    </>
+                                )}
                             </div>
                         </div>
 
