@@ -132,7 +132,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
 
   const handleLogout = async (e) => {
     e.stopPropagation();
-    // Gọi POST /api/auth/logout (server thu hồi token + xoá cookie httpOnly).
     await logout();
     navigate("/login");
   };
@@ -191,9 +190,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
             setIsCollapsed(!isCollapsed);
           }}
         >
-          <i
-            className={`fa-solid ${!isCollapsed ? "fa-bars" : "fa-ellipsis-vertical"}`}
-          ></i>
+          <i className="fa-solid fa-bars"></i>
         </div>
       </div>
 
@@ -212,7 +209,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
               {user.AvatarUrl ? (
                 <img src={user.AvatarUrl} alt="Avatar" />
               ) : (
-                user.FullName?.charAt(0) || user.Username?.charAt(0) || "U"
+                user.HoTen.trim().split(/\s+/).pop()[0] || "U"
               )}
             </div>
 

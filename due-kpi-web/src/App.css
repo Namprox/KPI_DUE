@@ -29,6 +29,7 @@ body {
   z-index: 100;
   color: #ffffff;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
 }
 
 .admin-container.collapsed .sidebar {
