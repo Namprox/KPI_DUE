@@ -307,6 +307,10 @@ body {
   color: #d63031;
 }
 
+.dropdown-item.logout i {
+  color: inherit;
+}
+
 .dropdown-item.logout:hover {
   background-color: #fff5f5;
 }

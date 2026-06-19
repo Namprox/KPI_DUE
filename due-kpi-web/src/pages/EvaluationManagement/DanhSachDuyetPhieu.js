@@ -89,6 +89,7 @@ const DanhSachDuyetPhieu = () => {
     selectedYear,
     isAdmin,
     isManager,
+    isTopLevel,
     listYears.length,
   ]);
 

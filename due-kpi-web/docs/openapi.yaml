@@ -2748,7 +2748,26 @@ paths:
           required: false
           schema:
             type: integer
-          description: Lọc theo đơn vị
+          description: Lọc theo khóa số đơn vị (id_don_vi). Dùng được kết hợp với maDonVi.
+        - name: maDonVi
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 20
+          description: >
+            Lọc theo mã đơn vị (ma_don_vi, khớp chính xác, vd "P.KT"). Dùng độc lập
+            hoặc kết hợp với idDonVi (hai điều kiện AND với nhau).
+        - name: baoGomDonViCon
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: >
+            true = lấy luôn nhân viên thuộc các đơn vị con (mọi cấp) của đơn vị khớp
+            bộ lọc (đệ quy theo id_don_vi_cha). Chỉ có tác dụng khi có lọc idDonVi/maDonVi.
+            Mặc định false = chỉ đúng đơn vị đó.
         - name: idChucVu
           in: query
           required: false
@@ -2786,7 +2805,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienListResponse"
         "400":
-          description: Tham số lọc không hợp lệ (idDonVi / idChucVu)
+          description: Tham số lọc không hợp lệ (idDonVi / maDonVi / idChucVu)
           content:
             application/json:
               schema:
@@ -3917,6 +3936,9 @@ components:
           type: string
         TrangThai:
           type: boolean
+        SoTieuChi:
+          type: integer
+          description: So luong tieu chi da gan vao mau danh gia
     MauDanhGiaResponse:
       type: object
       properties:

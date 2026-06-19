@@ -82,6 +82,11 @@ const menuStructure = {
       icon: "fa-solid fa-chalkboard-user",
       path: "/quan-ly-chuc-danh",
     },
+    {
+      name: "Chức vụ",
+      icon: "fa-solid fa-briefcase",
+      path: "/quan-ly-chuc-vu",
+    },
   ],
   evaluationMgmt: [
     {
@@ -268,7 +273,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
               >
                 <i
                   className="fa-solid fa-arrow-right-from-bracket"
-                  style={{ marginRight: "8px", width: "16px" }}
+                  style={{ marginRight: "8px", width: "16px", color: "inherit" }}
                 ></i>{" "}
                 Đăng xuất
               </div>
