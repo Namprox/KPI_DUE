@@ -381,36 +381,174 @@ body {
 
 .p-dialog-mask.p-component-overlay {
   z-index: 11000 !important;
+  background-color: rgba(15, 23, 42, 0.4) !important;
+  backdrop-filter: blur(6px);
+  transition: all 0.3s ease;
+}
+
+@keyframes dialogSlideUp {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .p-confirm-dialog.p-dialog {
-  border-radius: 8px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  border-radius: 16px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
   border: none;
   width: 480px;
   background: white;
+  animation: dialogSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+.p-confirm-dialog .p-dialog-header {
+  padding: 1.5rem 1.5rem 0.5rem 1.5rem !important;
+  background: #ffffff !important;
+  border-bottom: none !important;
+}
+
+.p-confirm-dialog .p-dialog-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+.p-confirm-dialog .p-dialog-header-icons {
+  display: flex;
+  align-items: center;
+}
+
+.p-confirm-dialog .p-dialog-header-close {
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 50% !important;
+  color: #64748b !important;
+  background: transparent !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.p-confirm-dialog .p-dialog-header-close:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
 .p-confirm-dialog .p-dialog-content {
-  padding: 2.5rem 2rem !important;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
+  padding: 1rem 1.5rem 1.5rem 1.5rem !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 1.25rem !important;
+  background: #ffffff !important;
+}
+
+.p-confirm-dialog .p-confirm-dialog-icon {
+  font-size: 1.5rem !important;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Color Coding for Dialog Types */
+/* Warning / Danger / Delete */
+.p-confirm-dialog .p-confirm-dialog-icon.pi-exclamation-triangle,
+.p-confirm-dialog .p-confirm-dialog-icon.pi-trash {
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+
+/* Success / Approve */
+.p-confirm-dialog .p-confirm-dialog-icon.pi-check-circle {
+  background-color: #dcfce7 !important;
+  color: #16a34a !important;
+}
+
+/* Info / General / Close */
+.p-confirm-dialog .p-confirm-dialog-icon.pi-info-circle,
+.p-confirm-dialog .p-confirm-dialog-icon.pi-question-circle {
+  background-color: #e0f2fe !important;
+  color: #0284c7 !important;
+}
+
+.p-confirm-dialog .p-confirm-dialog-message {
+  font-size: 0.95rem !important;
+  color: #475569 !important;
+  line-height: 1.6 !important;
+  margin-left: 0 !important;
+  padding-top: 6px;
 }
 
 .p-confirm-dialog .p-dialog-footer {
-  padding: 1.25rem 2rem;
-  border-top: 1px solid #f1f1f1;
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
+  padding: 1.25rem 1.5rem 1.5rem 1.5rem !important;
+  background: #f8fafc !important;
+  border-top: 1px solid #f1f5f9 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
 }
 
-.p-confirm-dialog .p-button {
-  padding: 10px 24px !important;
-  border-radius: 4px;
-  font-weight: 600;
+.p-confirm-dialog .p-dialog-footer .p-button {
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
   min-width: 100px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out !important;
+  margin: 0 !important;
+}
+
+/* Secondary Button (Cancel / Outlined) */
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-secondary.p-button-outlined {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-secondary.p-button-outlined:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+/* Danger Button (Confirm Delete, Confirm Logout) */
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Primary Button / Warning Button (Approve, Submit, Close Confirm) */
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-primary,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-success,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-warning {
+  background: #003399 !important;
+  border-color: #003399 !important;
+  color: #ffffff !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-primary:hover,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-success:hover,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-warning:hover {
+  background: #002266 !important;
+  border-color: #002266 !important;
+  box-shadow: 0 4px 12px rgba(0, 51, 153, 0.2) !important;
 }
 
 .p-button .p-button-icon-left {

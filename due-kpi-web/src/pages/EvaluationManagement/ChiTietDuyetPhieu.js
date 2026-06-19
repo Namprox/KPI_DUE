@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import '../../css/Pages.css';
 import DanhGiaPhuLuc2Form from '../../components/Evaluation/DanhGiaPhuLuc2/DanhGiaPhuLuc2Form';
 import { Toast } from 'primereact/toast';
-import { ConfirmDialog } from 'primereact/confirmdialog';
+import { confirmDialog } from 'primereact/confirmdialog';
 import { Dialog } from 'primereact/dialog';
 import { apiFetch } from '../../utils/api';
 
@@ -25,9 +25,6 @@ const ChiTietDuyetPhieu = () => {
 
     const [rejectDialogVisible, setRejectDialogVisible] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
-
-    const [confirmVisible, setConfirmVisible] = useState(false);
-    const [confirmAction, setConfirmAction] = useState("");
 
     const [isWithinTime, setIsWithinTime] = useState(true);
     const [timeMessage, setTimeMessage] = useState("");
@@ -194,18 +191,33 @@ const ChiTietDuyetPhieu = () => {
             toast.current.show({ severity: 'error', summary: 'Lỗi kết nối', detail: 'Không thể kết nối đến máy chủ!', life: 4000 });
         } finally {
             setIsSubmitting(false);
-            setConfirmVisible(false);
         }
     };
 
     const handleApprove = () => {
-        setConfirmAction('APPROVE');
-        setConfirmVisible(true);
+        confirmDialog({
+            message: 'Xác nhận PHÊ DUYỆT phiếu đánh giá này?',
+            header: 'Xác nhận phê duyệt',
+            icon: 'pi pi-check-circle',
+            acceptLabel: 'Phê duyệt',
+            rejectLabel: 'Hủy bỏ',
+            acceptClassName: 'p-button-success',
+            rejectClassName: 'p-button-secondary p-button-outlined',
+            accept: () => executeApproval('APPROVE'),
+        });
     };
 
     const handleCancelApprove = () => {
-        setConfirmAction('CANCEL_APPROVE');
-        setConfirmVisible(true);
+        confirmDialog({
+            message: 'Bạn có chắc chắn muốn HỦY DUYỆT phiếu này để xem xét lại?',
+            header: 'Xác nhận hủy duyệt',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Hủy duyệt',
+            rejectLabel: 'Hủy bỏ',
+            acceptClassName: 'p-button-danger',
+            rejectClassName: 'p-button-secondary p-button-outlined',
+            accept: () => executeApproval('CANCEL_APPROVE'),
+        });
     };
 
     const handleOpenReject = () => {
@@ -243,18 +255,6 @@ const ChiTietDuyetPhieu = () => {
     return (
         <div className="page-container">
             <Toast ref={toast} position="top-right" />
-
-            <ConfirmDialog
-                visible={confirmVisible}
-                onHide={() => setConfirmVisible(false)}
-                message={confirmAction === 'APPROVE' ? 'Xác nhận PHÊ DUYỆT phiếu đánh giá này?' : 'Bạn có chắc chắn muốn HỦY DUYỆT phiếu này để xem xét lại?'}
-                header={confirmAction === 'APPROVE' ? 'Xác nhận phê duyệt' : 'Xác nhận hủy duyệt'}
-                icon={confirmAction === 'APPROVE' ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'}
-                acceptLabel={confirmAction === 'APPROVE' ? 'Phê duyệt' : 'Hủy duyệt'}
-                rejectLabel="Hủy bỏ"
-                acceptClassName={confirmAction === 'APPROVE' ? 'p-button-success' : 'p-button-warning'}
-                accept={() => executeApproval(confirmAction)}
-            />
 
             <Dialog
                 header="Yêu cầu làm lại phiếu"

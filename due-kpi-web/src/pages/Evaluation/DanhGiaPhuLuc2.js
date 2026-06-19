@@ -5,7 +5,7 @@ import '../../css/Pages.css';
 import '../../css/Evaluation/DanhGiaPhuLuc2.css';
 import DanhGiaPhuLuc2Form from '../../components/Evaluation/DanhGiaPhuLuc2/DanhGiaPhuLuc2Form';
 import { Toast } from 'primereact/toast';
-import { ConfirmDialog } from 'primereact/confirmdialog';
+import { confirmDialog } from 'primereact/confirmdialog';
 import { apiFetch } from '../../utils/api';
 
 const parseNetDate = (dateString) => {
@@ -25,9 +25,6 @@ const DanhGiaPhuLuc2 = () => {
 
     const [trangThaiPhieu, setTrangThaiPhieu] = useState(0);
     const [lyDoTraVe, setLyDoTraVe] = useState("");
-
-    const [dialogVisible, setDialogVisible] = useState(false);
-    const [dialogType, setDialogType] = useState('');
 
     const [dinhMucHienTai, setDinhMucHienTai] = useState({ gioGiang: 270, gioNckh: 600 });
     const [gioThucTe, setGioThucTe] = useState({ gioGiang: 0, gioNckh: 0, soLopVuot: 0 });
@@ -679,8 +676,16 @@ const DanhGiaPhuLuc2 = () => {
                 return;
             }
 
-            setDialogType('SUBMIT');
-            setDialogVisible(true);
+            confirmDialog({
+                message: "Xác nhận nộp phiếu? Sau khi nộp sẽ không thể chỉnh sửa dữ liệu!",
+                header: "Xác nhận nộp phiếu",
+                icon: "pi pi-exclamation-triangle",
+                acceptLabel: "Nộp phiếu",
+                rejectLabel: "Hủy bỏ",
+                acceptClassName: "p-button-primary",
+                rejectClassName: "p-button-secondary p-button-outlined",
+                accept: () => executeSubmit(2)
+            });
         } else {
             executeSubmit(status);
         }
@@ -715,8 +720,16 @@ const DanhGiaPhuLuc2 = () => {
     };
 
     const handleRecall = () => {
-        setDialogType('RECALL');
-        setDialogVisible(true);
+        confirmDialog({
+            message: "Bạn có chắc chắn muốn thu hồi phiếu để chỉnh sửa lại?",
+            header: "Xác nhận thu hồi",
+            icon: "pi pi-info-circle",
+            acceptLabel: "Thu hồi phiếu",
+            rejectLabel: "Hủy bỏ",
+            acceptClassName: "p-button-danger",
+            rejectClassName: "p-button-secondary p-button-outlined",
+            accept: () => executeRecall()
+        });
     };
 
     if (isLoading) {
@@ -731,21 +744,6 @@ const DanhGiaPhuLuc2 = () => {
     return (
         <div className="page-container">
             <Toast ref={toast} position="top-right" />
-
-            <ConfirmDialog
-                visible={dialogVisible}
-                onHide={() => setDialogVisible(false)}
-                message={dialogType === 'SUBMIT' ? "Xác nhận nộp phiếu? Sau khi nộp sẽ không thể chỉnh sửa dữ liệu!" : "Bạn có chắc chắn muốn thu hồi phiếu để chỉnh sửa lại?"}
-                header={dialogType === 'SUBMIT' ? "Xác nhận nộp phiếu" : "Xác nhận thu hồi"}
-                icon={dialogType === 'SUBMIT' ? "pi pi-exclamation-triangle" : "pi pi-info-circle"}
-                acceptLabel={dialogType === 'SUBMIT' ? "Nộp phiếu" : "Thu hồi phiếu"}
-                rejectLabel="Hủy bỏ"
-                acceptClassName={dialogType === 'SUBMIT' ? "p-button-primary" : "p-button-danger"}
-                accept={() => {
-                    if (dialogType === 'SUBMIT') executeSubmit(2);
-                    if (dialogType === 'RECALL') executeRecall();
-                }}
-            />
 
             <div className="phu-luc-2-container">
                 <div className="page-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

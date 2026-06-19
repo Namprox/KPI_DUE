@@ -4,6 +4,7 @@ import '../../css/Pages.css';
 import QLDinhMucListing from '../../components/PlanManagement/QL_DinhMuc/QL_DinhMucListing';
 import QLDinhMucForm from '../../components/PlanManagement/QL_DinhMuc/QL_DinhMucForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
+import { confirmDialog } from 'primereact/confirmdialog';
 import { apiFetch } from '../../utils/api';
 
 const QL_DinhMucGiangVien = () => {
@@ -100,15 +101,25 @@ const QL_DinhMucGiangVien = () => {
         });
     };
 
-    const handleSyncData = async () => {
-        if (!window.confirm("Bạn có muốn đồng bộ Giờ NCKH thực tế của năm hiện tại từ Hệ thống DueScience không?")) return;
-        setIsLoading(true);
-        try {
-            const currentYear = new Date().getFullYear();
-            const res = await apiFetch(`sync-data?idNam=${currentYear}`, { method: 'POST' });
-            const result = await res.json();
-            if (result.success) { alert(result.message); fetchData(); } else alert("Lỗi: " + result.message);
-        } catch (error) { alert("Lỗi kết nối đến máy chủ!"); } finally { setIsLoading(false); }
+    const handleSyncData = () => {
+        confirmDialog({
+            message: "Bạn có muốn đồng bộ Giờ NCKH thực tế của năm hiện tại từ Hệ thống DueScience không?",
+            header: "Xác nhận đồng bộ",
+            icon: "pi pi-info-circle",
+            acceptLabel: "Đồng ý",
+            rejectLabel: "Hủy bỏ",
+            acceptClassName: "p-button-primary",
+            rejectClassName: "p-button-secondary p-button-outlined",
+            accept: async () => {
+                setIsLoading(true);
+                try {
+                    const currentYear = new Date().getFullYear();
+                    const res = await apiFetch(`sync-data?idNam=${currentYear}`, { method: 'POST' });
+                    const result = await res.json();
+                    if (result.success) { alert(result.message); fetchData(); } else alert("Lỗi: " + result.message);
+                } catch (error) { alert("Lỗi kết nối đến máy chủ!"); } finally { setIsLoading(false); }
+            }
+        });
     };
 
     const closeModal = () => { setIsModalOpen(false); setFormData(initialForm); setEditId(null); };
