@@ -1,23 +1,23 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import QLNhanVien from '../pages/OrganizationalManagement/QL_NhanVien';
-import QLDonVi from '../pages/OrganizationalManagement/QL_DonVi';
-import QLTieuChi from '../pages/CriteriaManagement/QL_TieuChi';
-import QLNhomTieuChi from '../pages/CriteriaManagement/QL_NhomTieuChi';
-import QLNhomNhiemVu from '../pages/CriteriaManagement/QL_NhomNhiemVu';
-import QLNamDanhGia from '../pages/PlanManagement/QL_NamDanhGia';
-import QLMauDanhGia from '../pages/PlanManagement/QL_MauDanhGia';
-import QLThangDiem from '../pages/CriteriaManagement/QL_ThangDiem';
-import QLThangDiemByTieuChi from '../pages/CriteriaManagement/QL_ThangDiemByTieuChi';
-import QLDinhMucGiangVien from '../pages/PlanManagement/QL_DinhMucGiangVien';
-import DanhGiaPhuLuc2 from '../pages/Evaluation/DanhGiaPhuLuc2';
-import LichSuDanhGia from '../pages/Evaluation/LichSuDanhGia';
-import DanhSachDuyetPhieu from '../pages/EvaluationManagement/DanhSachDuyetPhieu';
-import ChiTietDuyetPhieu from '../pages/EvaluationManagement/ChiTietDuyetPhieu';
-import QLGioThucHien from '../pages/PlanManagement/QL_GioThucHien';
-import QLChucDanh from '../pages/OrganizationalManagement/QL_ChucDanh';
-import QLChucVu from '../pages/OrganizationalManagement/QL_ChucVu';
-import DanhSachThanhVien from '../pages/OrganizationalManagement/DanhSachThanhVien';
+import QLNhanVien from '../pages/QuanLyToChuc/QL_NhanVien';
+import QLDonVi from '../pages/QuanLyToChuc/QL_DonVi';
+import QLTieuChi from '../pages/QuanLyTieuChi/QL_TieuChi';
+import QLNhomTieuChi from '../pages/QuanLyTieuChi/QL_NhomTieuChi';
+import QLNhomNhiemVu from '../pages/QuanLyTieuChi/QL_NhomNhiemVu';
+import QLNamDanhGia from '../pages/QuanLyKeHoach/QL_NamDanhGia';
+import QLMauDanhGia from '../pages/QuanLyKeHoach/QL_MauDanhGia';
+import QLThangDiem from '../pages/QuanLyTieuChi/QL_ThangDiem';
+import QLThangDiemByTieuChi from '../pages/QuanLyTieuChi/QL_ThangDiemByTieuChi';
+import QLDinhMucGiangVien from '../pages/QuanLyKeHoach/QL_DinhMucGiangVien';
+import DanhGiaPhuLuc2 from '../pages/DanhGia/DanhGiaPhuLuc2';
+import LichSuDanhGia from '../pages/DanhGia/LichSuDanhGia';
+import DanhSachDuyetPhieu from '../pages/QuanLyDanhGia/DanhSachDuyetPhieu';
+import ChiTietDuyetPhieu from '../pages/QuanLyDanhGia/ChiTietDuyetPhieu';
+import QLGioThucHien from '../pages/QuanLyKeHoach/QL_GioThucHien';
+import QLChucDanh from '../pages/QuanLyToChuc/QL_ChucDanh';
+import QLChucVu from '../pages/QuanLyToChuc/QL_ChucVu';
+import DanhSachThanhVien from '../pages/QuanLyToChuc/DanhSachThanhVien';
 
 const Overview = () => (
     <div className="content-body" style={{ padding: '20px' }}>

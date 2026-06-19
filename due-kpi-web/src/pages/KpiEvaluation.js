@@ -1,6 +1,6 @@
 import React from 'react';
 import '../css/Pages.css'; // Import CSS khung trang
-import KpiEvaluationForm from '../components/KpiEvaluation/KpiEvaluationForm'; // Gọi Component Form lên
+import KpiEvaluationForm from '../components/DanhGiaKpi/KpiEvaluationForm'; // Gọi Component Form lên
 
 const KpiEvaluationPage = () => {
     return (
