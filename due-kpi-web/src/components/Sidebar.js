@@ -55,16 +55,6 @@ const menuStructure = {
       icon: "fa-solid fa-list-ol",
       path: "/quan-ly-tieu-chi",
     },
-    {
-      name: "Thang điểm",
-      icon: "fa-solid fa-star-half-stroke",
-      path: "/quan-ly-thang-diem",
-    },
-    {
-      name: "Nhóm nhiệm vụ",
-      icon: "fa-solid fa-briefcase",
-      path: "/quan-ly-nhom-nhiem-vu",
-    },
   ],
   orgMgmt: [
     {

@@ -4,10 +4,8 @@ import QLNhanVien from '../pages/QuanLyToChuc/QL_NhanVien';
 import QLDonVi from '../pages/QuanLyToChuc/QL_DonVi';
 import QLTieuChi from '../pages/QuanLyTieuChi/QL_TieuChi';
 import QLNhomTieuChi from '../pages/QuanLyTieuChi/QL_NhomTieuChi';
-import QLNhomNhiemVu from '../pages/QuanLyTieuChi/QL_NhomNhiemVu';
 import QLNamDanhGia from '../pages/QuanLyKeHoach/QL_NamDanhGia';
 import QLMauDanhGia from '../pages/QuanLyKeHoach/QL_MauDanhGia';
-import QLThangDiem from '../pages/QuanLyTieuChi/QL_ThangDiem';
 import QLThangDiemByTieuChi from '../pages/QuanLyTieuChi/QL_ThangDiemByTieuChi';
 import QLDinhMucGiangVien from '../pages/QuanLyKeHoach/QL_DinhMucGiangVien';
 import DanhGiaPhuLuc2 from '../pages/DanhGia/DanhGiaPhuLuc2';
@@ -37,10 +35,8 @@ const AppRoutes = ({ triggerNotification }) => {
             <Route path="/quan-ly-don-vi/:maDonVi/danh-sach-thanh-vien" element={<DanhSachThanhVien />} />
             <Route path="/quan-ly-tieu-chi" element={<QLTieuChi />} />
             <Route path="/quan-ly-nhom-tieu-chi" element={<QLNhomTieuChi />} />
-            <Route path="/quan-ly-nhom-nhiem-vu" element={<QLNhomNhiemVu />} />
             <Route path="/quan-ly-nam-danh-gia" element={<QLNamDanhGia />} />
             <Route path="/quan-ly-mau-danh-gia" element={<QLMauDanhGia />} />
-            <Route path="/quan-ly-thang-diem" element={<QLThangDiem />} />
             <Route path="/:tieuChiId/thang-diem" element={<QLThangDiemByTieuChi />} />
             <Route path="/quan-ly-dinh-muc-giang-vien" element={<QLDinhMucGiangVien />} />
             <Route path="/quan-ly-chuc-danh" element={<QLChucDanh />} />
