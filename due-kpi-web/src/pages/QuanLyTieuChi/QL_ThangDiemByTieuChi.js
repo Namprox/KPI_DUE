@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Paginator } from "primereact/paginator";
@@ -6,6 +6,7 @@ import { useConfirmDeleteDialog } from "../../hooks/useConfirmDeleteDialog";
 import { apiFetch } from "../../utils/api";
 import "../../css/Pages.css";
 import "../../css/QuanLyTieuChi/QL_ThangDiem.css";
+import { Toast } from "primereact/toast";
 
 const QL_ThangDiemByTieuChi = () => {
   const { tieuChiId } = useParams();
@@ -31,6 +32,7 @@ const QL_ThangDiemByTieuChi = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [editId, setEditId] = useState(null);
+  const toast = useRef(null);
 
   // Pagination
   const [first, setFirst] = useState(0);
@@ -87,7 +89,7 @@ const QL_ThangDiemByTieuChi = () => {
     e.preventDefault();
 
     if (!canManage) {
-      alert("Bạn không có quyền thực hiện chức năng này!");
+      toast.current.show({ severity: "error", summary: "Lỗi", detail: "Bạn không có quyền thực hiện chức năng này!", life: 4000 });
       return;
     }
 
@@ -100,7 +102,7 @@ const QL_ThangDiemByTieuChi = () => {
     };
     if (editId) payload.IdThangDiem = editId;
 
-    const response = await apiFetch("thangdiem", {
+    const response = await apiFetch(editId ? `thangdiem/${editId}` : "thangdiem", {
       method,
       body: JSON.stringify(payload),
     });
@@ -108,13 +110,14 @@ const QL_ThangDiemByTieuChi = () => {
     if (response.ok) {
       const resData = await response.json();
       if (resData.status === "success" || !resData.status) {
+        toast.current.show({ severity: "success", summary: "Thành công", detail: "Đã lưu thang điểm thành công!", life: 3000 });
         fetchData();
         closeModal();
       } else {
-        alert(resData.message || "Lưu thất bại!");
+        toast.current.show({ severity: "error", summary: "Lỗi", detail: resData.message || "Lưu thất bại!", life: 4000 });
       }
     } else {
-      alert("Lỗi kết nối máy chủ!");
+      toast.current.show({ severity: "error", summary: "Lỗi", detail: "Lỗi kết nối máy chủ!", life: 4000 });
     }
   };
 
@@ -135,16 +138,19 @@ const QL_ThangDiemByTieuChi = () => {
       header: "Xác nhận xóa",
       message: "Bạn có chắc chắn muốn xóa mức thang điểm này?",
       accept: async () => {
-        const res = await apiFetch(`thang-diem?id=${id}`, {
+        const res = await apiFetch(`thangdiem/${id}`, {
           method: "DELETE",
         });
         if (res.ok) {
           const result = await res.json();
           if (result.status === "success" || !result.status) {
             fetchData();
+            toast.current.show({ severity: "success", summary: "Thành công", detail: "Đã xóa thang điểm thành công!", life: 3000 });
           } else {
-            alert(result.message || "Xóa thất bại!");
+            toast.current.show({ severity: "error", summary: "Lỗi", detail: result.message || "Xóa thất bại!", life: 4000 });
           }
+        } else {
+          toast.current.show({ severity: "error", summary: "Lỗi", detail: "Xóa thất bại!", life: 4000 });
         }
       },
     });
@@ -181,6 +187,7 @@ const QL_ThangDiemByTieuChi = () => {
 
   return (
     <div className="page-container">
+      <Toast ref={toast} position="top-right" />
       <div
         className="page-header"
         style={{

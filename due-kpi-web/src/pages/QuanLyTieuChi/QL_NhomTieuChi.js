@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLNhomTieuChiListing from '../../components/QuanLyTieuChi/QL_NhomTieuChi/QL_NhomTieuChiListing';
 import QLNhomTieuChiForm from '../../components/QuanLyTieuChi/QL_NhomTieuChi/QL_NhomTieuChiForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
+import { Toast } from 'primereact/toast';
 
 const QL_NhomTieuChi = () => {
     const initialForm = {
@@ -26,6 +27,7 @@ const QL_NhomTieuChi = () => {
     const [editId, setEditId] = useState(null);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
+    const toast = useRef(null);
 
     const { user } = useAuth();
     const currentUser = user || {};
@@ -68,7 +70,7 @@ const QL_NhomTieuChi = () => {
         e.preventDefault();
 
         if (!canManage) {
-            alert("Bạn không có quyền thực hiện chức năng này!");
+            toast.current.show({ severity: 'error', summary: 'Lỗi', detail: 'Bạn không có quyền thực hiện chức năng này!', life: 4000 });
             return;
         }
 
@@ -84,16 +86,17 @@ const QL_NhomTieuChi = () => {
         };
         if (editId) payload.IdNhom = editId;
 
-        const response = await apiFetch('nhomtieuchi', {
+        const response = await apiFetch(editId ? `nhomtieuchi/${editId}` : 'nhomtieuchi', {
             method,
             body: JSON.stringify(payload)
         });
 
         if (response.ok) {
+            toast.current.show({ severity: 'success', summary: 'Thành công', detail: 'Đã lưu nhóm tiêu chí thành công!', life: 3000 });
             fetchData();
             closeModal();
         } else {
-            alert("Lưu thất bại! Vui lòng kiểm tra lại dữ liệu");
+            toast.current.show({ severity: 'error', summary: 'Lỗi', detail: 'Lưu thất bại! Vui lòng kiểm tra lại dữ liệu', life: 4000 });
         }
     };
 
@@ -114,7 +117,7 @@ const QL_NhomTieuChi = () => {
             header: 'Xác nhận xóa',
             message: 'Bạn có chắc chắn muốn xóa Nhóm tiêu chí này?',
             accept: async () => {
-                const response = await apiFetch(`nhom-tieu-chi?id=${id}`, {
+                const response = await apiFetch(`nhomtieuchi/${id}`, {
                     method: 'DELETE'
                 });
 
@@ -122,11 +125,12 @@ const QL_NhomTieuChi = () => {
                     const result = await response.json();
                     if (result.status === "success" || !result.status) {
                         fetchData();
+                        toast.current.show({ severity: 'success', summary: 'Thành công', detail: 'Đã xóa nhóm tiêu chí thành công!', life: 3000 });
                     } else {
-                        alert(result.message || "Xóa thất bại!");
+                        toast.current.show({ severity: 'error', summary: 'Lỗi', detail: result.message || "Xóa thất bại!", life: 4000 });
                     }
                 } else {
-                    alert("Xóa thất bại!");
+                    toast.current.show({ severity: 'error', summary: 'Lỗi', detail: "Xóa thất bại!", life: 4000 });
                 }
             }
         });
@@ -140,6 +144,7 @@ const QL_NhomTieuChi = () => {
 
     return (
         <div className="page-container">
+            <Toast ref={toast} position="top-right" />
             <div className="page-header">
                 <div className="header-title">
                     <h2>QUẢN LÝ NHÓM TIÊU CHÍ</h2>

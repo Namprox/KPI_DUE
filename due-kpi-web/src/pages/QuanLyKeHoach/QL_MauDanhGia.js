@@ -5,6 +5,7 @@ import QLMauDanhGiaListing from '../../components/QuanLyKeHoach/QL_MauDanhGia/QL
 import QLMauDanhGiaForm from '../../components/QuanLyKeHoach/QL_MauDanhGia/QL_MauDanhGiaForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
+import { Toast } from 'primereact/toast';
 
 const QL_MauDanhGia = () => {
     const initialForm = {
@@ -24,6 +25,7 @@ const QL_MauDanhGia = () => {
     const editIdRef = useRef(null);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
+    const toast = useRef(null);
 
     const { user } = useAuth();
     const currentUser = user || {};
@@ -92,28 +94,53 @@ const QL_MauDanhGia = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!canManage) {
-            alert("Bạn không có quyền thực hiện chức năng này!");
+            toast.current.show({ severity: 'error', summary: 'Lỗi', detail: 'Bạn không có quyền thực hiện chức năng này!', life: 4000 });
             return;
         }
 
         const method = editId ? 'PUT' : 'POST';
         const payload = {
-            ...formData,
+            TenMau: formData.TenMau,
             IdNam: parseInt(formData.IdNam),
+            MoTa: formData.MoTa || '',
             TrangThai: !!formData.TrangThai
         };
         if (editId) payload.IdMau = editId;
 
-        const response = await apiFetch('maudanhgia', {
+        const endpoint = editId ? `maudanhgia/${editId}` : 'maudanhgia';
+        const response = await apiFetch(endpoint, {
             method,
             body: JSON.stringify(payload)
         });
 
         if (response.ok) {
+            const result = await response.json();
+            const createdId = editId || result.Item?.IdMau || result.IdMau;
+            let bulkSuccess = true;
+
+            if (createdId && formData.DanhSachIdTieuChi) {
+                const bulkResponse = await apiFetch('chitietmaudanhgia/bulk', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        IdMau: createdId,
+                        IdTieuChiList: formData.DanhSachIdTieuChi.map(id => parseInt(id))
+                    })
+                });
+
+                if (!bulkResponse.ok) {
+                    bulkSuccess = false;
+                    toast.current.show({ severity: 'warn', summary: 'Cảnh báo', detail: 'Lưu thông tin chung thành công nhưng lỗi liên kết tiêu chí!', life: 4000 });
+                }
+            }
+
+            if (bulkSuccess) {
+                toast.current.show({ severity: 'success', summary: 'Thành công', detail: 'Đã lưu mẫu đánh giá và danh sách tiêu chí thành công!', life: 3000 });
+            }
+
             fetchData();
             closeModal();
         } else {
-            alert("Lưu thất bại! Vui lòng kiểm tra lại dữ liệu");
+            toast.current.show({ severity: 'error', summary: 'Lỗi', detail: 'Lưu thất bại! Vui lòng kiểm tra lại dữ liệu', life: 4000 });
         }
     };
 
@@ -176,18 +203,19 @@ const QL_MauDanhGia = () => {
             header: 'Xác nhận xóa',
             message: 'Bạn có chắc chắn muốn xóa Mẫu phiếu này? Tất cả các tiêu chí đã gán bên trong cũng sẽ bị hủy liên kết',
             accept: async () => {
-                const res = await apiFetch(`mau-danh-gia?id=${id}`, {
+                const res = await apiFetch(`maudanhgia/${id}`, {
                     method: 'DELETE'
                 });
                 if (res.ok) {
                     const result = await res.json();
                     if (result.status === "success" || !result.status) {
                         fetchData();
+                        toast.current.show({ severity: 'success', summary: 'Thành công', detail: 'Đã xóa mẫu phiếu thành công!', life: 3000 });
                     } else {
-                        alert(result.message || "Xóa thất bại!");
+                        toast.current.show({ severity: 'error', summary: 'Lỗi', detail: result.message || "Xóa thất bại!", life: 4000 });
                     }
                 } else {
-                    alert("Xóa thất bại!");
+                    toast.current.show({ severity: 'error', summary: 'Lỗi', detail: "Xóa thất bại!", life: 4000 });
                 }
             }
         });
@@ -202,6 +230,7 @@ const QL_MauDanhGia = () => {
 
     return (
         <div className="page-container">
+            <Toast ref={toast} position="top-right" />
             <div className="page-header">
                 <div className="header-title">
                     <h2>QUẢN LÝ MẪU ĐÁNH GIÁ</h2>

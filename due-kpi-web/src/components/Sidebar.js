@@ -41,14 +41,14 @@ const menuStructure = {
   ],
   criteriaMgmt: [
     {
-      name: "Tiêu chí đánh giá",
-      icon: "fa-solid fa-list-ol",
-      path: "/quan-ly-tieu-chi",
-    },
-    {
       name: "Nhóm tiêu chí",
       icon: "fa-solid fa-layer-group",
       path: "/quan-ly-nhom-tieu-chi",
+    },
+    {
+      name: "Tiêu chí đánh giá",
+      icon: "fa-solid fa-list-ol",
+      path: "/quan-ly-tieu-chi",
     },
     {
       name: "Mẫu phiếu đánh giá",

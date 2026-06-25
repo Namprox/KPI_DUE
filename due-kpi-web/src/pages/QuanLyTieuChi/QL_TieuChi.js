@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLTieuChiListing from '../../components/QuanLyTieuChi/QL_TieuChi/QL_TieuChiListing';
 import QLTieuChiForm from '../../components/QuanLyTieuChi/QL_TieuChi/QL_TieuChiForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
+import { Toast } from 'primereact/toast';
 
 const QL_TieuChi = () => {
     const initialForm = {
@@ -33,6 +34,7 @@ const QL_TieuChi = () => {
     const [editId, setEditId] = useState(null);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
+    const toast = useRef(null);
 
     const { user } = useAuth();
     const currentUser = user || {};
@@ -104,7 +106,7 @@ const QL_TieuChi = () => {
         e.preventDefault();
 
         if (!canManage) {
-            alert("Bạn không có quyền thực hiện chức năng này!");
+            toast.current.show({ severity: 'error', summary: 'Lỗi', detail: 'Bạn không có quyền thực hiện chức năng này!', life: 4000 });
             return;
         }
 
@@ -125,16 +127,17 @@ const QL_TieuChi = () => {
         };
         if (editId) payload.IdTieuChi = editId;
 
-        const response = await apiFetch('tieuchidanhgia', {
+        const response = await apiFetch(editId ? `tieuchidanhgia/${editId}` : 'tieuchidanhgia', {
             method,
             body: JSON.stringify(payload)
         });
 
         if (response.ok) {
+            toast.current.show({ severity: 'success', summary: 'Thành công', detail: 'Đã lưu tiêu chí đánh giá thành công!', life: 3000 });
             fetchData();
             closeModal();
         } else {
-            alert("Lưu thất bại! Vui lòng kiểm tra lại dữ liệu");
+            toast.current.show({ severity: 'error', summary: 'Lỗi', detail: 'Lưu thất bại! Vui lòng kiểm tra lại dữ liệu', life: 4000 });
         }
     };
 
@@ -156,7 +159,7 @@ const QL_TieuChi = () => {
             header: 'Xác nhận xóa',
             message: 'Bạn có chắc chắn muốn xóa Tiêu chí này?',
             accept: async () => {
-                const response = await apiFetch(`tieu-chi?id=${id}`, {
+                const response = await apiFetch(`tieuchidanhgia/${id}`, {
                     method: 'DELETE'
                 });
 
@@ -164,11 +167,12 @@ const QL_TieuChi = () => {
                     const result = await response.json();
                     if (result.status === "success" || !result.status) {
                         fetchData();
+                        toast.current.show({ severity: 'success', summary: 'Thành công', detail: 'Đã xóa tiêu chí đánh giá thành công!', life: 3000 });
                     } else {
-                        alert(result.message || "Xóa thất bại!");
+                        toast.current.show({ severity: 'error', summary: 'Lỗi', detail: result.message || "Xóa thất bại!", life: 4000 });
                     }
                 } else {
-                    alert("Xóa thất bại!");
+                    toast.current.show({ severity: 'error', summary: 'Lỗi', detail: "Xóa thất bại!", life: 4000 });
                 }
             }
         });
@@ -182,6 +186,7 @@ const QL_TieuChi = () => {
 
     return (
         <div className="page-container">
+            <Toast ref={toast} position="top-right" />
             <div className="page-header">
                 <div className="header-title">
                     <h2>QUẢN LÝ TIÊU CHÍ ĐÁNH GIÁ</h2>
