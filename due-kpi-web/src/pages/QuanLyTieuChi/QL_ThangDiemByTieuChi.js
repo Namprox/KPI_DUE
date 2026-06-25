@@ -46,7 +46,7 @@ const QL_ThangDiemByTieuChi = () => {
 
   const fetchTieuChi = async () => {
     try {
-      const response = await apiFetch("tieuchidanhgia");
+      const response = await apiFetch("tieuchidanhgia?loaiDoiTuong=1");
       if (response.ok) {
         const res = await response.json();
         const list = res.Items || (Array.isArray(res) ? res : []);
@@ -169,8 +169,8 @@ const QL_ThangDiemByTieuChi = () => {
         return "Liên tục";
       case 3:
         return "Có / Không";
-      case 4:
-        return "Công thức";
+      // case 4:
+      //   return "Công thức";
       default:
         return "---";
     }
@@ -308,14 +308,14 @@ const QL_ThangDiemByTieuChi = () => {
                 {tieuChi.BatBuocMinhChung ? "Có bắt buộc" : "Không bắt buộc"}
               </span>
             </div>
-            {tieuChi.CoTheDongBoScience && (
+            {/* {tieuChi.CoTheDongBoScience && (
               <div style={{ gridColumn: "1 / -1" }}>
                 <strong>Đồng bộ Science:</strong>{" "}
                 <span style={{ color: "#0284c7", fontWeight: "600" }}>
                   {tieuChi.BangNguonScience || "Chưa cấu hình"}
                 </span>
               </div>
-            )}
+            )} */}
             {tieuChi.MoTa && (
               <div style={{ gridColumn: "1 / -1", marginTop: "8px" }}>
                 <strong>Mô tả:</strong>{" "}

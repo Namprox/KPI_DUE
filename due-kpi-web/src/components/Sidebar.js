@@ -29,11 +29,6 @@ const menuStructure = {
       path: "/quan-ly-nam-danh-gia",
     },
     {
-      name: "Mẫu phiếu đánh giá",
-      icon: "fa-solid fa-file-invoice",
-      path: "/quan-ly-mau-danh-gia",
-    },
-    {
       name: "Định mức giảng viên",
       icon: "fa-solid fa-scale-balanced",
       path: "/quan-ly-dinh-muc-giang-vien",
@@ -46,14 +41,19 @@ const menuStructure = {
   ],
   criteriaMgmt: [
     {
+      name: "Tiêu chí đánh giá",
+      icon: "fa-solid fa-list-ol",
+      path: "/quan-ly-tieu-chi",
+    },
+    {
       name: "Nhóm tiêu chí",
       icon: "fa-solid fa-layer-group",
       path: "/quan-ly-nhom-tieu-chi",
     },
     {
-      name: "Tiêu chí đánh giá",
-      icon: "fa-solid fa-list-ol",
-      path: "/quan-ly-tieu-chi",
+      name: "Mẫu phiếu đánh giá",
+      icon: "fa-solid fa-file-invoice",
+      path: "/quan-ly-mau-danh-gia",
     },
   ],
   orgMgmt: [
@@ -107,7 +107,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   useEffect(() => {
     const currentPath = location.pathname;
     for (const [key, subItems] of Object.entries(menuStructure)) {
-      if (subItems.some((item) => item.path === currentPath || (item.path !== '/' && currentPath.startsWith(item.path + '/')))) {
+      if (
+        subItems.some(
+          (item) =>
+            item.path === currentPath ||
+            (item.path !== "/" && currentPath.startsWith(item.path + "/")),
+        )
+      ) {
         setOpenMenus((prev) => ({ ...prev, [key]: true }));
         break;
       }
@@ -121,7 +127,9 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
 
   const isMenuActive = (menuKey) => {
     return menuStructure[menuKey].some(
-      (item) => item.path === location.pathname || (item.path !== '/' && location.pathname.startsWith(item.path + '/')),
+      (item) =>
+        item.path === location.pathname ||
+        (item.path !== "/" && location.pathname.startsWith(item.path + "/")),
     );
   };
 
@@ -138,7 +146,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         {items.map((item, index) => (
           <li
             key={index}
-            className={`sub-menu-item ${location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path + '/')) ? "active" : ""}`}
+            className={`sub-menu-item ${location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path + "/")) ? "active" : ""}`}
             onClick={(e) => {
               e.stopPropagation();
               if (item.path) {
@@ -263,7 +271,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
               >
                 <i
                   className="fa-solid fa-arrow-right-from-bracket"
-                  style={{ marginRight: "8px", width: "16px", color: "inherit" }}
+                  style={{
+                    marginRight: "8px",
+                    width: "16px",
+                    color: "inherit",
+                  }}
                 ></i>{" "}
                 Đăng xuất
               </div>
@@ -289,7 +301,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
             const labels = {
               evaluation: "Đánh giá KPI",
               planMgmt: "Thiết lập kế hoạch",
-              criteriaMgmt: "Tiêu chí",
+              criteriaMgmt: "Tiêu chí giảng viên",
               orgMgmt: "Cơ cấu tổ chức",
               evaluationMgmt: "Quản lý đánh giá",
             };

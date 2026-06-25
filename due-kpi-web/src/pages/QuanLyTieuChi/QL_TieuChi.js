@@ -51,7 +51,7 @@ const QL_TieuChi = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('tieuchidanhgia');
+            const response = await apiFetch('tieuchidanhgia?loaiDoiTuong=1');
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);
@@ -67,7 +67,7 @@ const QL_TieuChi = () => {
 
     const fetchNhomTieuChi = async () => {
         try {
-            const response = await apiFetch('nhomtieuchi');
+            const response = await apiFetch('nhomtieuchi?loaiDoiTuong=1');
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);

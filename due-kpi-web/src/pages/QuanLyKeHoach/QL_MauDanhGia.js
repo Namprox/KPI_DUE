@@ -42,7 +42,7 @@ const QL_MauDanhGia = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('maudanhgia');
+            const response = await apiFetch('maudanhgia?loaiDoiTuong=1');
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);
@@ -70,7 +70,7 @@ const QL_MauDanhGia = () => {
 
     const fetchTieuChi = async () => {
         try {
-            const response = await apiFetch('tieuchidanhgia');
+            const response = await apiFetch('tieuchidanhgia?loaiDoiTuong=1');
             if (response.ok) {
                 const res = await response.json();
                 setTieuChiList(res.Items || (Array.isArray(res) ? res : []));

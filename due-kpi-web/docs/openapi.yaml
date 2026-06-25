@@ -222,7 +222,7 @@ paths:
     delete:
       tags:
         - ChucVu
-      summary: Delete
+      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: chucVuDelete
       parameters:
         - name: id
@@ -314,7 +314,7 @@ paths:
     delete:
       tags:
         - DonVi
-      summary: Delete
+      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: donViDelete
       parameters:
         - name: id
@@ -427,6 +427,8 @@ paths:
         - MauDanhGia
       summary: Get all
       operationId: mauDanhGiaGetAll
+      parameters:
+        - $ref: "#/components/parameters/LoaiDoiTuongFilter"
       responses:
         "200":
           description: OK
@@ -498,7 +500,7 @@ paths:
     delete:
       tags:
         - MauDanhGia
-      summary: Delete
+      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: mauDanhGiaDelete
       parameters:
         - name: id
@@ -617,6 +619,25 @@ paths:
           required: true
           schema:
             type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietMauDanhGiaResponse"
+  /api/chitietmaudanhgia/bulk:
+    post:
+      tags:
+        - ChiTietMauDanhGia
+      summary: Bulk add tieu chi vao mau danh gia
+      operationId: chiTietMauDanhGiaBulkCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChiTietMauDanhGiaBulkCreateRequest"
       responses:
         "200":
           description: OK
@@ -2297,7 +2318,7 @@ paths:
     delete:
       tags:
         - ChucDanhNgheNghiep
-      summary: Delete
+      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: chucDanhNgheNghiepDelete
       parameters:
         - name: id
@@ -2318,6 +2339,8 @@ paths:
         - NhomTieuChi
       summary: Get all
       operationId: nhomTieuChiGetAll
+      parameters:
+        - $ref: "#/components/parameters/LoaiDoiTuongFilter"
       responses:
         "200":
           description: OK
@@ -2389,7 +2412,7 @@ paths:
     delete:
       tags:
         - NhomTieuChi
-      summary: Delete
+      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: nhomTieuChiDelete
       parameters:
         - name: id
@@ -2410,6 +2433,8 @@ paths:
         - TieuChiDanhGia
       summary: Get all
       operationId: tieuChiDanhGiaGetAll
+      parameters:
+        - $ref: "#/components/parameters/LoaiDoiTuongFilter"
       responses:
         "200":
           description: OK
@@ -2481,7 +2506,7 @@ paths:
     delete:
       tags:
         - TieuChiDanhGia
-      summary: Delete
+      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: tieuChiDanhGiaDelete
       parameters:
         - name: id
@@ -3273,7 +3298,438 @@ paths:
           description: Không tìm thấy nhân viên
         "403":
           description: Không có quyền
+  /api/phieu-don-vi:
+    get:
+      tags:
+        - PhieuDonVi
+      summary: List phieu danh gia don vi (paged)
+      description: >-
+        Danh sach phieu danh gia don vi (khoa/phong). Pham vi don vi do SP enforce
+        theo chuc vu cua nguoi goi (TKK/TKP/TK/TKL/TP/HT/ADMIN).
+      operationId: phieuDonViGetPaged
+      parameters:
+        - name: idNam
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: trangThai
+          in: query
+          required: false
+          description: CSV list of trang_thai values (e.g. "1,2,3")
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+    post:
+      tags:
+        - PhieuDonVi
+      summary: Create phieu danh gia don vi
+      description: >-
+        Tao 1 phieu danh gia cho 1 don vi / nam tu mot mau (1 phieu / don vi / nam).
+        Chi cap nhap don vi (TKK/TKP) duoc phep tao — SP enforce.
+      operationId: phieuDonViCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuDanhGiaDonViCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "400":
+          description: Bad Request (du lieu khong hop le, hoac phieu da ton tai)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+  /api/phieu-don-vi/{id}:
+    get:
+      tags:
+        - PhieuDonVi
+      summary: Get phieu danh gia don vi detail
+      operationId: phieuDonViGetDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+  /api/phieu-don-vi/{id}/submit:
+    post:
+      tags:
+        - PhieuDonVi
+      summary: Submit phieu don vi len Truong don vi (1 -> 2)
+      description: >-
+        Chuyen phieu tu Nhap sang Cho Truong don vi duyet. RowVersion bat buoc
+        (optimistic concurrency).
+      operationId: phieuDonViSubmit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuDonViSubmitRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "409":
+          description: Conflict - sai trang thai hoac RowVersion da thay doi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+  /api/phieu-don-vi/{id}/duyet-dv:
+    post:
+      tags:
+        - PhieuDonVi
+      summary: Truong don vi (TK/TKL/TP) duyet phieu (2 -> 3)
+      operationId: phieuDonViDuyetDv
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuDonViDuyetRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "409":
+          description: Conflict - sai trang thai hoac RowVersion da thay doi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+  /api/phieu-don-vi/{id}/duyet-truong:
+    post:
+      tags:
+        - PhieuDonVi
+      summary: Truong (HT) duyet phieu (3 -> 4)
+      operationId: phieuDonViDuyetTruong
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuDonViDuyetRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "409":
+          description: Conflict - sai trang thai hoac RowVersion da thay doi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+  /api/phieu-don-vi/{id}/chot:
+    post:
+      tags:
+        - PhieuDonVi
+      summary: Chot phieu don vi (4 -> 5 HOAN_TAT)
+      description: >-
+        HT chot ket qua. XepLoai tuy chon — bo trong thi BLL tinh provisional
+        theo tong diem (XepLoaiCalculator.TinhXepLoaiDonVi).
+      operationId: phieuDonViChot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuDonViChotRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "409":
+          description: Conflict - phieu khong o trang thai 4, hoac RowVersion da thay doi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+  /api/phieu-don-vi/{id}/mo-lai:
+    post:
+      tags:
+        - PhieuDonVi
+      summary: Mo lai phieu don vi da chot (5 -> 1/2/3)
+      description: >-
+        HT mo lai phieu da hoan tat. TrangThaiMoi (1/2/3) va LyDo bat buoc.
+      operationId: phieuDonViMoLai
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuDonViMoLaiRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "400":
+          description: Bad Request (thieu TrangThaiMoi / LyDo, ngoai khoang)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "409":
+          description: Conflict - phieu khong o trang thai 5, hoac RowVersion da thay doi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+  /api/phieu-don-vi/{id}/tong-hop-kpi:
+    post:
+      tags:
+        - PhieuDonVi
+      summary: Tong hop KPI thanh vien vao phieu don vi
+      description: >-
+        Tong hop diem KPI cac thanh vien thuoc don vi vao cac dong chi tiet co
+        LoaiNguonDiem = 2 (tu dong). Response co them khoi TongHop.
+      operationId: phieuDonViTongHopKpi
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: baoGomDonViCon
+          in: query
+          required: false
+          description: Co gom phieu cua cac don vi con hay khong.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: OK - response gom khoi TongHop
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+  /api/chi-tiet-don-vi/{idChiTiet}/diem-nhap:
+    put:
+      tags:
+        - PhieuDonVi
+      summary: Cham diem chi tiet - cap nhap (TKK/TKP)
+      description: >-
+        Nhap diem 1 dong chi tiet. RowVersion tuy chon — neu gui se duoc SP kiem
+        tra concurrency. NewRowVersion trong response la row_version moi cua PHIEU.
+      operationId: chiTietDonViDiemNhap
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChiTietDonViDiemRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaDonViResponse"
+        "409":
+          description: Conflict - sai trang thai hoac RowVersion da thay doi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaDonViResponse"
+  /api/chi-tiet-don-vi/{idChiTiet}/diem-duyet-dv:
+    put:
+      tags:
+        - PhieuDonVi
+      summary: Cham diem chi tiet - cap duyet don vi (TK/TKL/TP)
+      operationId: chiTietDonViDiemDuyetDv
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChiTietDonViDiemRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaDonViResponse"
+        "409":
+          description: Conflict - sai trang thai hoac RowVersion da thay doi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaDonViResponse"
+  /api/chi-tiet-don-vi/{idChiTiet}/diem-truong:
+    put:
+      tags:
+        - PhieuDonVi
+      summary: Cham diem chi tiet - cap truong (HT)
+      operationId: chiTietDonViDiemTruong
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChiTietDonViDiemRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaDonViResponse"
+        "409":
+          description: Conflict - sai trang thai hoac RowVersion da thay doi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaDonViResponse"
 components:
+  parameters:
+    LoaiDoiTuongFilter:
+      name: loaiDoiTuong
+      in: query
+      required: false
+      description: "Loc theo loai doi tuong: 1=Giang vien, 2=Vien chuc/NLD, 3=Don vi. Bo trong = tat ca."
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 3
   schemas:
     LichSuTrangThaiPhieuDto:
       type: object
@@ -4083,6 +4539,15 @@ components:
           type: integer
         IdTieuChi:
           type: integer
+    ChiTietMauDanhGiaBulkCreateRequest:
+      type: object
+      properties:
+        IdMau:
+          type: integer
+        IdTieuChiList:
+          type: array
+          items:
+            type: integer
     ChiTietMauDanhGiaDto:
       type: object
       properties:
@@ -5199,6 +5664,10 @@ components:
         LoaiNhom:
           type: integer
           nullable: true
+        LoaiDoiTuong:
+          type: integer
+          description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Đơn vị"
+          nullable: true
         DiemToiDa:
           type: number
           nullable: true
@@ -5220,6 +5689,10 @@ components:
           nullable: true
         LoaiNhom:
           type: integer
+          nullable: true
+        LoaiDoiTuong:
+          type: integer
+          description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Đơn vị"
           nullable: true
         DiemToiDa:
           type: number
@@ -5244,6 +5717,9 @@ components:
           type: string
         LoaiNhom:
           type: integer
+        LoaiDoiTuong:
+          type: integer
+          description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Đơn vị"
         DiemToiDa:
           type: number
           nullable: true
@@ -5914,6 +6390,358 @@ components:
         Data:
           $ref: "#/components/schemas/DinhMucApDungDto"
           nullable: true
+    ChiTietDanhGiaDonViDto:
+      type: object
+      properties:
+        IdChiTietDv:
+          type: integer
+        IdPhieuDv:
+          type: integer
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+          nullable: true
+        DiemToiDa:
+          type: number
+          nullable: true
+        LoaiThangDiem:
+          type: integer
+          nullable: true
+        LoaiNguonDiem:
+          type: integer
+          description: "1 = Cham thu cong (DiemNhap); 2 = Tu dong tong hop tu KPI thanh vien (DiemTongHop)"
+        CongThucSnapshot:
+          type: string
+          nullable: true
+        DiemNhap:
+          type: number
+          nullable: true
+        DiemTongHop:
+          type: number
+          nullable: true
+        NhanXetNhap:
+          type: string
+          nullable: true
+        IdNguoiNhap:
+          type: integer
+          nullable: true
+        NgayNhap:
+          type: string
+          format: date-time
+          nullable: true
+        DiemDuyetDv:
+          type: number
+          nullable: true
+        NhanXetDuyetDv:
+          type: string
+          nullable: true
+        IdNguoiDuyetDv:
+          type: integer
+          nullable: true
+        NgayDuyetDv:
+          type: string
+          format: date-time
+          nullable: true
+        DiemTruong:
+          type: number
+          nullable: true
+        NhanXetTruong:
+          type: string
+          nullable: true
+        IdNguoiDgTruong:
+          type: integer
+          nullable: true
+        NgayDgTruong:
+          type: string
+          format: date-time
+          nullable: true
+        DiemChinhThuc:
+          type: number
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+          nullable: true
+        TenNhom:
+          type: string
+          nullable: true
+        IdNhomCha:
+          type: integer
+          nullable: true
+        LoaiNhom:
+          type: integer
+          nullable: true
+        BatBuocMinhChung:
+          type: boolean
+          nullable: true
+        MinhChung:
+          type: array
+          items:
+            $ref: "#/components/schemas/MinhChungDto"
+    PhieuDanhGiaDonViDto:
+      type: object
+      properties:
+        IdPhieuDv:
+          type: integer
+        IdNam:
+          type: integer
+        IdDonVi:
+          type: integer
+        TenDonVi:
+          type: string
+          nullable: true
+        IdMau:
+          type: integer
+          nullable: true
+        TenMau:
+          type: string
+          nullable: true
+        LanDanhGia:
+          type: integer
+        RowVersion:
+          type: string
+          format: byte
+          description: "Base64-encoded ROWVERSION token for optimistic concurrency"
+        TrangThai:
+          type: integer
+          description: "1 Nhap, 2 Cho Truong DV duyet, 3 Truong DV da duyet, 4 Truong (HT) da duyet, 5 Hoan tat"
+        IdNguoiNhap:
+          type: integer
+          nullable: true
+        NgayNhap:
+          type: string
+          format: date-time
+          nullable: true
+        IdNguoiDuyetDv:
+          type: integer
+          nullable: true
+        NgayDvDuyet:
+          type: string
+          format: date-time
+          nullable: true
+        NhanXetDv:
+          type: string
+          nullable: true
+        IdNguoiDgTruong:
+          type: integer
+          nullable: true
+        NgayTruongDuyet:
+          type: string
+          format: date-time
+          nullable: true
+        NhanXetTruong:
+          type: string
+          nullable: true
+        IdNguoiChot:
+          type: integer
+          nullable: true
+        NgayChot:
+          type: string
+          format: date-time
+          nullable: true
+        TongDiemCoBan:
+          type: number
+          nullable: true
+        TongDiemVuotTroi:
+          type: number
+          nullable: true
+        TongDiemTichLuy:
+          type: number
+          nullable: true
+        XepLoai:
+          type: integer
+          format: int32
+          nullable: true
+          enum: [1, 2, 3, 4]
+          description: "Xep loai cuoi nam (TINYINT). Null khi chua chot."
+        XepLoaiText:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Computed display text derived from XepLoai (no DB column)
+        GhiChuXepLoai:
+          type: string
+          nullable: true
+        LanMoLai:
+          type: integer
+        NgayMoLaiGanNhat:
+          type: string
+          format: date-time
+          nullable: true
+        IdNguoiMoLai:
+          type: integer
+          nullable: true
+        LyDoMoLai:
+          type: string
+          nullable: true
+        NgayGui:
+          type: string
+          format: date-time
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+          nullable: true
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+        DaXoa:
+          type: boolean
+        NgayXoa:
+          type: string
+          format: date-time
+          nullable: true
+        ChiTiet:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChiTietDanhGiaDonViDto"
+        PheDuyet:
+          type: array
+          items:
+            $ref: "#/components/schemas/PheDuyetDto"
+    TongHopKpiDto:
+      type: object
+      properties:
+        SoPhieuThanhVien:
+          type: integer
+        SoXuatSac:
+          type: integer
+        SoHoanThanh:
+          type: integer
+        DiemTrungBinh:
+          type: number
+    PhieuDanhGiaDonViResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/PhieuDanhGiaDonViDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhieuDanhGiaDonViDto"
+        TongHop:
+          $ref: "#/components/schemas/TongHopKpiDto"
+          nullable: true
+          description: Chi co o endpoint tong-hop-kpi
+    ChiTietDanhGiaDonViResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/ChiTietDanhGiaDonViDto"
+        NewRowVersion:
+          type: string
+          format: byte
+          nullable: true
+          description: Base64 row_version moi cua PHIEU sau khi cham diem
+    PhieuDanhGiaDonViCreateRequest:
+      type: object
+      required:
+        - IdNam
+        - IdDonVi
+        - IdMau
+      properties:
+        IdNam:
+          type: integer
+        IdDonVi:
+          type: integer
+        IdMau:
+          type: integer
+    PhieuDonViSubmitRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+          maxLength: 1000
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuDonViDuyetRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+          maxLength: 2000
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuDonViChotRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+          maxLength: 2000
+        XepLoai:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3, 4]
+          description: "Tuy chon. Bo trong -> BLL tinh provisional theo tong diem."
+        GhiChuXepLoai:
+          type: string
+          nullable: true
+          maxLength: 1000
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuDonViMoLaiRequest:
+      type: object
+      required:
+        - LyDo
+        - RowVersion
+      properties:
+        TrangThaiMoi:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: Trang thai dich sau khi mo lai
+        LyDo:
+          type: string
+          maxLength: 1000
+          description: Bat buoc. Ly do mo lai.
+        NhanXet:
+          type: string
+          nullable: true
+          maxLength: 1000
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+    ChiTietDonViDiemRequest:
+      type: object
+      properties:
+        Diem:
+          type: number
+          nullable: true
+        NhanXet:
+          type: string
+          nullable: true
+          maxLength: 1000
+        RowVersion:
+          type: string
+          format: byte
+          nullable: true
+          description: "Tuy chon — neu gui se duoc SP kiem tra concurrency"
   securitySchemes:
     bearerAuth:
       type: http

@@ -42,7 +42,7 @@ const QL_NhomTieuChi = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('nhomtieuchi');
+            const response = await apiFetch('nhomtieuchi?loaiDoiTuong=1');
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);

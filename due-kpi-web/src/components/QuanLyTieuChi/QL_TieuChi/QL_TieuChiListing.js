@@ -41,8 +41,8 @@ const QL_TieuChiListing = ({
         return "Liên tục";
       case 3:
         return "Có / Không";
-      case 4:
-        return "Công thức";
+      // case 4:
+      //   return "Công thức";
       default:
         return "---";
     }
@@ -131,7 +131,7 @@ const QL_TieuChiListing = ({
                           {item.MoTa}
                         </div>
                       )}
-                      {item.LoaiThangDiem === 4 && item.CongThucTinhDiem && (
+                      {/* {item.LoaiThangDiem === 4 && item.CongThucTinhDiem && (
                         <div
                           style={{
                             fontSize: "12px",
@@ -146,7 +146,7 @@ const QL_TieuChiListing = ({
                           ></i>
                           Công thức: {item.CongThucTinhDiem}
                         </div>
-                      )}
+                      )} */}
                     </td>
                     <td>
                       <div style={{ fontWeight: "500", color: "#0284c7" }}>
@@ -226,7 +226,7 @@ const QL_TieuChiListing = ({
                           </span>
                         )}
 
-                        {item.CoTheDongBoScience && (
+                        {/* {item.CoTheDongBoScience && (
                           <span
                             style={{ color: "#2980b9" }}
                             title={
@@ -239,7 +239,7 @@ const QL_TieuChiListing = ({
                             ></i>
                             Đồng bộ: {item.BangNguonScience || "Chưa cấu hình"}
                           </span>
-                        )}
+                        )} */}
                       </div>
                     </td>
                     <td>

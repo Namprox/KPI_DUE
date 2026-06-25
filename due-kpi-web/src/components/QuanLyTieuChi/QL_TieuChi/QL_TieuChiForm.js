@@ -103,10 +103,10 @@ const QL_TieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
                                     <option value={1}>1 - Mức điểm rời rạc (VD: 2đ, 5đ, 10đ)</option>
                                     <option value={2}>2 - Điểm liên tục (Tự nhập số)</option>
                                     <option value={3}>3 - Chọn Có / Không</option>
-                                    <option value={4}>4 - Theo công thức tính toán</option>
+                                    {/* <option value={4}>4 - Theo công thức tính toán</option> */}
                                 </select>
                             </div>
-                            <div className="form-group">
+                            {/* <div className="form-group">
                                 <label>Công thức tính điểm {isFormula && <span className="text-red">*</span>}</label>
                                 <input
                                     type="text"
@@ -119,7 +119,7 @@ const QL_TieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
                                     placeholder={isFormula ? "VD: {SoGio} * 1.5" : "Chỉ mở khi Loại thang điểm = 4"}
                                     style={{ backgroundColor: !isFormula ? '#f1f5f9' : '#fff', borderColor: isFormula ? '#e67e22' : '#ccc' }}
                                 />
-                            </div>
+                            </div> */}
                         </div>
 
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>
@@ -130,13 +130,13 @@ const QL_TieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
                                         <input type="checkbox" name="BatBuocMinhChung" id="bbMc" checked={formData.BatBuocMinhChung || false} onChange={handleChange} style={{ width: '18px', height: '18px', marginRight: '10px' }} />
                                         <label htmlFor="bbMc" style={{ margin: 0, cursor: 'pointer' }}>Bắt buộc tải lên minh chứng</label>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    {/* <div style={{ display: 'flex', alignItems: 'center' }}>
                                         <input type="checkbox" name="CoTheDongBoScience" id="syncSc" checked={formData.CoTheDongBoScience || false} onChange={handleChange} style={{ width: '18px', height: '18px', marginRight: '10px' }} />
                                         <label htmlFor="syncSc" style={{ margin: 0, cursor: 'pointer', color: '#2980b9', fontWeight: 'bold' }}>Tự động đồng bộ từ Hệ thống Science</label>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
-                            <div className="form-group">
+                            {/* <div className="form-group">
                                 <label>Bảng nguồn Science {isSync && <span className="text-red">*</span>}</label>
                                 <input
                                     type="text"
@@ -149,7 +149,7 @@ const QL_TieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
                                     placeholder={isSync ? "VD: Nckh_BaiBao" : "Chỉ mở khi bật Đồng bộ"}
                                     style={{ backgroundColor: !isSync ? '#f1f5f9' : '#fff', borderColor: isSync ? '#2980b9' : '#ccc' }}
                                 />
-                            </div>
+                            </div> */}
                         </div>
 
                         <div className="form-grid-2" style={{ marginBottom: '10px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
