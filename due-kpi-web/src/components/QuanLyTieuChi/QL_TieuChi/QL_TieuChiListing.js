@@ -126,6 +126,10 @@ const QL_TieuChiListing = ({
                             fontSize: "12px",
                             color: "#666",
                             marginTop: "4px",
+                            whiteSpace: "pre-line",
+                            textAlign: "justify",
+                            hyphens: "auto",
+                            wordBreak: "break-word",
                           }}
                         >
                           {item.MoTa}
@@ -168,7 +172,7 @@ const QL_TieuChiListing = ({
                           {item.CapDanhGia === 1
                             ? "Trường"
                             : item.CapDanhGia === 2
-                              ? "Khoa/Viện"
+                              ? "Khoa/Phòng"
                               : "Bộ môn"}
                         </div>
                       )}

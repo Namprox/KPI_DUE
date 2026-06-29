@@ -43,17 +43,17 @@ const menuStructure = {
     {
       name: "Nhóm tiêu chí",
       icon: "fa-solid fa-layer-group",
-      path: "/quan-ly-nhom-tieu-chi",
+      path: "/nhom-tieu-chi",
     },
     {
       name: "Tiêu chí đánh giá",
       icon: "fa-solid fa-list-ol",
-      path: "/quan-ly-tieu-chi",
+      path: "/tieu-chi-danh-gia",
     },
     {
       name: "Mẫu phiếu đánh giá",
       icon: "fa-solid fa-file-invoice",
-      path: "/quan-ly-mau-danh-gia",
+      path: "/mau-danh-gia",
     },
   ],
   orgMgmt: [
@@ -301,7 +301,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
             const labels = {
               evaluation: "Đánh giá KPI",
               planMgmt: "Thiết lập kế hoạch",
-              criteriaMgmt: "Tiêu chí giảng viên",
+              criteriaMgmt: "Quản lý tiêu chí",
               orgMgmt: "Cơ cấu tổ chức",
               evaluationMgmt: "Quản lý đánh giá",
             };
@@ -309,7 +309,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
             const icons = {
               evaluation: "fa-check-double",
               planMgmt: "fa-calendar-check",
-              criteriaMgmt: "fa-book-bookmark",
+              criteriaMgmt: "fa-list-check",
               orgMgmt: "fa-users-gear",
               evaluationMgmt: "fa-check-double",
             };

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const QL_NhomTieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, nhomChaList = [] }) => {
+const QL_NhomTieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, nhomChaList = [], showLoaiNhom = true }) => {
     if (!isOpen) return null;
 
     const handleChange = (e) => {
@@ -51,21 +51,36 @@ const QL_NhomTieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, 
                             </select>
                         </div>
 
-                        <div className="form-grid-2" style={{ marginBottom: '20px' }}>
-                            <div className="form-group">
-                                <label>Loại Nhóm <span className="text-red">*</span></label>
-                                <select
-                                    name="LoaiNhom"
-                                    className="form-input"
-                                    value={formData.LoaiNhom || 1}
-                                    onChange={handleChange}
-                                    required
-                                >
-                                    <option value={1}>1 - Tiêu chí cơ bản (Nhóm A)</option>
-                                    <option value={2}>2 - Thành tích vượt trội (Nhóm B)</option>
-                                </select>
+                        {showLoaiNhom ? (
+                            <div className="form-grid-2" style={{ marginBottom: '20px' }}>
+                                <div className="form-group">
+                                    <label>Loại Nhóm <span className="text-red">*</span></label>
+                                    <select
+                                        name="LoaiNhom"
+                                        className="form-input"
+                                        value={formData.LoaiNhom || 1}
+                                        onChange={handleChange}
+                                        required
+                                    >
+                                        <option value={1}>1 - Tiêu chí cơ bản (Nhóm A)</option>
+                                        <option value={2}>2 - Thành tích vượt trội (Nhóm B)</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Điểm tối đa (Nếu có)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        name="DiemToiDa"
+                                        className="form-input"
+                                        value={formData.DiemToiDa || ''}
+                                        onChange={handleChange}
+                                        placeholder="VD: 100"
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
+                        ) : (
+                            <div className="form-group" style={{ marginBottom: '20px' }}>
                                 <label>Điểm tối đa (Nếu có)</label>
                                 <input
                                     type="number"
@@ -77,7 +92,7 @@ const QL_NhomTieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, 
                                     placeholder="VD: 100"
                                 />
                             </div>
-                        </div>
+                        )}
 
                         <div className="form-group" style={{ marginBottom: '20px' }}>
                             <label>Thứ tự hiển thị</label>

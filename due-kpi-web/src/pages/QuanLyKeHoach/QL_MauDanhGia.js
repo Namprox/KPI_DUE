@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLMauDanhGiaListing from '../../components/QuanLyKeHoach/QL_MauDanhGia/QL_MauDanhGiaListing';
@@ -6,8 +7,12 @@ import QLMauDanhGiaForm from '../../components/QuanLyKeHoach/QL_MauDanhGia/QL_Ma
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 import { Toast } from 'primereact/toast';
+import ObjectTabs, { OBJECT_TYPES } from '../../components/Common/ObjectTabs';
 
 const QL_MauDanhGia = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentType = searchParams.get('type') || '1';
+
     const initialForm = {
         TenMau: '', IdNam: '', MoTa: '', TrangThai: true, DanhSachIdTieuChi: []
     };
@@ -36,15 +41,21 @@ const QL_MauDanhGia = () => {
     const canManage = isAdmin || isManager;
 
     useEffect(() => {
-        fetchData();
-        fetchNamDanhGia();
-        fetchTieuChi();
-    }, []);
+        const isTypeEnabled = OBJECT_TYPES.some(t => t.key === currentType && t.enabled);
+        if (!isTypeEnabled) {
+            setSearchParams({ type: '1' }, { replace: true });
+        } else {
+            fetchData();
+            fetchNamDanhGia();
+            fetchTieuChi();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentType, setSearchParams]);
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('maudanhgia?loaiDoiTuong=1');
+            const response = await apiFetch(`maudanhgia?loaiDoiTuong=${currentType}`);
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);
@@ -72,7 +83,7 @@ const QL_MauDanhGia = () => {
 
     const fetchTieuChi = async () => {
         try {
-            const response = await apiFetch('tieuchidanhgia?loaiDoiTuong=1');
+            const response = await apiFetch(`tieuchidanhgia?loaiDoiTuong=${currentType}`);
             if (response.ok) {
                 const res = await response.json();
                 setTieuChiList(res.Items || (Array.isArray(res) ? res : []));
@@ -103,11 +114,16 @@ const QL_MauDanhGia = () => {
             TenMau: formData.TenMau,
             IdNam: parseInt(formData.IdNam),
             MoTa: formData.MoTa || '',
-            TrangThai: !!formData.TrangThai
+            TrangThai: !!formData.TrangThai,
+            LoaiDoiTuong: parseInt(currentType),
+            loaiDoiTuong: parseInt(currentType)
         };
         if (editId) payload.IdMau = editId;
 
-        const endpoint = editId ? `maudanhgia/${editId}` : 'maudanhgia';
+        const endpoint = editId 
+            ? `maudanhgia/${editId}?loaiDoiTuong=${currentType}` 
+            : `maudanhgia?loaiDoiTuong=${currentType}`;
+
         const response = await apiFetch(endpoint, {
             method,
             body: JSON.stringify(payload)
@@ -118,7 +134,7 @@ const QL_MauDanhGia = () => {
             const createdId = editId || result.Item?.IdMau || result.IdMau;
             let bulkSuccess = true;
 
-            if (createdId && formData.DanhSachIdTieuChi) {
+            if (createdId && formData.DanhSachIdTieuChi && formData.DanhSachIdTieuChi.length > 0) {
                 const bulkResponse = await apiFetch('chitietmaudanhgia/bulk', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -236,6 +252,8 @@ const QL_MauDanhGia = () => {
                     <h2>QUẢN LÝ MẪU ĐÁNH GIÁ</h2>
                 </div>
             </div>
+
+            <ObjectTabs currentType={currentType} onChange={(key) => setSearchParams({ type: key })} />
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
                 {canManage && (

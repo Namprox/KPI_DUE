@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLTieuChiListing from '../../components/QuanLyTieuChi/QL_TieuChi/QL_TieuChiListing';
@@ -6,12 +7,15 @@ import QLTieuChiForm from '../../components/QuanLyTieuChi/QL_TieuChi/QL_TieuChiF
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 import { Toast } from 'primereact/toast';
+import ObjectTabs, { OBJECT_TYPES } from '../../components/Common/ObjectTabs';
 
 const QL_TieuChi = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentType = searchParams.get('type') || '1';
+
     const initialForm = {
         TenTieuChi: '',
         IdNhom: '',
-        IdNam: '',
         CapDanhGia: '',
         MoTa: '',
         DiemToiDa: '',
@@ -19,13 +23,14 @@ const QL_TieuChi = () => {
         CongThucTinhDiem: '',
         BatBuocMinhChung: false,
         ThuTuHienThi: 1,
-        TrangThai: true
+        TrangThai: true,
+        ThangDiemList: [],
+        DeletedThangDiemIds: []
     };
 
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [nhomTieuChiList, setNhomTieuChiList] = useState([]);
-    const [namDanhGiaList, setNamDanhGiaList] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,15 +50,20 @@ const QL_TieuChi = () => {
     const canManage = isAdmin || isManager;
 
     useEffect(() => {
-        fetchData();
-        fetchNhomTieuChi();
-        fetchNamDanhGia();
-    }, []);
+        const isTypeEnabled = OBJECT_TYPES.some(t => t.key === currentType && t.enabled);
+        if (!isTypeEnabled) {
+            setSearchParams({ type: '1' }, { replace: true });
+        } else {
+            fetchData();
+            fetchNhomTieuChi();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentType, setSearchParams]);
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('tieuchidanhgia?loaiDoiTuong=1');
+            const response = await apiFetch(`tieuchidanhgia?loaiDoiTuong=${currentType}`);
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);
@@ -69,7 +79,7 @@ const QL_TieuChi = () => {
 
     const fetchNhomTieuChi = async () => {
         try {
-            const response = await apiFetch('nhomtieuchi?loaiDoiTuong=1');
+            const response = await apiFetch(`nhomtieuchi?loaiDoiTuong=${currentType}`);
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);
@@ -77,19 +87,6 @@ const QL_TieuChi = () => {
             }
         } catch (error) {
             console.error("Lỗi tải danh sách nhóm tiêu chí:", error);
-        }
-    };
-
-    const fetchNamDanhGia = async () => {
-        try {
-            const response = await apiFetch('namdanhgia');
-            if (response.ok) {
-                const result = await response.json();
-                const list = result.Items || (Array.isArray(result) ? result : []);
-                setNamDanhGiaList(list);
-            }
-        } catch (error) {
-            console.error("Lỗi tải danh sách năm đánh giá:", error);
         }
     };
 
@@ -115,7 +112,7 @@ const QL_TieuChi = () => {
         const payload = {
             ...formData,
             IdNhom: parseInt(formData.IdNhom) || 0,
-            IdNam: formData.IdNam ? parseInt(formData.IdNam) : null,
+            IdNam: null,
             CapDanhGia: formData.CapDanhGia ? parseInt(formData.CapDanhGia) : null,
             DiemToiDa: parseFloat(formData.DiemToiDa) || 0,
             LoaiThangDiem: parseInt(formData.LoaiThangDiem) || 1,
@@ -123,16 +120,91 @@ const QL_TieuChi = () => {
             TrangThai: !!formData.TrangThai,
             BatBuocMinhChung: !!formData.BatBuocMinhChung,
             CongThucTinhDiem: formData.CongThucTinhDiem || '',
-            MoTa: formData.MoTa || ''
+            MoTa: formData.MoTa || '',
+            LoaiDoiTuong: parseInt(currentType),
+            loaiDoiTuong: parseInt(currentType)
         };
         if (editId) payload.IdTieuChi = editId;
 
-        const response = await apiFetch(editId ? `tieuchidanhgia/${editId}` : 'tieuchidanhgia', {
+        const endpoint = editId 
+            ? `tieuchidanhgia/${editId}?loaiDoiTuong=${currentType}` 
+            : `tieuchidanhgia?loaiDoiTuong=${currentType}`;
+
+        const response = await apiFetch(endpoint, {
             method,
             body: JSON.stringify(payload)
         });
 
         if (response.ok) {
+            const result = await response.json();
+            const createdId = editId || result.Item?.IdTieuChi || result.IdTieuChi;
+
+            if (createdId) {
+                if (parseInt(payload.LoaiThangDiem) === 1) {
+                    // 1. Delete removed items
+                    if (formData.DeletedThangDiemIds && formData.DeletedThangDiemIds.length > 0) {
+                        try {
+                            await Promise.all(
+                                formData.DeletedThangDiemIds.map(id =>
+                                    apiFetch(`thangdiem/${id}`, { method: 'DELETE' })
+                                )
+                            );
+                        } catch (err) {
+                            console.error("Lỗi khi xóa thang điểm:", err);
+                        }
+                    }
+
+                    // 2. Save / Update items
+                    if (formData.ThangDiemList && formData.ThangDiemList.length > 0) {
+                        try {
+                            await Promise.all(
+                                formData.ThangDiemList.map(item => {
+                                    const subPayload = {
+                                        IdTieuChi: createdId,
+                                        GiaTriDiem: parseFloat(item.GiaTriDiem) || 0,
+                                        DieuKienDiem: item.DieuKienDiem || '',
+                                        ThuTuHienThi: parseInt(item.ThuTuHienThi) || 1
+                                    };
+
+                                    if (item.IdThangDiem) {
+                                        subPayload.IdThangDiem = item.IdThangDiem;
+                                        return apiFetch(`thangdiem/${item.IdThangDiem}`, {
+                                            method: 'PUT',
+                                            body: JSON.stringify(subPayload)
+                                        });
+                                    } else {
+                                        return apiFetch('thangdiem', {
+                                            method: 'POST',
+                                            body: JSON.stringify(subPayload)
+                                        });
+                                    }
+                                })
+                            );
+                        } catch (err) {
+                            console.error("Lỗi khi lưu thang điểm:", err);
+                        }
+                    }
+                } else {
+                    // If changed away from discrete scale type, delete any existing scale options
+                    const originalList = formData.ThangDiemList || [];
+                    const idsToDelete = originalList
+                        .map(item => item.IdThangDiem)
+                        .filter(id => id != null);
+
+                    if (idsToDelete.length > 0) {
+                        try {
+                            await Promise.all(
+                                idsToDelete.map(id =>
+                                    apiFetch(`thangdiem/${id}`, { method: 'DELETE' })
+                                )
+                            );
+                        } catch (err) {
+                            console.error("Lỗi khi dọn dẹp thang điểm cũ:", err);
+                        }
+                    }
+                }
+            }
+
             toast.current.show({ severity: 'success', summary: 'Thành công', detail: 'Đã lưu tiêu chí đánh giá thành công!', life: 3000 });
             fetchData();
             closeModal();
@@ -141,16 +213,38 @@ const QL_TieuChi = () => {
         }
     };
 
-    const handleEdit = (item) => {
+    const handleEdit = async (item) => {
         if (!canManage) return;
         setEditId(item.IdTieuChi);
+        
+        // Open modal with current item data first
         setFormData({
             ...item,
-            IdNam: item.IdNam || '',
             CapDanhGia: item.CapDanhGia || '',
-            CongThucTinhDiem: item.CongThucTinhDiem || ''
+            CongThucTinhDiem: item.CongThucTinhDiem || '',
+            ThangDiemList: [],
+            DeletedThangDiemIds: []
         });
         setIsModalOpen(true);
+
+        if (Number(item.LoaiThangDiem) === 1) {
+            try {
+                const response = await apiFetch(`thangdiem?tieuChiId=${item.IdTieuChi}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    let thangDiemList = result.Items || (Array.isArray(result) ? result : []);
+                    thangDiemList = thangDiemList.filter(td => td.IdTieuChi === item.IdTieuChi);
+                    thangDiemList.sort((a, b) => (a.ThuTuHienThi || 0) - (b.ThuTuHienThi || 0));
+                    
+                    setFormData(prev => ({
+                        ...prev,
+                        ThangDiemList: thangDiemList
+                    }));
+                }
+            } catch (error) {
+                console.error("Lỗi tải danh sách thang điểm:", error);
+            }
+        }
     };
 
     const handleDelete = (id) => {
@@ -193,6 +287,8 @@ const QL_TieuChi = () => {
                 </div>
             </div>
 
+            <ObjectTabs currentType={currentType} onChange={(key) => setSearchParams({ type: key })} />
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
                 {canManage && (
                     <button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}>
@@ -234,7 +330,6 @@ const QL_TieuChi = () => {
                 setFormData={setFormData}
                 isEditing={!!editId}
                 nhomTieuChiList={nhomTieuChiList}
-                namDanhGiaList={namDanhGiaList}
             />
         </div>
     );

@@ -8,6 +8,7 @@ const QL_NhomTieuChiListing = ({
   onDelete,
   isLoading,
   canManage,
+  showLoaiNhom = true,
 }) => {
   const [first, setFirst] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
@@ -78,11 +79,13 @@ const QL_NhomTieuChiListing = ({
                 <th width="8%" style={{ textAlign: "center" }}>
                   STT
                 </th>
-                <th width="35%">TÊN NHÓM TIÊU CHÍ</th>
+                <th width={showLoaiNhom ? "35%" : "47%"}>TÊN NHÓM TIÊU CHÍ</th>
                 <th width="20%">CẤP CHA (NẾU CÓ)</th>
-                <th width="12%" style={{ textAlign: "center" }}>
-                  LOẠI NHÓM
-                </th>
+                {showLoaiNhom && (
+                  <th width="12%" style={{ textAlign: "center" }}>
+                    LOẠI NHÓM
+                  </th>
+                )}
                 <th width="10%" style={{ textAlign: "center" }}>
                   TRẠNG THÁI
                 </th>
@@ -125,13 +128,15 @@ const QL_NhomTieuChiListing = ({
                     >
                       {item.TenNhomCha || "---"}
                     </td>
-                    <td style={{ textAlign: "center", fontWeight: "500" }}>
-                      {item.LoaiNhom === 1 ? (
-                        "Cơ bản (A)"
-                      ) : (
-                        <span style={{ color: "#8e44ad" }}>Vượt trội (B)</span>
-                      )}
-                    </td>
+                    {showLoaiNhom && (
+                      <td style={{ textAlign: "center", fontWeight: "500" }}>
+                        {item.LoaiNhom === 1 ? (
+                          "Cơ bản (A)"
+                        ) : (
+                          <span style={{ color: "#8e44ad" }}>Vượt trội (B)</span>
+                        )}
+                      </td>
+                    )}
                     <td style={{ textAlign: "center" }}>
                       {item.TrangThai ? (
                         <span className="nhom-nhiem-vu-status-active">

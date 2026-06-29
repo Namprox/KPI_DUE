@@ -15,9 +15,9 @@ const QL_ThangDiemByTieuChi = () => {
   const { user } = useAuth();
 
   const currentUser = user || {};
-  const roleCode = currentUser?.MaChucVu || '';
-  const isAdmin = roleCode === 'Admin';
-  const isManager = ['HT', 'PHT', 'TK', 'TBM'].includes(roleCode);
+  const roleCode = currentUser?.MaChucVu || "";
+  const isAdmin = roleCode === "Admin";
+  const isManager = ["HT", "PHT", "TK", "TBM"].includes(roleCode);
   const canManage = isAdmin || isManager;
 
   const initialForm = {
@@ -48,7 +48,7 @@ const QL_ThangDiemByTieuChi = () => {
 
   const fetchTieuChi = async () => {
     try {
-      const response = await apiFetch("tieuchidanhgia?loaiDoiTuong=1");
+      const response = await apiFetch("tieuchidanhgia");
       if (response.ok) {
         const res = await response.json();
         const list = res.Items || (Array.isArray(res) ? res : []);
@@ -89,7 +89,12 @@ const QL_ThangDiemByTieuChi = () => {
     e.preventDefault();
 
     if (!canManage) {
-      toast.current.show({ severity: "error", summary: "Lỗi", detail: "Bạn không có quyền thực hiện chức năng này!", life: 4000 });
+      toast.current.show({
+        severity: "error",
+        summary: "Lỗi",
+        detail: "Bạn không có quyền thực hiện chức năng này!",
+        life: 4000,
+      });
       return;
     }
 
@@ -102,22 +107,40 @@ const QL_ThangDiemByTieuChi = () => {
     };
     if (editId) payload.IdThangDiem = editId;
 
-    const response = await apiFetch(editId ? `thangdiem/${editId}` : "thangdiem", {
-      method,
-      body: JSON.stringify(payload),
-    });
+    const response = await apiFetch(
+      editId ? `thangdiem/${editId}` : "thangdiem",
+      {
+        method,
+        body: JSON.stringify(payload),
+      },
+    );
 
     if (response.ok) {
       const resData = await response.json();
       if (resData.status === "success" || !resData.status) {
-        toast.current.show({ severity: "success", summary: "Thành công", detail: "Đã lưu thang điểm thành công!", life: 3000 });
+        toast.current.show({
+          severity: "success",
+          summary: "Thành công",
+          detail: "Đã lưu thang điểm thành công!",
+          life: 3000,
+        });
         fetchData();
         closeModal();
       } else {
-        toast.current.show({ severity: "error", summary: "Lỗi", detail: resData.message || "Lưu thất bại!", life: 4000 });
+        toast.current.show({
+          severity: "error",
+          summary: "Lỗi",
+          detail: resData.message || "Lưu thất bại!",
+          life: 4000,
+        });
       }
     } else {
-      toast.current.show({ severity: "error", summary: "Lỗi", detail: "Lỗi kết nối máy chủ!", life: 4000 });
+      toast.current.show({
+        severity: "error",
+        summary: "Lỗi",
+        detail: "Lỗi kết nối máy chủ!",
+        life: 4000,
+      });
     }
   };
 
@@ -145,12 +168,27 @@ const QL_ThangDiemByTieuChi = () => {
           const result = await res.json();
           if (result.status === "success" || !result.status) {
             fetchData();
-            toast.current.show({ severity: "success", summary: "Thành công", detail: "Đã xóa thang điểm thành công!", life: 3000 });
+            toast.current.show({
+              severity: "success",
+              summary: "Thành công",
+              detail: "Đã xóa thang điểm thành công!",
+              life: 3000,
+            });
           } else {
-            toast.current.show({ severity: "error", summary: "Lỗi", detail: result.message || "Xóa thất bại!", life: 4000 });
+            toast.current.show({
+              severity: "error",
+              summary: "Lỗi",
+              detail: result.message || "Xóa thất bại!",
+              life: 4000,
+            });
           }
         } else {
-          toast.current.show({ severity: "error", summary: "Lỗi", detail: "Xóa thất bại!", life: 4000 });
+          toast.current.show({
+            severity: "error",
+            summary: "Lỗi",
+            detail: "Xóa thất bại!",
+            life: 4000,
+          });
         }
       },
     });
@@ -200,7 +238,7 @@ const QL_ThangDiemByTieuChi = () => {
           <h2>CHI TIẾT THANG ĐIỂM TIÊU CHÍ</h2>
         </div>
         <button
-          onClick={() => navigate("/quan-ly-tieu-chi")}
+          onClick={() => navigate("/tieu-chi-danh-gia")}
           style={{
             display: "flex",
             alignItems: "center",

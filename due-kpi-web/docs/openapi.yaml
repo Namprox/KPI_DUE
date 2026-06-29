@@ -3724,12 +3724,12 @@ components:
       name: loaiDoiTuong
       in: query
       required: false
-      description: "Loc theo loai doi tuong: 1=Giang vien, 2=Vien chuc/NLD, 3=Don vi. Bo trong = tat ca."
+      description: "Loc theo loai doi tuong: 1=Giang vien, 2=Vien chuc/NLD, 3=Khoa, 4=Phong/hanh chinh. Bo trong = tat ca."
       schema:
         type: integer
         format: int32
         minimum: 1
-        maximum: 3
+        maximum: 4
   schemas:
     LichSuTrangThaiPhieuDto:
       type: object
@@ -4365,6 +4365,10 @@ components:
         TrangThai:
           type: boolean
           nullable: true
+        LoaiDoiTuong:
+          type: integer
+          nullable: true
+          description: "1 = Giang vien, 2 = Vien chuc/NLD, 3 = Don vi (khoa/phong). Bo trong = mac dinh 1."
     MauDanhGiaUpdateRequest:
       type: object
       required:
@@ -4395,6 +4399,9 @@ components:
         SoTieuChi:
           type: integer
           description: So luong tieu chi da gan vao mau danh gia
+        LoaiDoiTuong:
+          type: integer
+          description: "1 = Giang vien, 2 = Vien chuc/NLD, 3 = Don vi (khoa/phong)"
     MauDanhGiaResponse:
       type: object
       properties:
@@ -4489,9 +4496,6 @@ components:
           type: number
           nullable: true
         ThuTuHienThiNhom:
-          type: integer
-          nullable: true
-        IdNam:
           type: integer
           nullable: true
         MoTa:
@@ -5532,6 +5536,12 @@ components:
         TrangThai:
           type: boolean
           nullable: true
+        LoaiDoiTuong:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 4
+          description: "1=Giang vien, 2=Vien chuc/NLD, 3=Khoa, 4=Phong; NULL=khong phan loai (dung chung)"
     NhomNhiemVuUpdateRequest:
       type: object
       required:
@@ -5545,6 +5555,12 @@ components:
         TrangThai:
           type: boolean
           nullable: true
+        LoaiDoiTuong:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 4
+          description: "1=Giang vien, 2=Vien chuc/NLD, 3=Khoa, 4=Phong; NULL=giu nguyen khi cap nhat"
     NhomNhiemVuDto:
       type: object
       properties:
@@ -5556,6 +5572,10 @@ components:
           type: integer
         TrangThai:
           type: boolean
+        LoaiDoiTuong:
+          type: integer
+          nullable: true
+          description: "1=Giang vien, 2=Vien chuc/NLD, 3=Khoa, 4=Phong; NULL=khong phan loai"
     NhomNhiemVuResponse:
       type: object
       properties:
@@ -5666,7 +5686,7 @@ components:
           nullable: true
         LoaiDoiTuong:
           type: integer
-          description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Đơn vị"
+          description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Khoa, 4: Phòng ban/hành chính"
           nullable: true
         DiemToiDa:
           type: number
@@ -5692,7 +5712,7 @@ components:
           nullable: true
         LoaiDoiTuong:
           type: integer
-          description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Đơn vị"
+          description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Khoa, 4: Phòng ban/hành chính"
           nullable: true
         DiemToiDa:
           type: number
@@ -5719,7 +5739,7 @@ components:
           type: integer
         LoaiDoiTuong:
           type: integer
-          description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Đơn vị"
+          description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Khoa, 4: Phòng ban/hành chính"
         DiemToiDa:
           type: number
           nullable: true
@@ -5750,9 +5770,6 @@ components:
           type: string
         IdNhom:
           type: integer
-        IdNam:
-          type: integer
-          nullable: true
         MoTa:
           type: string
         DiemToiDa:
@@ -5773,6 +5790,10 @@ components:
         TrangThai:
           type: boolean
           nullable: true
+        LoaiDoiTuong:
+          type: integer
+          nullable: true
+          description: "1=GV, 2=Vien chuc/NLD, 3=Khoa, 4=Phong. Bo trong => mac dinh 1 (GV)."
     TieuChiDanhGiaUpdateRequest:
       type: object
       required:
@@ -5782,9 +5803,6 @@ components:
           type: string
         IdNhom:
           type: integer
-        IdNam:
-          type: integer
-          nullable: true
         MoTa:
           type: string
         DiemToiDa:
@@ -5805,6 +5823,10 @@ components:
         TrangThai:
           type: boolean
           nullable: true
+        LoaiDoiTuong:
+          type: integer
+          nullable: true
+          description: "1=GV, 2=Vien chuc/NLD, 3=Khoa, 4=Phong. Bo trong => mac dinh 1 (GV)."
     TieuChiDanhGiaDto:
       type: object
       properties:
@@ -5816,9 +5838,6 @@ components:
           type: integer
         TenNhom:
           type: string
-        IdNam:
-          type: integer
-          nullable: true
         MoTa:
           type: string
         DiemToiDa:
@@ -5837,6 +5856,9 @@ components:
           nullable: true
         TrangThai:
           type: boolean
+        LoaiDoiTuong:
+          type: integer
+          description: "1=GV, 2=Vien chuc/NLD, 3=Khoa, 4=Phong."
     TieuChiDanhGiaResponse:
       type: object
       properties:
@@ -6648,7 +6670,6 @@ components:
       required:
         - IdNam
         - IdDonVi
-        - IdMau
       properties:
         IdNam:
           type: integer
@@ -6656,6 +6677,8 @@ components:
           type: integer
         IdMau:
           type: integer
+          nullable: true
+          description: "Bo trong: backend tu suy mau theo ma_don_vi (K_* va TNNCN => Khoa/loai 3, con lai => Phong/loai 4)."
     PhieuDonViSubmitRequest:
       type: object
       required:

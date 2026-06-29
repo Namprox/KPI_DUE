@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLNhomTieuChiListing from '../../components/QuanLyTieuChi/QL_NhomTieuChi/QL_NhomTieuChiListing';
@@ -6,8 +7,12 @@ import QLNhomTieuChiForm from '../../components/QuanLyTieuChi/QL_NhomTieuChi/QL_
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 import { Toast } from 'primereact/toast';
+import ObjectTabs, { OBJECT_TYPES } from '../../components/Common/ObjectTabs';
 
 const QL_NhomTieuChi = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentType = searchParams.get('type') || '1';
+
     const initialForm = {
         TenNhom: '',
         IdNhomCha: '',
@@ -36,15 +41,22 @@ const QL_NhomTieuChi = () => {
     const isAdmin = roleCode === 'Admin';
     const isManager = ['HT', 'PHT', 'TK', 'TBM'].includes(roleCode);
     const canManage = isAdmin || isManager;
+    const showLoaiNhom = currentType !== '2';
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        const isTypeEnabled = OBJECT_TYPES.some(t => t.key === currentType && t.enabled);
+        if (!isTypeEnabled) {
+            setSearchParams({ type: '1' }, { replace: true });
+        } else {
+            fetchData();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentType, setSearchParams]);
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('nhomtieuchi?loaiDoiTuong=1');
+            const response = await apiFetch(`nhomtieuchi?loaiDoiTuong=${currentType}`);
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);
@@ -79,14 +91,20 @@ const QL_NhomTieuChi = () => {
         const payload = {
             ...formData,
             IdNhomCha: formData.IdNhomCha ? parseInt(formData.IdNhomCha) : null,
-            LoaiNhom: parseInt(formData.LoaiNhom) || 1,
+            LoaiNhom: showLoaiNhom ? (parseInt(formData.LoaiNhom) || 1) : 1,
+            LoaiDoiTuong: parseInt(currentType),
+            loaiDoiTuong: parseInt(currentType),
             DiemToiDa: formData.DiemToiDa ? parseFloat(formData.DiemToiDa) : null,
             ThuTuHienThi: parseInt(formData.ThuTuHienThi) || 1,
             TrangThai: !!formData.TrangThai
         };
         if (editId) payload.IdNhom = editId;
 
-        const response = await apiFetch(editId ? `nhomtieuchi/${editId}` : 'nhomtieuchi', {
+        const endpoint = editId 
+            ? `nhomtieuchi/${editId}?loaiDoiTuong=${currentType}` 
+            : `nhomtieuchi?loaiDoiTuong=${currentType}`;
+
+        const response = await apiFetch(endpoint, {
             method,
             body: JSON.stringify(payload)
         });
@@ -151,6 +169,8 @@ const QL_NhomTieuChi = () => {
                 </div>
             </div>
 
+            <ObjectTabs currentType={currentType} onChange={(key) => setSearchParams({ type: key })} />
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
                 {canManage && (
                     <button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}>
@@ -182,6 +202,7 @@ const QL_NhomTieuChi = () => {
                 onDelete={canManage ? handleDelete : () => { }}
                 isLoading={isLoading}
                 canManage={canManage}
+                showLoaiNhom={showLoaiNhom}
             />
 
             <QLNhomTieuChiForm
@@ -192,6 +213,7 @@ const QL_NhomTieuChi = () => {
                 setFormData={setFormData}
                 isEditing={!!editId}
                 nhomChaList={data}
+                showLoaiNhom={showLoaiNhom}
             />
         </div>
     );
