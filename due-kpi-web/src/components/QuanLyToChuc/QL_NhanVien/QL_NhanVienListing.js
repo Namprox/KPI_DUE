@@ -6,6 +6,7 @@ const QL_NhanVienListing = ({
   data,
   onEdit,
   onDelete,
+  onResetPassword,
   isLoading,
   canManage,
 }) => {
@@ -75,11 +76,11 @@ const QL_NhanVienListing = ({
                 <th width="18%">HỌ VÀ TÊN</th>
                 <th width="16%">ĐƠN VỊ CÔNG TÁC</th>
                 <th width="14%">CHỨC VỤ / CHỨC DANH</th>
-                <th width="18%">THÔNG TIN LIÊN HỆ</th>
+                <th width="16%">THÔNG TIN LIÊN HỆ</th>
                 <th width="10%" style={{ textAlign: "center" }}>
                   TRẠNG THÁI
                 </th>
-                <th width="6%" style={{ textAlign: "center" }}>
+                <th width="8%" style={{ textAlign: "center" }}>
                   THAO TÁC
                 </th>
               </tr>
@@ -193,6 +194,13 @@ const QL_NhanVienListing = ({
                           title="Chỉnh sửa"
                         >
                           <i className="fa-solid fa-pen"></i>
+                        </div>
+                        <div
+                          className="action-btn key-btn"
+                          onClick={() => onResetPassword(item)}
+                          title="Đổi mật khẩu"
+                        >
+                          <i className="fa-solid fa-key"></i>
                         </div>
                         <div
                           className="action-btn delete-btn"

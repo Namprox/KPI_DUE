@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
-import QLNamDanhGiaListing from '../../components/QuanLyKeHoach/QL_NamDanhGia/QL_NamDanhGiaListing';
-import QLNamDanhGiaForm from '../../components/QuanLyKeHoach/QL_NamDanhGia/QL_NamDanhGiaForm';
+import QL_ViPhamListing from '../../components/QuanLyKeHoach/QL_ViPham/QL_ViPhamListing';
+import QL_ViPhamForm from '../../components/QuanLyKeHoach/QL_ViPham/QL_ViPhamForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
-const QL_NamDanhGia = () => {
-    const currentYear = new Date().getFullYear();
+const QL_ViPham = () => {
     const initialForm = {
-        IdNam: currentYear,
-        NgayBatDau: '',
-        NgayKetThuc: '',
-        NgayMoTuDanhGia: '',
-        NgayDongTuDanhGia: '',
-        NgayMoDanhGiaCapTren: '',
-        NgayDongDanhGiaCapTren: '',
-        TrangThai: 1,
-        GhiChu: ''
+        IdNhanVien: '',
+        IdNam: '',
+        MoTa: '',
+        LaNghiemTrong: false,
+        NgayViPham: '',
+        IdNguoiGhiNhan: ''
     };
 
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
+    const [namList, setNamList] = useState([]);
+    const [nhanVienList, setNhanVienList] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,10 +27,9 @@ const QL_NamDanhGia = () => {
     const [editId, setEditId] = useState(null);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
-
     const { user } = useAuth();
     const currentUser = user || {};
-
+    
     const roleCode = currentUser?.MaChucVu || '';
     const isAdmin = roleCode === 'Admin';
     const isManager = ['HT', 'PHT', 'TK', 'TBM'].includes(roleCode);
@@ -40,39 +37,15 @@ const QL_NamDanhGia = () => {
 
     useEffect(() => {
         fetchData();
+        fetchNamList();
+        fetchNhanVienList();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    useEffect(() => {
-        if (formData.NgayMoTuDanhGia && formData.NgayDongDanhGiaCapTren) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const startDate = new Date(formData.NgayMoTuDanhGia);
-            startDate.setHours(0, 0, 0, 0);
-
-            const endDate = new Date(formData.NgayDongDanhGiaCapTren);
-            endDate.setHours(23, 59, 59, 999);
-
-            let autoStatus = 1;
-
-            if (today < startDate) {
-                autoStatus = 1;
-            } else if (today >= startDate && today <= endDate) {
-                autoStatus = 2;
-            } else if (today > endDate) {
-                autoStatus = 3;
-            }
-
-            if (formData.TrangThai !== autoStatus) {
-                setFormData(prev => ({ ...prev, TrangThai: autoStatus }));
-            }
-        }
-    }, [formData.NgayMoTuDanhGia, formData.NgayDongDanhGiaCapTren, formData.TrangThai]);
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('namdanhgia');
+            const response = await apiFetch('viphamgiangday');
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);
@@ -80,24 +53,61 @@ const QL_NamDanhGia = () => {
                 setFilteredData(list);
             }
         } catch (error) {
-            console.error("Lỗi tải dữ liệu:", error);
+            console.error("Lỗi tải danh sách vi phạm:", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchNamList = async () => {
+        try {
+            const response = await apiFetch('namdanhgia');
+            if (response.ok) {
+                const result = await response.json();
+                setNamList(result.Items || (Array.isArray(result) ? result : []));
+            }
+        } catch (error) {
+            console.error("Lỗi tải danh sách năm đánh giá:", error);
+        }
+    };
+
+    const fetchNhanVienList = async () => {
+        try {
+            const response = await apiFetch('nhan-vien');
+            if (response.ok) {
+                const result = await response.json();
+                setNhanVienList(result.Items || (Array.isArray(result) ? result : []));
+            }
+        } catch (error) {
+            console.error("Lỗi tải danh sách nhân viên:", error);
         }
     };
 
     const handleSearch = (e) => {
         const query = e.target.value.toLowerCase();
         setSearchQuery(query);
-        setFilteredData(data.filter(item =>
-            item.IdNam.toString().includes(query) ||
-            (item.GhiChu && item.GhiChu.toLowerCase().includes(query))
-        ));
+        
+        if (!query.trim()) {
+            setFilteredData(data);
+            return;
+        }
+
+        setFilteredData(data.filter(item => {
+            const nv = nhanVienList.find(x => x.IdNhanVien === item.IdNhanVien);
+            const employeeName = nv ? nv.HoTen.toLowerCase() : '';
+            const employeeCode = nv ? nv.MaNhanVien.toLowerCase() : '';
+            const desc = item.MoTa ? item.MoTa.toLowerCase() : '';
+            const yearStr = item.IdNam ? item.IdNam.toString() : '';
+            
+            return employeeName.includes(query) || 
+                   employeeCode.includes(query) ||
+                   desc.includes(query) ||
+                   yearStr.includes(query);
+        }));
     };
 
     const formatDateForInput = (dateString) => {
         if (!dateString) return '';
-
         let date;
         if (typeof dateString === 'string' && dateString.includes('/Date(')) {
             const timestamp = parseInt(dateString.match(/\d+/)[0], 10);
@@ -105,82 +115,62 @@ const QL_NamDanhGia = () => {
         } else {
             date = new Date(dateString);
         }
-
         if (isNaN(date.getTime())) return '';
-
         date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
         return date.toISOString().split('T')[0];
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!canManage) {
             alert("Bạn không có quyền thực hiện chức năng này!");
             return;
         }
 
-        const dBatDau = new Date(formData.NgayBatDau);
-        const dKetThuc = new Date(formData.NgayKetThuc);
-        const dMoGV = new Date(formData.NgayMoTuDanhGia);
-        const dDongGV = new Date(formData.NgayDongTuDanhGia);
-        const dMoGD = new Date(formData.NgayMoDanhGiaCapTren);
-        const dDongGD = new Date(formData.NgayDongDanhGiaCapTren);
-
-        if (dBatDau > dKetThuc) {
-            alert("Lỗi logic: Ngày kết thúc NĂM HỌC không thể nằm trước Ngày bắt đầu!");
-            return;
-        }
-        if (dMoGV > dDongGV) {
-            alert("Lỗi logic: Hạn chót GIẢNG VIÊN ĐÁNH GIÁ không thể nằm trước Ngày bắt đầu mở hệ thống!");
-            return;
-        }
-        if (dMoGD > dDongGD) {
-            alert("Lỗi logic: Ngày đóng LỊCH DUYỆT ĐIỂM không thể nằm trước Ngày mở!");
-            return;
-        }
-        if (dDongGD < dMoGV) {
-            alert("Lỗi xung đột: Lịch duyệt điểm của Cấp trên không thể kết thúc trước khi Giảng viên được phép tự đánh giá!");
-            return;
-        }
-
         const method = editId ? 'PUT' : 'POST';
-        const endpoint = editId ? `namdanhgia/${editId}` : 'namdanhgia';
+        const endpoint = editId ? `viphamgiangday/${editId}` : 'viphamgiangday';
+        
         const payload = {
-            ...formData,
+            IdNhanVien: parseInt(formData.IdNhanVien),
             IdNam: parseInt(formData.IdNam),
-            TrangThai: parseInt(formData.TrangThai)
+            MoTa: formData.MoTa,
+            LaNghiemTrong: !!formData.LaNghiemTrong,
+            NgayViPham: formData.NgayViPham ? new Date(formData.NgayViPham).toISOString() : null,
+            IdNguoiGhiNhan: editId ? formData.IdNguoiGhiNhan : (currentUser.IdNhanVien || null)
         };
 
-        const response = await apiFetch(endpoint, {
-            method,
-            body: JSON.stringify(payload)
-        });
+        if (editId) {
+            payload.IdViPham = editId;
+        }
 
-        if (response.ok) {
-            const result = await response.json();
-            if (result.status === 'success' || result.status === undefined) {
+        try {
+            const response = await apiFetch(endpoint, {
+                method,
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
                 fetchData();
                 closeModal();
             } else {
-                alert(result.message || "Lưu thất bại!");
+                alert("Lưu thất bại! Vui lòng thử lại.");
             }
-        } else {
-            alert("Lỗi kết nối máy chủ!");
+        } catch (error) {
+            console.error("Lỗi khi lưu dữ liệu:", error);
+            alert("Có lỗi xảy ra khi kết nối máy chủ!");
         }
     };
 
     const handleEdit = (item) => {
         if (!canManage) return;
-        setEditId(item.IdNam);
+        setEditId(item.IdViPham);
         setFormData({
-            ...item,
-            NgayBatDau: formatDateForInput(item.NgayBatDau),
-            NgayKetThuc: formatDateForInput(item.NgayKetThuc),
-            NgayMoTuDanhGia: formatDateForInput(item.NgayMoTuDanhGia),
-            NgayDongTuDanhGia: formatDateForInput(item.NgayDongTuDanhGia),
-            NgayMoDanhGiaCapTren: formatDateForInput(item.NgayMoDanhGiaCapTren),
-            NgayDongDanhGiaCapTren: formatDateForInput(item.NgayDongDanhGiaCapTren)
+            IdNhanVien: item.IdNhanVien || '',
+            IdNam: item.IdNam || '',
+            MoTa: item.MoTa || '',
+            LaNghiemTrong: !!item.LaNghiemTrong,
+            NgayViPham: formatDateForInput(item.NgayViPham),
+            IdNguoiGhiNhan: item.IdNguoiGhiNhan || ''
         });
         setIsModalOpen(true);
     };
@@ -189,18 +179,20 @@ const QL_NamDanhGia = () => {
         if (!canManage) return;
         confirmDeleteDialog({
             header: 'Xác nhận xóa',
-            message: `Bạn có chắc chắn muốn xóa Năm đánh giá ${id}?`,
+            message: 'Bạn có chắc chắn muốn xóa ghi nhận vi phạm này?',
             accept: async () => {
-                const res = await apiFetch(`namdanhgia/${id}`, {
-                    method: 'DELETE'
-                });
-                if (res.ok) {
-                    const result = await res.json();
-                    if (result.status === "success" || result.status === undefined) {
+                try {
+                    const res = await apiFetch(`viphamgiangday/${id}`, {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
                         fetchData();
                     } else {
-                        alert(result.message || "Xóa thất bại!");
+                        alert("Xóa thất bại!");
                     }
+                } catch (error) {
+                    console.error("Lỗi khi xóa:", error);
+                    alert("Lỗi kết nối máy chủ!");
                 }
             }
         });
@@ -216,7 +208,7 @@ const QL_NamDanhGia = () => {
         <div className="page-container">
             <div className="page-header">
                 <div className="header-title">
-                    <h2>QUẢN LÝ NĂM ĐÁNH GIÁ</h2>
+                    <h2>QUẢN LÝ VI PHẠM</h2>
                 </div>
             </div>
 
@@ -230,12 +222,12 @@ const QL_NamDanhGia = () => {
 
             <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '5px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                    <p className="sub-title" style={{ margin: 0 }}>DANH SÁCH CÁC NĂM</p>
+                    <p className="sub-title" style={{ margin: 0 }}>DANH SÁCH VI PHẠM</p>
                     <div className="search-wrapper" style={{ position: 'relative', width: '100%', maxWidth: '350px' }}>
                         <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '10px', top: '12px', color: '#888' }}></i>
                         <input
                             type="text"
-                            placeholder="Tìm theo năm"
+                            placeholder="Tìm theo tên, mã NV, mô tả hoặc năm"
                             className="form-input"
                             style={{ width: '100%', paddingLeft: '35px' }}
                             value={searchQuery}
@@ -245,24 +237,28 @@ const QL_NamDanhGia = () => {
                 </div>
             </div>
 
-            <QLNamDanhGiaListing
+            <QL_ViPhamListing
                 data={filteredData}
-                onEdit={canManage ? handleEdit : () => { }}
-                onDelete={canManage ? handleDelete : () => { }}
+                nhanVienList={nhanVienList}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
                 isLoading={isLoading}
                 canManage={canManage}
             />
 
-            <QLNamDanhGiaForm
+            <QL_ViPhamForm
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 onSubmit={handleSubmit}
                 formData={formData}
                 setFormData={setFormData}
                 isEditing={!!editId}
+                namList={namList}
+                nhanVienList={nhanVienList}
+                currentUser={currentUser}
             />
         </div>
     );
 };
 
-export default QL_NamDanhGia;
+export default QL_ViPham;

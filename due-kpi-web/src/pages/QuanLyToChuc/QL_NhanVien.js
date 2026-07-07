@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import UserListing from '../../components/QuanLyToChuc/QL_NhanVien/QL_NhanVienListing';
 import UserForm from '../../components/QuanLyToChuc/QL_NhanVien/QL_NhanVienForm';
+import ResetPasswordModal from '../../components/QuanLyToChuc/QL_NhanVien/ResetPasswordModal';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
@@ -16,7 +17,6 @@ const QL_NhanVien = () => {
         IdChucVu: '',
         IdQuanLyTrucTiep: '',
         IdChucDanh: '',
-        ScienceUserId: '',
         TrangThai: true
     };
 
@@ -25,6 +25,8 @@ const QL_NhanVien = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+    const [resetPasswordUser, setResetPasswordUser] = useState(null);
 
     const [formData, setFormData] = useState(initialForm);
     const [editId, setEditId] = useState(null);
@@ -67,7 +69,18 @@ const QL_NhanVien = () => {
             }
             if (cdRes.ok) {
                 const res = await cdRes.json();
-                setChucDanhList(res.Items || (Array.isArray(res) ? res : []));
+                const list = res.Items || (Array.isArray(res) ? res : []);
+                const processedList = list
+                    .filter(item => {
+                        const name = item.ten_chuc_danh || item.TenChucDanh || '';
+                        return !name.toLowerCase().includes('không có chức danh');
+                    })
+                    .sort((a, b) => {
+                        const idA = a.id_chuc_danh || a.IdChucDanh || 0;
+                        const idB = b.id_chuc_danh || b.IdChucDanh || 0;
+                        return idA - idB;
+                    });
+                setChucDanhList(processedList);
             }
             if (qlRes.ok) {
                 const res = await qlRes.json();
@@ -106,7 +119,6 @@ const QL_NhanVien = () => {
             IdChucVu: formData.IdChucVu ? parseInt(formData.IdChucVu) : null,
             IdChucDanh: formData.IdChucDanh ? parseInt(formData.IdChucDanh) : null,
             IdQuanLyTrucTiep: formData.IdQuanLyTrucTiep ? parseInt(formData.IdQuanLyTrucTiep) : null,
-            ScienceUserId: formData.ScienceUserId ? parseInt(formData.ScienceUserId) : null,
             TrangThai: !!formData.TrangThai
         };
         if (editId) payload.IdNhanVien = editId;
@@ -123,12 +135,10 @@ const QL_NhanVien = () => {
         setEditId(item.IdNhanVien);
         setFormData({
             ...item,
-            ConfirmPassword: item.MatKhau,
             IdDonVi: item.IdDonVi || '',
             IdChucVu: item.IdChucVu || '',
             IdChucDanh: item.IdChucDanh || '',
-            IdQuanLyTrucTiep: item.IdQuanLyTrucTiep || '',
-            ScienceUserId: item.ScienceUserId || ''
+            IdQuanLyTrucTiep: item.IdQuanLyTrucTiep || ''
         });
         setIsModalOpen(true);
     };
@@ -142,6 +152,16 @@ const QL_NhanVien = () => {
                 fetchData();
             }
         });
+    };
+
+    const handleResetPassword = (item) => {
+        setResetPasswordUser(item);
+        setIsResetPasswordOpen(true);
+    };
+
+    const closeResetPasswordModal = () => {
+        setIsResetPasswordOpen(false);
+        setResetPasswordUser(null);
     };
 
     const closeModal = () => { setIsModalOpen(false); setFormData(initialForm); setEditId(null); };
@@ -166,6 +186,7 @@ const QL_NhanVien = () => {
                 data={filteredData}
                 onEdit={canManage ? handleEdit : () => { }}
                 onDelete={canManage ? handleDelete : () => { }}
+                onResetPassword={handleResetPassword}
                 isLoading={isLoading}
                 canManage={canManage}
             />
@@ -182,6 +203,12 @@ const QL_NhanVien = () => {
                 chucDanhList={chucDanhList}
                 quanLyList={quanLyList}
                 currentUser={currentUser}
+            />
+
+            <ResetPasswordModal
+                isOpen={isResetPasswordOpen}
+                onClose={closeResetPasswordModal}
+                user={resetPasswordUser}
             />
         </div>
     );

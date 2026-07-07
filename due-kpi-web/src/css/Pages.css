@@ -449,6 +449,16 @@
     color: #ffffff;
 }
 
+.action-btn.key-btn i {
+    color: #e67e22;
+    font-size: 16px;
+    transition: all 0.25s ease-in-out;
+}
+
+.action-btn.key-btn:hover {
+    background-color: #fdf2e9;
+}
+
 @media screen and (max-width: 992px) {
     .page-container {
         padding: 15px;

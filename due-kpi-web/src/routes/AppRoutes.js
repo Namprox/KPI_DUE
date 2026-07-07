@@ -9,10 +9,13 @@ import QLMauDanhGia from "../pages/QuanLyKeHoach/QL_MauDanhGia";
 import QLThangDiemByTieuChi from "../pages/QuanLyTieuChi/QL_ThangDiemByTieuChi";
 import QLDinhMucGiangVien from "../pages/QuanLyKeHoach/QL_DinhMucGiangVien";
 import DanhGiaPhuLuc2 from "../pages/DanhGia/DanhGiaPhuLuc2";
+import DanhGiaNhanVien from "../pages/DanhGia/DanhGiaNhanVien";
 import LichSuDanhGia from "../pages/DanhGia/LichSuDanhGia";
 import DanhSachDuyetPhieu from "../pages/QuanLyDanhGia/DanhSachDuyetPhieu";
 import ChiTietDuyetPhieu from "../pages/QuanLyDanhGia/ChiTietDuyetPhieu";
-import QLGioThucHien from "../pages/QuanLyKeHoach/QL_GioThucHien";
+import QLGioGiang from "../pages/QuanLyKeHoach/QL_GioGiang";
+import QLViPham from "../pages/QuanLyKeHoach/QL_ViPham";
+import QLDanhGiaSinhVien from "../pages/QuanLyKeHoach/QL_DanhGiaSinhVien";
 import QLChucDanh from "../pages/QuanLyToChuc/QL_ChucDanh";
 import QLChucVu from "../pages/QuanLyToChuc/QL_ChucVu";
 import DanhSachThanhVien from "../pages/QuanLyToChuc/DanhSachThanhVien";
@@ -29,6 +32,7 @@ const AppRoutes = ({ triggerNotification }) => {
     <Routes>
       <Route path="/" element={<Overview />} />
       <Route path="/danh-gia-phu-luc-2" element={<DanhGiaPhuLuc2 />} />
+      <Route path="/danh-gia-kpi-nhan-vien" element={<DanhGiaNhanVien />} />
       <Route path="/lich-su-danh-gia" element={<LichSuDanhGia />} />
       <Route path="/quan-ly-nguoi-dung" element={<QLNhanVien />} />
       <Route path="/quan-ly-don-vi" element={<QLDonVi />} />
@@ -49,7 +53,9 @@ const AppRoutes = ({ triggerNotification }) => {
       <Route path="/quan-ly-chuc-vu" element={<QLChucVu />} />
       <Route path="/danh-sach-duyet-phieu" element={<DanhSachDuyetPhieu />} />
       <Route path="/chi-tiet-duyet-phieu" element={<ChiTietDuyetPhieu />} />
-      <Route path="/quan-ly-gio-thuc-hien" element={<QLGioThucHien />} />
+      <Route path="/quan-ly-gio-giang" element={<QLGioGiang />} />
+      <Route path="/quan-ly-vi-pham" element={<QLViPham />} />
+      <Route path="/quan-ly-danh-gia-sinh-vien" element={<QLDanhGiaSinhVien />} />
     </Routes>
   );
 };

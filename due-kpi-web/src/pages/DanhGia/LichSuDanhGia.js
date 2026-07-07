@@ -17,10 +17,12 @@ const LichSuDanhGia = () => {
         const fetchHistory = async () => {
             setIsLoading(true);
             try {
-                const res = await apiFetch(`scoring?action=history&idNhanVien=${currentUser.IdNhanVien}`);
+                const res = await apiFetch(`phieu?idNhanVien=${currentUser.IdNhanVien}`);
                 const result = await res.json();
-                if (result.success) {
-                    setHistoryList(result.data || []);
+                const isSuccess = result.Success !== undefined ? result.Success : result.success;
+                const items = result.Items || result.data || [];
+                if (isSuccess) {
+                    setHistoryList(items);
                 }
             } catch (err) {
                 console.error("Lỗi tải lịch sử:", err);
@@ -52,7 +54,7 @@ const LichSuDanhGia = () => {
             <div className="page-header" style={{ marginBottom: '25px' }}>
                 <div>
                     <h2 style={{ margin: 0, color: '#1e293b' }}>LỊCH SỬ ĐÁNH GIÁ KPI</h2>
-                    <span className="breadcrumb">Giảng viên: {currentUser.FullName}</span>
+                    <span className="breadcrumb">{currentUser.RoleName || "Giảng viên"}: {currentUser.HoTen || currentUser.FullName}</span>
                 </div>
             </div>
 
@@ -108,7 +110,14 @@ const LichSuDanhGia = () => {
                                                     alignItems: 'center',
                                                     gap: '6px'
                                                 }}
-                                                onClick={() => navigate(`/danh-gia-phu-luc-2?year=${item.IdNam}`)}
+                                                onClick={() => {
+                                                    const isStaff = item.LoaiDoiTuong === 2 || item.loaiDoiTuong === 2 || !currentUser.IdChucDanh;
+                                                    if (isStaff) {
+                                                        navigate(`/danh-gia-kpi-nhan-vien?year=${item.IdNam}`);
+                                                    } else {
+                                                        navigate(`/danh-gia-phu-luc-2?year=${item.IdNam}`);
+                                                    }
+                                                }}
                                             >
                                                 <i className="fa-solid fa-eye"></i> Xem chi tiết
                                             </button>

@@ -7,9 +7,19 @@ import { useAuth } from "../context/AuthContext";
 const menuStructure = {
   evaluation: [
     {
-      name: "Đánh giá phụ lục 2",
+      name: "Đánh giá KPI Giảng viên",
       icon: "fa-solid fa-file-pen",
       path: "/danh-gia-phu-luc-2",
+    },
+    {
+      name: "Đánh giá KPI Nhân viên",
+      icon: "fa-solid fa-file-pen",
+      path: "/danh-gia-kpi-nhan-vien",
+    },
+    {
+      name: "Đánh giá KPI Đơn vị",
+      icon: "fa-solid fa-users-gear",
+      path: "/danh-gia-kpi-don-vi",
     },
     {
       name: "Lịch sử đánh giá",
@@ -34,9 +44,19 @@ const menuStructure = {
       path: "/quan-ly-dinh-muc-giang-vien",
     },
     {
-      name: "Quản lý giờ thực hiện",
+      name: "Quản lý giờ giảng",
       icon: "fa-solid fa-scale-balanced",
-      path: "/quan-ly-gio-thuc-hien",
+      path: "/quan-ly-gio-giang",
+    },
+    {
+      name: "Quản lý vi phạm",
+      icon: "fa-solid fa-circle-exclamation",
+      path: "/quan-ly-vi-pham",
+    },
+    {
+      name: "Quản lý đánh giá sinh viên",
+      icon: "fa-solid fa-user-graduate",
+      path: "/quan-ly-danh-gia-sinh-vien",
     },
   ],
   criteriaMgmt: [

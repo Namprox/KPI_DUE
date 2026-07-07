@@ -6,13 +6,53 @@ const KpiEvaluationForm = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        apiFetch('scoring')
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    setCriteria(result.data);
+        // Fetch templates for Giảng viên (loaiDoiTuong = 1)
+        apiFetch('maudanhgia?loaiDoiTuong=1')
+            .then(res => res.json())
+            .then(resTemplates => {
+                const list = resTemplates.Items || resTemplates.data || (Array.isArray(resTemplates) ? resTemplates : []);
+                const currentYear = new Date().getFullYear();
+                const matchedTemplate = list.find(t => t.IdNam === currentYear && t.TrangThai) || list.find(t => t.IdNam === currentYear) || list[0];
+                
+                if (matchedTemplate) {
+                    const idMau = matchedTemplate.IdMau;
+                    return apiFetch(`maudanhgia/${idMau}/chi-tiet`)
+                        .then(resDetail => resDetail.json())
+                        .then(resultDetail => {
+                            const item = resultDetail.Item || resultDetail.data || {};
+                            const flatCriteria = [];
+                            if (item.Nhom && Array.isArray(item.Nhom)) {
+                                item.Nhom.forEach(nhomCha => {
+                                    if (nhomCha.TieuChi && Array.isArray(nhomCha.TieuChi)) {
+                                        nhomCha.TieuChi.forEach(tc => {
+                                            flatCriteria.push({
+                                                ...tc,
+                                                TenNhom: nhomCha.TenNhom,
+                                                CacThangDiem: tc.ThangDiem || []
+                                            });
+                                        });
+                                    }
+                                    if (nhomCha.NhomCon && Array.isArray(nhomCha.NhomCon)) {
+                                        nhomCha.NhomCon.forEach(nhomCon => {
+                                            if (nhomCon.TieuChi && Array.isArray(nhomCon.TieuChi)) {
+                                                nhomCon.TieuChi.forEach(tc => {
+                                                    flatCriteria.push({
+                                                        ...tc,
+                                                        TenNhom: nhomCon.TenNhom || nhomCha.TenNhom,
+                                                        CacThangDiem: tc.ThangDiem || []
+                                                    });
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                            setCriteria(flatCriteria);
+                            setLoading(false);
+                        });
+                } else {
+                    setLoading(false);
                 }
-                setLoading(false);
             })
             .catch(error => {
                 console.error("Lỗi khi lấy dữ liệu KPI:", error);
@@ -55,24 +95,30 @@ const KpiEvaluationForm = () => {
                                     {item.DiemToiDa}
                                 </td>
                                 <td>
-                                    {item.CacThangDiem && item.CacThangDiem.length > 0 ? (
-                                        <select className="form-input" style={{ cursor: 'pointer' }}>
-                                            <option value="">-- Chọn mức đạt được --</option>
-                                            {item.CacThangDiem.map(td => (
-                                                <option key={td.IdThangDiem} value={td.GiaTriDiem}>
-                                                    {td.DieuKienDiem} ({td.GiaTriDiem} điểm)
-                                                </option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <input 
-                                            type="number" 
-                                            className="form-input" 
-                                            placeholder={`Tối đa ${item.DiemToiDa} điểm...`} 
-                                            max={item.DiemToiDa} 
-                                            min="0"
-                                        />
-                                    )}
+                                     {item.LoaiThangDiem === 3 ? (
+                                         <select className="form-input" style={{ cursor: 'pointer' }}>
+                                             <option value="">-- Chọn mức đạt được --</option>
+                                             <option value={item.DiemToiDa}>Có ({item.DiemToiDa} điểm)</option>
+                                             <option value="0">Không (0 điểm)</option>
+                                         </select>
+                                     ) : item.CacThangDiem && item.CacThangDiem.length > 0 ? (
+                                         <select className="form-input" style={{ cursor: 'pointer' }}>
+                                             <option value="">-- Chọn mức đạt được --</option>
+                                             {item.CacThangDiem.map(td => (
+                                                 <option key={td.IdThangDiem} value={td.GiaTriDiem}>
+                                                     {td.DieuKienDiem} ({td.GiaTriDiem} điểm)
+                                                 </option>
+                                             ))}
+                                         </select>
+                                     ) : (
+                                         <input 
+                                             type="number" 
+                                             className="form-input" 
+                                             placeholder={`Tối đa ${item.DiemToiDa} điểm...`} 
+                                             max={item.DiemToiDa} 
+                                             min="0"
+                                         />
+                                     )}
                                 </td>
                             </tr>
                         ))}

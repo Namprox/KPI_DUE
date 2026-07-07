@@ -145,6 +145,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+  /api/auth/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Reset password (admin)
+      description: >-
+        Truong (id_chuc_vu 1,7,8) dat lai mat khau cho mot nhan vien khac.
+        Khong can mat khau cu; id_nhan_vien dich nhan tu body. Khi thanh cong,
+        refresh token hien tai cua nhan vien do bi thu hoi nen ho phai dang nhap lai.
+      operationId: authResetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
   /api/chucvu:
     get:
       tags:
@@ -450,6 +473,40 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaResponse"
+  /api/maudanhgia/clone:
+    post:
+      tags:
+        - MauDanhGia
+      summary: Clone mau danh gia sang nam moi
+      description: >-
+        Tao mau danh gia moi cho nam dich va copy toan bo tieu chi tu mau nguon.
+        Co the truyen TenMau de dat ten moi; neu bo trong se giu ten mau nguon.
+      operationId: mauDanhGiaCloneToNam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MauDanhGiaCloneRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaResponse"
+        "404":
+          description: Khong tim thay mau nguon hoac nam dich khong ton tai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaResponse"
+        "409":
+          description: Xung dot du lieu khi sao chep
           content:
             application/json:
               schema:
@@ -3718,6 +3775,217 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChiTietDanhGiaDonViResponse"
+  /api/gio-giang-import:
+    get:
+      tags:
+        - GioGiangImport
+      summary: Get all (loc theo ky hoc)
+      description: >-
+        Danh sach ban ghi gio giang import. Truyen query kyHoc (261/262/263)
+        de loc theo ky hoc; bo trong = tat ca cac ky.
+      operationId: gioGiangImportGetAll
+      parameters:
+        - name: kyHoc
+          in: query
+          required: false
+          description: "Ky hoc: 261 = nam hoc 2025-2026 ky 1; 262 = ky 2; 263 = ky he. Bo trong = tat ca."
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+    post:
+      tags:
+        - GioGiangImport
+      summary: Create (tao tay 1 ban ghi)
+      description: Nguoi import (id_nguoi_import) lay tu token, khong nhan tu body.
+      operationId: gioGiangImportCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GioGiangImportCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+        "400":
+          description: Bad Request (ho ten trong, ky hoc khong hop le, ...)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+  /api/gio-giang-import/export:
+    get:
+      tags:
+        - GioGiangImport
+      summary: Export gio giang ra file Excel
+      description: >-
+        Xuat danh sach gio giang import ra file .xlsx (mot sheet, co dong tieu de).
+        Truyen query kyHoc (261/262/263) de loc theo ky hoc; bo trong = tat ca cac ky.
+        Tra ve file dinh kem; neu kyHoc khong hop le tra JSON loi (GioGiangImportResponse).
+      operationId: gioGiangImportExport
+      parameters:
+        - name: kyHoc
+          in: query
+          required: false
+          description: "Ky hoc: 261 = nam hoc 2025-2026 ky 1; 262 = ky 2; 263 = ky he. Bo trong = tat ca."
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK — file Excel dinh kem (gio-giang[-{kyHoc}].xlsx).
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Bad Request (ky hoc khong hop le)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+  /api/gio-giang-import/import:
+    post:
+      tags:
+        - GioGiangImport
+      summary: Import gio giang tu file Excel
+      description: >-
+        Upload file Excel "Tong hop gio giang" va field kyHoc (261/262/263).
+        Server tu dong dinh dong tieu de, ghep Ho lot + Ten, doc cac cot gio,
+        gan ky_hoc va nguoi import (tu token). Chay all-or-nothing: 1 dong loi
+        thi rollback toan bo.
+      operationId: gioGiangImportImport
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File Excel (.xls / .xlsx) theo mau "Tong hop gio giang".
+                kyHoc:
+                  type: integer
+                  description: "Ky hoc: 261/262/263 (2 so dau = nam hoc, so cuoi = ky)."
+              required:
+                - file
+                - kyHoc
+      responses:
+        "200":
+          description: OK — tra ImportedCount = so dong da luu.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+        "400":
+          description: Bad Request (thieu file/kyHoc, khong doc duoc Excel, du lieu khong hop le)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+        "409":
+          description: Conflict — import that bai o mot dong (da rollback)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+        "415":
+          description: Unsupported Media Type (khong phai multipart/form-data)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+  /api/gio-giang-import/{id}:
+    get:
+      tags:
+        - GioGiangImport
+      summary: Get by id
+      operationId: gioGiangImportGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+    put:
+      tags:
+        - GioGiangImport
+      summary: Update (khong doi nguoi import)
+      operationId: gioGiangImportUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GioGiangImportUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+    delete:
+      tags:
+        - GioGiangImport
+      summary: Xóa cứng ban ghi (bang phu, khong co FK phu thuoc)
+      operationId: gioGiangImportDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangImportResponse"
 components:
   parameters:
     LoaiDoiTuongFilter:
@@ -3987,6 +4255,17 @@ components:
       properties:
         OldPassword:
           type: string
+        NewPassword:
+          type: string
+          minLength: 8
+    ResetPasswordRequest:
+      type: object
+      required:
+        - IdNhanVien
+        - NewPassword
+      properties:
+        IdNhanVien:
+          type: integer
         NewPassword:
           type: string
           minLength: 8
@@ -4383,6 +4662,22 @@ components:
         TrangThai:
           type: boolean
           nullable: true
+    MauDanhGiaCloneRequest:
+      type: object
+      required:
+        - IdMauSource
+        - IdNamTarget
+      properties:
+        IdMauSource:
+          type: integer
+          minimum: 1
+        IdNamTarget:
+          type: integer
+          minimum: 1
+        TenMau:
+          type: string
+          nullable: true
+          description: Ten mau moi (toi da 200 ky tu). Bo trong de dung ten mau nguon.
     MauDanhGiaDto:
       type: object
       properties:
@@ -5523,6 +5818,131 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ChucDanhNgheNghiepDto"
+    GioGiangImportCreateRequest:
+      type: object
+      required:
+        - HoTen
+        - KyHoc
+      properties:
+        HoTen:
+          type: string
+          maxLength: 150
+        ChucDanh:
+          type: string
+          maxLength: 100
+        TenKhoa:
+          type: string
+          maxLength: 200
+          description: Ten khoa (tuy chon) — luu de kiem chung nguon du lieu import.
+        TongGioGiangDay:
+          type: number
+          format: double
+        TongGioCvk:
+          type: number
+          format: double
+        TongGioQuiDoi:
+          type: number
+          format: double
+        DinhMucGioChuan:
+          type: number
+          format: double
+        TongGioThucLinh:
+          type: number
+          format: double
+        KyHoc:
+          type: integer
+          description: "261/262/263 (2 so dau = nam hoc, so cuoi = ky: 1/2/he)."
+    GioGiangImportUpdateRequest:
+      type: object
+      required:
+        - HoTen
+        - KyHoc
+      properties:
+        HoTen:
+          type: string
+          maxLength: 150
+        ChucDanh:
+          type: string
+          maxLength: 100
+        TenKhoa:
+          type: string
+          maxLength: 200
+          description: Ten khoa (tuy chon) — luu de kiem chung nguon du lieu import.
+        TongGioGiangDay:
+          type: number
+          format: double
+        TongGioCvk:
+          type: number
+          format: double
+        TongGioQuiDoi:
+          type: number
+          format: double
+        DinhMucGioChuan:
+          type: number
+          format: double
+        TongGioThucLinh:
+          type: number
+          format: double
+        KyHoc:
+          type: integer
+    GioGiangImportDto:
+      type: object
+      properties:
+        IdGioGiangImport:
+          type: integer
+        HoTen:
+          type: string
+        ChucDanh:
+          type: string
+          nullable: true
+        TenKhoa:
+          type: string
+          nullable: true
+        TongGioGiangDay:
+          type: number
+          format: double
+        TongGioCvk:
+          type: number
+          format: double
+        TongGioQuiDoi:
+          type: number
+          format: double
+        DinhMucGioChuan:
+          type: number
+          format: double
+        TongGioThucLinh:
+          type: number
+          format: double
+        KyHoc:
+          type: integer
+        NgayImport:
+          type: string
+          format: date-time
+          nullable: true
+        IdNguoiImport:
+          type: integer
+          nullable: true
+          description: id_nhan_vien nguoi thuc hien import (tu token); NULL neu tai khoan khong gan nhan vien.
+        NguoiImportHoTen:
+          type: string
+          nullable: true
+    GioGiangImportResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/GioGiangImportDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/GioGiangImportDto"
+        ImportedCount:
+          type: integer
+          nullable: true
+          description: So dong da luu (chi co o endpoint import).
     NhomNhiemVuCreateRequest:
       type: object
       required:

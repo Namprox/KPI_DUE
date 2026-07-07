@@ -6,7 +6,6 @@ const QL_NhanVienForm = ({
     donViList = [], chucVuList = [], chucDanhList = [], quanLyList = []
 }) => {
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -18,10 +17,6 @@ const QL_NhanVienForm = ({
 
     const handleFormSubmit = (e) => {
         e.preventDefault();
-        if ((!isEditing || formData.MatKhau) && formData.MatKhau !== formData.ConfirmPassword) {
-            alert("Mật khẩu và Xác nhận mật khẩu không khớp!");
-            return;
-        }
         onSubmit(e);
     };
 
@@ -51,15 +46,9 @@ const QL_NhanVienForm = ({
                             </div>
                         </div>
 
-                        <div className="form-grid-2">
-                            <div className="form-group">
-                                <label>Email liên hệ</label>
-                                <input type="email" name="Email" className="form-input" value={formData.Email || ''} onChange={handleChange} />
-                            </div>
-                            <div className="form-group">
-                                <label>Mã liên kết DueScience</label>
-                                <input type="number" name="ScienceUserId" className="form-input" value={formData.ScienceUserId || ''} onChange={handleChange} placeholder="Nhập ID tài khoản DueScience" />
-                            </div>
+                        <div className="form-group">
+                            <label>Email liên hệ</label>
+                            <input type="email" name="Email" className="form-input" value={formData.Email || ''} onChange={handleChange} />
                         </div>
 
                         <hr style={{ border: '0', borderTop: '1px solid #eee', margin: '20px 0' }} />
@@ -73,8 +62,8 @@ const QL_NhanVienForm = ({
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Chức vụ (Quyền hạn)</label>
-                                <select name="IdChucVu" className="form-input" value={formData.IdChucVu || ''} onChange={handleChange}>
+                                <label>Chức vụ (Quyền hạn) <span className="text-red">*</span></label>
+                                <select name="IdChucVu" className="form-input" value={formData.IdChucVu || ''} onChange={handleChange} required>
                                     <option value="">Chọn chức vụ</option>
                                     {chucVuList.map(cv => <option key={cv.id_chuc_vu || cv.IdChucVu} value={cv.id_chuc_vu || cv.IdChucVu}>{cv.ten_chuc_vu || cv.TenChucVu}</option>)}
                                 </select>
@@ -83,9 +72,9 @@ const QL_NhanVienForm = ({
 
                         <div className="form-grid-2">
                             <div className="form-group">
-                                <label>Chức danh nghề nghiệp</label>
-                                <select name="IdChucDanh" className="form-input" value={formData.IdChucDanh || ''} onChange={handleChange}>
-                                    <option value="">Không có chức danh</option>
+                                <label>Chức danh nghề nghiệp <span className="text-red">*</span></label>
+                                <select name="IdChucDanh" className="form-input" value={formData.IdChucDanh || ''} onChange={handleChange} required>
+                                    <option value="">Chọn chức danh nghề nghiệp</option>
                                     {chucDanhList.map(cd => (
                                         <option key={cd.id_chuc_danh || cd.IdChucDanh} value={cd.id_chuc_danh || cd.IdChucDanh}>
                                             {cd.ten_chuc_danh || cd.TenChucDanh}
@@ -106,20 +95,11 @@ const QL_NhanVienForm = ({
 
                         <hr style={{ border: '0', borderTop: '1px solid #eee', margin: '20px 0' }} />
 
-                        <div className="form-grid-2">
-                            <div className="form-group">
-                                <label>Mật khẩu đăng nhập <span className="text-red">*</span></label>
-                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                    <input type={showPassword ? "text" : "password"} name="MatKhau" className="form-input" value={formData.MatKhau || ''} onChange={handleChange} required={!isEditing} placeholder={isEditing ? "Bỏ trống nếu không đổi mật khẩu" : "Nhập mật khẩu"} style={{ width: '100%', paddingRight: '40px', margin: 0 }} />
-                                    <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} style={{ position: 'absolute', right: '12px', cursor: 'pointer', color: '#666' }} onClick={() => setShowPassword(!showPassword)}></i>
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Nhập lại mật khẩu <span className="text-red">*</span></label>
-                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                    <input type={showConfirmPassword ? "text" : "password"} name="ConfirmPassword" className="form-input" value={formData.ConfirmPassword || ''} onChange={handleChange} required={!isEditing || !!formData.MatKhau} placeholder="Xác nhận mật khẩu" style={{ width: '100%', paddingRight: '40px', margin: 0 }} />
-                                    <i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`} style={{ position: 'absolute', right: '12px', cursor: 'pointer', color: '#666' }} onClick={() => setShowConfirmPassword(!showConfirmPassword)}></i>
-                                </div>
+                        <div className="form-group">
+                            <label>Mật khẩu đăng nhập <span className="text-red">*</span></label>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <input type={showPassword ? "text" : "password"} name="MatKhau" className="form-input" value={formData.MatKhau || ''} onChange={handleChange} required={!isEditing} placeholder={isEditing ? "Bỏ trống nếu không đổi mật khẩu" : "Nhập mật khẩu"} style={{ width: '100%', paddingRight: '40px', margin: 0 }} />
+                                <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} style={{ position: 'absolute', right: '12px', cursor: 'pointer', color: '#666' }} onClick={() => setShowPassword(!showPassword)}></i>
                             </div>
                         </div>
 

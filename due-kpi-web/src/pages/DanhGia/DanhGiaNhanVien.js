@@ -16,7 +16,7 @@ const parseNetDate = (dateString) => {
   return new Date(dateString);
 };
 
-const DanhGiaPhuLuc2 = () => {
+const DanhGiaNhanVien = () => {
   const [criteriaList, setCriteriaList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,7 +25,6 @@ const DanhGiaPhuLuc2 = () => {
 
   const [trangThaiPhieu, setTrangThaiPhieu] = useState(0);
   const [lyDoTraVe, setLyDoTraVe] = useState("");
-
 
 
   const toast = useRef(null);
@@ -65,7 +64,7 @@ const DanhGiaPhuLuc2 = () => {
             if (!yearParam) {
               const defaultYear = uniqueYears.includes(currentRealYear) ? currentRealYear : uniqueYears[0];
               setSelectedYear(defaultYear);
-              navigate(`/danh-gia-phu-luc-2?year=${defaultYear}`, {
+              navigate(`/danh-gia-kpi-nhan-vien?year=${defaultYear}`, {
                 replace: true,
               });
             }
@@ -114,10 +113,10 @@ const DanhGiaPhuLuc2 = () => {
           console.error("Lỗi khi tải phiếu cá nhân:", e);
         }
 
-        // 2. If phieu doesn't exist, search for template matching selectedYear
+        // 2. If phieu doesn't exist, search for template matching selectedYear (loaiDoiTuong = 2 for Staff)
         if (!idMau) {
           try {
-            const resTemplates = await apiFetch(`maudanhgia?loaiDoiTuong=1`);
+            const resTemplates = await apiFetch(`maudanhgia?loaiDoiTuong=2`);
             if (resTemplates.ok) {
               const resultTemplates = await resTemplates.json();
               const templates =
@@ -292,7 +291,7 @@ const DanhGiaPhuLuc2 = () => {
   const handleYearChange = (e) => {
     const newYear = parseInt(e.target.value);
     setSelectedYear(newYear);
-    navigate(`/danh-gia-phu-luc-2?year=${newYear}`);
+    navigate(`/danh-gia-kpi-nhan-vien?year=${newYear}`);
   };
 
   useEffect(() => {
@@ -426,6 +425,7 @@ const DanhGiaPhuLuc2 = () => {
   const executeSubmit = async (status) => {
     setIsSubmitting(true);
     toast.current.show({
+      style: { marginTop: "80px" },
       severity: "info",
       summary: "Đang xử lý",
       detail: "Đang tải tệp tin và lưu dữ liệu",
@@ -499,6 +499,7 @@ const DanhGiaPhuLuc2 = () => {
 
       if (result.status === "success") {
         toast.current.show({
+          style: { marginTop: "80px" },
           severity: "success",
           summary: "Thành công",
           detail: result.message,
@@ -507,6 +508,7 @@ const DanhGiaPhuLuc2 = () => {
         setTrangThaiPhieu(status);
       } else {
         toast.current.show({
+          style: { marginTop: "80px" },
           severity: "error",
           summary: "Lỗi",
           detail: result.message || "Lỗi lưu phiếu!",
@@ -517,6 +519,7 @@ const DanhGiaPhuLuc2 = () => {
       console.error("Lỗi khi nộp phiếu/upload file:", err);
       toast.current.clear();
       toast.current.show({
+        style: { marginTop: "80px" },
         severity: "error",
         summary: "Lỗi",
         detail: "Quá trình tải tệp tin hoặc lưu phiếu thất bại!",
@@ -539,6 +542,7 @@ const DanhGiaPhuLuc2 = () => {
 
       if (!hasEvaluated) {
         toast.current.show({
+          style: { marginTop: "80px" },
           severity: "error",
           summary: "Không thể nộp phiếu",
           detail:
@@ -581,6 +585,7 @@ const DanhGiaPhuLuc2 = () => {
 
       if (result.status === "success") {
         toast.current.show({
+          style: { marginTop: "80px" },
           severity: "success",
           summary: "Thành công",
           detail: result.message,
@@ -589,6 +594,7 @@ const DanhGiaPhuLuc2 = () => {
         setTrangThaiPhieu(1);
       } else {
         toast.current.show({
+          style: { marginTop: "80px" },
           severity: "error",
           summary: "Lỗi",
           detail: result.message || "Lỗi thu hồi phiếu!",
@@ -598,6 +604,7 @@ const DanhGiaPhuLuc2 = () => {
     } catch (err) {
       console.error("Lỗi khi thu hồi phiếu:", err);
       toast.current.show({
+        style: { marginTop: "80px" },
         severity: "error",
         summary: "Lỗi kết nối",
         detail: "Không thể kết nối đến máy chủ!",
@@ -651,9 +658,9 @@ const DanhGiaPhuLuc2 = () => {
           }}
         >
           <div>
-            <h2 style={{ margin: 0 }}>ĐÁNH GIÁ PHỤ LỤC 2</h2>
+            <h2 style={{ margin: 0 }}>ĐÁNH GIÁ KPI NHÂN VIÊN</h2>
             <span className="breadcrumb phu-luc-2-breadcrumb">
-              Giảng viên: {currentUser.HoTen || "Người dùng"}
+              Nhân viên: {currentUser.HoTen || "Người dùng"}
             </span>
           </div>
 
@@ -732,4 +739,4 @@ const DanhGiaPhuLuc2 = () => {
   );
 };
 
-export default DanhGiaPhuLuc2;
+export default DanhGiaNhanVien;
