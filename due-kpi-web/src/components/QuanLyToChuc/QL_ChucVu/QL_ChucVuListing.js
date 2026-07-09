@@ -75,7 +75,7 @@ const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading }) => {
                 <th width="7%">MÃ CHỨC VỤ</th>
                 <th width="20%">TÊN CHỨC VỤ</th>
                 <th width="15%" style={{ textAlign: "center" }}>
-                  ĐỊNH MỨC GIẢNG DẠY
+                  ĐỊNH MỨC GIỜ GIẢNG DẠY
                 </th>
                 <th width="15%" style={{ textAlign: "center" }}>
                   ĐỊNH MỨC NCKH

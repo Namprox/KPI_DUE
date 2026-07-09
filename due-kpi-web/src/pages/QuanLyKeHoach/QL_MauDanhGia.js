@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLMauDanhGiaListing from '../../components/QuanLyKeHoach/QL_MauDanhGia/QL_MauDanhGiaListing';
@@ -11,6 +11,7 @@ import ObjectTabs, { OBJECT_TYPES } from '../../components/Common/ObjectTabs';
 
 const QL_MauDanhGia = () => {
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
     const currentType = searchParams.get('type') || '1';
 
     const initialForm = {
@@ -284,6 +285,7 @@ const QL_MauDanhGia = () => {
                 data={filteredData}
                 onEdit={canManage ? handleEdit : () => { }}
                 onDelete={canManage ? handleDelete : () => { }}
+                onConfigPermissions={(item) => navigate(`/mau-danh-gia/${item.IdMau}/phan-quyen`, { state: { loaiDoiTuong: item.LoaiDoiTuong || item.loaiDoiTuong } })}
                 isLoading={isLoading}
                 canManage={canManage}
             />

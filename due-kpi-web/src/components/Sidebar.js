@@ -93,7 +93,7 @@ const menuStructure = {
       path: "/quan-ly-chuc-danh",
     },
     {
-      name: "Chức vụ",
+      name: "Quản lý chức vụ",
       icon: "fa-solid fa-briefcase",
       path: "/quan-ly-chuc-vu",
     },

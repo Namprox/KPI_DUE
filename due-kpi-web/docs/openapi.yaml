@@ -732,6 +732,11 @@ paths:
       tags:
         - ChiTietDanhGia
       summary: Khoa danh gia chi tiet
+      description: >
+        Chấm điểm cấp Khoa cho 1 tiêu chí. Quyền theo ma_chuc_vu:
+        nếu tiêu chí có phân quyền riêng (tieu_chi_don_vi_cham) thì CHỈ trưởng
+        đơn vị được giao (TK/TKL/TP) chấm; nếu không có phân quyền thì mặc định
+        trưởng đơn vị chủ quản (TK/TKL/TP). Vết người chấm lưu ở id_nguoi_dg_khoa.
       operationId: chiTietDanhGiaDiemKhoa
       parameters:
         - name: idChiTiet
@@ -757,6 +762,9 @@ paths:
       tags:
         - ChiTietDanhGia
       summary: Truong danh gia chi tiet
+      description: >
+        Chấm điểm cấp Trường cho 1 tiêu chí. Chỉ Hiệu trưởng (ma_chuc_vu = HT)
+        — Admin KHÔNG được chấm. Đồng bộ với duyệt Trường (cũng chỉ HT).
       operationId: chiTietDanhGiaDiemTruong
       parameters:
         - name: idChiTiet
@@ -1540,6 +1548,10 @@ paths:
       tags:
         - PhieuDanhGia
       summary: Get phieu danh gia list
+      description: >
+        Phạm vi theo ma_chuc_vu: cấp Trường (HT/ADMIN) xem tất cả; cấp Khoa
+        (TK/TKL/TP) xem đơn vị mình + đơn vị con; người khác chỉ xem phiếu của
+        chính mình. Thay cho magic id {1,7,8}/6 cũ.
       operationId: phieuDanhGiaGetPaged
       parameters:
         - name: idNam
@@ -1644,6 +1656,9 @@ paths:
       tags:
         - PhieuDanhGia
       summary: List phieu awaiting Khoa evaluation
+      description: >
+        Hàng đợi chờ Khoa duyệt. Chỉ cấp Khoa (ma_chuc_vu TK/TKL/TP); trả về
+        phiếu thuộc đơn vị mình + đơn vị con.
       operationId: phieuDanhGiaGetKhoaPending
       responses:
         "200":
@@ -1657,6 +1672,9 @@ paths:
       tags:
         - PhieuDanhGia
       summary: List phieu awaiting Truong evaluation
+      description: >
+        Hàng đợi chờ Trường duyệt. Cấp Trường xem (ma_chuc_vu HT/ADMIN) — Admin
+        xem được nhưng chỉ HT mới duyệt/chốt.
       operationId: phieuDanhGiaGetTruongPending
       responses:
         "200":
@@ -1743,6 +1761,9 @@ paths:
       tags:
         - PhieuDanhGia
       summary: Approve a phieu at the Khoa level
+      description: >
+        Duyệt cấp Khoa. Chỉ cấp Khoa (ma_chuc_vu TK/TKL/TP) của đơn vị chủ quản
+        phiếu (hoặc đơn vị cha). Thay cho magic id 6 cũ.
       operationId: phieuDanhGiaKhoaDuyet
       parameters:
         - name: id
@@ -1781,6 +1802,9 @@ paths:
       tags:
         - PhieuDanhGia
       summary: Approve a phieu at the Truong level
+      description: >
+        Duyệt cấp Trường. Chỉ Hiệu trưởng (ma_chuc_vu = HT) — Admin KHÔNG được
+        duyệt. Thay cho magic id {1,7,8} cũ.
       operationId: phieuDanhGiaTruongDuyet
       parameters:
         - name: id
@@ -1825,6 +1849,9 @@ paths:
       tags:
         - PhieuDanhGia
       summary: Return a phieu to the GV for revision
+      description: >
+        Trả lại phiếu (cấp Khoa). Chỉ cấp Khoa (ma_chuc_vu TK/TKL/TP) của đơn vị
+        chủ quản phiếu (hoặc đơn vị cha).
       operationId: phieuDanhGiaKhoaTraLai
       parameters:
         - name: id
@@ -1863,6 +1890,9 @@ paths:
       tags:
         - PhieuDanhGia
       summary: Return a phieu from Truong level
+      description: >
+        Trả lại phiếu (cấp Trường). Chỉ Hiệu trưởng (ma_chuc_vu = HT) — Admin
+        KHÔNG được.
       operationId: phieuDanhGiaTruongTraLai
       parameters:
         - name: id
@@ -1902,7 +1932,7 @@ paths:
         - PhieuDanhGia
       summary: Finalize a phieu (transition state 4 -> 5 HOAN_TAT)
       description: |
-        Truong-only. In a single transaction the server:
+        HT-only (ma_chuc_vu = HT; Admin KHONG duyet). In a single transaction the server:
         - Snapshots the applied dinh muc (after exceptions) and the actual
           gio giang / gio NCKH into the phieu (gio_*_dinh_muc_ap_dung,
           he_so_nckh_ap_dung, gio_*_thuc_te_snapshot, ly_do_dieu_chinh_dinh_muc).
@@ -1978,7 +2008,7 @@ paths:
         - PhieuDanhGia
       summary: Reopen a finalized phieu (state 5 HOAN_TAT -> 1/2/3)
       description: |
-        Truong-only. Most destructive operation in the system. In a single transaction:
+        HT-only (ma_chuc_vu = HT; Admin KHONG duyet). Most destructive operation in the system. In a single transaction:
         1) Snapshots every non-NULL chi_tiet score column (tu DG, Khoa, Truong, chinh thuc)
            into lich_su_cham_diem under the CURRENT lan_danh_gia (hanh_dong = 3) BEFORE clearing.
         2) Clears chi_tiet scores selectively based on trangThaiMoi:
@@ -2130,7 +2160,8 @@ paths:
       summary: Overview report - phieu counts by trang_thai and xep_loai
       description: |
         Counts phieu by trang_thai (1..5) and, for trang_thai=5 only, also by xep_loai.
-        Khoa users are scoped to their don_vi tree; Truong sees all.
+        Phạm vi theo ma_chuc_vu: Trường (HT/ADMIN) xem tất cả; Khoa (TK/TKL/TP)
+        giới hạn cây đơn vị mình; chủ phiếu (id 11) xem phiếu của chính mình.
       operationId: baoCaoTongQuan
       parameters:
         - name: idNam
@@ -2157,9 +2188,9 @@ paths:
       summary: Avg / min / max of tong_diem_tich_luy grouped by one-level-deep child don_vi
       description: |
         Only includes phieu with trang_thai=5 (HOAN_TAT). Buckets are the direct children of the
-        requested idDonVi. If idDonVi is omitted, Truong defaults to root (children = Khoa);
-        Khoa defaults to their own don_vi (children = Bo mon). Grandchild phieu (Bo mon under
-        a Khoa) roll up under their parent Khoa bucket.
+        requested idDonVi. If idDonVi is omitted, Trường (ma_chuc_vu HT/ADMIN) defaults to root
+        (children = Khoa); Khoa (ma_chuc_vu TK/TKL/TP) defaults to their own don_vi (children =
+        Bo mon). Grandchild phieu (Bo mon under a Khoa) roll up under their parent Khoa bucket.
       operationId: baoCaoDiemTrungBinh
       parameters:
         - name: idNam
@@ -2578,6 +2609,67 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TieuChiDanhGiaResponse"
+  /api/tieu-chi-don-vi-cham:
+    get:
+      tags:
+        - TieuChiDonViCham
+      summary: >
+        Danh sách phân quyền chấm tiêu chí cho đơn vị. Lọc theo idTieuChi (1 tiêu chí)
+        hoặc idMau (mọi tiêu chí thuộc mẫu — dựng bảng phân quyền cho cả mẫu; tiêu chí
+        không có dòng = mặc định trưởng khoa/phòng chấm).
+      operationId: tieuChiDonViChamGetAll
+      parameters:
+        - name: idTieuChi
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idMau
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TieuChiDonViChamResponse"
+    put:
+      tags:
+        - TieuChiDonViCham
+      summary: >
+        Thay thế toàn bộ danh sách đơn vị được phân quyền chấm của 1 tiêu chí (Admin).
+        Tiêu chí có phân quyền: chỉ TRƯỞNG các đơn vị đó (ma_chuc_vu TK/TKL/TP) được chấm
+        điểm cấp Khoa của tiêu chí (lưu vết người chấm qua id_nguoi_dg_khoa + lich_su_cham_diem).
+        Danh sách rỗng = bỏ phân quyền, quay về mặc định trưởng khoa/phòng đơn vị chủ quản chấm.
+      operationId: tieuChiDonViChamSet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TieuChiDonViChamSetRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TieuChiDonViChamResponse"
+        "400":
+          description: Id tiêu chí / danh sách đơn vị không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TieuChiDonViChamResponse"
+        "404":
+          description: Không tìm thấy tiêu chí
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TieuChiDonViChamResponse"
   /api/nhomnhiemvu:
     get:
       tags:
@@ -3099,6 +3191,153 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NhanVienChucVuResponse"
+  # ── Session 6: NhanVienChucDanh (lịch sử chức danh nghề nghiệp) ──────────────
+  /api/nhan-vien-chuc-danh/by-nhan-vien/{idNv}:
+    get:
+      tags:
+        - NhanVienChucDanh
+      summary: Lịch sử chức danh nghề nghiệp của nhân viên (mới nhất trước)
+      operationId: nhanVienChucDanhListByNhanVien
+      parameters:
+        - name: idNv
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID nhân viên
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "400":
+          description: idNv không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "401":
+          description: Chưa xác thực
+  /api/nhan-vien-chuc-danh:
+    post:
+      tags:
+        - NhanVienChucDanh
+      summary: Thêm chức danh cho nhân viên (HR/Admin). Tự đóng chức danh đang mở
+      operationId: nhanVienChucDanhCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhanVienChucDanhCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "400":
+          description: Dữ liệu không hợp lệ (TuNgay > DenNgay, …)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "403":
+          description: Không có quyền (chỉ HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "409":
+          description: Lỗi nghiệp vụ (nhân viên / chức danh không tìm thấy, khoảng thời gian chồng lấn, …)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+  /api/nhan-vien-chuc-danh/{id}:
+    put:
+      tags:
+        - NhanVienChucDanh
+      summary: Cập nhật DenNgay / GhiChu (HR/Admin)
+      operationId: nhanVienChucDanhUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_nv_chuc_danh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhanVienChucDanhUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "400":
+          description: DenNgay < TuNgay hoặc GhiChu quá dài
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "403":
+          description: Không có quyền (chỉ HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "404":
+          description: Không tìm thấy bản ghi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "409":
+          description: Khoảng thời gian chồng lấn với bản ghi khác
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+    delete:
+      tags:
+        - NhanVienChucDanh
+      summary: Xóa cứng bản ghi chức danh (HR/Admin)
+      operationId: nhanVienChucDanhDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: id_nv_chuc_danh
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "403":
+          description: Không có quyền (chỉ HR/Admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
+        "404":
+          description: Không tìm thấy bản ghi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucDanhResponse"
   # ── Session 5a: NgoaiLeDinhMuc ──────────────────────────────────────────────
   /api/ngoai-le-dinh-muc/by-nhan-vien-nam/{idNv}/{idNam}:
     get:
@@ -3842,7 +4081,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: OK — file Excel dinh kem (gio-giang[-{kyHoc}].xlsx).
+          description: OK — file Excel dinh kem (DL_GioGiang_{kyHoc}.xlsx; khong loc ky = DL_GioGiang_TatCa.xlsx).
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema:
@@ -6581,6 +6820,134 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/NhanVienChucVuDto"
+    # ── Session 6 schemas: NhanVienChucDanh ─────────────────────────────────────
+    NhanVienChucDanhDto:
+      type: object
+      description: Một giai đoạn giữ chức danh nghề nghiệp của nhân viên
+      properties:
+        IdNvChucDanh:
+          type: integer
+          description: PK của bản ghi lịch sử chức danh
+        IdNhanVien:
+          type: integer
+        IdChucDanh:
+          type: integer
+        MaChucDanh:
+          type: string
+          description: Mã chức danh (join từ bảng chuc_danh_nghe_nghiep)
+        TenChucDanh:
+          type: string
+          description: Tên chức danh (join từ bảng chuc_danh_nghe_nghiep)
+        TuNgay:
+          type: string
+          format: date
+          description: Ngày bắt đầu giữ chức danh
+        DenNgay:
+          type: string
+          format: date
+          nullable: true
+          description: Ngày kết thúc. NULL = đến nay.
+        GhiChu:
+          type: string
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+    NhanVienChucDanhCreateRequest:
+      type: object
+      required:
+        - IdNhanVien
+        - IdChucDanh
+        - TuNgay
+      properties:
+        IdNhanVien:
+          type: integer
+        IdChucDanh:
+          type: integer
+        TuNgay:
+          type: string
+          format: date
+          description: Ngày bắt đầu giữ chức danh (YYYY-MM-DD). Tự đóng chức danh đang mở trước ngày này.
+        DenNgay:
+          type: string
+          format: date
+          nullable: true
+          description: Ngày kết thúc. Phải ≥ TuNgay. NULL = đến nay.
+        GhiChu:
+          type: string
+          nullable: true
+          maxLength: 500
+    NhanVienChucDanhUpdateRequest:
+      type: object
+      description: Chỉ cho phép cập nhật DenNgay và GhiChu
+      properties:
+        DenNgay:
+          type: string
+          format: date
+          nullable: true
+          description: Ngày kết thúc. Phải ≥ TuNgay của bản ghi gốc.
+        GhiChu:
+          type: string
+          nullable: true
+          maxLength: 500
+    NhanVienChucDanhResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/NhanVienChucDanhDto"
+        Items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/NhanVienChucDanhDto"
+    # ── Schemas: TieuChiDonViCham (phân quyền chấm tiêu chí cho đơn vị) ─────────
+    TieuChiDonViChamDto:
+      type: object
+      properties:
+        IdPhanQuyen:
+          type: integer
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        NgayTao:
+          type: string
+          format: date-time
+    TieuChiDonViChamSetRequest:
+      type: object
+      required:
+        - IdTieuChi
+      properties:
+        IdTieuChi:
+          type: integer
+        IdDonViList:
+          type: array
+          nullable: true
+          description: Danh sách id_don_vi được chấm; rỗng/null = bỏ phân quyền
+          items:
+            type: integer
+    TieuChiDonViChamResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/TieuChiDonViChamDto"
     # ── Session 5a schemas: NgoaiLeDinhMuc ──────────────────────────────────────
     NgoaiLeDinhMucCreateRequest:
       type: object

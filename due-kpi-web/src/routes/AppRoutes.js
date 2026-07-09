@@ -1,11 +1,13 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import QLNhanVien from "../pages/QuanLyToChuc/QL_NhanVien";
+import QLNhanVienChiTiet from "../pages/QuanLyToChuc/QL_NhanVienChiTiet";
 import QLDonVi from "../pages/QuanLyToChuc/QL_DonVi";
 import QLTieuChi from "../pages/QuanLyTieuChi/QL_TieuChi";
 import QLNhomTieuChi from "../pages/QuanLyTieuChi/QL_NhomTieuChi";
 import QLNamDanhGia from "../pages/QuanLyKeHoach/QL_NamDanhGia";
 import QLMauDanhGia from "../pages/QuanLyKeHoach/QL_MauDanhGia";
+import QLPhanQuyenTieuChi from "../pages/QuanLyKeHoach/QL_PhanQuyenTieuChi";
 import QLThangDiemByTieuChi from "../pages/QuanLyTieuChi/QL_ThangDiemByTieuChi";
 import QLDinhMucGiangVien from "../pages/QuanLyKeHoach/QL_DinhMucGiangVien";
 import DanhGiaPhuLuc2 from "../pages/DanhGia/DanhGiaPhuLuc2";
@@ -35,6 +37,8 @@ const AppRoutes = ({ triggerNotification }) => {
       <Route path="/danh-gia-kpi-nhan-vien" element={<DanhGiaNhanVien />} />
       <Route path="/lich-su-danh-gia" element={<LichSuDanhGia />} />
       <Route path="/quan-ly-nguoi-dung" element={<QLNhanVien />} />
+      <Route path="/quan-ly-nguoi-dung/them-moi" element={<QLNhanVienChiTiet />} />
+      <Route path="/quan-ly-nguoi-dung/chi-tiet/:id" element={<QLNhanVienChiTiet />} />
       <Route path="/quan-ly-don-vi" element={<QLDonVi />} />
       <Route
         path="/quan-ly-don-vi/:maDonVi/danh-sach-thanh-vien"
@@ -44,6 +48,7 @@ const AppRoutes = ({ triggerNotification }) => {
       <Route path="/nhom-tieu-chi" element={<QLNhomTieuChi />} />
       <Route path="/quan-ly-nam-danh-gia" element={<QLNamDanhGia />} />
       <Route path="/mau-danh-gia" element={<QLMauDanhGia />} />
+      <Route path="/mau-danh-gia/:idMau/phan-quyen" element={<QLPhanQuyenTieuChi />} />
       <Route path="/:tieuChiId/thang-diem" element={<QLThangDiemByTieuChi />} />
       <Route
         path="/quan-ly-dinh-muc-giang-vien"

@@ -6,6 +6,7 @@ const QL_MauDanhGiaListing = ({
   data,
   onEdit,
   onDelete,
+  onConfigPermissions,
   isLoading,
   canManage,
 }) => {
@@ -180,6 +181,14 @@ const QL_MauDanhGiaListing = ({
                           pointerEvents: canManage ? "auto" : "none",
                         }}
                       >
+                        <div
+                          className="action-btn perm-btn"
+                          onClick={() => onConfigPermissions(item)}
+                          title="Phân quyền đánh giá"
+                          style={{ color: "#10b981" }}
+                        >
+                          <i className="fa-solid fa-user-shield"></i>
+                        </div>
                         <div
                           className="action-btn edit-btn"
                           onClick={() => onEdit(item)}

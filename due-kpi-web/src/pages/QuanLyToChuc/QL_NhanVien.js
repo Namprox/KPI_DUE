@@ -1,43 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import UserListing from '../../components/QuanLyToChuc/QL_NhanVien/QL_NhanVienListing';
-import UserForm from '../../components/QuanLyToChuc/QL_NhanVien/QL_NhanVienForm';
 import ResetPasswordModal from '../../components/QuanLyToChuc/QL_NhanVien/ResetPasswordModal';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
 const QL_NhanVien = () => {
-    const initialForm = {
-        MaNhanVien: '',
-        MatKhau: '',
-        HoTen: '',
-        Email: '',
-        IdDonVi: '',
-        IdChucVu: '',
-        IdQuanLyTrucTiep: '',
-        IdChucDanh: '',
-        TrangThai: true
-    };
-
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
     const [resetPasswordUser, setResetPasswordUser] = useState(null);
 
-    const [formData, setFormData] = useState(initialForm);
-    const [editId, setEditId] = useState(null);
-
-    const [donViList, setDonViList] = useState([]);
-    const [chucVuList, setChucVuList] = useState([]);
-    const [chucDanhList, setChucDanhList] = useState([]);
-    const [quanLyList, setQuanLyList] = useState([]);
-
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
     const { user } = useAuth();
+    const navigate = useNavigate();
     const currentUser = user || {};
     const roleCode = currentUser?.MaChucVu || '';
     const isAdmin = roleCode === 'Admin';
@@ -46,48 +26,8 @@ const QL_NhanVien = () => {
 
     useEffect(() => {
         fetchData();
-        fetchDropdownData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    const fetchDropdownData = async () => {
-        try {
-            const [dvRes, cvRes, cdRes, qlRes] = await Promise.all([
-                apiFetch('donvi'),
-                apiFetch('chucvu'),
-                apiFetch('chuc-danh-nghe-nghiep'),
-                apiFetch('nhan-vien')
-            ]);
-
-            if (dvRes.ok) {
-                const res = await dvRes.json();
-                setDonViList(res.Items || (Array.isArray(res) ? res : []));
-            }
-            if (cvRes.ok) {
-                const res = await cvRes.json();
-                setChucVuList(res.Items || (Array.isArray(res) ? res : []));
-            }
-            if (cdRes.ok) {
-                const res = await cdRes.json();
-                const list = res.Items || (Array.isArray(res) ? res : []);
-                const processedList = list
-                    .filter(item => {
-                        const name = item.ten_chuc_danh || item.TenChucDanh || '';
-                        return !name.toLowerCase().includes('không có chức danh');
-                    })
-                    .sort((a, b) => {
-                        const idA = a.id_chuc_danh || a.IdChucDanh || 0;
-                        const idB = b.id_chuc_danh || b.IdChucDanh || 0;
-                        return idA - idB;
-                    });
-                setChucDanhList(processedList);
-            }
-            if (qlRes.ok) {
-                const res = await qlRes.json();
-                setQuanLyList(res.Items || (Array.isArray(res) ? res : []));
-            }
-        } catch (error) { console.error("Lỗi tải dữ liệu dropdown:", error); }
-    };
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -96,7 +36,8 @@ const QL_NhanVien = () => {
             if (response.ok) {
                 const result = await response.json();
                 const list = result.Items || (Array.isArray(result) ? result : []);
-                setData(list); setFilteredData(list);
+                setData(list);
+                setFilteredData(list);
             }
         } catch (error) { console.error(error); }
         finally { setIsLoading(false); }
@@ -108,39 +49,9 @@ const QL_NhanVien = () => {
         setFilteredData(data.filter(item => (item.HoTen && item.HoTen.toLowerCase().includes(query)) || (item.MaNhanVien && item.MaNhanVien.toLowerCase().includes(query))));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!canManage) return alert("Bạn không có quyền thực hiện chức năng này!");
-        const method = editId ? 'PUT' : 'POST';
-
-        const payload = {
-            ...formData,
-            IdDonVi: formData.IdDonVi ? parseInt(formData.IdDonVi) : null,
-            IdChucVu: formData.IdChucVu ? parseInt(formData.IdChucVu) : null,
-            IdChucDanh: formData.IdChucDanh ? parseInt(formData.IdChucDanh) : null,
-            IdQuanLyTrucTiep: formData.IdQuanLyTrucTiep ? parseInt(formData.IdQuanLyTrucTiep) : null,
-            TrangThai: !!formData.TrangThai
-        };
-        if (editId) payload.IdNhanVien = editId;
-
-        const response = await apiFetch('nhan-vien', {
-            method, body: JSON.stringify(payload)
-        });
-
-        if (response.ok) { fetchData(); closeModal(); } else alert("Lưu thất bại! Vui lòng kiểm tra lại dữ liệu");
-    };
-
     const handleEdit = (item) => {
         if (!canManage) return;
-        setEditId(item.IdNhanVien);
-        setFormData({
-            ...item,
-            IdDonVi: item.IdDonVi || '',
-            IdChucVu: item.IdChucVu || '',
-            IdChucDanh: item.IdChucDanh || '',
-            IdQuanLyTrucTiep: item.IdQuanLyTrucTiep || ''
-        });
-        setIsModalOpen(true);
+        navigate(`/quan-ly-nguoi-dung/chi-tiet/${item.IdNhanVien}`);
     };
 
     const handleDelete = (id) => {
@@ -164,13 +75,11 @@ const QL_NhanVien = () => {
         setResetPasswordUser(null);
     };
 
-    const closeModal = () => { setIsModalOpen(false); setFormData(initialForm); setEditId(null); };
-
     return (
         <div className="page-container">
             <div className="page-header"><div className="header-title"><h2>QUẢN LÝ NHÂN VIÊN / GIẢNG VIÊN</h2></div></div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
-                {canManage && (<button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}><i className="fa-solid fa-plus"></i> Thêm mới</button>)}
+                {canManage && (<button className="btn-add-new" onClick={() => navigate('/quan-ly-nguoi-dung/them-moi')} style={{ margin: 0 }}><i className="fa-solid fa-plus"></i> Thêm mới</button>)}
             </div>
             <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '5px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
@@ -189,20 +98,6 @@ const QL_NhanVien = () => {
                 onResetPassword={handleResetPassword}
                 isLoading={isLoading}
                 canManage={canManage}
-            />
-
-            <UserForm
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                onSubmit={handleSubmit}
-                formData={formData}
-                setFormData={setFormData}
-                isEditing={!!editId}
-                donViList={donViList}
-                chucVuList={chucVuList}
-                chucDanhList={chucDanhList}
-                quanLyList={quanLyList}
-                currentUser={currentUser}
             />
 
             <ResetPasswordModal

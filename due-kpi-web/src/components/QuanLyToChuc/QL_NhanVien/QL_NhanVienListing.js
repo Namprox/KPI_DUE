@@ -65,18 +65,19 @@ const QL_NhanVienListing = ({
         <>
           <table
             className="custom-table nhanvien-table"
-            style={{ minWidth: isDesktop ? "1400px" : "100%" }}
+            style={{ minWidth: isDesktop ? "1450px" : "100%" }}
           >
             <thead>
               <tr>
-                <th width="4%" style={{ textAlign: "center" }}>
+                <th width="3%" style={{ textAlign: "center" }}>
                   STT
                 </th>
-                <th width="14%">MÃ NHÂN VIÊN</th>
-                <th width="18%">HỌ VÀ TÊN</th>
-                <th width="16%">ĐƠN VỊ CÔNG TÁC</th>
-                <th width="14%">CHỨC VỤ / CHỨC DANH</th>
-                <th width="16%">THÔNG TIN LIÊN HỆ</th>
+                <th width="11%">MÃ NHÂN VIÊN</th>
+                <th width="15%">HỌ VÀ TÊN</th>
+                <th width="15%">ĐƠN VỊ CÔNG TÁC</th>
+                <th width="12%">CHỨC VỤ</th>
+                <th width="12%">CHỨC DANH</th>
+                <th width="14%">THÔNG TIN LIÊN HỆ</th>
                 <th width="10%" style={{ textAlign: "center" }}>
                   TRẠNG THÁI
                 </th>
@@ -97,9 +98,9 @@ const QL_NhanVienListing = ({
                       </div>
                       {/* {item.ScienceUserId ? (
                                                 <div style={{ fontSize: '11px', color: '#059669', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}><i className="fa-solid fa-link"></i> DueScience: {item.ScienceUserId}</div>
-                                            ) : (
+                                             ) : (
                                                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}><i className="fa-solid fa-link-slash"></i> Chưa liên kết DB</div>
-                                            )} */}
+                                             )} */}
                     </td>
                     <td style={{ whiteSpace: "nowrap" }}>
                       <div style={{ fontWeight: "600", color: "#333" }}>
@@ -118,21 +119,11 @@ const QL_NhanVienListing = ({
                       <div style={{ fontWeight: "500", color: "#0284c7" }}>
                         {item.TenChucVu || "---"}
                       </div>
-                      {item.TenChucDanh && (
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "#64748b",
-                            marginTop: "4px",
-                          }}
-                        >
-                          <i
-                            className="fa-solid fa-graduation-cap"
-                            style={{ marginRight: "4px" }}
-                          ></i>{" "}
-                          {item.TenChucDanh}
-                        </div>
-                      )}
+                    </td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <div style={{ fontWeight: "500", color: "#475569" }}>
+                        {item.TenChucDanh || "—"}
+                      </div>
                     </td>
                     <td style={{ whiteSpace: "nowrap" }}>
                       <div style={{ fontSize: "13px", color: "#475569" }}>
