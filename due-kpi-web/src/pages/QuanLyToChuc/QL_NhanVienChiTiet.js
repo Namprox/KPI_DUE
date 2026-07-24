@@ -79,35 +79,40 @@ const QL_NhanVienChiTiet = () => {
   const [editChucVuNote, setEditChucVuNote] = useState("");
 
   // Helper to check if basic form fields differ from original/initial state
-  const isFormDirty = JSON.stringify(formData) !== JSON.stringify(isEditing ? originalFormData : initialForm);
+  const isFormDirty =
+    JSON.stringify(formData) !==
+    JSON.stringify(isEditing ? originalFormData : initialForm);
 
   // Check if there are unsaved drafts in title change panel
-  const isTitleDraftDirty = isChangingTitle && (
-    newTitleId !== "" ||
-    newTitleFromDate !== "" ||
-    newTitleNote !== ""
-  );
+  const isTitleDraftDirty =
+    isChangingTitle &&
+    (newTitleId !== "" || newTitleFromDate !== "" || newTitleNote !== "");
 
   // Check if there are unsaved drafts in position adding panel
-  const isChucVuDraftDirty = isAddingChucVu && (
-    newChucVuId !== "" ||
-    newChucVuFromDate !== "" ||
-    newChucVuNote !== ""
-  );
+  const isChucVuDraftDirty =
+    isAddingChucVu &&
+    (newChucVuId !== "" || newChucVuFromDate !== "" || newChucVuNote !== "");
 
   // Check if there are active inline edits
   const isInlineEditDirty = editingTitleId !== null || editingChucVuId !== null;
 
   // In Create Mode, any items in title/position history arrays count as unsaved changes
-  const isCreateHistoryDirty = !isEditing && (chucDanhHistory.length > 0 || chucVuConcurrent.length > 0);
+  const isCreateHistoryDirty =
+    !isEditing && (chucDanhHistory.length > 0 || chucVuConcurrent.length > 0);
 
-  const isDirty = isFormDirty || isTitleDraftDirty || isChucVuDraftDirty || isInlineEditDirty || isCreateHistoryDirty;
+  const isDirty =
+    isFormDirty ||
+    isTitleDraftDirty ||
+    isChucVuDraftDirty ||
+    isInlineEditDirty ||
+    isCreateHistoryDirty;
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isDirty && !isSavingRef.current) {
         e.preventDefault();
-        e.returnValue = "Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn rời khỏi trang?";
+        e.returnValue =
+          "Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn rời khỏi trang?";
         return e.returnValue;
       }
     };
@@ -119,14 +124,20 @@ const QL_NhanVienChiTiet = () => {
 
   const handleBack = () => {
     if (isDirty) {
-      const confirmLeave = window.confirm("Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn rời khỏi trang?");
+      const confirmLeave = window.confirm(
+        "Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn rời khỏi trang?",
+      );
       if (!confirmLeave) return;
     }
     navigate("/quan-ly-nguoi-dung");
   };
 
   const handleCancelChanges = () => {
-    if (window.confirm("Bạn có chắc chắn muốn hủy bỏ tất cả thay đổi chưa lưu trên form?")) {
+    if (
+      window.confirm(
+        "Bạn có chắc chắn muốn hủy bỏ tất cả thay đổi chưa lưu trên form?",
+      )
+    ) {
       setFormData(originalFormData);
       setErrors({});
     }
@@ -756,11 +767,19 @@ const QL_NhanVienChiTiet = () => {
         >
           <i className="fa-solid fa-arrow-left"></i> Quay lại
         </button>
-        <div className="header-title" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "#0f172a" }}>
-            {isEditing
-              ? "THÔNG TIN CHI TIẾT NHÂN VIÊN"
-              : "THÊM NHÂN VIÊN MỚI"}
+        <div
+          className="header-title"
+          style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+        >
+          <h2
+            style={{
+              margin: 0,
+              fontSize: "20px",
+              fontWeight: "700",
+              color: "#0f172a",
+            }}
+          >
+            {isEditing ? "THÔNG TIN CHI TIẾT NHÂN VIÊN" : "THÊM NHÂN VIÊN MỚI"}
           </h2>
         </div>
       </div>
@@ -823,7 +842,7 @@ const QL_NhanVienChiTiet = () => {
             className="fa-solid fa-graduation-cap"
             style={{ marginRight: "8px" }}
           ></i>{" "}
-          Lịch sử Chức danh{" "}
+          Chức danh{" "}
           {chucDanhHistory.length > 0 ? `(${chucDanhHistory.length})` : ""}
         </button>
         <button
@@ -849,7 +868,7 @@ const QL_NhanVienChiTiet = () => {
             className="fa-solid fa-briefcase"
             style={{ marginRight: "8px" }}
           ></i>{" "}
-          Lịch sử Chức vụ{" "}
+          Chức vụ{" "}
           {chucVuConcurrent.length > 0 ? `(${chucVuConcurrent.length})` : ""}
         </button>
       </div>
@@ -885,7 +904,13 @@ const QL_NhanVienChiTiet = () => {
                     <label>
                       Mã nhân viên <span className="text-red">*</span>
                     </label>
-                    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <div
+                      style={{
+                        position: "relative",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
                       <input
                         type="text"
                         name="MaNhanVien"
@@ -900,7 +925,9 @@ const QL_NhanVienChiTiet = () => {
                           backgroundColor: isEditing ? "#f8fafc" : "inherit",
                           color: isEditing ? "#475569" : "inherit",
                           cursor: isEditing ? "not-allowed" : "text",
-                          borderColor: errors.MaNhanVien ? "#ef4444" : "#cbd5e1",
+                          borderColor: errors.MaNhanVien
+                            ? "#ef4444"
+                            : "#cbd5e1",
                           margin: 0,
                         }}
                       />
@@ -917,13 +944,30 @@ const QL_NhanVienChiTiet = () => {
                       )}
                     </div>
                     {isEditing && (
-                      <span style={{ fontSize: "11.5px", color: "#475569", marginTop: "4px", display: "block" }}>
-                        <i className="fa-solid fa-circle-info" style={{ marginRight: "4px" }}></i>
+                      <span
+                        style={{
+                          fontSize: "11.5px",
+                          color: "#475569",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
+                        <i
+                          className="fa-solid fa-circle-info"
+                          style={{ marginRight: "4px" }}
+                        ></i>
                         Mã nhân viên không thể chỉnh sửa sau khi tạo.
                       </span>
                     )}
                     {errors.MaNhanVien && (
-                      <span style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      <span
+                        style={{
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
                         {errors.MaNhanVien}
                       </span>
                     )}
@@ -945,7 +989,14 @@ const QL_NhanVienChiTiet = () => {
                       }}
                     />
                     {errors.HoTen && (
-                      <span style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      <span
+                        style={{
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
                         {errors.HoTen}
                       </span>
                     )}
@@ -979,7 +1030,14 @@ const QL_NhanVienChiTiet = () => {
                       ))}
                     </select>
                     {errors.IdDonVi && (
-                      <span style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      <span
+                        style={{
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
                         {errors.IdDonVi}
                       </span>
                     )}
@@ -1020,7 +1078,14 @@ const QL_NhanVienChiTiet = () => {
                       }}
                     />
                     {errors.Email && (
-                      <span style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      <span
+                        style={{
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
                         {errors.Email}
                       </span>
                     )}
@@ -1068,7 +1133,14 @@ const QL_NhanVienChiTiet = () => {
                       ></i>
                     </div>
                     {errors.MatKhau && (
-                      <span style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      <span
+                        style={{
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
                         {errors.MatKhau}
                       </span>
                     )}
@@ -1269,7 +1341,10 @@ const QL_NhanVienChiTiet = () => {
                                   alignItems: "center",
                                 }}
                               >
-                                <i className="fa-solid fa-circle-check" style={{ marginRight: "6px" }}></i>
+                                <i
+                                  className="fa-solid fa-circle-check"
+                                  style={{ marginRight: "6px" }}
+                                ></i>
                                 Hiện hành
                               </div>
                             ) : (
@@ -1533,7 +1608,13 @@ const QL_NhanVienChiTiet = () => {
                                           border: "1px solid #bbf7d0",
                                         }}
                                       >
-                                        <i className="fa-solid fa-circle-check" style={{ marginRight: "4px", fontSize: "10px" }}></i>
+                                        <i
+                                          className="fa-solid fa-circle-check"
+                                          style={{
+                                            marginRight: "4px",
+                                            fontSize: "10px",
+                                          }}
+                                        ></i>
                                         Hiện hành
                                       </span>
                                     ) : (
@@ -1600,7 +1681,10 @@ const QL_NhanVienChiTiet = () => {
                                             }}
                                             title="Lưu thay đổi"
                                           >
-                                            <i className="fa-solid fa-check" style={{ fontSize: "13px" }}></i>
+                                            <i
+                                              className="fa-solid fa-check"
+                                              style={{ fontSize: "13px" }}
+                                            ></i>
                                           </button>
                                           <button
                                             type="button"
@@ -1621,7 +1705,10 @@ const QL_NhanVienChiTiet = () => {
                                             }}
                                             title="Hủy bỏ"
                                           >
-                                            <i className="fa-solid fa-times" style={{ fontSize: "13px" }}></i>
+                                            <i
+                                              className="fa-solid fa-times"
+                                              style={{ fontSize: "13px" }}
+                                            ></i>
                                           </button>
                                         </div>
                                       ) : (
@@ -1649,7 +1736,10 @@ const QL_NhanVienChiTiet = () => {
                                             }}
                                             title="Chỉnh sửa"
                                           >
-                                            <i className="fa-solid fa-pencil" style={{ fontSize: "13px" }}></i>
+                                            <i
+                                              className="fa-solid fa-pencil"
+                                              style={{ fontSize: "13px" }}
+                                            ></i>
                                           </button>
                                           <button
                                             type="button"
@@ -1672,7 +1762,10 @@ const QL_NhanVienChiTiet = () => {
                                             }}
                                             title="Xóa"
                                           >
-                                            <i className="fa-solid fa-trash" style={{ fontSize: "13px" }}></i>
+                                            <i
+                                              className="fa-solid fa-trash"
+                                              style={{ fontSize: "13px" }}
+                                            ></i>
                                           </button>
                                         </div>
                                       )}
@@ -1857,7 +1950,10 @@ const QL_NhanVienChiTiet = () => {
                                   alignItems: "center",
                                 }}
                               >
-                                <i className="fa-solid fa-circle-check" style={{ marginRight: "6px" }}></i>
+                                <i
+                                  className="fa-solid fa-circle-check"
+                                  style={{ marginRight: "6px" }}
+                                ></i>
                                 Đang giữ
                               </div>
                             ) : (
@@ -2142,7 +2238,13 @@ const QL_NhanVienChiTiet = () => {
                                           border: "1px solid #bbf7d0",
                                         }}
                                       >
-                                        <i className="fa-solid fa-circle-check" style={{ marginRight: "4px", fontSize: "10px" }}></i>
+                                        <i
+                                          className="fa-solid fa-circle-check"
+                                          style={{
+                                            marginRight: "4px",
+                                            fontSize: "10px",
+                                          }}
+                                        ></i>
                                         Đang giữ
                                       </span>
                                     ) : (
@@ -2209,7 +2311,10 @@ const QL_NhanVienChiTiet = () => {
                                             }}
                                             title="Lưu thay đổi"
                                           >
-                                            <i className="fa-solid fa-check" style={{ fontSize: "13px" }}></i>
+                                            <i
+                                              className="fa-solid fa-check"
+                                              style={{ fontSize: "13px" }}
+                                            ></i>
                                           </button>
                                           <button
                                             type="button"
@@ -2230,7 +2335,10 @@ const QL_NhanVienChiTiet = () => {
                                             }}
                                             title="Hủy bỏ"
                                           >
-                                            <i className="fa-solid fa-times" style={{ fontSize: "13px" }}></i>
+                                            <i
+                                              className="fa-solid fa-times"
+                                              style={{ fontSize: "13px" }}
+                                            ></i>
                                           </button>
                                         </div>
                                       ) : (
@@ -2260,7 +2368,10 @@ const QL_NhanVienChiTiet = () => {
                                             }}
                                             title="Chỉnh sửa"
                                           >
-                                            <i className="fa-solid fa-pencil" style={{ fontSize: "13px" }}></i>
+                                            <i
+                                              className="fa-solid fa-pencil"
+                                              style={{ fontSize: "13px" }}
+                                            ></i>
                                           </button>
                                           <button
                                             type="button"
@@ -2283,7 +2394,10 @@ const QL_NhanVienChiTiet = () => {
                                             }}
                                             title="Xóa"
                                           >
-                                            <i className="fa-solid fa-trash" style={{ fontSize: "13px" }}></i>
+                                            <i
+                                              className="fa-solid fa-trash"
+                                              style={{ fontSize: "13px" }}
+                                            ></i>
                                           </button>
                                         </div>
                                       )}
@@ -2351,7 +2465,9 @@ const QL_NhanVienChiTiet = () => {
                 margin: 0,
                 background: !isFormDirty ? "#f8fafc" : "#f1f5f9",
                 color: !isFormDirty ? "#94a3b8" : "#334155",
-                border: !isFormDirty ? "1px solid #e2e8f0" : "1px solid #cbd5e1",
+                border: !isFormDirty
+                  ? "1px solid #e2e8f0"
+                  : "1px solid #cbd5e1",
                 borderRadius: "6px",
                 padding: "10px 20px",
                 fontWeight: "600",

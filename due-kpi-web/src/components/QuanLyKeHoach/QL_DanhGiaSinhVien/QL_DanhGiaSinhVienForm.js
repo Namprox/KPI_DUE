@@ -1,6 +1,6 @@
 import React from 'react';
 
-const QL_DanhGiaSinhVienForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, namList, nhanVienList }) => {
+const QL_DanhGiaSinhVienForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, nhanVienList }) => {
     if (!isOpen) return null;
 
     const handleChange = (e) => {
@@ -12,13 +12,26 @@ const QL_DanhGiaSinhVienForm = ({ isOpen, onClose, onSubmit, formData, setFormDa
         const { name, value } = e.target;
         setFormData({ 
             ...formData, 
-            [name]: value === '' ? '' : (name === 'DiemTrungBinh' ? parseFloat(value) : parseInt(value, 10)) 
+            [name]: value === '' ? '' : (name === 'DanhGia' ? parseFloat(value) : parseInt(value, 10)) 
         });
+    };
+
+    const handleNhanVienChange = (e) => {
+        const idNv = e.target.value;
+        if (!idNv) return;
+        const nv = nhanVienList.find(x => x.IdNhanVien?.toString() === idNv || x.idNhanVien?.toString() === idNv);
+        if (nv) {
+            setFormData({ 
+                ...formData, 
+                MaCanBo: nv.MaNhanVien || nv.maNhanVien || formData.MaCanBo,
+                HoTenGv: nv.HoTen || nv.hoTen || formData.HoTenGv
+            });
+        }
     };
 
     return (
         <div className="modal-overlay" style={{ zIndex: 10000 }}>
-            <div className="modal-box form-modal-box" style={{ width: '90%', maxWidth: '600px' }}>
+            <div className="modal-box form-modal-box" style={{ width: '90%', maxWidth: '700px' }}>
                 <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ margin: 0, paddingRight: '20px', lineHeight: '1.4' }}>
                         {isEditing ? "Cập nhật đánh giá sinh viên" : "Thêm mới đánh giá sinh viên"}
@@ -27,80 +40,120 @@ const QL_DanhGiaSinhVienForm = ({ isOpen, onClose, onSubmit, formData, setFormDa
                 </div>
                 <div className="modal-body" style={{ padding: '25px' }}>
                     <form id="danhGiaSinhVienForm" onSubmit={onSubmit}>
+                        <div className="form-group" style={{ marginBottom: '15px' }}>
+                            <label>Lấy thông tin từ Nhân viên (Tùy chọn)</label>
+                            <select className="form-input" onChange={handleNhanVienChange} defaultValue="">
+                                <option value="">-- Chọn nhân viên để điền nhanh --</option>
+                                {nhanVienList.map(nv => (
+                                    <option key={nv.IdNhanVien || nv.idNhanVien} value={nv.IdNhanVien || nv.idNhanVien}>{nv.MaNhanVien || nv.maNhanVien} - {nv.HoTen || nv.hoTen}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                             <div className="form-group">
-                                <label>Năm học <span className="text-red">*</span></label>
-                                <select
-                                    name="IdNam"
+                                <label>Mã cán bộ <span className="text-red">*</span></label>
+                                <input
+                                    type="text"
+                                    name="MaCanBo"
                                     className="form-input"
-                                    value={formData.IdNam || ''}
+                                    value={formData.MaCanBo || ''}
                                     onChange={handleChange}
+                                    placeholder="Ví dụ: GV001"
                                     required
-                                >
-                                    <option value="">-- Chọn năm học --</option>
-                                    {namList.map(n => (
-                                        <option key={n.IdNam} value={n.IdNam}>{n.IdNam}</option>
-                                    ))}
-                                </select>
+                                />
                             </div>
                             <div className="form-group">
-                                <label>Nhân viên <span className="text-red">*</span></label>
-                                <select
-                                    name="IdNhanVien"
+                                <label>Họ tên giảng viên</label>
+                                <input
+                                    type="text"
+                                    name="HoTenGv"
                                     className="form-input"
-                                    value={formData.IdNhanVien || ''}
+                                    value={formData.HoTenGv || ''}
                                     onChange={handleChange}
-                                    required
-                                >
-                                    <option value="">-- Chọn nhân viên --</option>
-                                    {nhanVienList.map(nv => (
-                                        <option key={nv.IdNhanVien} value={nv.IdNhanVien}>{nv.MaNhanVien} - {nv.HoTen}</option>
-                                    ))}
-                                </select>
+                                    placeholder="Ví dụ: Nguyễn Văn A"
+                                />
                             </div>
                         </div>
 
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                             <div className="form-group">
-                                <label>Điểm trung bình (Thang 5) <span className="text-red">*</span></label>
+                                <label>Mã số sinh viên (MSSV)</label>
+                                <input
+                                    type="text"
+                                    name="Mssv"
+                                    className="form-input"
+                                    value={formData.Mssv || ''}
+                                    onChange={handleChange}
+                                    placeholder="Ví dụ: 231121012345"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Mã học phần</label>
+                                <input
+                                    type="text"
+                                    name="MaHocPhan"
+                                    className="form-input"
+                                    value={formData.MaHocPhan || ''}
+                                    onChange={handleChange}
+                                    placeholder="Ví dụ: LAW1001"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-grid-2" style={{ marginBottom: '20px' }}>
+                            <div className="form-group">
+                                <label>Kỳ học <span className="text-red">*</span></label>
                                 <input
                                     type="number"
-                                    name="DiemTrungBinh"
+                                    name="KyHoc"
                                     className="form-input"
-                                    value={formData.DiemTrungBinh !== undefined && formData.DiemTrungBinh !== null ? formData.DiemTrungBinh : ''}
+                                    value={formData.KyHoc !== undefined && formData.KyHoc !== null ? formData.KyHoc : ''}
+                                    onChange={handleNumberChange}
+                                    placeholder="Ví dụ: 261 (Năm 26, Kỳ 1)"
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Khoa quản lý</label>
+                                <input
+                                    type="text"
+                                    name="KhoaQuanLyHp"
+                                    className="form-input"
+                                    value={formData.KhoaQuanLyHp || ''}
+                                    onChange={handleChange}
+                                    placeholder="Ví dụ: Khoa Luật"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-grid-2" style={{ marginBottom: '20px' }}>
+                            <div className="form-group">
+                                <label>Câu hỏi</label>
+                                <input
+                                    type="number"
+                                    name="CauHoi"
+                                    className="form-input"
+                                    value={formData.CauHoi !== undefined && formData.CauHoi !== null ? formData.CauHoi : ''}
+                                    onChange={handleNumberChange}
+                                    min="1" max="12"
+                                    placeholder="1..12"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Điểm đánh giá <span className="text-red">*</span></label>
+                                <input
+                                    type="number"
+                                    name="DanhGia"
+                                    className="form-input"
+                                    value={formData.DanhGia !== undefined && formData.DanhGia !== null ? formData.DanhGia : ''}
                                     onChange={handleNumberChange}
                                     step="0.01"
-                                    min="0"
+                                    min="1"
                                     max="5"
                                     placeholder="Ví dụ: 4.5"
                                     required
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>Số học phần đánh giá</label>
-                                <input
-                                    type="number"
-                                    name="SoHocPhanDanhGia"
-                                    className="form-input"
-                                    value={formData.SoHocPhanDanhGia !== undefined && formData.SoHocPhanDanhGia !== null ? formData.SoHocPhanDanhGia : ''}
-                                    onChange={handleNumberChange}
-                                    step="1"
-                                    min="0"
-                                    placeholder="Ví dụ: 3"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-group" style={{ marginBottom: '20px' }}>
-                            <label>Hệ thống nguồn</label>
-                            <input
-                                type="text"
-                                name="HeThongNguon"
-                                className="form-input"
-                                value={formData.HeThongNguon || ''}
-                                onChange={handleChange}
-                                placeholder="Ví dụ: Portal, Survey..."
-                            />
                         </div>
                     </form>
                 </div>

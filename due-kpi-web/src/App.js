@@ -143,6 +143,7 @@ const AppContent = () => {
             <div className="page-wrapper">
               <AppRoutes
                 triggerNotification={() => setNotifCount((prev) => prev + 1)}
+                setIsPassModalOpen={setIsPassModalOpen}
               />
             </div>
           </div>

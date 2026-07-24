@@ -37,14 +37,18 @@ export const apiFetch = async (endpoint, options = {}) => {
   const isAuthEndpoint =
     endpoint === "auth/refresh" || endpoint === "auth/login";
 
-  const buildInit = () => ({
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  const buildInit = () => {
+    const isFormData = options.body instanceof FormData;
+    const defaultHeaders = isFormData ? {} : { "Content-Type": "application/json" };
+    return {
+      ...options,
+      credentials: "include",
+      headers: {
+        ...defaultHeaders,
+        ...options.headers,
+      },
+    };
+  };
 
   let response = await fetch(url, buildInit());
 

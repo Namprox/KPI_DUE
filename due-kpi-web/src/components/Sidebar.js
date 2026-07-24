@@ -44,6 +44,11 @@ const menuStructure = {
       path: "/quan-ly-dinh-muc-giang-vien",
     },
     {
+      name: "Ngoại lệ định mức",
+      icon: "fa-solid fa-file-contract",
+      path: "/quan-ly-ngoai-le-dinh-muc",
+    },
+    {
       name: "Quản lý giờ giảng",
       icon: "fa-solid fa-scale-balanced",
       path: "/quan-ly-gio-giang",
@@ -57,6 +62,11 @@ const menuStructure = {
       name: "Quản lý đánh giá sinh viên",
       icon: "fa-solid fa-user-graduate",
       path: "/quan-ly-danh-gia-sinh-vien",
+    },
+    {
+      name: "Điểm trung bình ĐGSV",
+      icon: "fa-solid fa-square-poll-vertical",
+      path: "/diem-trung-binh-danh-gia-sinh-vien",
     },
   ],
   criteriaMgmt: [
@@ -274,7 +284,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
                 className="user-dropdown-item"
                 onClick={(e) => {
                   e.stopPropagation();
-                  alert("Chức năng Hồ sơ đang phát triển");
+                  setIsUserMenuOpen(false);
+                  navigate("/thong-tin-lien-he");
                 }}
               >
                 <i
