@@ -18,6 +18,8 @@ import DanhSachDuyetPhieu from "../pages/QuanLyDanhGia/DanhSachDuyetPhieu";
 import ChiTietDuyetPhieu from "../pages/QuanLyDanhGia/ChiTietDuyetPhieu";
 import QLGioGiang from "../pages/QuanLyKeHoach/QL_GioGiang";
 import QLViPham from "../pages/QuanLyKeHoach/QL_ViPham";
+import QLLoaiViPham from "../pages/QuanLyKeHoach/QL_LoaiViPham";
+import QLTongHopViPham from "../pages/QuanLyKeHoach/QL_TongHopViPham";
 import QLDanhGiaSinhVien from "../pages/QuanLyKeHoach/QL_DanhGiaSinhVien";
 import QLDiemTbDanhGiaSinhVien from "../pages/QuanLyKeHoach/QL_DiemTbDanhGiaSinhVien";
 import QLChucDanh from "../pages/QuanLyToChuc/QL_ChucDanh";
@@ -77,6 +79,8 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
       <Route path="/chi-tiet-duyet-phieu" element={<ChiTietDuyetPhieu />} />
       <Route path="/quan-ly-gio-giang" element={<QLGioGiang />} />
       <Route path="/quan-ly-vi-pham" element={<QLViPham />} />
+      <Route path="/danh-muc-loai-vi-pham" element={<QLLoaiViPham />} />
+      <Route path="/tong-hop-vi-pham" element={<QLTongHopViPham />} />
       <Route
         path="/quan-ly-danh-gia-sinh-vien"
         element={<QLDanhGiaSinhVien />}

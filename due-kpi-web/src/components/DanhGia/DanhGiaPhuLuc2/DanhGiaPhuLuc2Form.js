@@ -1,8 +1,16 @@
 import React from "react";
 
+const formatNgay = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("vi-VN");
+};
+
 const DanhGiaPhuLuc2Form = ({
   criteriaList,
   formData,
+  autoScores = {},
   tongDiemCoBan,
   isSubmitting,
   trangThaiPhieu,
@@ -24,19 +32,43 @@ const DanhGiaPhuLuc2Form = ({
     return groups;
   }, {});
 
+  // Current score of a criterion: auto score, or the manually entered/selected score
+  const getScoreOf = (tc) => {
+    const autoInfo = autoScores[tc.IdTieuChi];
+    if (autoInfo) return Number(autoInfo.DiemTuDong || 0);
+    const v = formData[tc.IdTieuChi]?.DiemTuDanhGia;
+    return v == null || v === "" ? null : Number(v);
+  };
+
+  const totalCount = criteriaList.length;
+  const answeredCount = criteriaList.filter(
+    (tc) => getScoreOf(tc) != null,
+  ).length;
+  const progressPercent =
+    totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
+
+  const getGroupStats = (items) => {
+    let sum = 0;
+    let max = 0;
+    items.forEach((tc) => {
+      max += Number(tc.DiemToiDa) || 0;
+      const s = getScoreOf(tc);
+      if (s != null) sum += s;
+    });
+    return { sum, max };
+  };
+
   const getXepLoai = (diem) => {
     if (diem >= 80 && diem <= 100)
       return {
         text: "Hoàn thành",
-        color: "#0ea5e9",
-        bg: "#f0f9ff",
+        className: "pl2-xep-loai-blue",
         icon: "fa-circle-check",
       };
     if (diem > 100)
       return {
         text: "Hoàn thành Tốt / Xuất sắc",
-        color: "#10b981",
-        bg: "#ecfdf5",
+        className: "pl2-xep-loai-green",
         icon: "fa-medal",
       };
     return null;
@@ -46,64 +78,40 @@ const DanhGiaPhuLuc2Form = ({
 
   return (
     <div className="pl2-container">
-      <div className="pl2-header" style={{ position: "static" }}>
+      <div className="pl2-header">
         <div className="pl2-header-score">
-          <span className="pl2-header-score-label">TỔNG ĐIỂM TÍCH LŨY</span>
+          <span className="pl2-header-score-label">
+            <i className="fa-solid fa-chart-line"></i> TỔNG ĐIỂM TÍCH LŨY
+          </span>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "15px",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="pl2-header-score-row">
             <div className="pl2-header-score-value">
               {tongDiemCoBan.toFixed(2)}
-              <span
-                style={{
-                  fontSize: "16px",
-                  color: "#64748b",
-                  fontWeight: "normal",
-                  marginLeft: "5px",
-                }}
-              >
-                điểm
-              </span>
+              <span className="pl2-header-score-unit">điểm</span>
             </div>
 
             {xepLoai && (
-              <div
-                style={{
-                  background: xepLoai.bg,
-                  color: xepLoai.color,
-                  border: `1px solid ${xepLoai.color}40`,
-                  padding: "6px 15px",
-                  borderRadius: "20px",
-                  fontSize: "14px",
-                  fontWeight: "bold",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                  transition: "all 0.3s ease",
-                }}
-              >
+              <div className={`pl2-xep-loai ${xepLoai.className}`}>
                 <i className={`fa-solid ${xepLoai.icon}`}></i>
                 Dự kiến: {xepLoai.text}
               </div>
             )}
           </div>
 
-          <div
-            style={{
-              fontSize: "12px",
-              color: "#94a3b8",
-              marginTop: "4px",
-              fontWeight: "500",
-            }}
-          >
+          <div className="pl2-header-score-note">
             (Bao gồm Điểm cơ bản + Điểm vượt trội)
+          </div>
+
+          <div className="pl2-progress">
+            <div className="pl2-progress-bar">
+              <div
+                className="pl2-progress-fill"
+                style={{ width: `${progressPercent}%` }}
+              ></div>
+            </div>
+            <div className="pl2-progress-label">
+              Đã đánh giá <b>{answeredCount}</b>/{totalCount} tiêu chí
+            </div>
           </div>
         </div>
 
@@ -126,7 +134,7 @@ const DanhGiaPhuLuc2Form = ({
               </button>
             </>
           )}
-          {trangThaiPhieu === 2 && !isKhoaEvaluating && (
+          {trangThaiPhieu === 2 && !isKhoaEvaluating && onRecall && (
             <button
               onClick={onRecall}
               disabled={isSubmitting}
@@ -134,6 +142,12 @@ const DanhGiaPhuLuc2Form = ({
             >
               <i className="fa-solid fa-rotate-left"></i> Thu hồi phiếu để sửa
             </button>
+          )}
+          {trangThaiPhieu === 2 && !isKhoaEvaluating && !onRecall && (
+            <div className="pl2-approved pl2-waiting">
+              <i className="fa-solid fa-paper-plane"></i> Phiếu đã nộp, chờ Khoa
+              đánh giá
+            </div>
           )}
           {trangThaiPhieu >= 3 && !isKhoaEvaluating && (
             <div className="pl2-approved">
@@ -144,389 +158,432 @@ const DanhGiaPhuLuc2Form = ({
         </div>
       </div>
 
-      {Object.keys(groupedCriteria).map((groupName, gIndex) => (
-        <div key={groupName} className="pl2-group">
-          <h3 className="pl2-group-title">{groupName}</h3>
-          <div className="pl2-group-items">
-            {groupedCriteria[groupName].map((tc, index) => {
-              const isActive = formData[tc.IdTieuChi]?.DiemTuDanhGia > 0;
-              const fileList = formData[tc.IdTieuChi]?.DanhSachFile || [];
-              const nckhList = formData[tc.IdTieuChi]?.DanhSachNCKH || [];
+      {lyDoTraVe && (
+        <div className="pl2-return-note">
+          <i className="fa-solid fa-circle-info"></i>
+          <div>
+            <b>Nhận xét từ Khoa:</b> {lyDoTraVe}
+          </div>
+        </div>
+      )}
 
-              let disabledRadio = false;
-              let disabledText = false;
+      {Object.keys(groupedCriteria).map((groupName, gIndex) => {
+        const items = groupedCriteria[groupName];
+        const { sum, max } = getGroupStats(items);
+        return (
+          <div key={groupName} className="pl2-group">
+            <div className="pl2-group-header">
+              <h3 className="pl2-group-title">{groupName}</h3>
+              <span className="pl2-group-score">
+                <i className="fa-solid fa-star"></i> {sum % 1 === 0 ? sum : sum.toFixed(2)}
+                <span className="pl2-group-score-max">/ {max}đ</span>
+              </span>
+            </div>
+            <div className="pl2-group-items">
+              {items.map((tc, index) => {
+                const autoInfo = autoScores[tc.IdTieuChi];
+                const currentScore = getScoreOf(tc);
+                const hasScore = currentScore != null;
 
-              if (isKhoaEvaluating) {
-                disabledRadio = trangThaiPhieu >= 3;
-                disabledText = trangThaiPhieu >= 3;
-              } else {
-                disabledRadio = trangThaiPhieu >= 2;
-                disabledText = trangThaiPhieu >= 2;
-              }
-
-              return (
-                <div
-                  key={tc.IdTieuChi}
-                  className={`pl2-criteria ${isActive ? "active" : ""}`}
-                >
-                  <div
-                    className="pl2-criteria-header"
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: "24px",
-                      width: "100%",
-                    }}
-                  >
-                    <div
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
-                      }}
-                    >
-                      <span
-                        className="pl2-criteria-title"
-                        style={{
-                          fontWeight: "600",
-                          color: "#333",
-                          fontSize: "16px",
-                        }}
-                      >
+                const criteriaHeader = (
+                  <div className="pl2-criteria-header">
+                    <div className="pl2-criteria-header-main">
+                      <span className="pl2-criteria-title">
                         {gIndex + 1}.{index + 1}. {tc.TenTieuChi}
                       </span>
-
                       {tc.MoTa && (
-                        <div
-                          className="pl2-criteria-desc"
-                          style={{
-                            color: "#555",
-                            fontSize: "14px",
-                            lineHeight: "1.6",
-                            whiteSpace: "pre-line",
-                            paddingLeft: "4px",
-                          }}
-                        >
-                          {tc.MoTa}
+                        <div className="pl2-criteria-desc">{tc.MoTa}</div>
+                      )}
+                    </div>
+                    <div className="pl2-criteria-header-side">
+                      {hasScore && (
+                        <span className="pl2-criteria-score">
+                          <i className="fa-solid fa-circle-check"></i>{" "}
+                          {currentScore % 1 === 0
+                            ? currentScore
+                            : currentScore.toFixed(2)}
+                          đ
+                        </span>
+                      )}
+                      <span className="pl2-criteria-max">
+                        Tối đa: {tc.DiemToiDa}đ
+                      </span>
+                    </div>
+                  </div>
+                );
+
+                // Auto-scored criterion (LoaiNguonDiem = 2): system-computed, read-only
+                if (autoInfo) {
+                  const congThuc = (autoInfo.CongThucTongHop || "").toUpperCase();
+                  const isPhsv = congThuc.startsWith("PHSV");
+                  const isNckh = congThuc.startsWith("NCKH");
+                  const autoNote = isNckh
+                    ? "Điểm được tính tự động dựa vào dữ liệu ở trang NCKH"
+                    : isPhsv
+                      ? "Điểm được tính tự động dựa vào dữ liệu đánh giá của sinh viên"
+                      : "Không chỉnh sửa";
+
+                  const minhChungNckh = Array.isArray(autoInfo.MinhChung)
+                    ? autoInfo.MinhChung
+                    : [];
+
+                  // PHSV_DIEM_TB_GTE_3 -> threshold 3 (default 3 if not encoded)
+                  const nguongMatch = congThuc.match(/GTE_(\d+(?:\.\d+)?)/);
+                  const nguong = nguongMatch ? Number(nguongMatch[1]) : 3;
+                  const diemTb =
+                    autoInfo.DiemTrungBinhPhanHoi != null
+                      ? Number(autoInfo.DiemTrungBinhPhanHoi)
+                      : null;
+                  const datNguong = diemTb != null && diemTb >= nguong;
+
+                  return (
+                    <div
+                      key={tc.IdTieuChi}
+                      className="pl2-criteria pl2-criteria-auto"
+                    >
+                      {criteriaHeader}
+
+                      <div className="pl2-auto-score-box">
+                        <div className="pl2-auto-score-info">
+                          <i className="fa-solid fa-gauge-high pl2-auto-icon"></i>
+                          <span className="pl2-auto-score-label">
+                            Điểm hệ thống tự tính
+                          </span>
+                          <i className="fa-solid fa-lock pl2-auto-lock"></i>
+                          <span className="pl2-auto-score-note">{autoNote}</span>
+                        </div>
+                        <div className="pl2-auto-score-value">
+                          {Number(autoInfo.DiemTuDong || 0)}đ
+                        </div>
+                      </div>
+
+                      {isPhsv && (
+                        <div className="pl2-phsv-tb-box">
+                          <span className="pl2-phsv-tb-label">
+                            <i className="fa-solid fa-users"></i> Điểm trung
+                            bình phản hồi sinh viên:
+                          </span>
+                          {diemTb != null ? (
+                            <>
+                              <span className="pl2-phsv-tb-value">
+                                {diemTb.toFixed(2)}
+                              </span>
+                              <span
+                                className={`pl2-phsv-tb-badge ${datNguong ? "pl2-phsv-tb-dat" : "pl2-phsv-tb-khong-dat"}`}
+                              >
+                                <i
+                                  className={`fa-solid ${datNguong ? "fa-circle-check" : "fa-circle-xmark"}`}
+                                ></i>
+                                {datNguong
+                                  ? `Đạt (≥ ${nguong})`
+                                  : `Không đạt (< ${nguong})`}
+                              </span>
+                              {autoInfo.SoLuotDanhGia != null && (
+                                <span className="pl2-phsv-tb-luot">
+                                  ({autoInfo.SoLuotDanhGia} lượt đánh giá)
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="pl2-phsv-tb-empty">
+                              Chưa có dữ liệu điểm trung bình
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {isNckh && minhChungNckh.length > 0 && (
+                        <div className="pl2-nckh-mc-box">
+                          <div className="pl2-nckh-mc-title">
+                            <i className="fa-solid fa-book-open"></i> Minh chứng
+                            từ hệ thống NCKH
+                            <span className="pl2-nckh-mc-count">
+                              {minhChungNckh.length}
+                            </span>
+                          </div>
+                          <ul className="pl2-nckh-mc-list">
+                            {minhChungNckh.map((mc, mcIndex) => {
+                              const ngay = formatNgay(mc.Ngay);
+                              return (
+                                <li
+                                  key={`${mc.LoaiNguon}_${mc.MaNguon}_${mcIndex}`}
+                                  className="pl2-nckh-mc-item"
+                                >
+                                  <div className="pl2-nckh-mc-item-main">
+                                    <span className="pl2-nckh-mc-name">
+                                      {mc.TieuDe || "(Không có tiêu đề)"}
+                                    </span>
+                                    {mc.TenLoaiNguon && (
+                                      <span className="pl2-nckh-mc-type">
+                                        {mc.TenLoaiNguon}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {(mc.MoTa || ngay) && (
+                                    <div className="pl2-nckh-mc-meta">
+                                      {mc.MoTa}
+                                      {mc.MoTa && ngay ? " • " : ""}
+                                      {ngay}
+                                    </div>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
                         </div>
                       )}
                     </div>
+                  );
+                }
 
-                    <span
-                      className="pl2-criteria-max"
-                      style={{
-                        whiteSpace: "nowrap",
-                        color: "#333",
-                        fontSize: "14px",
-                      }}
-                    >
-                      Tối đa: {tc.DiemToiDa}đ
-                    </span>
-                  </div>
+                const isActive = formData[tc.IdTieuChi]?.DiemTuDanhGia > 0;
+                const fileList = formData[tc.IdTieuChi]?.DanhSachFile || [];
+                const nckhList = formData[tc.IdTieuChi]?.DanhSachNCKH || [];
 
-                  {tc.LoaiThangDiem === 2 ? (
-                    <div className="pl2-score-input-container">
-                      <span style={{ fontSize: "14px", fontWeight: "500", color: "#475569" }}>
-                        Nhập điểm:
-                      </span>
-                      <input
-                        type="number"
-                        className="pl2-score-input"
-                        placeholder={`Tối đa ${tc.DiemToiDa}`}
-                        value={formData[tc.IdTieuChi]?.DiemTuDanhGia ?? ""}
-                        disabled={disabledRadio}
-                        min="0"
-                        max={tc.DiemToiDa}
-                        step="any"
-                        onChange={(e) => {
-                          if (disabledRadio) return;
-                          const val = e.target.value;
-                          if (val === "") {
-                            onScoreChange(tc.IdTieuChi, null, "");
-                          } else {
-                            let parsed = parseFloat(val);
-                            if (isNaN(parsed)) parsed = 0;
-                            if (parsed < 0) parsed = 0;
-                            if (parsed > tc.DiemToiDa) parsed = tc.DiemToiDa;
-                            onScoreChange(tc.IdTieuChi, null, parsed);
-                          }
-                        }}
-                      />
-                      <span style={{ fontSize: "13px", color: "#64748b" }}>
-                        (Điểm tối đa: {tc.DiemToiDa}đ)
-                      </span>
-                    </div>
-                  ) : tc.LoaiThangDiem === 3 ? (
-                    <div className="pl2-thang-diem-list">
-                      <label
-                        className={`pl2-thang-diem-item ${formData[tc.IdTieuChi]?.DiemTuDanhGia === tc.DiemToiDa ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
-                      >
-                        <input
-                          type="radio"
-                          name={`yesno_${tc.IdTieuChi}`}
-                          checked={
-                            formData[tc.IdTieuChi]?.DiemTuDanhGia ===
-                            tc.DiemToiDa
-                          }
-                          disabled={disabledRadio}
-                          onChange={() => {
-                            if (disabledRadio) return;
-                            onScoreChange(tc.IdTieuChi, null, tc.DiemToiDa);
-                          }}
-                        />
-                        <span className="pl2-thang-diem-text">
-                          Có ({tc.DiemToiDa}đ)
-                        </span>
-                      </label>
-                      <label
-                        className={`pl2-thang-diem-item ${formData[tc.IdTieuChi]?.DiemTuDanhGia === 0 || formData[tc.IdTieuChi]?.DiemTuDanhGia == null ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
-                      >
-                        <input
-                          type="radio"
-                          name={`yesno_${tc.IdTieuChi}`}
-                          checked={
-                            formData[tc.IdTieuChi]?.DiemTuDanhGia === 0 ||
-                            formData[tc.IdTieuChi]?.DiemTuDanhGia == null
-                          }
-                          disabled={disabledRadio}
-                          onChange={() => {
-                            if (disabledRadio) return;
-                            onScoreChange(tc.IdTieuChi, null, 0);
-                          }}
-                        />
-                        <span className="pl2-thang-diem-text">Không (0đ)</span>
-                      </label>
-                    </div>
-                  ) : (
-                    tc.CacThangDiem?.length > 0 && (
-                      <div className="pl2-thang-diem-list">
-                        {tc.CacThangDiem.map((td) => {
-                          const selected =
-                            formData[tc.IdTieuChi]?.IdThangDiemChon ===
-                            td.IdThangDiem;
-                          return (
-                            <label
-                              key={td.IdThangDiem}
-                              className={`pl2-thang-diem-item ${selected ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
-                            >
-                              <input
-                                type="radio"
-                                checked={selected}
-                                disabled={disabledRadio}
-                                onClick={() => {
-                                  if (disabledRadio) return;
-                                  if (selected)
-                                    onScoreChange(tc.IdTieuChi, null, 0);
-                                  else
-                                    onScoreChange(
-                                      tc.IdTieuChi,
-                                      td.IdThangDiem,
-                                      td.GiaTriDiem,
-                                    );
-                                }}
-                                onChange={() => {}}
-                              />
-                              <span className="pl2-thang-diem-text">
-                                <b>{td.GiaTriDiem}đ:</b> {td.DieuKienDiem}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )
-                  )}
+                let disabledRadio = false;
+                let disabledText = false;
 
-                  <textarea
-                    className="pl2-textarea"
-                    placeholder={
-                      isKhoaEvaluating
-                        ? "Nhập nhận xét của Khoa..."
-                        : "Nhập diễn giải (nếu có)"
-                    }
-                    value={formData[tc.IdTieuChi]?.MoTaHoanThanh || ""}
-                    onChange={(e) => onTextChange(tc.IdTieuChi, e.target.value)}
-                    disabled={disabledText}
-                  />
+                if (isKhoaEvaluating) {
+                  disabledRadio = trangThaiPhieu >= 3;
+                  disabledText = trangThaiPhieu >= 3;
+                } else {
+                  disabledRadio = trangThaiPhieu >= 2;
+                  disabledText = trangThaiPhieu >= 2;
+                }
 
+                return (
                   <div
-                    className="pl2-file-upload"
-                    style={{ marginTop: "10px" }}
+                    key={tc.IdTieuChi}
+                    className={`pl2-criteria ${isActive ? "active" : ""}`}
                   >
-                    {trangThaiPhieu <= 1 && !isKhoaEvaluating && (
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "10px",
-                          marginBottom:
-                            fileList.length > 0 || nckhList.length > 0
-                              ? "10px"
-                              : "0",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          className="btn-attach-file"
-                          onClick={() =>
-                            document
-                              .getElementById(`file_input_${tc.IdTieuChi}`)
-                              .click()
-                          }
-                        >
-                          <i className="fa-solid fa-paperclip"></i> Đính kèm tệp
-                        </button>
+                    {criteriaHeader}
+
+                    {tc.LoaiThangDiem === 2 ? (
+                      <div className="pl2-score-input-container">
+                        <span className="pl2-score-input-label">
+                          Nhập điểm:
+                        </span>
                         <input
-                          id={`file_input_${tc.IdTieuChi}`}
-                          type="file"
-                          multiple
-                          style={{ display: "none" }}
+                          type="number"
+                          className="pl2-score-input"
+                          placeholder={`Tối đa ${tc.DiemToiDa}`}
+                          value={formData[tc.IdTieuChi]?.DiemTuDanhGia ?? ""}
+                          disabled={disabledRadio}
+                          min="0"
+                          max={tc.DiemToiDa}
+                          step="any"
                           onChange={(e) => {
-                            const files = Array.from(e.target.files);
-                            if (files.length > 0 && onFileChange)
-                              onFileChange(tc.IdTieuChi, files);
-                            e.target.value = null;
+                            if (disabledRadio) return;
+                            const val = e.target.value;
+                            if (val === "") {
+                              onScoreChange(tc.IdTieuChi, null, "");
+                            } else {
+                              let parsed = parseFloat(val);
+                              if (isNaN(parsed)) parsed = 0;
+                              if (parsed < 0) parsed = 0;
+                              if (parsed > tc.DiemToiDa) parsed = tc.DiemToiDa;
+                              onScoreChange(tc.IdTieuChi, null, parsed);
+                            }
                           }}
                         />
+                        <span className="pl2-score-input-hint">
+                          (Điểm tối đa: {tc.DiemToiDa}đ)
+                        </span>
                       </div>
-                    )}
-
-                    {fileList.length > 0 && (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        {fileList.map((fileItem, fileIndex) => {
-                          const isSavedOnServer = !(fileItem instanceof File);
-                          const fileNameDisplay = isSavedOnServer
-                            ? fileItem.originalName || fileItem.fileName
-                            : fileItem.name;
-                          return (
-                            <div
-                              key={fileIndex}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  fontSize: "13px",
-                                  color: "#15803d",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  background: "#dcfce3",
-                                  padding: "5px 12px",
-                                  borderRadius: "20px",
-                                  fontWeight: "500",
-                                }}
-                              >
-                                <i
-                                  className="fa-solid fa-file-circle-check"
-                                  style={{ marginRight: "6px" }}
-                                ></i>{" "}
-                                {fileNameDisplay}
-                              </span>
-                              {trangThaiPhieu <= 1 && !isKhoaEvaluating && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    onRemoveFile(tc.IdTieuChi, fileIndex)
-                                  }
-                                  style={{
-                                    fontSize: "13px",
-                                    color: "#ef4444",
-                                    background: "#fef2f2",
-                                    padding: "5px 10px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #fecaca",
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  <i className="fa-solid fa-xmark"></i>
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {nckhList.length > 0 && (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                        }}
-                      >
-                        {nckhList.map((nckhItem, nckhIndex) => (
-                          <div
-                            key={nckhIndex}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              flexWrap: "wrap",
+                    ) : tc.LoaiThangDiem === 3 ? (
+                      <div className="pl2-thang-diem-list">
+                        <label
+                          className={`pl2-thang-diem-item ${formData[tc.IdTieuChi]?.DiemTuDanhGia === tc.DiemToiDa ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
+                        >
+                          <input
+                            type="radio"
+                            name={`yesno_${tc.IdTieuChi}`}
+                            checked={
+                              formData[tc.IdTieuChi]?.DiemTuDanhGia ===
+                              tc.DiemToiDa
+                            }
+                            disabled={disabledRadio}
+                            onChange={() => {
+                              if (disabledRadio) return;
+                              onScoreChange(tc.IdTieuChi, null, tc.DiemToiDa);
                             }}
-                          >
-                            <span
-                              style={{
-                                fontSize: "13px",
-                                color: "#6b21a8",
-                                display: "flex",
-                                alignItems: "center",
-                                background: "#f3e8ff",
-                                padding: "5px 12px",
-                                borderRadius: "20px",
-                                fontWeight: "500",
-                                border: "1px solid #e9d5ff",
-                              }}
-                            >
-                              <i
-                                className="fa-solid fa-book-open"
-                                style={{ marginRight: "6px" }}
-                              ></i>
-                              [{nckhItem.QRanking}] {nckhItem.MoTa}
-                            </span>
-                            {trangThaiPhieu <= 1 &&
-                              !isKhoaEvaluating &&
-                              onRemoveNckh && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    onRemoveNckh(tc.IdTieuChi, nckhIndex)
-                                  }
-                                  style={{
-                                    fontSize: "13px",
-                                    color: "#ef4444",
-                                    background: "#fef2f2",
-                                    padding: "5px 10px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #fecaca",
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  <i className="fa-solid fa-xmark"></i>
-                                </button>
-                              )}
-                          </div>
-                        ))}
+                          />
+                          <span className="pl2-diem-badge">
+                            {tc.DiemToiDa}đ
+                          </span>
+                          <span className="pl2-thang-diem-text">Có</span>
+                        </label>
+                        <label
+                          className={`pl2-thang-diem-item ${formData[tc.IdTieuChi]?.DiemTuDanhGia === 0 || formData[tc.IdTieuChi]?.DiemTuDanhGia == null ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
+                        >
+                          <input
+                            type="radio"
+                            name={`yesno_${tc.IdTieuChi}`}
+                            checked={
+                              formData[tc.IdTieuChi]?.DiemTuDanhGia === 0 ||
+                              formData[tc.IdTieuChi]?.DiemTuDanhGia == null
+                            }
+                            disabled={disabledRadio}
+                            onChange={() => {
+                              if (disabledRadio) return;
+                              onScoreChange(tc.IdTieuChi, null, 0);
+                            }}
+                          />
+                          <span className="pl2-diem-badge">0đ</span>
+                          <span className="pl2-thang-diem-text">Không</span>
+                        </label>
                       </div>
+                    ) : (
+                      tc.CacThangDiem?.length > 0 && (
+                        <div className="pl2-thang-diem-list">
+                          {tc.CacThangDiem.map((td) => {
+                            const selected =
+                              formData[tc.IdTieuChi]?.IdThangDiemChon ===
+                              td.IdThangDiem;
+                            return (
+                              <label
+                                key={td.IdThangDiem}
+                                className={`pl2-thang-diem-item ${selected ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
+                              >
+                                <input
+                                  type="radio"
+                                  checked={selected}
+                                  disabled={disabledRadio}
+                                  onClick={() => {
+                                    if (disabledRadio) return;
+                                    if (selected)
+                                      onScoreChange(tc.IdTieuChi, null, 0);
+                                    else
+                                      onScoreChange(
+                                        tc.IdTieuChi,
+                                        td.IdThangDiem,
+                                        td.GiaTriDiem,
+                                      );
+                                  }}
+                                  onChange={() => {}}
+                                />
+                                <span className="pl2-diem-badge">
+                                  {td.GiaTriDiem}đ
+                                </span>
+                                <span className="pl2-thang-diem-text">
+                                  {td.DieuKienDiem}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )
                     )}
+
+                    <textarea
+                      className="pl2-textarea"
+                      placeholder={
+                        isKhoaEvaluating
+                          ? "Nhập nhận xét của Khoa..."
+                          : "Nhập diễn giải (nếu có)"
+                      }
+                      value={formData[tc.IdTieuChi]?.MoTaHoanThanh || ""}
+                      onChange={(e) =>
+                        onTextChange(tc.IdTieuChi, e.target.value)
+                      }
+                      disabled={disabledText}
+                    />
+
+                    <div className="pl2-file-upload">
+                      {trangThaiPhieu <= 1 && !isKhoaEvaluating && (
+                        <div className="pl2-file-actions">
+                          <button
+                            type="button"
+                            className="btn-attach-file"
+                            onClick={() =>
+                              document
+                                .getElementById(`file_input_${tc.IdTieuChi}`)
+                                .click()
+                            }
+                          >
+                            <i className="fa-solid fa-paperclip"></i> Đính kèm
+                            tệp
+                          </button>
+                          <input
+                            id={`file_input_${tc.IdTieuChi}`}
+                            type="file"
+                            multiple
+                            style={{ display: "none" }}
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files);
+                              if (files.length > 0 && onFileChange)
+                                onFileChange(tc.IdTieuChi, files);
+                              e.target.value = null;
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {fileList.length > 0 && (
+                        <div className="pl2-chip-list">
+                          {fileList.map((fileItem, fileIndex) => {
+                            const isSavedOnServer = !(fileItem instanceof File);
+                            const fileNameDisplay = isSavedOnServer
+                              ? fileItem.originalName || fileItem.fileName
+                              : fileItem.name;
+                            return (
+                              <div key={fileIndex} className="pl2-chip-row">
+                                <span className="pl2-chip pl2-chip-file">
+                                  <i className="fa-solid fa-file-circle-check"></i>
+                                  {fileNameDisplay}
+                                </span>
+                                {trangThaiPhieu <= 1 && !isKhoaEvaluating && (
+                                  <button
+                                    type="button"
+                                    className="pl2-chip-remove"
+                                    title="Xóa tệp"
+                                    onClick={() =>
+                                      onRemoveFile(tc.IdTieuChi, fileIndex)
+                                    }
+                                  >
+                                    <i className="fa-solid fa-xmark"></i>
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {nckhList.length > 0 && (
+                        <div className="pl2-chip-list">
+                          {nckhList.map((nckhItem, nckhIndex) => (
+                            <div key={nckhIndex} className="pl2-chip-row">
+                              <span className="pl2-chip pl2-chip-nckh">
+                                <i className="fa-solid fa-book-open"></i>[
+                                {nckhItem.QRanking}] {nckhItem.MoTa}
+                              </span>
+                              {trangThaiPhieu <= 1 &&
+                                !isKhoaEvaluating &&
+                                onRemoveNckh && (
+                                  <button
+                                    type="button"
+                                    className="pl2-chip-remove"
+                                    title="Xóa"
+                                    onClick={() =>
+                                      onRemoveNckh(tc.IdTieuChi, nckhIndex)
+                                    }
+                                  >
+                                    <i className="fa-solid fa-xmark"></i>
+                                  </button>
+                                )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

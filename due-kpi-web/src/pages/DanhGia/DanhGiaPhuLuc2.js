@@ -16,19 +16,58 @@ const parseNetDate = (dateString) => {
   return new Date(dateString);
 };
 
+// Flatten the template groups (Nhom -> NhomCon -> TieuChi) into a flat criteria list
+const flattenTemplate = (itemDetail) => {
+  const flatCriteria = [];
+  if (itemDetail.Nhom && Array.isArray(itemDetail.Nhom)) {
+    itemDetail.Nhom.forEach((nhomCha) => {
+      if (nhomCha.TieuChi && Array.isArray(nhomCha.TieuChi)) {
+        nhomCha.TieuChi.forEach((tc) => {
+          flatCriteria.push({
+            ...tc,
+            TenNhom: nhomCha.TenNhom,
+            CacThangDiem: tc.ThangDiem || [],
+          });
+        });
+      }
+      if (nhomCha.NhomCon && Array.isArray(nhomCha.NhomCon)) {
+        nhomCha.NhomCon.forEach((nhomCon) => {
+          if (nhomCon.TieuChi && Array.isArray(nhomCon.TieuChi)) {
+            nhomCon.TieuChi.forEach((tc) => {
+              flatCriteria.push({
+                ...tc,
+                TenNhom: nhomCon.TenNhom || nhomCha.TenNhom,
+                CacThangDiem: tc.ThangDiem || [],
+              });
+            });
+          }
+        });
+      }
+    });
+  }
+  return flatCriteria;
+};
+
 const DanhGiaPhuLuc2 = () => {
   const [criteriaList, setCriteriaList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({});
+  const [autoScores, setAutoScores] = useState({}); // IdTieuChi -> { DiemTuDong, ... }
   const [tongDiemCoBan, setTongDiemCoBan] = useState(0);
 
   const [trangThaiPhieu, setTrangThaiPhieu] = useState(0);
   const [lyDoTraVe, setLyDoTraVe] = useState("");
 
-
-
   const toast = useRef(null);
+
+  // Refs holding the freshest values for async flows (create phieu / save draft / submit)
+  const phieuRef = useRef(null); // { IdPhieu, RowVersion, TrangThai, IdMau, ChiTiet, ... }
+  const idMauRef = useRef(null);
+  const chiTietMapRef = useRef({}); // IdTieuChi -> IdChiTiet
+  const formDataRef = useRef({});
+  const autoScoresRef = useRef({});
+  const dirtyRef = useRef(new Set()); // IdTieuChi with unsaved manual edits
 
   const { user } = useAuth();
   const currentUser = user || {};
@@ -43,6 +82,22 @@ const DanhGiaPhuLuc2 = () => {
   const [selectedYear, setSelectedYear] = useState(
     yearParam ? parseInt(yearParam) : new Date().getFullYear(),
   );
+
+  // Keep refs in sync with state so unmount / async closures read the latest values
+  const selectedYearRef = useRef(selectedYear);
+  const idNhanVienRef = useRef(currentUser.IdNhanVien);
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
+  useEffect(() => {
+    autoScoresRef.current = autoScores;
+  }, [autoScores]);
+  useEffect(() => {
+    selectedYearRef.current = selectedYear;
+  }, [selectedYear]);
+  useEffect(() => {
+    idNhanVienRef.current = currentUser.IdNhanVien;
+  }, [currentUser.IdNhanVien]);
 
   useEffect(() => {
     const fetchYears = async () => {
@@ -84,16 +139,28 @@ const DanhGiaPhuLuc2 = () => {
     fetchYears();
   }, [navigate, yearParam]);
 
-
   useEffect(() => {
     const fetchScoringData = async () => {
       setIsLoading(true);
+
+      // Reset all state + refs for the new year
+      phieuRef.current = null;
+      idMauRef.current = null;
+      chiTietMapRef.current = {};
+      dirtyRef.current = new Set();
+      setFormData({});
+      setAutoScores({});
+      setTongDiemCoBan(0);
+      setTrangThaiPhieu(0);
+      setLyDoTraVe("");
+      setCriteriaList([]);
+
       try {
-        // 1. Fetch user's phieu for this year
         let phieu = null;
         let chiTiet = [];
         let idMau = null;
 
+        // 1. Load the current user's phieu for this year (if any)
         try {
           const resPhieu = await apiFetch(`phieu/me/${selectedYear}`);
           if (resPhieu.ok) {
@@ -114,7 +181,7 @@ const DanhGiaPhuLuc2 = () => {
           console.error("Lỗi khi tải phiếu cá nhân:", e);
         }
 
-        // 2. If phieu doesn't exist, search for template matching selectedYear
+        // 2. No phieu yet -> resolve the template for this year (phieu is created lazily later)
         if (!idMau) {
           try {
             const resTemplates = await apiFetch(`maudanhgia?loaiDoiTuong=1`);
@@ -137,115 +204,106 @@ const DanhGiaPhuLuc2 = () => {
           }
         }
 
-        setFormData({});
-        setTongDiemCoBan(0);
-        setTrangThaiPhieu(0);
-        setLyDoTraVe("");
-        setCriteriaList([]);
-
         if (!idMau) {
           setIsLoading(false);
           return;
         }
+        idMauRef.current = idMau;
 
-        // 3. Fetch template details
+        // 3. Template details -> display structure (groups, scales)
         const resDetail = await apiFetch(`maudanhgia/${idMau}/chi-tiet`);
         if (!resDetail.ok)
           throw new Error("Không thể lấy chi tiết mẫu đánh giá");
         const resultDetail = await resDetail.json();
-
         const itemDetail = resultDetail.Item || resultDetail.data || {};
+        setCriteriaList(flattenTemplate(itemDetail));
 
-        // Flat map nested groups (Nhom -> NhomCon -> TieuChi)
-        const flatCriteria = [];
-        if (itemDetail.Nhom && Array.isArray(itemDetail.Nhom)) {
-          itemDetail.Nhom.forEach((nhomCha) => {
-            if (nhomCha.TieuChi && Array.isArray(nhomCha.TieuChi)) {
-              nhomCha.TieuChi.forEach((tc) => {
-                flatCriteria.push({
-                  ...tc,
-                  TenNhom: nhomCha.TenNhom,
-                  CacThangDiem: tc.ThangDiem || [],
-                });
-              });
-            }
-            if (nhomCha.NhomCon && Array.isArray(nhomCha.NhomCon)) {
-              nhomCha.NhomCon.forEach((nhomCon) => {
-                if (nhomCon.TieuChi && Array.isArray(nhomCon.TieuChi)) {
-                  nhomCon.TieuChi.forEach((tc) => {
-                    flatCriteria.push({
-                      ...tc,
-                      TenNhom: nhomCon.TenNhom || nhomCha.TenNhom,
-                      CacThangDiem: tc.ThangDiem || [],
-                    });
-                  });
-                }
-              });
-            }
-          });
+        // 4. Auto-computed scores for LoaiNguonDiem = 2 criteria (read-only)
+        const autoMap = {};
+        try {
+          const resAuto = await apiFetch(
+            `maudanhgia/${idMau}/diem-tu-dong?idNhanVien=${currentUser.IdNhanVien}`,
+          );
+          if (resAuto.ok) {
+            const resultAuto = await resAuto.json();
+            const autoItems =
+              resultAuto.Items ||
+              resultAuto.items ||
+              (Array.isArray(resultAuto) ? resultAuto : []);
+            autoItems.forEach((it) => {
+              if (it && it.IdTieuChi != null) autoMap[it.IdTieuChi] = it;
+            });
+          }
+        } catch (e) {
+          console.error("Lỗi khi tải điểm tự động:", e);
         }
 
-        setCriteriaList(flatCriteria);
-
-        // 4. If phieu exists, populate form state
-        if (phieu) {
-          setTrangThaiPhieu(phieu.TrangThai);
-          setLyDoTraVe(phieu.LyDoTraVe || phieu.NhanXetKhoa || "");
-          setTongDiemCoBan(phieu.TongDiemCoBan || 0);
-
-          if (chiTiet && chiTiet.length > 0) {
-            const initialFormData = {};
-            chiTiet.forEach((item) => {
-              if (!initialFormData[item.IdTieuChi]) {
-                initialFormData[item.IdTieuChi] = {
-                  IdTieuChi: item.IdTieuChi,
-                  IdThangDiemChon: item.IdThangDiemChon,
-                  DiemTuDanhGia: item.DiemTuDanhGia,
-                  MoTaHoanThanh:
-                    item.MoTaHoanThanh || item.NhanXetTuDanhGia || "",
-                  DanhSachFile: [],
-                  DanhSachNCKH: [],
-                };
-              }
-
-              // Load MinhChung
-              if (item.MinhChung && Array.isArray(item.MinhChung)) {
-                item.MinhChung.forEach((mc) => {
-                  initialFormData[item.IdTieuChi].DanhSachFile.push({
-                    idMinhChung: mc.IdMinhChung,
-                    fileName: mc.DuongDan,
-                    originalName: mc.TenFileGoc || mc.TenHienThi || mc.DuongDan,
-                    fileType: mc.LoaiFile,
-                    fileSizeKB: mc.KichThuocKb || mc.KichThuocKB || 0,
-                  });
+        // 4b. PHSV criteria -> attach the student-feedback average score (điểm TB phản hồi SV)
+        const hasPhsv = Object.values(autoMap).some((it) =>
+          (it.CongThucTongHop || "").toUpperCase().startsWith("PHSV"),
+        );
+        if (hasPhsv) {
+          try {
+            const resTb = await apiFetch(
+              `diem-tb-phan-hoi-sv?idNam=${selectedYear}`,
+            );
+            if (resTb.ok) {
+              const resultTb = await resTb.json();
+              const tbItems =
+                resultTb.Items ||
+                resultTb.items ||
+                (Array.isArray(resultTb) ? resultTb : []);
+              const myTb = tbItems.find(
+                (it) => it.IdNhanVien === currentUser.IdNhanVien,
+              );
+              if (myTb) {
+                Object.values(autoMap).forEach((it) => {
+                  if ((it.CongThucTongHop || "").toUpperCase().startsWith("PHSV")) {
+                    it.DiemTrungBinhPhanHoi = myTb.DiemTrungBinh ?? null;
+                    it.SoLuotDanhGia = myTb.SoLuotDanhGia ?? null;
+                  }
                 });
               }
-
-              if (item.TenFile) {
-                initialFormData[item.IdTieuChi].DanhSachFile.push({
-                  fileName: item.TenFile,
-                  originalName: item.TenFileGoc || item.TenFile,
-                  fileType: item.LoaiFile,
-                  fileSizeKB: item.KichThuocKB || 0,
-                });
-              }
-
-              if (item.ScienceRecordId) {
-                initialFormData[item.IdTieuChi].DanhSachNCKH.push({
-                  ScienceRecordId: item.ScienceRecordId,
-                  BangNguon: item.BangNguon || "ScientificArticles",
-                  MoTa: item.MoTaNckh || "",
-                  QRanking: item.QRanking || "NCKH",
-                  JournalScore: item.JournalScore,
-                  BonusCoefficient: item.BonusCoefficient,
-                  TotalAuthors: item.TotalAuthors,
-                  PrimaryAuthors: item.PrimaryAuthors,
-                  MembersJSON: item.MembersJSON,
-                });
-              }
-            });
-            setFormData(initialFormData);
+            }
+          } catch (e) {
+            console.error("Lỗi khi tải điểm TB phản hồi sinh viên:", e);
           }
+        }
+
+        setAutoScores(autoMap);
+        autoScoresRef.current = autoMap;
+
+        // 5. Hydrate the form state from an existing phieu
+        if (phieu) {
+          phieuRef.current = phieu;
+          setTrangThaiPhieu(phieu.TrangThai);
+          setLyDoTraVe(phieu.NhanXetKhoa || phieu.LyDoTraVe || "");
+
+          const map = {};
+          const initialFormData = {};
+          (chiTiet || []).forEach((ct) => {
+            if (ct.IdTieuChi == null) return;
+            map[ct.IdTieuChi] = ct.IdChiTiet;
+
+            // Auto-scored criteria are not editable -> keep them out of the form state
+            if (autoMap[ct.IdTieuChi]) return;
+
+            initialFormData[ct.IdTieuChi] = {
+              IdTieuChi: ct.IdTieuChi,
+              IdThangDiemChon: ct.IdThangDiemChon ?? null,
+              DiemTuDanhGia: ct.DiemTuDanhGia ?? null,
+              MoTaHoanThanh: ct.MoTaHoanThanh || ct.NhanXetTuDanhGia || "",
+              DanhSachFile: (ct.MinhChung || []).map((mc) => ({
+                idMinhChung: mc.IdMinhChung,
+                fileName: mc.DuongDan,
+                originalName: mc.TenHienThi || mc.TenFileGoc || mc.DuongDan,
+                fileType: mc.LoaiFile,
+                fileSizeKB: mc.KichThuocKb || mc.KichThuocKB || 0,
+              })),
+            };
+          });
+          chiTietMapRef.current = map;
+          setFormData(initialFormData);
         }
       } catch (err) {
         console.error("Lỗi API Tải dữ liệu đánh giá:", err);
@@ -254,7 +312,7 @@ const DanhGiaPhuLuc2 = () => {
       }
     };
 
-    if (listYears.length > 0) {
+    if (listYears.length > 0 && currentUser.IdNhanVien) {
       fetchScoringData();
     }
   }, [selectedYear, currentUser.IdNhanVien, listYears.length]);
@@ -287,24 +345,41 @@ const DanhGiaPhuLuc2 = () => {
     ? Math.max(trangThaiPhieu, 2.5)
     : trangThaiPhieu;
 
+  const isReadOnly = displayTrangThai >= 2;
 
+  // Recompute the running total: manual self-evaluated scores + system auto scores
+  useEffect(() => {
+    const manualTotal = Object.entries(formData).reduce(
+      (sum, [idTieuChi, item]) =>
+        autoScores[idTieuChi] ? sum : sum + (Number(item.DiemTuDanhGia) || 0),
+      0,
+    );
+    const autoTotal = Object.values(autoScores).reduce(
+      (sum, it) => sum + (Number(it.DiemTuDong) || 0),
+      0,
+    );
+    setTongDiemCoBan(manualTotal + autoTotal);
+  }, [formData, autoScores]);
 
-  const handleYearChange = (e) => {
+  const handleYearChange = async (e) => {
     const newYear = parseInt(e.target.value);
+    if (!isReadOnly && dirtyRef.current.size > 0) {
+      try {
+        await saveAllDrafts();
+      } catch (err) {
+        console.error("Lỗi lưu nháp khi đổi năm:", err);
+      }
+    }
     setSelectedYear(newYear);
     navigate(`/danh-gia-phu-luc-2?year=${newYear}`);
   };
 
-  useEffect(() => {
-    const total = Object.values(formData).reduce(
-      (sum, item) => sum + (item.DiemTuDanhGia || 0),
-      0,
-    );
-    setTongDiemCoBan(total);
-  }, [formData]);
+  const markDirty = (idTieuChi) => {
+    dirtyRef.current.add(idTieuChi);
+  };
 
   const handleScoreChange = (idTieuChi, idThangDiem, score) => {
-    if (displayTrangThai >= 2) return;
+    if (isReadOnly || autoScores[idTieuChi]) return;
 
     setFormData((prev) => ({
       ...prev,
@@ -315,10 +390,11 @@ const DanhGiaPhuLuc2 = () => {
         DiemTuDanhGia: score,
       },
     }));
+    markDirty(idTieuChi);
   };
 
   const handleTextChange = (idTieuChi, text) => {
-    if (displayTrangThai >= 2) return;
+    if (isReadOnly || autoScores[idTieuChi]) return;
     setFormData((prev) => ({
       ...prev,
       [idTieuChi]: {
@@ -327,280 +403,297 @@ const DanhGiaPhuLuc2 = () => {
         MoTaHoanThanh: text,
       },
     }));
+    markDirty(idTieuChi);
   };
 
-  const handleFileChange = (idTieuChi, newFilesArray) => {
-    if (displayTrangThai >= 2 || !newFilesArray || newFilesArray.length === 0)
+  // Create the phieu on demand (POST /api/phieu) so chi_tiet rows / IdChiTiet exist
+  const ensurePhieu = async () => {
+    if (phieuRef.current) return phieuRef.current;
+
+    const res = await apiFetch("phieu", {
+      method: "POST",
+      body: JSON.stringify({
+        IdNam: selectedYearRef.current,
+        IdNhanVien: idNhanVienRef.current,
+        IdMau: idMauRef.current,
+      }),
+    });
+    const result = await res.json();
+    const isSuccess =
+      result.Success !== undefined ? result.Success : result.success;
+    const item = result.Item || result.data;
+    if (!res.ok || !isSuccess || !item) {
+      throw new Error(result.Message || result.message || "Không thể tạo phiếu đánh giá");
+    }
+
+    phieuRef.current = item;
+    const map = { ...chiTietMapRef.current };
+    (item.ChiTiet || item.chiTiet || []).forEach((ct) => {
+      if (ct.IdTieuChi != null) map[ct.IdTieuChi] = ct.IdChiTiet;
+    });
+    chiTietMapRef.current = map;
+    setTrangThaiPhieu(item.TrangThai ?? 1);
+    return item;
+  };
+
+  // Persist every dirty manual criterion via PUT /api/chitiet/{id}/tu-danh-gia
+  const saveAllDrafts = async () => {
+    const dirty = Array.from(dirtyRef.current);
+    if (dirty.length === 0) return;
+
+    await ensurePhieu();
+    const map = chiTietMapRef.current;
+    const data = formDataRef.current;
+    const auto = autoScoresRef.current;
+
+    for (const idTieuChi of dirty) {
+      if (auto[idTieuChi]) {
+        dirtyRef.current.delete(idTieuChi);
+        continue;
+      }
+      const idChiTiet = map[idTieuChi];
+      if (!idChiTiet) continue;
+
+      const item = data[idTieuChi] || {};
+      const diem =
+        item.DiemTuDanhGia === "" || item.DiemTuDanhGia == null
+          ? null
+          : Number(item.DiemTuDanhGia);
+      const body = {
+        Diem: diem,
+        NhanXet: item.MoTaHoanThanh || null,
+        IdThangDiemChon: item.IdThangDiemChon ?? null,
+      };
+
+      const res = await apiFetch(`chitiet/${idChiTiet}/tu-danh-gia`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+      if (res.ok) dirtyRef.current.delete(idTieuChi);
+    }
+  };
+
+  const refreshPhieu = async () => {
+    try {
+      const res = await apiFetch(`phieu/me/${selectedYearRef.current}`);
+      if (res.ok) {
+        const result = await res.json();
+        const item = result.Item || result.data || result.phieu;
+        if (item) {
+          phieuRef.current = item;
+          return item;
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi làm mới phiếu:", err);
+    }
+    return phieuRef.current;
+  };
+
+  const handleSaveDraft = async () => {
+    setIsSubmitting(true);
+    toast.current?.show({
+      severity: "info",
+      summary: "Đang lưu",
+      detail: "Đang lưu bản nháp",
+      sticky: true,
+    });
+    try {
+      await saveAllDrafts();
+      toast.current?.clear();
+      toast.current?.show({
+        severity: "success",
+        summary: "Đã lưu nháp",
+        detail: "Bản nháp đã được lưu",
+        life: 3000,
+      });
+    } catch (err) {
+      console.error("Lỗi lưu nháp:", err);
+      toast.current?.clear();
+      toast.current?.show({
+        severity: "error",
+        summary: "Lỗi",
+        detail: "Không thể lưu bản nháp!",
+        life: 4000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFileChange = async (idTieuChi, newFilesArray) => {
+    if (isReadOnly || autoScores[idTieuChi] || !newFilesArray || newFilesArray.length === 0)
       return;
 
-    setFormData((prev) => {
-      const currentData = prev[idTieuChi] || {
-        IdTieuChi: idTieuChi,
-        DanhSachFile: [],
-        DanhSachNCKH: [],
-      };
-      const currentFiles = currentData.DanhSachFile || [];
-
-      return {
-        ...prev,
-        [idTieuChi]: {
-          ...currentData,
-          DanhSachFile: [...currentFiles, ...newFilesArray],
-        },
-      };
+    setIsSubmitting(true);
+    toast.current?.show({
+      severity: "info",
+      summary: "Đang tải tệp",
+      detail: "Đang tải tệp minh chứng lên",
+      sticky: true,
     });
-  };
+    try {
+      await ensurePhieu();
+      const idChiTiet = chiTietMapRef.current[idTieuChi];
+      if (!idChiTiet) throw new Error("Không xác định được chi tiết phiếu");
 
-  const handleRemoveFile = (idTieuChi, indexToRemove) => {
-    if (displayTrangThai >= 2) return;
+      const uploaded = [];
+      for (const file of newFilesArray) {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("tenHienThi", file.name);
 
-    setFormData((prev) => {
-      const currentData = prev[idTieuChi];
-      if (!currentData || !currentData.DanhSachFile) return prev;
-
-      const newFilesList = currentData.DanhSachFile.filter(
-        (_, idx) => idx !== indexToRemove,
-      );
-
-      return {
-        ...prev,
-        [idTieuChi]: {
-          ...currentData,
-          DanhSachFile: newFilesList,
-        },
-      };
-    });
-  };
-
-  const handleNckhChange = (idTieuChi, articleObj) => {
-    if (displayTrangThai >= 2) return;
-
-    setFormData((prev) => {
-      const currentData = prev[idTieuChi] || {
-        IdTieuChi: idTieuChi,
-        DanhSachFile: [],
-        DanhSachNCKH: [],
-      };
-      const currentNckh = currentData.DanhSachNCKH || [];
-
-      if (
-        currentNckh.some(
-          (item) => item.ScienceRecordId === articleObj.ScienceRecordId,
-        )
-      ) {
-        return prev;
+        const res = await apiFetch(`chitiet/${idChiTiet}/minh-chung/file`, {
+          method: "POST",
+          body: fd,
+        });
+        const result = await res.json();
+        const isSuccess =
+          result.Success !== undefined ? result.Success : result.success;
+        const mc = result.Item || result.data;
+        if (!res.ok || !isSuccess || !mc) {
+          throw new Error(result.Message || result.message || "Tải tệp thất bại");
+        }
+        uploaded.push({
+          idMinhChung: mc.IdMinhChung,
+          fileName: mc.DuongDan,
+          originalName: mc.TenHienThi || mc.TenFileGoc || file.name,
+          fileType: mc.LoaiFile,
+          fileSizeKB: mc.KichThuocKb || 0,
+        });
       }
 
-      const newList = [...currentNckh, articleObj];
-      return {
-        ...prev,
-        [idTieuChi]: {
-          ...currentData,
-          DanhSachNCKH: newList,
-        },
-      };
-    });
+      setFormData((prev) => {
+        const currentData = prev[idTieuChi] || {
+          IdTieuChi: idTieuChi,
+          DanhSachFile: [],
+        };
+        return {
+          ...prev,
+          [idTieuChi]: {
+            ...currentData,
+            IdTieuChi: idTieuChi,
+            DanhSachFile: [...(currentData.DanhSachFile || []), ...uploaded],
+          },
+        };
+      });
+
+      toast.current?.clear();
+      toast.current?.show({
+        severity: "success",
+        summary: "Thành công",
+        detail: "Đã tải tệp minh chứng",
+        life: 2500,
+      });
+    } catch (err) {
+      console.error("Lỗi tải tệp minh chứng:", err);
+      toast.current?.clear();
+      toast.current?.show({
+        severity: "error",
+        summary: "Lỗi",
+        detail: "Không thể tải tệp minh chứng lên!",
+        life: 4000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleRemoveNckh = (idTieuChi, indexToRemove) => {
-    if (displayTrangThai >= 2) return;
+  const handleRemoveFile = async (idTieuChi, indexToRemove) => {
+    if (isReadOnly) return;
+
+    const currentData = formData[idTieuChi];
+    if (!currentData || !currentData.DanhSachFile) return;
+    const fileItem = currentData.DanhSachFile[indexToRemove];
+
+    try {
+      if (fileItem && fileItem.idMinhChung) {
+        await apiFetch(`minhchung/${fileItem.idMinhChung}`, {
+          method: "DELETE",
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi xóa minh chứng:", err);
+    }
 
     setFormData((prev) => {
-      const currentData = prev[idTieuChi];
-      if (!currentData || !currentData.DanhSachNCKH) return prev;
-
-      const newNckhList = currentData.DanhSachNCKH.filter(
-        (_, idx) => idx !== indexToRemove,
-      );
-
+      const cur = prev[idTieuChi];
+      if (!cur || !cur.DanhSachFile) return prev;
       return {
         ...prev,
         [idTieuChi]: {
-          ...currentData,
-          DanhSachNCKH: newNckhList,
+          ...cur,
+          DanhSachFile: cur.DanhSachFile.filter((_, idx) => idx !== indexToRemove),
         },
       };
     });
   };
 
-  const executeSubmit = async (status) => {
+  const executeSubmit = async () => {
     setIsSubmitting(true);
-    toast.current.show({
+    toast.current?.show({
       severity: "info",
       summary: "Đang xử lý",
-      detail: "Đang tải tệp tin và lưu dữ liệu",
+      detail: "Đang lưu và nộp phiếu",
       sticky: true,
     });
 
     try {
-      const finalChiTiet = [];
+      await ensurePhieu();
+      await saveAllDrafts();
+      const fresh = await refreshPhieu();
+      const idPhieu = fresh?.IdPhieu;
+      if (!idPhieu) throw new Error("Không xác định được phiếu để nộp");
 
-      for (const item of Object.values(formData)) {
-        const uploadedFilesList = [];
-        const filesToProcess = item.DanhSachFile || [];
-
-        for (const fileItem of filesToProcess) {
-          if (fileItem instanceof File) {
-            const resUpload = await apiFetch(
-              `upload?fileName=${encodeURIComponent(fileItem.name)}`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": undefined,
-                },
-                body: fileItem,
-              },
-            );
-
-            if (!resUpload.ok) throw new Error("Upload file thất bại");
-
-            const uploadResult = await resUpload.json();
-            if (uploadResult.success) {
-              uploadedFilesList.push({
-                fileName: uploadResult.fileName,
-                originalName: uploadResult.originalName,
-                fileType: uploadResult.fileType,
-                fileSizeKB: uploadResult.fileSizeKB,
-              });
-            } else {
-              throw new Error(uploadResult.message);
-            }
-          } else {
-            uploadedFilesList.push(fileItem);
-          }
-        }
-
-        finalChiTiet.push({
-          ...item,
-          DiemTuDanhGia: Number(item.DiemTuDanhGia) || 0,
-          DanhSachFile: uploadedFilesList,
-          DanhSachNCKH: item.DanhSachNCKH || [],
-        });
-      }
-
-      const payload = {
-        Action: "SUBMIT",
-        IdNam: selectedYear,
-        IdNhanVien: currentUser.IdNhanVien,
-        IdDonVi: currentUser.IdDonVi,
-        TrangThai: status,
-        TongDiemCoBan: tongDiemCoBan,
-        TongDiemTichLuy: tongDiemCoBan,
-        ChiTiet: finalChiTiet,
-      };
-
-      const res = await apiFetch("scoring", {
+      const res = await apiFetch(`phieu/${idPhieu}/submit`, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ RowVersion: fresh.RowVersion }),
       });
-      const result = await res.json();
 
-      toast.current.clear();
+      toast.current?.clear();
 
-      if (result.status === "success") {
-        toast.current.show({
-          severity: "success",
-          summary: "Thành công",
-          detail: result.message,
-          life: 3000,
-        });
-        setTrangThaiPhieu(status);
-      } else {
-        toast.current.show({
-          severity: "error",
-          summary: "Lỗi",
-          detail: result.message || "Lỗi lưu phiếu!",
-          life: 4000,
-        });
-      }
-    } catch (err) {
-      console.error("Lỗi khi nộp phiếu/upload file:", err);
-      toast.current.clear();
-      toast.current.show({
-        severity: "error",
-        summary: "Lỗi",
-        detail: "Quá trình tải tệp tin hoặc lưu phiếu thất bại!",
-        life: 4000,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSubmit = (status) => {
-    if (status === 2) {
-      const hasEvaluated = Object.values(formData).some(
-        (item) =>
-          item.IdThangDiemChon != null ||
-          (item.MoTaHoanThanh && item.MoTaHoanThanh.trim() !== "") ||
-          (item.DanhSachFile && item.DanhSachFile.length > 0) ||
-          (item.DanhSachNCKH && item.DanhSachNCKH.length > 0),
-      );
-
-      if (!hasEvaluated) {
-        toast.current.show({
-          severity: "error",
-          summary: "Không thể nộp phiếu",
+      if (res.status === 422) {
+        const validation = await res.json().catch(() => ({}));
+        const missing = validation.missingItems || [];
+        toast.current?.show({
+          severity: "warn",
+          summary: "Chưa thể nộp phiếu",
           detail:
-            "Bạn chưa chọn mục đánh giá hoặc tải file nào! Vui lòng đánh giá ít nhất 1 tiêu chí trước khi nộp",
-          life: 4000,
+            validation.message ||
+            `Còn ${missing.length} tiêu chí thiếu điểm hoặc minh chứng bắt buộc`,
+          life: 5000,
         });
         return;
       }
 
-      confirmDialog({
-        message:
-          "Xác nhận nộp phiếu? Sau khi nộp sẽ không thể chỉnh sửa dữ liệu!",
-        header: "Xác nhận nộp phiếu",
-        icon: "pi pi-exclamation-triangle",
-        acceptLabel: "Nộp phiếu",
-        rejectLabel: "Hủy bỏ",
-        acceptClassName: "p-button-primary",
-        rejectClassName: "p-button-secondary p-button-outlined",
-        accept: () => executeSubmit(2),
-      });
-    } else {
-      executeSubmit(status);
-    }
-  };
+      const result = await res.json().catch(() => ({}));
+      const isSuccess =
+        result.Success !== undefined ? result.Success : result.success;
 
-  const executeRecall = async () => {
-    setIsSubmitting(true);
-    const payload = {
-      Action: "RECALL",
-      IdNam: selectedYear,
-      IdNhanVien: currentUser.IdNhanVien,
-    };
-
-    try {
-      const res = await apiFetch("scoring", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      const result = await res.json();
-
-      if (result.status === "success") {
-        toast.current.show({
+      if (res.ok && isSuccess) {
+        toast.current?.show({
           severity: "success",
           summary: "Thành công",
-          detail: result.message,
+          detail: result.Message || "Đã nộp phiếu",
           life: 3000,
         });
-        setTrangThaiPhieu(1);
+        setTrangThaiPhieu(2);
+        phieuRef.current = result.Item || result.data || fresh;
       } else {
-        toast.current.show({
+        toast.current?.show({
           severity: "error",
           summary: "Lỗi",
-          detail: result.message || "Lỗi thu hồi phiếu!",
+          detail: result.Message || result.message || "Lỗi nộp phiếu!",
           life: 4000,
         });
       }
     } catch (err) {
-      console.error("Lỗi khi thu hồi phiếu:", err);
-      toast.current.show({
+      console.error("Lỗi khi nộp phiếu:", err);
+      toast.current?.clear();
+      toast.current?.show({
         severity: "error",
-        summary: "Lỗi kết nối",
-        detail: "Không thể kết nối đến máy chủ!",
+        summary: "Lỗi",
+        detail: "Quá trình nộp phiếu thất bại!",
         life: 4000,
       });
     } finally {
@@ -608,18 +701,56 @@ const DanhGiaPhuLuc2 = () => {
     }
   };
 
-  const handleRecall = () => {
+  // Form buttons: status 1 = save draft, status 2 = submit
+  const handleFormSubmit = (status) => {
+    if (status !== 2) {
+      handleSaveDraft();
+      return;
+    }
+
+    const hasEvaluated =
+      Object.values(formData).some(
+        (item) =>
+          item.IdThangDiemChon != null ||
+          (item.DiemTuDanhGia != null && item.DiemTuDanhGia !== "") ||
+          (item.MoTaHoanThanh && item.MoTaHoanThanh.trim() !== "") ||
+          (item.DanhSachFile && item.DanhSachFile.length > 0),
+      ) || Object.keys(autoScores).length > 0;
+
+    if (!hasEvaluated) {
+      toast.current?.show({
+        severity: "error",
+        summary: "Không thể nộp phiếu",
+        detail:
+          "Bạn chưa đánh giá tiêu chí nào! Vui lòng đánh giá ít nhất 1 tiêu chí trước khi nộp",
+        life: 4000,
+      });
+      return;
+    }
+
     confirmDialog({
-      message: "Bạn có chắc chắn muốn thu hồi phiếu để chỉnh sửa lại?",
-      header: "Xác nhận thu hồi",
-      icon: "pi pi-info-circle",
-      acceptLabel: "Thu hồi phiếu",
+      message: "Xác nhận nộp phiếu? Sau khi nộp sẽ không thể chỉnh sửa dữ liệu!",
+      header: "Xác nhận nộp phiếu",
+      icon: "pi pi-exclamation-triangle",
+      acceptLabel: "Nộp phiếu",
       rejectLabel: "Hủy bỏ",
-      acceptClassName: "p-button-danger",
+      acceptClassName: "p-button-primary",
       rejectClassName: "p-button-secondary p-button-outlined",
-      accept: () => executeRecall(),
+      accept: () => executeSubmit(),
     });
   };
+
+  // Best-effort save draft when leaving the page ("khi thoát")
+  useEffect(() => {
+    return () => {
+      if (dirtyRef.current.size > 0) {
+        saveAllDrafts().catch((err) =>
+          console.error("Lỗi lưu nháp khi thoát:", err),
+        );
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isLoading) {
     return (
@@ -713,18 +844,16 @@ const DanhGiaPhuLuc2 = () => {
           <DanhGiaPhuLuc2Form
             criteriaList={criteriaList}
             formData={formData}
+            autoScores={autoScores}
             tongDiemCoBan={tongDiemCoBan}
             isSubmitting={isSubmitting}
             trangThaiPhieu={displayTrangThai}
             lyDoTraVe={lyDoTraVe}
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
             onScoreChange={handleScoreChange}
             onTextChange={handleTextChange}
             onFileChange={handleFileChange}
             onRemoveFile={handleRemoveFile}
-            onNckhChange={handleNckhChange}
-            onRemoveNckh={handleRemoveNckh}
-            onRecall={handleRecall}
           />
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../css/Sidebar.css";
 import logoImage from "../images/logo.png";
 import { useAuth } from "../context/AuthContext";
+import { normalizeRole } from "../utils/viPhamPermissions";
 
 const menuStructure = {
   evaluation: [
@@ -54,9 +55,20 @@ const menuStructure = {
       path: "/quan-ly-gio-giang",
     },
     {
-      name: "Quản lý vi phạm",
+      name: "Danh mục loại vi phạm",
+      icon: "fa-solid fa-list-check",
+      path: "/danh-muc-loai-vi-pham",
+      roles: ["ADMIN"],
+    },
+    {
+      name: "Ghi nhận vi phạm",
       icon: "fa-solid fa-circle-exclamation",
       path: "/quan-ly-vi-pham",
+    },
+    {
+      name: "Tổng hợp điểm trừ vi phạm",
+      icon: "fa-solid fa-square-poll-vertical",
+      path: "/tong-hop-vi-pham",
     },
     {
       name: "Quản lý đánh giá sinh viên",
@@ -134,11 +146,16 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   const isManager = ["HT", "PHT", "TK", "TBM"].includes(roleCode);
   const canManageSystem = isAdmin || isManager;
 
+  // Gating theo từng mục: item không khai báo `roles` thì ai thấy group là thấy mục
+  const myRole = normalizeRole(user);
+  const canSeeItem = (item) => !item.roles || item.roles.includes(myRole);
+  const visibleItems = (menuKey) => menuStructure[menuKey].filter(canSeeItem);
+
   useEffect(() => {
     const currentPath = location.pathname;
     for (const [key, subItems] of Object.entries(menuStructure)) {
       if (
-        subItems.some(
+        subItems.filter(canSeeItem).some(
           (item) =>
             item.path === currentPath ||
             (item.path !== "/" && currentPath.startsWith(item.path + "/")),
@@ -148,7 +165,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         break;
       }
     }
-  }, [location.pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, myRole]);
 
   const toggleSubMenu = (menuKey) => {
     if (!isExpanded) return;
@@ -156,7 +174,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   };
 
   const isMenuActive = (menuKey) => {
-    return menuStructure[menuKey].some(
+    return visibleItems(menuKey).some(
       (item) =>
         item.path === location.pathname ||
         (item.path !== "/" && location.pathname.startsWith(item.path + "/")),
@@ -328,6 +346,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
 
           {Object.keys(menuStructure).map((key) => {
             if (key !== "evaluation" && !canManageSystem) return null;
+            if (visibleItems(key).length === 0) return null;
 
             const labels = {
               evaluation: "Đánh giá KPI",
@@ -359,7 +378,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
                     ></i>
                   )}
                 </li>
-                {openMenus[key] && renderSubMenu(menuStructure[key])}
+                {openMenus[key] && renderSubMenu(visibleItems(key))}
               </React.Fragment>
             );
           })}

@@ -591,6 +591,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MauDanhGiaChiTietResponse"
+  /api/maudanhgia/{id}/diem-tu-dong:
+    get:
+      tags:
+        - MauDanhGia
+      summary: Xem trước điểm tự động của các tiêu chí loai_nguon_diem=2 trong mẫu
+      description: >
+        Tính on-the-fly qua fn_nckh_diem_tu_dong, KHÔNG ghi DB và không cần phiếu.
+        Năm đánh giá lấy từ chính mẫu (mau_danh_gia.id_nam).
+        Mỗi phần tử Items = 1 giảng viên × 1 tiêu chí tự động.
+        DiemTuDong = null nghĩa là mã công thức chưa được hỗ trợ.
+
+        MinhChung (các bản ghi nguồn đã tạo ra điểm) CHỈ được trả khi truyền
+        idNhanVien — gọi toàn trường luôn trả mảng rỗng để tránh payload quá lớn.
+        Minh chứng dùng chung bộ vị từ với sp_nckh_dong_bo (fn_nckh_minh_chung_tu_dong)
+        nên luôn khớp với cờ trong nckh_tong_hop.
+      operationId: mauDanhGiaGetDiemTuDong
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id mẫu đánh giá
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          description: >
+            Bỏ trống = tất cả giảng viên đang hoạt động có dữ liệu tự động của năm
+            (có snapshot nckh_tong_hop hoặc đã chốt điểm TB phản hồi sinh viên).
+            Có giá trị = chỉ giảng viên đó, VÀ kèm MinhChung.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaDiemTuDongResponse"
+        "400":
+          description: Id mẫu hoặc id nhân viên không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaDiemTuDongResponse"
+        "404":
+          description: Không tìm thấy mẫu đánh giá hoặc nhân viên
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaDiemTuDongResponse"
   /api/chitietmaudanhgia:
     get:
       tags:
@@ -2366,8 +2417,28 @@ paths:
     get:
       tags:
         - ViPhamGiangDay
-      summary: Get all
+      summary: Danh sach vi pham (scope theo vai tro)
+      description: >
+        HT/ADMIN xem tat ca; TK/TKL/TP xem don vi minh (+ don vi con) va cac vi pham
+        do don vi minh ghi nhan; nguoi dung khac chi xem vi pham cua chinh minh.
       operationId: viPhamGiangDayGetAll
+      parameters:
+        - name: idNam
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          description: Don vi chu quan cua giang vien bi ghi nhan
+          schema:
+            type: integer
       responses:
         "200":
           description: OK
@@ -2375,10 +2446,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "401":
+          description: Thieu hoac sai token
     post:
       tags:
         - ViPhamGiangDay
-      summary: Create
+      summary: Ghi nhan vi pham (TP/TK/TKL dung don vi, hoac ADMIN)
+      description: >
+        Chi ghi nhan duoc cho GIANG VIEN thuoc KHOA (ma_don_vi LIKE 'K_%').
+        Nguoi ghi nhan va don vi ghi nhan lay tu JWT, KHONG nhan tu body.
       operationId: viPhamGiangDayCreate
       requestBody:
         required: true
@@ -2387,8 +2463,37 @@ paths:
             schema:
               $ref: "#/components/schemas/ViPhamGiangDayCreateRequest"
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Da tao
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "400":
+          description: Du lieu khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: >
+            ErrorCode = FORBIDDEN_CHUC_VU (khong phai TP/TK/TKL/ADMIN),
+            FORBIDDEN_DON_VI (don vi khong duoc ghi loai vi pham nay),
+            NOT_GIANG_VIEN_KHOA (doi tuong khong phai giang vien thuoc Khoa)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "404":
+          description: ErrorCode = LOAI_VI_PHAM_NOT_FOUND / NAM_NOT_FOUND / NHAN_VIEN_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "409":
+          description: Xung dot du lieu
           content:
             application/json:
               schema:
@@ -2397,7 +2502,7 @@ paths:
     get:
       tags:
         - ViPhamGiangDay
-      summary: Get by id
+      summary: Chi tiet vi pham
       operationId: viPhamGiangDayGetById
       parameters:
         - name: id
@@ -2412,10 +2517,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: Khong co quyen xem vi pham nay
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "404":
+          description: ErrorCode = VI_PHAM_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
     put:
       tags:
         - ViPhamGiangDay
-      summary: Update
+      summary: Cap nhat vi pham (chi don vi da ghi nhan hoac ADMIN)
       operationId: viPhamGiangDayUpdate
       parameters:
         - name: id
@@ -2436,10 +2555,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "400":
+          description: Du lieu khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU / FORBIDDEN_DON_VI / NOT_GIANG_VIEN_KHOA
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "404":
+          description: ErrorCode = VI_PHAM_NOT_FOUND / LOAI_VI_PHAM_NOT_FOUND / NAM_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "409":
+          description: Xung dot du lieu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
     delete:
       tags:
         - ViPhamGiangDay
-      summary: Delete
+      summary: Xoa vi pham (chi don vi da ghi nhan hoac ADMIN)
       operationId: viPhamGiangDayDelete
       parameters:
         - name: id
@@ -2454,6 +2599,495 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU / FORBIDDEN_DON_VI
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "404":
+          description: ErrorCode = VI_PHAM_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+  /api/viphamgiangday/{idViPham}/minh-chung:
+    get:
+      tags:
+        - ViPhamGiangDay
+      summary: Metadata minh chung PDF cua vi pham
+      description: >
+        Tra ve nguyen ban ghi vi pham; metadata file nam trong truong MinhChung
+        (null neu chua tai len). Quyen doc giong GET api/viphamgiangday/{id}.
+      operationId: viPhamMinhChungGet
+      parameters:
+        - name: idViPham
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: Khong co quyen xem vi pham nay
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "404":
+          description: ErrorCode = VI_PHAM_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+    post:
+      tags:
+        - ViPhamGiangDay
+      summary: Tai len / ghi de minh chung PDF (chi don vi da ghi nhan hoac ADMIN)
+      description: >
+        CHI chap nhan file PDF — kiem tra ca duoi .pdf lan chu ky "%PDF-" cua noi dung.
+        Kich thuoc toi da lay tu appSetting maxEvidenceFileSizeKb (mac dinh 10240 KB).
+        Moi vi pham giu toi da 1 file: tai len lan sau se GHI DE va xoa file cu.
+        Response tra ve ban ghi vi pham da cap nhat (kem MinhChung).
+      operationId: viPhamMinhChungUpload
+      parameters:
+        - name: idViPham
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File PDF minh chung (bien ban, email thong bao...)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "400":
+          description: >
+            ErrorCode = VALIDATION (khong phai PDF, tep rong, vuot kich thuoc) / IO_ERROR
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU / FORBIDDEN_DON_VI
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "404":
+          description: ErrorCode = VI_PHAM_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "415":
+          description: Yeu cau khong phai multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+    delete:
+      tags:
+        - ViPhamGiangDay
+      summary: Go minh chung khoi vi pham (chi don vi da ghi nhan hoac ADMIN)
+      description: Xoa ca metadata trong DB lan file PDF tren dia. Dong vi pham van con.
+      operationId: viPhamMinhChungDelete
+      parameters:
+        - name: idViPham
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU / FORBIDDEN_DON_VI
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "404":
+          description: ErrorCode = VI_PHAM_NOT_FOUND / MINH_CHUNG_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+  /api/viphamgiangday/{idViPham}/minh-chung/tai-ve:
+    get:
+      tags:
+        - ViPhamGiangDay
+      summary: Tai file PDF minh chung ve
+      description: >
+        Tra ve file PDF (Content-Disposition: attachment, ten file goc). Quyen doc:
+        chinh chu, ADMIN, hoac truong don vi (TK/TKL/TP) cua don vi giang vien /
+        don vi chu quan / don vi da ghi nhan.
+      operationId: viPhamMinhChungTaiVe
+      parameters:
+        - name: idViPham
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: File PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+        "404":
+          description: >
+            ErrorCode = VI_PHAM_NOT_FOUND / MINH_CHUNG_NOT_FOUND (chua tai len) /
+            FILE_NOT_FOUND (metadata con nhung tep da mat tren may chu)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamGiangDayResponse"
+  /api/vi-pham/tong-hop-giang-vien:
+    get:
+      tags:
+        - ViPhamGiangDay
+      summary: Tong hop diem tru cua tung giang vien (tran 15 diem/ca nhan)
+      description: >
+        Chi liet ke giang vien THUOC KHOA. DiemTruCaNhan = MIN(tong diem tru trong nam, 15).
+        IdDonVi tra ve la KHOA chu quan de khop voi api/vi-pham/diem-tru-khoa.
+      operationId: viPhamTongHopGiangVien
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          description: Loc theo Khoa
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamTongHopGiangVienResponse"
+        "400":
+          description: Thieu idNam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamTongHopGiangVienResponse"
+        "401":
+          description: Thieu hoac sai token
+  /api/vi-pham/diem-tru-khoa:
+    get:
+      tags:
+        - ViPhamGiangDay
+      summary: Diem tru KPI tap the cua tung Khoa
+      description: >
+        DiemTruTapThe = MIN( 7.5 * T / (0.2 * 15 * N) , 7.5 ), N = 0 -> 0.
+        T = tong diem tru cua cac ca nhan (moi ca nhan da ap tran 15),
+        N = tong so giang vien dang hoat dong cua Khoa.
+        HT/ADMIN/TK/TKL/TP xem moi Khoa; nguoi dung khac chi xem Khoa cua minh.
+      operationId: viPhamDiemTruKhoa
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          description: Loc 1 Khoa cu the
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamDiemTruKhoaResponse"
+        "400":
+          description: Thieu idNam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamDiemTruKhoaResponse"
+        "401":
+          description: Thieu hoac sai token
+  /api/nhom-vi-pham:
+    get:
+      tags:
+        - LoaiViPham
+      summary: Danh sach 6 nhom noi dung cong viec
+      operationId: nhomViPhamGetAll
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "401":
+          description: Thieu hoac sai token
+  /api/loai-vi-pham:
+    get:
+      tags:
+        - LoaiViPham
+      summary: Danh muc loai vi pham kem danh sach don vi ghi nhan
+      operationId: loaiViPhamGetAll
+      parameters:
+        - name: idNhomVp
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: trangThai
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "401":
+          description: Thieu hoac sai token
+    post:
+      tags:
+        - LoaiViPham
+      summary: Them loai vi pham (chi ADMIN)
+      operationId: loaiViPhamCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoaiViPhamCreateRequest"
+      responses:
+        "201":
+          description: Da tao
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "400":
+          description: Du lieu khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "409":
+          description: ErrorCode = DUPLICATE_MA
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+  /api/loai-vi-pham/{id}:
+    get:
+      tags:
+        - LoaiViPham
+      summary: Chi tiet loai vi pham
+      operationId: loaiViPhamGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "401":
+          description: Thieu hoac sai token
+        "404":
+          description: ErrorCode = LOAI_VI_PHAM_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+    put:
+      tags:
+        - LoaiViPham
+      summary: Sua loai vi pham (chi ADMIN)
+      operationId: loaiViPhamUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoaiViPhamUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "404":
+          description: ErrorCode = LOAI_VI_PHAM_NOT_FOUND / NHOM_VI_PHAM_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+    delete:
+      tags:
+        - LoaiViPham
+      summary: Xoa loai vi pham (chi ADMIN, chan neu da phat sinh vi pham)
+      operationId: loaiViPhamDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "404":
+          description: ErrorCode = LOAI_VI_PHAM_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "409":
+          description: ErrorCode = IN_USE (da co vi pham tham chieu)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+  /api/loai-vi-pham/{idLoaiViPham}/don-vi-ghi-nhan:
+    put:
+      tags:
+        - LoaiViPham
+      summary: Thay the danh sach don vi duoc ghi nhan loai vi pham (chi ADMIN)
+      description: >
+        IdDonViList rong = bo phan quyen co dinh; luc do chi con
+        ChoPhepKhoaChuQuan / ChoPhepMoiDonVi quyet dinh quyen ghi.
+      operationId: loaiViPhamSetDonViGhiNhan
+      parameters:
+        - name: idLoaiViPham
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoaiViPhamDonViGhiNhanSetRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
+        "404":
+          description: ErrorCode = LOAI_VI_PHAM_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiViPhamResponse"
   /api/chuc-danh-nghe-nghiep:
     get:
       tags:
@@ -5588,6 +6222,96 @@ components:
           type: string
         Item:
           $ref: "#/components/schemas/MauDanhGiaChiTietDto"
+    MauDanhGiaDiemTuDongResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        IdMau:
+          type: integer
+          nullable: true
+        IdNam:
+          type: integer
+          nullable: true
+          description: Năm đánh giá lấy từ chính mẫu
+        SoTieuChiTuDong:
+          type: integer
+          description: Số tiêu chí chấm tự động có trong mẫu
+        Items:
+          type: array
+          nullable: true
+          description: Mỗi phần tử = 1 giảng viên × 1 tiêu chí tự động (null khi thất bại)
+          items:
+            $ref: "#/components/schemas/MauDanhGiaDiemTuDongItemDto"
+    MauDanhGiaDiemTuDongItemDto:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        Email:
+          type: string
+        MaNguoiDungNckh:
+          type: integer
+          nullable: true
+          description: null = giảng viên chưa liên kết hệ thống NCKH qua email (điểm các mã hợp lệ = 0)
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+        DiemToiDa:
+          type: number
+        CongThucTongHop:
+          type: string
+          description: >
+            Mã công thức. Cá nhân: NCKH_BAI_Q1Q2, NCKH_BAI_WOS_SCOPUS,
+            NCKH_CHU_BIEN_CHUYEN_KHAO, NCKH_THANH_VIEN_CHUYEN_KHAO,
+            NCKH_CHU_BIEN_GIAO_TRINH, NCKH_THANH_VIEN_GIAO_TRINH,
+            NCKH_CHU_BIEN_THAM_KHAO, NCKH_THANH_VIEN_THAM_KHAO,
+            NCKH_CHU_NHIEM_NN, NCKH_CHU_NHIEM_BO_TINH, NCKH_DE_TAI_CO_SO,
+            PHSV_DIEM_TB_GTE_3.
+        DiemTuDong:
+          type: number
+          nullable: true
+          description: diem_toi_da nếu đạt, 0 nếu không đạt, null nếu mã công thức chưa được hỗ trợ
+        MinhChung:
+          type: array
+          description: >
+            Các bản ghi nguồn đã tạo ra điểm của tiêu chí này. Luôn khác null.
+            Rỗng khi không đạt HOẶC khi gọi không kèm idNhanVien.
+          items:
+            $ref: "#/components/schemas/MauDanhGiaMinhChungDto"
+    MauDanhGiaMinhChungDto:
+      type: object
+      description: 1 dòng minh chứng gọn, đủ để xem qua ngay trên lưới điểm tự động
+      properties:
+        LoaiNguon:
+          type: integer
+          description: "1: Bài báo, 2: Sách, 3: Đề tài, 4: Phản hồi sinh viên"
+          enum: [1, 2, 3, 4]
+        TenLoaiNguon:
+          type: string
+          example: Bài báo
+        MaNguon:
+          type: integer
+          nullable: true
+          description: Mã bản ghi bên hệ thống nguồn (ma_bai_bao_nguon / ma_sach_nguon / ma_de_tai_nguon)
+        TieuDe:
+          type: string
+        MoTa:
+          type: string
+          description: Mô tả gộp 1 dòng
+          example: SCIE - Q2 - Psychology & Marketing
+        Ngay:
+          type: string
+          format: date-time
+          nullable: true
+          description: Ngày xuất bản (bài báo/sách), ngày bắt đầu (đề tài) hoặc ngày chốt (phản hồi SV)
     ChiTietMauDanhGiaCreateRequest:
       type: object
       properties:
@@ -6477,18 +7201,32 @@ components:
             $ref: "#/components/schemas/PhieuDanhGiaChiTietDto"
     ViPhamGiangDayCreateRequest:
       type: object
+      description: >
+        IdNguoiGhiNhan / IdDonViGhiNhan KHONG nhan tu body — server lay tu JWT.
+        Minh chung KHONG nam trong body: sau khi tao xong, POST file PDF len
+        api/viphamgiangday/{idViPham}/minh-chung (multipart/form-data).
       required:
         - IdNhanVien
         - IdNam
-        - MoTa
-        - IdNguoiGhiNhan
+        - IdLoaiViPham
       properties:
         IdNhanVien:
           type: integer
+          description: Bat buoc la giang vien thuoc Khoa (ma_don_vi LIKE 'K_%')
         IdNam:
           type: integer
+        IdLoaiViPham:
+          type: integer
+          description: Noi dung vi pham theo danh muc loai_vi_pham
         MoTa:
           type: string
+          nullable: true
+          description: De trong = lay noi dung cua loai vi pham
+        DiemTru:
+          type: number
+          format: double
+          nullable: true
+          description: null = lay diem_tru_mac_dinh cua loai vi pham (thuong la 1)
         LaNghiemTrong:
           type: boolean
           nullable: true
@@ -6496,22 +7234,29 @@ components:
           type: string
           format: date-time
           nullable: true
-        IdNguoiGhiNhan:
-          type: integer
     ViPhamGiangDayUpdateRequest:
       type: object
+      description: >
+        Khong sua minh chung qua PUT nay — dung cac endpoint
+        api/viphamgiangday/{idViPham}/minh-chung.
       required:
         - IdNhanVien
         - IdNam
-        - MoTa
-        - IdNguoiGhiNhan
+        - IdLoaiViPham
       properties:
         IdNhanVien:
           type: integer
         IdNam:
           type: integer
+        IdLoaiViPham:
+          type: integer
         MoTa:
           type: string
+          nullable: true
+        DiemTru:
+          type: number
+          format: double
+          nullable: true
         LaNghiemTrong:
           type: boolean
           nullable: true
@@ -6519,8 +7264,6 @@ components:
           type: string
           format: date-time
           nullable: true
-        IdNguoiGhiNhan:
-          type: integer
     ViPhamGiangDayDto:
       type: object
       properties:
@@ -6528,8 +7271,35 @@ components:
           type: integer
         IdNhanVien:
           type: integer
+        MaNhanVien:
+          type: string
+        HoTenNhanVien:
+          type: string
+        IdDonVi:
+          type: integer
+          description: Don vi chu quan cua giang vien bi ghi nhan
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
         IdNam:
           type: integer
+        IdLoaiViPham:
+          type: integer
+          nullable: true
+        MaLoaiViPham:
+          type: string
+          nullable: true
+        NoiDung:
+          type: string
+          nullable: true
+        TenNhom:
+          type: string
+          nullable: true
+        DiemTru:
+          type: number
+          format: double
+          nullable: true
         MoTa:
           type: string
         LaNghiemTrong:
@@ -6540,9 +7310,57 @@ components:
           nullable: true
         IdNguoiGhiNhan:
           type: integer
+        HoTenNguoiGhiNhan:
+          type: string
+          nullable: true
+        IdDonViGhiNhan:
+          type: integer
+          nullable: true
+        MaDonViGhiNhan:
+          type: string
+          nullable: true
+        TenDonViGhiNhan:
+          type: string
+          nullable: true
         NgayGhiNhan:
           type: string
           format: date-time
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+        MinhChung:
+          allOf:
+            - $ref: "#/components/schemas/ViPhamMinhChungDto"
+          nullable: true
+          description: null khi vi pham chua co minh chung PDF
+    ViPhamMinhChungDto:
+      type: object
+      description: >
+        Metadata file minh chung PDF cua 1 vi pham (thay cho SoHieuHoSo nhap tay truoc day).
+        Moi vi pham giu toi da 1 file; tai len lan sau se GHI DE file cu.
+      properties:
+        TenFileGoc:
+          type: string
+          description: Ten file nguoi dung tai len (de hien thi)
+        DuongDan:
+          type: string
+          description: >
+            Path tuong doi duoi App_Data, luon ket thuc .pdf. KHONG phai URL cong khai —
+            tai file qua GET api/viphamgiangday/{idViPham}/minh-chung/tai-ve.
+        KichThuocKb:
+          type: integer
+          nullable: true
+        NguoiTaiLen:
+          type: integer
+          nullable: true
+        HoTenNguoiTaiLen:
+          type: string
+          nullable: true
+        NgayTaiLen:
+          type: string
+          format: date-time
+          nullable: true
     ViPhamGiangDayResponse:
       type: object
       properties:
@@ -6550,12 +7368,277 @@ components:
           type: boolean
         Message:
           type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          description: >
+            FORBIDDEN_CHUC_VU, FORBIDDEN_DON_VI, NOT_GIANG_VIEN_KHOA,
+            VI_PHAM_NOT_FOUND, LOAI_VI_PHAM_NOT_FOUND, LOAI_VI_PHAM_INACTIVE,
+            NAM_NOT_FOUND, NHAN_VIEN_NOT_FOUND, MINH_CHUNG_NOT_FOUND, FILE_NOT_FOUND,
+            VALIDATION, IO_ERROR, DB_ERROR
         Item:
           $ref: "#/components/schemas/ViPhamGiangDayDto"
         Items:
           type: array
           items:
             $ref: "#/components/schemas/ViPhamGiangDayDto"
+    ViPhamTongHopGiangVienDto:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        IdDonVi:
+          type: integer
+          description: Khoa chu quan
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        IdNam:
+          type: integer
+        SoViPham:
+          type: integer
+        TongDiemTruTho:
+          type: number
+          format: double
+          description: Tong diem tru chua ap tran
+        DiemTruCaNhan:
+          type: number
+          format: double
+          description: MIN(TongDiemTruTho, 15)
+    ViPhamTongHopGiangVienResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ViPhamTongHopGiangVienDto"
+    ViPhamDiemTruKhoaDto:
+      type: object
+      properties:
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        IdNam:
+          type: integer
+        TongDiemTruCaNhan:
+          type: number
+          format: double
+          description: T — tong diem tru cua cac ca nhan thuoc Khoa
+        SoGiangVien:
+          type: integer
+          description: N — so giang vien dang hoat dong cua Khoa
+        SoGiangVienViPham:
+          type: integer
+        MauSo:
+          type: number
+          format: double
+          description: 0.2 * 15 * N
+        DiemTruTapThe:
+          type: number
+          format: double
+          description: MIN(7.5 * T / MauSo, 7.5); N = 0 -> 0
+    ViPhamDiemTruKhoaResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ViPhamDiemTruKhoaDto"
+    NhomViPhamDto:
+      type: object
+      properties:
+        IdNhomVp:
+          type: integer
+        TenNhom:
+          type: string
+        ThuTuHienThi:
+          type: integer
+        TrangThai:
+          type: boolean
+    LoaiViPhamDonViGhiNhanDto:
+      type: object
+      properties:
+        IdPhanQuyen:
+          type: integer
+        IdLoaiViPham:
+          type: integer
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        NgayTao:
+          type: string
+          format: date-time
+    LoaiViPhamDto:
+      type: object
+      properties:
+        IdLoaiViPham:
+          type: integer
+        IdNhomVp:
+          type: integer
+        TenNhom:
+          type: string
+        MaLoaiViPham:
+          type: string
+        NoiDung:
+          type: string
+        DiemTruMacDinh:
+          type: number
+          format: double
+        HoSoKemTheo:
+          type: string
+          nullable: true
+        ChoPhepKhoaChuQuan:
+          type: boolean
+          description: Truong Khoa chu quan cua giang vien cung duoc ghi nhan
+        ChoPhepMoiDonVi:
+          type: boolean
+          description: Bat ky truong don vi nao cung duoc ghi nhan ("don vi chu tri")
+        GhiChu:
+          type: string
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+        TrangThai:
+          type: boolean
+        DonViGhiNhan:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoaiViPhamDonViGhiNhanDto"
+    LoaiViPhamCreateRequest:
+      type: object
+      required:
+        - IdNhomVp
+        - MaLoaiViPham
+        - NoiDung
+      properties:
+        IdNhomVp:
+          type: integer
+        MaLoaiViPham:
+          type: string
+        NoiDung:
+          type: string
+        DiemTruMacDinh:
+          type: number
+          format: double
+          nullable: true
+          description: null -> 1
+        HoSoKemTheo:
+          type: string
+          nullable: true
+        ChoPhepKhoaChuQuan:
+          type: boolean
+          nullable: true
+        ChoPhepMoiDonVi:
+          type: boolean
+          nullable: true
+        GhiChu:
+          type: string
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+        IdDonViGhiNhanList:
+          type: array
+          nullable: true
+          items:
+            type: integer
+    LoaiViPhamUpdateRequest:
+      type: object
+      required:
+        - IdNhomVp
+        - MaLoaiViPham
+        - NoiDung
+      properties:
+        IdNhomVp:
+          type: integer
+        MaLoaiViPham:
+          type: string
+        NoiDung:
+          type: string
+        DiemTruMacDinh:
+          type: number
+          format: double
+          nullable: true
+        HoSoKemTheo:
+          type: string
+          nullable: true
+        ChoPhepKhoaChuQuan:
+          type: boolean
+          nullable: true
+        ChoPhepMoiDonVi:
+          type: boolean
+          nullable: true
+        GhiChu:
+          type: string
+          nullable: true
+        ThuTuHienThi:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: boolean
+          nullable: true
+        IdDonViGhiNhanList:
+          type: array
+          nullable: true
+          description: null = giu nguyen phan quyen; mang rong = xoa het
+          items:
+            type: integer
+    LoaiViPhamDonViGhiNhanSetRequest:
+      type: object
+      properties:
+        IdDonViList:
+          type: array
+          items:
+            type: integer
+    LoaiViPhamResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          description: FORBIDDEN_CHUC_VU, LOAI_VI_PHAM_NOT_FOUND, NHOM_VI_PHAM_NOT_FOUND, DUPLICATE_MA, IN_USE, VALIDATION
+        Item:
+          $ref: "#/components/schemas/LoaiViPhamDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoaiViPhamDto"
+        Nhom:
+          type: array
+          items:
+            $ref: "#/components/schemas/NhomViPhamDto"
     ChucDanhNgheNghiepCreateRequest:
       type: object
       required:

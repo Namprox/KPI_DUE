@@ -276,21 +276,95 @@ CREATE TABLE gio_thuc_hien_gv (
 );
 GO
 
+-- 3.2.a. Nhóm nội dung công việc trong quy định tính điểm trừ KPI (6 nhóm)
+CREATE TABLE nhom_vi_pham (
+    id_nhom_vp      INT           IDENTITY(1,1) PRIMARY KEY,
+    ten_nhom        NVARCHAR(200) NOT NULL,
+    thu_tu_hien_thi INT           NOT NULL DEFAULT 0,
+    trang_thai      BIT           NOT NULL DEFAULT 1
+);
+GO
+
+-- 3.2.b. Danh mục "việc chưa tuân thủ" (15 nội dung, mặc định 1 điểm / 1 nội dung)
+--   Quyền ghi nhận của 1 loại = HỢP của 3 nguồn:
+--     (a) danh sách đơn vị cố định trong loai_vi_pham_don_vi_ghi_nhan
+--     (b) cho_phep_khoa_chu_quan = 1 → trưởng Khoa chủ quản của giảng viên
+--     (c) cho_phep_moi_don_vi   = 1 → bất kỳ trưởng đơn vị nào ("đơn vị chủ trì")
+CREATE TABLE loai_vi_pham (
+    id_loai_vi_pham        INT           IDENTITY(1,1) PRIMARY KEY,
+    id_nhom_vp             INT           NOT NULL,
+    ma_loai_vi_pham        NVARCHAR(50)  NOT NULL,
+    noi_dung               NVARCHAR(500) NOT NULL,
+    diem_tru_mac_dinh      DECIMAL(5,2)  NOT NULL DEFAULT 1,
+    ho_so_kem_theo         NVARCHAR(200) NULL,   -- Biên bản / email thông báo / hồ sơ theo dõi
+    cho_phep_khoa_chu_quan BIT           NOT NULL DEFAULT 0,
+    cho_phep_moi_don_vi    BIT           NOT NULL DEFAULT 0,
+    ghi_chu                NVARCHAR(500) NULL,
+    thu_tu_hien_thi        INT           NOT NULL DEFAULT 0,
+    trang_thai             BIT           NOT NULL DEFAULT 1,
+    CONSTRAINT uq_loai_vi_pham_ma    UNIQUE (ma_loai_vi_pham),
+    CONSTRAINT fk_loai_vi_pham_nhom  FOREIGN KEY (id_nhom_vp) REFERENCES nhom_vi_pham(id_nhom_vp),
+    CONSTRAINT chk_loai_vi_pham_diem CHECK (diem_tru_mac_dinh >= 0)
+);
+GO
+
+-- 3.2.c. Phân quyền đơn vị ghi nhận vi phạm (đơn vị nào được ghi loại vi phạm nào)
+--   Mirror tieu_chi_don_vi_cham: chỉ trưởng (ma_chuc_vu TK/TKL/TP) của đúng các đơn vị
+--   ở đây mới được ghi nhận loại vi phạm tương ứng. Đọc live (không snapshot).
+CREATE TABLE loai_vi_pham_don_vi_ghi_nhan (
+    id_phan_quyen   INT      IDENTITY(1,1) PRIMARY KEY,
+    id_loai_vi_pham INT      NOT NULL,
+    id_don_vi       INT      NOT NULL,
+    ngay_tao        DATETIME NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT uq_lvpdvgn        UNIQUE (id_loai_vi_pham, id_don_vi),
+    CONSTRAINT fk_lvpdvgn_loai   FOREIGN KEY (id_loai_vi_pham) REFERENCES loai_vi_pham(id_loai_vi_pham),
+    CONSTRAINT fk_lvpdvgn_don_vi FOREIGN KEY (id_don_vi)       REFERENCES don_vi(id_don_vi)
+);
+GO
+
 -- 3.2. Vi phạm giảng dạy
---   Lưu các vi phạm quy định giảng dạy trong năm để tính KPI I.2.
+--   Lưu các vi phạm quy định giảng dạy trong năm để tính điểm trừ KPI.
+--   CHỈ áp dụng cho GIẢNG VIÊN thuộc KHOA (ma_don_vi LIKE 'K_%').
+--   Giảng viên = chuc_danh_nghe_nghiep.ma_chuc_danh IN ('GV','GVC','GVCC','PGS','GS')
+--   — xem view v_giang_vien_khoa trong procedure.sql.
 --   KHÔNG bao gồm vi phạm pháp luật (xử lý qua phieu_danh_gia.khong_vi_pham_phap_luat).
+--   Điểm trừ cá nhân = MIN(SUM(diem_tru) trong năm, 15).
+--   Điểm trừ tập thể của Khoa = MIN(7.5 * T / (0.2 * 15 * N), 7.5) — xem sp_vi_pham_diem_tru_khoa.
 CREATE TABLE vi_pham_giang_day (
-    id_vi_pham        INT           IDENTITY(1,1) PRIMARY KEY,
-    id_nhan_vien      INT           NOT NULL,
-    id_nam            INT           NOT NULL,
-    mo_ta             NVARCHAR(500) NOT NULL,
-    la_nghiem_trong   BIT           DEFAULT 0,   -- 1 = vi phạm nghiêm trọng → 0đ
-    ngay_vi_pham      DATE          NULL,
-    id_nguoi_ghi_nhan INT           NOT NULL,
-    ngay_ghi_nhan     DATETIME      DEFAULT GETDATE(),
-    CONSTRAINT fk_vp_nv    FOREIGN KEY (id_nhan_vien)      REFERENCES nhan_vien(id_nhan_vien),
-    CONSTRAINT fk_vp_nam   FOREIGN KEY (id_nam)            REFERENCES nam_danh_gia(id_nam),
-    CONSTRAINT fk_vp_nguoi FOREIGN KEY (id_nguoi_ghi_nhan) REFERENCES nhan_vien(id_nhan_vien)
+    id_vi_pham         INT           IDENTITY(1,1) PRIMARY KEY,
+    id_nhan_vien       INT           NOT NULL,
+    id_nam             INT           NOT NULL,
+    id_loai_vi_pham    INT           NULL,          -- NULL: dòng cũ tạo trước khi có danh mục
+    mo_ta              NVARCHAR(500) NOT NULL,
+    diem_tru           DECIMAL(5,2)  NULL,          -- Snapshot từ loai_vi_pham.diem_tru_mac_dinh
+    la_nghiem_trong    BIT           DEFAULT 0,     -- 1 = vi phạm nghiêm trọng → 0đ
+    ngay_vi_pham       DATE          NULL,
+    id_nguoi_ghi_nhan  INT           NOT NULL,      -- Lấy từ JWT, không nhận từ body
+    id_don_vi_ghi_nhan INT           NULL,          -- Snapshot đơn vị của người ghi lúc ghi
+    ngay_ghi_nhan      DATETIME      DEFAULT GETDATE(),
+    ngay_cap_nhat      DATETIME      NULL,
+    -- Minh chứng PDF (thay cho so_hieu_ho_so cũ đã bỏ): tối đa 1 file / vi phạm.
+    -- File nằm ở App_Data/uploads/vi-pham/{id_vi_pham}/, DB chỉ giữ metadata.
+    mc_ten_file_goc    NVARCHAR(255) NULL,          -- Tên file người dùng tải lên
+    mc_duong_dan       NVARCHAR(500) NULL,          -- Path tương đối dưới App_Data (luôn .pdf)
+    mc_kich_thuoc_kb   INT           NULL,
+    mc_nguoi_tai_len   INT           NULL,
+    mc_ngay_tai_len    DATETIME      NULL,
+    CONSTRAINT fk_vp_nv              FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_vp_nam             FOREIGN KEY (id_nam)             REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_vp_nguoi           FOREIGN KEY (id_nguoi_ghi_nhan)  REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_vp_loai_vi_pham    FOREIGN KEY (id_loai_vi_pham)    REFERENCES loai_vi_pham(id_loai_vi_pham),
+    CONSTRAINT fk_vp_don_vi_ghi_nhan FOREIGN KEY (id_don_vi_ghi_nhan) REFERENCES don_vi(id_don_vi),
+    CONSTRAINT fk_vp_mc_nguoi        FOREIGN KEY (mc_nguoi_tai_len)   REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_vp_diem_tru       CHECK (diem_tru IS NULL OR diem_tru >= 0),
+    CONSTRAINT chk_vp_mc_kich_thuoc  CHECK (mc_kich_thuoc_kb IS NULL OR mc_kich_thuoc_kb > 0),
+    -- Metadata minh chứng: hoặc rỗng hoàn toàn, hoặc đủ tên file + path + người tải
+    CONSTRAINT chk_vp_minh_chung     CHECK (
+        (mc_duong_dan IS NULL AND mc_ten_file_goc IS NULL AND mc_nguoi_tai_len IS NULL)
+     OR (mc_duong_dan IS NOT NULL AND mc_ten_file_goc IS NOT NULL AND mc_nguoi_tai_len IS NOT NULL)
+    ),
+    -- Chỉ chấp nhận PDF
+    CONSTRAINT chk_vp_mc_pdf         CHECK (mc_duong_dan IS NULL OR mc_duong_dan LIKE '%.pdf')
 );
 GO
 
@@ -1335,6 +1409,8 @@ CREATE INDEX ix_dm_chuc_danh_nam  ON dinh_muc_giang_vien(id_chuc_danh, id_nam);
 -- dữ liệu nguồn
 CREATE INDEX ix_gth_nv_nam     ON gio_thuc_hien_gv(id_nhan_vien, id_nam);
 CREATE INDEX ix_vp_nv_nam      ON vi_pham_giang_day(id_nhan_vien, id_nam);
+CREATE INDEX ix_vp_nam_loai    ON vi_pham_giang_day(id_nam, id_loai_vi_pham);
+CREATE INDEX ix_vp_don_vi_ghi_nhan ON vi_pham_giang_day(id_don_vi_ghi_nhan);
 CREATE INDEX ix_phsv_ky_hoc    ON phan_hoi_sinh_vien(ky_hoc);
 CREATE INDEX ix_phsv_ma_can_bo ON phan_hoi_sinh_vien(ma_can_bo, ky_hoc);
 CREATE INDEX ix_phsv_don_vi    ON phan_hoi_sinh_vien(id_don_vi);
