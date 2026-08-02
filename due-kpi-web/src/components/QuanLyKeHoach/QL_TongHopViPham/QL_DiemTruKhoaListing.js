@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CongThucDiemTruTapThe from '../../Common/CongThucDiemTruTapThe';
 
 const TRAN_TAP_THE = 7.5;
 
@@ -46,6 +47,10 @@ const QL_DiemTruKhoaListing = ({ data, isLoading, selectedNam }) => {
                             {data.map((item, index) => {
                                 const soGv = item.SoGiangVien ?? 0;
                                 const khongCoGv = soGv === 0;
+                                const mauSo = Number(item.MauSo) || 0;
+                                // Giá trị trước khi cắt trần, chỉ để giải thích cho người xem
+                                const truocTran = mauSo > 0 ? (TRAN_TAP_THE * Number(item.TongDiemTruCaNhan || 0)) / mauSo : 0;
+                                const chamTran = truocTran - Number(item.DiemTruTapThe || 0) > 0.001;
 
                                 return (
                                     <tr key={item.IdDonVi}>
@@ -73,9 +78,16 @@ const QL_DiemTruKhoaListing = ({ data, isLoading, selectedNam }) => {
                                                     Khoa chưa có giảng viên hoạt động
                                                 </div>
                                             ) : (
-                                                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}>
-                                                    MIN(7,5 × {fmt(item.TongDiemTruCaNhan)} / {fmt(item.MauSo)}; 7,5)
-                                                </div>
+                                                <>
+                                                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}>
+                                                        7,5 × ({fmt(item.TongDiemTruCaNhan)} / {fmt(item.MauSo)})
+                                                    </div>
+                                                    {chamTran && (
+                                                        <div style={{ fontSize: '11px', color: '#c2410c', marginTop: '3px', fontStyle: 'italic' }}>
+                                                            {fmt(truocTran)} → áp trần {TRAN_TAP_THE.toFixed(1)}
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </td>
                                     </tr>
@@ -85,17 +97,12 @@ const QL_DiemTruKhoaListing = ({ data, isLoading, selectedNam }) => {
                     </table>
 
                     {/* Chú giải công thức */}
-                    <div style={{ margin: '18px', padding: '14px 18px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', fontSize: '13px', color: '#1e40af', lineHeight: '1.7' }}>
-                        <div style={{ fontWeight: '700', marginBottom: '6px' }}>
-                            <i className="fa-solid fa-circle-info" style={{ marginRight: '6px' }}></i>
-                            Diễn giải công thức
+                    <div style={{ margin: '18px' }}>
+                        <CongThucDiemTruTapThe />
+                        <div style={{ marginTop: '10px', fontSize: '12px', color: '#64748b', lineHeight: '1.7' }}>
+                            <div>• T tính trên toàn Khoa, mỗi cá nhân ĐÃ áp trần 15 điểm trước khi cộng.</div>
+                            <div>• N tính cả giảng viên ở đơn vị con của Khoa. N = 0 → điểm trừ tập thể = 0.</div>
                         </div>
-                        <div>
-                            <strong>Điểm trừ tập thể của Khoa</strong> = MIN(7,5 × T / (0,2 × 15 × N); 7,5)
-                        </div>
-                        <div>• <strong>T</strong> = tổng điểm trừ cá nhân của Khoa (mỗi cá nhân ĐÃ áp trần 15 điểm)</div>
-                        <div>• <strong>N</strong> = tổng số giảng viên đang hoạt động của Khoa (kể cả đơn vị con). N = 0 → điểm trừ tập thể = 0</div>
-                        <div>• Điểm trừ cá nhân của mỗi giảng viên được giới hạn tối đa <strong>15 điểm/năm</strong>.</div>
                     </div>
                 </>
             )}

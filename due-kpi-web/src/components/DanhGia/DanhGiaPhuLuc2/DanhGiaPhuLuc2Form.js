@@ -7,6 +7,11 @@ const formatNgay = (value) => {
   return d.toLocaleDateString("vi-VN");
 };
 
+const formatDiem = (value) => {
+  const n = Number(value) || 0;
+  return n % 1 === 0 ? String(n) : n.toFixed(2);
+};
+
 const DanhGiaPhuLuc2Form = ({
   criteriaList,
   formData,
@@ -175,7 +180,8 @@ const DanhGiaPhuLuc2Form = ({
             <div className="pl2-group-header">
               <h3 className="pl2-group-title">{groupName}</h3>
               <span className="pl2-group-score">
-                <i className="fa-solid fa-star"></i> {sum % 1 === 0 ? sum : sum.toFixed(2)}
+                <i className="fa-solid fa-star"></i>{" "}
+                {sum % 1 === 0 ? sum : sum.toFixed(2)}
                 <span className="pl2-group-score-max">/ {max}đ</span>
               </span>
             </div>
@@ -214,18 +220,34 @@ const DanhGiaPhuLuc2Form = ({
 
                 // Auto-scored criterion (LoaiNguonDiem = 2): system-computed, read-only
                 if (autoInfo) {
-                  const congThuc = (autoInfo.CongThucTongHop || "").toUpperCase();
+                  const congThuc = (
+                    autoInfo.CongThucTongHop || ""
+                  ).toUpperCase();
                   const isPhsv = congThuc.startsWith("PHSV");
                   const isNckh = congThuc.startsWith("NCKH");
+                  const isVpgd = congThuc.startsWith("VPGD");
                   const autoNote = isNckh
                     ? "Điểm được tính tự động dựa vào dữ liệu ở trang NCKH"
                     : isPhsv
                       ? "Điểm được tính tự động dựa vào dữ liệu đánh giá của sinh viên"
-                      : "Không chỉnh sửa";
+                      : isVpgd
+                        ? "Điểm được tính tự động dựa vào các vi phạm giảng dạy đã ghi nhận"
+                        : "Không chỉnh sửa";
 
-                  const minhChungNckh = Array.isArray(autoInfo.MinhChung)
+                  const minhChungList = Array.isArray(autoInfo.MinhChung)
                     ? autoInfo.MinhChung
                     : [];
+
+                  // VPGD_TUAN_THU là điểm TRỪ dần: điểm = điểm tối đa − tổng điểm trừ
+                  // của các vi phạm trong năm (sàn 0), không vi phạm = trọn điểm.
+                  const diemToiDaAuto =
+                    Number(autoInfo.DiemToiDa ?? tc.DiemToiDa) || 0;
+                  const tongDiemTru = isVpgd
+                    ? Math.max(
+                        diemToiDaAuto - Number(autoInfo.DiemTuDong || 0),
+                        0,
+                      )
+                    : 0;
 
                   // PHSV_DIEM_TB_GTE_3 -> threshold 3 (default 3 if not encoded)
                   const nguongMatch = congThuc.match(/GTE_(\d+(?:\.\d+)?)/);
@@ -250,10 +272,14 @@ const DanhGiaPhuLuc2Form = ({
                             Điểm hệ thống tự tính
                           </span>
                           <i className="fa-solid fa-lock pl2-auto-lock"></i>
-                          <span className="pl2-auto-score-note">{autoNote}</span>
+                          <span className="pl2-auto-score-note">
+                            {autoNote}
+                          </span>
                         </div>
-                        <div className="pl2-auto-score-value">
-                          {Number(autoInfo.DiemTuDong || 0)}đ
+                        <div
+                          className={`pl2-auto-score-value ${tongDiemTru > 0 ? "pl2-auto-score-value-tru" : ""}`}
+                        >
+                          {formatDiem(autoInfo.DiemTuDong)}đ
                         </div>
                       </div>
 
@@ -292,17 +318,60 @@ const DanhGiaPhuLuc2Form = ({
                         </div>
                       )}
 
-                      {isNckh && minhChungNckh.length > 0 && (
-                        <div className="pl2-nckh-mc-box">
+                      {isVpgd && (
+                        <div
+                          className={`pl2-vpgd-box ${tongDiemTru > 0 ? "pl2-vpgd-box-tru" : "pl2-vpgd-box-dat"}`}
+                        >
+                          <span className="pl2-vpgd-label">
+                            <i className="fa-solid fa-gavel"></i> Tuân thủ quy
+                            định giảng dạy:
+                          </span>
+                          {tongDiemTru > 0 ? (
+                            <>
+                              <span className="pl2-vpgd-badge pl2-vpgd-badge-tru">
+                                <i className="fa-solid fa-circle-exclamation"></i>
+                                Bị trừ {formatDiem(tongDiemTru)}đ
+                              </span>
+                              <span className="pl2-vpgd-note">
+                                {formatDiem(diemToiDaAuto)}đ −{" "}
+                                {formatDiem(tongDiemTru)}đ ={" "}
+                                {formatDiem(autoInfo.DiemTuDong)}đ
+                                {minhChungList.length > 0
+                                  ? ` • ${minhChungList.length} vi phạm trong năm`
+                                  : ""}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="pl2-vpgd-badge pl2-vpgd-badge-dat">
+                              <i className="fa-solid fa-circle-check"></i> Không
+                              có vi phạm - đạt trọn điểm
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {(isNckh || isVpgd) && minhChungList.length > 0 && (
+                        <div
+                          className={`pl2-nckh-mc-box ${isVpgd ? "pl2-mc-box-vpgd" : ""}`}
+                        >
                           <div className="pl2-nckh-mc-title">
-                            <i className="fa-solid fa-book-open"></i> Minh chứng
-                            từ hệ thống NCKH
+                            {isVpgd ? (
+                              <>
+                                <i className="fa-solid fa-triangle-exclamation"></i>{" "}
+                                Vi phạm giảng dạy đã ghi nhận
+                              </>
+                            ) : (
+                              <>
+                                <i className="fa-solid fa-book-open"></i> Minh
+                                chứng từ hệ thống NCKH
+                              </>
+                            )}
                             <span className="pl2-nckh-mc-count">
-                              {minhChungNckh.length}
+                              {minhChungList.length}
                             </span>
                           </div>
                           <ul className="pl2-nckh-mc-list">
-                            {minhChungNckh.map((mc, mcIndex) => {
+                            {minhChungList.map((mc, mcIndex) => {
                               const ngay = formatNgay(mc.Ngay);
                               return (
                                 <li

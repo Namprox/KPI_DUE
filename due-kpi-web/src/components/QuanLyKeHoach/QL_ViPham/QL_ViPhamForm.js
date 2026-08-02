@@ -15,7 +15,7 @@ const labelStyle = {
   color: "#475569",
   marginBottom: "6px",
 };
-const hintStyle = { fontSize: "12px", color: "#64748b", marginTop: "5px" };
+const hintStyle = { fontSize: "13px", color: "#64748b", marginTop: "5px" };
 const fileCardStyle = {
   display: "flex",
   alignItems: "center",
@@ -479,26 +479,26 @@ const QL_ViPhamForm = ({
                 >
                   <input
                     type="checkbox"
-                    id="LaNghiemTrong"
-                    name="LaNghiemTrong"
-                    checked={!!formData.LaNghiemTrong}
+                    id="BiKyLuat"
+                    name="BiKyLuat"
+                    checked={!!formData.BiKyLuat}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        LaNghiemTrong: e.target.checked,
+                        BiKyLuat: e.target.checked,
                       })
                     }
                     style={{ width: "20px", height: "20px", cursor: "pointer" }}
                   />
                   <label
-                    htmlFor="LaNghiemTrong"
+                    htmlFor="BiKyLuat"
                     style={{ margin: 0, cursor: "pointer", fontWeight: "600" }}
                   >
-                    Vi phạm nghiêm trọng
+                    Bị xử lý kỷ luật
                   </label>
                 </div>
                 <div style={hintStyle}>
-                  Vi phạm nghiêm trọng → KPI về 0 điểm.
+                  Sẽ được xét không hoàn thành nhiệm vụ của năm vi phạm.
                 </div>
               </div>
             </div>
@@ -565,7 +565,9 @@ const QL_ViPhamForm = ({
                     <button
                       type="button"
                       style={fileActionStyle}
-                      onClick={() => onDownloadMinhChung && onDownloadMinhChung()}
+                      onClick={() =>
+                        onDownloadMinhChung && onDownloadMinhChung()
+                      }
                       title="Tải tệp về máy"
                     >
                       <i className="fa-solid fa-download"></i> Tải về
@@ -589,7 +591,13 @@ const QL_ViPhamForm = ({
                   </div>
                 </div>
               ) : fileMoi ? (
-                <div style={{ ...fileCardStyle, background: "#f0fdf4", borderColor: "#bbf7d0" }}>
+                <div
+                  style={{
+                    ...fileCardStyle,
+                    background: "#f0fdf4",
+                    borderColor: "#bbf7d0",
+                  }}
+                >
                   <i
                     className="fa-solid fa-file-pdf"
                     style={{ fontSize: "26px", color: "#dc2626" }}
@@ -605,9 +613,15 @@ const QL_ViPhamForm = ({
                     >
                       {fileMoi.name}
                     </div>
-                    <div style={{ ...hintStyle, marginTop: "3px", color: "#15803d" }}>
-                      {formatKb(Math.ceil(fileMoi.size / 1024))} • Sẽ được tải lên
-                      khi bấm “Lưu dữ liệu”
+                    <div
+                      style={{
+                        ...hintStyle,
+                        marginTop: "3px",
+                        color: "#15803d",
+                      }}
+                    >
+                      {formatKb(Math.ceil(fileMoi.size / 1024))} • Sẽ được tải
+                      lên khi bấm “Lưu dữ liệu”
                       {formData.MinhChung ? " (ghi đè tệp hiện tại)" : ""}
                     </div>
                   </div>

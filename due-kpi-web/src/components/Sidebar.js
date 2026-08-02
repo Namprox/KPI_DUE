@@ -71,6 +71,12 @@ const menuStructure = {
       path: "/tong-hop-vi-pham",
     },
     {
+      name: "Thống kê vi phạm của Khoa",
+      icon: "fa-solid fa-chart-pie",
+      path: "/thong-ke-vi-pham-khoa",
+      roles: ["TK", "TKL"],
+    },
+    {
       name: "Quản lý đánh giá sinh viên",
       icon: "fa-solid fa-user-graduate",
       path: "/quan-ly-danh-gia-sinh-vien",

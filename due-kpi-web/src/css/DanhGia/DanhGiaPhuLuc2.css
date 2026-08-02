@@ -663,6 +663,72 @@
     text-align: center;
 }
 
+/* Điểm bị trừ (VPGD): đổi sang tông đỏ để tách khỏi các tiêu chí cộng điểm */
+.pl2-auto-score-value-tru {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+/* ===== Tuân thủ quy định giảng dạy (VPGD_TUAN_THU) ===== */
+.pl2-vpgd-box {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    max-width: fit-content;
+}
+
+.pl2-vpgd-box-dat {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.pl2-vpgd-box-tru {
+    background: #fef6f6;
+    border: 1px solid #fecaca;
+}
+
+.pl2-vpgd-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
+}
+
+.pl2-vpgd-label i {
+    color: #003399;
+    margin-right: 4px;
+}
+
+.pl2-vpgd-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.pl2-vpgd-badge-dat {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+.pl2-vpgd-badge-tru {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
+.pl2-vpgd-note {
+    font-size: 12.5px;
+    color: #64748b;
+}
+
 /* ===== Điểm TB phản hồi sinh viên (PHSV) ===== */
 .pl2-phsv-tb-box {
     display: flex;
@@ -727,7 +793,7 @@
     color: #94a3b8;
 }
 
-/* ===== Minh chứng từ hệ thống NCKH ===== */
+/* ===== Minh chứng từ hệ thống NCKH / danh sách vi phạm giảng dạy ===== */
 .pl2-nckh-mc-box {
     margin-top: 10px;
     padding: 12px 16px;
@@ -806,6 +872,30 @@
     font-size: 12.5px;
     color: #64748b;
     line-height: 18px;
+}
+
+/* Biến thể vi phạm giảng dạy: cùng bố cục, đổi tông cảnh báo */
+.pl2-mc-box-vpgd {
+    background: #fffbfb;
+    border-color: #fecaca;
+}
+
+.pl2-mc-box-vpgd .pl2-nckh-mc-title i {
+    color: #dc2626;
+}
+
+.pl2-mc-box-vpgd .pl2-nckh-mc-count {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.pl2-mc-box-vpgd .pl2-nckh-mc-item {
+    border-left-color: #fca5a5;
+}
+
+.pl2-mc-box-vpgd .pl2-nckh-mc-type {
+    background: #fee2e2;
+    color: #b91c1c;
 }
 
 /* ===== Responsive ===== */

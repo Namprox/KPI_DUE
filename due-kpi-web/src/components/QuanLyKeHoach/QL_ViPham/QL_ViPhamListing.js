@@ -117,7 +117,7 @@ const QL_ViPhamListing = ({
                   NGÀY VP
                 </th>
                 <th width="7%" style={{ textAlign: "center" }}>
-                  MỨC ĐỘ
+                  KỶ LUẬT
                 </th>
                 <th width="11%">NGƯỜI GHI NHẬN</th>
                 {canManage && (
@@ -267,7 +267,7 @@ const QL_ViPhamListing = ({
                     {formatDate(item.NgayViPham)}
                   </td>
                   <td style={{ textAlign: "center" }}>
-                    {item.LaNghiemTrong ? (
+                    {item.BiKyLuat ? (
                       <span
                         style={{
                           backgroundColor: "#f8d7da",
@@ -279,21 +279,11 @@ const QL_ViPhamListing = ({
                           border: "1px solid #f5c6cb",
                         }}
                       >
-                        Nghiêm trọng
+                        Bị kỷ luật
                       </span>
                     ) : (
-                      <span
-                        style={{
-                          backgroundColor: "#e2e3e5",
-                          color: "#383d41",
-                          padding: "4px 10px",
-                          borderRadius: "4px",
-                          fontSize: "12px",
-                          fontWeight: "500",
-                          border: "1px solid #d6d8db",
-                        }}
-                      >
-                        Thường
+                      <span style={{ color: "#94a3b8", fontSize: "13px" }}>
+                        ---
                       </span>
                     )}
                   </td>

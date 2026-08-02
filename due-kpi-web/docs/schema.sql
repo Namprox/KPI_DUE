@@ -330,6 +330,8 @@ GO
 --   KHÔNG bao gồm vi phạm pháp luật (xử lý qua phieu_danh_gia.khong_vi_pham_phap_luat).
 --   Điểm trừ cá nhân = MIN(SUM(diem_tru) trong năm, 15).
 --   Điểm trừ tập thể của Khoa = MIN(7.5 * T / (0.2 * 15 * N), 7.5) — xem sp_vi_pham_diem_tru_khoa.
+--   Điểm tiêu chí "Tuân thủ đúng quy định về giảng dạy" (mã công thức VPGD_TUAN_THU,
+--   chấm tự động qua fn_nckh_diem_tu_dong) = 15 − SUM(diem_tru) trong năm, sàn 0.
 CREATE TABLE vi_pham_giang_day (
     id_vi_pham         INT           IDENTITY(1,1) PRIMARY KEY,
     id_nhan_vien       INT           NOT NULL,
@@ -337,7 +339,10 @@ CREATE TABLE vi_pham_giang_day (
     id_loai_vi_pham    INT           NULL,          -- NULL: dòng cũ tạo trước khi có danh mục
     mo_ta              NVARCHAR(500) NOT NULL,
     diem_tru           DECIMAL(5,2)  NULL,          -- Snapshot từ loai_vi_pham.diem_tru_mac_dinh
-    la_nghiem_trong    BIT           DEFAULT 0,     -- 1 = vi phạm nghiêm trọng → 0đ
+    -- 1 = vi phạm này đã bị xử lý kỷ luật. HIỆN CHỈ LƯU: không ảnh hưởng điểm tiêu chí
+    -- lẫn xếp loại (thay cho cột la_nghiem_trong cũ đã bỏ — xem update_database.sql).
+    -- DB đã migrate: cột này nằm CUỐI bảng do được DROP + ADD, không ở vị trí này.
+    bi_ky_luat         BIT           NOT NULL DEFAULT 0,
     ngay_vi_pham       DATE          NULL,
     id_nguoi_ghi_nhan  INT           NOT NULL,      -- Lấy từ JWT, không nhận từ body
     id_don_vi_ghi_nhan INT           NULL,          -- Snapshot đơn vị của người ghi lúc ghi

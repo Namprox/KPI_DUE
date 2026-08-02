@@ -619,7 +619,9 @@ paths:
           required: false
           description: >
             Bỏ trống = tất cả giảng viên đang hoạt động có dữ liệu tự động của năm
-            (có snapshot nckh_tong_hop hoặc đã chốt điểm TB phản hồi sinh viên).
+            (có snapshot nckh_tong_hop hoặc đã chốt điểm TB phản hồi sinh viên);
+            nếu mẫu có tiêu chí VPGD_TUAN_THU thì mở rộng ra toàn bộ giảng viên Khoa
+            (v_giang_vien_khoa) vì không vi phạm = trọn điểm.
             Có giá trị = chỉ giảng viên đó, VÀ kèm MinhChung.
           schema:
             type: integer
@@ -6274,16 +6276,24 @@ components:
             NCKH_CHU_BIEN_GIAO_TRINH, NCKH_THANH_VIEN_GIAO_TRINH,
             NCKH_CHU_BIEN_THAM_KHAO, NCKH_THANH_VIEN_THAM_KHAO,
             NCKH_CHU_NHIEM_NN, NCKH_CHU_NHIEM_BO_TINH, NCKH_DE_TAI_CO_SO,
-            PHSV_DIEM_TB_GTE_3.
+            PHSV_DIEM_TB_GTE_3, VPGD_TUAN_THU.
         DiemTuDong:
           type: number
           nullable: true
-          description: diem_toi_da nếu đạt, 0 nếu không đạt, null nếu mã công thức chưa được hỗ trợ
+          description: >
+            diem_toi_da nếu đạt, 0 nếu không đạt, null nếu mã công thức chưa được hỗ trợ.
+
+            Riêng VPGD_TUAN_THU (tuân thủ quy định giảng dạy) là điểm TRỪ dần, không
+            phải đạt/không đạt: điểm = diem_toi_da (15) − tổng diem_tru của các vi phạm
+            trong năm, sàn ở 0 (không có đường nào ép về 0);
+            giảng viên KHÔNG có vi phạm nào được trọn điểm.
         MinhChung:
           type: array
           description: >
-            Các bản ghi nguồn đã tạo ra điểm của tiêu chí này. Luôn khác null.
-            Rỗng khi không đạt HOẶC khi gọi không kèm idNhanVien.
+            Các bản ghi nguồn đã tạo ra điểm của tiêu chí này (với VPGD_TUAN_THU là các
+            vi phạm đã TRỪ điểm). Luôn khác null.
+            Rỗng khi không đạt HOẶC khi gọi không kèm idNhanVien
+            (với VPGD_TUAN_THU, rỗng nghĩa là không có vi phạm = trọn điểm).
           items:
             $ref: "#/components/schemas/MauDanhGiaMinhChungDto"
     MauDanhGiaMinhChungDto:
@@ -6292,15 +6302,19 @@ components:
       properties:
         LoaiNguon:
           type: integer
-          description: "1: Bài báo, 2: Sách, 3: Đề tài, 4: Phản hồi sinh viên"
-          enum: [1, 2, 3, 4]
+          description: >
+            1: Bài báo, 2: Sách, 3: Đề tài, 4: Phản hồi sinh viên,
+            5: Vi phạm giảng dạy (minh chứng TRỪ điểm của tiêu chí VPGD_TUAN_THU)
+          enum: [1, 2, 3, 4, 5]
         TenLoaiNguon:
           type: string
           example: Bài báo
         MaNguon:
           type: integer
           nullable: true
-          description: Mã bản ghi bên hệ thống nguồn (ma_bai_bao_nguon / ma_sach_nguon / ma_de_tai_nguon)
+          description: >
+            Mã bản ghi bên hệ thống nguồn
+            (ma_bai_bao_nguon / ma_sach_nguon / ma_de_tai_nguon / id_diem_tb / id_vi_pham)
         TieuDe:
           type: string
         MoTa:
@@ -6311,7 +6325,9 @@ components:
           type: string
           format: date-time
           nullable: true
-          description: Ngày xuất bản (bài báo/sách), ngày bắt đầu (đề tài) hoặc ngày chốt (phản hồi SV)
+          description: >
+            Ngày xuất bản (bài báo/sách), ngày bắt đầu (đề tài), ngày chốt (phản hồi SV)
+            hoặc ngày vi phạm (vi phạm giảng dạy)
     ChiTietMauDanhGiaCreateRequest:
       type: object
       properties:
@@ -7227,9 +7243,12 @@ components:
           format: double
           nullable: true
           description: null = lay diem_tru_mac_dinh cua loai vi pham (thuong la 1)
-        LaNghiemTrong:
+        BiKyLuat:
           type: boolean
           nullable: true
+          description: >
+            1 = vi phạm này đã bị xử lý kỷ luật. Hiện CHỈ được lưu và trả về,
+            chưa ảnh hưởng tới điểm tiêu chí hay xếp loại.
         NgayViPham:
           type: string
           format: date-time
@@ -7257,9 +7276,12 @@ components:
           type: number
           format: double
           nullable: true
-        LaNghiemTrong:
+        BiKyLuat:
           type: boolean
           nullable: true
+          description: >
+            1 = vi phạm này đã bị xử lý kỷ luật. Hiện CHỈ được lưu và trả về,
+            chưa ảnh hưởng tới điểm tiêu chí hay xếp loại.
         NgayViPham:
           type: string
           format: date-time
@@ -7302,8 +7324,9 @@ components:
           nullable: true
         MoTa:
           type: string
-        LaNghiemTrong:
+        BiKyLuat:
           type: boolean
+          description: 1 = vi phạm này đã bị xử lý kỷ luật (chưa ảnh hưởng điểm/xếp loại)
         NgayViPham:
           type: string
           format: date-time

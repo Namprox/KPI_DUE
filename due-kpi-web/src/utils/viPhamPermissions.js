@@ -75,6 +75,26 @@ export const laDonViKhoa = (donVi) =>
   donVi.CapDonVi === CAP_KHOA_PHONG &&
   String(donVi.MaDonVi || '').trim().toUpperCase().startsWith('K');
 
+/**
+ * Màn hình "Thống kê vi phạm theo Khoa" chỉ dành cho Trưởng Khoa / Trưởng Khoa
+ * liên ngành: mỗi người xem đúng Khoa mình phụ trách, không có lựa chọn Khoa khác.
+ * Cấp Trường xem số liệu toàn trường ở màn hình tổng hợp.
+ */
+export const canXemThongKeKhoa = (user) => ['TK', 'TKL'].includes(normalizeRole(user));
+
+/**
+ * Khoa mà người dùng đang phụ trách — nguồn duy nhất xác định phạm vi dữ liệu của
+ * màn hình thống kê Khoa (không nhận idDonVi từ URL hay dropdown).
+ *
+ * Trả null khi: không phải Trưởng Khoa, hoặc đơn vị của họ không roll-up ra Khoa nào.
+ * Đây chỉ là lớp gợi ý cho UI — server vẫn kiểm tra lại theo token.
+ */
+export const resolveKhoaCuaToi = (user, donViList = []) => {
+  if (!canXemThongKeKhoa(user)) return null;
+  const khoa = resolveKhoaCuaNhanVien(user?.IdDonVi, buildDonViIndex(donViList));
+  return laDonViKhoa(khoa) ? khoa : null;
+};
+
 /* ------------------------------------------------------------------ */
 /* Đối tượng bị ghi nhận: phải là GIẢNG VIÊN thuộc KHOA                */
 /* ------------------------------------------------------------------ */
