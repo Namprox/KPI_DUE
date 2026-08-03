@@ -252,11 +252,23 @@ const DanhGiaPhuLuc2Form = ({
                   // PHSV_DIEM_TB_GTE_3 -> threshold 3 (default 3 if not encoded)
                   const nguongMatch = congThuc.match(/GTE_(\d+(?:\.\d+)?)/);
                   const nguong = nguongMatch ? Number(nguongMatch[1]) : 3;
-                  const diemTb =
-                    autoInfo.DiemTrungBinhPhanHoi != null
-                      ? Number(autoInfo.DiemTrungBinhPhanHoi)
-                      : null;
-                  const datNguong = diemTb != null && diemTb >= nguong;
+
+                  // Nguồn duy nhất của tiêu chí PHSV là dòng chốt trong
+                  // diem_tb_phan_hoi_sinh_vien -> minh chứng đầu tiên chính là nó.
+                  // API chỉ trả minh chứng khi ĐẠT, nên rỗng có 2 nghĩa: điểm TB dưới
+                  // ngưỡng (DiemTuDong = 0), hoặc chưa chốt mà vẫn có điểm -> bất thường.
+                  const phsvChot = isPhsv ? minhChungList[0] : null;
+                  const phsvThieuCanCu =
+                    isPhsv && !phsvChot && Number(autoInfo.DiemTuDong || 0) > 0;
+
+                  // MoTa dạng "Điểm TB 4.65 - 8688 lượt đánh giá" -> chỉ lấy điểm TB,
+                  // số lượt và ngày chốt không hiển thị ở phiếu tự đánh giá.
+                  const diemTbMatch = (phsvChot?.MoTa || "").match(
+                    /\d+(?:[.,]\d+)?/,
+                  );
+                  const diemTb = diemTbMatch
+                    ? diemTbMatch[0].replace(",", ".")
+                    : null;
 
                   return (
                     <div
@@ -284,67 +296,35 @@ const DanhGiaPhuLuc2Form = ({
                       </div>
 
                       {isPhsv && (
-                        <div className="pl2-phsv-tb-box">
+                        <div
+                          className={`pl2-phsv-tb-box ${phsvThieuCanCu ? "pl2-phsv-tb-box-thieu" : ""}`}
+                        >
                           <span className="pl2-phsv-tb-label">
                             <i className="fa-solid fa-users"></i> Điểm trung
                             bình phản hồi sinh viên:
                           </span>
-                          {diemTb != null ? (
+                          {phsvChot ? (
                             <>
-                              <span className="pl2-phsv-tb-value">
-                                {diemTb.toFixed(2)}
-                              </span>
-                              <span
-                                className={`pl2-phsv-tb-badge ${datNguong ? "pl2-phsv-tb-dat" : "pl2-phsv-tb-khong-dat"}`}
-                              >
-                                <i
-                                  className={`fa-solid ${datNguong ? "fa-circle-check" : "fa-circle-xmark"}`}
-                                ></i>
-                                {datNguong
-                                  ? `Đạt (≥ ${nguong})`
-                                  : `Không đạt (< ${nguong})`}
-                              </span>
-                              {autoInfo.SoLuotDanhGia != null && (
-                                <span className="pl2-phsv-tb-luot">
-                                  ({autoInfo.SoLuotDanhGia} lượt đánh giá)
+                              {diemTb && (
+                                <span className="pl2-phsv-tb-value">
+                                  {diemTb}
                                 </span>
                               )}
+                              <span className="pl2-phsv-tb-badge pl2-phsv-tb-dat">
+                                <i className="fa-solid fa-circle-check"></i>
+                                Đạt (≥ {nguong})
+                              </span>
                             </>
-                          ) : (
+                          ) : phsvThieuCanCu ? (
                             <span className="pl2-phsv-tb-empty">
-                              Chưa có dữ liệu điểm trung bình
+                              <i className="fa-solid fa-triangle-exclamation"></i>{" "}
+                              Chưa có đợt chốt điểm phản hồi sinh viên cho năm
+                              này — điểm ở trên chưa có căn cứ
                             </span>
-                          )}
-                        </div>
-                      )}
-
-                      {isVpgd && (
-                        <div
-                          className={`pl2-vpgd-box ${tongDiemTru > 0 ? "pl2-vpgd-box-tru" : "pl2-vpgd-box-dat"}`}
-                        >
-                          <span className="pl2-vpgd-label">
-                            <i className="fa-solid fa-gavel"></i> Tuân thủ quy
-                            định giảng dạy:
-                          </span>
-                          {tongDiemTru > 0 ? (
-                            <>
-                              <span className="pl2-vpgd-badge pl2-vpgd-badge-tru">
-                                <i className="fa-solid fa-circle-exclamation"></i>
-                                Bị trừ {formatDiem(tongDiemTru)}đ
-                              </span>
-                              <span className="pl2-vpgd-note">
-                                {formatDiem(diemToiDaAuto)}đ −{" "}
-                                {formatDiem(tongDiemTru)}đ ={" "}
-                                {formatDiem(autoInfo.DiemTuDong)}đ
-                                {minhChungList.length > 0
-                                  ? ` • ${minhChungList.length} vi phạm trong năm`
-                                  : ""}
-                              </span>
-                            </>
                           ) : (
-                            <span className="pl2-vpgd-badge pl2-vpgd-badge-dat">
-                              <i className="fa-solid fa-circle-check"></i> Không
-                              có vi phạm - đạt trọn điểm
+                            <span className="pl2-phsv-tb-badge pl2-phsv-tb-khong-dat">
+                              <i className="fa-solid fa-circle-xmark"></i>
+                              Không đạt (&lt; {nguong})
                             </span>
                           )}
                         </div>
@@ -382,11 +362,6 @@ const DanhGiaPhuLuc2Form = ({
                                     <span className="pl2-nckh-mc-name">
                                       {mc.TieuDe || "(Không có tiêu đề)"}
                                     </span>
-                                    {mc.TenLoaiNguon && (
-                                      <span className="pl2-nckh-mc-type">
-                                        {mc.TenLoaiNguon}
-                                      </span>
-                                    )}
                                   </div>
                                   {(mc.MoTa || ngay) && (
                                     <div className="pl2-nckh-mc-meta">

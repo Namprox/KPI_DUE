@@ -238,37 +238,8 @@ const DanhGiaPhuLuc2 = () => {
           console.error("Lỗi khi tải điểm tự động:", e);
         }
 
-        // 4b. PHSV criteria -> attach the student-feedback average score (điểm TB phản hồi SV)
-        const hasPhsv = Object.values(autoMap).some((it) =>
-          (it.CongThucTongHop || "").toUpperCase().startsWith("PHSV"),
-        );
-        if (hasPhsv) {
-          try {
-            const resTb = await apiFetch(
-              `diem-tb-phan-hoi-sv?idNam=${selectedYear}`,
-            );
-            if (resTb.ok) {
-              const resultTb = await resTb.json();
-              const tbItems =
-                resultTb.Items ||
-                resultTb.items ||
-                (Array.isArray(resultTb) ? resultTb : []);
-              const myTb = tbItems.find(
-                (it) => it.IdNhanVien === currentUser.IdNhanVien,
-              );
-              if (myTb) {
-                Object.values(autoMap).forEach((it) => {
-                  if ((it.CongThucTongHop || "").toUpperCase().startsWith("PHSV")) {
-                    it.DiemTrungBinhPhanHoi = myTb.DiemTrungBinh ?? null;
-                    it.SoLuotDanhGia = myTb.SoLuotDanhGia ?? null;
-                  }
-                });
-              }
-            }
-          } catch (e) {
-            console.error("Lỗi khi tải điểm TB phản hồi sinh viên:", e);
-          }
-        }
+        // Điểm TB phản hồi SV đã nằm trong MinhChung của lời gọi trên -> không gọi
+        // thêm diem-tb-phan-hoi-sv (API đó trả cả danh sách GV và chặn quyền theo đơn vị).
 
         setAutoScores(autoMap);
         autoScoresRef.current = autoMap;

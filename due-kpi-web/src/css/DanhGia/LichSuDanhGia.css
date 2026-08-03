@@ -23,12 +23,22 @@
     color: #475569;
 }
 
-.badge-cho-duyet {
+.badge-dang-cham {
     background: #dbeafe;
     color: #1d4ed8;
 }
 
+.badge-cho-duyet {
+    background: #fef3c7;
+    color: #b45309;
+}
+
 .badge-da-duyet {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.badge-hoan-tat {
     background: #dcfce3;
     color: #15803d;
 }
