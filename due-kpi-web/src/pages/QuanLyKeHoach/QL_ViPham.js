@@ -8,13 +8,14 @@ import QL_ViPhamForm from "../../components/QuanLyKeHoach/QL_ViPham/QL_ViPhamFor
 import { useConfirmDeleteDialog } from "../../hooks/useConfirmDeleteDialog";
 import { apiFetch } from "../../utils/api";
 import { readApiError } from "../../utils/apiError";
+import { canAccessPath } from "../../config/menuConfig";
 import { fetchAllNhanVien } from "../../utils/nhanVienApi";
 import {
   uploadViPhamMinhChung,
   deleteViPhamMinhChung,
   validatePdfFile,
 } from "../../utils/viPhamMinhChungApi";
-import PdfPreviewModal from "../../components/Common/PdfPreviewModal";
+import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import { useViPhamMinhChungPreview } from "../../hooks/useViPhamMinhChungPreview";
 import {
   canRecordViPham,
@@ -67,6 +68,13 @@ const QL_ViPham = () => {
   const tongHopNav = canXemThongKeKhoa(currentUser)
     ? { path: "/thong-ke-vi-pham-khoa", label: "Thống kê vi phạm Khoa", icon: "fa-chart-pie" }
     : { path: "/tong-hop-vi-pham", label: "Tổng hợp điểm trừ", icon: "fa-square-poll-vertical" };
+
+  /**
+   * Trang này mở cho cả Trưởng Phòng (qua lối vào /quan-ly/vi-pham của phân hệ
+   * chấm điểm), nhưng TP không có quyền vào /tong-hop-vi-pham. Hỏi đúng bảng
+   * quyền mà RequireRole dùng để không dẫn người dùng tới màn hình bị chặn.
+   */
+  const hienNutTongHop = canAccessPath(tongHopNav.path, currentUser);
 
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -624,19 +632,21 @@ const QL_ViPham = () => {
         </div>
 
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <button
-            className="btn-cancel"
-            onClick={() => navigate(tongHopNav.path)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "10px 18px",
-              fontSize: "14px",
-            }}
-          >
-            <i className={`fa-solid ${tongHopNav.icon}`}></i> {tongHopNav.label}
-          </button>
+          {hienNutTongHop && (
+            <button
+              className="btn-cancel"
+              onClick={() => navigate(tongHopNav.path)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "10px 18px",
+                fontSize: "14px",
+              }}
+            >
+              <i className={`fa-solid ${tongHopNav.icon}`}></i> {tongHopNav.label}
+            </button>
+          )}
           {canManage && (
             <button
               className="btn-submit"
@@ -769,7 +779,7 @@ const QL_ViPham = () => {
         onPreviewMinhChung={openPreview}
       />
 
-      <PdfPreviewModal
+      <FilePreviewModal
         isOpen={preview.isOpen}
         fileName={preview.item?.MinhChung?.TenFileGoc}
         url={preview.url}

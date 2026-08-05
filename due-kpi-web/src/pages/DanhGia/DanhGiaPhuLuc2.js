@@ -4,9 +4,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "../../css/Pages.css";
 import "../../css/DanhGia/DanhGiaPhuLuc2.css";
 import DanhGiaPhuLuc2Form from "../../components/DanhGia/DanhGiaPhuLuc2/DanhGiaPhuLuc2Form";
+import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import { Toast } from "primereact/toast";
 import { confirmDialog } from "primereact/confirmdialog";
 import { apiFetch } from "../../utils/api";
+import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
+import { locFilePdf } from "../../utils/minhChungPhieuApi";
+import { formatNgay, huyNopPhieu } from "../../utils/phieuApi";
 
 const parseNetDate = (dateString) => {
   if (!dateString) return null;
@@ -58,8 +62,22 @@ const DanhGiaPhuLuc2 = () => {
 
   const [trangThaiPhieu, setTrangThaiPhieu] = useState(0);
   const [lyDoTraVe, setLyDoTraVe] = useState("");
+  // Đơn vị đã chấm ≥ 1 tiêu chí -> server từ chối hủy nộp (409 DA_CHAM), nên ẩn
+  // nút thay vì để giảng viên bấm rồi nhận lỗi.
+  const [khoaDaCham, setKhoaDaCham] = useState(false);
 
   const toast = useRef(null);
+
+  // Giảng viên xem lại minh chứng đã tải lên của chính mình
+  const { preview, openPreview, closePreview, downloadMinhChung } =
+    useMinhChungPhieuPreview((message) =>
+      toast.current?.show({
+        severity: "error",
+        summary: "Lỗi",
+        detail: message,
+        life: 4000,
+      }),
+    );
 
   // Refs holding the freshest values for async flows (create phieu / save draft / submit)
   const phieuRef = useRef(null); // { IdPhieu, RowVersion, TrangThai, IdMau, ChiTiet, ... }
@@ -153,6 +171,7 @@ const DanhGiaPhuLuc2 = () => {
       setTongDiemCoBan(0);
       setTrangThaiPhieu(0);
       setLyDoTraVe("");
+      setKhoaDaCham(false);
       setCriteriaList([]);
 
       try {
@@ -249,6 +268,7 @@ const DanhGiaPhuLuc2 = () => {
           phieuRef.current = phieu;
           setTrangThaiPhieu(phieu.TrangThai);
           setLyDoTraVe(phieu.NhanXetKhoa || phieu.LyDoTraVe || "");
+          setKhoaDaCham((chiTiet || []).some((ct) => ct.DiemKhoa != null));
 
           const map = {};
           const initialFormData = {};
@@ -304,9 +324,9 @@ const DanhGiaPhuLuc2 = () => {
     if (!activeYear.NgayMoTuDanhGia || !activeYear.NgayDongTuDanhGia) {
       timeMessage = "Hệ thống chưa thiết lập lịch tự đánh giá cho năm này";
     } else if (now < start) {
-      timeMessage = `Chưa đến thời gian mở hệ thống. Lịch tự đánh giá sẽ bắt đầu từ ${parseNetDate(activeYear.NgayMoTuDanhGia).toLocaleDateString("vi-VN")}`;
+      timeMessage = `Chưa đến thời gian mở hệ thống. Lịch tự đánh giá sẽ bắt đầu từ ${formatNgay(activeYear.NgayMoTuDanhGia)}`;
     } else if (now > end) {
-      timeMessage = `Đã hết hạn tự đánh giá! Hệ thống đã đóng vào lúc 23:59 ngày ${parseNetDate(activeYear.NgayDongTuDanhGia).toLocaleDateString("vi-VN")}`;
+      timeMessage = `Đã hết hạn tự đánh giá! Hệ thống đã đóng vào lúc 23:59 ngày ${formatNgay(activeYear.NgayDongTuDanhGia)}`;
     } else {
       isWithinTime = true;
     }
@@ -496,6 +516,18 @@ const DanhGiaPhuLuc2 = () => {
     if (isReadOnly || autoScores[idTieuChi] || !newFilesArray || newFilesArray.length === 0)
       return;
 
+    // Minh chứng phiếu chỉ nhận PDF; tệp sai định dạng bị loại trước khi tốn vòng upload
+    const { hopLe, loi } = locFilePdf(newFilesArray);
+    if (loi.length > 0) {
+      toast.current?.show({
+        severity: "warn",
+        summary: "Tệp không hợp lệ",
+        detail: loi.join(" • "),
+        life: 6000,
+      });
+    }
+    if (hopLe.length === 0) return;
+
     setIsSubmitting(true);
     toast.current?.show({
       severity: "info",
@@ -509,7 +541,7 @@ const DanhGiaPhuLuc2 = () => {
       if (!idChiTiet) throw new Error("Không xác định được chi tiết phiếu");
 
       const uploaded = [];
-      for (const file of newFilesArray) {
+      for (const file of hopLe) {
         const fd = new FormData();
         fd.append("file", file);
         fd.append("tenHienThi", file.name);
@@ -711,6 +743,75 @@ const DanhGiaPhuLuc2 = () => {
     });
   };
 
+  /** Đồng bộ lại trạng thái phiếu từ server (dùng sau khi hủy nộp / khi 409). */
+  const dongBoTrangThai = async () => {
+    const moi = await refreshPhieu();
+    if (!moi) return null;
+    setTrangThaiPhieu(moi.TrangThai);
+    setKhoaDaCham((moi.ChiTiet || []).some((ct) => ct.DiemKhoa != null));
+    return moi;
+  };
+
+  // Rút phiếu đã nộp về lại trạng thái Nháp (POST phieu/{id}/huy-nop).
+  // RowVersion phải lấy ngay trước khi gọi: bản đang giữ có thể đã cũ sau các
+  // lần lưu nháp / tải tệp trước đó.
+  const executeRecall = async () => {
+    setIsSubmitting(true);
+    toast.current?.show({
+      severity: "info",
+      summary: "Đang xử lý",
+      detail: "Đang hủy nộp phiếu",
+      sticky: true,
+    });
+
+    try {
+      const fresh = await refreshPhieu();
+      if (!fresh?.IdPhieu) throw new Error("Không xác định được phiếu để hủy nộp");
+
+      await huyNopPhieu(fresh.IdPhieu, { rowVersion: fresh.RowVersion });
+      await dongBoTrangThai();
+
+      toast.current?.clear();
+      toast.current?.show({
+        severity: "success",
+        summary: "Đã hủy nộp",
+        detail:
+          "Phiếu đã về trạng thái nháp. Bạn có thể chỉnh sửa và nộp lại trong hạn tự đánh giá.",
+        life: 4000,
+      });
+    } catch (err) {
+      console.error("Lỗi khi hủy nộp phiếu:", err);
+      toast.current?.clear();
+
+      // 409 = phiếu không còn ở trạng thái cho phép (đơn vị đã chấm / quá hạn /
+      // người khác vừa đổi): tải lại để nút biến mất đúng theo thực tế.
+      if (err.isConflict) await dongBoTrangThai();
+
+      toast.current?.show({
+        severity: err.isConflict ? "warn" : "error",
+        summary: "Không hủy nộp được",
+        detail: err.message || "Hủy nộp phiếu thất bại!",
+        life: 6000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRecall = () => {
+    confirmDialog({
+      message:
+        "Phiếu sẽ được đưa về trạng thái nháp để bạn chỉnh sửa và nộp lại. Chỉ thực hiện được khi đơn vị chưa chấm tiêu chí nào và còn trong hạn tự đánh giá.",
+      header: "Xác nhận hủy nộp phiếu",
+      icon: "pi pi-info-circle",
+      acceptLabel: "Hủy nộp phiếu",
+      rejectLabel: "Để nguyên",
+      acceptClassName: "p-button-warning",
+      rejectClassName: "p-button-secondary p-button-outlined",
+      accept: () => executeRecall(),
+    });
+  };
+
   // Best-effort save draft when leaving the page ("khi thoát")
   useEffect(() => {
     return () => {
@@ -821,13 +922,26 @@ const DanhGiaPhuLuc2 = () => {
             trangThaiPhieu={displayTrangThai}
             lyDoTraVe={lyDoTraVe}
             onSubmit={handleFormSubmit}
+            onRecall={khoaDaCham ? undefined : handleRecall}
             onScoreChange={handleScoreChange}
             onTextChange={handleTextChange}
             onFileChange={handleFileChange}
             onRemoveFile={handleRemoveFile}
+            onXemMinhChung={openPreview}
           />
         </div>
       </div>
+
+      <FilePreviewModal
+        isOpen={preview.isOpen}
+        fileName={preview.mc?.TenFileGoc || preview.mc?.TenHienThi}
+        kieu={preview.kieu}
+        url={preview.url}
+        isLoading={preview.isLoading}
+        error={preview.error}
+        onClose={closePreview}
+        onDownload={() => downloadMinhChung(preview.mc)}
+      />
     </div>
   );
 };

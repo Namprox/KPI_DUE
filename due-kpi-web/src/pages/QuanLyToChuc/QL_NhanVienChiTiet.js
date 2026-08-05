@@ -10,7 +10,6 @@ const QL_NhanVienChiTiet = () => {
   const { user } = useAuth();
   const currentUser = user || {};
   const roleCode = currentUser?.MaChucVu || "";
-  const isHRAdmin = roleCode === "Admin" || roleCode === "HR";
   const canManage =
     roleCode === "Admin" || ["HT", "PHT", "TK", "TBM"].includes(roleCode);
 
@@ -1214,7 +1213,7 @@ const QL_NhanVienChiTiet = () => {
                     ></i>
                     Chức danh nghề nghiệp
                   </h3>
-                  {isHRAdmin && !isChangingTitle && (
+                  {canManage && !isChangingTitle && (
                     <button
                       type="button"
                       className="btn-add-new"
@@ -1506,7 +1505,7 @@ const QL_NhanVienChiTiet = () => {
                             >
                               GHI CHÚ
                             </th>
-                            {isHRAdmin && (
+                            {canManage && (
                               <th
                                 style={{
                                   padding: "10px",
@@ -1524,7 +1523,7 @@ const QL_NhanVienChiTiet = () => {
                           {chucDanhHistory.length === 0 ? (
                             <tr>
                               <td
-                                colSpan={isHRAdmin ? 5 : 4}
+                                colSpan={canManage ? 5 : 4}
                                 style={{
                                   padding: "15px",
                                   textAlign: "center",
@@ -1647,7 +1646,7 @@ const QL_NhanVienChiTiet = () => {
                                       item.GhiChu || "—"
                                     )}
                                   </td>
-                                  {isHRAdmin && (
+                                  {canManage && (
                                     <td
                                       style={{
                                         padding: "10px",
@@ -1814,7 +1813,7 @@ const QL_NhanVienChiTiet = () => {
                     ></i>
                     Chức vụ
                   </h3>
-                  {isHRAdmin && !isAddingChucVu && (
+                  {canManage && !isAddingChucVu && (
                     <button
                       type="button"
                       className="btn-add-new"
@@ -2125,7 +2124,7 @@ const QL_NhanVienChiTiet = () => {
                             >
                               GHI CHÚ
                             </th>
-                            {isHRAdmin && (
+                            {canManage && (
                               <th
                                 style={{
                                   padding: "10px",
@@ -2143,7 +2142,7 @@ const QL_NhanVienChiTiet = () => {
                           {chucVuConcurrent.length === 0 ? (
                             <tr>
                               <td
-                                colSpan={isHRAdmin ? 6 : 5}
+                                colSpan={canManage ? 6 : 5}
                                 style={{
                                   padding: "15px",
                                   textAlign: "center",
@@ -2277,7 +2276,7 @@ const QL_NhanVienChiTiet = () => {
                                       item.GhiChu || "—"
                                     )}
                                   </td>
-                                  {isHRAdmin && (
+                                  {canManage && (
                                     <td
                                       style={{
                                         padding: "10px",

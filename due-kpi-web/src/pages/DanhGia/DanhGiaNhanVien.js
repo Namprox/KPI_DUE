@@ -4,9 +4,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "../../css/Pages.css";
 import "../../css/DanhGia/DanhGiaPhuLuc2.css";
 import DanhGiaPhuLuc2Form from "../../components/DanhGia/DanhGiaPhuLuc2/DanhGiaPhuLuc2Form";
+import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import { Toast } from "primereact/toast";
 import { confirmDialog } from "primereact/confirmdialog";
 import { apiFetch } from "../../utils/api";
+import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
+import { locFilePdf } from "../../utils/minhChungPhieuApi";
+import { formatNgay } from "../../utils/phieuApi";
 
 const parseNetDate = (dateString) => {
   if (!dateString) return null;
@@ -28,6 +32,17 @@ const DanhGiaNhanVien = () => {
 
 
   const toast = useRef(null);
+
+  // Giảng viên xem lại minh chứng đã tải lên của chính mình
+  const { preview, openPreview, closePreview, downloadMinhChung } =
+    useMinhChungPhieuPreview((message) =>
+      toast.current?.show({
+        severity: "error",
+        summary: "Lỗi",
+        detail: message,
+        life: 4000,
+      }),
+    );
 
   const { user } = useAuth();
   const currentUser = user || {};
@@ -274,9 +289,9 @@ const DanhGiaNhanVien = () => {
     if (!activeYear.NgayMoTuDanhGia || !activeYear.NgayDongTuDanhGia) {
       timeMessage = "Hệ thống chưa thiết lập lịch tự đánh giá cho năm này";
     } else if (now < start) {
-      timeMessage = `Chưa đến thời gian mở hệ thống. Lịch tự đánh giá sẽ bắt đầu từ ${parseNetDate(activeYear.NgayMoTuDanhGia).toLocaleDateString("vi-VN")}`;
+      timeMessage = `Chưa đến thời gian mở hệ thống. Lịch tự đánh giá sẽ bắt đầu từ ${formatNgay(activeYear.NgayMoTuDanhGia)}`;
     } else if (now > end) {
-      timeMessage = `Đã hết hạn tự đánh giá! Hệ thống đã đóng vào lúc 23:59 ngày ${parseNetDate(activeYear.NgayDongTuDanhGia).toLocaleDateString("vi-VN")}`;
+      timeMessage = `Đã hết hạn tự đánh giá! Hệ thống đã đóng vào lúc 23:59 ngày ${formatNgay(activeYear.NgayDongTuDanhGia)}`;
     } else {
       isWithinTime = true;
     }
@@ -332,6 +347,18 @@ const DanhGiaNhanVien = () => {
     if (displayTrangThai >= 2 || !newFilesArray || newFilesArray.length === 0)
       return;
 
+    // Minh chứng phiếu chỉ nhận PDF; chặn ngay lúc chọn thay vì để hỏng khi nộp
+    const { hopLe, loi } = locFilePdf(newFilesArray);
+    if (loi.length > 0) {
+      toast.current?.show({
+        severity: "warn",
+        summary: "Tệp không hợp lệ",
+        detail: loi.join(" • "),
+        life: 6000,
+      });
+    }
+    if (hopLe.length === 0) return;
+
     setFormData((prev) => {
       const currentData = prev[idTieuChi] || {
         IdTieuChi: idTieuChi,
@@ -344,7 +371,7 @@ const DanhGiaNhanVien = () => {
         ...prev,
         [idTieuChi]: {
           ...currentData,
-          DanhSachFile: [...currentFiles, ...newFilesArray],
+          DanhSachFile: [...currentFiles, ...hopLe],
         },
       };
     });
@@ -732,9 +759,21 @@ const DanhGiaNhanVien = () => {
             onNckhChange={handleNckhChange}
             onRemoveNckh={handleRemoveNckh}
             onRecall={handleRecall}
+            onXemMinhChung={openPreview}
           />
         </div>
       </div>
+
+      <FilePreviewModal
+        isOpen={preview.isOpen}
+        fileName={preview.mc?.TenFileGoc || preview.mc?.TenHienThi}
+        kieu={preview.kieu}
+        url={preview.url}
+        isLoading={preview.isLoading}
+        error={preview.error}
+        onClose={closePreview}
+        onDownload={() => downloadMinhChung(preview.mc)}
+      />
     </div>
   );
 };

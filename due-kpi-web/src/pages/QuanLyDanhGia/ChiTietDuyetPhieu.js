@@ -2,10 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../../css/Pages.css";
 import DanhGiaPhuLuc2Form from "../../components/DanhGia/DanhGiaPhuLuc2/DanhGiaPhuLuc2Form";
+import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import { Toast } from "primereact/toast";
 import { confirmDialog } from "primereact/confirmdialog";
 import { Dialog } from "primereact/dialog";
 import { apiFetch } from "../../utils/api";
+import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
+import { formatNgay } from "../../utils/phieuApi";
 
 const parseNetDate = (dateString) => {
   if (!dateString) return null;
@@ -30,6 +33,18 @@ const ChiTietDuyetPhieu = () => {
   const [timeMessage, setTimeMessage] = useState("");
 
   const toast = useRef(null);
+
+  // Người duyệt phải mở được minh chứng của từng tiêu chí ngay trên phiếu
+  const { preview, openPreview, closePreview, downloadMinhChung } =
+    useMinhChungPhieuPreview((message) =>
+      toast.current?.show({
+        severity: "error",
+        summary: "Lỗi",
+        detail: message,
+        life: 4000,
+      }),
+    );
+
   const location = useLocation();
   const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
@@ -83,12 +98,12 @@ const ChiTietDuyetPhieu = () => {
             } else if (now < start) {
               setIsWithinTime(false);
               setTimeMessage(
-                `Chưa đến thời gian Duyệt phiếu. (Bắt đầu từ ${parseNetDate(activeYear.NgayMoDanhGiaCapTren).toLocaleDateString("vi-VN")})`,
+                `Chưa đến thời gian Duyệt phiếu. (Bắt đầu từ ${formatNgay(activeYear.NgayMoDanhGiaCapTren)})`,
               );
             } else if (now > end) {
               setIsWithinTime(false);
               setTimeMessage(
-                `Đã hết hạn Duyệt phiếu! Cổng phê duyệt đã đóng vào lúc 23:59 ngày ${parseNetDate(activeYear.NgayDongDanhGiaCapTren).toLocaleDateString("vi-VN")}`,
+                `Đã hết hạn Duyệt phiếu! Cổng phê duyệt đã đóng vào lúc 23:59 ngày ${formatNgay(activeYear.NgayDongDanhGiaCapTren)}`,
               );
             } else {
               setIsWithinTime(true);
@@ -533,6 +548,18 @@ const ChiTietDuyetPhieu = () => {
         onFileChange={() => {}}
         onRemoveFile={() => {}}
         onRecall={() => {}}
+        onXemMinhChung={openPreview}
+      />
+
+      <FilePreviewModal
+        isOpen={preview.isOpen}
+        fileName={preview.mc?.TenFileGoc || preview.mc?.TenHienThi}
+        kieu={preview.kieu}
+        url={preview.url}
+        isLoading={preview.isLoading}
+        error={preview.error}
+        onClose={closePreview}
+        onDownload={() => downloadMinhChung(preview.mc)}
       />
     </div>
   );

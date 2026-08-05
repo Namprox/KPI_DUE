@@ -6,7 +6,7 @@ import QL_ViPhamListing from "../../components/QuanLyKeHoach/QL_ViPham/QL_ViPham
 import QL_TongHopGiangVienListing from "../../components/QuanLyKeHoach/QL_TongHopViPham/QL_TongHopGiangVienListing";
 import QL_DiemTruTapTheCard from "../../components/QuanLyKeHoach/QL_ThongKeViPhamKhoa/QL_DiemTruTapTheCard";
 import QL_ThongKeTheoNhomListing from "../../components/QuanLyKeHoach/QL_ThongKeViPhamKhoa/QL_ThongKeTheoNhomListing";
-import PdfPreviewModal from "../../components/Common/PdfPreviewModal";
+import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import { useViPhamMinhChungPreview } from "../../hooks/useViPhamMinhChungPreview";
 import { apiFetch } from "../../utils/api";
 import { readApiError } from "../../utils/apiError";
@@ -576,7 +576,7 @@ const QL_ThongKeViPhamKhoa = () => {
         </>
       )}
 
-      <PdfPreviewModal
+      <FilePreviewModal
         isOpen={preview.isOpen}
         fileName={preview.item?.MinhChung?.TenFileGoc}
         url={preview.url}

@@ -1,139 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../css/Sidebar.css";
 import logoImage from "../images/logo.png";
 import { useAuth } from "../context/AuthContext";
-import { normalizeRole } from "../utils/viPhamPermissions";
-
-const menuStructure = {
-  evaluation: [
-    {
-      name: "Đánh giá KPI Giảng viên",
-      icon: "fa-solid fa-file-pen",
-      path: "/danh-gia-phu-luc-2",
-    },
-    {
-      name: "Đánh giá KPI Nhân viên",
-      icon: "fa-solid fa-file-pen",
-      path: "/danh-gia-kpi-nhan-vien",
-    },
-    {
-      name: "Đánh giá KPI Đơn vị",
-      icon: "fa-solid fa-users-gear",
-      path: "/danh-gia-kpi-don-vi",
-    },
-    {
-      name: "Lịch sử đánh giá",
-      icon: "fa-solid fa-clock-rotate-left",
-      path: "/lich-su-danh-gia",
-    },
-  ],
-  planMgmt: [
-    {
-      name: "Danh sách phiếu đánh giá",
-      icon: "fa-solid fa-clipboard-check",
-      path: "/quan-ly-phieu",
-    },
-    {
-      name: "Quản lý năm đánh giá",
-      icon: "fa-solid fa-calendar-days",
-      path: "/quan-ly-nam-danh-gia",
-    },
-    {
-      name: "Định mức giảng viên",
-      icon: "fa-solid fa-scale-balanced",
-      path: "/quan-ly-dinh-muc-giang-vien",
-    },
-    {
-      name: "Ngoại lệ định mức",
-      icon: "fa-solid fa-file-contract",
-      path: "/quan-ly-ngoai-le-dinh-muc",
-    },
-    {
-      name: "Quản lý giờ giảng",
-      icon: "fa-solid fa-scale-balanced",
-      path: "/quan-ly-gio-giang",
-    },
-    {
-      name: "Danh mục loại vi phạm",
-      icon: "fa-solid fa-list-check",
-      path: "/danh-muc-loai-vi-pham",
-      roles: ["ADMIN"],
-    },
-    {
-      name: "Ghi nhận vi phạm",
-      icon: "fa-solid fa-circle-exclamation",
-      path: "/quan-ly-vi-pham",
-    },
-    {
-      name: "Tổng hợp điểm trừ vi phạm",
-      icon: "fa-solid fa-square-poll-vertical",
-      path: "/tong-hop-vi-pham",
-    },
-    {
-      name: "Thống kê vi phạm của Khoa",
-      icon: "fa-solid fa-chart-pie",
-      path: "/thong-ke-vi-pham-khoa",
-      roles: ["TK", "TKL"],
-    },
-    {
-      name: "Quản lý đánh giá sinh viên",
-      icon: "fa-solid fa-user-graduate",
-      path: "/quan-ly-danh-gia-sinh-vien",
-    },
-    {
-      name: "Điểm trung bình ĐGSV",
-      icon: "fa-solid fa-square-poll-vertical",
-      path: "/diem-trung-binh-danh-gia-sinh-vien",
-    },
-  ],
-  criteriaMgmt: [
-    {
-      name: "Nhóm tiêu chí",
-      icon: "fa-solid fa-layer-group",
-      path: "/nhom-tieu-chi",
-    },
-    {
-      name: "Tiêu chí đánh giá",
-      icon: "fa-solid fa-list-ol",
-      path: "/tieu-chi-danh-gia",
-    },
-    {
-      name: "Mẫu phiếu đánh giá",
-      icon: "fa-solid fa-file-invoice",
-      path: "/mau-danh-gia",
-    },
-  ],
-  orgMgmt: [
-    {
-      name: "Cơ cấu đơn vị",
-      icon: "fa-solid fa-sitemap",
-      path: "/quan-ly-don-vi",
-    },
-    {
-      name: "Người dùng",
-      icon: "fa-solid fa-users",
-      path: "/quan-ly-nguoi-dung",
-    },
-    {
-      name: "Chức danh nghề nghiệp",
-      icon: "fa-solid fa-chalkboard-user",
-      path: "/quan-ly-chuc-danh",
-    },
-    {
-      name: "Quản lý chức vụ",
-      icon: "fa-solid fa-briefcase",
-      path: "/quan-ly-chuc-vu",
-    },
-  ],
-  evaluationMgmt: [
-    {
-      name: "Danh sách duyệt phiếu",
-      icon: "fa-solid fa-file-pen",
-      path: "/danh-sach-duyet-phieu",
-    },
-  ],
-};
+import { normalizeRole } from "../utils/roles";
+import { visibleGroups } from "../config/menuConfig";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   const { user: authUser, logout } = useAuth();
@@ -147,31 +18,23 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
 
   const isExpanded = !isCollapsed || isHovered;
 
-  const roleCode = user?.MaChucVu || "";
-  const isAdmin = roleCode === "Admin";
-  const isManager = ["HT", "PHT", "TK", "TBM"].includes(roleCode);
-  const canManageSystem = isAdmin || isManager;
-
-  // Gating theo từng mục: item không khai báo `roles` thì ai thấy group là thấy mục
   const myRole = normalizeRole(user);
-  const canSeeItem = (item) => !item.roles || item.roles.includes(myRole);
-  const visibleItems = (menuKey) => menuStructure[menuKey].filter(canSeeItem);
+  const groups = useMemo(() => visibleGroups(authUser), [authUser]);
 
   useEffect(() => {
     const currentPath = location.pathname;
-    for (const [key, subItems] of Object.entries(menuStructure)) {
+    for (const group of groups) {
       if (
-        subItems.filter(canSeeItem).some(
+        group.items.some(
           (item) =>
             item.path === currentPath ||
             (item.path !== "/" && currentPath.startsWith(item.path + "/")),
         )
       ) {
-        setOpenMenus((prev) => ({ ...prev, [key]: true }));
+        setOpenMenus((prev) => ({ ...prev, [group.key]: true }));
         break;
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, myRole]);
 
   const toggleSubMenu = (menuKey) => {
@@ -179,8 +42,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
     setOpenMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
   };
 
-  const isMenuActive = (menuKey) => {
-    return visibleItems(menuKey).some(
+  const isMenuActive = (group) => {
+    return group.items.some(
       (item) =>
         item.path === location.pathname ||
         (item.path !== "/" && location.pathname.startsWith(item.path + "/")),
@@ -350,44 +213,23 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
             {isExpanded && <span>Tổng quan</span>}
           </li>
 
-          {Object.keys(menuStructure).map((key) => {
-            if (key !== "evaluation" && !canManageSystem) return null;
-            if (visibleItems(key).length === 0) return null;
-
-            const labels = {
-              evaluation: "Đánh giá KPI",
-              planMgmt: "Thiết lập kế hoạch",
-              criteriaMgmt: "Quản lý tiêu chí",
-              orgMgmt: "Cơ cấu tổ chức",
-              evaluationMgmt: "Quản lý đánh giá",
-            };
-
-            const icons = {
-              evaluation: "fa-check-double",
-              planMgmt: "fa-calendar-check",
-              criteriaMgmt: "fa-list-check",
-              orgMgmt: "fa-users-gear",
-              evaluationMgmt: "fa-check-double",
-            };
-
-            return (
-              <React.Fragment key={key}>
-                <li
-                  className={`menu-item has-submenu ${isMenuActive(key) ? "active" : ""}`}
-                  onClick={() => toggleSubMenu(key)}
-                >
-                  <i className={`fa-solid ${icons[key]} menu-icon`}></i>
-                  {isExpanded && <span>{labels[key]}</span>}
-                  {isExpanded && (
-                    <i
-                      className={`fa-solid fa-chevron-down arrow ${openMenus[key] ? "open" : ""}`}
-                    ></i>
-                  )}
-                </li>
-                {openMenus[key] && renderSubMenu(visibleItems(key))}
-              </React.Fragment>
-            );
-          })}
+          {groups.map((group) => (
+            <React.Fragment key={group.key}>
+              <li
+                className={`menu-item has-submenu ${isMenuActive(group) ? "active" : ""}`}
+                onClick={() => toggleSubMenu(group.key)}
+              >
+                <i className={`fa-solid ${group.icon} menu-icon`}></i>
+                {isExpanded && <span>{group.label}</span>}
+                {isExpanded && (
+                  <i
+                    className={`fa-solid fa-chevron-down arrow ${openMenus[group.key] ? "open" : ""}`}
+                  ></i>
+                )}
+              </li>
+              {openMenus[group.key] && renderSubMenu(group.items)}
+            </React.Fragment>
+          ))}
         </ul>
       </div>
     </div>

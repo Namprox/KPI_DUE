@@ -9,14 +9,16 @@
  * Đây chỉ là lớp gợi ý cho UI. Server vẫn chặn lại ở BLL + Stored Procedure.
  */
 
+import { normalizeRole } from './roles';
+
 const ROLE_TRUONG_DON_VI = ['TK', 'TKL', 'TP'];
 
-/** Chuẩn hóa mã chức vụ về chữ hoa (dữ liệu thực tế có thể là 'Admin' hoặc 'ADMIN'). */
-export const normalizeRole = (user) => String(user?.MaChucVu || '').trim().toUpperCase();
+/** Re-export để các file đang import normalizeRole từ đây vẫn chạy. */
+export { normalizeRole };
 
 export const isAdminRole = (user) => normalizeRole(user) === 'ADMIN';
 
-/** Trưởng Khoa / Trưởng Khoa liên ngành / Trưởng Phòng — nhóm được ghi nhận vi phạm. */
+/** Trưởng Khoa / Trưởng Khoa lớn / Trưởng Phòng — nhóm được ghi nhận vi phạm. */
 export const isTruongDonVi = (user) => ROLE_TRUONG_DON_VI.includes(normalizeRole(user));
 
 /** Cấp Trường — chỉ được XEM toàn bộ, không nằm trong nhóm ghi nhận. */
@@ -77,7 +79,7 @@ export const laDonViKhoa = (donVi) =>
 
 /**
  * Màn hình "Thống kê vi phạm theo Khoa" chỉ dành cho Trưởng Khoa / Trưởng Khoa
- * liên ngành: mỗi người xem đúng Khoa mình phụ trách, không có lựa chọn Khoa khác.
+ * lớn: mỗi người xem đúng Khoa mình phụ trách, không có lựa chọn Khoa khác.
  * Cấp Trường xem số liệu toàn trường ở màn hình tổng hợp.
  */
 export const canXemThongKeKhoa = (user) => ['TK', 'TKL'].includes(normalizeRole(user));

@@ -1,297 +1,316 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import "../../css/Pages.css";
-import "../../css/DanhGia/LichSuDanhGia.css";
-import { apiFetch } from "../../utils/api";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Toast } from 'primereact/toast';
+import '../../css/Pages.css';
+import '../../css/QuanLyChamDiem.css';
+import { useAuth } from '../../context/AuthContext';
+import { useNamDanhGia } from '../../hooks/useNamDanhGia';
+import {
+  fetchPhieuList,
+  formatDiem,
+  formatNgay,
+  TRANG_THAI,
+  TRANG_THAI_META,
+} from '../../utils/phieuApi';
+import { duongDanPhieuTuDanhGia } from '../../utils/roles';
+import {
+  TrangThaiBadge,
+  XepLoaiBadge,
+} from '../../components/QuanLyChamDiem/TrangThaiBadge';
 
+const PAGE_SIZE = 20;
+
+const MOI_TRANG_THAI = [
+  TRANG_THAI.NHAP,
+  TRANG_THAI.DON_VI_CHAM,
+  TRANG_THAI.CHO_HT_DUYET,
+  TRANG_THAI.HT_DA_DUYET,
+  TRANG_THAI.HOAN_TAT,
+];
+
+/**
+ * Danh sách phiếu đánh giá của CHÍNH NGƯỜI ĐANG ĐĂNG NHẬP, qua các năm.
+ *
+ * Luôn truyền idNhanVien của mình: với người không thuộc cấp Khoa/Trường thì
+ * server đã tự giới hạn phạm vi, còn với trưởng đơn vị thì tham số này là thứ
+ * ngăn màn hình "phiếu của tôi" biến thành danh sách toàn đơn vị.
+ */
 const LichSuDanhGia = () => {
-  const [historyList, setHistoryList] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const toast = useRef(null);
   const navigate = useNavigate();
-
   const { user } = useAuth();
   const currentUser = user || {};
+  // Bộ lọc năm ở đây có thêm lựa chọn "tất cả" nên giữ state riêng, chỉ mượn
+  // selectedNam của hook làm giá trị mặc định lúc mở trang.
+  const { namList, selectedNam, dangTaiNam } = useNamDanhGia();
+
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [idNam, setIdNam] = useState(''); // '' = mọi năm
+  const [trangThaiChon, setTrangThaiChon] = useState([]); // rỗng = mọi trạng thái
+  const [sortBy, setSortBy] = useState('ngay_tao');
+  const [page, setPage] = useState(1);
+  // Chỉ tải sau khi năm mặc định đã được gieo, nếu không lượt tải đầu tiên chạy
+  // với bộ lọc rỗng rồi lập tức bị lượt thứ hai thay thế.
+  const [daSanSang, setDaSanSang] = useState(false);
+
+  const showToast = (severity, summary, detail) => {
+    toast.current?.show({ severity, summary, detail, life: 4000 });
+  };
+
+  // Mặc định bám theo năm đang mở, người dùng vẫn chuyển sang "mọi năm" được.
+  useEffect(() => {
+    if (dangTaiNam) return;
+    setIdNam(String(selectedNam || ''));
+    setDaSanSang(true);
+  }, [dangTaiNam, selectedNam]);
+
+  const taiDanhSach = useCallback(async () => {
+    if (!currentUser.IdNhanVien) return;
+    setIsLoading(true);
+    try {
+      const items = await fetchPhieuList({
+        idNam: idNam || undefined,
+        idNhanVien: currentUser.IdNhanVien,
+        trangThai: trangThaiChon.length > 0 ? trangThaiChon : undefined,
+        page,
+        pageSize: PAGE_SIZE,
+        sortBy,
+      });
+      setRows(items);
+    } catch (error) {
+      console.error('Lỗi tải danh sách phiếu của tôi:', error);
+      showToast('error', 'Lỗi', error.message);
+      setRows([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentUser.IdNhanVien, idNam, trangThaiChon, page, sortBy]);
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      setIsLoading(true);
-      try {
-        const res = await apiFetch(
-          `phieu?idNhanVien=${currentUser.IdNhanVien}`,
-        );
-        const result = await res.json();
-        const isSuccess =
-          result.Success !== undefined ? result.Success : result.success;
-        const items = result.Items || result.data || [];
-        if (isSuccess) {
-          setHistoryList(items);
-        }
-      } catch (err) {
-        console.error("Lỗi tải lịch sử:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (daSanSang) taiDanhSach();
+  }, [daSanSang, taiDanhSach]);
 
-    if (currentUser.IdNhanVien) fetchHistory();
-  }, [currentUser.IdNhanVien]);
+  useEffect(() => {
+    setPage(1);
+  }, [idNam, trangThaiChon, sortBy]);
 
-  // phieu_danh_gia.trang_thai: 1 NHAP, 2 DON_VI_CHAM, 3 CHO_HT_DUYET, 4 HT_DA_DUYET, 5 HOAN_TAT
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 1:
-        return <span className="badge badge-nhap">Lưu nháp</span>;
-      case 2:
-        return <span className="badge badge-dang-cham">Đơn vị đang chấm</span>;
-      case 3:
-        return (
-          <span className="badge badge-cho-duyet">Chờ Hiệu trưởng duyệt</span>
-        );
-      case 4:
-        return (
-          <span className="badge badge-da-duyet">Hiệu trưởng đã duyệt</span>
-        );
-      case 5:
-        return <span className="badge badge-hoan-tat">Đã hoàn tất</span>;
-      default:
-        return <span className="badge badge-chua-ro">Chưa rõ</span>;
-    }
+  const toggleTrangThai = (tt) => {
+    setTrangThaiChon((cur) =>
+      cur.includes(tt) ? cur.filter((x) => x !== tt) : [...cur, tt].sort((a, b) => a - b),
+    );
   };
 
-  // xep_loai: 1 Không hoàn thành, 2 Hoàn thành, 3 Hoàn thành tốt, 4 Hoàn thành xuất sắc
-  const getXepLoaiText = (item) => {
-    if (item.XepLoaiText) return item.XepLoaiText;
-    switch (item.XepLoai) {
-      case 1:
-        return "Không hoàn thành";
-      case 2:
-        return "Hoàn thành";
-      case 3:
-        return "Hoàn thành tốt";
-      case 4:
-        return "Hoàn thành xuất sắc";
-      default:
-        return null;
+  const moPhieu = (p) => {
+    const duongDan = duongDanPhieuTuDanhGia(currentUser, p.IdNam);
+    if (duongDan) navigate(duongDan);
+    else {
+      showToast(
+        'warn',
+        'Không mở được phiếu',
+        'Chức danh nghề nghiệp của bạn không gắn với biểu mẫu KPI cá nhân nào.',
+      );
     }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return null;
-    const d = new Date(dateString);
-    return isNaN(d.getTime()) ? null : d.toLocaleDateString("vi-VN");
   };
 
   return (
     <div className="page-container">
-      <div className="page-header" style={{ marginBottom: "25px" }}>
-        <div>
-          <h2 style={{ margin: 0, color: "#1e293b" }}>LỊCH SỬ ĐÁNH GIÁ KPI</h2>
-          <span className="breadcrumb">
-            {currentUser.RoleName || "Giảng viên"}:{" "}
-            {currentUser.HoTen || currentUser.FullName}
-          </span>
+      <Toast ref={toast} position="top-right" />
+
+      <div className="page-header">
+        <h2 style={{ margin: 0, color: '#1e293b', fontSize: '22px', fontWeight: 700 }}>
+          Phiếu đánh giá của tôi
+        </h2>
+        <span className="breadcrumb">
+          {currentUser.HoTen || 'Người dùng'} — toàn bộ phiếu KPI qua các năm
+        </span>
+      </div>
+
+      <div className="cd-toolbar">
+        <div className="cd-field">
+          <label className="cd-label">Năm đánh giá</label>
+          <select
+            className="form-input"
+            value={idNam}
+            onChange={(e) => setIdNam(e.target.value)}
+            disabled={dangTaiNam}
+          >
+            <option value="">-- Tất cả các năm --</option>
+            {namList.map((n) => (
+              <option key={n.IdNam} value={n.IdNam}>
+                Năm học {n.IdNam}
+              </option>
+            ))}
+          </select>
         </div>
+
+        <div className="cd-field">
+          <label className="cd-label">Sắp xếp</label>
+          <select className="form-input" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="ngay_tao">Ngày tạo</option>
+            <option value="ngay_gui">Ngày gửi</option>
+          </select>
+        </div>
+
+        <button
+          className="btn-cancel"
+          onClick={taiDanhSach}
+          disabled={isLoading}
+        >
+          <i className={`fa-solid fa-rotate${isLoading ? ' fa-spin' : ''}`}></i> Làm mới
+        </button>
       </div>
 
       <div
-        className="table-card lich-su-table-container"
         style={{
-          background: "#fff",
-          borderRadius: "12px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          paddingBottom: "10px",
+          display: 'flex',
+          gap: '8px',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          marginBottom: '18px',
         }}
       >
-        {isLoading ? (
-          <div style={{ textAlign: "center", padding: "50px" }}>
-            <i
-              className="fa-solid fa-spinner fa-spin"
-              style={{ fontSize: "30px", color: "#003399" }}
-            ></i>
-          </div>
-        ) : historyList.length === 0 ? (
-          <div
-            style={{ textAlign: "center", padding: "50px", color: "#64748b" }}
-          >
-            <i
-              className="fa-solid fa-folder-open"
+        <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Trạng thái:</span>
+        <button
+          className="cd-status-badge"
+          style={{
+            cursor: 'pointer',
+            background: trangThaiChon.length === 0 ? '#1d4ed8' : '#fff',
+            color: trangThaiChon.length === 0 ? '#fff' : '#475569',
+            borderColor: trangThaiChon.length === 0 ? '#1d4ed8' : '#e2e8f0',
+          }}
+          onClick={() => setTrangThaiChon([])}
+        >
+          Tất cả
+        </button>
+        {MOI_TRANG_THAI.map((tt) => {
+          const meta = TRANG_THAI_META[tt];
+          const chon = trangThaiChon.includes(tt);
+          return (
+            <button
+              key={tt}
+              className="cd-status-badge"
               style={{
-                fontSize: "40px",
-                marginBottom: "15px",
-                color: "#cbd5e1",
+                cursor: 'pointer',
+                background: chon ? meta.bg : '#fff',
+                color: chon ? meta.color : '#94a3b8',
+                borderColor: chon ? meta.border : '#e2e8f0',
               }}
-            ></i>
-            <p>Bạn chưa có phiếu đánh giá nào trong hệ thống</p>
+              onClick={() => toggleTrangThai(tt)}
+            >
+              <i className={`fa-solid ${meta.icon}`}></i> {meta.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="modern-table-card">
+        {isLoading ? (
+          <div className="cd-empty">
+            <i className="fa-solid fa-spinner fa-spin"></i>
+            Đang tải danh sách phiếu...
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="cd-empty">
+            <i className="fa-solid fa-folder-open"></i>
+            <h3 style={{ color: '#334155', margin: '0 0 6px 0' }}>Không có phiếu nào</h3>
+            <p style={{ margin: 0 }}>
+              Bạn chưa có phiếu đánh giá khớp bộ lọc hiện tại. Thử chọn "Tất cả các năm".
+            </p>
           </div>
         ) : (
-          <table className="custom-table lich-su-table">
-            <thead
-              style={{
-                background: "#f8fafc",
-                borderBottom: "2px solid #e2e8f0",
-              }}
-            >
-              <tr>
-                <th
-                  style={{
-                    width: "10%",
-                    padding: "15px",
-                    textAlign: "center",
-                    color: "#475569",
-                  }}
-                >
-                  Năm học
-                </th>
-                <th
-                  style={{
-                    width: "35%",
-                    padding: "15px",
-                    textAlign: "left",
-                    color: "#475569",
-                  }}
-                >
-                  Tổng điểm (Tích lũy)
-                </th>
-                <th
-                  style={{
-                    width: "20%",
-                    padding: "15px",
-                    textAlign: "center",
-                    color: "#475569",
-                  }}
-                >
-                  Ngày gửi
-                </th>
-                <th
-                  style={{
-                    width: "15%",
-                    padding: "15px",
-                    textAlign: "center",
-                    color: "#475569",
-                  }}
-                >
-                  Trạng thái
-                </th>
-                <th
-                  style={{
-                    width: "20%",
-                    padding: "15px",
-                    textAlign: "center",
-                    color: "#475569",
-                  }}
-                >
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {historyList.map((item) => (
-                <tr
-                  key={item.IdPhieu}
-                  style={{
-                    borderBottom: "1px solid #f1f5f9",
-                    transition: "0.2s",
-                  }}
-                >
-                  <td
-                    className="nowrap"
-                    style={{
-                      padding: "15px",
-                      textAlign: "center",
-                      fontWeight: "bold",
-                      color: "#0f172a",
-                    }}
-                  >
-                    {item.IdNam}
-                  </td>
-
-                  <td style={{ padding: "15px", textAlign: "left" }}>
-                    {item.TongDiemTichLuy != null ? (
-                      <>
-                        <b style={{ color: "#003399", fontSize: "16px" }}>
-                          {Number(item.TongDiemTichLuy).toFixed(2)} đ
-                        </b>
-                        {getXepLoaiText(item) && (
-                          <div
-                            style={{
-                              fontSize: "13px",
-                              color: "#64748b",
-                              marginTop: "2px",
-                            }}
-                          >
-                            {getXepLoaiText(item)}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <span style={{ color: "#94a3b8", fontStyle: "italic" }}>
-                        Chưa có điểm tổng kết
-                      </span>
-                    )}
-                  </td>
-
-                  <td
-                    className="nowrap"
-                    style={{
-                      padding: "15px",
-                      textAlign: "center",
-                      color: "#64748b",
-                    }}
-                  >
-                    {formatDate(item.NgayGui) || (
-                      <span style={{ color: "#94a3b8", fontStyle: "italic" }}>
-                        Chưa nộp
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="nowrap" style={{ padding: "15px" }}>
-                    <div style={{ display: "flex", justifyContent: "center" }}>
-                      {getStatusBadge(item.TrangThai)}
-                    </div>
-                  </td>
-
-                  <td className="nowrap" style={{ padding: "15px" }}>
-                    <div style={{ display: "flex", justifyContent: "center" }}>
-                      <button
-                        className="btn-submit"
-                        style={{
-                          padding: "6px 15px",
-                          fontSize: "13px",
-                          borderRadius: "6px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                        onClick={() => {
-                          // LoaiDoiTuong hợp lệ là 1 (giảng viên) / 2 (viên chức - NLĐ).
-                          // API danh sách có thể trả 0 (không map) -> suy ra từ chức danh của phiếu.
-                          const loaiDoiTuong =
-                            item.LoaiDoiTuong ?? item.loaiDoiTuong;
-                          const isStaff =
-                            loaiDoiTuong === 1
-                              ? false
-                              : loaiDoiTuong === 2 ||
-                                !(item.IdChucDanh ?? currentUser.IdChucDanh);
-                          if (isStaff) {
-                            navigate(
-                              `/danh-gia-kpi-nhan-vien?year=${item.IdNam}`,
-                            );
-                          } else {
-                            navigate(`/danh-gia-phu-luc-2?year=${item.IdNam}`);
-                          }
-                        }}
-                      >
-                        <i className="fa-solid fa-eye"></i> Xem chi tiết
-                      </button>
-                    </div>
-                  </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="custom-table" style={{ minWidth: '900px' }}>
+              <thead>
+                <tr>
+                  <th style={{ width: '12%' }}>Năm học</th>
+                  <th style={{ width: '20%', textAlign: 'center' }}>Trạng thái</th>
+                  <th style={{ width: '14%', textAlign: 'right' }}>Tổng điểm</th>
+                  <th style={{ width: '20%', textAlign: 'center' }}>Xếp loại</th>
+                  <th style={{ width: '16%' }}>Ngày gửi</th>
+                  <th style={{ width: '12%', textAlign: 'center' }}>Thao tác</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((p) => (
+                  <tr key={p.IdPhieu}>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>{p.IdNam}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <TrangThaiBadge trangThai={p.TrangThai} />
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
+                      {formatDiem(p.TongDiemTichLuy)}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <XepLoaiBadge xepLoai={p.XepLoai} />
+                    </td>
+                    <td style={{ fontSize: '13px' }}>
+                      {p.NgayGui ? (
+                        formatNgay(p.NgayGui)
+                      ) : (
+                        <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Chưa nộp</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          type="button"
+                          className="action-btn view-btn"
+                          title="Xem phiếu đánh giá năm này"
+                          onClick={() => moPhieu(p)}
+                        >
+                          <i className="fa-solid fa-eye"></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="action-btn edit-btn"
+                          title="Xem minh chứng của phiếu này"
+                          onClick={() => navigate(`/kho-minh-chung?idPhieu=${p.IdPhieu}`)}
+                        >
+                          <i className="fa-solid fa-paperclip"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
+
+        {/* Server không trả TotalCount trên nhóm API phiếu nên không dùng được
+            <Paginator>: chỉ suy ra "còn trang sau" từ số dòng nhận được. */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '14px 20px',
+            borderTop: '1px solid #e2e8f0',
+            fontSize: '13px',
+            color: '#64748b',
+          }}
+        >
+          <span>Trang {page}</span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="btn-cancel"
+              style={{ padding: '8px 14px' }}
+              disabled={page <= 1 || isLoading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              <i className="fa-solid fa-chevron-left"></i> Trước
+            </button>
+            <button
+              className="btn-cancel"
+              style={{ padding: '8px 14px' }}
+              disabled={rows.length < PAGE_SIZE || isLoading}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Sau <i className="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

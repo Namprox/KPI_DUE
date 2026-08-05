@@ -6,6 +6,73 @@ security:
   - bearerAuth: []
   - cookieAuth: []
 paths:
+  /api/docs:
+    get:
+      tags:
+        - Docs
+      summary: Trang Swagger UI (HTML)
+      description: >
+        Tra ve trang HTML render chinh file Swagger/openapi.yaml nay.
+        DocsController KHONG gan [TokenAuthorize] nen 4 endpoint /api/docs,
+        /api/openapi.yaml, /api/workflow, /api/concurrency deu truy cap duoc
+        khong can dang nhap.
+      operationId: docsUi
+      security: []
+      responses:
+        "200":
+          description: HTML
+          content:
+            text/html:
+              schema:
+                type: string
+  /api/openapi.yaml:
+    get:
+      tags:
+        - Docs
+      summary: File openapi.yaml tho
+      operationId: docsOpenApiYaml
+      security: []
+      responses:
+        "200":
+          description: Noi dung YAML
+          content:
+            application/yaml:
+              schema:
+                type: string
+        "404":
+          description: Khong tim thay Swagger/openapi.yaml tren may chu
+  /api/workflow:
+    get:
+      tags:
+        - Docs
+      summary: Tai lieu luong nghiep vu (Docs/Workflow.html)
+      operationId: docsWorkflow
+      security: []
+      responses:
+        "200":
+          description: HTML
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: Khong tim thay Docs/Workflow.html
+  /api/concurrency:
+    get:
+      tags:
+        - Docs
+      summary: Tai lieu co che chong ghi de (Docs/Concurrency.html)
+      operationId: docsConcurrency
+      security: []
+      responses:
+        "200":
+          description: HTML
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: Khong tim thay Docs/Concurrency.html
   /api/auth/login:
     post:
       tags:
@@ -949,7 +1016,203 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MinhChungResponse"
+  /api/minhchung/{idMinhChung}/tai-ve:
+    get:
+      tags:
+        - MinhChung
+      summary: Tai tep minh chung ve (ho tro xem truoc inline)
+      description: >
+        Tra ve tep. Mac dinh Content-Disposition: attachment (ten file goc); truyen
+        inline=1 de doi sang inline cho FE xem truoc trong iframe / tab moi.
+        Content-Type suy tu loai_file - minh chung phieu cho phep
+        pdf/doc/docx/xls/xlsx/png/jpg nen khong co dinh mot kieu; duoi la se tra
+        application/octet-stream. Chi ap dung cho minh chung LoaiMinhChung = 1 (File);
+        loai 2 (Link) / 3 (DOI) khong co tep tren dia.
+        Quyen doc giong GET api/chitiet/{idChiTiet}/minh-chung: chu phieu, cap Truong
+        (HT/ADMIN), hoac cap Khoa (TK/TKL/TP) trong pham vi don vi / don vi cha.
+        KHONG rang buoc trang thai phieu (doc duoc o moi trang thai).
+        Endpoint nam sau [TokenAuthorize], nhung filter co fallback doc cookie httpOnly
+        kpi_access_token nen <a href> / <iframe src> van xac thuc duoc khi FE cung-site
+        (khac origin thi phai dat Cookie:SameSite = None + HTTPS).
+        Response luon kem X-Content-Type-Options: nosniff.
+      operationId: minhChungTaiVe
+      parameters:
+        - name: idMinhChung
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: inline
+          in: query
+          required: false
+          description: >
+            inline=1 -> Content-Disposition: inline. Chi co hieu luc voi cac kieu trinh
+            duyet render an toan (application/pdf, image/png, image/jpeg); cac kieu con
+            lai (doc/docx/xls/xlsx, octet-stream) van tra attachment de tranh nguy co
+            stored XSS neu whitelist duoi file duoc mo rong. Bo qua / khac 1 -> attachment.
+          schema:
+            type: integer
+            enum: [1]
+      responses:
+        "200":
+          description: Noi dung tep
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: >
+            idMinhChung <= 0 (khong co ErrorCode), hoac
+            ErrorCode = MINH_CHUNG_KHONG_PHAI_FILE (minh chung la Link/DOI —
+            phan hoi kem Item de FE mo thang DuongDan)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN_CHUC_VU
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "404":
+          description: >
+            ErrorCode = MINH_CHUNG_NOT_FOUND (khong ton tai / da xoa mem) /
+            FILE_NOT_FOUND (metadata con nhung tep da mat tren may chu)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+  /api/minhchung:
+    get:
+      tags:
+        - MinhChung
+      summary: Kho minh chung - liet ke theo ca phieu hoac theo nam
+      description: >
+        Tra ve minh chung kem NGU CANH (tieu chi, phieu, nam) de FE dung o mot man hinh
+        "Kho minh chung" rieng, thay vi phai goi GET api/chitiet/{idChiTiet}/minh-chung
+        cho tung tieu chi.
+        Bo loc: idPhieu (uu tien cao nhat) -> dung phieu do; idNam -> phieu cua idNhanVien
+        trong nam do; KHONG truyen gi -> tat ca cac nam cua idNhanVien (kho xuyen nam).
+        idNhanVien mac dinh la nguoi dang dang nhap, nen khong the vo tinh liet ke minh
+        chung cua toan truong.
+        Quyen doc giong GET api/phieu/{id}. Khong tim thay phieu nao khop bo loc -> 404;
+        co phieu nhung khong duoc doc -> 403 (KHONG tra ve mang rong im lang).
+        Ket qua sap xep theo nam giam dan, roi theo thu tu hien thi cua tieu chi.
+      operationId: minhChungGetKho
+      parameters:
+        - name: idPhieu
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idNam
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          description: Chi dung kem idNam. Mac dinh = nguoi dang dang nhap.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungKhoResponse"
+        "400":
+          description: idPhieu / idNam <= 0
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungKhoResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungKhoResponse"
+        "404":
+          description: ErrorCode = NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungKhoResponse"
   /api/minhchung/{idMinhChung}:
+    put:
+      tags:
+        - MinhChung
+      summary: Sua ten hien thi / duong dan cua 1 minh chung
+      description: >
+        Patch semantics - truong nao NULL / khong truyen thi giu nguyen gia tri cu; chuoi
+        rong hoac chi khoang trang cung duoc coi la "khong truyen" (tranh vo tinh xoa ten).
+        Truyen ca hai deu rong -> 400.
+        DuongDan CHI sua duoc voi minh chung dang Link (2) / DOI (3); voi dang File (1)
+        do la duong dan vat ly do server sinh ra nen API tra 400 kem
+        ErrorCode = MINH_CHUNG_LA_FILE (muon doi tep thi xoa roi tai len tep moi).
+        Rang buoc giong DELETE: phieu phai o trang thai Nhap (1) va nguoi goi phai la chu
+        phieu hoac cap Truong (HT/ADMIN).
+      operationId: minhChungUpdate
+      parameters:
+        - name: idMinhChung
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MinhChungUpdateRequest"
+      responses:
+        "200":
+          description: OK - Item la ban ghi sau khi cap nhat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "400":
+          description: >
+            Khong truyen truong nao, vuot do dai (255 / 500), hoac
+            ErrorCode = MINH_CHUNG_LA_FILE (co doi DuongDan cua minh chung dang tep)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: Khong phai chu phieu / khong du quyen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "404":
+          description: Minh chung khong ton tai hoac da xoa mem
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "409":
+          description: Phieu khong o trang thai Nhap (1)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
     delete:
       tags:
         - MinhChung
@@ -986,6 +1249,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MinhChungResponse"
+  /api/cau-hinh/minh-chung:
+    get:
+      tags:
+        - CauHinh
+      summary: Cau hinh upload minh chung cho FE
+      description: >
+        Tra ve whitelist duoi file, gioi han dung luong va do dai truong ma server dang
+        ap dung khi them minh chung. FE dung de dat thuoc tinh accept cua input file va
+        chan som file qua co / ten qua dai thay vi doi API tra 400.
+        Nguon: Web.config appSettings (allowedEvidenceExtensions, maxEvidenceFileSizeKb)
+        va gioi han cot cua bang minh_chung — doc lai tu dung ham ma luong upload dung
+        (MinhChungService) nen khong the lech cau hinh.
+        Khong truy van DB, khong phu thuoc user (chi can token hop le).
+      operationId: cauHinhMinhChung
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CauHinhMinhChungResponse"
+        "401":
+          description: Thieu hoac sai token
   /api/chitiet/{idChiTiet}/nhiem-vu:
     post:
       tags:
@@ -1590,6 +1876,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhanHoiSinhVienImportResponse"
+  /api/phanhoisinhvien/cua-toi:
+    get:
+      tags:
+        - PhanHoiSinhVien
+      summary: Ket qua khao sat sinh vien cua CHINH nguoi dang dang nhap
+      description: >
+        Tong hop san (khong tra dong tho, khong phan trang). ma_can_bo lay tu token,
+        KHONG nhan tu query -> khong can kiem tra vai tro, ai cung chi xem duoc cua
+        minh. idNam 4 chu so, server tu quy doi 2026 -> nam_hoc 26 -> ky_hoc 261/262/263.
+        BoLoc luon tinh tren ca nam (bo qua kyHoc/maHocPhan) de dropdown khong bi thu hep.
+        DiemChot luon la so ca nam, khong theo bo loc; null khi nam chua chot.
+      operationId: phanHoiSinhVienCuaToi
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: kyHoc
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: maHocPhan
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK (ke ca khi khong co phan hoi nao)
+        "400":
+          description: idNam khong hop le
+        "401":
+          description: Khong xac dinh duoc nguoi dang nhap
   /api/phanhoisinhvien/{id}:
     get:
       tags:
@@ -1955,7 +2276,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/PhieuDanhGiaResponse"
         "409":
-          description: Conflict - phieu not in NHAP state, or concurrency conflict (phieu was modified by another user)
+          description: >
+            Conflict - phieu not in NHAP state, qua han tu danh gia (QUA_HAN - da qua
+            ngay_dong_tu_danh_gia / han gia han rieng), or concurrency conflict
+            (phieu was modified by another user)
           content:
             application/json:
               schema:
@@ -1975,6 +2299,202 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhieuSubmitValidationResponse"
+  /api/phieu/{id}/huy-nop:
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Chu phieu tu rut phieu vua nop (2 -> 1)
+      description: |
+        GV/vien chuc rut lai phieu da gui de sua tiep. Chi hop le khi: nguoi goi la CHU
+        PHIEU, phieu dang o trang_thai = 2 (cho Khoa danh gia), Khoa CHUA cham bat ky
+        tieu chi nao, va con trong han tu danh gia (ngay_dong_tu_danh_gia cua nam hoac
+        han gia han rieng - xem GET /api/gia-han/me/{idNam}).
+
+        Giu nguyen lan_danh_gia (khac khoa-tra-lai). Ghi lich_su_trang_thai_phieu voi
+        hanh_dong = 6 (Huy nop), trang_thai_truoc = 2, trang_thai_sau = 1.
+      operationId: phieuDanhGiaHuyNop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuHuyNopRequest"
+      responses:
+        "200":
+          description: OK - phieu ve trang thai Nhap, header moi (kem RowVersion moi)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "400":
+          description: Bad Request (invalid id / RowVersion)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "403":
+          description: Forbidden (khong phai chu phieu)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+        "409":
+          description: >
+            Conflict - phieu khong o trang_thai = 2 (INVALID_STATE), Khoa da bat dau cham
+            (DA_CHAM), qua han tu danh gia (QUA_HAN), hoac concurrency conflict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaResponse"
+  /api/gia-han:
+    get:
+      tags:
+        - GiaHan
+      summary: Danh sach gia han tu danh gia cua 1 nam (HT/ADMIN)
+      operationId: giaHanList
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+        "403":
+          description: Forbidden (khong phai HT/ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+        "404":
+          description: Nam danh gia khong ton tai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+    post:
+      tags:
+        - GiaHan
+      summary: Cap / cap lai (ghi de) gia han tu danh gia cho 1 nguoi (HT/ADMIN)
+      description: |
+        Moi (idNam, idNhanVien) chi giu 1 dong gia han hieu luc - goi lai = ghi de han cu.
+        HanMoi phai tu hom nay tro di va sau ngay_dong_tu_danh_gia cua nam.
+        Han tu danh gia hieu luc cua nguoi do = MAX(ngay_dong_tu_danh_gia, HanMoi).
+      operationId: giaHanUpsert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GiaHanUpsertRequest"
+      responses:
+        "200":
+          description: OK - dong gia han sau khi cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+        "400":
+          description: Bad Request (thieu HanMoi / han khong hop le)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+        "403":
+          description: Forbidden (khong phai HT/ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+        "404":
+          description: Nam / nhan vien khong ton tai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+  /api/gia-han/{id}:
+    delete:
+      tags:
+        - GiaHan
+      summary: Thu hoi gia han (HT/ADMIN, soft delete)
+      operationId: giaHanDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+        "403":
+          description: Forbidden (khong phai HT/ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+        "404":
+          description: Khong tim thay gia han hieu luc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+  /api/gia-han/me/{idNam}:
+    get:
+      tags:
+        - GiaHan
+      summary: Han tu danh gia hieu luc cua chinh nguoi dang dang nhap
+      description: |
+        FE dung de hien thi han nop va an/hien nut sua - nop - huy nop.
+        HanHieuLuc = MAX(HanMacDinh = ngay_dong_tu_danh_gia, HanMoi = gia han rieng);
+        null = khong gioi han. QuaHan = true nghia la phieu tu danh gia da bi khoa.
+      operationId: giaHanMe
+      parameters:
+        - name: idNam
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
+        "404":
+          description: Nam danh gia khong ton tai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiaHanResponse"
   /api/phieu/{id}/truong/duyet:
     post:
       tags:
@@ -2262,6 +2782,104 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhieuDanhGiaResponse"
+  /api/phieu/{id}/tong-hop-tu-dong:
+    post:
+      tags:
+        - PhieuDanhGia
+      summary: Cham diem tu dong cac tieu chi loai_nguon_diem = 2 tren 1 phieu
+      description: >
+        Chay engine sp_phieu_tong_hop_tu_dong: voi moi tieu chi co LoaiNguonDiem = 2,
+        tinh diem tu du lieu da dong bo (NCKH, gio giang, phan hoi sinh vien...) theo
+        CongThucSnapshot roi GHI THANG vao diem_chinh_thuc — don vi khong cham tay
+        cac tieu chi nay.
+        Chi chay duoc khi phieu o trang thai Nhap (1). Quyen: ADMIN, hoac TK/TKL/TP
+        trong pham vi don vi (enforce trong SP).
+        ScienceUserId = null nghia la giang vien chua duoc map sang he thong NCKH,
+        khi do cac tieu chi NCKH tu dong se ra 0 diem.
+      operationId: phieuTongHopTuDong
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTongHopTuDongResponse"
+        "400":
+          description: Id phieu khong hop le / loi khac tu engine
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTongHopTuDongResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN (khong du quyen cham tu dong phieu nay)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTongHopTuDongResponse"
+        "404":
+          description: PHIEU_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTongHopTuDongResponse"
+        "409":
+          description: PHIEU_INVALID_STATE (phieu khong o trang thai Nhap)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTongHopTuDongResponse"
+  /api/phieu/{id}/kiem-tra-hop-le:
+    get:
+      tags:
+        - PhieuDanhGia
+      summary: Kiem tra phieu du dieu kien nop chua (dry-run cua submit)
+      description: >
+        Chay dung bo quy tac validate cua POST api/phieu/{id}/submit nhung KHONG doi trang
+        thai, khong can RowVersion. Dung cho checklist "con thieu gi truoc khi nop" o
+        dashboard / form cham KPI - truoc day FE phai goi POST submit va doc response loi
+        VALIDATION_FAILED moi biet.
+        QUY TAC (giong het sp_phieu_submit): bo qua tieu chi cham tu dong
+        (LoaiNguonDiem = 2); chi bao thieu minh chung khi tieu chi co BatBuocMinhChung = 1
+        VA giang vien thuc su ke khai DiemTuDanhGia > 0 (NULL hoac 0 = khong ke khai thi
+        khong bat gi ca).
+        Quyen doc giong GET api/phieu/{id} (chu phieu, HT/ADMIN, hoac TK/TKL/TP trong pham
+        vi don vi / duoc giao cham tieu chi). Rieng CoTheNop chi = true voi CHU PHIEU.
+      operationId: phieuKiemTraHopLe
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK - xem Item.CoTheNop va Item.ThieuMinhChung
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuKiemTraHopLeResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuKiemTraHopLeResponse"
+        "404":
+          description: ErrorCode = NOT_FOUND (phieu khong ton tai / da xoa mem)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuKiemTraHopLeResponse"
   /api/phieu/{id}/lich-su-trang-thai:
     get:
       tags:
@@ -3755,7 +4373,7 @@ paths:
       description: >
         Cập nhật bộ phận: field nào null thì GIỮ NGUYÊN giá trị hiện tại.
         Phân quyền gioi_tinh / ngay_sinh: GV tự cập nhật hồ sơ của CHÍNH MÌNH;
-        HR/Admin cập nhật bất kỳ ai.
+        Admin/BGH cập nhật bất kỳ ai.
       operationId: nhanVienCapNhatHoSo
       parameters:
         - name: id
@@ -3786,7 +4404,7 @@ paths:
         "401":
           description: Chưa xác thực
         "403":
-          description: Không có quyền (GV sửa hồ sơ người khác, hoặc sửa hệ số phụ cấp mà không phải HR/Admin)
+          description: Không có quyền (GV sửa hồ sơ người khác, hoặc sửa hệ số phụ cấp mà không phải Admin/BGH)
           content:
             application/json:
               schema:
@@ -3843,7 +4461,7 @@ paths:
     post:
       tags:
         - NhanVienChucVu
-      summary: Thêm chức vụ kiêm nhiệm cho nhân viên (HR/Admin)
+      summary: Thêm chức vụ kiêm nhiệm cho nhân viên (Admin/BGH)
       operationId: nhanVienChucVuCreate
       requestBody:
         required: true
@@ -3865,7 +4483,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienChucVuResponse"
         "403":
-          description: Không có quyền (chỉ HR/Admin)
+          description: Không có quyền (chỉ Admin/BGH)
           content:
             application/json:
               schema:
@@ -3880,7 +4498,7 @@ paths:
     put:
       tags:
         - NhanVienChucVu
-      summary: Cập nhật DenNgay / GhiChu (HR/Admin)
+      summary: Cập nhật DenNgay / GhiChu (Admin/BGH)
       operationId: nhanVienChucVuUpdate
       parameters:
         - name: id
@@ -3909,7 +4527,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienChucVuResponse"
         "403":
-          description: Không có quyền (chỉ HR/Admin)
+          description: Không có quyền (chỉ Admin/BGH)
           content:
             application/json:
               schema:
@@ -3923,7 +4541,7 @@ paths:
     delete:
       tags:
         - NhanVienChucVu
-      summary: Xóa cứng bản ghi chức vụ kiêm nhiệm (HR/Admin)
+      summary: Xóa cứng bản ghi chức vụ kiêm nhiệm (Admin/BGH)
       operationId: nhanVienChucVuDelete
       parameters:
         - name: id
@@ -3940,7 +4558,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienChucVuResponse"
         "403":
-          description: Không có quyền (chỉ HR/Admin)
+          description: Không có quyền (chỉ Admin/BGH)
           content:
             application/json:
               schema:
@@ -3984,7 +4602,7 @@ paths:
     post:
       tags:
         - NhanVienChucDanh
-      summary: Thêm chức danh cho nhân viên (HR/Admin). Tự đóng chức danh đang mở
+      summary: Thêm chức danh cho nhân viên (Admin/BGH). Tự đóng chức danh đang mở
       operationId: nhanVienChucDanhCreate
       requestBody:
         required: true
@@ -4006,7 +4624,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienChucDanhResponse"
         "403":
-          description: Không có quyền (chỉ HR/Admin)
+          description: Không có quyền (chỉ Admin/BGH)
           content:
             application/json:
               schema:
@@ -4021,7 +4639,7 @@ paths:
     put:
       tags:
         - NhanVienChucDanh
-      summary: Cập nhật DenNgay / GhiChu (HR/Admin)
+      summary: Cập nhật DenNgay / GhiChu (Admin/BGH)
       operationId: nhanVienChucDanhUpdate
       parameters:
         - name: id
@@ -4050,7 +4668,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienChucDanhResponse"
         "403":
-          description: Không có quyền (chỉ HR/Admin)
+          description: Không có quyền (chỉ Admin/BGH)
           content:
             application/json:
               schema:
@@ -4070,7 +4688,7 @@ paths:
     delete:
       tags:
         - NhanVienChucDanh
-      summary: Xóa cứng bản ghi chức danh (HR/Admin)
+      summary: Xóa cứng bản ghi chức danh (Admin/BGH)
       operationId: nhanVienChucDanhDelete
       parameters:
         - name: id
@@ -4087,7 +4705,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienChucDanhResponse"
         "403":
-          description: Không có quyền (chỉ HR/Admin)
+          description: Không có quyền (chỉ Admin/BGH)
           content:
             application/json:
               schema:
@@ -4131,7 +4749,7 @@ paths:
     post:
       tags:
         - NgoaiLeDinhMuc
-      summary: Tạo ngoại lệ định mức mới (HR/Admin)
+      summary: Tạo ngoại lệ định mức mới (Admin/BGH)
       operationId: ngoaiLeDinhMucCreate
       requestBody:
         required: true
@@ -4153,7 +4771,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
         "403":
-          description: Không có quyền (chỉ HR/Admin)
+          description: Không có quyền (chỉ Admin/BGH)
           content:
             application/json:
               schema:
@@ -4187,7 +4805,7 @@ paths:
     put:
       tags:
         - NgoaiLeDinhMuc
-      summary: Cập nhật LyDo / MinhChungUrl / DenNgay / TrangThai (HR/Admin)
+      summary: Cập nhật LyDo / MinhChungUrl / DenNgay / TrangThai (Admin/BGH)
       operationId: ngoaiLeDinhMucUpdate
       parameters:
         - name: id
@@ -4216,7 +4834,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
         "403":
-          description: Không có quyền (chỉ HR/Admin)
+          description: Không có quyền (chỉ Admin/BGH)
           content:
             application/json:
               schema:
@@ -4230,7 +4848,7 @@ paths:
     delete:
       tags:
         - NgoaiLeDinhMuc
-      summary: Vô hiệu hóa ngoại lệ — xóa mềm trang_thai=0 (HR/Admin)
+      summary: Vô hiệu hóa ngoại lệ — xóa mềm trang_thai=0 (Admin/BGH)
       operationId: ngoaiLeDinhMucDelete
       parameters:
         - name: id
@@ -4247,7 +4865,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
         "403":
-          description: Không có quyền (chỉ HR/Admin)
+          description: Không có quyền (chỉ Admin/BGH)
           content:
             application/json:
               schema:
@@ -4270,7 +4888,7 @@ paths:
         GioGiangApDung = max(0, base − SoGioGiamGiang − base × ΣHeSoGiamGiang).
         GioNckhApDung  = max(0, base × max(HeSoNckh) − base × ΣHeSoGiamNckh).
         GioPvcdApDung  = max(0, base − base × ΣHeSoGiamPvcd).
-        GV chỉ xem của chính mình; HR/Admin (chucVu 1, 7, 8) xem mọi người.
+        GV chỉ xem của chính mình; Admin/BGH (chucVu 1, 7, 8) xem mọi người.
       operationId: dinhMucGiangVienGetApDung
       parameters:
         - name: idNv
@@ -4989,20 +5607,25 @@ paths:
     post:
       tags:
         - Nckh
-      summary: Dong bo du lieu NCKH tu API ngoai
+      summary: Dong bo du lieu NCKH tu API ngoai (theo nam)
       description: >-
-        Keo TOAN BO du lieu KPI giang vien tu {NckhApiUrl}/api/kpilecturerdata
-        (du lieu tich luy toan thoi gian, tra ve trong 1 lan goi) va luu vao DB KPI:
-        upsert nckh_ho_so, full-refresh 4 bang chi tiet (bai bao / de tai / sach / ke khai khac),
-        va ghi de snapshot tong hop + phan loai theo id_nam (phuc vu cham TC 18/19/20,
-        32-37, 40-42). Anh xa ve nhan vien KPI qua nhan_vien.science_user_id. Neu API
-        tra ve rong -> KHONG xoa du lieu cu (tranh mat du lieu khi API loi).
+        Keo du lieu KPI giang vien tu {NckhApiUrl}/api/kpilecturerdata (API tra TOAN BO
+        lich su trong 1 lan goi) va luu vao DB KPI THEO NAM id_nam: upsert nckh_ho_so
+        (khong xoa), refresh 4 bang chi tiet (bai bao / de tai / sach / ke khai khac)
+        CHI TRONG PHAM VI nam id_nam, va ghi de snapshot tong hop + phan loai theo id_nam
+        (phuc vu cham TC 18/19/20, 32-37, 40-42).
+        Phan vung theo nam: bai bao & sach theo ngay_xuat_ban, ke khai khac theo ngay_ap_dung
+        nam trong [ngay_bat_dau, ngay_ket_thuc] cua nam_danh_gia; de tai theo GIAO khoang
+        thoi gian. Ban ghi thieu ngay (tru de tai) khong thuoc nam nao nen khong duoc nap.
+        Du lieu cac nam khac GIU NGUYEN -> moi nam can cham phai duoc dong bo it nhat 1 lan.
+        Anh xa ve nhan vien KPI qua EMAIL (LOWER+TRIM nhan_vien.email = nckh_ho_so.email).
+        Neu API tra ve rong -> KHONG xoa du lieu cu (tranh mat du lieu khi API loi).
       operationId: nckhDongBo
       parameters:
         - name: id_nam
           in: query
           required: true
-          description: "Nam danh gia de gan snapshot tong hop (vd: 2026). Phai ton tai trong nam_danh_gia."
+          description: "Nam danh gia can dong bo (vd: 2026). Phai ton tai trong nam_danh_gia. Quyet dinh CA pham vi ghi 4 bang chi tiet LAN snapshot tong hop/phan loai."
           schema:
             type: integer
       responses:
@@ -6775,6 +7398,116 @@ components:
           type: string
           format: byte
           description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuHuyNopRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        RowVersion:
+          type: string
+          format: byte
+          description: "Obtained from GET phieu response; prevents concurrent edits"
+        LyDo:
+          type: string
+          nullable: true
+          description: Ly do rut phieu (tuy chon), ghi vao lich_su_trang_thai_phieu.
+    GiaHanUpsertRequest:
+      type: object
+      required:
+        - IdNam
+        - IdNhanVien
+        - HanMoi
+      properties:
+        IdNam:
+          type: integer
+        IdNhanVien:
+          type: integer
+        HanMoi:
+          type: string
+          format: date
+          description: Han tu danh gia moi; phai sau ngay_dong_tu_danh_gia cua nam.
+        LyDo:
+          type: string
+          nullable: true
+    GiaHanDto:
+      type: object
+      properties:
+        IdGiaHan:
+          type: integer
+        IdNam:
+          type: integer
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        TenDonVi:
+          type: string
+        HanMoi:
+          type: string
+          format: date
+        HanMacDinh:
+          type: string
+          format: date
+          nullable: true
+          description: ngay_dong_tu_danh_gia cua nam (han chung).
+        LyDo:
+          type: string
+          nullable: true
+        IdNguoiCap:
+          type: integer
+        TenNguoiCap:
+          type: string
+          nullable: true
+        NgayCap:
+          type: string
+          format: date-time
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+    GiaHanMeDto:
+      type: object
+      properties:
+        IdNam:
+          type: integer
+        HanMacDinh:
+          type: string
+          format: date
+          nullable: true
+        HanMoi:
+          type: string
+          format: date
+          nullable: true
+          description: Han gia han rieng (null = khong duoc gia han).
+        HanHieuLuc:
+          type: string
+          format: date
+          nullable: true
+          description: MAX(HanMacDinh, HanMoi); null = khong gioi han.
+        QuaHan:
+          type: boolean
+          description: true = phieu tu danh gia da bi khoa (khong sua/nop/huy nop duoc).
+    GiaHanResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          nullable: true
+          description: GiaHanDto (upsert) hoac GiaHanMeDto (me); null o danh sach.
+          oneOf:
+            - $ref: "#/components/schemas/GiaHanDto"
+            - $ref: "#/components/schemas/GiaHanMeDto"
+        Items:
+          type: array
+          nullable: true
+          description: Danh sach gia han cua nam (GET /api/gia-han).
+          items:
+            $ref: "#/components/schemas/GiaHanDto"
     PhieuSubmitMissingItemDto:
       type: object
       properties:
@@ -6855,12 +7588,216 @@ components:
           type: boolean
         Message:
           type: string
+        ErrorCode:
+          type: string
+          description: >
+            Ma loi on dinh cho FE phan nhanh. Chi xuat hien tren cac phan hoi loi cua
+            GET api/minhchung/{idMinhChung}/tai-ve (MINH_CHUNG_NOT_FOUND,
+            FORBIDDEN_CHUC_VU, MINH_CHUNG_KHONG_PHAI_FILE, FILE_NOT_FOUND);
+            bi bo qua khi serialize neu null.
         Item:
           $ref: "#/components/schemas/MinhChungDto"
         Items:
           type: array
           items:
             $ref: "#/components/schemas/MinhChungDto"
+    MinhChungUpdateRequest:
+      type: object
+      description: Ca hai truong deu tuy chon; NULL / rong = giu nguyen gia tri cu.
+      properties:
+        TenHienThi:
+          type: string
+          nullable: true
+          maxLength: 255
+        DuongDan:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: Chi ap dung cho minh chung dang Link (2) / DOI (3).
+    MinhChungKhoDto:
+      type: object
+      description: Minh chung kem ngu canh tieu chi / phieu / nam (dung cho man hinh Kho minh chung).
+      properties:
+        IdMinhChung:
+          type: integer
+        IdChiTiet:
+          type: integer
+        LoaiMinhChung:
+          type: integer
+          description: "1: File, 2: Link, 3: DOI/URL hoc thuat"
+        TenHienThi:
+          type: string
+        TenFileGoc:
+          type: string
+          nullable: true
+        DuongDan:
+          type: string
+        LoaiFile:
+          type: string
+          nullable: true
+        KichThuocKb:
+          type: integer
+          nullable: true
+        NguoiTaiLen:
+          type: integer
+        NgayTaiLen:
+          type: string
+          format: date-time
+          nullable: true
+        IdPhieu:
+          type: integer
+        IdNam:
+          type: integer
+        TrangThaiPhieu:
+          type: integer
+          description: Trang thai phieu cha - chi sua/xoa duoc minh chung khi = 1 (Nhap).
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+        BatBuocMinhChung:
+          type: boolean
+    MinhChungKhoResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          description: NOT_FOUND / FORBIDDEN. Bi bo qua khi serialize neu null.
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MinhChungKhoDto"
+    ChiTietTuDongDto:
+      type: object
+      properties:
+        IdChiTiet:
+          type: integer
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+        DiemToiDa:
+          type: number
+        CongThucSnapshot:
+          type: string
+          description: Cong thuc da snapshot tren chi_tiet_danh_gia, quyet dinh nhanh CASE nao trong engine.
+        DiemTuDong:
+          type: number
+          nullable: true
+        DiemChinhThuc:
+          type: number
+          nullable: true
+          description: Engine ghi thang vao day (khong qua diem_khoa / diem_truong).
+    PhieuTongHopTuDongResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        SoTieuChiTuDong:
+          type: integer
+          description: So tieu chi LoaiNguonDiem = 2 da xu ly tren phieu.
+        ScienceUserId:
+          type: integer
+          nullable: true
+          description: Lien ket he thong NCKH cua giang vien; null = chua map (diem NCKH tu dong = 0).
+        Items:
+          type: array
+          description: Chi tiet cac dong tu dong sau khi cham (khong co khi that bai).
+          items:
+            $ref: "#/components/schemas/ChiTietTuDongDto"
+    PhieuKiemTraHopLeDto:
+      type: object
+      properties:
+        IdPhieu:
+          type: integer
+        TrangThai:
+          type: integer
+          description: Trang thai hien tai cua phieu (1 = Nhap).
+        LaChuPhieu:
+          type: boolean
+        CoTheNop:
+          type: boolean
+          description: >
+            true khi SoTieuChiThieu = 0 VA TrangThai = 1 VA LaChuPhieu = true VA QuaHan = false.
+        TongSoTieuChi:
+          type: integer
+        SoTieuChiThieu:
+          type: integer
+        HanNop:
+          type: string
+          format: date
+          nullable: true
+          description: >
+            Han tu danh gia hieu luc cua chu phieu = MAX(ngay_dong_tu_danh_gia cua nam,
+            han gia han rieng). Null = khong gioi han.
+        QuaHan:
+          type: boolean
+          description: true = da qua han, phieu bi khoa (CoTheNop luon = false).
+        ThieuMinhChung:
+          type: array
+          description: Cung kieu voi MissingItems tra ve tu POST submit khi VALIDATION_FAILED.
+          items:
+            $ref: "#/components/schemas/PhieuSubmitMissingItemDto"
+    PhieuKiemTraHopLeResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          description: NOT_FOUND / FORBIDDEN. Bi bo qua khi serialize neu null.
+        Item:
+          $ref: "#/components/schemas/PhieuKiemTraHopLeDto"
+    CauHinhMinhChungDto:
+      type: object
+      properties:
+        AllowedExtensions:
+          type: array
+          description: Duoi file duoc phep, KHONG kem dau cham.
+          items:
+            type: string
+          example: ["pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg"]
+        Accept:
+          type: string
+          description: Chuoi gan thang vao input[type=file] accept.
+          example: ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+        MaxFileSizeKb:
+          type: integer
+          description: Gioi han dung luong 1 tep (KB). Nguon appSettings maxEvidenceFileSizeKb.
+          example: 10240
+        MaxTenHienThiLength:
+          type: integer
+          description: >
+            Do dai toi da cua TenHienThi (minh_chung.ten_hien_thi NVARCHAR(255)).
+            BLL KHONG cat chuoi nen vuot gioi han se loi tu SQL - FE phai chan truoc.
+          example: 255
+        MaxDuongDanLength:
+          type: integer
+          description: Do dai toi da cua DuongDan / URL (minh_chung.duong_dan NVARCHAR(500)).
+          example: 500
+        LoaiLinkHopLe:
+          type: array
+          description: Gia tri Loai hop le khi POST .../minh-chung/link (2 = Link, 3 = DOI).
+          items:
+            type: integer
+          example: [2, 3]
+    CauHinhMinhChungResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/CauHinhMinhChungDto"
     NhiemVuCongDongDto:
       type: object
       properties:
@@ -6933,6 +7870,16 @@ components:
         DiemToiDa:
           type: number
           nullable: true
+        BatBuocMinhChung:
+          type: boolean
+          nullable: true
+          description: >
+            Tieu chi co BAT BUOC dinh kem minh chung hay khong (snapshot tu
+            tieu_chi_danh_gia.bat_buoc_minh_chung). Dung cho checklist "con thieu gi
+            truoc khi nop" o dashboard / form cham KPI.
+            CHI co gia tri o GET api/phieu/{id} va GET api/phieu/me/{idNam};
+            cac endpoint chi tra ve 1 chi tiet (tu-danh-gia, diem-khoa) khong doc cot
+            nay nen truong bi bo qua trong JSON.
         LoaiNguonDiem:
           type: integer
           description: "1: cham thu cong, 2: cham tu dong"
@@ -7854,23 +8801,23 @@ components:
         HoSoCount:
           type: integer
           nullable: true
-          description: So ho so giang vien da upsert.
+          description: So ho so giang vien da upsert (toan bo GV API tra ve, khong loc theo nam).
         BaiBaoCount:
           type: integer
           nullable: true
-          description: So dong bai bao da ghi (full-refresh).
+          description: So dong bai bao THUOC nam id_nam da ghi (theo ngay_xuat_ban).
         DeTaiCount:
           type: integer
           nullable: true
-          description: So dong de tai da ghi (full-refresh).
+          description: So dong de tai THUOC nam id_nam da ghi (giao khoang thoi gian).
         SachCount:
           type: integer
           nullable: true
-          description: So dong sach da ghi (full-refresh).
+          description: So dong sach THUOC nam id_nam da ghi (theo ngay_xuat_ban).
         KeKhaiKhacCount:
           type: integer
           nullable: true
-          description: So dong ke khai khac (OtherDeclarations) da ghi (full-refresh).
+          description: So dong ke khai khac (OtherDeclarations) THUOC nam id_nam da ghi (theo ngay_ap_dung).
         TongHopCount:
           type: integer
           nullable: true

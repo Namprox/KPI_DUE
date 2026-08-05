@@ -1,10 +1,18 @@
 import React from "react";
+import {
+  chuanHoaFileMinhChung,
+  ACCEPT_PDF,
+} from "../../../utils/minhChungPhieuApi";
+import { formatNgay as formatNgayChung } from "../../../utils/phieuApi";
 
+/**
+ * Khác formatNgay dùng chung ở chỗ trả chuỗi RỖNG thay vì "—": dòng meta của
+ * minh chứng NCKH bên dưới dựa vào chuỗi rỗng để quyết định có hiện dấu • và có
+ * hiện cả dòng hay không — trả "—" sẽ làm mọi minh chứng mọc thêm một gạch ngang.
+ */
 const formatNgay = (value) => {
-  if (!value) return "";
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("vi-VN");
+  const ngay = formatNgayChung(value);
+  return ngay === "—" ? "" : ngay;
 };
 
 const formatDiem = (value) => {
@@ -29,6 +37,8 @@ const DanhGiaPhuLuc2Form = ({
   onNckhChange,
   onRemoveNckh,
   isKhoaEvaluating = false,
+  // Có truyền thì chip tệp đã lưu bấm được để xem trước; không truyền thì chip chỉ hiển thị
+  onXemMinhChung,
 }) => {
   const groupedCriteria = criteriaList.reduce((groups, item) => {
     const group = groups[item.TenNhom] || [];
@@ -63,24 +73,6 @@ const DanhGiaPhuLuc2Form = ({
     return { sum, max };
   };
 
-  const getXepLoai = (diem) => {
-    if (diem >= 80 && diem <= 100)
-      return {
-        text: "Hoàn thành",
-        className: "pl2-xep-loai-blue",
-        icon: "fa-circle-check",
-      };
-    if (diem > 100)
-      return {
-        text: "Hoàn thành Tốt / Xuất sắc",
-        className: "pl2-xep-loai-green",
-        icon: "fa-medal",
-      };
-    return null;
-  };
-
-  const xepLoai = getXepLoai(tongDiemCoBan);
-
   return (
     <div className="pl2-container">
       <div className="pl2-header">
@@ -94,13 +86,6 @@ const DanhGiaPhuLuc2Form = ({
               {tongDiemCoBan.toFixed(2)}
               <span className="pl2-header-score-unit">điểm</span>
             </div>
-
-            {xepLoai && (
-              <div className={`pl2-xep-loai ${xepLoai.className}`}>
-                <i className={`fa-solid ${xepLoai.icon}`}></i>
-                Dự kiến: {xepLoai.text}
-              </div>
-            )}
           </div>
 
           <div className="pl2-header-score-note">
@@ -144,8 +129,9 @@ const DanhGiaPhuLuc2Form = ({
               onClick={onRecall}
               disabled={isSubmitting}
               className="btn-thu-hoi"
+              title="Đưa phiếu về trạng thái nháp để chỉnh sửa rồi nộp lại"
             >
-              <i className="fa-solid fa-rotate-left"></i> Thu hồi phiếu để sửa
+              <i className="fa-solid fa-rotate-left"></i> Hủy nộp để chỉnh sửa
             </button>
           )}
           {trangThaiPhieu === 2 && !isKhoaEvaluating && !onRecall && (
@@ -539,6 +525,7 @@ const DanhGiaPhuLuc2Form = ({
                           <button
                             type="button"
                             className="btn-attach-file"
+                            title="Chỉ chấp nhận tệp PDF"
                             onClick={() =>
                               document
                                 .getElementById(`file_input_${tc.IdTieuChi}`)
@@ -546,12 +533,13 @@ const DanhGiaPhuLuc2Form = ({
                             }
                           >
                             <i className="fa-solid fa-paperclip"></i> Đính kèm
-                            tệp
+                            tệp PDF
                           </button>
                           <input
                             id={`file_input_${tc.IdTieuChi}`}
                             type="file"
                             multiple
+                            accept={ACCEPT_PDF}
                             style={{ display: "none" }}
                             onChange={(e) => {
                               const files = Array.from(e.target.files);
@@ -570,12 +558,45 @@ const DanhGiaPhuLuc2Form = ({
                             const fileNameDisplay = isSavedOnServer
                               ? fileItem.originalName || fileItem.fileName
                               : fileItem.name;
+
+                            // Chỉ tệp đã lưu và có IdMinhChung mới xem trước được:
+                            // endpoint api/minhchung/{id}/tai-ve khóa theo id, còn tệp
+                            // vừa chọn thì chưa lên máy chủ.
+                            const mc = isSavedOnServer
+                              ? chuanHoaFileMinhChung(fileItem)
+                              : null;
+                            const xemDuoc = !!(
+                              mc &&
+                              mc.IdMinhChung &&
+                              onXemMinhChung
+                            );
+
                             return (
                               <div key={fileIndex} className="pl2-chip-row">
-                                <span className="pl2-chip pl2-chip-file">
-                                  <i className="fa-solid fa-file-circle-check"></i>
-                                  {fileNameDisplay}
-                                </span>
+                                {xemDuoc ? (
+                                  <button
+                                    type="button"
+                                    className="pl2-chip pl2-chip-file pl2-chip-xem"
+                                    onClick={() => onXemMinhChung(mc)}
+                                    title={`Xem trước / tải về: ${fileNameDisplay}`}
+                                  >
+                                    <i className="fa-solid fa-file-circle-check"></i>
+                                    {fileNameDisplay}
+                                    <i className="fa-solid fa-eye pl2-chip-xem-icon"></i>
+                                  </button>
+                                ) : (
+                                  <span
+                                    className="pl2-chip pl2-chip-file"
+                                    title={
+                                      isSavedOnServer
+                                        ? `${fileNameDisplay} — bản ghi cũ không có mã minh chứng nên không xem được`
+                                        : `${fileNameDisplay} — tệp mới chọn, xem được sau khi lưu phiếu`
+                                    }
+                                  >
+                                    <i className="fa-solid fa-file-circle-check"></i>
+                                    {fileNameDisplay}
+                                  </span>
+                                )}
                                 {trangThaiPhieu <= 1 && !isKhoaEvaluating && (
                                   <button
                                     type="button"

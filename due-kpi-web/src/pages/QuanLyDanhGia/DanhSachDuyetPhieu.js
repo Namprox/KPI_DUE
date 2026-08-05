@@ -4,6 +4,13 @@ import { useNavigate } from "react-router-dom";
 import "../../css/Pages.css";
 import { Toast } from "primereact/toast";
 import { apiFetch } from "../../utils/api";
+import FilePreviewModal from "../../components/Common/FilePreviewModal";
+import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
+import {
+  chuanHoaFileMinhChung,
+  downloadMinhChungFile,
+  iconFile,
+} from "../../utils/minhChungPhieuApi";
 
 const DanhSachDuyetPhieu = () => {
   const [approvalList, setApprovalList] = useState([]);
@@ -14,8 +21,17 @@ const DanhSachDuyetPhieu = () => {
   const toast = useRef(null);
   const { user } = useAuth();
   const currentUser = user || {};
-  const API_URL =
-    process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
+
+  // Phiếu đang tải cả bộ minh chứng — chặn bấm hai lần vào cùng một hàng
+  const [idPhieuDangTai, setIdPhieuDangTai] = useState(null);
+
+  const showToast = (severity, summary, detail, life = 3000) => {
+    toast.current?.show({ severity, summary, detail, life });
+  };
+
+  // Xem trước / tải minh chứng dùng chung với trang chấm điểm và trang vi phạm
+  const { preview, openPreview, closePreview, downloadMinhChung } =
+    useMinhChungPhieuPreview((message) => showToast("error", "Lỗi", message));
 
   const roleCode = currentUser?.MaChucVu || "";
   const isAdmin = roleCode === "Admin";
@@ -155,35 +171,60 @@ const DanhSachDuyetPhieu = () => {
     );
   };
 
-  const handleDownloadAllFiles = (files) => {
-    if (!files || files.length === 0) {
-      toast.current.show({
-        severity: "warn",
-        summary: "Không có tệp",
-        detail: "Phiếu này không có tệp đính kèm nào.",
-        life: 3000,
-      });
+  /**
+   * Tải cả bộ minh chứng của một phiếu.
+   * Tải TUẦN TỰ chứ không bắn song song: mỗi tệp là một lượt fetch có xác thực, và
+   * trình duyệt hay chặn nhiều lượt tải tự động dồn cùng lúc.
+   */
+  const handleDownloadAllFiles = async (item) => {
+    const danhSach = (item?.DanhSachFile || []).map(chuanHoaFileMinhChung);
+    if (danhSach.length === 0) {
+      showToast("warn", "Không có tệp", "Phiếu này không có tệp đính kèm nào.");
       return;
     }
 
-    toast.current.show({
-      severity: "info",
-      summary: "Đang tải xuống",
-      detail: `Hệ thống đang tải ${files.length} tệp về máy`,
-      life: 3000,
-    });
+    const taiDuoc = danhSach.filter((mc) => mc.IdMinhChung);
+    const boQua = danhSach.length - taiDuoc.length;
+    if (taiDuoc.length === 0) {
+      showToast(
+        "warn",
+        "Không tải được",
+        `${boQua} tệp là bản ghi cũ, không có mã minh chứng nên không tải được từ máy chủ.`,
+        5000,
+      );
+      return;
+    }
 
-    files.forEach((file, index) => {
-      setTimeout(() => {
-        const link = document.createElement("a");
-        const fileName = file.fileName || file.ten_file;
-        link.href = `${API_URL}/download?file=${encodeURIComponent(fileName)}`;
-        link.setAttribute("download", "");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }, index * 300);
-    });
+    setIdPhieuDangTai(item.IdPhieu);
+    showToast(
+      "info",
+      "Đang tải xuống",
+      `Hệ thống đang tải ${taiDuoc.length} tệp về máy`,
+    );
+
+    let soLoi = 0;
+    for (const mc of taiDuoc) {
+      try {
+        await downloadMinhChungFile(mc);
+      } catch (error) {
+        console.error(`Lỗi tải tệp minh chứng #${mc.IdMinhChung}:`, error);
+        soLoi += 1;
+      }
+    }
+    setIdPhieuDangTai(null);
+
+    if (soLoi > 0 || boQua > 0) {
+      const phanLoi = soLoi > 0 ? `${soLoi} tệp tải thất bại` : "";
+      const phanBoQua = boQua > 0 ? `${boQua} tệp không có mã minh chứng` : "";
+      showToast(
+        "warn",
+        `Đã tải ${taiDuoc.length - soLoi}/${danhSach.length} tệp`,
+        [phanLoi, phanBoQua].filter(Boolean).join(" • "),
+        5000,
+      );
+    } else {
+      showToast("success", "Hoàn tất", `Đã tải ${taiDuoc.length} tệp về máy`);
+    }
   };
 
   if (!isAdmin && !isManager) {
@@ -569,40 +610,60 @@ const DanhSachDuyetPhieu = () => {
                             gap: "5px",
                           }}
                         >
-                          {item.DanhSachFile.map((file, idx) => (
-                            <div
-                              key={idx}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                              }}
-                            >
-                              <i
-                                className="fa-solid fa-file-lines"
-                                style={{ color: "#94a3b8" }}
-                              ></i>
-                              <span
+                          {item.DanhSachFile.map((file, idx) => {
+                            const mc = chuanHoaFileMinhChung(file);
+                            const icon = iconFile(mc);
+                            const nhan = mc.TenFileGoc || "Minh chứng";
+                            const tenStyle = {
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "180px",
+                            };
+
+                            return (
+                              <div
+                                key={mc.IdMinhChung || idx}
                                 style={{
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  maxWidth: "180px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "6px",
                                 }}
-                                title={
-                                  file.originalName ||
-                                  file.ten_file_goc ||
-                                  file.fileName ||
-                                  file.ten_file
-                                }
                               >
-                                {file.originalName ||
-                                  file.ten_file_goc ||
-                                  file.fileName ||
-                                  file.ten_file}
-                              </span>
-                            </div>
-                          ))}
+                                <i
+                                  className={icon.className}
+                                  style={{ color: icon.color, flexShrink: 0 }}
+                                ></i>
+                                {mc.IdMinhChung ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openPreview(mc)}
+                                    title={`Xem trước: ${nhan}`}
+                                    style={{
+                                      ...tenStyle,
+                                      background: "none",
+                                      border: "none",
+                                      padding: 0,
+                                      cursor: "pointer",
+                                      color: "#1d4ed8",
+                                      fontSize: "12px",
+                                      fontFamily: "inherit",
+                                      textAlign: "left",
+                                    }}
+                                  >
+                                    {nhan}
+                                  </button>
+                                ) : (
+                                  <span
+                                    style={tenStyle}
+                                    title={`${nhan} — bản ghi cũ không có mã minh chứng nên không xem/tải được`}
+                                  >
+                                    {nhan}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
                         <span style={{ color: "#94a3b8", fontStyle: "italic" }}>
@@ -658,47 +719,49 @@ const DanhSachDuyetPhieu = () => {
                           )}
                         </button>
 
-                        <button
-                          title="Tải tất cả tệp minh chứng"
-                          disabled={
-                            !item.DanhSachFile || item.DanhSachFile.length === 0
-                          }
-                          style={{
-                            width: "32px",
-                            height: "32px",
-                            padding: "0",
-                            borderRadius: "8px",
-                            cursor:
-                              !item.DanhSachFile ||
-                              item.DanhSachFile.length === 0
-                                ? "not-allowed"
-                                : "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background:
-                              !item.DanhSachFile ||
-                              item.DanhSachFile.length === 0
-                                ? "#f1f5f9"
-                                : "#eff6ff",
-                            color:
-                              !item.DanhSachFile ||
-                              item.DanhSachFile.length === 0
-                                ? "#94a3b8"
-                                : "#003399",
-                            border:
-                              !item.DanhSachFile ||
-                              item.DanhSachFile.length === 0
-                                ? "1px solid #e2e8f0"
-                                : "1px solid #bfdbfe",
-                            transition: "all 0.2s",
-                          }}
-                          onClick={() =>
-                            handleDownloadAllFiles(item.DanhSachFile)
-                          }
-                        >
-                          <i className="fa-solid fa-download"></i>
-                        </button>
+                        {(() => {
+                          const dangTai = idPhieuDangTai === item.IdPhieu;
+                          const khongCoTep =
+                            !item.DanhSachFile ||
+                            item.DanhSachFile.length === 0;
+                          const moKhoa = !khongCoTep && !dangTai;
+
+                          return (
+                            <button
+                              title={
+                                dangTai
+                                  ? "Đang tải các tệp minh chứng..."
+                                  : "Tải tất cả tệp minh chứng"
+                              }
+                              disabled={!moKhoa}
+                              style={{
+                                width: "32px",
+                                height: "32px",
+                                padding: "0",
+                                borderRadius: "8px",
+                                cursor: moKhoa ? "pointer" : "not-allowed",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                background: moKhoa ? "#eff6ff" : "#f1f5f9",
+                                color: moKhoa ? "#003399" : "#94a3b8",
+                                border: moKhoa
+                                  ? "1px solid #bfdbfe"
+                                  : "1px solid #e2e8f0",
+                                transition: "all 0.2s",
+                              }}
+                              onClick={() => handleDownloadAllFiles(item)}
+                            >
+                              <i
+                                className={
+                                  dangTai
+                                    ? "fa-solid fa-spinner fa-spin"
+                                    : "fa-solid fa-download"
+                                }
+                              ></i>
+                            </button>
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>
@@ -708,6 +771,17 @@ const DanhSachDuyetPhieu = () => {
           </div>
         )}
       </div>
+
+      <FilePreviewModal
+        isOpen={preview.isOpen}
+        fileName={preview.mc?.TenFileGoc || preview.mc?.TenHienThi}
+        kieu={preview.kieu}
+        url={preview.url}
+        isLoading={preview.isLoading}
+        error={preview.error}
+        onClose={closePreview}
+        onDownload={() => downloadMinhChung(preview.mc)}
+      />
     </div>
   );
 };
