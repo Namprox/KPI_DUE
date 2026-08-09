@@ -7,6 +7,7 @@ import QL_DiemTruKhoaListing from '../../components/QuanLyKeHoach/QL_TongHopViPh
 import { apiFetch } from '../../utils/api';
 import { readApiError } from '../../utils/apiError';
 import { laDonViKhoa } from '../../utils/viPhamPermissions';
+import SearchSelect from '../../components/Common/SearchSelect';
 
 const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '6px' };
 
@@ -143,14 +144,12 @@ const QL_TongHopViPham = () => {
         }
     };
 
-    const handleNamChange = (e) => {
-        const val = e.target.value;
+    const handleNamChange = (val) => {
         setSelectedNam(val);
         loadTongHop(val, selectedDonVi);
     };
 
-    const handleDonViChange = (e) => {
-        const val = e.target.value;
+    const handleDonViChange = (val) => {
         setSelectedDonVi(val);
         loadTongHop(selectedNam, val);
     };
@@ -235,21 +234,24 @@ const QL_TongHopViPham = () => {
             <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <div style={{ minWidth: '160px', flex: '1 1 160px' }}>
                     <label style={labelStyle}>Năm đánh giá</label>
-                    <select className="form-input" value={selectedNam} onChange={handleNamChange}>
-                        {namList.map((n) => (
-                            <option key={n.IdNam} value={n.IdNam}>Năm học {n.IdNam}</option>
-                        ))}
-                    </select>
+                    <SearchSelect
+                        value={selectedNam}
+                        onChange={handleNamChange}
+                        options={namList.map((n) => ({ value: n.IdNam, label: `Năm học ${n.IdNam}` }))}
+                    />
                 </div>
 
                 <div style={{ minWidth: '220px', flex: '2 1 220px' }}>
                     <label style={labelStyle}>Khoa</label>
-                    <select className="form-input" value={selectedDonVi} onChange={handleDonViChange}>
-                        <option value="">-- Tất cả Khoa --</option>
-                        {khoaList.map((dv) => (
-                            <option key={dv.IdDonVi} value={dv.IdDonVi}>{dv.TenDonVi}</option>
-                        ))}
-                    </select>
+                    <SearchSelect
+                        value={selectedDonVi}
+                        onChange={handleDonViChange}
+                        options={[
+                            { value: '', label: '-- Tất cả Khoa --' },
+                            ...khoaList.map((dv) => ({ value: dv.IdDonVi, label: dv.TenDonVi })),
+                        ]}
+                        placeholder="-- Tất cả Khoa --"
+                    />
                 </div>
 
                 <div style={{ minWidth: '220px', flex: '2 1 220px' }}>

@@ -5,6 +5,7 @@ import "../../css/Pages.css";
 import { Toast } from "primereact/toast";
 import { apiFetch } from "../../utils/api";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
+import SearchSelect from "../../components/Common/SearchSelect";
 import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
 import {
   chuanHoaFileMinhChung,
@@ -356,24 +357,14 @@ const DanhSachDuyetPhieu = () => {
             >
               Năm học:
             </label>
-            <select
-              className="form-input"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              style={{
-                width: "120px",
-                borderRadius: "8px",
-                border: "1px solid #cbd5e1",
-                cursor: "pointer",
-              }}
-              disabled={isLoading || listYears.length === 0}
-            >
-              {listYears.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+            <div style={{ width: "120px" }}>
+              <SearchSelect
+                value={selectedYear}
+                onChange={(v) => setSelectedYear(parseInt(v))}
+                options={listYears.map((y) => ({ value: y, label: String(y) }))}
+                disabled={isLoading || listYears.length === 0}
+              />
+            </div>
           </div>
         </div>
 

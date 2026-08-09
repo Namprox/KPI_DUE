@@ -16,6 +16,7 @@ import {
 } from '../../utils/phieuApi';
 import { useNamDanhGia } from '../../hooks/useNamDanhGia';
 import { chuCaiDau, thongTinNhanVien, useNhanVienIndex } from '../../hooks/useNhanVienIndex';
+import SearchSelect from '../../components/Common/SearchSelect';
 
 const TABS = [
   { key: 'dinhMuc', nhan: 'Định mức', icon: 'fa-scale-balanced' },
@@ -200,18 +201,15 @@ const HoSoKpiGiangVien = () => {
 
           <div className="cd-field" style={{ maxWidth: '200px' }}>
             <label className="cd-label">Năm đánh giá</label>
-            <select
-              className="form-input"
+            <SearchSelect
               value={idNam}
-              onChange={(e) => doiNam(e.target.value)}
+              onChange={(v) => doiNam(v)}
+              options={namList.map((n) => ({
+                value: n.IdNam,
+                label: `Năm học ${n.IdNam}`,
+              }))}
               disabled={dangTaiNam}
-            >
-              {namList.map((n) => (
-                <option key={n.IdNam} value={n.IdNam}>
-                  Năm học {n.IdNam}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
       </div>

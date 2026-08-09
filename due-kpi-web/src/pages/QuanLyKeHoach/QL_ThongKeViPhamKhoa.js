@@ -7,6 +7,7 @@ import QL_TongHopGiangVienListing from "../../components/QuanLyKeHoach/QL_TongHo
 import QL_DiemTruTapTheCard from "../../components/QuanLyKeHoach/QL_ThongKeViPhamKhoa/QL_DiemTruTapTheCard";
 import QL_ThongKeTheoNhomListing from "../../components/QuanLyKeHoach/QL_ThongKeViPhamKhoa/QL_ThongKeTheoNhomListing";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
+import SearchSelect from "../../components/Common/SearchSelect";
 import { useViPhamMinhChungPreview } from "../../hooks/useViPhamMinhChungPreview";
 import { apiFetch } from "../../utils/api";
 import { readApiError } from "../../utils/apiError";
@@ -434,17 +435,14 @@ const QL_ThongKeViPhamKhoa = () => {
           >
             <div style={{ minWidth: "160px", flex: "1 1 160px" }}>
               <label style={labelStyle}>Năm đánh giá</label>
-              <select
-                className="form-input"
+              <SearchSelect
                 value={selectedNam}
-                onChange={(e) => setSelectedNam(e.target.value)}
-              >
-                {namList.map((n) => (
-                  <option key={n.IdNam} value={n.IdNam}>
-                    Năm học {n.IdNam}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setSelectedNam(v)}
+                options={namList.map((n) => ({
+                  value: n.IdNam,
+                  label: `Năm học ${n.IdNam}`,
+                }))}
+              />
             </div>
 
             <div style={{ minWidth: "260px", flex: "2 1 260px" }}>

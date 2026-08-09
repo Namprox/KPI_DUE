@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "../../css/Pages.css";
 import { apiFetch } from "../../utils/api";
+import SearchSelect from "../../components/Common/SearchSelect";
 
 const QL_NhanVienChiTiet = () => {
   const { id } = useParams();
@@ -619,6 +620,14 @@ const QL_NhanVienChiTiet = () => {
     validateField(name, val);
   };
 
+  const handleSelect = (name) => (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    validateField(name, value);
+  };
+
   const handleGlobalSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!canManage) return alert("Bạn không có quyền thực hiện chức năng này!");
@@ -1007,27 +1016,18 @@ const QL_NhanVienChiTiet = () => {
                     <label>
                       Đơn vị trực thuộc <span className="text-red">*</span>
                     </label>
-                    <select
+                    <SearchSelect
                       name="IdDonVi"
-                      className="form-input"
                       value={formData.IdDonVi || ""}
-                      onChange={handleChange}
+                      onChange={handleSelect("IdDonVi")}
+                      options={donViList.map((dv) => ({
+                        value: dv.id_don_vi || dv.IdDonVi,
+                        label: dv.ten_don_vi || dv.TenDonVi,
+                      }))}
+                      placeholder="Chọn đơn vị"
+                      invalid={Boolean(errors.IdDonVi)}
                       required
-                      style={{
-                        margin: 0,
-                        borderColor: errors.IdDonVi ? "#ef4444" : "#cbd5e1",
-                      }}
-                    >
-                      <option value="">Chọn đơn vị</option>
-                      {donViList.map((dv) => (
-                        <option
-                          key={dv.id_don_vi || dv.IdDonVi}
-                          value={dv.id_don_vi || dv.IdDonVi}
-                        >
-                          {dv.ten_don_vi || dv.TenDonVi}
-                        </option>
-                      ))}
-                    </select>
+                    />
                     {errors.IdDonVi && (
                       <span
                         style={{
@@ -1043,22 +1043,23 @@ const QL_NhanVienChiTiet = () => {
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>Người quản lý trực tiếp</label>
-                    <select
+                    <SearchSelect
                       name="IdQuanLyTrucTiep"
-                      className="form-input"
                       value={formData.IdQuanLyTrucTiep || ""}
-                      onChange={handleChange}
-                      style={{ margin: 0 }}
-                    >
-                      <option value="">Không có</option>
-                      {quanLyList
-                        .filter((nv) => nv.IdNhanVien !== parseInt(id))
-                        .map((nv) => (
-                          <option key={nv.IdNhanVien} value={nv.IdNhanVien}>
-                            {nv.MaNhanVien} - {nv.HoTen}
-                          </option>
-                        ))}
-                    </select>
+                      onChange={handleSelect("IdQuanLyTrucTiep")}
+                      options={[
+                        { value: "", label: "Không có" },
+                        ...quanLyList
+                          .filter((nv) => nv.IdNhanVien !== parseInt(id))
+                          .map((nv) => ({
+                            value: nv.IdNhanVien,
+                            label: `${nv.MaNhanVien} - ${nv.HoTen}`,
+                          })),
+                      ]}
+                      placeholder="Không có"
+                      searchable
+                      searchPlaceholder="Tìm theo mã hoặc tên..."
+                    />
                   </div>
                 </div>
 
@@ -1275,22 +1276,15 @@ const QL_NhanVienChiTiet = () => {
                             >
                               Chức danh <span className="text-red">*</span>
                             </label>
-                            <select
-                              className="form-input"
+                            <SearchSelect
                               value={newTitleId}
-                              onChange={(e) => setNewTitleId(e.target.value)}
-                              style={{ padding: "8px" }}
-                            >
-                              <option value="">Chọn chức danh</option>
-                              {chucDanhList.map((cd) => (
-                                <option
-                                  key={cd.id_chuc_danh || cd.IdChucDanh}
-                                  value={cd.id_chuc_danh || cd.IdChucDanh}
-                                >
-                                  {cd.ten_chuc_danh || cd.TenChucDanh}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={(v) => setNewTitleId(v)}
+                              options={chucDanhList.map((cd) => ({
+                                value: cd.id_chuc_danh || cd.IdChucDanh,
+                                label: cd.ten_chuc_danh || cd.TenChucDanh,
+                              }))}
+                              placeholder="Chọn chức danh"
+                            />
                           </div>
                           <div
                             className="form-group"
@@ -1875,22 +1869,15 @@ const QL_NhanVienChiTiet = () => {
                             >
                               Chức vụ <span className="text-red">*</span>
                             </label>
-                            <select
-                              className="form-input"
+                            <SearchSelect
                               value={newChucVuId}
-                              onChange={(e) => setNewChucVuId(e.target.value)}
-                              style={{ padding: "8px" }}
-                            >
-                              <option value="">Chọn chức vụ</option>
-                              {chucVuList.map((cv) => (
-                                <option
-                                  key={cv.id_chuc_vu || cv.IdChucVu}
-                                  value={cv.id_chuc_vu || cv.IdChucVu}
-                                >
-                                  {cv.ten_chuc_vu || cv.TenChucVu}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={(v) => setNewChucVuId(v)}
+                              options={chucVuList.map((cv) => ({
+                                value: cv.id_chuc_vu || cv.IdChucVu,
+                                label: cv.ten_chuc_vu || cv.TenChucVu,
+                              }))}
+                              placeholder="Chọn chức vụ"
+                            />
                           </div>
                           <div
                             className="form-group"

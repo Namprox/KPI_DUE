@@ -1,4 +1,10 @@
 import React from 'react';
+import SearchSelect from '../../Common/SearchSelect';
+
+const LOAI_NHOM_OPTIONS = [
+    { value: 1, label: '1 - Tiêu chí cơ bản (Nhóm A)' },
+    { value: 2, label: '2 - Thành tích vượt trội (Nhóm B)' },
+];
 
 const QL_NhomTieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, nhomChaList = [], showLoaiNhom = true }) => {
     if (!isOpen) return null;
@@ -7,6 +13,8 @@ const QL_NhomTieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, 
         const { name, value, type, checked } = e.target;
         setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
     };
+
+    const handleSelect = (name) => (value) => setFormData({ ...formData, [name]: value });
 
     return (
         <div className="modal-overlay">
@@ -36,35 +44,31 @@ const QL_NhomTieuChiForm = ({ isOpen, onClose, onSubmit, formData, setFormData, 
 
                         <div className="form-group" style={{ marginBottom: '20px' }}>
                             <label>Trực thuộc (Cấp cha)</label>
-                            <select
+                            <SearchSelect
                                 name="IdNhomCha"
-                                className="form-input"
                                 value={formData.IdNhomCha || ''}
-                                onChange={handleChange}
-                            >
-                                <option value="">Thuộc cấp cao nhất</option>
-                                {nhomChaList
-                                    .filter(n => n.IdNhom !== formData.IdNhom)
-                                    .map(n => (
-                                        <option key={n.IdNhom} value={n.IdNhom}>{n.TenNhom}</option>
-                                    ))}
-                            </select>
+                                onChange={handleSelect('IdNhomCha')}
+                                options={[
+                                    { value: '', label: 'Thuộc cấp cao nhất' },
+                                    ...nhomChaList
+                                        .filter(n => n.IdNhom !== formData.IdNhom)
+                                        .map(n => ({ value: n.IdNhom, label: n.TenNhom })),
+                                ]}
+                                placeholder="Thuộc cấp cao nhất"
+                            />
                         </div>
 
                         {showLoaiNhom ? (
                             <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                                 <div className="form-group">
                                     <label>Loại Nhóm <span className="text-red">*</span></label>
-                                    <select
+                                    <SearchSelect
                                         name="LoaiNhom"
-                                        className="form-input"
                                         value={formData.LoaiNhom || 1}
-                                        onChange={handleChange}
+                                        onChange={handleSelect('LoaiNhom')}
+                                        options={LOAI_NHOM_OPTIONS}
                                         required
-                                    >
-                                        <option value={1}>1 - Tiêu chí cơ bản (Nhóm A)</option>
-                                        <option value={2}>2 - Thành tích vượt trội (Nhóm B)</option>
-                                    </select>
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label>Điểm tối đa (Nếu có)</label>

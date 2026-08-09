@@ -2,6 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import { apiFetch } from "../../utils/api";
+import SearchSelect from "../../components/Common/SearchSelect";
+
+const HOC_KY_OPTIONS = [
+  { value: "1", label: "Học kỳ 1" },
+  { value: "2", label: "Học kỳ 2" },
+  { value: "3", label: "Học kỳ hè" },
+];
 
 const QL_GioGiang = () => {
   const toast = useRef(null);
@@ -328,27 +335,16 @@ const QL_GioGiang = () => {
             >
               Năm học:
             </label>
-            <select
-              className="form-input"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              style={{
-                width: "140px",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                background: "#fff",
-              }}
-            >
-              {namList.map((y) => {
-                const endYear = parseInt(y.IdNam);
-                return (
-                  <option key={y.IdNam} value={y.IdNam}>
-                    {endYear - 1}-{endYear}
-                  </option>
-                );
-              })}
-            </select>
+            <div style={{ width: "140px" }}>
+              <SearchSelect
+                value={selectedYear}
+                onChange={(v) => setSelectedYear(v)}
+                options={namList.map((y) => {
+                  const endYear = parseInt(y.IdNam);
+                  return { value: y.IdNam, label: `${endYear - 1}-${endYear}` };
+                })}
+              />
+            </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -357,23 +353,14 @@ const QL_GioGiang = () => {
             >
               Học kỳ:
             </label>
-            <select
-              className="form-input"
-              value={selectedSemester}
-              onChange={(e) => setSelectedSemester(e.target.value)}
-              style={{
-                width: "150px",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                background: "#fff",
-              }}
-            >
-              <option value="">Tất cả học kỳ</option>
-              <option value="1">Học kỳ 1</option>
-              <option value="2">Học kỳ 2</option>
-              <option value="3">Học kỳ hè</option>
-            </select>
+            <div style={{ width: "150px" }}>
+              <SearchSelect
+                value={selectedSemester}
+                onChange={(v) => setSelectedSemester(v)}
+                options={[{ value: "", label: "Tất cả học kỳ" }, ...HOC_KY_OPTIONS]}
+                placeholder="Tất cả học kỳ"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -743,35 +730,23 @@ const QL_GioGiang = () => {
             <div className="modal-body" style={{ padding: "25px" }}>
               <div className="form-group" style={{ marginBottom: "20px" }}>
                 <label style={{ fontWeight: "bold", display: "block", marginBottom: "8px" }}>Năm học <span className="text-red">*</span></label>
-                <select
-                  className="form-input"
+                <SearchSelect
                   value={importYear}
-                  onChange={(e) => setImportYear(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px" }}
-                >
-                  {dbNamList.map((y) => {
+                  onChange={(v) => setImportYear(v)}
+                  options={dbNamList.map((y) => {
                     const endYear = parseInt(y.IdNam);
-                    return (
-                      <option key={y.IdNam} value={y.IdNam}>
-                        {endYear - 1}-{endYear}
-                      </option>
-                    );
+                    return { value: y.IdNam, label: `${endYear - 1}-${endYear}` };
                   })}
-                </select>
+                />
               </div>
 
               <div className="form-group" style={{ marginBottom: "20px" }}>
                 <label style={{ fontWeight: "bold", display: "block", marginBottom: "8px" }}>Học kỳ <span className="text-red">*</span></label>
-                <select
-                  className="form-input"
+                <SearchSelect
                   value={importSemester}
-                  onChange={(e) => setImportSemester(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px" }}
-                >
-                  <option value="1">Học kỳ 1</option>
-                  <option value="2">Học kỳ 2</option>
-                  <option value="3">Học kỳ hè</option>
-                </select>
+                  onChange={(v) => setImportSemester(v)}
+                  options={HOC_KY_OPTIONS}
+                />
               </div>
 
               <div className="form-group" style={{ marginBottom: "20px" }}>

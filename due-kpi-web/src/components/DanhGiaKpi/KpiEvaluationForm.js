@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
+import SearchSelect from '../Common/SearchSelect';
 
 const KpiEvaluationForm = () => {
     const [criteria, setCriteria] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [mucDatDuoc, setMucDatDuoc] = useState({});
+
+    const chonMuc = (idTieuChi, value) =>
+        setMucDatDuoc(prev => ({ ...prev, [idTieuChi]: value }));
 
     useEffect(() => {
         // Fetch templates for Giảng viên (loaiDoiTuong = 1)
@@ -96,20 +101,26 @@ const KpiEvaluationForm = () => {
                                 </td>
                                 <td>
                                      {item.LoaiThangDiem === 3 ? (
-                                         <select className="form-input" style={{ cursor: 'pointer' }}>
-                                             <option value="">-- Chọn mức đạt được --</option>
-                                             <option value={item.DiemToiDa}>Có ({item.DiemToiDa} điểm)</option>
-                                             <option value="0">Không (0 điểm)</option>
-                                         </select>
+                                         <SearchSelect
+                                             value={mucDatDuoc[item.IdTieuChi] ?? ''}
+                                             onChange={(v) => chonMuc(item.IdTieuChi, v)}
+                                             options={[
+                                                 { value: item.DiemToiDa, label: `Có (${item.DiemToiDa} điểm)` },
+                                                 { value: '0', label: 'Không (0 điểm)' },
+                                             ]}
+                                             placeholder="-- Chọn mức đạt được --"
+                                         />
                                      ) : item.CacThangDiem && item.CacThangDiem.length > 0 ? (
-                                         <select className="form-input" style={{ cursor: 'pointer' }}>
-                                             <option value="">-- Chọn mức đạt được --</option>
-                                             {item.CacThangDiem.map(td => (
-                                                 <option key={td.IdThangDiem} value={td.GiaTriDiem}>
-                                                     {td.DieuKienDiem} ({td.GiaTriDiem} điểm)
-                                                 </option>
-                                             ))}
-                                         </select>
+                                         <SearchSelect
+                                             className="select-multiline"
+                                             value={mucDatDuoc[item.IdTieuChi] ?? ''}
+                                             onChange={(v) => chonMuc(item.IdTieuChi, v)}
+                                             options={item.CacThangDiem.map(td => ({
+                                                 value: td.GiaTriDiem,
+                                                 label: `${td.DieuKienDiem} (${td.GiaTriDiem} điểm)`,
+                                             }))}
+                                             placeholder="-- Chọn mức đạt được --"
+                                         />
                                      ) : (
                                          <input 
                                              type="number" 

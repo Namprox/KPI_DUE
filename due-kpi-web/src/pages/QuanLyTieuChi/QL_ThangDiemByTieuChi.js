@@ -605,11 +605,12 @@ const QL_ThangDiemByTieuChi = () => {
                   <div className="form-group">
                     <label>Thứ tự hiển thị</label>
                     <input
-                      type="number"
+                      type="text"
                       name="ThuTuHienThi"
                       className="form-input"
-                      value={formData.ThuTuHienThi || 1}
+                      value={formData.ThuTuHienThi ?? ""}
                       onChange={handleChange}
+                      placeholder="VD: 1"
                     />
                   </div>
                 </div>

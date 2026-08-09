@@ -10,6 +10,13 @@ import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 import { readApiError } from '../../utils/apiError';
 import { isAdminRole, CAP_KHOA_PHONG } from '../../utils/viPhamPermissions';
+import SearchSelect from '../../components/Common/SearchSelect';
+
+const TRANG_THAI_FILTER_OPTIONS = [
+    { value: '', label: '-- Tất cả --' },
+    { value: 'true', label: 'Đang sử dụng' },
+    { value: 'false', label: 'Ngừng sử dụng' },
+];
 
 const initialForm = {
     IdNhomVp: '',
@@ -140,14 +147,12 @@ const QL_LoaiViPham = () => {
         );
     };
 
-    const handleNhomFilterChange = (e) => {
-        const val = e.target.value;
+    const handleNhomFilterChange = (val) => {
         setFilterNhom(val);
         loadLoaiList(val, filterTrangThai);
     };
 
-    const handleTrangThaiFilterChange = (e) => {
-        const val = e.target.value;
+    const handleTrangThaiFilterChange = (val) => {
         setFilterTrangThai(val);
         loadLoaiList(filterNhom, val);
     };
@@ -386,21 +391,25 @@ const QL_LoaiViPham = () => {
             <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <div style={{ minWidth: '240px', flex: '2 1 240px' }}>
                     <label style={labelStyle}>Nhóm vi phạm</label>
-                    <select className="form-input" value={filterNhom} onChange={handleNhomFilterChange}>
-                        <option value="">-- Tất cả nhóm --</option>
-                        {nhomList.map((n) => (
-                            <option key={n.IdNhomVp} value={n.IdNhomVp}>{n.TenNhom}</option>
-                        ))}
-                    </select>
+                    <SearchSelect
+                        value={filterNhom}
+                        onChange={handleNhomFilterChange}
+                        options={[
+                            { value: '', label: '-- Tất cả nhóm --' },
+                            ...nhomList.map((n) => ({ value: n.IdNhomVp, label: n.TenNhom })),
+                        ]}
+                        placeholder="-- Tất cả nhóm --"
+                    />
                 </div>
 
                 <div style={{ minWidth: '160px', flex: '1 1 160px' }}>
                     <label style={labelStyle}>Trạng thái</label>
-                    <select className="form-input" value={filterTrangThai} onChange={handleTrangThaiFilterChange}>
-                        <option value="">-- Tất cả --</option>
-                        <option value="true">Đang sử dụng</option>
-                        <option value="false">Ngừng sử dụng</option>
-                    </select>
+                    <SearchSelect
+                        value={filterTrangThai}
+                        onChange={handleTrangThaiFilterChange}
+                        options={TRANG_THAI_FILTER_OPTIONS}
+                        placeholder="-- Tất cả --"
+                    />
                 </div>
 
                 <div style={{ minWidth: '220px', flex: '2 1 220px' }}>

@@ -17,6 +17,7 @@ import {
   TrangThaiBadge,
   XepLoaiBadge,
 } from '../../components/QuanLyChamDiem/TrangThaiBadge';
+import SearchSelect from '../../components/Common/SearchSelect';
 
 const PAGE_SIZE = 20;
 
@@ -129,27 +130,31 @@ const LichSuDanhGia = () => {
       <div className="cd-toolbar">
         <div className="cd-field">
           <label className="cd-label">Năm đánh giá</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={idNam}
-            onChange={(e) => setIdNam(e.target.value)}
+            onChange={(v) => setIdNam(v)}
+            options={[
+              { value: '', label: '-- Tất cả các năm --' },
+              ...namList.map((n) => ({
+                value: n.IdNam,
+                label: `Năm học ${n.IdNam}`,
+              })),
+            ]}
+            placeholder="-- Tất cả các năm --"
             disabled={dangTaiNam}
-          >
-            <option value="">-- Tất cả các năm --</option>
-            {namList.map((n) => (
-              <option key={n.IdNam} value={n.IdNam}>
-                Năm học {n.IdNam}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className="cd-field">
           <label className="cd-label">Sắp xếp</label>
-          <select className="form-input" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            <option value="ngay_tao">Ngày tạo</option>
-            <option value="ngay_gui">Ngày gửi</option>
-          </select>
+          <SearchSelect
+            value={sortBy}
+            onChange={(v) => setSortBy(v)}
+            options={[
+              { value: 'ngay_tao', label: 'Ngày tạo' },
+              { value: 'ngay_gui', label: 'Ngày gửi' },
+            ]}
+          />
         </div>
 
         <button

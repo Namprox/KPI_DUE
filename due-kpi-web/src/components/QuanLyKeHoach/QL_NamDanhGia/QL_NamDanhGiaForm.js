@@ -1,6 +1,13 @@
 import React, { useEffect } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { addLocale, locale } from 'primereact/api';
+import SearchSelect from '../../Common/SearchSelect';
+
+const TRANG_THAI_OPTIONS = [
+    { value: 1, label: '1 - Đang cấu hình (Chuẩn bị)' },
+    { value: 2, label: '2 - Mở hệ thống (Đang chạy)' },
+    { value: 3, label: '3 - Đóng hệ thống (Kết thúc)' },
+];
 
 const QL_NamDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing }) => {
     useEffect(() => {
@@ -68,25 +75,13 @@ const QL_NamDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, i
                             </div>
                             <div className="form-group">
                                 <label>Trạng thái hệ thống (Tự động) <span className="text-red">*</span></label>
-                                <select
+                                <SearchSelect
                                     name="TrangThai"
-                                    className="form-input"
                                     value={formData.TrangThai || 1}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={true}
-                                    style={{
-                                        backgroundColor: '#f1f5f9',
-                                        cursor: 'not-allowed',
-                                        color: '#475569',
-                                        fontWeight: 'bold',
-                                        border: '1px solid #cbd5e1'
-                                    }}
-                                >
-                                    <option value={1}>1 - Đang cấu hình (Chuẩn bị)</option>
-                                    <option value={2}>2 - Mở hệ thống (Đang chạy)</option>
-                                    <option value={3}>3 - Đóng hệ thống (Kết thúc)</option>
-                                </select>
+                                    onChange={(v) => setFormData({ ...formData, TrangThai: v })}
+                                    options={TRANG_THAI_OPTIONS}
+                                    disabled
+                                />
                             </div>
                         </div>
 

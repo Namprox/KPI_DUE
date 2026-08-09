@@ -2,6 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch } from "../utils/api";
 import "../css/Pages.css";
+import SearchSelect from "../components/Common/SearchSelect";
+
+const GIOI_TINH_OPTIONS = [
+  { value: "", label: "Chọn giới tính" },
+  { value: "1", label: "Nam" },
+  { value: "2", label: "Nữ" },
+  { value: "3", label: "Khác" },
+];
 
 const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
   const { user, refreshUser } = useAuth();
@@ -383,19 +391,13 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
             <div className="form-grid-2" style={{ marginTop: "15px" }}>
               {/* Giới tính */}
               <div className="form-group">
-                <label htmlFor="gender-select">Giới tính</label>
-                <select
-                  id="gender-select"
-                  className="form-input"
+                <label>Giới tính</label>
+                <SearchSelect
                   value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <option value="">Chọn giới tính</option>
-                  <option value="1">Nam</option>
-                  <option value="2">Nữ</option>
-                  <option value="3">Khác</option>
-                </select>
+                  onChange={(v) => setGender(v)}
+                  options={GIOI_TINH_OPTIONS}
+                  placeholder="Chọn giới tính"
+                />
               </div>
 
               {/* Ngày sinh */}

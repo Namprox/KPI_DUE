@@ -6,6 +6,19 @@ import QL_NgoaiLeListing from "../../components/QuanLyKeHoach/QL_NgoaiLeDinhMuc/
 import QL_NgoaiLeForm from "../../components/QuanLyKeHoach/QL_NgoaiLeDinhMuc/QL_NgoaiLeForm";
 import { useConfirmDeleteDialog } from "../../hooks/useConfirmDeleteDialog";
 import { apiFetch } from "../../utils/api";
+import SearchSelect from "../../components/Common/SearchSelect";
+
+const LOAI_NGOAI_LE_FILTER_OPTIONS = [
+  { value: "", label: "-- Tất cả loại ngoại lệ --" },
+  { value: "1", label: "1: Tập sự / Thử việc" },
+  { value: "2", label: "2: Nghỉ BHXH / LĐ" },
+  { value: "3", label: "3: Cử đi đào tạo TS" },
+  { value: "4", label: "4: Nữ nuôi con 7-12 tháng" },
+  { value: "5", label: "5: Nữ nuôi con 13-36 tháng" },
+  { value: "6", label: "6: Quân nhân dự bị" },
+  { value: "7", label: "7: Hệ số NCKH nữ" },
+  { value: "8", label: "8: Khác" },
+];
 
 const initialForm = {
   IdNhanVien: "",
@@ -188,24 +201,21 @@ const QL_NgoaiLeDinhMuc = () => {
     setFilteredData(result);
   };
 
-  const handleNamChange = (e) => {
-    const yearId = e.target.value;
+  const handleNamChange = (yearId) => {
     setSelectedNam(yearId);
     if (yearId) {
       loadNgoaiLeData(yearId, selectedNhanVienFilter);
     }
   };
 
-  const handleNhanVienFilterChange = (e) => {
-    const nvId = e.target.value;
+  const handleNhanVienFilterChange = (nvId) => {
     setSelectedNhanVienFilter(nvId);
     if (selectedNam) {
       loadNgoaiLeData(selectedNam, nvId);
     }
   };
 
-  const handleLoaiFilterChange = (e) => {
-    const val = e.target.value;
+  const handleLoaiFilterChange = (val) => {
     setSelectedLoaiFilter(val);
     applyFilters(data, searchQuery, val);
   };
@@ -458,17 +468,14 @@ const QL_NgoaiLeDinhMuc = () => {
           >
             Năm đánh giá
           </label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedNam}
             onChange={handleNamChange}
-          >
-            {namList.map((n) => (
-              <option key={n.IdNam} value={n.IdNam}>
-                Năm học {n.IdNam}
-              </option>
-            ))}
-          </select>
+            options={namList.map((n) => ({
+              value: n.IdNam,
+              label: `Năm học ${n.IdNam}`,
+            }))}
+          />
         </div>
 
         <div style={{ minWidth: "220px", flex: "2 1 220px" }}>
@@ -483,19 +490,20 @@ const QL_NgoaiLeDinhMuc = () => {
           >
             Giảng viên
           </label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedNhanVienFilter}
             onChange={handleNhanVienFilterChange}
-          >
-            <option value="">-- Tất cả giảng viên --</option>
-            {nhanVienList.map((nv) => (
-              <option key={nv.IdNhanVien} value={nv.IdNhanVien}>
-                {nv.MaNhanVien ? nv.MaNhanVien + " - " : ""}
-                {nv.HoTen}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: "-- Tất cả giảng viên --" },
+              ...nhanVienList.map((nv) => ({
+                value: nv.IdNhanVien,
+                label: `${nv.MaNhanVien ? nv.MaNhanVien + " - " : ""}${nv.HoTen}`,
+              })),
+            ]}
+            placeholder="-- Tất cả giảng viên --"
+            searchable
+            searchPlaceholder="Tìm theo mã hoặc tên..."
+          />
         </div>
 
         <div style={{ minWidth: "200px", flex: "2 1 200px" }}>
@@ -510,21 +518,12 @@ const QL_NgoaiLeDinhMuc = () => {
           >
             Loại ngoại lệ
           </label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedLoaiFilter}
             onChange={handleLoaiFilterChange}
-          >
-            <option value="">-- Tất cả loại ngoại lệ --</option>
-            <option value="1">1: Tập sự / Thử việc</option>
-            <option value="2">2: Nghỉ BHXH / LĐ</option>
-            <option value="3">3: Cử đi đào tạo TS</option>
-            <option value="4">4: Nữ nuôi con 7-12 tháng</option>
-            <option value="5">5: Nữ nuôi con 13-36 tháng</option>
-            <option value="6">6: Quân nhân dự bị</option>
-            <option value="7">7: Hệ số NCKH nữ</option>
-            <option value="8">8: Khác</option>
-          </select>
+            options={LOAI_NGOAI_LE_FILTER_OPTIONS}
+            placeholder="-- Tất cả loại ngoại lệ --"
+          />
         </div>
 
         <div style={{ minWidth: "220px", flex: "2 1 220px" }}>

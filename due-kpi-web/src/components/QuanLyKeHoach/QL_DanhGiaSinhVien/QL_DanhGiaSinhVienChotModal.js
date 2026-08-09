@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiFetch } from "../../../utils/api";
+import SearchSelect from "../../Common/SearchSelect";
 
 const QL_DanhGiaSinhVienChotModal = ({
   isOpen,
@@ -132,23 +133,17 @@ const QL_DanhGiaSinhVienChotModal = ({
               <label style={{ fontWeight: "600", marginBottom: "8px", display: "block" }}>
                 Năm đánh giá <span className="text-red">*</span>
               </label>
-              <select
-                className="form-input"
+              <SearchSelect
                 value={idNam}
-                onChange={(e) => setIdNam(e.target.value)}
+                onChange={(v) => setIdNam(v)}
+                options={(namList || []).map((y) => {
+                  const val = y.IdNam || y.id_nam;
+                  return { value: val, label: `Năm ${val}` };
+                })}
+                placeholder="-- Chọn năm đánh giá --"
                 required
                 disabled={isLoading}
-              >
-                <option value="">-- Chọn năm đánh giá --</option>
-                {(namList || []).map((y) => {
-                  const val = y.IdNam || y.id_nam;
-                  return (
-                    <option key={val} value={val}>
-                      Năm {val}
-                    </option>
-                  );
-                })}
-              </select>
+              />
             </div>
 
             <div

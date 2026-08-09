@@ -8,6 +8,7 @@ import { TrangThaiBadge } from '../../components/QuanLyChamDiem/TrangThaiBadge';
 import { useMinhChungPhieuPreview } from '../../hooks/useMinhChungPhieuPreview';
 import { useNamDanhGia } from '../../hooks/useNamDanhGia';
 import { formatNgay } from '../../utils/phieuApi';
+import SearchSelect from '../../components/Common/SearchSelect';
 import {
   fetchKhoMinhChung,
   formatKb,
@@ -106,20 +107,21 @@ const KhoMinhChung = () => {
       <div className="cd-toolbar">
         <div className="cd-field">
           <label className="cd-label">Năm đánh giá</label>
-          <select
-            className="form-input"
-            value={idNam}
-            onChange={(e) => setIdNam(e.target.value)}
-            disabled={dangTaiNam || Boolean(idPhieu)}
-            title={idPhieu ? 'Đang lọc theo một phiếu cụ thể' : undefined}
-          >
-            <option value="">-- Tất cả các năm --</option>
-            {namList.map((n) => (
-              <option key={n.IdNam} value={n.IdNam}>
-                Năm học {n.IdNam}
-              </option>
-            ))}
-          </select>
+          <div title={idPhieu ? 'Đang lọc theo một phiếu cụ thể' : undefined}>
+            <SearchSelect
+              value={idNam}
+              onChange={(v) => setIdNam(v)}
+              options={[
+                { value: '', label: '-- Tất cả các năm --' },
+                ...namList.map((n) => ({
+                  value: n.IdNam,
+                  label: `Năm học ${n.IdNam}`,
+                })),
+              ]}
+              placeholder="-- Tất cả các năm --"
+              disabled={dangTaiNam || Boolean(idPhieu)}
+            />
+          </div>
         </div>
 
         <div className="cd-field" style={{ flex: '2 1 260px' }}>

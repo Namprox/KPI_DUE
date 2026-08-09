@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import SearchSelect from '../../Common/SearchSelect';
 
 const QL_MauDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, namList = [], tieuChiList = [], isLoadingDetails = false }) => {
 
@@ -47,12 +48,14 @@ const QL_MauDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, i
                             </div>
                             <div className="form-group">
                                 <label>Năm áp dụng <span className="text-red">*</span></label>
-                                <select name="IdNam" className="form-input" value={formData.IdNam || ''} onChange={handleChange} required>
-                                    <option value="">Chọn năm</option>
-                                    {namList.map(nam => (
-                                        <option key={nam.IdNam} value={nam.IdNam}>Năm {nam.IdNam}</option>
-                                    ))}
-                                </select>
+                                <SearchSelect
+                                    name="IdNam"
+                                    value={formData.IdNam || ''}
+                                    onChange={(v) => setFormData({ ...formData, IdNam: v })}
+                                    options={namList.map(nam => ({ value: nam.IdNam, label: `Năm ${nam.IdNam}` }))}
+                                    placeholder="Chọn năm"
+                                    required
+                                />
                             </div>
                         </div>
 

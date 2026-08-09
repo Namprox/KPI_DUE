@@ -2147,6 +2147,14 @@ paths:
           required: true
           schema:
             type: integer
+        - name: kemLichSu
+          in: query
+          required: false
+          description: >
+            true = do them lich su cham diem vao tung ChiTiet[].LichSu. Mac dinh false.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: OK
@@ -2231,6 +2239,20 @@ paths:
       description: |
         Validates that the phieu is in NHAP (1), owned by the current GV,
         and that all chi_tiet rows have diem_tu_danh_gia plus required minh_chung.
+
+        CHOT 0 DIEM KHI NOP: moi tieu chi cham tay (LoaiNguonDiem = 1) con
+        diem_tu_danh_gia NULL se duoc ghi 0 trong cung transaction nop. Sau khi nop,
+        phieu KHONG con dong nao thieu diem. 0 diem KHONG bi bat minh chung —
+        validate minh chung chi soi cac dong GV ke khai diem > 0, va chay TRUOC
+        buoc dien 0 nen khong bi anh huong. Tong diem khong doi.
+
+        CHAM TU DONG KHI NOP: trong cung transaction nop phieu, SP goi
+        sp_phieu_cham_tu_dong_apply de ghi diem cho moi chi_tiet co
+        LoaiNguonDiem = 2 (NCKH / phan hoi sinh vien / vi pham giang day) vao
+        diem_tu_dong VA diem_chinh_thuc. Con so bang dung preview
+        GET /api/maudanhgia/{id}/diem-tu-dong vi ca hai dung chung
+        fn_nckh_diem_tu_dong. Engine loi thi ca thao tac nop bi rollback.
+        Goi lai GET /api/phieu/{id} sau khi nop de doc DiemChinhThuc / NgayTuDong.
       operationId: phieuDanhGiaSubmit
       parameters:
         - name: id
@@ -2713,6 +2735,9 @@ paths:
               1 -> clear ALL (tu DG, Khoa, Truong, chinh thuc)
               2 -> clear Khoa + Truong + chinh thuc (keep tu DG)
               3 -> clear Truong + chinh thuc (keep tu DG + Khoa)
+           Rows with LoaiNguonDiem = 2 are NEVER cleared: their diem_chinh_thuc is
+           machine-computed from source data, not a manual score, and chot skips them
+           (so a cleared value could never be recomputed when reopening to state 3).
         3) Updates phieu: trang_thai = trangThaiMoi, lan_danh_gia +=1, lan_mo_lai +=1,
            sets tracking columns, clears totals/xep_loai/chot info.
         4) Writes lich_su_trang_thai_phieu (hanh_dong = 5 Mo lai, cap_thuc_hien = 3).
@@ -2775,6 +2800,17 @@ paths:
           required: true
           schema:
             type: integer
+        - name: kemLichSu
+          in: query
+          required: false
+          description: >
+            true = do them lich su cham diem vao tung ChiTiet[].LichSu (gom MOI
+            lan danh gia, moi cap). Mac dinh false de khong lam phinh payload.
+            Du lieu y het GET /api/phieu/{id}/lich-su-cham-diem, chi khac la da
+            duoc nhom san theo tieu chi.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: OK
@@ -2792,7 +2828,11 @@ paths:
         tinh diem tu du lieu da dong bo (NCKH, gio giang, phan hoi sinh vien...) theo
         CongThucSnapshot roi GHI THANG vao diem_chinh_thuc — don vi khong cham tay
         cac tieu chi nay.
-        Chi chay duoc khi phieu o trang thai Nhap (1). Quyen: ADMIN, hoac TK/TKL/TP
+        LUU Y: POST /api/phieu/{id}/nop da TU DONG chay engine nay trong cung
+        transaction nop phieu, nen endpoint nay chi con dung de cham som (khi phieu
+        con Nhap) hoac cham lai sau khi du lieu nguon thay doi.
+        Chay duoc khi phieu o trang thai Nhap (1) hoac Da nop (2); tu trang thai 3
+        tro len tra PHIEU_INVALID_STATE. Quyen: ADMIN, hoac TK/TKL/TP
         trong pham vi don vi (enforce trong SP).
         ScienceUserId = null nghia la giang vien chua duoc map sang he thong NCKH,
         khi do cac tieu chi NCKH tu dong se ra 0 diem.
@@ -6910,6 +6950,32 @@ components:
             phải đạt/không đạt: điểm = diem_toi_da (15) − tổng diem_tru của các vi phạm
             trong năm, sàn ở 0 (không có đường nào ép về 0);
             giảng viên KHÔNG có vi phạm nào được trọn điểm.
+        IdThangDiemChon:
+          type: integer
+          nullable: true
+          description: >
+            Mức thang điểm (thang_diem.id_thang_diem) mà engine SẼ gán khi chấm thật —
+            preview dùng đúng quy tắc của sp_phieu_cham_tu_dong_apply nên không bao giờ lệch.
+            Chỉ ánh xạ cho tiêu chí RỜI RẠC (loai_thang_diem = 1) và khớp CHÍNH XÁC
+            gia_tri_diem = DiemTuDong.
+            null khi tiêu chí không rời rạc (VPGD_TUAN_THU là loại liên tục) hoặc điểm
+            không trùng mức nào. Ánh xạ KHÔNG làm thay đổi điểm số.
+        DieuKienDiem:
+          type: string
+          nullable: true
+          description: Nhãn hiển thị của mức trên (thang_diem.dieu_kien_diem), vd "Có bài Q1/Q2". null khi IdThangDiemChon null.
+        ThangDiem:
+          type: array
+          description: >
+            TOÀN BỘ các mức thang điểm của tiêu chí này, sắp theo ThuTuHienThi.
+            Luôn khác null — mảng rỗng nghĩa là tiêu chí chưa khai thang điểm
+            (ví dụ các tiêu chí NCKH loại Có/Không).
+            Mức đang được chọn có DaChon = true và IdThangDiem trùng IdThangDiemChon;
+            khi IdThangDiemChon null thì mọi phần tử đều có DaChon = false.
+            FE dùng mảng này để vẽ cả thang và tô sáng mức đạt được, không cần gọi
+            thêm GET /api/thangdiem?tieuChiId=.
+          items:
+            $ref: "#/components/schemas/MauDanhGiaThangDiemMucDto"
         MinhChung:
           type: array
           description: >
@@ -6919,6 +6985,26 @@ components:
             (với VPGD_TUAN_THU, rỗng nghĩa là không có vi phạm = trọn điểm).
           items:
             $ref: "#/components/schemas/MauDanhGiaMinhChungDto"
+    MauDanhGiaThangDiemMucDto:
+      type: object
+      description: >
+        1 mức trong thang điểm của tiêu chí. Danh mục mức là thuộc tính của TIÊU CHÍ,
+        nhưng DaChon là cờ RIÊNG của từng dòng (giảng viên × tiêu chí) vì mức được chọn
+        phụ thuộc điểm của chính giảng viên đó.
+      properties:
+        IdThangDiem:
+          type: integer
+        GiaTriDiem:
+          type: number
+        DieuKienDiem:
+          type: string
+          nullable: true
+          description: Mô tả điều kiện đạt mức, vd "Điểm đánh giá phản hồi của sinh viên >= 3".
+        ThuTuHienThi:
+          type: integer
+        DaChon:
+          type: boolean
+          description: true = mức này khớp với DiemTuDong của dòng hiện tại (IdThangDiem = IdThangDiemChon).
     MauDanhGiaMinhChungDto:
       type: object
       description: 1 dòng minh chứng gọn, đủ để xem qua ngay trên lưới điểm tự động
@@ -7692,6 +7778,20 @@ components:
           type: number
           nullable: true
           description: Engine ghi thang vao day (khong qua diem_khoa / diem_truong).
+        IdThangDiemChon:
+          type: integer
+          nullable: true
+          description: >
+            Muc thang diem (thang_diem.id_thang_diem) ma engine da anh xa cho diem vua cham.
+            Engine CHI anh xa cho tieu chi ROI RAC (tieu_chi_danh_gia.loai_thang_diem = 1)
+            va khop CHINH XAC gia_tri_diem = diem vua tinh.
+            null khi tieu chi khong roi rac (vd VPGD_TUAN_THU la loai lien tuc: diem la
+            phan con lai sau khi tru nen khong keo ve muc nao) hoac diem khong trung muc nao.
+            Anh xa KHONG lam thay doi diem so.
+        DieuKienDiem:
+          type: string
+          nullable: true
+          description: Nhan hien thi cua muc tren (thang_diem.dieu_kien_diem), vd "Co bai Q1/Q2". null khi IdThangDiemChon null.
     PhieuTongHopTuDongResponse:
       type: object
       properties:
@@ -7925,6 +8025,28 @@ components:
         DiemChinhThuc:
           type: number
           nullable: true
+        CongThucSnapshot:
+          type: string
+          nullable: true
+          description: >
+            Chi co nghia khi LoaiNguonDiem = 2. Ma cong thuc snapshot luc tao phieu
+            (vd NCKH_BAI_Q1Q2, PHSV_DIEM_TB_GTE_3, VPGD_TUAN_THU).
+            Chi duoc tra o GET /api/phieu/{id}.
+        DiemTuDong:
+          type: number
+          nullable: true
+          description: >
+            Diem engine tinh (audit / re-run). Engine ghi dong thoi vao DiemChinhThuc,
+            nen NgayTuDong khac null nghia la DiemChinhThuc la diem may cham chu khong
+            phai Truong cham tay.
+        IdNguoiTuDong:
+          type: integer
+          nullable: true
+          description: Nguoi kich hoat cham tu dong (= chu phieu khi engine chay luc nop phieu).
+        NgayTuDong:
+          type: string
+          format: date-time
+          nullable: true
         MoTaHoanThanh:
           type: string
           nullable: true
@@ -7945,6 +8067,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/NhiemVuCongDongDto"
+        LichSu:
+          type: array
+          nullable: true
+          description: >
+            Lich su cham diem cua RIENG tieu chi nay (moi lan_danh_gia, moi cap),
+            sap xep tang dan theo thoi gian. CHI xuat hien khi goi
+            GET api/phieu/{id}?kemLichSu=true hoac api/phieu/me/{idNam}?kemLichSu=true;
+            mac dinh truong nay bi bo qua trong JSON.
+          items:
+            $ref: "#/components/schemas/LichSuChamDiemDto"
     ChiTietDanhGiaTuDanhGiaRequest:
       type: object
       properties:

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { addLocale, locale } from 'primereact/api';
 import { LOAI_NGOAI_LE_MAP } from './QL_NgoaiLeListing';
+import SearchSelect from '../../Common/SearchSelect';
 
 const QL_NgoaiLeForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, namList, nhanVienList }) => {
     useEffect(() => {
@@ -26,8 +27,10 @@ const QL_NgoaiLeForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
         setFormData(prev => ({ ...prev, [name]: val }));
     };
 
-    const handleLoaiNgoaiLeChange = (e) => {
-        const loai = parseInt(e.target.value, 10);
+    const handleSelect = (name) => (value) => setFormData(prev => ({ ...prev, [name]: value }));
+
+    const handleLoaiNgoaiLeChange = (value) => {
+        const loai = parseInt(value, 10);
         if (!loai) {
             setFormData(prev => ({ ...prev, LoaiNgoaiLe: '' }));
             return;
@@ -97,56 +100,47 @@ const QL_NgoaiLeForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                             <div className="form-group">
                                 <label>Năm đánh giá <span className="text-red">*</span></label>
-                                <select
+                                <SearchSelect
                                     name="IdNam"
-                                    className="form-input"
                                     value={formData.IdNam || ''}
-                                    onChange={handleChange}
+                                    onChange={handleSelect('IdNam')}
+                                    options={namList.map(n => ({ value: n.IdNam, label: String(n.IdNam) }))}
+                                    placeholder="-- Chọn năm học --"
                                     disabled={isEditing}
                                     required
-                                >
-                                    <option value="">-- Chọn năm học --</option>
-                                    {namList.map(n => (
-                                        <option key={n.IdNam} value={n.IdNam}>{n.IdNam}</option>
-                                    ))}
-                                </select>
+                                />
                             </div>
 
                             <div className="form-group">
                                 <label>Giảng viên / Nhân viên <span className="text-red">*</span></label>
-                                <select
+                                <SearchSelect
                                     name="IdNhanVien"
-                                    className="form-input"
                                     value={formData.IdNhanVien || ''}
-                                    onChange={handleChange}
+                                    onChange={handleSelect('IdNhanVien')}
+                                    options={nhanVienList.map(nv => ({
+                                        value: nv.IdNhanVien,
+                                        label: `${nv.MaNhanVien ? nv.MaNhanVien + ' - ' : ''}${nv.HoTen}`,
+                                    }))}
+                                    placeholder="-- Chọn giảng viên --"
+                                    searchable
+                                    searchPlaceholder="Tìm theo mã hoặc tên..."
                                     disabled={isEditing}
                                     required
-                                >
-                                    <option value="">-- Chọn giảng viên --</option>
-                                    {nhanVienList.map(nv => (
-                                        <option key={nv.IdNhanVien} value={nv.IdNhanVien}>
-                                            {nv.MaNhanVien ? nv.MaNhanVien + ' - ' : ''}{nv.HoTen}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                             </div>
                         </div>
 
                         <div className="form-group" style={{ marginBottom: '20px' }}>
                             <label>Loại ngoại lệ <span className="text-red">*</span></label>
-                            <select
+                            <SearchSelect
                                 name="LoaiNgoaiLe"
-                                className="form-input"
                                 value={formData.LoaiNgoaiLe || ''}
                                 onChange={handleLoaiNgoaiLeChange}
+                                options={Object.entries(LOAI_NGOAI_LE_MAP).map(([key, val]) => ({ value: key, label: val }))}
+                                placeholder="-- Chọn loại ngoại lệ --"
                                 disabled={isEditing}
                                 required
-                            >
-                                <option value="">-- Chọn loại ngoại lệ --</option>
-                                {Object.entries(LOAI_NGOAI_LE_MAP).map(([key, val]) => (
-                                    <option key={key} value={key}>{val}</option>
-                                ))}
-                            </select>
+                            />
                         </div>
 
                         {/* Additional fields depending on LoaiNgoaiLe (only when creating) */}

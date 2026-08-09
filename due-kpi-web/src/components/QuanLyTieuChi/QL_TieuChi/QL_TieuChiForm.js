@@ -1,4 +1,18 @@
 import React from "react";
+import SearchSelect from "../../Common/SearchSelect";
+
+const CAP_DANH_GIA_OPTIONS = [
+  { value: "", label: "Dành cho mọi cấp" },
+  { value: 1, label: "Cấp Trường" },
+  { value: 2, label: "Cấp Khoa/Phòng" },
+  { value: 3, label: "Cấp Bộ môn" },
+];
+
+const LOAI_THANG_DIEM_OPTIONS = [
+  { value: 1, label: "1 - Mức điểm rời rạc (VD: 2đ, 5đ, 10đ)" },
+  { value: 2, label: "2 - Điểm liên tục (Tự nhập số)" },
+  { value: 3, label: "3 - Chọn Có / Không" },
+];
 
 const QL_TieuChiForm = ({
   isOpen,
@@ -15,6 +29,9 @@ const QL_TieuChiForm = ({
     const { name, value, type, checked } = e.target;
     setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
   };
+
+  const handleSelect = (name) => (value) =>
+    setFormData({ ...formData, [name]: value });
 
   const handleAddThangDiem = () => {
     const currentList = formData.ThangDiemList || [];
@@ -106,20 +123,17 @@ const QL_TieuChiForm = ({
               <label>
                 Thuộc Nhóm Tiêu Chí <span className="text-red">*</span>
               </label>
-              <select
+              <SearchSelect
                 name="IdNhom"
-                className="form-input"
                 value={formData.IdNhom || ""}
-                onChange={handleChange}
+                onChange={handleSelect("IdNhom")}
+                options={nhomTieuChiList.map((nhom) => ({
+                  value: nhom.IdNhom,
+                  label: nhom.TenNhom,
+                }))}
+                placeholder="Chọn nhóm tiêu chí"
                 required
-              >
-                <option value="">Chọn nhóm tiêu chí</option>
-                {nhomTieuChiList.map((nhom) => (
-                  <option key={nhom.IdNhom} value={nhom.IdNhom}>
-                    {nhom.TenNhom}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div className="form-group" style={{ marginBottom: "20px" }}>
@@ -152,17 +166,13 @@ const QL_TieuChiForm = ({
             <div className="form-grid-2" style={{ marginBottom: "20px" }}>
               <div className="form-group">
                 <label>Cấp đánh giá</label>
-                <select
+                <SearchSelect
                   name="CapDanhGia"
-                  className="form-input"
                   value={formData.CapDanhGia || ""}
-                  onChange={handleChange}
-                >
-                  <option value="">Dành cho mọi cấp</option>
-                  <option value={1}>Cấp Trường</option>
-                  <option value={2}>Cấp Khoa/Phòng</option>
-                  <option value={3}>Cấp Bộ môn</option>
-                </select>
+                  onChange={handleSelect("CapDanhGia")}
+                  options={CAP_DANH_GIA_OPTIONS}
+                  placeholder="Dành cho mọi cấp"
+                />
               </div>
               <div className="form-group">
                 <label>
@@ -185,20 +195,13 @@ const QL_TieuChiForm = ({
                 <label>
                   Loại Thang Điểm <span className="text-red">*</span>
                 </label>
-                <select
+                <SearchSelect
                   name="LoaiThangDiem"
-                  className="form-input"
                   value={formData.LoaiThangDiem || 1}
-                  onChange={handleChange}
+                  onChange={handleSelect("LoaiThangDiem")}
+                  options={LOAI_THANG_DIEM_OPTIONS}
                   required
-                >
-                  <option value={1}>
-                    1 - Mức điểm rời rạc (VD: 2đ, 5đ, 10đ)
-                  </option>
-                  <option value={2}>2 - Điểm liên tục (Tự nhập số)</option>
-                  <option value={3}>3 - Chọn Có / Không</option>
-                  {/* <option value={4}>4 - Theo công thức tính toán</option> */}
-                </select>
+                />
               </div>
               {/* <div className="form-group">
                                 <label>Công thức tính điểm {isFormula && <span className="text-red">*</span>}</label>

@@ -11,6 +11,7 @@ import "../../css/QuanLyChamDiem.css";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import { downloadExcel } from "../../utils/excelUtils";
 import { formatDiem, formatNgay } from "../../utils/phieuApi";
+import SearchSelect from "../../components/Common/SearchSelect";
 import {
   fetchPhanHoiCuaToi,
   mauTheoDiem,
@@ -200,52 +201,43 @@ const PhanHoiSinhVienCuaToi = () => {
       <div className="cd-toolbar">
         <div className="cd-field">
           <label className="cd-label">Năm đánh giá</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedNam}
-            onChange={(e) => setSelectedNam(e.target.value)}
+            onChange={(v) => setSelectedNam(v)}
+            options={namList.map((n) => ({
+              value: n.IdNam,
+              label: `Năm học ${n.IdNam}`,
+            }))}
             disabled={dangTaiNam}
-          >
-            {namList.map((n) => (
-              <option key={n.IdNam} value={n.IdNam}>
-                Năm học {n.IdNam}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className="cd-field">
           <label className="cd-label">Kỳ học</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={kyHoc}
-            onChange={(e) => setKyHoc(e.target.value)}
+            onChange={(v) => setKyHoc(v)}
+            options={[
+              { value: '', label: 'Tất cả các kỳ' },
+              ...boLoc.kyHoc.map((ky) => ({ value: ky, label: tenKyHoc(ky) })),
+            ]}
+            placeholder="Tất cả các kỳ"
             disabled={isLoading || boLoc.kyHoc.length === 0}
-          >
-            <option value="">Tất cả các kỳ</option>
-            {boLoc.kyHoc.map((ky) => (
-              <option key={ky} value={ky}>
-                {tenKyHoc(ky)}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className="cd-field">
           <label className="cd-label">Học phần</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={maHocPhan}
-            onChange={(e) => setMaHocPhan(e.target.value)}
+            onChange={(v) => setMaHocPhan(v)}
+            options={[
+              { value: '', label: 'Tất cả học phần' },
+              ...boLoc.hocPhan.map((ma) => ({ value: ma, label: ma })),
+            ]}
+            placeholder="Tất cả học phần"
             disabled={isLoading || boLoc.hocPhan.length === 0}
-          >
-            <option value="">Tất cả học phần</option>
-            {boLoc.hocPhan.map((ma) => (
-              <option key={ma} value={ma}>
-                {ma}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <button

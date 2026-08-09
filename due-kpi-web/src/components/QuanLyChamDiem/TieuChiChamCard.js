@@ -96,9 +96,10 @@ const MinhChungRow = ({ mc, onXem, onTai }) => {
  * Một tiêu chí trên màn hình chấm.
  *
  * Điểm quan trọng về dữ liệu: GET api/phieu/{id} đã nhúng sẵn MinhChung[] và
- * NhiemVuCongDong[] trong từng chi tiết, nên panel mở rộng chỉ gọi API khi bản
- * ghi thiếu mảng đó (tránh n request thừa mỗi lần mở). Lịch sử chấm điểm luôn
- * gọi lazy vì detail không kèm.
+ * NhiemVuCongDong[] trong từng chi tiết, nên chỉ gọi API khi bản ghi thiếu mảng
+ * đó (tránh n request thừa). Lịch sử chấm điểm không nằm trong detail nên phải
+ * gọi riêng, và chỉ gọi khi tiêu chí đã từng được chấm — tiêu chí chưa ai chấm
+ * chắc chắn chưa có lượt nào, gọi cũng chỉ nhận về mảng rỗng.
  */
 const TieuChiChamCard = ({
   chiTiet,
@@ -116,7 +117,7 @@ const TieuChiChamCard = ({
   const [diem, setDiem] = useState(chiTiet.DiemKhoa ?? '');
   const [nhanXet, setNhanXet] = useState(chiTiet.NhanXetKhoa ?? '');
   const [loiNhap, setLoiNhap] = useState('');
-  const [moRong, setMoRong] = useState(false);
+  const [daThuGon, setDaThuGon] = useState(false);
 
   const [minhChung, setMinhChung] = useState(
     Array.isArray(chiTiet.MinhChung) ? chiTiet.MinhChung : null,
@@ -127,38 +128,46 @@ const TieuChiChamCard = ({
   const [lichSu, setLichSu] = useState(null);
   const [dangTaiPhu, setDangTaiPhu] = useState(false);
 
-  // Sau mỗi lần lưu, phiếu được tải lại → đồng bộ lại ô nhập theo dữ liệu server,
-  // nếu không giá trị cũ của người dùng sẽ che mất giá trị server vừa ghi nhận.
+  // Sau mỗi lần lưu, phiếu được tải lại → đồng bộ lại ô nhập theo dữ liệu server
+  // (nếu không giá trị cũ của người dùng sẽ che mất giá trị server vừa ghi nhận)
+  // rồi nạp phần dữ liệu kèm theo còn thiếu. Lịch sử luôn nạp lại vì lượt chấm
+  // vừa lưu chính là một dòng mới trong đó.
   useEffect(() => {
     setDiem(chiTiet.DiemKhoa ?? '');
     setNhanXet(chiTiet.NhanXetKhoa ?? '');
     setLoiNhap('');
-    if (Array.isArray(chiTiet.MinhChung)) setMinhChung(chiTiet.MinhChung);
-    if (Array.isArray(chiTiet.NhiemVuCongDong)) setNhiemVu(chiTiet.NhiemVuCongDong);
-  }, [chiTiet]);
 
-  const toggleMoRong = async () => {
-    const moTiep = !moRong;
-    setMoRong(moTiep);
-    if (!moTiep) return;
+    const mcNhung = Array.isArray(chiTiet.MinhChung) ? chiTiet.MinhChung : null;
+    const nvNhung = Array.isArray(chiTiet.NhiemVuCongDong) ? chiTiet.NhiemVuCongDong : null;
+    setMinhChung(mcNhung);
+    setNhiemVu(nvNhung);
+    setLichSu(null);
 
-    const canTaiMinhChung = minhChung === null;
-    const canTaiNhiemVu = nhiemVu === null;
-    const canTaiLichSu = lichSu === null;
-    if (!canTaiMinhChung && !canTaiNhiemVu && !canTaiLichSu) return;
+    const canTaiMinhChung = mcNhung === null;
+    const canTaiNhiemVu = nvNhung === null;
+    const canTaiLichSu =
+      chiTiet.DiemKhoa != null || chiTiet.DiemChinhThuc != null || !!chiTiet.NgayDgKhoa;
+    if (!canTaiMinhChung && !canTaiNhiemVu && !canTaiLichSu) return undefined;
 
+    let huy = false;
     setDangTaiPhu(true);
-    const ketQua = await Promise.allSettled([
-      canTaiMinhChung ? fetchMinhChung(chiTiet.IdChiTiet) : Promise.resolve(minhChung),
-      canTaiNhiemVu ? fetchNhiemVuCongDong(chiTiet.IdChiTiet) : Promise.resolve(nhiemVu),
-      canTaiLichSu ? fetchLichSuChamDiem(chiTiet.IdChiTiet) : Promise.resolve(lichSu),
-    ]);
-    // Một endpoint lỗi (403/404) không được làm hỏng cả panel — hiện mảng rỗng.
-    setMinhChung(ketQua[0].status === 'fulfilled' ? ketQua[0].value : []);
-    setNhiemVu(ketQua[1].status === 'fulfilled' ? ketQua[1].value : []);
-    setLichSu(ketQua[2].status === 'fulfilled' ? ketQua[2].value : []);
-    setDangTaiPhu(false);
-  };
+    Promise.allSettled([
+      canTaiMinhChung ? fetchMinhChung(chiTiet.IdChiTiet) : Promise.resolve(mcNhung),
+      canTaiNhiemVu ? fetchNhiemVuCongDong(chiTiet.IdChiTiet) : Promise.resolve(nvNhung),
+      canTaiLichSu ? fetchLichSuChamDiem(chiTiet.IdChiTiet) : Promise.resolve([]),
+    ]).then((ketQua) => {
+      if (huy) return;
+      // Một endpoint lỗi (403/404) không được làm hỏng cả panel — coi như rỗng.
+      setMinhChung(ketQua[0].status === 'fulfilled' ? ketQua[0].value : []);
+      setNhiemVu(ketQua[1].status === 'fulfilled' ? ketQua[1].value : []);
+      setLichSu(ketQua[2].status === 'fulfilled' ? ketQua[2].value : []);
+      setDangTaiPhu(false);
+    });
+
+    return () => {
+      huy = true;
+    };
+  }, [chiTiet]);
 
   const kiemTraDiem = (giaTri) => {
     if (giaTri === '' || giaTri === null) return 'Chưa nhập điểm';
@@ -186,6 +195,22 @@ const TieuChiChamCard = ({
     (nhanXet || '') !== (chiTiet.NhanXetKhoa || '');
 
   const lopThe = !chamTay ? 'cd-tu-dong' : daCham ? 'cd-da-cham' : choPhepNhap ? 'cd-mo-nhap' : '';
+
+  // Khối kèm theo chỉ dựng cho phần thực sự có dữ liệu và mặc định mở sẵn —
+  // tiêu chí trống thì không cần một hàng "không có gì" để người chấm bấm vào.
+  const coMinhChung = (minhChung?.length ?? 0) > 0;
+  const coNhiemVu = (nhiemVu?.length ?? 0) > 0;
+  const coLichSu = (lichSu?.length ?? 0) > 0;
+  const coDuLieuPhu = coMinhChung || coNhiemVu || coLichSu;
+  const moRong = !daThuGon;
+
+  const nhanKhoiPhu = [
+    coMinhChung ? `minh chứng (${minhChung.length})` : null,
+    coNhiemVu ? `nhiệm vụ cộng đồng (${nhiemVu.length})` : null,
+    coLichSu ? 'lịch sử chấm' : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <div className={`cd-tieu-chi ${lopThe}`}>
@@ -270,22 +295,29 @@ const TieuChiChamCard = ({
             )}
           </div>
 
-          <button type="button" className="cd-link-btn" style={{ marginTop: '10px' }} onClick={toggleMoRong}>
-            <i className={`fa-solid ${moRong ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
-            {moRong ? 'Thu gọn' : 'Minh chứng, nhiệm vụ cộng đồng & lịch sử chấm'}
-          </button>
+          {dangTaiPhu && (
+            <div style={{ marginTop: '10px', fontSize: '13px', color: '#64748b' }}>
+              <i className="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu kèm theo...
+            </div>
+          )}
 
-          {moRong && (
+          {coDuLieuPhu && (
+            <button
+              type="button"
+              className="cd-link-btn"
+              style={{ marginTop: '10px' }}
+              onClick={() => setDaThuGon((truoc) => !truoc)}
+            >
+              <i className={`fa-solid ${moRong ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+              {moRong ? 'Thu gọn' : `Xem ${nhanKhoiPhu}`}
+            </button>
+          )}
+
+          {coDuLieuPhu && moRong && (
             <div style={{ marginTop: '12px', display: 'grid', gap: '12px' }}>
-              {dangTaiPhu && (
-                <div style={{ fontSize: '13px', color: '#64748b' }}>
-                  <i className="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu kèm theo...
-                </div>
-              )}
-
-              <div className="cd-box">
-                <div className="cd-box-title">Minh chứng ({minhChung?.length || 0})</div>
-                {minhChung && minhChung.length > 0 ? (
+              {coMinhChung && (
+                <div className="cd-box">
+                  <div className="cd-box-title">Minh chứng ({minhChung.length})</div>
                   <div>
                     {minhChung.map((mc) => (
                       <MinhChungRow
@@ -296,14 +328,12 @@ const TieuChiChamCard = ({
                       />
                     ))}
                   </div>
-                ) : (
-                  <div className="cd-hint">Không có minh chứng nào.</div>
-                )}
-              </div>
+                </div>
+              )}
 
-              <div className="cd-box">
-                <div className="cd-box-title">Nhiệm vụ cộng đồng ({nhiemVu?.length || 0})</div>
-                {nhiemVu && nhiemVu.length > 0 ? (
+              {coNhiemVu && (
+                <div className="cd-box">
+                  <div className="cd-box-title">Nhiệm vụ cộng đồng ({nhiemVu.length})</div>
                   <table className="custom-table" style={{ fontSize: '13px' }}>
                     <thead>
                       <tr>
@@ -326,14 +356,12 @@ const TieuChiChamCard = ({
                       ))}
                     </tbody>
                   </table>
-                ) : (
-                  <div className="cd-hint">Tiêu chí này không kê khai nhiệm vụ cộng đồng.</div>
-                )}
-              </div>
+                </div>
+              )}
 
-              <div className="cd-box">
-                <div className="cd-box-title">Lịch sử chấm điểm</div>
-                {lichSu && lichSu.length > 0 ? (
+              {coLichSu && (
+                <div className="cd-box">
+                  <div className="cd-box-title">Lịch sử chấm điểm</div>
                   <div style={{ display: 'grid', gap: '10px' }}>
                     {lichSu.map((nhom) => (
                       <div key={`${nhom.LanDanhGia}-${nhom.Cap}`}>
@@ -351,10 +379,8 @@ const TieuChiChamCard = ({
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="cd-hint">Chưa có lượt chấm nào được ghi nhận.</div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>

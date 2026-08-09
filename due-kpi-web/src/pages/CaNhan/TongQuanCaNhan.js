@@ -23,6 +23,7 @@ import {
   TRANG_THAI_META,
 } from "../../utils/phieuApi";
 import { duongDanPhieuTuDanhGia } from "../../utils/roles";
+import SearchSelect from "../../components/Common/SearchSelect";
 import {
   TrangThaiBadge,
   XepLoaiBadge,
@@ -137,18 +138,15 @@ const TongQuanCaNhan = () => {
       <div className="cd-toolbar">
         <div className="cd-field">
           <label className="cd-label">Năm đánh giá</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedNam}
-            onChange={(e) => setSelectedNam(e.target.value)}
+            onChange={(v) => setSelectedNam(v)}
+            options={namList.map((n) => ({
+              value: n.IdNam,
+              label: `Năm học ${n.IdNam}`,
+            }))}
             disabled={dangTaiNam}
-          >
-            {namList.map((n) => (
-              <option key={n.IdNam} value={n.IdNam}>
-                Năm học {n.IdNam}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <button

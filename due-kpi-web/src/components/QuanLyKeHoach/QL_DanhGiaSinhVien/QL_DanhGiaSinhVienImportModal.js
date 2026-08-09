@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiFetch } from "../../../utils/api";
+import SearchSelect from "../../Common/SearchSelect";
 
 const QL_DanhGiaSinhVienImportModal = ({
   isOpen,
@@ -178,23 +179,17 @@ const QL_DanhGiaSinhVienImportModal = ({
               >
                 Năm học <span className="text-red">*</span>
               </label>
-              <select
-                className="form-input"
+              <SearchSelect
                 value={namHoc}
-                onChange={(e) => setNamHoc(e.target.value)}
+                onChange={(v) => setNamHoc(v)}
+                options={namList.map((y) => {
+                  const val = y.IdNam || y.id_nam;
+                  return { value: val, label: `Năm ${val}` };
+                })}
+                placeholder="-- Chọn năm học --"
                 required
                 disabled={isLoading}
-              >
-                <option value="">-- Chọn năm học --</option>
-                {namList.map((y) => {
-                  const val = y.IdNam || y.id_nam;
-                  return (
-                    <option key={val} value={val}>
-                      Năm {val}
-                    </option>
-                  );
-                })}
-              </select>
+              />
             </div>
 
             <div className="form-group" style={{ marginBottom: "18px" }}>
@@ -207,25 +202,17 @@ const QL_DanhGiaSinhVienImportModal = ({
               >
                 Đơn vị (Khoa) <span className="text-red">*</span>
               </label>
-              <select
-                className="form-input"
+              <SearchSelect
                 value={maDonVi}
-                onChange={(e) => setMaDonVi(e.target.value)}
+                onChange={(v) => setMaDonVi(v)}
+                options={khoaList.map((dv) => ({
+                  value: dv.MaDonVi || dv.ma_don_vi || "",
+                  label: dv.TenDonVi || dv.ten_don_vi || "",
+                }))}
+                placeholder="-- Chọn đơn vị (Khoa) --"
                 required
                 disabled={isLoading}
-              >
-                <option value="">-- Chọn đơn vị (Khoa) --</option>
-                {khoaList.map((dv) => {
-                  const code = dv.MaDonVi || dv.ma_don_vi || "";
-                  const name = dv.TenDonVi || dv.ten_don_vi || "";
-                  const id = dv.IdDonVi || dv.id_don_vi || code;
-                  return (
-                    <option key={id} value={code}>
-                      {name}
-                    </option>
-                  );
-                })}
-              </select>
+              />
               {khoaList.length === 0 && (
                 <p
                   style={{

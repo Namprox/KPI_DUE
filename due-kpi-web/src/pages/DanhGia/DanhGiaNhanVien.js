@@ -11,6 +11,7 @@ import { apiFetch } from "../../utils/api";
 import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
 import { locFilePdf } from "../../utils/minhChungPhieuApi";
 import { formatNgay } from "../../utils/phieuApi";
+import SearchSelect from "../../components/Common/SearchSelect";
 
 const parseNetDate = (dateString) => {
   if (!dateString) return null;
@@ -303,8 +304,8 @@ const DanhGiaNhanVien = () => {
 
 
 
-  const handleYearChange = (e) => {
-    const newYear = parseInt(e.target.value);
+  const handleYearChange = (value) => {
+    const newYear = parseInt(value);
     setSelectedYear(newYear);
     navigate(`/danh-gia-kpi-nhan-vien?year=${newYear}`);
   };
@@ -697,27 +698,14 @@ const DanhGiaNhanVien = () => {
             >
               Năm đánh giá:
             </label>
-            <select
-              className="form-input"
-              value={selectedYear}
-              onChange={handleYearChange}
-              disabled={isLoading || listYears.length === 0}
-              style={{
-                width: "130px",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "1px solid #cbd5e1",
-                cursor: "pointer",
-                background: "#fff",
-                fontSize: "14px",
-              }}
-            >
-              {listYears.map((y) => (
-                <option key={y} value={y}>
-                  Năm {y}
-                </option>
-              ))}
-            </select>
+            <div style={{ width: "130px" }}>
+              <SearchSelect
+                value={selectedYear}
+                onChange={handleYearChange}
+                options={listYears.map((y) => ({ value: y, label: `Năm ${y}` }))}
+                disabled={isLoading || listYears.length === 0}
+              />
+            </div>
           </div>
         </div>
 

@@ -189,12 +189,13 @@ const DanhGiaPhuLuc2Form = ({
                     </div>
                     <div className="pl2-criteria-header-side">
                       {hasScore && (
-                        <span className="pl2-criteria-score">
-                          <i className="fa-solid fa-circle-check"></i>{" "}
-                          {currentScore % 1 === 0
-                            ? currentScore
-                            : currentScore.toFixed(2)}
-                          đ
+                        <span
+                          className={`pl2-criteria-score ${autoInfo && currentScore === 0 ? "pl2-criteria-score-zero" : ""}`}
+                        >
+                          <i
+                            className={`fa-solid ${autoInfo && currentScore === 0 ? "fa-circle-minus" : "fa-circle-check"}`}
+                          ></i>{" "}
+                          {formatDiem(currentScore)}đ
                         </span>
                       )}
                       <span className="pl2-criteria-max">
@@ -213,7 +214,7 @@ const DanhGiaPhuLuc2Form = ({
                   const isNckh = congThuc.startsWith("NCKH");
                   const isVpgd = congThuc.startsWith("VPGD");
                   const autoNote = isNckh
-                    ? "Điểm được tính tự động dựa vào dữ liệu ở trang NCKH"
+                    ? "Điểm được tính tự động dựa vào dữ liệu từ website NCKH của trường"
                     : isPhsv
                       ? "Điểm được tính tự động dựa vào dữ liệu đánh giá của sinh viên"
                       : isVpgd
@@ -235,10 +236,27 @@ const DanhGiaPhuLuc2Form = ({
                       )
                     : 0;
 
-                  // PHSV_DIEM_TB_GTE_3 -> threshold 3 (default 3 if not encoded)
-                  const nguongMatch = congThuc.match(/GTE_(\d+(?:\.\d+)?)/);
-                  const nguong = nguongMatch ? Number(nguongMatch[1]) : 3;
+                  // Thang điểm kèm cờ DaChon do API điểm tự động trả về; thang điểm
+                  // trong mẫu chỉ là nguồn dự phòng (không có cờ chọn) khi API trống.
+                  const thangDiemAuto = [
+                    ...(autoInfo.ThangDiem?.length
+                      ? autoInfo.ThangDiem
+                      : tc.CacThangDiem || []),
+                  ].sort(
+                    (a, b) => (a.ThuTuHienThi ?? 0) - (b.ThuTuHienThi ?? 0),
+                  );
 
+                  // Tiêu chí liên tục (VPGD_TUAN_THU) không được API ánh xạ mức nào ->
+                  // tự khớp theo giá trị điểm để vẫn tô sáng đúng mức khi trùng khít.
+                  const idMucApDung =
+                    autoInfo.IdThangDiemChon ??
+                    thangDiemAuto.find(
+                      (td) =>
+                        td.DaChon ||
+                        Number(td.GiaTriDiem) ===
+                          Number(autoInfo.DiemTuDong ?? -1),
+                    )?.IdThangDiem ??
+                    null;
                   // Nguồn duy nhất của tiêu chí PHSV là dòng chốt trong
                   // diem_tb_phan_hoi_sinh_vien -> minh chứng đầu tiên chính là nó.
                   // API chỉ trả minh chứng khi ĐẠT, nên rỗng có 2 nghĩa: điểm TB dưới
@@ -281,7 +299,31 @@ const DanhGiaPhuLuc2Form = ({
                         </div>
                       </div>
 
-                      {isPhsv && (
+                      {thangDiemAuto.length > 0 && (
+                        <ul className="pl2-auto-thang-diem-list">
+                          {thangDiemAuto.map((td) => {
+                            const chon = td.IdThangDiem === idMucApDung;
+                            return (
+                              <li
+                                key={td.IdThangDiem}
+                                className={`pl2-auto-thang-diem-item ${chon ? "selected" : ""}`}
+                              >
+                                <i
+                                  className={`fa-solid ${chon ? "fa-circle-check" : "fa-circle"} pl2-auto-thang-diem-icon`}
+                                ></i>
+                                <span className="pl2-diem-badge">
+                                  {formatDiem(td.GiaTriDiem)}đ
+                                </span>
+                                <span className="pl2-thang-diem-text">
+                                  {td.DieuKienDiem}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+
+                      {isPhsv && (phsvChot || phsvThieuCanCu) && (
                         <div
                           className={`pl2-phsv-tb-box ${phsvThieuCanCu ? "pl2-phsv-tb-box-thieu" : ""}`}
                         >
@@ -290,27 +332,14 @@ const DanhGiaPhuLuc2Form = ({
                             bình phản hồi sinh viên:
                           </span>
                           {phsvChot ? (
-                            <>
-                              {diemTb && (
-                                <span className="pl2-phsv-tb-value">
-                                  {diemTb}
-                                </span>
-                              )}
-                              <span className="pl2-phsv-tb-badge pl2-phsv-tb-dat">
-                                <i className="fa-solid fa-circle-check"></i>
-                                Đạt (≥ {nguong})
-                              </span>
-                            </>
-                          ) : phsvThieuCanCu ? (
+                            <span className="pl2-phsv-tb-value">
+                              {diemTb || phsvChot.MoTa || "Đã chốt"}
+                            </span>
+                          ) : (
                             <span className="pl2-phsv-tb-empty">
                               <i className="fa-solid fa-triangle-exclamation"></i>{" "}
                               Chưa có đợt chốt điểm phản hồi sinh viên cho năm
                               này — điểm ở trên chưa có căn cứ
-                            </span>
-                          ) : (
-                            <span className="pl2-phsv-tb-badge pl2-phsv-tb-khong-dat">
-                              <i className="fa-solid fa-circle-xmark"></i>
-                              Không đạt (&lt; {nguong})
                             </span>
                           )}
                         </div>
@@ -533,7 +562,7 @@ const DanhGiaPhuLuc2Form = ({
                             }
                           >
                             <i className="fa-solid fa-paperclip"></i> Đính kèm
-                            tệp PDF
+                            minh chứng
                           </button>
                           <input
                             id={`file_input_${tc.IdTieuChi}`}

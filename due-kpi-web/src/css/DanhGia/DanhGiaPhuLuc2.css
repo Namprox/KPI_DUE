@@ -314,6 +314,12 @@
   white-space: nowrap;
 }
 
+.pl2-criteria-score-zero {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+
 .pl2-thang-diem-list {
   display: flex;
   flex-direction: column;
@@ -655,6 +661,50 @@
   color: #b91c1c;
 }
 
+.pl2-auto-thang-diem-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pl2-auto-thang-diem-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.pl2-auto-thang-diem-item.selected {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.pl2-auto-thang-diem-icon {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.pl2-auto-thang-diem-item.selected .pl2-auto-thang-diem-icon {
+  color: #1d4ed8;
+}
+
+.pl2-auto-thang-diem-item.selected .pl2-diem-badge {
+  color: #fff;
+  background: #1d4ed8;
+}
+
+.pl2-auto-thang-diem-item.selected .pl2-thang-diem-text {
+  font-weight: 600;
+  color: #1e293b;
+}
+
 .pl2-phsv-tb-box {
   display: flex;
   align-items: center;
@@ -685,35 +735,12 @@
   color: #1d4ed8;
 }
 
-.pl2-phsv-tb-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 12.5px;
-  font-weight: 600;
-}
-
-.pl2-phsv-tb-dat {
-  background: #dcfce7;
-  color: #15803d;
-  border: 1px solid #86efac;
-}
-
-.pl2-phsv-tb-khong-dat {
-  background: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fca5a5;
-}
-
 .pl2-phsv-tb-empty {
   font-size: 13px;
   font-style: italic;
   color: #94a3b8;
 }
 
-/* Có điểm nhưng không có đợt chốt nào làm căn cứ -> cảnh báo, không im lặng */
 .pl2-phsv-tb-box-thieu {
   background: #fffbeb;
   border-color: #fcd34d;

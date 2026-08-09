@@ -1,8 +1,10 @@
 import React from 'react';
+import SearchSelect from '../../Common/SearchSelect';
 
 const QL_DinhMucForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, namList, chucDanhList }) => {
     if (!isOpen) return null;
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleSelect = (name) => (value) => setFormData({ ...formData, [name]: value });
 
     return (
         <div className="modal-overlay">
@@ -18,17 +20,25 @@ const QL_DinhMucForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                             <div className="form-group">
                                 <label>Năm học</label>
-                                <select name="IdNam" className="form-input" value={formData.IdNam || ''} onChange={handleChange} required>
-                                    <option value="">Chọn năm</option>
-                                    {namList.map(n => <option key={n.IdNam} value={n.IdNam}>Năm {n.IdNam}</option>)}
-                                </select>
+                                <SearchSelect
+                                    name="IdNam"
+                                    value={formData.IdNam || ''}
+                                    onChange={handleSelect('IdNam')}
+                                    options={namList.map(n => ({ value: n.IdNam, label: `Năm ${n.IdNam}` }))}
+                                    placeholder="Chọn năm"
+                                    required
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Chức danh nghề nghiệp</label>
-                                <select name="IdChucDanh" className="form-input" value={formData.IdChucDanh || ''} onChange={handleChange} required>
-                                    <option value="">Chọn chức danh</option>
-                                    {chucDanhList.map(cd => <option key={cd.IdChucDanh} value={cd.IdChucDanh}>{cd.TenChucDanh}</option>)}
-                                </select>
+                                <SearchSelect
+                                    name="IdChucDanh"
+                                    value={formData.IdChucDanh || ''}
+                                    onChange={handleSelect('IdChucDanh')}
+                                    options={chucDanhList.map(cd => ({ value: cd.IdChucDanh, label: cd.TenChucDanh }))}
+                                    placeholder="Chọn chức danh"
+                                    required
+                                />
                             </div>
                         </div>
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>

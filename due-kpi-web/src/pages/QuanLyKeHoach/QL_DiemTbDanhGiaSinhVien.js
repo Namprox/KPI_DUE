@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../css/Pages.css";
 import QL_DiemTbDanhGiaSinhVienListing from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DiemTbDanhGiaSinhVienListing";
 import { apiFetch } from "../../utils/api";
+import SearchSelect from "../../components/Common/SearchSelect";
 
 const QL_DiemTbDanhGiaSinhVien = () => {
   const navigate = useNavigate();
@@ -75,8 +76,7 @@ const QL_DiemTbDanhGiaSinhVien = () => {
     }
   };
 
-  const handleNamChange = (e) => {
-    const newNam = e.target.value;
+  const handleNamChange = (newNam) => {
     setSelectedNam(newNam);
     setSearchQuery("");
     fetchChiTiet(newNam);
@@ -151,22 +151,18 @@ const QL_DiemTbDanhGiaSinhVien = () => {
             <label style={{ fontWeight: "600", marginBottom: "6px", display: "block", color: "#334155" }}>
               Năm đánh giá
             </label>
-            <select
-              className="form-input"
+            <SearchSelect
               value={selectedNam}
               onChange={handleNamChange}
-              style={{ width: "100%" }}
-            >
-              <option value="">-- Chọn năm --</option>
-              {namList.map((y) => {
-                const val = y.IdNam || y.id_nam;
-                return (
-                  <option key={val} value={val}>
-                    Năm {val}
-                  </option>
-                );
-              })}
-            </select>
+              options={[
+                { value: "", label: "-- Chọn năm --" },
+                ...namList.map((y) => {
+                  const val = y.IdNam || y.id_nam;
+                  return { value: val, label: `Năm ${val}` };
+                }),
+              ]}
+              placeholder="-- Chọn năm --"
+            />
           </div>
 
           <div style={{ flex: "1 1 250px", marginLeft: "auto" }}>

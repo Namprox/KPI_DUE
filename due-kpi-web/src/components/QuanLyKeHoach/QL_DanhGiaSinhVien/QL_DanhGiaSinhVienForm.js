@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import SearchSelect from '../../Common/SearchSelect';
 
 const QL_DanhGiaSinhVienForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, nhanVienList }) => {
+    const [nhanVienDaChon, setNhanVienDaChon] = useState('');
+
     if (!isOpen) return null;
 
     const handleChange = (e) => {
@@ -16,8 +19,9 @@ const QL_DanhGiaSinhVienForm = ({ isOpen, onClose, onSubmit, formData, setFormDa
         });
     };
 
-    const handleNhanVienChange = (e) => {
-        const idNv = e.target.value;
+    const handleNhanVienChange = (value) => {
+        setNhanVienDaChon(value);
+        const idNv = String(value || '');
         if (!idNv) return;
         const nv = nhanVienList.find(x => x.IdNhanVien?.toString() === idNv || x.idNhanVien?.toString() === idNv);
         if (nv) {
@@ -42,12 +46,17 @@ const QL_DanhGiaSinhVienForm = ({ isOpen, onClose, onSubmit, formData, setFormDa
                     <form id="danhGiaSinhVienForm" onSubmit={onSubmit}>
                         <div className="form-group" style={{ marginBottom: '15px' }}>
                             <label>Lấy thông tin từ Nhân viên (Tùy chọn)</label>
-                            <select className="form-input" onChange={handleNhanVienChange} defaultValue="">
-                                <option value="">-- Chọn nhân viên để điền nhanh --</option>
-                                {nhanVienList.map(nv => (
-                                    <option key={nv.IdNhanVien || nv.idNhanVien} value={nv.IdNhanVien || nv.idNhanVien}>{nv.MaNhanVien || nv.maNhanVien} - {nv.HoTen || nv.hoTen}</option>
-                                ))}
-                            </select>
+                            <SearchSelect
+                                value={nhanVienDaChon}
+                                onChange={handleNhanVienChange}
+                                options={nhanVienList.map(nv => ({
+                                    value: nv.IdNhanVien || nv.idNhanVien,
+                                    label: `${nv.MaNhanVien || nv.maNhanVien} - ${nv.HoTen || nv.hoTen}`,
+                                }))}
+                                placeholder="-- Chọn nhân viên để điền nhanh --"
+                                searchable
+                                searchPlaceholder="Tìm theo mã hoặc tên..."
+                            />
                         </div>
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                             <div className="form-group">

@@ -1,4 +1,10 @@
 -- =============================================================================
+-- SCHEMA KPI — nguồn sự thật cấu trúc DB (DDL).
+-- Mô tả / giải thích nghiệp vụ của từng bảng: xem App_Data/schema_ghi_chu.md
+-- (số mục trong đó trùng với số mục ở đây).
+-- =============================================================================
+
+-- =============================================================================
 -- 1. BẢNG THAM CHIẾU
 -- =============================================================================
 
@@ -34,7 +40,6 @@ CREATE TABLE chuc_vu (
 GO
 
 -- 1.3. Chức danh nghề nghiệp
---   Theo Bảng 1 QĐ ĐHKT: Trợ giảng, Tập sự, GV, GVC, GVCC/PGS, GS.
 CREATE TABLE chuc_danh_nghe_nghiep (
     id_chuc_danh  INT           IDENTITY(1,1) PRIMARY KEY,
     ma_chuc_danh  NVARCHAR(20)  NOT NULL,
@@ -155,8 +160,6 @@ CREATE TABLE dinh_muc_giang_vien (
 GO
 
 -- 2.3. Nhóm tiêu chí (cây phân cấp)
---   Nhóm A (100đ): I. Đào tạo (40), II. NCKH (40), III. PVCĐ (20)
---   Nhóm B: Thành tích vượt trội
 CREATE TABLE nhom_tieu_chi (
     id_nhom          INT           IDENTITY(1,1) PRIMARY KEY,
     ten_nhom         NVARCHAR(200) NOT NULL,
@@ -233,16 +236,7 @@ CREATE TABLE chi_tiet_mau_danh_gia (
 GO
 
 
--- 2.8. Phân quyền đơn vị chấm tiêu chí (đơn vị nào được chấm tiêu chí nào)
---   NGUỒN DUY NHẤT quyết định ai chấm một tiêu chí. Không còn khái niệm "cấp
---   đánh giá" ở mức tiêu chí: mọi tiêu chí đều do đơn vị chấm (slot diem_khoa),
---   HT chỉ duyệt / trả lại / chốt.
---   • Tiêu chí CÓ dòng ở đây → chỉ trưởng (ma_chuc_vu TK/TKL/TP) của đúng các
---     đơn vị đó được chấm.
---   • Tiêu chí KHÔNG có dòng nào → mặc định trưởng đơn vị CHỦ QUẢN của người
---     được đánh giá chấm.
---   Đọc live (không snapshot vào phiếu): sửa phân quyền có hiệu lực ngay cả
---   trên phiếu đang mở.
+-- 2.8. Phân quyền đơn vị chấm tiêu chí (NGUỒN DUY NHẤT quyết định ai chấm tiêu chí nào)
 CREATE TABLE tieu_chi_don_vi_cham (
     id_phan_quyen INT      IDENTITY(1,1) PRIMARY KEY,
     id_tieu_chi   INT      NOT NULL,
@@ -251,6 +245,25 @@ CREATE TABLE tieu_chi_don_vi_cham (
     CONSTRAINT uq_tcdvc          UNIQUE (id_tieu_chi, id_don_vi),
     CONSTRAINT fk_tcdvc_tieu_chi FOREIGN KEY (id_tieu_chi) REFERENCES tieu_chi_danh_gia(id_tieu_chi),
     CONSTRAINT fk_tcdvc_don_vi   FOREIGN KEY (id_don_vi)   REFERENCES don_vi(id_don_vi)
+);
+GO
+
+-- 2.9. Gia hạn tự đánh giá cá nhân (1 dòng hiệu lực / (năm, nhân viên); da_xoa = 1 là lịch sử)
+--   Hạn tự đánh giá hiệu lực = MAX(nam_danh_gia.ngay_dong_tu_danh_gia, han_moi).
+CREATE TABLE gia_han_danh_gia (
+    id_gia_han    INT            IDENTITY(1,1) PRIMARY KEY,
+    id_nam        INT            NOT NULL,
+    id_nhan_vien  INT            NOT NULL,
+    han_moi       DATE           NOT NULL,      -- Hạn tự đánh giá mới (thay ngay_dong_tu_danh_gia)
+    ly_do         NVARCHAR(500)  NULL,
+    id_nguoi_cap  INT            NOT NULL,      -- HT / ADMIN cấp gia hạn
+    ngay_cap      DATETIME       NOT NULL DEFAULT GETDATE(),
+    ngay_cap_nhat DATETIME       NULL,          -- Lần cấp lại gần nhất (ghi đè hạn cũ)
+    da_xoa        BIT            NOT NULL DEFAULT 0,
+    ngay_xoa      DATETIME       NULL,
+    CONSTRAINT fk_ghdg_nam       FOREIGN KEY (id_nam)       REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_ghdg_nv        FOREIGN KEY (id_nhan_vien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ghdg_nguoi_cap FOREIGN KEY (id_nguoi_cap) REFERENCES nhan_vien(id_nhan_vien)
 );
 GO
 
@@ -286,10 +299,6 @@ CREATE TABLE nhom_vi_pham (
 GO
 
 -- 3.2.b. Danh mục "việc chưa tuân thủ" (15 nội dung, mặc định 1 điểm / 1 nội dung)
---   Quyền ghi nhận của 1 loại = HỢP của 3 nguồn:
---     (a) danh sách đơn vị cố định trong loai_vi_pham_don_vi_ghi_nhan
---     (b) cho_phep_khoa_chu_quan = 1 → trưởng Khoa chủ quản của giảng viên
---     (c) cho_phep_moi_don_vi   = 1 → bất kỳ trưởng đơn vị nào ("đơn vị chủ trì")
 CREATE TABLE loai_vi_pham (
     id_loai_vi_pham        INT           IDENTITY(1,1) PRIMARY KEY,
     id_nhom_vp             INT           NOT NULL,
@@ -308,9 +317,7 @@ CREATE TABLE loai_vi_pham (
 );
 GO
 
--- 3.2.c. Phân quyền đơn vị ghi nhận vi phạm (đơn vị nào được ghi loại vi phạm nào)
---   Mirror tieu_chi_don_vi_cham: chỉ trưởng (ma_chuc_vu TK/TKL/TP) của đúng các đơn vị
---   ở đây mới được ghi nhận loại vi phạm tương ứng. Đọc live (không snapshot).
+-- 3.2.c. Phân quyền đơn vị ghi nhận vi phạm (mirror tieu_chi_don_vi_cham)
 CREATE TABLE loai_vi_pham_don_vi_ghi_nhan (
     id_phan_quyen   INT      IDENTITY(1,1) PRIMARY KEY,
     id_loai_vi_pham INT      NOT NULL,
@@ -322,16 +329,7 @@ CREATE TABLE loai_vi_pham_don_vi_ghi_nhan (
 );
 GO
 
--- 3.2. Vi phạm giảng dạy
---   Lưu các vi phạm quy định giảng dạy trong năm để tính điểm trừ KPI.
---   CHỈ áp dụng cho GIẢNG VIÊN thuộc KHOA (ma_don_vi LIKE 'K_%').
---   Giảng viên = chuc_danh_nghe_nghiep.ma_chuc_danh IN ('GV','GVC','GVCC','PGS','GS')
---   — xem view v_giang_vien_khoa trong procedure.sql.
---   KHÔNG bao gồm vi phạm pháp luật (xử lý qua phieu_danh_gia.khong_vi_pham_phap_luat).
---   Điểm trừ cá nhân = MIN(SUM(diem_tru) trong năm, 15).
---   Điểm trừ tập thể của Khoa = MIN(7.5 * T / (0.2 * 15 * N), 7.5) — xem sp_vi_pham_diem_tru_khoa.
---   Điểm tiêu chí "Tuân thủ đúng quy định về giảng dạy" (mã công thức VPGD_TUAN_THU,
---   chấm tự động qua fn_nckh_diem_tu_dong) = 15 − SUM(diem_tru) trong năm, sàn 0.
+-- 3.2. Vi phạm giảng dạy (điểm trừ KPI; chỉ GV thuộc Khoa)
 CREATE TABLE vi_pham_giang_day (
     id_vi_pham         INT           IDENTITY(1,1) PRIMARY KEY,
     id_nhan_vien       INT           NOT NULL,
@@ -339,17 +337,13 @@ CREATE TABLE vi_pham_giang_day (
     id_loai_vi_pham    INT           NULL,          -- NULL: dòng cũ tạo trước khi có danh mục
     mo_ta              NVARCHAR(500) NOT NULL,
     diem_tru           DECIMAL(5,2)  NULL,          -- Snapshot từ loai_vi_pham.diem_tru_mac_dinh
-    -- 1 = vi phạm này đã bị xử lý kỷ luật. HIỆN CHỈ LƯU: không ảnh hưởng điểm tiêu chí
-    -- lẫn xếp loại (thay cho cột la_nghiem_trong cũ đã bỏ — xem update_database.sql).
-    -- DB đã migrate: cột này nằm CUỐI bảng do được DROP + ADD, không ở vị trí này.
-    bi_ky_luat         BIT           NOT NULL DEFAULT 0,
+    bi_ky_luat         BIT           NOT NULL DEFAULT 0,  -- 1 = đã bị kỷ luật (chỉ lưu; DB thật: cột nằm cuối bảng)
     ngay_vi_pham       DATE          NULL,
     id_nguoi_ghi_nhan  INT           NOT NULL,      -- Lấy từ JWT, không nhận từ body
     id_don_vi_ghi_nhan INT           NULL,          -- Snapshot đơn vị của người ghi lúc ghi
     ngay_ghi_nhan      DATETIME      DEFAULT GETDATE(),
     ngay_cap_nhat      DATETIME      NULL,
-    -- Minh chứng PDF (thay cho so_hieu_ho_so cũ đã bỏ): tối đa 1 file / vi phạm.
-    -- File nằm ở App_Data/uploads/vi-pham/{id_vi_pham}/, DB chỉ giữ metadata.
+    -- Minh chứng PDF: tối đa 1 file / vi phạm, DB chỉ giữ metadata
     mc_ten_file_goc    NVARCHAR(255) NULL,          -- Tên file người dùng tải lên
     mc_duong_dan       NVARCHAR(500) NULL,          -- Path tương đối dưới App_Data (luôn .pdf)
     mc_kich_thuoc_kb   INT           NULL,
@@ -373,12 +367,7 @@ CREATE TABLE vi_pham_giang_day (
 );
 GO
 
--- 3.3. Phản hồi sinh viên (thang Likert 1-5) → nguồn cho KPI I.3
--- Luu THO tung luot tra loi (1 dong = 1 sinh vien / 1 cau hoi / 1 hoc phan), import tu file khao sat
--- (streaming qua TVP PhanHoiSinhVienRawRow, ~200,000 dong/lan). KHONG luu san diem trung binh o day —
--- diem trung binh duoc tinh khi "chot" (xem diem_tb_phan_hoi_sinh_vien; moi nam giu 1 lan chot cuoi cung).
--- ma_can_bo resolve MEM qua nhan_vien.ma_nhan_vien tai thoi diem chot (khong hard-FK, khong fail import
--- neu khong khop). id_don_vi / id_nguoi_import duoc SP import xac thuc truoc khi ghi, nen co FK cung.
+-- 3.3. Phản hồi sinh viên (thang Likert 1-5, lưu thô từng lượt) → nguồn cho KPI I.3
 CREATE TABLE phan_hoi_sinh_vien (
     id_phan_hoi      INT           IDENTITY(1,1) PRIMARY KEY,
     mssv             NVARCHAR(20)  NULL,               -- co the NULL neu khao sat an danh
@@ -413,9 +402,7 @@ CREATE TYPE dbo.PhanHoiSinhVienRawRow AS TABLE (
 );
 GO
 
--- 3.3b. Điểm TB phản hồi sinh viên (1 dòng = điểm TB cả năm của 1 GV; mỗi năm giữ 1 lần chốt cuối cùng).
--- Chốt lại một năm sẽ GHI ĐÈ (xoá kết quả cũ của năm đó rồi tính lại) — không lưu lịch sử nhiều đợt chốt.
--- id_nguoi_chot / ngay_chot lặp trên mỗi dòng GV của cùng một năm (thay cho bảng header đã bỏ).
+-- 3.3b. Điểm TB phản hồi sinh viên (1 dòng = điểm TB cả năm của 1 GV; chốt lại = ghi đè)
 CREATE TABLE diem_tb_phan_hoi_sinh_vien (
     id_diem_tb        INT           IDENTITY(1,1) PRIMARY KEY,
     id_nam            INT           NOT NULL,
@@ -489,12 +476,7 @@ CREATE TABLE gio_giang_import (
 );
 GO
 
--- 3.6. Dữ liệu NCKH đồng bộ từ API nghiên cứu khoa học ({NckhApiUrl}/api/kpilecturerdata)
--- API trả TOÀN BỘ giảng viên trong 1 lần gọi; dữ liệu TÍCH LUỸ TOÀN THỜI GIAN (không gắn năm).
--- Ánh xạ về nhân viên KPI: JOIN nhan_vien.science_user_id = nckh_ho_so.ma_nguoi_dung_nckh
--- (KHÔNG hard-FK: user NCKH chưa khớp nhân viên vẫn lưu được).
--- Đồng bộ qua sp_nckh_dong_bo (streaming TVP): upsert ho_so (không xoá — snapshot các năm khác
--- tham chiếu FK), full-refresh 4 bảng chi tiết, ghi đè snapshot tổng hợp/phân loại theo id_nam.
+-- 3.6. Dữ liệu NCKH đồng bộ từ API nghiên cứu khoa học (map qua EMAIL, refresh theo năm)
 
 -- 3.6.1. Hồ sơ người dùng NCKH (PK = UserId từ API)
 CREATE TABLE nckh_ho_so (
@@ -506,10 +488,7 @@ CREATE TABLE nckh_ho_so (
 );
 GO
 
--- 3.6.2. Bài báo → nguồn cho TC 18/19/20 (WoS/Scopus, Q1/Q2).
--- PK ghép (user, ma_bai_bao_nguon): 1 bài đồng tác giả xuất hiện ở nhiều user = nhiều dòng.
--- members_json giữ nguyên MembersJSON để audit — KHÔNG bóc vai trò per-user (không đáng tin:
--- user có thể không có trong members, UserId lúc là số lúc là chuỗi rỗng).
+-- 3.6.2. Bài báo → nguồn cho TC 18/19/20 (WoS/Scopus, Q1/Q2)
 CREATE TABLE nckh_bai_bao (
     ma_nguoi_dung_nckh  INT             NOT NULL,
     ma_bai_bao_nguon    INT             NOT NULL,
@@ -532,8 +511,7 @@ CREATE TABLE nckh_bai_bao (
 );
 GO
 
--- 3.6.3. Đề tài → nguồn cho TC 40/41/42 (cấp Nhà nước / Bộ, Tỉnh / Cơ sở).
--- Vai trò của user (Chủ nhiệm / Thành viên) lấy từ nckh_phan_loai (API đã resolve sẵn).
+-- 3.6.3. Đề tài → nguồn cho TC 40/41/42 (cấp Nhà nước / Bộ, Tỉnh / Cơ sở)
 CREATE TABLE nckh_de_tai (
     ma_nguoi_dung_nckh  INT             NOT NULL,
     ma_de_tai_nguon     INT             NOT NULL,
@@ -551,8 +529,7 @@ CREATE TABLE nckh_de_tai (
 );
 GO
 
--- 3.6.4. Sách → nguồn cho TC 32-37 (phụ thuộc ĐỒNG THỜI loại sách + vai trò).
--- Tổ hợp (loại sách + vai trò) lấy từ nckh_phan_loai, không suy từ loai_sach ở đây.
+-- 3.6.4. Sách → nguồn cho TC 32-37 (phụ thuộc ĐỒNG THỜI loại sách + vai trò)
 CREATE TABLE nckh_sach (
     ma_nguoi_dung_nckh  INT             NOT NULL,
     ma_sach_nguon       INT             NOT NULL,
@@ -572,10 +549,7 @@ CREATE TABLE nckh_sach (
 );
 GO
 
--- 3.6.5. Kê khai khác → nguồn cho các "Nội dung NCKH" (hướng dẫn SV NCKH, chuyển giao công nghệ,
--- sở hữu trí tuệ, diễn giả hội thảo...). Nguồn = mảng OtherDeclarations của từng giảng viên.
--- Tích luỹ toàn thời gian → full-refresh (delete-all + insert) giống nckh_bai_bao/de_tai/sach.
--- ten_noi_dung giữ nguyên ContentName (kèm mức điểm trong ngoặc, vd "... (0.5 điểm)"). KHÔNG có members_json.
+-- 3.6.5. Kê khai khác → nguồn cho các "Nội dung NCKH" (mảng OtherDeclarations)
 CREATE TABLE nckh_ke_khai_khac (
     ma_nguoi_dung_nckh  INT             NOT NULL,
     ma_ke_khai_nguon    INT             NOT NULL,   -- = Id từ API
@@ -590,11 +564,7 @@ CREATE TABLE nckh_ke_khai_khac (
 );
 GO
 
--- 3.6.6. Tổng hợp NCKH theo năm — 11 cờ boolean TỰ TÍNH THEO NĂM từ các bảng chi tiết
--- (KHÔNG lấy điểm do API tính sẵn). Bài báo/sách lọc theo ngay_xuat_ban ∈ [nam_bd, nam_kt];
--- đề tài lọc theo GIAO khoảng thời gian với năm. Vai trò (chủ biên/chủ nhiệm) đã được C# bóc
--- từ MembersJSON và lưu vào nckh_sach.la_chu_bien / nckh_de_tai.la_chu_nhiem.
--- Đồng bộ lại cùng năm = GHI ĐÈ (DELETE theo id_nam rồi tính lại).
+-- 3.6.6. Tổng hợp NCKH theo năm — 11 cờ boolean tự tính từ các bảng chi tiết
 CREATE TABLE nckh_tong_hop (
     ma_nguoi_dung_nckh            INT       NOT NULL,
     id_nam                        INT       NOT NULL,   -- năm đánh giá (vd 2026)
@@ -619,10 +589,7 @@ CREATE TABLE nckh_tong_hop (
 );
 GO
 
--- 3.6.7. Phân loại NCKH theo năm — flatten 2 dictionary mà API trả sẵn:
---   loai = 1: BookClassifications    → feed TC 32-37 (vd "Thành viên biên soạn sách tham khảo")
---   loai = 2: ProjectClassifications → feed TC 40-42
--- Đây mới là ánh xạ vai trò CHUẨN của user (API đã resolve), thay cho việc bóc từ members_json.
+-- 3.6.7. Phân loại NCKH (⚠️ số liệu TOÀN THỜI GIAN dù có id_nam — xem schema_ghi_chu.md)
 CREATE TABLE nckh_phan_loai (
     id_phan_loai        INT           IDENTITY(1,1) PRIMARY KEY,
     ma_nguoi_dung_nckh  INT           NOT NULL,
@@ -742,36 +709,12 @@ GO
 
 -- =============================================================================
 -- 4. DỮ LIỆU ĐÁNH GIÁ
--- =============================================================================
--- Trạng thái phieu_danh_gia.trang_thai:
---   1: NHAP            – GV đang nháp / sửa
---   2: DON_VI_CHAM     – Đã gửi; trưởng các đơn vị trong tieu_chi_don_vi_cham
---                        chấm phần tiêu chí được giao
---   3: CHO_HT_DUYET    – Đã chấm đủ, chờ Hiệu trưởng duyệt
---   4: HT_DA_DUYET     – HT đã duyệt, chờ chốt cuối
---   5: HOAN_TAT        – Đã chốt & lưu trữ (read-only, trừ khi mở lại)
---
--- 2 → 3 là TỰ ĐỘNG: sp_chi_tiet_danh_gia_update_diem_khoa chuyển trạng thái ngay
--- khi tiêu chí chấm tay cuối cùng trên phiếu có diem_khoa. Không có bước "Khoa
--- duyệt" thủ công. Tiêu chí loai_nguon_diem = 2 (chấm tự động) không tính vào
--- điều kiện này.
---
--- HT KHÔNG chấm điểm từng tiêu chí — chỉ duyệt (3→4), chốt (4→5) hoặc trả lại.
--- Các cột diem_truong* vẫn còn trong chi_tiet_danh_gia nhưng chỉ giữ dữ liệu
--- lịch sử của phiếu chốt trước thay đổi này; luồng hiện tại không ghi vào chúng.
---
--- "Trả lại" KHÔNG phải state riêng — là transition (state hiện tại bị set ngược
--- về cấp thấp hơn). Lý do trả lại ghi trong lich_su_trang_thai_phieu.
--- Trả lại về 2 sẽ clear diem_khoa để đơn vị chấm lại (nếu không, phiếu đang ở
--- tình trạng "đủ điểm" sẽ tự bật ngược lên 3 ngay lần sửa đầu tiên).
--- "Mở lại" sau HOAN_TAT: trang_thai quay về 1/2/3 tuỳ Trường chọn,
--- lan_danh_gia += 1.
+--    trang_thai: 1 NHAP → 2 DON_VI_CHAM → 3 CHO_HT_DUYET → 4 HT_DA_DUYET → 5 HOAN_TAT.
+--    State machine chi tiết (2→3 tự động, trả lại, hủy nộp, mở lại, hạn tự đánh giá):
+--    xem schema_ghi_chu.md mục 4.
 -- =============================================================================
 
--- 4.0. Lookup: nhóm vai trò PVCĐ theo đơn vị
---   Mỗi khoa có thể có bộ vai trò + điểm quy đổi riêng (id_don_vi NULL = áp
---   dụng toàn trường, default). id_nam NULL = áp dụng mọi năm.
---   App resolve theo thứ tự: (don_vi, nam) > (don_vi, NULL) > (NULL, nam) > (NULL, NULL).
+-- 4.0. Lookup: nhóm vai trò PVCĐ theo đơn vị (NULL = default toàn trường / mọi năm)
 CREATE TABLE danh_muc_vai_tro_pvcd (
     id_vai_tro    INT           IDENTITY(1,1) PRIMARY KEY,
     id_don_vi     INT           NULL,       -- NULL = default toàn trường
@@ -795,27 +738,7 @@ INSERT INTO danh_muc_vai_tro_pvcd (ma_vai_tro, ten_vai_tro, diem_quy_doi, thu_tu
     (N'CT',  N'Chủ trì',        10,  3);
 GO
 
--- 4.1. Phiếu đánh giá (Header – 1 phiếu duy nhất / GV / năm)
---   Snapshot toàn bộ định mức ÁP DỤNG (sau khi đã áp dụng các ngoại lệ) tại
---   thời điểm chốt phiếu. Đảm bảo có thể truy vết kết luận xếp loại về sau
---   ngay cả khi quy định / cấu hình thay đổi.
---
---   Xếp loại (theo QĐ ĐHKT):
---     1 = Không hoàn thành nhiệm vụ
---          - tong_diem_tich_luy < 80, HOẶC
---          - du_dinh_muc_gio_nckh = 0, HOẶC
---          - khong_vi_pham_phap_luat = 0
---     2 = Hoàn thành nhiệm vụ
---          - 80 <= tong_diem_tich_luy <= 100
---          - Đủ định mức giờ NCKH (QĐ 3237 + QĐ 1356)
---          - Không vi phạm pháp luật
---     3 = Hoàn thành tốt nhiệm vụ
---          - Thỏa mãn (2)
---          - tong_diem_tich_luy > 100
---          - muc_nckhcn_qd838 >= 1 (đạt mức HT Tốt KHCN — QĐ 838)
---     4 = Hoàn thành xuất sắc nhiệm vụ
---          - Thỏa mãn (3)
---          - muc_nckhcn_qd838 = 2 (đạt mức HT Xuất sắc KHCN — QĐ 838)
+-- 4.1. Phiếu đánh giá (Header – 1 phiếu duy nhất / GV / năm; luật xếp loại: xem schema_ghi_chu.md 4.1)
 CREATE TABLE phieu_danh_gia (
     id_phieu              INT            IDENTITY(1,1) PRIMARY KEY,
     id_nam                INT            NOT NULL,
@@ -912,21 +835,11 @@ CREATE TABLE phieu_danh_gia (
 );
 GO
 
--- 4.2. Chi tiết đánh giá (Detail – 1 dòng = 1 tiêu chí)
---  Mỗi cấp có cột điểm + nhận xét + người chấm + ngày chấm RIÊNG.
---  Khi GV/đơn vị sửa, giá trị cũ được snapshot sang lich_su_cham_diem
---  trước khi ghi đè.
---  Luồng hiện tại chỉ ghi diem_tu_danh_gia (GV) và diem_khoa (đơn vị được giao
---  trong tieu_chi_don_vi_cham). Nhóm cột diem_truong* CHỈ còn giữ dữ liệu lịch
---  sử của phiếu đã chốt trước khi bỏ bước "Trường chấm điểm" — không có đường
---  ghi mới nào vào chúng.
+-- 4.2. Chi tiết đánh giá (Detail – 1 dòng = 1 tiêu chí; mỗi cấp có bộ cột điểm riêng)
 CREATE TABLE chi_tiet_danh_gia (
     id_chi_tiet           INT            IDENTITY(1,1) PRIMARY KEY,
     id_phieu              INT            NOT NULL,
     id_tieu_chi           INT            NOT NULL,
-
-    -- Không snapshot "cấp chấm" nữa: ai chấm tra live từ tieu_chi_don_vi_cham.
-    -- Cột cap_danh_gia_snapshot cũ đã bị bỏ (xem update_database.sql).
 
     -- Tự đánh giá (cap = 1)
     diem_tu_danh_gia      DECIMAL(5,2)   NULL,
@@ -949,9 +862,7 @@ CREATE TABLE chi_tiet_danh_gia (
     -- Điểm chính thức (chốt bởi Trường ở HOAN_TAT)
     diem_chinh_thuc       DECIMAL(5,2)   NULL,
 
-    -- Chấm điểm tự động (tiêu chí loai_nguon_diem=2): snapshot nguồn/công thức từ
-    -- tiêu chí lúc tạo phiếu (mirror chi_tiet_danh_gia_don_vi). Điểm tự động là điểm
-    -- KHÓA CỨNG: engine ghi thẳng diem_chinh_thuc, bỏ qua 3 cấp chấm tay.
+    -- Chấm điểm tự động (điểm KHÓA CỨNG — engine ghi thẳng diem_chinh_thuc)
     loai_nguon_diem       TINYINT        NOT NULL DEFAULT 1,   -- 1: thủ công, 2: tự động tổng hợp
     cong_thuc_snapshot    NVARCHAR(200)  NULL,                 -- mã công thức snapshot lúc tạo phiếu
     diem_tu_dong          DECIMAL(5,2)   NULL,                 -- điểm hệ thống tính (audit / re-run)
@@ -990,10 +901,7 @@ CREATE TABLE danh_muc_nhom_nhiem_vu (
 );
 GO
 
--- 4.4. Nhiệm vụ phục vụ cộng đồng (KPI Nhóm III – nhiều dòng, cộng dồn, tối đa 20đ)
---  LƯU Ý: trần 20đ enforce ở tầng API (SQL Server 2008 không enforce
---  được cross-row sum constraint).
---  Hỗ trợ soft-delete (da_xoa / ngay_xoa) tương tự bảng minh_chung.
+-- 4.4. Nhiệm vụ phục vụ cộng đồng (KPI Nhóm III – cộng dồn, trần 20đ enforce ở API)
 CREATE TABLE nhiem_vu_cong_dong (
     id_nhiem_vu   INT           IDENTITY(1,1) PRIMARY KEY,
     id_chi_tiet   INT           NOT NULL,   -- FK → chi_tiet_danh_gia
@@ -1039,8 +947,6 @@ CREATE TABLE minh_chung (
 GO
 
 -- 4.6. Luồng phê duyệt
---  cap_duyet TINYINT 1/2/3 (thay vì FK đến chuc_vu để workflow ổn định).
---  Snapshot id_chuc_vu để truy vết về sau ai đã duyệt với cương vị nào.
 CREATE TABLE phe_duyet (
     id_phe_duyet        INT            IDENTITY(1,1) PRIMARY KEY,
     id_phieu            INT            NOT NULL,
@@ -1063,22 +969,7 @@ CREATE TABLE phe_duyet (
 );
 GO
 
--- 4.7. Lịch sử chấm điểm chi tiết
---   Mục đích:
---     • Audit trail mọi lần chấm/sửa điểm ở từng cấp.
---     • Reconstruct được điểm của bất kỳ "phiên bản" (lan_danh_gia) nào.
---     • Hiển thị UI: "Lần 1 Khoa chấm X điểm, lần 2 sau trả lại Khoa chấm Y điểm".
---
---   Cách dùng (xử lý ở tầng API trong cùng transaction với UPDATE chi_tiet_danh_gia):
---     1) Insert một row mỗi khi diem/nhan_xet của bất kỳ cấp nào thay đổi.
---     2) Khi Trường chốt diem_chinh_thuc → insert với hanh_dong = 3 (Chốt).
---     3) Khi Trường mở lại phiếu HOAN_TAT → snapshot toàn bộ chi_tiet hiện
---        tại sang đây (hanh_dong = 3, đánh dấu lan_danh_gia hiện tại của phiếu),
---        sau đó tăng lan_danh_gia của phiếu.
---
---   LƯU Ý CASCADE: fk_lscd_ct không có ON DELETE CASCADE (để tránh multiple
---   cascade paths trên SQL Server 2008). Cascade dọn lịch sử đi qua đường
---   phieu_danh_gia → lich_su_cham_diem (fk_lscd_phieu).
+-- 4.7. Lịch sử chấm điểm chi tiết (audit trail; cascade qua fk_lscd_phieu, KHÔNG qua fk_lscd_ct)
 CREATE TABLE lich_su_cham_diem (
     id_lich_su         BIGINT         IDENTITY(1,1) PRIMARY KEY,
     id_chi_tiet        INT            NOT NULL,
@@ -1099,17 +990,7 @@ CREATE TABLE lich_su_cham_diem (
 );
 GO
 
--- 4.8. Lịch sử trạng thái phiếu (state-machine audit)
---   Mọi chuyển trạng thái của phiếu được ghi vào đây — bao gồm cả "trả lại"
---   và "mở lại". Mỗi row = 1 transition.
---
---   Cách query "phiếu có bị trả lại bao giờ không?":
---     SELECT 1 FROM lich_su_trang_thai_phieu
---     WHERE id_phieu = ? AND hanh_dong = 3 (Trả lại)
---
---   Cách query "phiếu đã được mở lại bao nhiêu lần?":
---     SELECT COUNT(*) FROM lich_su_trang_thai_phieu
---     WHERE id_phieu = ? AND hanh_dong = 5 (Mở lại)
+-- 4.8. Lịch sử trạng thái phiếu (state-machine audit; mỗi row = 1 transition)
 CREATE TABLE lich_su_trang_thai_phieu (
     id                 BIGINT         IDENTITY(1,1) PRIMARY KEY,
     id_phieu           INT            NOT NULL,
@@ -1122,6 +1003,7 @@ CREATE TABLE lich_su_trang_thai_phieu (
         -- 3: Trả lại (về cấp thấp hơn)
         -- 4: Chốt (vào HOAN_TAT)
         -- 5: Mở lại (từ HOAN_TAT về 1/2/3)
+        -- 6: Hủy nộp (GV tự rút, 2 → 1, giữ nguyên lan_danh_gia)
     cap_thuc_hien      TINYINT        NULL,         -- 1: GV, 2: Khoa, 3: Trường (NULL khi do hệ thống)
     id_nguoi_thuc_hien INT            NOT NULL,
     ly_do              NVARCHAR(1000) NULL,         -- BẮT BUỘC (ở tầng API) khi hanh_dong IN (3, 5)
@@ -1131,26 +1013,15 @@ CREATE TABLE lich_su_trang_thai_phieu (
     CONSTRAINT fk_lstt_nv        FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT chk_lstt_tt_sau   CHECK (trang_thai_sau   IN (1,2,3,4,5)),
     CONSTRAINT chk_lstt_tt_truoc CHECK (trang_thai_truoc IS NULL OR trang_thai_truoc IN (1,2,3,4,5)),
-    CONSTRAINT chk_lstt_hd       CHECK (hanh_dong IN (1, 2, 3, 4, 5)),
+    CONSTRAINT chk_lstt_hd       CHECK (hanh_dong IN (1, 2, 3, 4, 5, 6)),
     CONSTRAINT chk_lstt_cap      CHECK (cap_thuc_hien IS NULL OR cap_thuc_hien IN (1, 2, 3))
 );
 GO
 
 
 -- =============================================================================
--- 4.9 → 4.14. ĐÁNH GIÁ ĐƠN VỊ (KHOA / PHÒNG)
--- =============================================================================
--- Bộ bảng bản ghi đánh giá đơn vị, song song với luồng người (phieu_danh_gia …)
--- nhưng khoá theo id_phieu_dv / id_chi_tiet_dv. Quy trình 3 cấp nhận diện theo
--- ma_chuc_vu: Thư ký Khoa/Phòng (TKK/TKP) nhập → Trưởng Khoa/Phòng (TK/TKL/TP)
--- duyệt → Hiệu trưởng (HT) duyệt & chốt.
---
--- Trạng thái phieu_danh_gia_don_vi.trang_thai:
---   1: Nháp / đang nhập (TKK/TKP)
---   2: Chờ Trưởng đơn vị duyệt
---   3: Trưởng đơn vị đã duyệt / chờ Trường
---   4: Trường (HT) đã duyệt, chờ chốt
---   5: Hoàn tất (read-only, trừ khi mở lại)
+-- 4.9 → 4.14. ĐÁNH GIÁ ĐƠN VỊ (KHOA / PHÒNG) — mirror luồng người, khoá theo
+--    id_phieu_dv / id_chi_tiet_dv. Quy trình & trạng thái: xem schema_ghi_chu.md.
 -- =============================================================================
 
 -- 4.9. Phiếu đánh giá đơn vị (Header – 1 phiếu / đơn vị / năm)
@@ -1219,8 +1090,6 @@ CREATE TABLE phieu_danh_gia_don_vi (
 GO
 
 -- 4.10. Chi tiết đánh giá đơn vị (Detail – 1 dòng = 1 tiêu chí)
---   loai_nguon_diem: 1 = Chấm thủ công (TKK/TKP nhập diem_nhap),
---                    2 = Tự động tổng hợp từ KPI thành viên (hệ thống điền diem_tong_hop).
 CREATE TABLE chi_tiet_danh_gia_don_vi (
     id_chi_tiet_dv       INT            IDENTITY(1,1) PRIMARY KEY,
     id_phieu_dv          INT            NOT NULL,
@@ -1271,7 +1140,6 @@ CREATE TABLE chi_tiet_danh_gia_don_vi (
 GO
 
 -- 4.11. Luồng phê duyệt đơn vị (mirror phe_duyet)
---   cap_duyet: 1 = TKK/TKP nhập, 2 = Trưởng đơn vị, 3 = Trường (HT).
 CREATE TABLE phe_duyet_don_vi (
     id_phe_duyet_dv     INT            IDENTITY(1,1) PRIMARY KEY,
     id_phieu_dv         INT            NOT NULL,
@@ -1295,8 +1163,6 @@ CREATE TABLE phe_duyet_don_vi (
 GO
 
 -- 4.12. Lịch sử chấm điểm chi tiết đơn vị (mirror lich_su_cham_diem)
---   fk_lscddv_ct KHÔNG cascade (tránh multiple cascade paths trên SQL 2008);
---   cascade dọn lịch sử đi qua phieu_danh_gia_don_vi → fk_lscddv_phieu.
 CREATE TABLE lich_su_cham_diem_don_vi (
     id_lich_su         BIGINT         IDENTITY(1,1) PRIMARY KEY,
     id_chi_tiet_dv     INT            NOT NULL,
@@ -1397,8 +1263,7 @@ CREATE INDEX ix_nv_don_vi      ON nhan_vien(id_don_vi, trang_thai);
 CREATE INDEX ix_nv_chuc_danh   ON nhan_vien(id_chuc_danh) WHERE id_chuc_danh IS NOT NULL;
 CREATE INDEX ix_nv_chuc_vu     ON nhan_vien(id_chuc_vu)   WHERE id_chuc_vu   IS NOT NULL;
 CREATE INDEX ix_nv_science_uid ON nhan_vien(science_user_id) WHERE science_user_id IS NOT NULL;
--- Thay cho UNIQUE constraint cũ: cho phép nhiều NULL, nhưng science_user_id
--- đã gán phải duy nhất (đồng bộ 1-1 với hệ thống NCKH).
+-- Cho phép nhiều NULL, science_user_id đã gán phải duy nhất
 CREATE UNIQUE INDEX ux_nhan_vien_science_user_not_null
     ON nhan_vien(science_user_id) WHERE science_user_id IS NOT NULL;
 
@@ -1410,6 +1275,10 @@ CREATE INDEX ix_nvcv_chuc_vu   ON nhan_vien_chuc_vu(id_chuc_vu);
 CREATE INDEX ix_tieu_chi_nhom     ON tieu_chi_danh_gia(id_nhom, trang_thai);
 CREATE INDEX ix_thang_diem_tc     ON thang_diem(id_tieu_chi);
 CREATE INDEX ix_dm_chuc_danh_nam  ON dinh_muc_giang_vien(id_chuc_danh, id_nam);
+
+-- gia hạn tự đánh giá: 1 dòng HIỆU LỰC / (năm, nhân viên); dòng đã thu hồi giữ làm lịch sử
+CREATE UNIQUE INDEX ux_ghdg_nam_nv
+    ON gia_han_danh_gia(id_nam, id_nhan_vien) WHERE da_xoa = 0;
 
 -- dữ liệu nguồn
 CREATE INDEX ix_gth_nv_nam     ON gio_thuc_hien_gv(id_nhan_vien, id_nam);

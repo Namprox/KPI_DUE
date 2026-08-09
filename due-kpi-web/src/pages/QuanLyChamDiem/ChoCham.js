@@ -7,6 +7,7 @@ import { fetchPhieuChoCham, formatNgay } from '../../utils/phieuApi';
 import { useNamDanhGia } from '../../hooks/useNamDanhGia';
 import { chuCaiDau, thongTinNhanVien, useNhanVienIndex } from '../../hooks/useNhanVienIndex';
 import TienDoCham from '../../components/QuanLyChamDiem/TienDoCham';
+import SearchSelect from '../../components/Common/SearchSelect';
 
 const PAGE_SIZE = 20;
 
@@ -101,26 +102,27 @@ const ChoCham = () => {
       <div className="cd-toolbar">
         <div className="cd-field">
           <label className="cd-label">Năm đánh giá</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedNam}
-            onChange={(e) => setSelectedNam(e.target.value)}
+            onChange={(v) => setSelectedNam(v)}
+            options={namList.map((n) => ({
+              value: n.IdNam,
+              label: `Năm học ${n.IdNam}`,
+            }))}
             disabled={dangTaiNam}
-          >
-            {namList.map((n) => (
-              <option key={n.IdNam} value={n.IdNam}>
-                Năm học {n.IdNam}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className="cd-field">
           <label className="cd-label">Sắp xếp theo</label>
-          <select className="form-input" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            <option value="ngay_gui">Ngày gửi</option>
-            <option value="ngay_tao">Ngày tạo</option>
-          </select>
+          <SearchSelect
+            value={sortBy}
+            onChange={(v) => setSortBy(v)}
+            options={[
+              { value: 'ngay_gui', label: 'Ngày gửi' },
+              { value: 'ngay_tao', label: 'Ngày tạo' },
+            ]}
+          />
         </div>
 
         <div className="cd-field" style={{ flex: '2 1 240px' }}>

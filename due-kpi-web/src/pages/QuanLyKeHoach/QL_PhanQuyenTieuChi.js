@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { apiFetch } from '../../utils/api';
+import SearchSelect from '../../components/Common/SearchSelect';
 import { Toast } from 'primereact/toast';
 import { confirmDialog } from 'primereact/confirmdialog';
 import '../../css/Pages.css';
@@ -291,19 +292,15 @@ const QL_PhanQuyenTieuChi = () => {
                                                 )}
                                             </td>
                                             <td style={{ padding: '12px' }}>
-                                                <select
-                                                    className="form-input"
+                                                <SearchSelect
                                                     value={selectedValue}
-                                                    onChange={(e) => handleSelectChange(tc.IdTieuChi, e.target.value)}
-                                                    style={{ width: '100%', padding: '8px 12px', fontSize: '14px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#fff', color: '#0f172a', outline: 'none' }}
-                                                >
-                                                    <option value="">{defaultDVLabel}</option>
-                                                    {donViList.map(dv => (
-                                                        <option key={dv.IdDonVi} value={dv.IdDonVi}>
-                                                            {dv.TenDonVi}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    onChange={(v) => handleSelectChange(tc.IdTieuChi, v)}
+                                                    options={[
+                                                        { value: '', label: defaultDVLabel },
+                                                        ...donViList.map(dv => ({ value: dv.IdDonVi, label: dv.TenDonVi })),
+                                                    ]}
+                                                    placeholder={defaultDVLabel}
+                                                />
                                             </td>
                                         </tr>
                                     );

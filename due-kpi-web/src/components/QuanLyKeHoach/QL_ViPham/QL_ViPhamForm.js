@@ -6,7 +6,7 @@ import {
   formatKb,
   validatePdfFile,
 } from "../../../utils/viPhamMinhChungApi";
-import ViPhamDropdown from "./ViPhamDropdown";
+import SearchSelect from "../../Common/SearchSelect";
 
 const labelStyle = {
   display: "block",
@@ -149,8 +149,8 @@ const QL_ViPhamForm = ({
 
   /* --- Cascade: đổi cấp trên thì xóa cấp dưới --- */
 
-  const handleNhanVienChange = (e) => {
-    setFormData({ ...formData, IdNhanVien: e.target.value });
+  const handleNhanVienChange = (idNhanVien) => {
+    setFormData({ ...formData, IdNhanVien: idNhanVien });
   };
 
   const handleNhomChange = (idNhom) => {
@@ -289,41 +289,36 @@ const QL_ViPhamForm = ({
                 <label style={labelStyle}>
                   Năm đánh giá <span className="text-red">*</span>
                 </label>
-                <select
+                <SearchSelect
                   name="IdNam"
-                  className="form-input"
                   value={formData.IdNam || ""}
-                  onChange={handleChange}
+                  onChange={(v) => setFormData({ ...formData, IdNam: v })}
+                  options={namList.map((n) => ({
+                    value: n.IdNam,
+                    label: `Năm học ${n.IdNam}`,
+                  }))}
+                  placeholder="-- Chọn năm học --"
                   required
-                >
-                  <option value="">-- Chọn năm học --</option>
-                  {namList.map((n) => (
-                    <option key={n.IdNam} value={n.IdNam}>
-                      Năm học {n.IdNam}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div className="form-group">
                 <label style={labelStyle}>
                   Giảng viên vi phạm <span className="text-red">*</span>
                 </label>
-                <select
+                <SearchSelect
                   name="IdNhanVien"
-                  className="form-input"
                   value={formData.IdNhanVien || ""}
                   onChange={handleNhanVienChange}
+                  options={nhanVienList.map((nv) => ({
+                    value: nv.IdNhanVien,
+                    label: `${nv.MaNhanVien} - ${nv.HoTen}${nv.MaDonVi ? ` (${nv.MaDonVi})` : ""}`,
+                  }))}
+                  placeholder="-- Chọn giảng viên --"
+                  searchable
+                  searchPlaceholder="Tìm theo mã hoặc tên..."
                   required
-                >
-                  <option value="">-- Chọn giảng viên --</option>
-                  {nhanVienList.map((nv) => (
-                    <option key={nv.IdNhanVien} value={nv.IdNhanVien}>
-                      {nv.MaNhanVien} - {nv.HoTen}
-                      {nv.MaDonVi ? ` (${nv.MaDonVi})` : ""}
-                    </option>
-                  ))}
-                </select>
+                />
                 {formData.IdNhanVien && lecturerBlockReason && (
                   <div style={{ ...hintStyle, color: "#b91c1c" }}>
                     <i
@@ -350,7 +345,7 @@ const QL_ViPhamForm = ({
             <div className="form-grid-2" style={{ marginBottom: "20px" }}>
               <div className="form-group">
                 <label style={labelStyle}>Nhóm vi phạm</label>
-                <ViPhamDropdown
+                <SearchSelect
                   name="IdNhomVp"
                   value={formData.IdNhomVp || ""}
                   onChange={handleNhomChange}
@@ -372,7 +367,8 @@ const QL_ViPhamForm = ({
                 <label style={labelStyle}>
                   Loại vi phạm <span className="text-red">*</span>
                 </label>
-                <ViPhamDropdown
+                <SearchSelect
+                  className="select-multiline"
                   name="IdLoaiViPham"
                   value={formData.IdLoaiViPham || ""}
                   onChange={handleLoaiChange}

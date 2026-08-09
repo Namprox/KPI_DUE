@@ -1,4 +1,5 @@
 import React from 'react';
+import SearchSelect from '../../Common/SearchSelect';
 
 const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '6px' };
 const hintStyle = { fontSize: '12px', color: '#64748b', marginTop: '5px' };
@@ -20,6 +21,8 @@ const QL_LoaiViPhamForm = ({
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
+
+    const handleSelect = (name) => (value) => setFormData({ ...formData, [name]: value });
 
     const handleCheck = (e) => {
         const { name, checked } = e.target;
@@ -57,12 +60,14 @@ const QL_LoaiViPhamForm = ({
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                             <div className="form-group">
                                 <label style={labelStyle}>Nhóm vi phạm <span className="text-red">*</span></label>
-                                <select name="IdNhomVp" className="form-input" value={formData.IdNhomVp || ''} onChange={handleChange} required>
-                                    <option value="">-- Chọn nhóm --</option>
-                                    {nhomList.map((n) => (
-                                        <option key={n.IdNhomVp} value={n.IdNhomVp}>{n.TenNhom}</option>
-                                    ))}
-                                </select>
+                                <SearchSelect
+                                    name="IdNhomVp"
+                                    value={formData.IdNhomVp || ''}
+                                    onChange={handleSelect('IdNhomVp')}
+                                    options={nhomList.map((n) => ({ value: n.IdNhomVp, label: n.TenNhom }))}
+                                    placeholder="-- Chọn nhóm --"
+                                    required
+                                />
                             </div>
                             <div className="form-group">
                                 <label style={labelStyle}>Mã loại vi phạm <span className="text-red">*</span></label>

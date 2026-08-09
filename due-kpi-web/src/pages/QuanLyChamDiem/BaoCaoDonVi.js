@@ -14,6 +14,7 @@ import {
 } from '../../utils/phieuApi';
 import { useNamDanhGia } from '../../hooks/useNamDanhGia';
 import { TrangThaiBadge } from '../../components/QuanLyChamDiem/TrangThaiBadge';
+import SearchSelect from '../../components/Common/SearchSelect';
 
 /** Số ngày trôi mà một phiếu chưa hoàn tất bị coi là "để quá lâu". */
 const NGUONG_TRE = 30;
@@ -107,30 +108,28 @@ const BaoCaoDonVi = () => {
       <div className="cd-toolbar">
         <div className="cd-field">
           <label className="cd-label">Năm đánh giá</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedNam}
-            onChange={(e) => setSelectedNam(e.target.value)}
+            onChange={(v) => setSelectedNam(v)}
+            options={namList.map((n) => ({
+              value: n.IdNam,
+              label: `Năm học ${n.IdNam}`,
+            }))}
             disabled={dangTaiNam}
-          >
-            {namList.map((n) => (
-              <option key={n.IdNam} value={n.IdNam}>
-                Năm học {n.IdNam}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className="cd-field" style={{ flex: '2 1 240px' }}>
           <label className="cd-label">Đơn vị</label>
-          <select className="form-input" value={idDonVi} onChange={(e) => setIdDonVi(e.target.value)}>
-            <option value="">-- Toàn bộ phạm vi của tôi --</option>
-            {donViList.map((dv) => (
-              <option key={dv.IdDonVi} value={dv.IdDonVi}>
-                {dv.TenDonVi}
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            value={idDonVi}
+            onChange={(v) => setIdDonVi(v)}
+            options={[
+              { value: '', label: '-- Toàn bộ phạm vi của tôi --' },
+              ...donViList.map((dv) => ({ value: dv.IdDonVi, label: dv.TenDonVi })),
+            ]}
+            placeholder="-- Toàn bộ phạm vi của tôi --"
+          />
         </div>
 
         <button

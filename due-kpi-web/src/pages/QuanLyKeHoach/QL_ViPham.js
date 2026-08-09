@@ -16,6 +16,7 @@ import {
   validatePdfFile,
 } from "../../utils/viPhamMinhChungApi";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
+import SearchSelect from "../../components/Common/SearchSelect";
 import { useViPhamMinhChungPreview } from "../../hooks/useViPhamMinhChungPreview";
 import {
   canRecordViPham,
@@ -332,26 +333,22 @@ const QL_ViPham = () => {
     setFilteredData(result);
   };
 
-  const handleNamChange = (e) => {
-    const val = e.target.value;
+  const handleNamChange = (val) => {
     setSelectedNam(val);
     loadViPhamData(val, selectedNhanVienFilter, selectedDonViFilter);
   };
 
-  const handleDonViFilterChange = (e) => {
-    const val = e.target.value;
+  const handleDonViFilterChange = (val) => {
     setSelectedDonViFilter(val);
     loadViPhamData(selectedNam, selectedNhanVienFilter, val);
   };
 
-  const handleNhanVienFilterChange = (e) => {
-    const val = e.target.value;
+  const handleNhanVienFilterChange = (val) => {
     setSelectedNhanVienFilter(val);
     loadViPhamData(selectedNam, val, selectedDonViFilter);
   };
 
-  const handleNhomFilterChange = (e) => {
-    const val = e.target.value;
+  const handleNhomFilterChange = (val) => {
     setFilterNhom(val);
     applyFilters(data, searchQuery, val);
   };
@@ -681,66 +678,64 @@ const QL_ViPham = () => {
       >
         <div style={{ minWidth: "150px", flex: "1 1 150px" }}>
           <label style={labelStyle}>Năm đánh giá</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedNam}
             onChange={handleNamChange}
-          >
-            {namList.map((n) => (
-              <option key={n.IdNam} value={n.IdNam}>
-                Năm học {n.IdNam}
-              </option>
-            ))}
-          </select>
+            options={namList.map((n) => ({
+              value: n.IdNam,
+              label: `Năm học ${n.IdNam}`,
+            }))}
+          />
         </div>
 
         <div style={{ minWidth: "180px", flex: "2 1 180px" }}>
           <label style={labelStyle}>Đơn vị (Khoa)</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedDonViFilter}
             onChange={handleDonViFilterChange}
-          >
-            <option value="">-- Tất cả Khoa --</option>
-            {khoaList.map((dv) => (
-              <option key={dv.IdDonVi} value={dv.IdDonVi}>
-                {dv.MaDonVi} - {dv.TenDonVi}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: "-- Tất cả Khoa --" },
+              ...khoaList.map((dv) => ({
+                value: dv.IdDonVi,
+                label: `${dv.MaDonVi} - ${dv.TenDonVi}`,
+              })),
+            ]}
+            placeholder="-- Tất cả Khoa --"
+          />
         </div>
 
         <div style={{ minWidth: "200px", flex: "2 1 200px" }}>
           <label style={labelStyle}>Giảng viên</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={selectedNhanVienFilter}
             onChange={handleNhanVienFilterChange}
-          >
-            <option value="">-- Tất cả giảng viên --</option>
-            {nhanVienList.map((nv) => (
-              <option key={nv.IdNhanVien} value={nv.IdNhanVien}>
-                {nv.MaNhanVien ? nv.MaNhanVien + " - " : ""}
-                {nv.HoTen}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: "-- Tất cả giảng viên --" },
+              ...nhanVienList.map((nv) => ({
+                value: nv.IdNhanVien,
+                label: `${nv.MaNhanVien ? nv.MaNhanVien + " - " : ""}${nv.HoTen}`,
+              })),
+            ]}
+            placeholder="-- Tất cả giảng viên --"
+            searchable
+            searchPlaceholder="Tìm theo mã hoặc tên..."
+          />
         </div>
 
         <div style={{ minWidth: "200px", flex: "2 1 200px" }}>
           <label style={labelStyle}>Nhóm vi phạm</label>
-          <select
-            className="form-input"
+          <SearchSelect
             value={filterNhom}
             onChange={handleNhomFilterChange}
-          >
-            <option value="">-- Tất cả nhóm --</option>
-            {nhomList.map((n) => (
-              <option key={n.IdNhomVp} value={n.IdNhomVp}>
-                {n.TenNhom}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: "-- Tất cả nhóm --" },
+              ...nhomList.map((n) => ({
+                value: n.IdNhomVp,
+                label: n.TenNhom,
+              })),
+            ]}
+            placeholder="-- Tất cả nhóm --"
+          />
         </div>
 
         <div style={{ minWidth: "200px", flex: "2 1 200px" }}>

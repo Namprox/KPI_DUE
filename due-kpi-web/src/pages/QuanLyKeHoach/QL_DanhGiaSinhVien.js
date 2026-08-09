@@ -8,6 +8,14 @@ import QL_DanhGiaSinhVienImportModal from "../../components/QuanLyKeHoach/QL_Dan
 import QL_DanhGiaSinhVienChotModal from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DanhGiaSinhVienChotModal";
 import { useConfirmDeleteDialog } from "../../hooks/useConfirmDeleteDialog";
 import { apiFetch } from "../../utils/api";
+import SearchSelect from "../../components/Common/SearchSelect";
+
+const KY_HOC_OPTIONS = [
+  { value: "", label: "-- Tất cả Kỳ --" },
+  { value: "1", label: "Kỳ 1" },
+  { value: "2", label: "Kỳ 2" },
+  { value: "3", label: "Kỳ Hè" },
+];
 
 const QL_DanhGiaSinhVien = () => {
   const navigate = useNavigate();
@@ -415,23 +423,18 @@ const QL_DanhGiaSinhVien = () => {
               >
                 Khoa
               </label>
-              <select
-                className="form-input"
-                style={{ width: "100%" }}
+              <SearchSelect
                 value={selectedDonVi}
-                onChange={(e) => setSelectedDonVi(e.target.value)}
-              >
-                <option value="">-- Tất cả Khoa --</option>
-                {khoaList.map((dv) => {
-                  const id = dv.IdDonVi || dv.idDonVi;
-                  const ten = dv.TenDonVi || dv.tenDonVi;
-                  return (
-                    <option key={id} value={id}>
-                      {ten}
-                    </option>
-                  );
-                })}
-              </select>
+                onChange={(v) => setSelectedDonVi(v)}
+                options={[
+                  { value: "", label: "-- Tất cả Khoa --" },
+                  ...khoaList.map((dv) => ({
+                    value: dv.IdDonVi || dv.idDonVi,
+                    label: dv.TenDonVi || dv.tenDonVi,
+                  })),
+                ]}
+                placeholder="-- Tất cả Khoa --"
+              />
             </div>
 
             <div style={{ flex: "1 1 180px", minWidth: "150px" }}>
@@ -490,35 +493,31 @@ const QL_DanhGiaSinhVien = () => {
               >
                 Năm học
               </label>
-              <select
-                className="form-input"
-                style={{ width: "100%" }}
+              <SearchSelect
                 value={searchNamHoc}
-                onChange={(e) => setSearchNamHoc(e.target.value)}
-              >
-                <option value="">-- Tất cả Năm --</option>
-                {namList.map((item) => {
-                  const rawVal =
-                    item.IdNam || item.idNam || item.NamHoc || item.namHoc;
-                  const num = parseInt(rawVal, 10);
-                  const twoDigit = !isNaN(num)
-                    ? num > 100
-                      ? num % 100
-                      : num
-                    : rawVal;
-                  const label =
-                    item.TenNam ||
-                    item.tenNam ||
-                    item.TenNamHoc ||
-                    item.tenNamHoc ||
-                    (rawVal ? `Năm ${rawVal}` : `Năm ${twoDigit}`);
-                  return (
-                    <option key={rawVal} value={twoDigit}>
-                      {label}
-                    </option>
-                  );
-                })}
-              </select>
+                onChange={(v) => setSearchNamHoc(v)}
+                options={[
+                  { value: "", label: "-- Tất cả Năm --" },
+                  ...namList.map((item) => {
+                    const rawVal =
+                      item.IdNam || item.idNam || item.NamHoc || item.namHoc;
+                    const num = parseInt(rawVal, 10);
+                    const twoDigit = !isNaN(num)
+                      ? num > 100
+                        ? num % 100
+                        : num
+                      : rawVal;
+                    const label =
+                      item.TenNam ||
+                      item.tenNam ||
+                      item.TenNamHoc ||
+                      item.tenNamHoc ||
+                      (rawVal ? `Năm ${rawVal}` : `Năm ${twoDigit}`);
+                    return { value: twoDigit, label };
+                  }),
+                ]}
+                placeholder="-- Tất cả Năm --"
+              />
             </div>
 
             <div style={{ flex: "1 1 130px", minWidth: "120px" }}>
@@ -533,17 +532,12 @@ const QL_DanhGiaSinhVien = () => {
               >
                 Kỳ học
               </label>
-              <select
-                className="form-input"
-                style={{ width: "100%" }}
+              <SearchSelect
                 value={searchKyHoc}
-                onChange={(e) => setSearchKyHoc(e.target.value)}
-              >
-                <option value="">-- Tất cả Kỳ --</option>
-                <option value="1">Kỳ 1</option>
-                <option value="2">Kỳ 2</option>
-                <option value="3">Kỳ Hè</option>
-              </select>
+                onChange={(v) => setSearchKyHoc(v)}
+                options={KY_HOC_OPTIONS}
+                placeholder="-- Tất cả Kỳ --"
+              />
             </div>
 
             <div style={{ display: "flex", gap: "10px" }}>
