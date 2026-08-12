@@ -6,10 +6,12 @@ import '../../css/QuanLyChamDiem.css';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/api';
 import {
+  fetchLichSuChamDiemPhieu,
   fetchPhieuDetail,
   fetchTieuChiDonViCham,
   formatDiem,
   formatNgayGio,
+  gomLichSuTheoChiTiet,
   putDiemKhoa,
   traLaiPhieuKhoa,
   TRANG_THAI,
@@ -55,6 +57,8 @@ const ChamDiemPhieu = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loiTai, setLoiTai] = useState('');
   const [idDangLuu, setIdDangLuu] = useState(null);
+  const [lichSuItems, setLichSuItems] = useState([]);
+  const [dangTaiLichSu, setDangTaiLichSu] = useState(true);
   const [moTraLai, setMoTraLai] = useState(false);
   const [dangTraLai, setDangTraLai] = useState(false);
 
@@ -95,6 +99,25 @@ const ChamDiemPhieu = () => {
     taiPhieu();
   }, [taiPhieu]);
 
+  // Lịch sử chấm lấy một lần cho cả phiếu (thay vì mỗi tiêu chí một request) và
+  // nạp lại sau mỗi lần lưu điểm — lượt vừa lưu chính là một dòng mới trong đó.
+  const taiLichSu = useCallback(async () => {
+    setDangTaiLichSu(true);
+    try {
+      setLichSuItems(await fetchLichSuChamDiemPhieu(id));
+    } catch (error) {
+      // Thiếu lịch sử không được chặn màn hình chấm — chỉ mất khối tham khảo.
+      console.error('Lỗi tải lịch sử chấm điểm:', error);
+      setLichSuItems([]);
+    } finally {
+      setDangTaiLichSu(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    taiLichSu();
+  }, [taiLichSu]);
+
   useEffect(() => {
     const taiDonVi = async () => {
       try {
@@ -134,6 +157,7 @@ const ChamDiemPhieu = () => {
   );
 
   const chiTietList = useMemo(() => phieu?.ChiTiet || [], [phieu]);
+  const lichSuTheoChiTiet = useMemo(() => gomLichSuTheoChiTiet(lichSuItems), [lichSuItems]);
   const tienDo = useMemo(() => tinhTienDoCham(chiTietList, chamCtx), [chiTietList, chamCtx]);
   const nv = thongTinNhanVien(nhanVienIndex, phieu?.IdNhanVien);
 
@@ -146,7 +170,7 @@ const ChamDiemPhieu = () => {
 
       // Luôn tải lại: điểm vừa lưu có thể kéo theo đổi trạng thái phiếu, và
       // RowVersion đang giữ đã cũ ngay sau khi server ghi.
-      await taiPhieu({ imLang: true });
+      await Promise.all([taiPhieu({ imLang: true }), taiLichSu()]);
 
       if (trangThaiPhieu === TRANG_THAI.CHO_HT_DUYET) {
         showToast(
@@ -377,6 +401,8 @@ const ChamDiemPhieu = () => {
               key={ct.IdChiTiet}
               chiTiet={ct}
               stt={index + 1}
+              lichSu={lichSuTheoChiTiet.get(Number(ct.IdChiTiet)) || []}
+              dangTaiLichSu={dangTaiLichSu}
               choPhepNhap={choPhepNhap}
               lyDoKhoa={choPhepNhap ? '' : lyDoKhoaONhap(ct, chamCtx)}
               dangLuu={idDangLuu === ct.IdChiTiet}

@@ -1,0 +1,5171 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quy trình đánh giá KPI – API reference</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #faf7f2;
+        --bg-elev: #ffffff;
+        --bg-code: #1a1815;
+        --ink: #1a1815;
+        --ink-soft: #5a544a;
+        --ink-mute: #8b8276;
+        --rule: #e8e1d4;
+        --accent: #b8511c;
+        --accent-soft: #f4ddc8;
+        --warn: #c0392b;
+        --warn-soft: #fae3df;
+        --ok: #2f6b3a;
+        --ok-soft: #dbeadc;
+        --code-ink: #f0ebe1;
+        --code-key: #e8b478;
+        --code-str: #a8c98a;
+        --code-num: #d4a4d8;
+        --code-com: #6b665d;
+        --serif: "Fraunces", "Georgia", serif;
+        --sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: var(--sans);
+        font-size: 15px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--bg);
+        display: flex;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        background-image:
+          radial-gradient(
+            circle at 15% 10%,
+            rgba(184, 81, 28, 0.04),
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at 85% 90%,
+            rgba(47, 107, 58, 0.03),
+            transparent 35%
+          );
+        background-attachment: fixed;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        transition: color 0.15s ease;
+      }
+
+      a:hover {
+        text-decoration: underline;
+        color: #943e13;
+      }
+
+      .toc {
+        width: 280px;
+        min-width: 240px;
+        max-width: 280px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        background: rgba(250, 247, 242, 0.85);
+        backdrop-filter: blur(8px);
+        border-right: 1px solid var(--rule);
+        padding: 2.5rem 0;
+      }
+
+      .toc-title {
+        font-family: var(--mono);
+        font-weight: 600;
+        font-size: 0.75rem;
+        padding: 0 1.5rem 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--ink-mute);
+        border-bottom: 1px solid var(--rule);
+        margin-bottom: 1rem;
+      }
+
+      .toc ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .toc a {
+        display: block;
+        padding: 0.45rem 1.5rem;
+        font-size: 0.84rem;
+        color: var(--ink-soft);
+        border-left: 3px solid transparent;
+        transition: all 0.15s ease;
+      }
+
+      .toc a:hover {
+        background: var(--accent-soft);
+        color: var(--ink);
+        text-decoration: none;
+      }
+
+      .toc a.active {
+        border-left-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-soft);
+        font-weight: 600;
+      }
+
+      .toc-sub a {
+        padding-left: 2.25rem;
+        font-size: 0.78rem;
+        color: var(--ink-mute);
+      }
+
+      .main {
+        flex: 1;
+        max-width: 940px;
+        padding: 60px 50px 120px;
+        overflow-x: hidden;
+      }
+
+      h1 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 2.5rem;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        margin-bottom: 1.8rem;
+      }
+
+      h2 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 1.75rem;
+        letter-spacing: -0.015em;
+        color: var(--ink);
+        margin: 4.5rem 0 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      h3 {
+        font-family: var(--sans);
+        font-weight: 600;
+        font-size: 1.15rem;
+        margin: 2.5rem 0 1rem;
+        letter-spacing: -0.005em;
+        color: var(--ink);
+      }
+
+      h4 {
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 1.5rem 0 0.6rem;
+        color: var(--ink-mute);
+      }
+
+      p {
+        margin: 0 0 1.2rem;
+        color: var(--ink-soft);
+      }
+
+      ul,
+      ol {
+        margin: 0 0 1.5rem 1.5rem;
+      }
+
+      li {
+        margin: 0.4rem 0;
+        color: var(--ink-soft);
+      }
+
+      p code,
+      li code,
+      td code {
+        font-family: var(--mono);
+        font-size: 0.88em;
+        background: var(--accent-soft);
+        color: var(--ink);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        margin: 1.5rem 0;
+        font-size: 0.88rem;
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--bg-elev);
+      }
+
+      th {
+        background: var(--accent-soft);
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+        text-align: left;
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      td {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid var(--rule);
+        border-right: 1px solid var(--rule);
+        vertical-align: top;
+        color: var(--ink-soft);
+        line-height: 1.6;
+      }
+
+      td:last-child,
+      th:last-child {
+        border-right: none;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      tr:nth-child(even) td {
+        background: rgba(244, 221, 200, 0.15);
+      }
+
+      pre {
+        background: var(--bg-code);
+        color: var(--code-ink);
+        font-family: var(--mono);
+        font-size: 0.86rem;
+        line-height: 1.6;
+        padding: 22px 26px;
+        border-radius: 10px;
+        overflow-x: auto;
+        margin: 1rem 0 1.5rem;
+        border: 1px solid #2a2520;
+        position: relative;
+      }
+
+      pre code {
+        font-size: inherit;
+        font-family: inherit;
+        background: transparent;
+        padding: 0;
+        color: inherit;
+      }
+
+      .pre-wrap {
+        position: relative;
+      }
+
+      .copy-btn {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-family: var(--mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        color: var(--code-ink);
+        opacity: 0.5;
+        transition: all 0.15s ease;
+        z-index: 10;
+      }
+
+      .copy-btn:hover {
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.12);
+        border-color: var(--code-key);
+        color: var(--code-key);
+      }
+
+      .badge {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        vertical-align: middle;
+      }
+
+      .method-get {
+        background: var(--ink-soft);
+        color: white;
+      }
+      .method-post {
+        background: var(--accent);
+        color: white;
+      }
+      .method-put {
+        background: #c67a13;
+        color: white;
+      }
+      .method-delete {
+        background: var(--warn);
+        color: white;
+      }
+
+      .status-2xx {
+        background: var(--ok-soft);
+        color: var(--ok);
+        border: 1px solid var(--ok);
+      }
+      .status-4xx {
+        background: var(--warn-soft);
+        color: var(--warn);
+        border: 1px solid var(--warn);
+      }
+      .status-5xx {
+        background: #fae3df;
+        color: var(--warn);
+        border: 1px solid var(--warn);
+      }
+      .role-badge {
+        background: var(--accent-soft);
+        color: var(--accent);
+        border: 1px solid var(--accent);
+      }
+      .tag-compact {
+        font-size: 0.65rem;
+        padding: 1px 4px;
+      }
+
+      .callout {
+        padding: 18px 22px;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+        border-left: 3px solid;
+        font-size: 0.95rem;
+      }
+
+      .callout strong {
+        font-weight: 600;
+      }
+
+      .callout-blue {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--ink);
+      }
+
+      .callout-green {
+        background: var(--ok-soft);
+        border-color: var(--ok);
+        color: var(--ink);
+      }
+
+      .callout-red {
+        background: var(--warn-soft);
+        border-color: var(--warn);
+        color: var(--ink);
+      }
+
+      .callout-yellow {
+        background: #fdf3e7;
+        border-color: #e28743;
+        color: var(--ink);
+      }
+
+      .endpoint-card {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        margin: 1.2rem 0;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(26, 24, 21, 0.01);
+      }
+
+      .endpoint-header {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.9rem 1.2rem;
+        background: #fdfbfa;
+        cursor: pointer;
+        user-select: none;
+        border-bottom: 1px solid var(--rule);
+        transition: background 0.15s ease;
+      }
+
+      .endpoint-header:hover {
+        background: var(--accent-soft);
+      }
+
+      .endpoint-path {
+        font-family: var(--mono);
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--ink);
+        flex: 1;
+      }
+
+      .endpoint-toggle {
+        margin-left: auto;
+        font-size: 0.75rem;
+        color: var(--ink-mute);
+        transition: transform 0.2s ease;
+      }
+
+      .endpoint-body {
+        padding: 1.5rem;
+        display: none;
+        background: var(--bg-elev);
+      }
+
+      .endpoint-body.open {
+        display: block;
+      }
+
+      .workflow-diagram {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        align-items: center;
+        margin: 1.5rem 0;
+        padding: 1.5rem;
+        background: var(--bg-elev);
+        border-radius: 8px;
+        border: 1px solid var(--rule);
+      }
+
+      .wf-step {
+        background: var(--bg);
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.8rem;
+        font-family: var(--mono);
+        font-weight: 500;
+        text-align: center;
+        min-width: 100px;
+        color: var(--ink-soft);
+      }
+
+      .wf-step[style*="border-color:#16a34a"] {
+        border-color: var(--ok) !important;
+        color: var(--ok) !important;
+        background: var(--ok-soft) !important;
+      }
+
+      .wf-arrow {
+        color: var(--ink-mute);
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      .svg-state {
+        width: 100%;
+        max-width: 820px;
+        display: block;
+        margin: 1.5rem auto;
+        overflow: visible;
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        padding: 15px;
+      }
+
+      .svg-state text {
+        font-family: var(--sans) !important;
+      }
+
+      .toc-mobile {
+        display: none;
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .toc-mobile-toggle {
+        background: transparent;
+        border: 1px solid var(--rule);
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .toc-mobile-list {
+        display: none;
+        margin-top: 0.5rem;
+        border-top: 1px solid var(--rule);
+        padding-top: 0.5rem;
+      }
+
+      .toc-mobile-list.open {
+        display: block;
+      }
+
+      .toc-mobile-list a {
+        display: block;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      .section {
+        margin-bottom: 4rem;
+      }
+
+      .section-anchor {
+        scroll-margin-top: 2rem;
+      }
+
+      @media (max-width: 900px) {
+        body {
+          flex-direction: column;
+        }
+        .toc {
+          display: none;
+        }
+        .toc-mobile {
+          display: block;
+        }
+        .main {
+          padding: 2rem 1.5rem;
+          max-width: 100%;
+        }
+      }
+
+      @media print {
+        .toc,
+        .toc-mobile {
+          display: none;
+        }
+        body {
+          display: block;
+          max-width: 100%;
+        }
+        .main {
+          max-width: 100%;
+          padding: 0;
+        }
+        .endpoint-body {
+          display: block !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- TOC (desktop) -->
+    <nav class="toc" id="toc-desktop">
+      <div class="toc-title">Mục lục</div>
+      <ul>
+        <li><a href="#s0">0. Tổng quan</a></li>
+        <li><a href="#s1">1. Trạng thái phiếu</a></li>
+        <li><a href="#s2">2. Đăng nhập &amp; phiên</a></li>
+        <li class="toc-sub">
+          <ul>
+            <li><a href="#post-auth-login">POST /login</a></li>
+            <li><a href="#post-auth-refresh">POST /refresh</a></li>
+            <li><a href="#post-auth-logout">POST /logout</a></li>
+            <li><a href="#post-auth-register">POST /register</a></li>
+          </ul>
+        </li>
+        <li><a href="#s3">3. Setup ban đầu (Admin)</a></li>
+        <li><a href="#s4">4. Dữ liệu nguồn</a></li>
+        <li><a href="#s5">5. Quy trình GV</a></li>
+        <li class="toc-sub">
+          <ul>
+            <li><a href="#s5-1">5.1 Tạo/Lấy phiếu</a></li>
+            <li><a href="#s5-2">5.2 Tự đánh giá</a></li>
+            <li><a href="#s5-3">5.3 Minh chứng</a></li>
+            <li><a href="#s5-4">5.4 PVCĐ</a></li>
+            <li><a href="#s5-5">5.5 Submit phiếu</a></li>
+          </ul>
+        </li>
+        <li><a href="#s6">6. GĐ2 — Thẩm định theo dòng</a></li>
+        <li class="toc-sub">
+          <ul>
+            <li>
+              <a href="#get-api-thamdinh-pending">GET /tham-dinh/pending</a>
+            </li>
+            <li><a href="#put-api-chitiet-diemkhoa">PUT /diem-khoa</a></li>
+            <li>
+              <a href="#post-api-chitiet-thamdinh-duyet"
+                >POST /tham-dinh/duyet</a
+              >
+            </li>
+            <li>
+              <a href="#post-api-chitiet-thamdinh-trave"
+                >POST /tham-dinh/tra-ve</a
+              >
+            </li>
+            <li><a href="#post-api-phieu-noplai">POST /nop-lai</a></li>
+          </ul>
+        </li>
+        <li><a href="#s7">7. GĐ3 — Trưởng khoa chốt hồ sơ</a></li>
+        <li class="toc-sub">
+          <ul>
+            <li>
+              <a href="#post-api-phieu-khoa-duyethoso"
+                >POST /khoa/duyet-ho-so</a
+              >
+            </li>
+            <li>
+              <a href="#post-api-chitiet-khoa-trathamdinh"
+                >POST /khoa/tra-tham-dinh</a
+              >
+            </li>
+          </ul>
+        </li>
+        <li><a href="#s8">8. GĐ4 — Tờ trình KPI Khoa</a></li>
+        <li class="toc-sub">
+          <ul>
+            <li><a href="#get-api-totrinh-khoa">GET /to-trinh-khoa</a></li>
+            <li><a href="#post-api-totrinh-donggoi">POST /dong-goi</a></li>
+            <li><a href="#put-api-phieu-uutien">PUT /uu-tien-xuat-sac</a></li>
+            <li><a href="#post-api-totrinh-trinh">POST /trinh</a></li>
+            <li><a href="#post-api-totrinh-htduyet">POST /ht-duyet</a></li>
+            <li><a href="#post-api-totrinh-httralai">POST /ht-tra-lai</a></li>
+          </ul>
+        </li>
+        <li><a href="#s9">9. Mở lại phiếu</a></li>
+        <li><a href="#s10">10. Lịch sử</a></li>
+        <li><a href="#s11">11. Báo cáo</a></li>
+        <li><a href="#s12">12. Bảng mã lỗi</a></li>
+        <li><a href="#s13">13. Response chuẩn</a></li>
+        <li><a href="#s14">14. rowVersion &amp; Concurrency</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main">
+      <!-- Mobile TOC -->
+      <div class="toc-mobile">
+        <button
+          class="toc-mobile-toggle"
+          onclick="toggleMobileToc()"
+          id="mob-toggle"
+        >
+          &#9776; Mục lục
+        </button>
+        <div class="toc-mobile-list" id="mob-list">
+          <ul style="list-style: none; padding: 0.5rem 0; margin: 0">
+            <li><a href="#s0">0. Tổng quan</a></li>
+            <li><a href="#s1">1. Trạng thái phiếu</a></li>
+            <li><a href="#s2">2. Đăng nhập &amp; phiên</a></li>
+            <li><a href="#s3">3. Setup ban đầu (Admin)</a></li>
+            <li><a href="#s4">4. Dữ liệu nguồn</a></li>
+            <li><a href="#s5">5. Quy trình GV</a></li>
+            <li><a href="#s6">6. GĐ2 — Thẩm định theo dòng</a></li>
+            <li><a href="#s7">7. GĐ3 — Trưởng khoa chốt hồ sơ</a></li>
+            <li><a href="#s8">8. GĐ4 — Tờ trình KPI Khoa</a></li>
+            <li><a href="#s9">9. Mở lại phiếu</a></li>
+            <li><a href="#s10">10. Lịch sử</a></li>
+            <li><a href="#s11">11. Báo cáo</a></li>
+            <li><a href="#s12">12. Bảng mã lỗi</a></li>
+            <li><a href="#s13">13. Response chuẩn</a></li>
+            <li><a href="#s14">14. rowVersion &amp; Concurrency</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- SECTION 0 -->
+      <section class="section section-anchor" id="s0">
+        <h1>Quy trình đánh giá KPI – API Reference</h1>
+        <p>
+          Hệ thống KPI hỗ trợ quy trình đánh giá cán bộ giảng viên theo
+          <strong>4 giai đoạn</strong> — giảng viên kê khai, đơn vị thẩm định
+          <em>từng dòng tiêu chí</em>, Trưởng khoa chốt hồ sơ và chọn xếp loại,
+          Hiệu trưởng duyệt cả gói KPI của Khoa — với đầy đủ lịch sử thay đổi và
+          minh chứng. API xây dựng trên ASP.NET Web API (.NET Framework 4.0), sử
+          dụng token xác thực và SQL Server 2008 làm CSDL.
+        </p>
+        <p>
+          Mọi request (trừ <code>/api/auth/login</code> và
+          <code>/api/auth/refresh</code>) cần header:
+          <code>Authorization: Bearer &lt;AccessToken&gt;</code>
+        </p>
+
+        <h3>Vai trò trong hệ thống</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Vai trò</th>
+              <th>Mô tả quyền hạn</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge role-badge">GV</span> Giảng viên</td>
+              <td>
+                Tự đánh giá, tải minh chứng, nhập nhiệm vụ PVCĐ, nộp phiếu của
+                bản thân
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="badge role-badge">Đơn vị thẩm định</span><br />
+                <code>TK</code> / <code>TKL</code> / <code>TP</code>
+              </td>
+              <td>
+                <strong>GĐ2</strong> — thẩm định
+                <strong>từng dòng tiêu chí</strong> được giao trong
+                <code>tieu_chi_don_vi_cham</code>: duyệt giữ nguyên điểm, sửa
+                điểm (bắt buộc lý do), hoặc trả dòng về cho GV. Không thao tác
+                trên cả hồ sơ
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="badge role-badge">Trưởng khoa</span><br />
+                <code>TK</code> / <code>TKL</code>
+              </td>
+              <td>
+                <strong>GĐ3–4</strong> — chốt hồ sơ cá nhân và
+                <strong>chọn tay xếp loại 1/2/3</strong>, trả dòng về đơn vị
+                thẩm định, đóng gói tờ trình KPI Khoa rồi trình Hiệu trưởng.
+                Trưởng phòng (<code>TP</code>) <strong>không</strong> duyệt hồ
+                sơ giảng viên
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="badge role-badge">Hiệu trưởng</span><br />
+                <code>HT</code>
+              </td>
+              <td>
+                <strong>GĐ4</strong> — duyệt hoặc trả lại
+                <strong>cả gói KPI của Khoa</strong> (tờ trình), mở lại phiếu.
+                KHÔNG còn duyệt/chấm/chốt từng phiếu lẻ
+              </td>
+            </tr>
+            <tr>
+              <td><span class="badge role-badge">Admin</span></td>
+              <td>
+                Cấu hình hệ thống (chức vụ, đơn vị, năm, mẫu đánh giá…), nhập dữ
+                liệu nguồn
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Luồng tổng quát</h3>
+        <div class="workflow-diagram">
+          <div class="wf-step">Admin<br />Setup</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step">GV tự<br />kê khai</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step">GV<br />nộp phiếu</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step">Thẩm định<br />từng tiêu chí</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step">Trưởng khoa<br />duyệt hồ sơ</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step">Đóng gói<br />tờ trình Khoa</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step">Hiệu trưởng<br />duyệt gói</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step" style="border-color: #16a34a; color: #16a34a">
+            HOÀN TẤT
+          </div>
+        </div>
+        <p style="font-size: 13px; color: #6b7280; margin-top: 8px">
+          Bước "Thẩm định" chạy
+          <strong>song song theo từng dòng tiêu chí</strong>: mỗi tiêu chí về
+          đúng Khoa/Phòng được phân công, và có thể bị trả về cho giảng viên độc
+          lập với các tiêu chí khác. Xem mục 1.
+        </p>
+      </section>
+      <!-- SECTION 1 -->
+      <section class="section section-anchor" id="s1">
+        <h2>1. Trạng thái phiếu đánh giá</h2>
+
+        <div class="callout callout-blue">
+          <strong>Quy trình 4 giai đoạn đã áp dụng đầy đủ</strong> — schema,
+          stored procedure và API đều đã chuyển đổi xong. Mục 6–8 mô tả đúng
+          endpoint hiện hành.
+          <strong>Bốn endpoint của luồng cũ đã bị gỡ</strong> và trả 404 nếu còn
+          gọi: <code>POST /api/phieu/{id}/khoa/tra-lai</code>,
+          <code>POST /api/phieu/{id}/truong/duyet</code>,
+          <code>POST /api/phieu/{id}/truong/tra-lai</code>,
+          <code>POST /api/phieu/{id}/chot</code>. Endpoint thay thế xem
+          <a href="#s6">mục 6</a>–<a href="#s8">8</a>.
+        </div>
+
+        <h3>Hai trục trạng thái song song</h3>
+        <p>
+          Điểm cốt lõi của thiết kế mới: mỗi <strong>dòng tiêu chí</strong> có
+          trạng thái riêng, độc lập với trạng thái hồ sơ. Nhờ vậy trả về được
+          đúng một tiêu chí mà các tiêu chí khác — đang chờ Phòng khác duyệt
+          hoặc đã duyệt — vẫn giữ nguyên tiến độ.
+        </p>
+
+        <h3>
+          Trục 1 — <code>chi_tiet_danh_gia.trang_thai_dong</code> (từng dòng
+          tiêu chí)
+        </h3>
+        <table class="state-table">
+          <thead>
+            <tr>
+              <th>Giá trị</th>
+              <th>Tên trạng thái</th>
+              <th>Ai sửa được</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>KE_KHAI</td>
+              <td>
+                Chủ phiếu — sửa được <strong>cả điểm lẫn minh chứng</strong>.
+                Bao gồm cả lúc kê khai lần đầu và lúc sửa sau khi bị trả về
+              </td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>CHO_THAM_DINH</td>
+              <td>
+                Đơn vị được giao trong <code>tieu_chi_don_vi_cham</code> — duyệt
+                giữ nguyên điểm, sửa điểm (bắt buộc lý do), hoặc trả về
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>DA_CHOT</td>
+              <td>
+                Không ai. <code>diem_chinh_thuc</code> đã ghi, khóa cứng. Chỉ
+                Trưởng khoa trả về thẩm định lại được
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Trục 2 — <code>phieu_danh_gia.trang_thai</code> (hồ sơ)</h3>
+        <table class="state-table">
+          <thead>
+            <tr>
+              <th>Giá trị</th>
+              <th>Tên trạng thái</th>
+              <th>Mô tả</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>NHAP</td>
+              <td>GV kê khai, chưa nộp lần nào</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>THAM_DINH</td>
+              <td>
+                Còn ≥1 dòng ở trạng thái 1 hoặc 2.
+                <strong>Bao trùm cả lúc GV đang sửa dòng bị trả về</strong>
+                — hồ sơ KHÔNG tụt về trạng thái 1
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>CHO_TK_DUYET</td>
+              <td>
+                100% dòng đã chốt, chờ Trưởng khoa duyệt hồ sơ.
+                <strong>2 ↔ 3 là tự động</strong>, tính lại sau mọi thao tác cấp
+                dòng
+              </td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>TK_DA_DUYET</td>
+              <td>
+                Trưởng khoa đã chốt hồ sơ và chọn xếp loại (1/2/3), chờ đóng gói
+                tờ trình
+              </td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>HOAN_TAT</td>
+              <td>Hiệu trưởng đã duyệt gói KPI Khoa. Phiếu chỉ đọc</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-blue">
+          <strong>Đổi nghĩa so với luồng cũ:</strong> giá trị 3 và 4 vẫn giữ
+          nguyên con số nhưng đổi ý nghĩa — 3 từ <em>CHO_HT_DUYET</em> thành
+          <em>CHO_TK_DUYET</em>, 4 từ <em>HT_DA_DUYET</em> thành
+          <em>TK_DA_DUYET</em>. Ràng buộc
+          <code>CHECK (trang_thai IN (1,2,3,4,5))</code> không đổi.
+        </div>
+
+        <h3>Sơ đồ 4 giai đoạn</h3>
+        <svg
+          class="svg-state"
+          viewBox="0 0 860 470"
+          xmlns="http://www.w3.org/2000/svg"
+          style="font-family: system-ui, sans-serif"
+        >
+          <defs>
+            <marker
+              id="w4-ah"
+              markerWidth="8"
+              markerHeight="8"
+              refX="6"
+              refY="3"
+              orient="auto"
+            >
+              <path d="M0,0 L0,6 L8,3 z" fill="#374151" />
+            </marker>
+            <marker
+              id="w4-ah-red"
+              markerWidth="8"
+              markerHeight="8"
+              refX="6"
+              refY="3"
+              orient="auto"
+            >
+              <path d="M0,0 L0,6 L8,3 z" fill="#dc2626" />
+            </marker>
+            <marker
+              id="w4-ah-green"
+              markerWidth="8"
+              markerHeight="8"
+              refX="6"
+              refY="3"
+              orient="auto"
+            >
+              <path d="M0,0 L0,6 L8,3 z" fill="#16a34a" />
+            </marker>
+          </defs>
+
+          <!-- ===== Lane labels ===== -->
+          <text x="12" y="30" font-size="11" font-weight="700" fill="#6b7280">
+            GĐ1 — GIẢNG VIÊN
+          </text>
+          <text x="12" y="146" font-size="11" font-weight="700" fill="#6b7280">
+            GĐ2 — THẨM ĐỊNH (theo từng dòng tiêu chí)
+          </text>
+          <text x="12" y="286" font-size="11" font-weight="700" fill="#6b7280">
+            GĐ3 — TRƯỞNG KHOA
+          </text>
+          <text x="12" y="402" font-size="11" font-weight="700" fill="#6b7280">
+            GĐ4 — HIỆU TRƯỞNG
+          </text>
+          <line
+            x1="0"
+            y1="160"
+            x2="860"
+            y2="160"
+            stroke="#e5e7eb"
+            stroke-width="1"
+          />
+          <line
+            x1="0"
+            y1="300"
+            x2="860"
+            y2="300"
+            stroke="#e5e7eb"
+            stroke-width="1"
+          />
+          <line
+            x1="0"
+            y1="416"
+            x2="860"
+            y2="416"
+            stroke="#e5e7eb"
+            stroke-width="1"
+          />
+
+          <!-- ===== GĐ1 ===== -->
+          <rect
+            x="40"
+            y="44"
+            width="150"
+            height="46"
+            rx="6"
+            fill="#eff6ff"
+            stroke="#2563eb"
+            stroke-width="2"
+          />
+          <text
+            x="115"
+            y="64"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="700"
+            fill="#1e3a8a"
+          >
+            1 NHAP
+          </text>
+          <text
+            x="115"
+            y="79"
+            text-anchor="middle"
+            font-size="10"
+            fill="#374151"
+          >
+            mọi dòng = KE_KHAI
+          </text>
+
+          <rect
+            x="270"
+            y="44"
+            width="170"
+            height="46"
+            rx="6"
+            fill="#eff6ff"
+            stroke="#2563eb"
+            stroke-width="2"
+          />
+          <text
+            x="355"
+            y="64"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="700"
+            fill="#1e3a8a"
+          >
+            2 THAM_DINH
+          </text>
+          <text
+            x="355"
+            y="79"
+            text-anchor="middle"
+            font-size="10"
+            fill="#374151"
+          >
+            còn dòng chưa chốt
+          </text>
+
+          <line
+            x1="190"
+            y1="67"
+            x2="266"
+            y2="67"
+            stroke="#374151"
+            stroke-width="2"
+            marker-end="url(#w4-ah)"
+          />
+          <text
+            x="228"
+            y="38"
+            text-anchor="middle"
+            font-size="10"
+            fill="#374151"
+          >
+            nộp phiếu
+          </text>
+          <text
+            x="228"
+            y="60"
+            text-anchor="middle"
+            font-size="9"
+            fill="#6b7280"
+          >
+            dòng 1→2
+          </text>
+
+          <!-- huy-nop -->
+          <path
+            d="M300,90 Q228,120 160,90"
+            fill="none"
+            stroke="#d97706"
+            stroke-width="1.6"
+            marker-end="url(#w4-ah)"
+          />
+          <text
+            x="228"
+            y="118"
+            text-anchor="middle"
+            font-size="9"
+            fill="#d97706"
+          >
+            huy-nop (chưa dòng nào chốt)
+          </text>
+
+          <!-- ===== GĐ2 : row-level ===== -->
+          <rect
+            x="270"
+            y="180"
+            width="170"
+            height="46"
+            rx="6"
+            fill="#f0fdf4"
+            stroke="#16a34a"
+            stroke-width="2"
+          />
+          <text
+            x="355"
+            y="200"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="700"
+            fill="#166534"
+          >
+            DÒNG: CHO_THAM_DINH
+          </text>
+          <text
+            x="355"
+            y="215"
+            text-anchor="middle"
+            font-size="10"
+            fill="#374151"
+          >
+            đơn vị được giao chấm
+          </text>
+
+          <rect
+            x="40"
+            y="180"
+            width="150"
+            height="46"
+            rx="6"
+            fill="#fef2f2"
+            stroke="#dc2626"
+            stroke-width="2"
+          />
+          <text
+            x="115"
+            y="200"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="700"
+            fill="#991b1b"
+          >
+            DÒNG: KE_KHAI
+          </text>
+          <text
+            x="115"
+            y="215"
+            text-anchor="middle"
+            font-size="10"
+            fill="#374151"
+          >
+            GV sửa điểm + minh chứng
+          </text>
+
+          <rect
+            x="520"
+            y="180"
+            width="170"
+            height="46"
+            rx="6"
+            fill="#f0fdf4"
+            stroke="#16a34a"
+            stroke-width="2"
+          />
+          <text
+            x="605"
+            y="200"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="700"
+            fill="#166534"
+          >
+            DÒNG: DA_CHOT
+          </text>
+          <text
+            x="605"
+            y="215"
+            text-anchor="middle"
+            font-size="10"
+            fill="#374151"
+          >
+            diem_chinh_thuc đã ghi
+          </text>
+
+          <line
+            x1="440"
+            y1="203"
+            x2="516"
+            y2="203"
+            stroke="#16a34a"
+            stroke-width="2"
+            marker-end="url(#w4-ah-green)"
+          />
+          <text
+            x="478"
+            y="196"
+            text-anchor="middle"
+            font-size="9"
+            fill="#166534"
+          >
+            duyệt / sửa điểm
+          </text>
+
+          <line
+            x1="266"
+            y1="203"
+            x2="194"
+            y2="203"
+            stroke="#dc2626"
+            stroke-width="2"
+            marker-end="url(#w4-ah-red)"
+          />
+          <text
+            x="230"
+            y="196"
+            text-anchor="middle"
+            font-size="9"
+            fill="#dc2626"
+          >
+            trả về (bắt buộc lý do)
+          </text>
+
+          <path
+            d="M115,180 Q115,140 300,132"
+            fill="none"
+            stroke="#374151"
+            stroke-width="1.6"
+            marker-end="url(#w4-ah)"
+          />
+          <text x="150" y="150" font-size="9" fill="#374151">
+            nộp lại (dòng 1→2)
+          </text>
+
+          <!-- auto-scored shortcut -->
+          <path
+            d="M190,192 Q360,250 520,210"
+            fill="none"
+            stroke="#16a34a"
+            stroke-width="1.4"
+            stroke-dasharray="4,3"
+            marker-end="url(#w4-ah-green)"
+          />
+          <text
+            x="360"
+            y="258"
+            text-anchor="middle"
+            font-size="9"
+            fill="#166534"
+          >
+            loai_nguon_diem = 2 → chốt thẳng, bỏ qua thẩm định
+          </text>
+
+          <!-- ===== GĐ3 ===== -->
+          <rect
+            x="270"
+            y="320"
+            width="170"
+            height="46"
+            rx="6"
+            fill="#eff6ff"
+            stroke="#2563eb"
+            stroke-width="2"
+          />
+          <text
+            x="355"
+            y="340"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="700"
+            fill="#1e3a8a"
+          >
+            3 CHO_TK_DUYET
+          </text>
+          <text
+            x="355"
+            y="355"
+            text-anchor="middle"
+            font-size="10"
+            fill="#374151"
+          >
+            100% dòng đã chốt
+          </text>
+
+          <rect
+            x="520"
+            y="320"
+            width="170"
+            height="46"
+            rx="6"
+            fill="#eff6ff"
+            stroke="#2563eb"
+            stroke-width="2"
+          />
+          <text
+            x="605"
+            y="340"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="700"
+            fill="#1e3a8a"
+          >
+            4 TK_DA_DUYET
+          </text>
+          <text
+            x="605"
+            y="355"
+            text-anchor="middle"
+            font-size="10"
+            fill="#374151"
+          >
+            TK chọn xếp loại 1/2/3
+          </text>
+
+          <path
+            d="M355,226 L355,316"
+            fill="none"
+            stroke="#374151"
+            stroke-width="2"
+            marker-end="url(#w4-ah)"
+          />
+          <text x="362" y="276" font-size="9" fill="#374151">
+            TỰ ĐỘNG khi mọi dòng = DA_CHOT
+          </text>
+
+          <line
+            x1="440"
+            y1="343"
+            x2="516"
+            y2="343"
+            stroke="#374151"
+            stroke-width="2"
+            marker-end="url(#w4-ah)"
+          />
+          <text
+            x="478"
+            y="336"
+            text-anchor="middle"
+            font-size="9"
+            fill="#374151"
+          >
+            chốt hồ sơ
+          </text>
+
+          <path
+            d="M560,320 Q470,270 400,226"
+            fill="none"
+            stroke="#dc2626"
+            stroke-width="1.6"
+            marker-end="url(#w4-ah-red)"
+          />
+          <text x="700" y="290" text-anchor="end" font-size="9" fill="#dc2626">
+            TK trả 1 dòng về thẩm định (dòng 3→2)
+          </text>
+
+          <!-- ===== GĐ4 ===== -->
+          <rect
+            x="520"
+            y="430"
+            width="170"
+            height="34"
+            rx="6"
+            fill="#fefce8"
+            stroke="#d97706"
+            stroke-width="2"
+          />
+          <text
+            x="605"
+            y="451"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="700"
+            fill="#92400e"
+          >
+            TỜ TRÌNH KPI KHOA
+          </text>
+
+          <rect
+            x="730"
+            y="320"
+            width="115"
+            height="46"
+            rx="6"
+            fill="#dcfce7"
+            stroke="#16a34a"
+            stroke-width="2"
+          />
+          <text
+            x="787"
+            y="340"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="700"
+            fill="#166534"
+          >
+            5 HOAN_TAT
+          </text>
+          <text
+            x="787"
+            y="355"
+            text-anchor="middle"
+            font-size="10"
+            fill="#374151"
+          >
+            khóa chiến dịch
+          </text>
+
+          <path
+            d="M605,366 L605,426"
+            fill="none"
+            stroke="#374151"
+            stroke-width="2"
+            marker-end="url(#w4-ah)"
+          />
+          <text x="612" y="398" font-size="9" fill="#374151">
+            đóng gói khi 100% GV đã chốt → nâng top 20% lên mức 4
+          </text>
+
+          <path
+            d="M690,447 Q800,447 800,370"
+            fill="none"
+            stroke="#16a34a"
+            stroke-width="2"
+            marker-end="url(#w4-ah-green)"
+          />
+          <text x="700" y="424" font-size="9" fill="#166534">HT duyệt gói</text>
+
+          <path
+            d="M520,438 Q400,420 360,370"
+            fill="none"
+            stroke="#dc2626"
+            stroke-width="1.6"
+            marker-end="url(#w4-ah-red)"
+          />
+          <text x="366" y="394" font-size="9" fill="#dc2626">
+            HT trả riêng hồ sơ về TK (4→3)
+          </text>
+
+          <path
+            d="M787,320 Q787,150 700,132"
+            fill="none"
+            stroke="#d97706"
+            stroke-width="1.6"
+            stroke-dasharray="4,3"
+            marker-end="url(#w4-ah)"
+          />
+          <text x="795" y="240" text-anchor="end" font-size="9" fill="#d97706">
+            mo-lai (→1, 2 hoặc 3)
+          </text>
+        </svg>
+
+        <h3>Xếp loại — ai ghi cột nào</h3>
+        <p>
+          Mức 4 (Hoàn thành xuất sắc) <strong>không ai chọn tay được</strong>:
+          nó phụ thuộc thứ hạng trong cả Khoa nên chỉ tính được khi 100% hồ sơ
+          của Khoa đã chốt.
+        </p>
+        <table class="state-table">
+          <thead>
+            <tr>
+              <th>Cột</th>
+              <th>Ai ghi</th>
+              <th>Khi nào</th>
+              <th>Giá trị</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>xep_loai_de_xuat</code></td>
+              <td>Hệ thống</td>
+              <td>Khi TK mở hồ sơ ở GĐ3</td>
+              <td>1–4, chỉ để đối chiếu</td>
+            </tr>
+            <tr>
+              <td><code>xep_loai_khoa</code></td>
+              <td><strong>Trưởng khoa chọn tay</strong></td>
+              <td>Chốt hồ sơ cá nhân (3 → 4)</td>
+              <td><strong>1/2/3 — cấm chọn 4</strong></td>
+            </tr>
+            <tr>
+              <td><code>xep_loai</code></td>
+              <td>Hệ thống</td>
+              <td>Đóng gói tờ trình Khoa</td>
+              <td>
+                = <code>xep_loai_khoa</code>, nâng lên 4 nếu trúng hạn ngạch
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Hạn ngạch top 20% (theo từng Khoa)</h3>
+        <pre><code>so_giang_vien      = COUNT(phiếu trong gói WHERE loai_doi_tuong = 1)
+han_ngach_xuat_sac = FLOOR(so_giang_vien * 0.20)</code></pre>
+        <ul>
+          <li>
+            <strong>Mẫu số là TỔNG SỐ giảng viên của Khoa</strong>, không phải
+            số người "Hoàn thành tốt". Khoa 30 GV, 10 người mức 3 ⇒ hạn ngạch =
+            6, không phải 2.
+          </li>
+          <li>Làm tròn <strong>xuống</strong>. 27 GV ⇒ 5 suất.</li>
+          <li>
+            Viên chức/NLĐ (<code>loai_doi_tuong = 2</code>) không tính vào mẫu
+            số và không tranh hạn ngạch.
+          </li>
+          <li>
+            <strong>Suất được lấp đầy, không bỏ trống.</strong> Duyệt từ điểm
+            cao xuống, chỉ lấy người vừa <code>xep_loai_khoa = 3</code> vừa
+            <code>muc_nckhcn_qd838 = 2</code>. Người điểm cao nhưng không đạt QĐ
+            838 bị bỏ qua, suất dồn cho người kế tiếp.
+          </li>
+          <li>
+            <strong>Đồng hạng ở ranh giới ⇒ hệ thống CHẶN đóng gói</strong>
+            (<code>error_code = DONG_HANG</code>) cho tới khi Trưởng khoa chỉ
+            định ai được suất cuối. Cố ý không tự tie-break: đây là quyết định
+            nhân sự.
+          </li>
+        </ul>
+      </section>
+      <!-- SECTION 2 -->
+      <section class="section section-anchor" id="s2">
+        <h2>2. Đăng nhập &amp; quản lý phiên</h2>
+        <p>
+          <code>/login</code>, <code>/refresh</code>, <code>/logout</code> là
+          public. Riêng <code>/register</code> yêu cầu
+          <code>bearerAuth</code> và chỉ cấp Trường (<code>id_chuc_vu</code> ∈
+          {1, 7, 8}) được phép.
+        </p>
+
+        <!-- login -->
+        <div class="endpoint-card" id="post-auth-login">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/auth/login</span>
+            <span
+              class="badge tag-compact"
+              style="background: #6b7280; color: #fff"
+              >Public</span
+            >
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Đăng nhập bằng email và mật khẩu, nhận về
+              <code>AccessToken</code> và <code>RefreshToken</code>.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Email": "gv001@school.edu.vn",
+  "Password": "secret123"
+}</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>HTTP/1.1 200 OK
+{
+  "Success": true,
+  "Message": "Đăng nhập thành công.",
+  "User": {
+    "IdNhanVien": 42,
+    "MaNhanVien": "GV001",
+    "HoTen": "Nguyễn Văn A",
+    "Email": "gv001@school.edu.vn",
+    "IdDonVi": 3,
+    "IdChucVu": null,
+    "IdChucDanh": 1,
+    "ScienceUserId": null
+  },
+  "Tokens": {
+    "AccessToken": "eyJhbGc...",
+    "RefreshToken": "rt_abc123"
+  }
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">401</span></td>
+                  <td>Sai email hoặc mật khẩu</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td>Thiếu Email hoặc Password</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- refresh -->
+        <div class="endpoint-card" id="post-auth-refresh">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/auth/refresh</span>
+            <span
+              class="badge tag-compact"
+              style="background: #6b7280; color: #fff"
+              >Public</span
+            >
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Đổi <code>RefreshToken</code> lấy cặp token mới.
+              <code>AccessToken</code> cũ sẽ bị vô hiệu.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "RefreshToken": "rt_abc123" }</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Làm mới token thành công.", "Tokens": { "AccessToken": "eyJ...", "RefreshToken": "rt_xyz456", "AccessTokenExpiresAt": "...", "RefreshTokenExpiresAt": "..." } }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">401</span></td>
+                  <td>RefreshToken hết hạn hoặc không hợp lệ</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- logout -->
+        <div class="endpoint-card" id="post-auth-logout">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/auth/logout</span>
+            <span
+              class="badge tag-compact"
+              style="background: #6b7280; color: #fff"
+              >Public</span
+            >
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Thu hồi <code>RefreshToken</code>. Client cần tự xóa
+              <code>AccessToken</code> phía client.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "RefreshToken": "rt_abc123" }</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Đăng xuất thành công." }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- register -->
+        <div class="endpoint-card" id="post-auth-register">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/auth/register</span>
+            <span class="badge role-badge tag-compact">Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Đăng ký tài khoản mới. Yêu cầu <code>bearerAuth</code> và chỉ cấp
+              <strong>Trường</strong> (<code>id_chuc_vu</code> ∈ {1, 7, 8}) được
+              phép — filter
+              <code>[TokenAuthorize(idChucVuAllowed = "1,7,8")]</code> gắn ở mức
+              method (login/refresh/logout vẫn public).
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "MaNhanVien": "GV002",
+  "HoTen": "Trần Thị B",
+  "Password": "Pass@123",
+  "Email": "gv002@school.edu.vn",
+  "IdDonVi": 3,
+  "IdChucVu": null,
+  "IdChucDanh": 1,
+  "ScienceUserId": null
+}</code></pre>
+            </div>
+            <h4>201 Created</h4>
+            <p>
+              Payload trả về dùng khóa <code>User</code> (không phải
+              <code>Item</code>), là một <code>AuthUserDto</code>:
+            </p>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Message": "Tạo tài khoản thành công.",
+  "User": {
+    "IdNhanVien": 43,
+    "MaNhanVien": "GV002",
+    "HoTen": "Trần Thị B",
+    "Email": "gv002@school.edu.vn",
+    "IdDonVi": 3,
+    "IdChucVu": null,
+    "IdChucDanh": 1,
+    "ScienceUserId": null
+  }
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td>Thiếu MaNhanVien, HoTen, hoặc Password</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">401</span></td>
+                  <td>Thiếu token hoặc token không hợp lệ/hết hạn</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td>Token hợp lệ nhưng chức vụ không thuộc {1, 7, 8}</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td>MaNhanVien hoặc Email đã tồn tại</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- SECTION 3 -->
+      <section class="section section-anchor" id="s3">
+        <h2>3. Setup ban đầu (Admin)</h2>
+        <p>
+          Các endpoint cấu hình hệ thống, chỉ dành cho Admin. Mỗi tài nguyên hỗ
+          trợ CRUD chuẩn (<code>GET</code> list, <code>POST</code> tạo mới,
+          <code>GET /{id}</code>, <code>PUT /{id}</code>,
+          <code>DELETE /{id}</code>).
+        </p>
+
+        <h3>Chức vụ — <code>/api/chucvu</code></h3>
+        <div class="endpoint-card" id="post-api-chucvu">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/chucvu</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "MaChucVu": "PGS", "TenChucVu": "Phó Giáo sư", "TyLeDinhMucGiang": null, "GhiChuDieuKien": null, "TrangThai": true }</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span>
+              <code>/api/chucvu</code> — Lấy danh sách &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/chucvu/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/chucvu/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/chucvu/{id}</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>Đơn vị — <code>/api/donvi</code></h3>
+        <div class="endpoint-card" id="post-api-donvi">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/donvi</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "MaDonVi": "KHCN", "TenDonVi": "Khoa Công nghệ", "IdDonViCha": null, "CapDonVi": 1, "TrangThai": 1 }</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span>
+              <code>/api/donvi</code> &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/donvi/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/donvi/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/donvi/{id}</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>Năm đánh giá — <code>/api/namdanhgia</code></h3>
+        <div class="endpoint-card" id="post-api-namdanhgia">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/namdanhgia</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "IdNam": 2024,
+  "NgayBatDau": "2024-01-01",
+  "NgayKetThuc": "2024-12-31",
+  "NgayMoTuDanhGia": "2024-12-01",
+  "NgayDongTuDanhGia": "2024-12-15",
+  "NgayMoDanhGiaCapTren": "2024-12-16",
+  "NgayDongDanhGiaCapTren": "2024-12-31",
+  "TrangThai": 1,
+  "GhiChu": "Năm học 2024"
+}</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span>
+              <code>/api/namdanhgia</code> &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/namdanhgia/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/namdanhgia/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/namdanhgia/{id}</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>Chức danh nghề nghiệp — <code>/api/chuc-danh-nghe-nghiep</code></h3>
+        <div class="endpoint-card" id="post-api-chuc-danh-nghe-nghiep">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/chuc-danh-nghe-nghiep</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Đổi tên từ <code>nhom_giang_vien</code> →
+              <code>chuc_danh_nghe_nghiep</code>
+              (schema_v2). Quyết định định mức GỐC giờ NCKH &amp; PVCĐ.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "MaChucDanh": "GVC", "TenChucDanh": "Giảng viên chính", "MoTa": null, "TrangThai": 1 }</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span>
+              <code>/api/chuc-danh-nghe-nghiep</code> &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/chuc-danh-nghe-nghiep/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/chuc-danh-nghe-nghiep/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/chuc-danh-nghe-nghiep/{id}</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>Định mức giảng viên — <code>/api/dinhmucgiangvien</code></h3>
+        <div class="endpoint-card" id="post-api-dinhmuc">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/dinhmucgiangvien</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>Query params: <code>chucDanhId?</code>, <code>namId?</code></p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "IdChucDanh": 1, "IdNam": 2024, "GioGiangLyThuyet": 810, "GioNckh": 600, "MoTa": null }</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span>
+              <code>/api/dinhmucgiangvien?chucDanhId=1&amp;namId=2024</code>
+              &nbsp;|&nbsp; <span class="badge method-put">PUT</span>
+              <code>/api/dinhmucgiangvien/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/dinhmucgiangvien/{id}</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>Thang điểm — <code>/api/thangdiem</code></h3>
+        <div class="endpoint-card" id="post-api-thangdiem">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/thangdiem</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>Query params: <code>tieuChiId?</code></p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "IdTieuChi": 5, "GiaTriDiem": 10.0, "DieuKienDiem": "Đạt từ 90% giờ chuẩn", "ThuTuHienThi": 1 }</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span>
+              <code>/api/thangdiem?tieuChiId=5</code> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/thangdiem/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/thangdiem/{id}</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>Mẫu đánh giá — <code>/api/maudanhgia</code></h3>
+        <div class="endpoint-card" id="post-api-maudanhgia">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/maudanhgia</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "TenMau": "Mẫu GV cơ hữu 2024", "IdNam": 2024, "MoTa": null, "TrangThai": 1 }</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span>
+              <code>/api/maudanhgia</code> &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/maudanhgia/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/maudanhgia/{id}/chi-tiet</code> (cây
+              Nhom→NhomCon→TieuChi) &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+            </p>
+          </div>
+        </div>
+
+        <h3>Chi tiết mẫu đánh giá — <code>/api/chitietmaudanhgia</code></h3>
+        <div class="endpoint-card" id="post-api-chitietmau">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/chitietmaudanhgia</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "IdMau": 1, "IdTieuChi": 5 }</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/chitietmaudanhgia/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/chitietmaudanhgia/{id}</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>Nhóm tiêu chí — <code>/api/nhomtieuchi</code></h3>
+        <div class="endpoint-card" id="post-api-nhomtieuchi">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/nhomtieuchi</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "TenNhom": "Nhóm A – Giảng dạy", "IdNhomCha": null, "LoaiNhom": 1, "DiemToiDa": 100, "ThuTuHienThi": 1, "TrangThai": 1 }</code></pre>
+              <p style="margin: 0.4rem 0 0">
+                <code>LoaiNhom</code> là số (<code>byte</code>, 1 = Nhóm A cơ
+                bản, 2 = Nhóm B vượt trội) — KHÔNG phải chuỗi "A"/"B".
+              </p>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/nhomtieuchi/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+            </p>
+          </div>
+        </div>
+
+        <h3>Tiêu chí đánh giá — <code>/api/tieuchidanhgia</code></h3>
+        <div class="endpoint-card" id="post-api-tieuchi">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/tieuchidanhgia</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "TenTieuChi": "Giờ giảng lý thuyết",
+  "IdNhom": 2,
+  "IdNam": 2024,
+  "MoTa": null,
+  "DiemToiDa": 50,
+  "LoaiThangDiem": 1,
+  "CongThucTinhDiem": null,
+  "BatBuocMinhChung": false,
+  "ThuTuHienThi": 1,
+  "TrangThai": true
+}</code></pre>
+            </div>
+            <p style="margin: 0.4rem 0 0">
+              <code>LoaiThangDiem</code> là <code>byte</code> (1..4) — là số,
+              KHÔNG phải chuỗi "CHON"/"GV". Tiêu chí KHÔNG khai báo "cấp đánh
+              giá": ai chấm tiêu chí nào do bảng
+              <code>tieu_chi_don_vi_cham</code> quyết định.
+            </p>
+            <p>
+              <span class="badge method-get">GET</span> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/tieuchidanhgia/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+            </p>
+          </div>
+        </div>
+
+        <h3>Nhóm nhiệm vụ — <code>/api/nhomnhiemvu</code></h3>
+        <div class="endpoint-card" id="post-api-nhomnv">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/nhomnhiemvu</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>Query params: <code>trangThai?</code></p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "TenNhom": "Ban giám hiệu", "ThuTu": 1, "TrangThai": 1 }</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/nhomnhiemvu/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+            </p>
+          </div>
+        </div>
+
+        <h3>Vai trò PVCĐ — <code>/api/vaitropvcd</code></h3>
+        <div class="endpoint-card" id="post-api-vaitropvcd">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/vaitropvcd</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Query params: <code>idDonVi?</code>, <code>idNam?</code>,
+              <code>trangThai?</code>
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "IdDonVi": null, "IdNam": 2024, "MaVaiTro": "BGH_CHU_TICH", "TenVaiTro": "Chủ tịch Hội đồng", "DiemQuyDoi": 5.0, "ThuTu": 1, "TrangThai": 1 }</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span>
+              <code>/api/vaitropvcd?idNam=2024</code> &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/vaitropvcd/resolve?idDonVi=3&amp;idNam=2024</code>
+              (giải quyết kế thừa) &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/vaitropvcd/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+            </p>
+          </div>
+        </div>
+      </section>
+      <!-- SECTION 4 -->
+      <section class="section section-anchor" id="s4">
+        <h2>4. Nhập dữ liệu nguồn (Admin/Khoa)</h2>
+        <p>Dữ liệu nguồn được nhập thủ công bởi Admin hoặc Khoa.</p>
+
+        <h3>Giờ thực hiện GV — <code>/api/giothuchiengv</code></h3>
+        <div class="endpoint-card" id="post-api-giothuchien">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/giothuchiengv</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "IdNhanVien": 42,
+  "IdNam": 2024,
+  "GioGiangThucTe": 280,
+  "GioNckhThucTe": 160,
+  "Nguon": 1
+}</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span>
+              <code>/api/giothuchiengv</code> &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/giothuchiengv/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/giothuchiengv/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/giothuchiengv/{id}</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>Vi phạm giảng dạy — <code>/api/viphamgiangday</code></h3>
+        <div class="endpoint-card" id="post-api-vipham">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/viphamgiangday</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Ghi nhận một vi phạm quy định giảng dạy.
+              <code>IdLoaiViPham</code> lấy từ danh mục
+              <code>/api/loai-vi-pham</code>; để trống <code>DiemTru</code> thì
+              hệ thống lấy <code>diem_tru_mac_dinh</code> của loại vi phạm.
+              Người ghi nhận lấy từ JWT, không nhận qua body.
+            </p>
+            <p>
+              <code>BiKyLuat = true</code> đánh dấu vi phạm đã bị xử lý kỷ luật
+              — hiện <em>chỉ được lưu</em>, chưa ảnh hưởng tới điểm hay xếp
+              loại. Điểm tiêu chí
+              <em>Tuân thủ đúng quy định về giảng dạy</em> luôn là
+              <code>15 − tổng DiemTru</code> của năm (sàn 0).
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "IdNhanVien": 42,
+  "IdNam": 2024,
+  "IdLoaiViPham": 3,
+  "MoTa": "Nghỉ dạy không phép 3 buổi",
+  "DiemTru": 1,
+  "BiKyLuat": false,
+  "NgayViPham": "2024-10-15"
+}</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span> &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/viphamgiangday/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/viphamgiangday/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/viphamgiangday/{id}</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>Phản hồi sinh viên — <code>/api/phanhoisinhvien</code></h3>
+        <div class="endpoint-card" id="post-api-phanhoi">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/phanhoisinhvien</span>
+            <span class="badge role-badge tag-compact">Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "IdNhanVien": 42,
+  "IdNam": 2024,
+  "DiemTrungBinh": 4.2,
+  "SoHocPhanDanhGia": 5,
+  "HeThongNguon": "LMS"
+}</code></pre>
+            </div>
+            <p>
+              <span class="badge method-get">GET</span> &nbsp;|&nbsp;
+              <span class="badge method-get">GET</span>
+              <code>/api/phanhoisinhvien/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-put">PUT</span>
+              <code>/api/phanhoisinhvien/{id}</code> &nbsp;|&nbsp;
+              <span class="badge method-delete">DELETE</span>
+              <code>/api/phanhoisinhvien/{id}</code>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 5 -->
+      <section class="section section-anchor" id="s5">
+        <h2>5. Quy trình GV (tự đánh giá và nộp phiếu)</h2>
+        <p>
+          Đây là luồng chính của hệ thống. GV thực hiện tuần tự 6 bước dưới đây.
+        </p>
+
+        <!-- 5.1 -->
+        <h3 class="section-anchor" id="s5-1">5.1 Tạo / Lấy phiếu đánh giá</h3>
+
+        <div class="endpoint-card" id="post-api-phieu">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/phieu</span>
+            <span class="badge role-badge tag-compact">Admin/GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Tạo phiếu đánh giá mới. Hệ thống tự động sinh các bản ghi
+              <code>chi_tiet_danh_gia</code> theo mẫu được chọn.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "IdNam": 2024, "IdNhanVien": 42, "IdMau": 1 }</code></pre>
+            </div>
+            <h4>201 Created</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>HTTP/1.1 201 Created
+{
+  "Success": true,
+  "Message": "Tạo phiếu thành công.",
+  "Item": {
+    "IdPhieu": 17,
+    "IdNam": 2024,
+    "IdNhanVien": 42,
+    "IdMau": 1,
+    "TrangThai": 1,
+    "LanDanhGia": 1,
+    "LanMoLai": 0,
+    "RowVersion": "AAAAAAAAB9Q=",
+    "ChiTiet": [ { "IdChiTiet": 101, "IdTieuChi": 5, "TenTieuChi": "Giờ giảng lý thuyết", "DiemToiDa": 50, "LoaiNguonDiem": 1 } ]
+  }
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td>Phiếu đã tồn tại cho GV này trong năm đã chọn</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td>Thiếu IdNam, IdNhanVien hoặc IdMau</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-phieu-me">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/phieu/me/{idNam}</span>
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Lấy phiếu của chính người dùng đang đăng nhập cho năm
+              <code>{idNam}</code>. Trả về phiếu kèm toàn bộ chi tiết.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Item": { "IdPhieu": 17, "TrangThai": 1, "RowVersion": "AAAAAAAAB9Q=", "ChiTiet": [...] } }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">404</span></td>
+                  <td>
+                    Chưa có phiếu cho năm này (<code>PHIEU_NOT_FOUND</code>)
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-phieu-list">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/phieu</span>
+            <span class="badge role-badge tag-compact">Admin/Khoa/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Lấy danh sách phiếu với bộ lọc. Query params: <code>idNam?</code>,
+              <code>idDonVi?</code>, <code>idNhanVien?</code>,
+              <code>trangThai?</code> (CSV, vd: <code>1,2</code>),
+              <code>tuNgay?</code>, <code>denNgay?</code>, <code>page?=1</code>,
+              <code>pageSize?=20</code>, <code>sortBy?</code>
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Lấy danh sách phiếu thành công.", "Items": [...] }</code></pre>
+              <p style="margin: 0.4rem 0 0">
+                Response chỉ gồm <code>Success</code>, <code>Message</code>,
+                <code>Items</code> — KHÔNG có
+                <code>TotalCount</code>/<code>Page</code>/<code>PageSize</code>
+                (dù request nhận tham số
+                <code>page</code>/<code>pageSize</code>, metadata phân trang
+                không được trả về).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5.2 -->
+        <h3 class="section-anchor" id="s5-2">
+          5.2 Tự đánh giá (điền điểm các tiêu chí)
+        </h3>
+        <p>
+          GV nhập điểm tự đánh giá cho từng <code>chi_tiet_danh_gia</code>.
+          Phiếu phải ở trạng thái <strong>1 (NHAP)</strong>.
+        </p>
+
+        <div class="endpoint-card" id="put-api-chitiet-tudanhgia">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-put">PUT</span>
+            <span class="endpoint-path"
+              >/api/chitiet/{idChiTiet}/tu-danh-gia</span
+            >
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Cập nhật điểm tự đánh giá. Nếu tiêu chí dùng thang điểm dạng
+              <em>chọn</em>, truyền <code>IdThangDiemChon</code>; nếu dạng
+              <em>nhập tự do</em>, truyền <code>Diem</code>.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Diem": 45.0,
+  "NhanXet": "Đã hoàn thành 280/320 giờ chuẩn.",
+  "IdThangDiemChon": null
+}</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Cập nhật điểm tự đánh giá thành công.", "Item": { "IdChiTiet": 101, "DiemTuDanhGia": 45.0, "NhanXetTuDanhGia": "..." } }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>GV không sở hữu phiếu này</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Phiếu không ở trạng thái NHAP (1)</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">404</span></td>
+                  <td><code>PHIEU_NOT_FOUND</code></td>
+                  <td>Chi tiết không tồn tại hoặc bị xóa</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5.3 -->
+        <h3 class="section-anchor" id="s5-3">5.3 Tải minh chứng</h3>
+        <p>
+          Mỗi chi tiết có thể đính kèm nhiều minh chứng dạng file hoặc đường
+          dẫn. Phiếu phải ở trạng thái <strong>1 (NHAP)</strong>.
+        </p>
+
+        <div class="endpoint-card" id="post-api-chitiet-minhchung-file">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path"
+              >/api/chitiet/{idChiTiet}/minh-chung/file</span
+            >
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Upload file minh chứng. Request dạng
+              <code>multipart/form-data</code>. Định dạng cho phép:
+              <code>pdf, doc, docx, xls, xlsx, png, jpg, jpeg</code>. Giới hạn:
+              <strong>10 MB</strong>.
+            </p>
+            <h4>Form Fields</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>file: (binary)
+tenHienThi: "Bằng chứng hoàn thành giờ giảng" (tùy chọn)</code></pre>
+            </div>
+            <h4>201 Created</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Tải minh chứng thành công.", "Item": { "IdMinhChung": 55, "TenHienThi": "...", "LoaiMinhChung": 1, "DuongDan": "/uploads/..." } }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td>File vượt 10 MB hoặc định dạng không hợp lệ</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code> — không sở hữu phiếu</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td>Phiếu không ở trạng thái NHAP</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="post-api-chitiet-minhchung-link">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path"
+              >/api/chitiet/{idChiTiet}/minh-chung/link</span
+            >
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "TenHienThi": "Bài báo ISI", "DuongDan": "https://doi.org/10.1000/xyz123", "Loai": 3 }</code></pre>
+            </div>
+            <p><code>Loai</code>: <code>2</code> = URL, <code>3</code> = DOI</p>
+            <h4>201 Created</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Item": { "IdMinhChung": 56, "LoaiMinhChung": 3, "DuongDan": "https://doi.org/..." } }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-chitiet-minhchung">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path"
+              >/api/chitiet/{idChiTiet}/minh-chung</span
+            >
+            <span class="badge role-badge tag-compact">GV/Khoa/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Lấy danh sách minh chứng của một chi tiết (chỉ trả về bản ghi chưa
+              xóa — <code>da_xoa = 0</code>).
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Items": [ { "IdMinhChung": 55, "TenHienThi": "...", "LoaiMinhChung": 1, "DuongDan": "..." } ] }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="delete-api-minhchung">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-delete">DELETE</span>
+            <span class="endpoint-path">/api/minhchung/{idMinhChung}</span>
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Xóa mềm (soft-delete) minh chứng — đặt <code>da_xoa = 1</code>.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Đã xóa minh chứng." }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">404</span></td>
+                  <td><code>PHIEU_NOT_FOUND</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td>Phiếu không ở trạng thái NHAP</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- 5.4 PVCD -->
+        <h3 class="section-anchor" id="s5-4">
+          5.4 Nhiệm vụ PVCĐ (Nhóm III — trần 20 điểm)
+        </h3>
+        <p>
+          Nhiệm vụ phục vụ cộng đồng (PVCĐ) thuộc nhóm tiêu chí III. Tổng
+          <code>diem_snapshot</code> của tất cả nhiệm vụ trong một
+          <code>chi_tiet_danh_gia</code> không được vượt
+          <strong>20 điểm</strong>. Vi phạm sẽ trả về lỗi
+          <code>PVCD_CAP_EXCEEDED</code>.
+        </p>
+
+        <div class="endpoint-card" id="post-api-chitiet-nhiemvu">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/chitiet/{idChiTiet}/nhiem-vu</span>
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "TenNhiemVu": "Thư ký Hội đồng xét tuyển",
+  "IdNhomNv": 2,
+  "IdVaiTro": 7,
+  "MoTa": "Học kỳ 1 năm 2024"
+}</code></pre>
+            </div>
+            <h4>201 Created</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>HTTP/1.1 201 Created
+{
+  "Success": true,
+  "Item": {
+    "IdNhiemVu": 33,
+    "IdChiTiet": 101,
+    "TenNhiemVu": "Thư ký Hội đồng xét tuyển",
+    "IdNhomNv": 2,
+    "TenNhom": "...",
+    "IdVaiTro": 7,
+    "TenVaiTro": "...",
+    "DiemSnapshot": 3.0,
+    "MoTa": "...",
+    "NgayTao": "2024-09-01T00:00:00"
+  }
+}</code></pre>
+              <p style="margin: 0.4rem 0 0">
+                <code>Item</code> (kiểu <code>NhiemVuCongDongDto</code>) KHÔNG
+                chứa <code>TongDiemSnapshot</code>/<code>ConLai</code> — các
+                tổng này chỉ là field cấp ngoài (top-level) của endpoint GET
+                danh sách bên dưới.
+              </p>
+            </div>
+            <h4>422 — Vượt trần điểm PVCĐ</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>HTTP/1.1 422 Unprocessable Entity
+{
+  "error": "PVCD_CAP_EXCEEDED",
+  "currentTotal": 18.0,
+  "attemptedAdd": 7.0,
+  "remaining": 2.0
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">422</span></td>
+                  <td><code>PVCD_CAP_EXCEEDED</code></td>
+                  <td>Tổng điểm PVCĐ sẽ vượt 20 điểm</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>Không sở hữu phiếu</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Phiếu không ở trạng thái NHAP</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-chitiet-nhiemvu">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/chitiet/{idChiTiet}/nhiem-vu</span>
+            <span class="badge role-badge tag-compact">GV/Khoa/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>Trả về danh sách nhiệm vụ kèm thống kê tổng điểm.</p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "TongDiemSnapshot": 8.0, "SoNhiemVu": 3, "ConLai": 12.0, "Items": [...] }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="put-api-nhiemvu">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-put">PUT</span>
+            <span class="endpoint-path">/api/nhiemvu/{idNhiemVu}</span>
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "TenNhiemVu": "Thư ký (cập nhật)", "IdNhomNv": 2, "IdVaiTro": 8, "MoTa": null }</code></pre>
+            </div>
+            <h4>200 OK / 422 PVCD_CAP_EXCEEDED</h4>
+            <p>
+              Tương tự POST, nếu thay đổi IdVaiTro dẫn đến tổng điểm vượt 20 →
+              422.
+            </p>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="delete-api-nhiemvu">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-delete">DELETE</span>
+            <span class="endpoint-path">/api/nhiemvu/{idNhiemVu}</span>
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Đã xóa nhiệm vụ." }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5.5 Submit -->
+        <h3 class="section-anchor" id="s5-5">5.5 Nộp phiếu (Submit)</h3>
+        <p>
+          GV nộp phiếu để chuyển trạng thái
+          <strong>1 (NHAP) → 2 (THAM_DINH)</strong>, đồng thời đẩy
+          <strong>mọi dòng tiêu chí từ 1 KE_KHAI → 2 CHO_THAM_DINH</strong>. Hệ
+          thống kiểm tra toàn bộ các tiêu chí bắt buộc trước khi cho phép
+          submit.
+        </p>
+        <div class="callout callout-blue">
+          Dòng chấm tự động (<code>loai_nguon_diem = 2</code>) đi đường tắt:
+          engine ghi thẳng <code>diem_chinh_thuc</code> và đặt
+          <strong>trang_thai_dong = 3 (DA_CHOT)</strong> ngay lúc submit, bỏ qua
+          bước thẩm định.<br />
+          Đây là lần nộp <strong>đầu tiên</strong> (phiếu đang ở trạng thái 1).
+          Khi hồ sơ đã ở trạng thái 2 và GV vừa sửa xong các dòng bị trả về,
+          dùng
+          <a href="#post-api-phieu-noplai"
+            ><code>POST /api/phieu/{id}/nop-lai</code></a
+          >
+          — endpoint đó KHÔNG tăng <code>lan_danh_gia</code> và không đụng tới
+          các dòng đang chờ thẩm định hoặc đã chốt.
+        </div>
+
+        <div class="endpoint-card" id="post-api-phieu-submit">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/phieu/{id}/submit</span>
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              <code>RowVersion</code> là bắt buộc. Xem
+              <a href="#s14">Mục 14</a> về concurrency.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "RowVersion": "AAAAAAAAB9Q=", "NhanXet": null }</code></pre>
+            </div>
+            <h4>200 OK — Nộp thành công</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>HTTP/1.1 200 OK
+{
+  "Success": true,
+  "Message": "Nộp phiếu thành công.",
+  "Item": {
+    "IdPhieu": 17,
+    "TrangThai": 2,
+    "RowVersion": "AAAAAAAAB9U=",
+    "LanDanhGia": 1
+  }
+}</code></pre>
+            </div>
+            <h4>422 — Thiếu điểm hoặc minh chứng</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>HTTP/1.1 422 Unprocessable Entity
+{
+  "error": "PHIEU_SUBMIT_VALIDATION_FAILED",
+  "message": "Còn 2 tiêu chí chưa hoàn tất.",
+  "missingItems": [
+    {
+      "idChiTiet": 5,
+      "idTieuChi": 3,
+      "tenTieuChi": "Giờ giảng lý thuyết",
+      "missingDiemTuDanhGia": true,
+      "missingMinhChung": false,
+      "batBuocMinhChung": false
+    }
+  ]
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>GV không sở hữu phiếu này</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CONCURRENCY_CONFLICT</code></td>
+                  <td>
+                    RowVersion không khớp — phiếu đã bị sửa bởi request khác
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Phiếu không ở trạng thái NHAP (1)</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">422</span></td>
+                  <td><code>PHIEU_SUBMIT_VALIDATION_FAILED</code></td>
+                  <td>
+                    Còn tiêu chí đã kê khai điểm (&gt; 0) nhưng thiếu minh chứng
+                    bắt buộc. Tiêu chí bỏ trống hoặc 0đ KHÔNG chặn submit.
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">404</span></td>
+                  <td><code>PHIEU_NOT_FOUND</code></td>
+                  <td>Phiếu không tồn tại hoặc đã bị xóa</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- SECTION 6 -->
+      <section class="section section-anchor" id="s6">
+        <h2>6. Giai đoạn 2 — Thẩm định theo từng dòng tiêu chí</h2>
+        <p>
+          Sau khi GV nộp phiếu, hồ sơ ở trạng thái
+          <strong>2 (THAM_DINH)</strong> và mỗi dòng tiêu chí đi
+          <strong>độc lập</strong> về đúng Khoa/Phòng được giao trong
+          <code>tieu_chi_don_vi_cham</code>. Mỗi dòng có 3 kết cục:
+          <strong>duyệt giữ nguyên điểm</strong>, <strong>sửa điểm</strong> (bắt
+          buộc lý do), hoặc <strong>trả về cho GV</strong> (bắt buộc lý do).
+        </p>
+
+        <div class="callout callout-green">
+          <strong>Đây là thay đổi lớn nhất so với luồng cũ.</strong> Trước đây
+          <code>POST /api/phieu/{id}/khoa/tra-lai</code> trả về
+          <em>cả phiếu</em> và
+          <strong>xóa sạch điểm Khoa của MỌI dòng</strong> — thiếu một bìa tạp
+          chí ở một tiêu chí thì toàn bộ hồ sơ phải chấm lại từ đầu. Endpoint đó
+          đã bị gỡ. Nay trả về <strong>đúng một dòng</strong>; các dòng đang chờ
+          Phòng khác duyệt hoặc đã chốt giữ nguyên tiến độ, và hồ sơ
+          <strong>không tụt về trạng thái 1</strong>.
+        </div>
+
+        <div class="callout callout-blue">
+          <strong>Điểm chính thức nay chốt ngay ở cấp DÒNG.</strong> Khi một
+          dòng sang <code>trang_thai_dong = 3</code>, SP ghi luôn
+          <code>diem_chinh_thuc</code> và <code>id_don_vi_tham_dinh</code> —
+          không còn dồn về bước Hiệu trưởng chốt như trước. Công thức tổng điểm
+          <code
+            >COALESCE(diem_chinh_thuc, diem_truong, diem_khoa, diem_tu_danh_gia,
+            0)</code
+          >
+          không đổi.<br />
+          Khi dòng vừa chốt là dòng <strong>cuối cùng</strong> chưa chốt của hồ
+          sơ, phiếu <strong>tự chuyển 2 → 3 (CHO_TK_DUYET)</strong>. Mọi
+          response cấp dòng đều trả <code>TrangThaiPhieu</code> để FE biết hồ sơ
+          vừa rời hàng đợi.
+        </div>
+
+        <div class="endpoint-card" id="get-api-thamdinh-pending">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/tham-dinh/pending</span>
+            <span class="badge role-badge tag-compact">Đơn vị thẩm định</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Hàng đợi thẩm định <strong>theo DÒNG</strong> — đây là màn hình
+              làm việc chính của chuyên viên. Chỉ lấy dòng ở
+              <code>trang_thai_dong = 2</code>, thuộc phiếu trạng thái 2, và bỏ
+              qua dòng chấm tự động.
+            </p>
+            <p>
+              <strong>Thứ tự ưu tiên:</strong> dòng từng bị Trưởng khoa trả về
+              thẩm định lại (<code>NguonTraVe = 3</code>) luôn nằm trên đầu — đó
+              là việc đang chặn cả hồ sơ.
+            </p>
+            <p>
+              Query: <code>idNam</code>, <code>idNhanVien</code>,
+              <code>idTieuChi</code>, <code>page</code>, <code>pageSize</code>,
+              <code>sortBy</code>.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Items": [
+  {
+    "IdChiTiet": 101, "IdPhieu": 17, "IdTieuChi": 3,
+    "TenTieuChi": "Giờ giảng lý thuyết", "TenNhom": "Giảng dạy",
+    "DiemToiDa": 50.0, "BatBuocMinhChung": true,
+    "MaNhanVien": "GV001", "HoTen": "Nguyễn Văn A", "TenDonVi": "Khoa Công nghệ",
+    "DiemTuDanhGia": 45.0, "NhanXetTuDanhGia": "Đã dạy đủ 280 tiết.",
+    "DiemKhoa": null, "TrangThaiDong": 2,
+    "NguonTraVe": null, "NguonTraVeText": null, "LyDoTraVe": null,
+    "SoLanTraVe": 0, "SoMinhChung": 2, "TrangThaiPhieu": 2
+  }
+] }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>
+                    Không phải trưởng đơn vị
+                    (<code>TK</code>/<code>TKL</code>/<code>TP</code>) hoặc
+                    <code>ADMIN</code>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-phieu-khoa-pending">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/phieu/khoa/pending</span>
+            <span class="badge role-badge tag-compact">Khoa</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Cùng dữ liệu nhưng gom <strong>theo PHIẾU</strong> — view tổng
+              quan hồ sơ, bổ sung cho
+              <a href="#get-api-thamdinh-pending"
+                ><code>/api/tham-dinh/pending</code></a
+              >
+              (theo dòng) chứ không thay thế. Chỉ trả phiếu trạng thái 2 mà đơn
+              vị của người đăng nhập có ≥1 tiêu chí được giao chấm.
+            </p>
+            <div class="callout callout-yellow">
+              <code>SoTieuChiDaCham</code> nay đếm theo
+              <strong><code>trang_thai_dong = 3</code></strong
+              >, KHÔNG đếm <code>diem_khoa IS NOT NULL</code>: một dòng bị trả
+              về vẫn còn <code>diem_khoa</code> của vòng trước, đếm theo cột đó
+              sẽ báo nhầm "đã chấm xong" trong khi đơn vị vẫn phải xử lý nó. Cả
+              hai chỉ số đều bỏ qua dòng <code>loai_nguon_diem = 2</code>.
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Items": [ { "IdPhieu": 17, "HoTen": "Nguyễn Văn A", "TrangThai": 2, "SoTieuChiDuocGiao": 8, "SoTieuChiDaCham": 5, "RowVersion": "AAAAAAAAB9U=" } ] }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="put-api-chitiet-diemkhoa">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-put">PUT</span>
+            <span class="endpoint-path"
+              >/api/chitiet/{idChiTiet}/diem-khoa</span
+            >
+            <span class="badge role-badge tag-compact">Khoa</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              <strong>Thẩm định có SỬA điểm.</strong> Chỉ đơn vị được giao trong
+              <code>tieu_chi_don_vi_cham</code> mới chấm được (tiêu chí chưa
+              phân quyền → mặc định trưởng đơn vị chủ quản). Dòng phải ở
+              <code>trang_thai_dong = 2</code>. SP ghi
+              <code>diem_chinh_thuc</code> + <code>trang_thai_dong = 3</code> +
+              <code>id_don_vi_tham_dinh</code>, rồi đồng bộ trạng thái phiếu.
+            </p>
+            <div class="callout callout-red">
+              <strong>Hai ràng buộc MỚI:</strong><br />
+              (1) <code>Diem</code>
+              <strong>bắt buộc</strong> (<code>THIEU_DIEM</code>). Trước đây cho
+              NULL vì điểm chính thức chốt ở bước HT; nay dòng chốt ngay tại đây
+              nên "chốt mà không có điểm" là vô nghĩa.<br />
+              (2) <code>NhanXet</code>
+              <strong
+                >bắt buộc khi <code>Diem</code> khác điểm chủ phiếu tự kê
+                khai</strong
+              >
+              (<code>THIEU_LY_DO</code>). Sửa điểm của người khác mà không nói
+              lý do là nguồn khiếu nại lớn nhất của quy trình cũ.<br />
+              Muốn <strong>giữ nguyên</strong> điểm GV thì dùng
+              <a href="#post-api-chitiet-thamdinh-duyet"
+                ><code>POST /tham-dinh/duyet</code></a
+              >
+              — endpoint đó không đòi lý do.
+            </div>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Diem": 42.0, "NhanXet": "Giảm 3đ: thiếu minh chứng 2 lớp học phần.", "RowVersion": "AAAAAAAAB9U=" }</code></pre>
+            </div>
+            <p style="margin: 0.4rem 0 0">
+              <code>RowVersion</code> là của <strong>PHIẾU CHA</strong>, không
+              phải của dòng; tùy chọn (giữ tương thích ngược với FE cũ), nhưng
+              nên gửi.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Message": "Cập nhật điểm Khoa thành công.",
+  "Item": { "IdChiTiet": 101, "DiemKhoa": 42.0, "DiemChinhThuc": 42.0, "TrangThaiDong": 3 },
+  "TrangThaiPhieu": 3
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td><code>THIEU_DIEM</code></td>
+                  <td>Không gửi <code>Diem</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN_DON_VI</code></td>
+                  <td>Đơn vị không được giao chấm tiêu chí này</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>THIEU_LY_DO</code></td>
+                  <td>
+                    <code>Diem</code> khác điểm GV tự kê khai nhưng thiếu
+                    <code>NhanXet</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE_DONG</code></td>
+                  <td>Dòng không ở <code>trang_thai_dong = 2</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>AUTO_SCORED</code></td>
+                  <td>
+                    Tiêu chí chấm tự động (<code>loai_nguon_diem = 2</code>) —
+                    không chấm tay được
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CONCURRENCY_CONFLICT</code></td>
+                  <td>Xung đột đồng thời</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="post-api-chitiet-thamdinh-duyet">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path"
+              >/api/chitiet/{idChiTiet}/tham-dinh/duyet</span
+            >
+            <span class="badge role-badge tag-compact">Đơn vị thẩm định</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              <strong>Duyệt GIỮ NGUYÊN điểm GV tự kê khai.</strong> Dòng
+              <code>2 → 3 (DA_CHOT)</code>,
+              <code>diem_chinh_thuc = diem_tu_danh_gia</code>. KHÔNG đòi lý do —
+              đây chính là điểm khác với
+              <a href="#put-api-chitiet-diemkhoa"><code>PUT /diem-khoa</code></a
+              >. Ghi <code>lich_su_cham_diem</code> với
+              <code>hanh_dong = 4</code>.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "NhanXet": "Minh chứng đầy đủ, đồng ý giữ nguyên điểm.", "RowVersion": "AAAAAAAAB9U=" }</code></pre>
+            </div>
+            <p style="margin: 0.4rem 0 0">
+              <code>RowVersion</code> bắt buộc, là của
+              <strong>PHIẾU CHA</strong>. <code>NhanXet</code> tùy chọn.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Message": "Đã duyệt tiêu chí.",
+  "Item": { "IdChiTiet": 101, "DiemChinhThuc": 45.0, "TrangThaiDong": 3 },
+  "TrangThaiPhieu": 3
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN_DON_VI</code></td>
+                  <td>Đơn vị không được giao thẩm định tiêu chí này</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE_DONG</code></td>
+                  <td>Dòng không ở <code>trang_thai_dong = 2</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>AUTO_SCORED</code></td>
+                  <td>Tiêu chí chấm tự động — đã chốt sẵn, không thẩm định</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CONCURRENCY_CONFLICT</code></td>
+                  <td>RowVersion không khớp</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="post-api-chitiet-thamdinh-trave">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path"
+              >/api/chitiet/{idChiTiet}/tham-dinh/tra-ve</span
+            >
+            <span class="badge role-badge tag-compact">Đơn vị thẩm định</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              <strong>Trả ĐÚNG MỘT DÒNG</strong> về cho chủ phiếu bổ sung — thay
+              thế <code>POST /api/phieu/{id}/khoa/tra-lai</code> của luồng cũ.
+              Dòng <code>2 → 1 (KE_KHAI)</code>, đặt
+              <code>nguon_tra_ve = 2</code>, <code>so_lan_tra_ve += 1</code>, và
+              <strong>xóa điểm chốt của dòng đó</strong> (dòng chưa chốt thì
+              không được phép còn <code>diem_chinh_thuc</code>).
+            </p>
+            <div class="callout callout-green">
+              <strong>Hồ sơ KHÔNG tụt về trạng thái 1</strong> và
+              <code>lan_danh_gia</code> KHÔNG tăng — phiếu ở lại trạng thái 2.
+              Các dòng khác giữ nguyên tiến độ. Nếu hồ sơ đang ở trạng thái 3,
+              việc trả về này kéo nó về 2 một cách tự động.
+            </div>
+            <p>
+              Sau đó chủ phiếu sửa điểm/minh chứng của đúng dòng đó rồi gọi
+              <a href="#post-api-phieu-noplai"
+                ><code>POST /api/phieu/{id}/nop-lai</code></a
+              >. Ghi <code>lich_su_cham_diem</code> với
+              <code>hanh_dong = 5</code>.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "LyDo": "Thiếu bìa tạp chí và trang mục lục cho bài báo số 2.", "RowVersion": "AAAAAAAAB9U=" }</code></pre>
+            </div>
+            <p style="margin: 0.4rem 0 0">
+              <code>LyDo</code> <strong>bắt buộc</strong> — trả về mà không nói
+              lý do thì người nhận không biết phải sửa gì. SP cũng chặn lại bằng
+              <code>THIEU_LY_DO</code>.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Message": "Đã trả tiêu chí về cho giảng viên.",
+  "Item": {
+    "IdChiTiet": 101, "TrangThaiDong": 1,
+    "NguonTraVe": 2, "NguonTraVeText": "Đơn vị thẩm định trả về",
+    "LyDoTraVe": "Thiếu bìa tạp chí và trang mục lục cho bài báo số 2.",
+    "SoLanTraVe": 1, "DiemChinhThuc": null
+  },
+  "TrangThaiPhieu": 2
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td><code>THIEU_LY_DO</code></td>
+                  <td>Thiếu <code>LyDo</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN_DON_VI</code></td>
+                  <td>Đơn vị không được giao thẩm định tiêu chí này</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE_DONG</code></td>
+                  <td>Dòng không ở <code>trang_thai_dong = 2</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>AUTO_SCORED</code></td>
+                  <td>Tiêu chí chấm tự động</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CONCURRENCY_CONFLICT</code></td>
+                  <td>RowVersion không khớp</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="post-api-phieu-noplai">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/phieu/{id}/nop-lai</span>
+            <span class="badge role-badge tag-compact">GV</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              <strong>Vòng lặp trả về.</strong> Chủ phiếu nộp lại các dòng đã
+              sửa: mọi dòng <code>1 KE_KHAI → 2 CHO_THAM_DINH</code>. Phiếu
+              <strong>giữ nguyên trạng thái 2</strong> và
+              <strong>giữ nguyên <code>lan_danh_gia</code></strong> — đây không
+              phải một vòng đánh giá mới. Các dòng đang chờ thẩm định hoặc đã
+              chốt <strong>không bị đụng tới</strong>.
+            </p>
+            <div class="callout callout-yellow">
+              <strong>Lưu ý vận hành:</strong> nếu chuyên viên trả về một dòng
+              <em>sau</em> khi đã qua hạn tự đánh giá thì chủ phiếu
+              <strong>không nộp lại được</strong> — phải cấp
+              <code>gia_han_danh_gia</code> riêng cho người đó (<code
+                >GET /api/gia-han/me/{idNam}</code
+              >). Đây là hành vi <strong>có chủ đích</strong>, đồng nhất với
+              <code>sp_chi_tiet_danh_gia_update_tu_danh_gia</code>.
+            </div>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "NhanXet": "Đã bổ sung bìa tạp chí.", "RowVersion": "AAAAAAAAB9W=" }</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Đã nộp lại các tiêu chí được yêu cầu bổ sung.", "Item": { "IdPhieu": 17, "TrangThai": 2, "LanDanhGia": 1, "RowVersion": "AAAAAAAAB9X=" } }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>Chỉ chủ phiếu mới được nộp lại</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Phiếu không ở trạng thái 2</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>KHONG_CO_DONG</code></td>
+                  <td>
+                    Không còn dòng nào ở <code>trang_thai_dong = 1</code> để nộp
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>QUA_HAN</code></td>
+                  <td>Quá hạn tự đánh giá và chưa được gia hạn</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">422</span></td>
+                  <td><code>PHIEU_SUBMIT_VALIDATION_FAILED</code></td>
+                  <td>
+                    Các tiêu chí bị trả về chưa được bổ sung minh chứng đầy đủ
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 7 -->
+      <section class="section section-anchor" id="s7">
+        <h2>7. Giai đoạn 3 — Trưởng khoa chốt hồ sơ</h2>
+        <p>
+          Khi <strong>100% dòng</strong> của hồ sơ đã chốt, phiếu tự chuyển sang
+          <strong>3 (CHO_TK_DUYET)</strong>. Trưởng khoa
+          (<code>TK</code>/<code>TKL</code>) rà lại toàn bộ hồ sơ, xác nhận các
+          điều kiện kết luận, rồi <strong>chọn tay xếp loại</strong> và chốt hồ
+          sơ cá nhân: <strong>3 → 4 (TK_DA_DUYET)</strong>.
+        </p>
+
+        <div class="callout callout-red">
+          <strong>Trưởng khoa chỉ được chọn mức 1/2/3 — cấm chọn 4.</strong> Mức
+          4 (Hoàn thành xuất sắc) phụ thuộc thứ hạng trong cả Khoa nên chỉ tính
+          được ở bước đóng gói tờ trình (<a href="#s8">mục 8</a>), khi 100% hồ
+          sơ của Khoa đã chốt. Gửi <code>XepLoaiKhoa = 4</code> →
+          <strong>400</strong>.
+        </div>
+
+        <div class="callout callout-blue">
+          <strong><code>XepLoaiDeXuat</code> chỉ là mức GỢI Ý.</strong>
+          <code>XepLoaiCalculator</code> vẫn tính như cũ nhưng đổi vai trò: hệ
+          thống hiện mức đề xuất để Trưởng khoa đối chiếu,
+          <strong>không tự áp</strong>. Nếu <code>XepLoaiKhoa</code> khác mức đề
+          xuất thì <code>LyDoXepLoai</code> <strong>bắt buộc</strong>.<br />
+          Ba cột phân vai rõ: <code>xep_loai_de_xuat</code> (hệ thống gợi ý) ·
+          <code>xep_loai_khoa</code> (TK chọn tay, 1–3) ·
+          <code>xep_loai</code> (kết quả cuối cùng, chỉ ghi ở bước đóng gói).
+        </div>
+
+        <p>
+          <strong>Lấy danh sách hồ sơ chờ mình duyệt:</strong> Trưởng khoa dùng
+          <code>GET /api/phieu?trangThai=3</code> — endpoint đó tự giới hạn cho
+          cấp Khoa về đơn vị của người đăng nhập + đơn vị con trực tiếp. KHÔNG
+          dùng <code>GET /api/phieu/truong/pending</code>: endpoint đó chỉ dành
+          cho <code>HT</code>/<code>ADMIN</code> và trả 403 với Trưởng khoa (xem
+          <a href="#get-api-phieu-truong-pending">mục 8</a>).
+        </p>
+
+        <div class="endpoint-card" id="post-api-phieu-khoa-duyethoso">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/phieu/{id}/khoa/duyet-ho-so</span>
+            <span class="badge role-badge tag-compact">Trưởng khoa</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Trưởng khoa chốt hồ sơ cá nhân:
+              <strong>3 → 4 (TK_DA_DUYET)</strong>. <strong>THAY THẾ</strong> cả
+              <code>POST /api/phieu/{id}/truong/duyet</code> lẫn
+              <code>POST /api/phieu/{id}/chot</code> của luồng cũ — endpoint này
+              hấp thụ toàn bộ tham số định mức và điều kiện kết luận trước đây
+              nằm ở bước Hiệu trưởng chốt,
+              <strong>kèm bước tính lại tổng điểm chống tamper</strong>. Ghi
+              <code>lich_su_trang_thai_phieu</code> với
+              <code>hanh_dong = 8</code>, <code>cap_thuc_hien = 4</code>.
+            </p>
+            <h4>Request Body</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Trường</th>
+                  <th>Kiểu</th>
+                  <th>Bắt buộc</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>XepLoaiKhoa</code></td>
+                  <td>byte?</td>
+                  <td>Có</td>
+                  <td>
+                    Trưởng khoa <strong>chọn tay</strong>, chỉ
+                    <strong>1/2/3</strong>. Gửi 4 → 400. (Bắt buộc được validate
+                    ở BLL — không đặt <code>[Required]</code> trên nullable
+                    value type)
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>LyDoXepLoai</code></td>
+                  <td>string</td>
+                  <td>Có điều kiện</td>
+                  <td>
+                    Bắt buộc khi <code>XepLoaiKhoa</code> khác
+                    <code>xep_loai_de_xuat</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>MucNckhcnQd838</code></td>
+                  <td>byte?</td>
+                  <td>Có khi năm ≥ 2025-2026</td>
+                  <td>
+                    0 = chưa/không đạt, 1 = HT tốt, 2 = HT xuất sắc.
+                    <strong
+                      >Chỉ người có mức 2 mới đủ điều kiện tranh hạn ngạch xuất
+                      sắc</strong
+                    >
+                    ở bước đóng gói
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>DuDinhMucGioNckh</code></td>
+                  <td>bool</td>
+                  <td>Có</td>
+                  <td>
+                    Quyết định của Trưởng khoa —
+                    <strong>ưu tiên hơn</strong> kết quả tự động của server (giờ
+                    NCKH thực tế vs định mức)
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>KhongViPhamPhapLuat</code></td>
+                  <td>bool</td>
+                  <td>Có</td>
+                  <td>Điều kiện để xếp loại ≥ 2</td>
+                </tr>
+                <tr>
+                  <td><code>GhiChuXepLoai</code> / <code>NhanXet</code></td>
+                  <td>string</td>
+                  <td>Không</td>
+                  <td>Ghi chú xếp loại / nhận xét của Khoa</td>
+                </tr>
+                <tr>
+                  <td><code>RowVersion</code></td>
+                  <td>string</td>
+                  <td>Có</td>
+                  <td>RowVersion hiện tại của phiếu</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "XepLoaiKhoa": 3,
+  "LyDoXepLoai": "Hạ 1 mức so với đề xuất: chưa đủ giờ hướng dẫn NCKH sinh viên.",
+  "MucNckhcnQd838": 2,
+  "DuDinhMucGioNckh": true,
+  "KhongViPhamPhapLuat": true,
+  "GhiChuXepLoai": null,
+  "NhanXet": "Đồng ý chốt hồ sơ.",
+  "RowVersion": "AAAAAAAAB9X="
+}</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Message": "Đã chốt hồ sơ.",
+  "Item": {
+    "IdPhieu": 17,
+    "TrangThai": 4,
+    "TongDiemCoBan": 92.5,
+    "TongDiemVuotTroi": 15.0,
+    "TongDiemTichLuy": 107.5,
+    "XepLoaiDeXuat": 4,
+    "XepLoaiKhoa": 3,
+    "XepLoai": null,
+    "MucNckhcnQd838": 2,
+    "IdToTrinh": null,
+    "RowVersion": "AAAAAAAAB9Z="
+  }
+}</code></pre>
+            </div>
+            <p style="margin: 0.4rem 0 0">
+              <code>XepLoai</code> và <code>IdToTrinh</code> còn NULL — cả hai
+              chỉ được ghi ở bước
+              <a href="#post-api-totrinh-donggoi">đóng gói tờ trình</a>.
+            </p>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td>—</td>
+                  <td>
+                    <code>XepLoaiKhoa = 4</code> hoặc ngoài 1..3; thiếu
+                    <code>LyDoXepLoai</code> khi lệch mức đề xuất; thiếu
+                    <code>MucNckhcnQd838</code> với giảng viên từ năm 2025-2026
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>
+                    Không phải trưởng đơn vị chủ quản của hồ sơ. Trưởng phòng
+                    (<code>TP</code>) KHÔNG duyệt hồ sơ giảng viên
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Hồ sơ không ở trạng thái 3</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CHUA_CHOT_HET</code></td>
+                  <td>
+                    Còn tiêu chí <code>trang_thai_dong &lt;&gt; 3</code> (cũng
+                    trả 422 kèm <code>missingItems</code>)
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>VUOT_MUC_VIEN_CHUC</code></td>
+                  <td>
+                    Viên chức/NLĐ (<code>loai_doi_tuong = 2</code>) bị kẹp trần
+                    mức 2
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CONCURRENCY_CONFLICT</code></td>
+                  <td>RowVersion không khớp</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="post-api-chitiet-khoa-trathamdinh">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path"
+              >/api/chitiet/{idChiTiet}/khoa/tra-tham-dinh</span
+            >
+            <span class="badge role-badge tag-compact">Trưởng khoa</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Trưởng khoa không đồng ý với kết quả thẩm định một dòng → trả dòng
+              đó
+              <strong>về ĐƠN VỊ THẨM ĐỊNH</strong> chấm lại: <code>3 → 2</code>,
+              đặt <code>nguon_tra_ve = 3</code>, xóa <code>diem_khoa</code> và
+              <code>diem_chinh_thuc</code> của dòng.
+            </p>
+            <div class="callout callout-yellow">
+              Khác
+              <a href="#post-api-chitiet-thamdinh-trave"
+                ><code>POST /tham-dinh/tra-ve</code></a
+              >
+              (trả cho <strong>chủ phiếu</strong>): đây trả cho
+              <strong>đơn vị đã thẩm định</strong> — "Phòng Đào tạo kiểm tra lại
+              giờ chuẩn". Đích đến lấy từ <code>id_don_vi_tham_dinh</code> đã
+              snapshot trên dòng, vì đơn vị của người chấm có thể đã đổi.<br />
+              Hồ sơ tụt <strong>4 → 2</strong> (hoặc 3 → 2) và
+              <strong>hủy nhóm xếp loại</strong>: <code>xep_loai_khoa</code>,
+              <code>xep_loai_de_xuat</code>, <code>ly_do_xep_loai</code>,
+              <code>hang_trong_khoa</code> bị xóa — TK phải chốt lại từ đầu sau
+              khi dòng được thẩm định xong.
+            </div>
+            <p>
+              Nếu hồ sơ đã nằm trong gói đã trình, phải để Hiệu trưởng trả hồ sơ
+              về trước qua
+              <a href="#post-api-totrinh-httralai"
+                ><code>POST /to-trinh-khoa/{id}/ht-tra-lai</code></a
+              >.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "LyDo": "Giờ chuẩn tiêu chí C3 lệch với bảng phân công, đề nghị P.ĐT kiểm tra lại.", "RowVersion": "AAAAAAAAB9Z=" }</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Message": "Đã trả tiêu chí về đơn vị thẩm định.",
+  "Item": {
+    "IdChiTiet": 101, "TrangThaiDong": 2,
+    "NguonTraVe": 3, "NguonTraVeText": "Trưởng khoa trả thẩm định lại",
+    "DiemKhoa": null, "DiemChinhThuc": null
+  },
+  "TrangThaiPhieu": 2
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td><code>THIEU_LY_DO</code></td>
+                  <td>Thiếu <code>LyDo</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td>
+                    <code>FORBIDDEN</code> / <code>FORBIDDEN_DON_VI</code>
+                  </td>
+                  <td>Không phải trưởng đơn vị chủ quản của hồ sơ</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE_DONG</code></td>
+                  <td>
+                    Dòng chưa chốt điểm (<code>trang_thai_dong &lt;&gt; 3</code
+                    >)
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>AUTO_SCORED</code></td>
+                  <td>Tiêu chí chấm tự động</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CONCURRENCY_CONFLICT</code></td>
+                  <td>RowVersion không khớp</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- SECTION 8 -->
+      <section class="section section-anchor" id="s8">
+        <h2>8. Giai đoạn 4 — Tờ trình KPI Khoa &amp; hạn ngạch xuất sắc</h2>
+        <p>
+          Khi <strong>100% giảng viên</strong> của Khoa đã được Trưởng khoa chốt
+          (trạng thái 4), TK <strong>đóng gói tờ trình</strong>: hệ thống tính
+          hạn ngạch top 20%, nâng những người trúng suất lên mức 4 và ghi
+          <code>xep_loai</code> cuối cùng. Gói được trình lên Hiệu trưởng; HT
+          duyệt <strong>cả gói</strong> → mọi phiếu trong gói chuyển
+          <strong>4 → 5 (HOAN_TAT)</strong>.
+        </p>
+
+        <div class="callout callout-red">
+          <strong>Hiệu trưởng KHÔNG còn duyệt/chốt từng phiếu lẻ.</strong> Ba
+          endpoint cũ <code>POST /truong/duyet</code>,
+          <code>POST /truong/tra-lai</code>, <code>POST /chot</code> đã bị gỡ.
+          Đơn vị thao tác của HT nay là <strong>gói KPI của một Khoa</strong>,
+          không phải hồ sơ cá nhân.
+        </div>
+
+        <h3>Trạng thái tờ trình (<code>to_trinh_kpi_khoa.trang_thai</code>)</h3>
+        <table class="state-table">
+          <thead>
+            <tr>
+              <th>Giá trị</th>
+              <th>Tên trạng thái</th>
+              <th>Ý nghĩa</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>DANG_TONG_HOP</td>
+              <td>Chưa đủ 100% GV được Trưởng khoa chốt</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>DA_DONG_GOI</td>
+              <td>
+                Đã tính hạn ngạch + nâng xuất sắc; nút "Trình Hiệu trưởng" mở
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>DA_TRINH</td>
+              <td>Chờ Hiệu trưởng duyệt</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>HT_DA_DUYET</td>
+              <td>Chốt số liệu toàn Khoa, khóa chiến dịch</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>HT_TRA_VE</td>
+              <td>HT trả về ≥1 hồ sơ; TK xử lý rồi trình lại</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-blue">
+          <strong>Tổng điểm</strong> (proc tự tính lại khi Trưởng khoa chốt hồ
+          sơ ở GĐ3, chống tamper): <code>tong_diem_co_ban</code> = SUM tiêu chí
+          Nhóm A (<code>loai_nhom = 1</code>);
+          <code>tong_diem_vuot_troi</code> = SUM Nhóm B (<code
+            >loai_nhom = 2</code
+          >); <code>tong_diem_tich_luy</code> = cơ bản + vượt trội.<br />
+          <code>diem_chinh_thuc</code> của từng tiêu chí
+          <strong>không còn được chốt ở đây</strong> — nó đã được ghi ngay khi
+          dòng chốt ở <a href="#s6">GĐ2</a>. Công thức đọc điểm giữ nguyên:
+          <code
+            >COALESCE(diem_chinh_thuc, diem_truong, diem_khoa, diem_tu_danh_gia,
+            0)</code
+          >.
+        </div>
+
+        <div class="callout callout-yellow">
+          <strong
+            >Logic <code>XepLoaiCalculator.TinhXepLoai</code> nay chỉ sinh ra
+            <code>xep_loai_de_xuat</code> — MỨC GỢI Ý</strong
+          >, không còn tự áp vào <code>xep_loai</code>. Trưởng khoa chọn tay ở
+          <a href="#post-api-phieu-khoa-duyethoso">GĐ3</a> và bị
+          <strong>kẹp trần ở mức 3</strong>; mức 4 chỉ do bước đóng gói bên dưới
+          nâng lên theo hạn ngạch. Thuật toán vẫn dựa trên
+          <code>tong_diem_tich_luy</code>, 2 điều kiện bắt buộc và mức QĐ 838,
+          KHÔNG dùng ngưỡng 60/80/95:<br />
+          1. <code>tich_luy &lt; 80</code> →
+          <strong>Không hoàn thành</strong>.<br />
+          2. <code>DuDinhMucGioNckh = false</code> HOẶC
+          <code>KhongViPhamPhapLuat = false</code> →
+          <strong>Không hoàn thành</strong> (bất kể điểm).<br />
+          3. <code>80 ≤ tich_luy ≤ 100</code> →
+          <strong>Hoàn thành</strong>.<br />
+          4. <code>tich_luy &gt; 100</code> nhưng năm học &lt; 2025-2026 (QĐ 838
+          chưa áp dụng) → <strong>Hoàn thành</strong>.<br />
+          5. <code>tich_luy &gt; 100</code>, năm ≥ 2025-2026,
+          <code>MucNckhcnQd838 = 0/null</code> →
+          <strong>Hoàn thành</strong>.<br />
+          6. … <code>MucNckhcnQd838 = 1</code> →
+          <strong>Hoàn thành tốt</strong>.<br />
+          7. … <code>MucNckhcnQd838 = 2</code> →
+          <strong>Hoàn thành xuất sắc</strong>.<br />
+          <strong>Nhãn lưu DB</strong> (<code>xep_loai</code> TINYINT 1..4) và
+          text tương ứng: 1 = "Không hoàn thành nhiệm vụ", 2 = "Hoàn thành nhiệm
+          vụ", 3 = "Hoàn thành tốt nhiệm vụ", 4 = "Hoàn thành xuất sắc nhiệm
+          vụ".
+        </div>
+
+        <h3>Hạn ngạch top 20% — thuật toán đóng gói</h3>
+        <pre><code>so_giang_vien      = COUNT(hồ sơ trong gói WHERE loai_doi_tuong = 1 AND trang_thai = 4)
+han_ngach_xuat_sac = FLOOR(so_giang_vien * ty_le_xuat_sac)   -- ty_le mặc định 0.2000</code></pre>
+        <ol>
+          <li>
+            <strong>Mẫu số là TỔNG SỐ giảng viên của Khoa</strong>, không phải
+            số người "Hoàn thành tốt". Khoa 30 GV, 10 người mức 3 ⇒ hạn ngạch =
+            6, không phải 2. Làm tròn <strong>xuống</strong>: 27 GV ⇒ 5 suất.
+          </li>
+          <li>
+            Xếp hạng bằng
+            <code
+              >ROW_NUMBER() OVER (ORDER BY tong_diem_tich_luy DESC,
+              uu_tien_xuat_sac DESC)</code
+            >, ghi vào <code>hang_trong_khoa</code>.
+          </li>
+          <li>
+            <strong>Đủ điều kiện tranh suất</strong> =
+            <code>loai_doi_tuong = 1</code> AND
+            <code>xep_loai_khoa = 3</code> AND
+            <code>muc_nckhcn_qd838 = 2</code>.
+          </li>
+          <li>
+            <strong>Suất được lấp đầy, không bỏ trống.</strong> Duyệt từ trên
+            xuống; người điểm cao nhưng không đạt QĐ 838 bị
+            <strong>bỏ qua</strong>, suất dồn cho người kế tiếp.
+          </li>
+          <li>
+            Ghi kết quả: <code>xep_loai = 4</code> cho người trúng suất,
+            <code>xep_loai = xep_loai_khoa</code> cho những người còn lại.
+          </li>
+        </ol>
+
+        <div class="callout callout-red">
+          <strong>Đồng hạng ở ranh giới ⇒ hệ thống CHẶN đóng gói</strong>
+          (<code>error_code = DONG_HANG</code>) cho tới khi Trưởng khoa chỉ định
+          ai được suất cuối bằng
+          <a href="#put-api-phieu-uutien"
+            ><code>PUT /api/phieu/{id}/uu-tien-xuat-sac</code></a
+          >. Cố ý <strong>không tự tie-break</strong>: đây là quyết định nhân
+          sự, không phải phép toán. Viên chức/NLĐ (<code
+            >loai_doi_tuong = 2</code
+          >) không tính vào mẫu số và không tranh hạn ngạch.
+        </div>
+
+        <div class="endpoint-card" id="get-api-totrinh-khoa">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/to-trinh-khoa</span>
+            <span class="badge role-badge tag-compact">Trưởng khoa / HT</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Danh sách gói KPI.
+              <strong>Đây là hàng đợi hành động thật của Hiệu trưởng</strong>
+              (lọc <code>trangThai=3</code> để lấy các gói đang chờ duyệt).
+              Query: <code>idNam</code>, <code>idDonVi</code>,
+              <code>trangThai</code>, <code>page</code>, <code>pageSize</code>.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Items": [
+  {
+    "IdToTrinh": 4, "IdNam": 26, "IdDonVi": 12,
+    "MaDonVi": "K_CNTT", "TenDonVi": "Khoa Công nghệ thông tin",
+    "TrangThai": 2, "TrangThaiText": "Đã đóng gói",
+    "SoGiangVien": 30, "TyLeXuatSac": 0.2, "HanNgachXuatSac": 6, "SoDatXuatSac": 6,
+    "SoHoSo": 34, "SoHoSoDaChot": 34, "LanTrinh": 0,
+    "RowVersion": "AAAAAAAACBA="
+  }
+] }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-totrinh-khoa-id">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/to-trinh-khoa/{id}</span>
+            <span class="badge role-badge tag-compact">Trưởng khoa / HT</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Chi tiết một gói: header tờ trình + <code>HoSo[]</code> (toàn bộ
+              hồ sơ trong gói kèm điểm, hạng, xếp loại) + <code>LichSu[]</code>.
+              Mỗi hồ sơ kèm cờ <code>DuDieuKienXuatSac</code> =
+              <code
+                >loai_doi_tuong = 1 AND xep_loai_khoa = 3 AND muc_nckhcn_qd838 =
+                2</code
+              >
+              — dùng để FE hiển thị ai đang tranh suất.
+            </p>
+            <div class="callout callout-blue">
+              <code>SoGiangVien</code> là
+              <strong>mẫu số đã snapshot lúc đóng gói</strong>;
+              <code>SoGiangVienHienTai</code> (chỉ có ở endpoint chi tiết này)
+              là số đếm tại thời điểm gọi — đối chiếu 2 giá trị để phát hiện
+              nhân sự Khoa đã thay đổi sau khi đóng gói.
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>Không có quyền xem gói KPI của đơn vị này</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">404</span></td>
+                  <td>—</td>
+                  <td>Không tìm thấy tờ trình</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-phieu-truong-pending">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/phieu/truong/pending</span>
+            <span class="badge role-badge tag-compact">HT / Admin</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Danh sách hồ sơ cấp Trường: chỉ trả phiếu ở
+              <strong>trạng thái 4 (TK_DA_DUYET)</strong> trên toàn trường,
+              không lọc theo cây đơn vị.
+            </p>
+            <div class="callout callout-yellow">
+              <strong>Đây là view CHỈ ĐỂ THEO DÕI</strong>, không phải hàng đợi
+              hành động — HT không duyệt/chốt từng phiếu lẻ nữa. Hàng đợi hành
+              động là
+              <a href="#get-api-totrinh-khoa"
+                ><code>GET /api/to-trinh-khoa</code></a
+              >.<br />
+              Phiếu ở trạng thái 3 <strong>không</strong> xuất hiện ở đây: trạng
+              thái 3 nay là <code>CHO_TK_DUYET</code> — việc của Trưởng khoa,
+              chưa tới lượt cấp Trường. Trưởng khoa gọi endpoint này bị
+              <strong>403</strong>; TK dùng
+              <code>GET /api/phieu?trangThai=3</code>.
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Items": [ { "IdPhieu": 17, "HoTen": "Nguyễn Văn A", "TenDonVi": "Khoa Công nghệ", "TrangThai": 4, "XepLoaiKhoa": 3 } ] }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="post-api-totrinh-donggoi">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/to-trinh-khoa/{id}/dong-goi</span>
+            <span class="badge role-badge tag-compact">Trưởng khoa</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Chạy thuật toán hạn ngạch ở trên và ghi <code>xep_loai</code> +
+              <code>hang_trong_khoa</code> cho toàn bộ hồ sơ trong gói. Tờ trình
+              <code>1 → 2 (DA_DONG_GOI)</code>. Ghi
+              <code>lich_su_to_trinh_kpi_khoa</code> với
+              <code>hanh_dong = 1</code>. Đóng gói lại được nhiều lần trước khi
+              trình.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "TyLeXuatSac": null, "RowVersion": "AAAAAAAACBA=" }</code></pre>
+            </div>
+            <p style="margin: 0.4rem 0 0">
+              <code>TyLeXuatSac</code> NULL = giữ tỷ lệ đang lưu trên gói (mặc
+              định <code>0.2000</code>). Khoảng hợp lệ <code>(0, 1]</code>. Tỷ
+              lệ để cột chứ không hằng số cứng vì quy định có thể đổi theo năm,
+              và cần snapshot lại tỷ lệ đã dùng cho tờ trình cũ.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Message": "Đã đóng gói tờ trình.",
+  "Item": { "IdToTrinh": 4, "TrangThai": 2, "SoGiangVien": 30, "HanNgachXuatSac": 6, "SoDatXuatSac": 6 },
+  "HoSo": [
+    { "IdPhieu": 17, "HoTen": "Nguyễn Văn A", "TongDiemTichLuy": 118.5, "HangTrongKhoa": 1, "XepLoaiKhoa": 3, "XepLoai": 4 },
+    { "IdPhieu": 21, "HoTen": "Trần Thị B",  "TongDiemTichLuy": 107.5, "HangTrongKhoa": 7, "XepLoaiKhoa": 3, "XepLoai": 3 }
+  ]
+}</code></pre>
+            </div>
+            <h4>409 — Đồng hạng ở ranh giới hạn ngạch</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>HTTP/1.1 409 Conflict
+{
+  "Success": false,
+  "Message": "Có 3 hồ sơ đồng điểm tranh 1 suất xuất sắc cuối cùng. Vui lòng chỉ định người được suất.",
+  "error_code": "DONG_HANG",
+  "DongHang": { "SoSuatConLai": 1, "SoNguoiTranh": 3 },
+  "HoSo": [ { "IdPhieu": 21, "HoTen": "Trần Thị B", "TongDiemTichLuy": 107.5, "UuTienXuatSac": false } ]
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td><code>TY_LE_KHONG_HOP_LE</code></td>
+                  <td>
+                    <code>TyLeXuatSac</code> ngoài khoảng <code>(0, 1]</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>Chỉ trưởng đơn vị của gói mới được đóng gói</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CHUA_DU_HO_SO</code></td>
+                  <td>
+                    Còn hồ sơ chưa được Trưởng khoa chốt — response kèm
+                    <code>HoSo[]</code> liệt kê người còn thiếu
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>DONG_HANG</code></td>
+                  <td>Đồng điểm ở ranh giới hạn ngạch (xem ví dụ trên)</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CONCURRENCY_CONFLICT</code></td>
+                  <td>RowVersion không khớp</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="put-api-phieu-uutien">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-put">PUT</span>
+            <span class="endpoint-path">/api/phieu/{id}/uu-tien-xuat-sac</span>
+            <span class="badge role-badge tag-compact">Trưởng khoa</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Gỡ thế bế tắc <code>DONG_HANG</code>: Trưởng khoa đánh dấu ai được
+              suất xuất sắc cuối cùng. Hồ sơ phải ở
+              <strong>trạng thái 4</strong>.
+            </p>
+            <div class="callout callout-yellow">
+              Số người được đánh dấu
+              <strong>phải BẰNG ĐÚNG số suất còn lại</strong> — không nhiều
+              không ít; nếu không, đóng gói vẫn báo <code>DONG_HANG</code>.
+            </div>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "UuTien": true, "RowVersion": "AAAAAAAAB9Z=" }</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Đã cập nhật ưu tiên xuất sắc.", "HoSo": [ { "IdPhieu": 21, "HoTen": "Trần Thị B", "UuTienXuatSac": true } ] }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>Không phải trưởng đơn vị chủ quản của hồ sơ</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Hồ sơ không ở trạng thái 4</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>VUOT_MUC_VIEN_CHUC</code></td>
+                  <td>Viên chức/NLĐ không tham gia hạn ngạch</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Gói đã trình / đã duyệt — không sửa ưu tiên được nữa</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="post-api-totrinh-trinh">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/to-trinh-khoa/{id}/trinh</span>
+            <span class="badge role-badge tag-compact">Trưởng khoa</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Trình gói lên Hiệu trưởng: tờ trình <code>2 → 3 (DA_TRINH)</code>,
+              <code>lan_trinh += 1</code>. Ghi lịch sử với
+              <code>hanh_dong = 2</code>.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "NhanXet": "Kính trình Hiệu trưởng phê duyệt KPI năm học 2025-2026.", "RowVersion": "AAAAAAAACBB=" }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>Chỉ trưởng đơn vị của gói mới được trình</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Gói không ở trạng thái 2</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>TRAN_LAN_TRINH</code></td>
+                  <td>Đạt giới hạn số lần trình</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CONCURRENCY_CONFLICT</code></td>
+                  <td>RowVersion không khớp</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="post-api-totrinh-htduyet">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/to-trinh-khoa/{id}/ht-duyet</span>
+            <span class="badge role-badge tag-compact">Hiệu trưởng</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              <strong>Bước cuối cùng của cả quy trình.</strong> Hiệu trưởng
+              duyệt cả gói: tờ trình <code>3 → 4 (HT_DA_DUYET)</code> và
+              <strong>MỌI hồ sơ trong gói chuyển 4 → 5 (HOAN_TAT)</strong>, trở
+              thành read-only. Đây là endpoint <strong>THAY THẾ</strong>
+              <code>POST /api/phieu/{id}/chot</code> cũ (chốt lẻ từng phiếu).
+              Ghi lịch sử tờ trình <code>hanh_dong = 3</code>. Chỉ
+              <code>HT</code> — <code>ADMIN</code> xem được nhưng không duyệt.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "NhanXet": "Phê duyệt kết quả KPI Khoa CNTT năm học 2025-2026.", "RowVersion": "AAAAAAAACBC=" }</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Message": "Đã duyệt gói KPI.", "Item": { "IdToTrinh": 4, "TrangThai": 4, "SoDatXuatSac": 6, "NgayDuyet": "2026-08-12T09:15:00Z" } }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>Chỉ Hiệu trưởng mới được duyệt gói</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Gói không ở trạng thái 3</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>CONCURRENCY_CONFLICT</code></td>
+                  <td>RowVersion không khớp</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="post-api-totrinh-httralai">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path"
+              >/api/to-trinh-khoa/{id}/ht-tra-lai</span
+            >
+            <span class="badge role-badge tag-compact">Hiệu trưởng</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Hiệu trưởng trả về <strong>một DANH SÁCH hồ sơ</strong> (không
+              phải cả gói): các phiếu được chọn <code>4 → 3</code> kèm
+              <code>ly_do_ht_tra_ve</code>, các phiếu khác
+              <strong>giữ nguyên</strong>. Tờ trình
+              <code>3 → 5 (HT_TRA_VE)</code>; TK xử lý rồi đóng gói và trình
+              lại. Ghi lịch sử <code>hanh_dong = 4</code>. Thay thế
+              <code>POST /api/phieu/{id}/truong/tra-lai</code> cũ.
+            </p>
+            <p>
+              <code>xep_loai_khoa</code> của hồ sơ bị trả về
+              <strong>giữ nguyên</strong> để Trưởng khoa thấy mình đã chọn gì mà
+              sửa.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "IdPhieuList": [17, 21],
+  "LyDo": "Đề nghị Khoa rà lại xếp loại 2 trường hợp: điểm NCKH chưa khớp minh chứng.",
+  "RowVersion": "AAAAAAAACBC="
+}</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Message": "Đã trả lại 2 hồ sơ cho Trưởng khoa.",
+  "Item": { "IdToTrinh": 4, "TrangThai": 5 },
+  "HoSo": [ { "IdPhieu": 17, "TrangThai": 3, "XepLoaiKhoa": 3 }, { "IdPhieu": 21, "TrangThai": 3, "XepLoaiKhoa": 3 } ]
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td><code>DANH_SACH_RONG</code></td>
+                  <td>
+                    <code>IdPhieuList</code> rỗng — phải có ít nhất 1 phần tử
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td><code>THIEU_LY_DO</code></td>
+                  <td>Thiếu <code>LyDo</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>Chỉ Hiệu trưởng mới được trả về gói</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>Gói không ở trạng thái 3</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>HO_SO_KHONG_HOP_LE</code></td>
+                  <td>
+                    Danh sách chứa hồ sơ không thuộc gói hoặc không ở trạng thái
+                    4
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 9 -->
+      <section class="section section-anchor" id="s9">
+        <h2>9. Mở lại phiếu</h2>
+        <p>
+          Trường có thể mở lại phiếu ở trạng thái
+          <strong>5 (HOAN_TAT)</strong> để chỉnh sửa. Thao tác này tạo snapshot
+          lịch sử điểm, xóa điểm theo mức trạng thái đích, và tăng bộ đếm.
+        </p>
+
+        <div class="callout callout-red">
+          <strong>Tác dụng phụ khi mở lại:</strong><br />
+          (1) Điểm hiện tại được snapshot vào
+          <code>lich_su_cham_diem</code>.<br />
+          (2) Tùy <code>TrangThaiMoi</code>: nếu 1 → xóa điểm GV, Khoa, Trường;
+          nếu 2 → xóa điểm Khoa, Trường; nếu 3 → xóa điểm Trường.<br />
+          (3) <code>trang_thai_dong</code> được reset theo trạng thái đích (1, 2
+          hoặc 3), <strong>luôn loại trừ dòng chấm tự động</strong> (<code
+            >loai_nguon_diem = 2</code
+          >
+          giữ nguyên <code>DA_CHOT</code>).<br />
+          (4) <code>lan_danh_gia += 1</code>,
+          <code>lan_mo_lai += 1</code>.<br />
+          (5) <code>diem_chinh_thuc</code> và <code>xep_loai</code> bị xóa.
+        </div>
+
+        <div class="callout callout-yellow">
+          Mở lại là thao tác <strong>cấp phiếu lẻ</strong> của Hiệu trưởng, khác
+          hẳn
+          <a href="#post-api-totrinh-httralai"><code>ht-tra-lai</code></a> (trả
+          hồ sơ trong gói đang trình, 4 → 3). Dùng <code>mo-lai</code> khi hồ sơ
+          đã <strong>HOÀN TẤT</strong> (trạng thái 5) mà phát hiện sai sót.
+        </div>
+
+        <div class="endpoint-card" id="post-api-phieu-molai">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-post">POST</span>
+            <span class="endpoint-path">/api/phieu/{id}/mo-lai</span>
+            <span class="badge role-badge tag-compact">Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              <code>TrangThaiMoi</code> chỉ nhận giá trị <strong>1</strong>,
+              <strong>2</strong>, hoặc <strong>3</strong>. <code>LyDo</code> và
+              <code>RowVersion</code> là bắt buộc.
+            </p>
+            <h4>Request Body</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "TrangThaiMoi": 2,
+  "LyDo": "Phát hiện sai sót điểm Khoa, cần đánh giá lại.",
+  "RowVersion": "AAAAAAAAB9Z=",
+  "NhanXet": null
+}</code></pre>
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>HTTP/1.1 200 OK
+{
+  "Success": true,
+  "Message": "Mở lại phiếu thành công.",
+  "Item": {
+    "IdPhieu": 17,
+    "TrangThai": 2,
+    "LanDanhGia": 2,
+    "LanMoLai": 1,
+    "RowVersion": "AAAAAAAACAs="
+  }
+}</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mã lỗi</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">400</span></td>
+                  <td>—</td>
+                  <td>
+                    Thiếu LyDo hoặc TrangThaiMoi, hoặc TrangThaiMoi không hợp lệ
+                    (phải là 1, 2 hoặc 3)
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td><code>FORBIDDEN</code></td>
+                  <td>Không có quyền Trường</td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">409</span></td>
+                  <td><code>INVALID_STATE</code></td>
+                  <td>
+                    Phiếu không ở trạng thái HOAN_TAT (5), hoặc RowVersion không
+                    khớp (<code>CONCURRENCY_CONFLICT</code>)
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">404</span></td>
+                  <td><code>PHIEU_NOT_FOUND</code></td>
+                  <td>Phiếu không tồn tại</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 10 -->
+      <section class="section section-anchor" id="s10">
+        <h2>10. Lịch sử phiếu</h2>
+
+        <div class="endpoint-card" id="get-api-phieu-id">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/phieu/{id}</span>
+            <span class="badge role-badge tag-compact">GV/Khoa/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Lấy toàn bộ thông tin phiếu (bao gồm chi tiết, lịch sử tóm tắt).
+              Trả về <code>RowVersion</code> cần dùng cho các thao tác ghi tiếp
+              theo.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Item": { "IdPhieu": 17, "TrangThai": 2, "LanDanhGia": 1, "RowVersion": "AAAAAAAAB9U=", "ChiTiet": [...] } }</code></pre>
+            </div>
+            <h4>Lỗi có thể gặp</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>HTTP</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge status-4xx">404</span></td>
+                  <td><code>PHIEU_NOT_FOUND</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge status-4xx">403</span></td>
+                  <td>
+                    <code>FORBIDDEN</code> — GV truy cập phiếu của người khác
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-phieu-lichsu-trangthai">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path"
+              >/api/phieu/{id}/lich-su-trang-thai</span
+            >
+            <span class="badge role-badge tag-compact">GV/Khoa/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>Toàn bộ log thay đổi trạng thái theo thứ tự thời gian.</p>
+            <h4>Giá trị HanhDong:</h4>
+            <ul>
+              <li><code>1</code> = Submit (GV nộp lần đầu)</li>
+              <li><code>2</code> = Approve (duyệt)</li>
+              <li><code>3</code> = Return (trả lại)</li>
+              <li><code>4</code> = Chot</li>
+              <li><code>5</code> = MoLai (Hiệu trưởng mở lại)</li>
+              <li><code>6</code> = HuyNop (GV rút lại phiếu, 2 → 1)</li>
+              <li>
+                <code>7</code> = <strong>NopLai</strong> sau khi bị trả về dòng
+                — giữ nguyên <code>lan_danh_gia</code>, khác hẳn "trả lại phiếu"
+                cũ
+              </li>
+              <li>
+                <code>8</code> =
+                <strong>Trưởng khoa chốt hồ sơ cá nhân</strong> (3 → 4)
+              </li>
+              <li>
+                <code>9</code> = <strong>HT trả riêng hồ sơ về TK</strong> (4 →
+                3)
+              </li>
+            </ul>
+            <h4>Giá trị CapThucHien:</h4>
+            <ul>
+              <li><code>1</code> = Giảng viên (chủ phiếu)</li>
+              <li><code>2</code> = Đơn vị thẩm định</li>
+              <li><code>3</code> = Hiệu trưởng / cấp Trường</li>
+              <li><code>4</code> = <strong>Trưởng khoa</strong> (mới)</li>
+            </ul>
+            <p style="margin: 0.4rem 0 0">
+              Nghĩa cũ của 1–3 giữ nguyên để không phá dữ liệu lịch sử. Cùng quy
+              ước này áp dụng cho <code>lich_su_cham_diem.Cap</code>.
+            </p>
+            <div class="callout callout-blue">
+              <strong>Lịch sử cấp DÒNG</strong> nằm ở
+              <code>lich_su_cham_diem</code>, khóa theo
+              <code>(IdChiTiet, LanDanhGia, Cap)</code>. Hai mã hành động mới ở
+              đó: <code>4</code> = duyệt giữ nguyên điểm (thẩm định),
+              <code>5</code> = trả về dòng. Gói tờ trình có bảng lịch sử riêng
+              <code>lich_su_to_trinh_kpi_khoa</code> (<code>hanh_dong</code>: 1
+              Đóng gói · 2 Trình HT · 3 HT duyệt · 4 HT trả về · 5 Mở lại gói).
+            </div>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Items": [
+  { "Id": 1, "IdPhieu": 17, "LanDanhGia": 1, "TrangThaiTruoc": null, "TrangThaiSau": 2, "HanhDong": 1, "CapThucHien": 1, "IdNguoiThucHien": 42, "TenNguoiThucHien": "Nguyễn Văn A", "LyDo": null, "NhanXet": null, "NgayThucHien": "2025-01-10T08:30:00Z" },
+  { "Id": 2, "IdPhieu": 17, "LanDanhGia": 1, "TrangThaiTruoc": 2, "TrangThaiSau": 3, "HanhDong": 2, "CapThucHien": 2, "IdNguoiThucHien": 5, "TenNguoiThucHien": "Trưởng khoa B", "LyDo": null, "NhanXet": "OK", "NgayThucHien": "2025-01-12T14:00:00Z" }
+] }</code></pre>
+              <p style="margin: 0.4rem 0 0">
+                Tên field thực tế: <code>Id</code> (không phải IdLichSu),
+                <code>TrangThaiTruoc</code>/<code>TrangThaiSau</code> (không
+                phải TrangThaiTuBo/TrangThaiMoi),
+                <code>TenNguoiThucHien</code> (không phải HoTen),
+                <code>NgayThucHien</code> (không phải ThoiGian).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-phieu-lichsu-chamdiem">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path">/api/phieu/{id}/lich-su-cham-diem</span>
+            <span class="badge role-badge tag-compact">Khoa/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Lịch sử điểm toàn phiếu, nhóm theo
+              <code>(LanDanhGia, IdChiTiet, Cap)</code>. Mỗi nhóm chứa mảng
+              <code>Entries</code>. <code>Cap</code> là số: 1 = GV/tự đánh giá,
+              2 = Khoa, 3 = Trường (KHÔNG có field <code>TenTieuChi</code>).
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Items": [
+  { "LanDanhGia": 1, "IdChiTiet": 101, "Cap": 1, "Entries": [
+      { "IdLichSu": 1, "IdChiTiet": 101, "IdPhieu": 17, "LanDanhGia": 1, "Cap": 1, "HanhDong": 1, "Diem": 45.0, "NhanXet": "...", "IdNguoiThucHien": 42, "TenNguoiThucHien": "Nguyễn Văn A", "NgayThucHien": "2025-01-10T08:00:00Z" }
+  ] }
+] }</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-chitiet-lichsu-chamdiem">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path"
+              >/api/chitiet/{idChiTiet}/lich-su-cham-diem</span
+            >
+            <span class="badge role-badge tag-compact">GV/Khoa/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Lịch sử điểm của một tiêu chí cụ thể. Dùng chung cấu trúc nhóm
+              <code>(LanDanhGia, IdChiTiet, Cap)</code> như endpoint toàn phiếu,
+              chỉ lọc về một tiêu chí. <code>Cap</code> là số (1 = GV, 2 = Khoa,
+              3 = Trường).
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{ "Success": true, "Items": [
+  { "LanDanhGia": 1, "IdChiTiet": 101, "Cap": 1, "Entries": [
+      { "IdLichSu": 1, "IdChiTiet": 101, "IdPhieu": 17, "LanDanhGia": 1, "Cap": 1, "HanhDong": 1, "Diem": 45.0, "NhanXet": "...", "IdNguoiThucHien": 42, "TenNguoiThucHien": "Nguyễn Văn A", "NgayThucHien": "2025-01-10T08:00:00Z" }
+  ] },
+  { "LanDanhGia": 1, "IdChiTiet": 101, "Cap": 2, "Entries": [
+      { "IdLichSu": 2, "IdChiTiet": 101, "IdPhieu": 17, "LanDanhGia": 1, "Cap": 2, "HanhDong": 2, "Diem": 42.0, "NhanXet": "Điều chỉnh.", "IdNguoiThucHien": 5, "TenNguoiThucHien": "Trưởng khoa B", "NgayThucHien": "2025-01-12T10:00:00Z" }
+  ] }
+] }</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 11 -->
+      <section class="section section-anchor" id="s11">
+        <h2>11. Báo cáo</h2>
+        <p>
+          Tất cả endpoint báo cáo yêu cầu query param <code>idNam</code> bắt
+          buộc.
+        </p>
+
+        <div class="endpoint-card" id="get-api-baocao-tongquan">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path"
+              >/api/bao-cao/tong-quan?idNam=2024&amp;idDonVi=3</span
+            >
+            <span class="badge role-badge tag-compact">Admin/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>Tổng quan số lượng phiếu theo trạng thái và phân bố xếp loại.</p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Item": {
+    "IdNam": 2024,
+    "IdDonVi": 3,
+    "TongSoPhieu": 120,
+    "DemTheoTrangThai": [
+      { "TrangThai": 1, "SoLuong": 5 },
+      { "TrangThai": 2, "SoLuong": 10 },
+      { "TrangThai": 3, "SoLuong": 15 },
+      { "TrangThai": 4, "SoLuong": 8 },
+      { "TrangThai": 5, "SoLuong": 82 }
+    ],
+    "DemTheoXepLoai": [
+      { "XepLoai": "1", "SoLuong": 7 },
+      { "XepLoai": "2", "SoLuong": 25 },
+      { "XepLoai": "3", "SoLuong": 38 },
+      { "XepLoai": "4", "SoLuong": 12 }
+    ]
+  }
+}</code></pre>
+              <p style="margin: 0.4rem 0 0">
+                Phân bố là MẢNG (<code>DemTheoTrangThai</code>,
+                <code>DemTheoXepLoai</code>), KHÔNG phải object có khóa.
+                <code>TrangThai</code> là số 1..5, <code>XepLoai</code> là giá
+                trị thô của <code>phieu_danh_gia.xep_loai</code> (1..4) trả về
+                dưới dạng chuỗi số — không phải nhãn "XuatSac"/"Tot".
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-baocao-diemtrungbinh">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path"
+              >/api/bao-cao/diem-trung-binh?idNam=2024&amp;idDonVi=3</span
+            >
+            <span class="badge role-badge tag-compact">Admin/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>Thống kê điểm trung bình, min, max theo đơn vị.</p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Items": [
+    { "IdDonVi": 3, "MaDonVi": "CNTT", "TenDonVi": "Khoa Công nghệ", "SoPhieu": 35, "DiemTrungBinh": 82.4, "DiemThapNhat": 55.0, "DiemCaoNhat": 98.0 }
+  ]
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card" id="get-api-baocao-chuahoantat">
+          <div class="endpoint-header" onclick="toggleCard(this)">
+            <span class="badge method-get">GET</span>
+            <span class="endpoint-path"
+              >/api/bao-cao/chua-hoan-tat?idNam=2024&amp;idDonVi=3</span
+            >
+            <span class="badge role-badge tag-compact">Admin/Trường</span>
+            <span class="endpoint-toggle">&#9660;</span>
+          </div>
+          <div class="endpoint-body">
+            <p>
+              Danh sách phiếu chưa hoàn tất kèm số ngày trôi qua kể từ lần cập
+              nhật cuối.
+            </p>
+            <h4>200 OK</h4>
+            <div class="pre-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>{
+  "Success": true,
+  "Items": [
+    { "IdPhieu": 22, "IdNam": 2024, "IdNhanVien": 41, "MaNhanVien": "GV041", "HoTen": "Lê Văn C", "IdDonVi": 3, "TenDonVi": "Khoa Công nghệ", "TrangThai": 1, "LanDanhGia": 1, "NgayTao": "2024-09-01T00:00:00", "NgayGui": null, "SoNgayTroi": 14 }
+  ]
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- SECTION 12 -->
+      <section class="section section-anchor" id="s12">
+        <h2>12. Bảng mã lỗi</h2>
+        <div class="callout callout-red">
+          <strong>Quan trọng:</strong> envelope phiếu
+          (<code>PhieuDanhGiaResponse</code>) chỉ có
+          <code>Success</code>/<code>Message</code>/<code>Item</code>/<code
+            >Items</code
+          >
+          — KHÔNG có field <code>error_code</code>. Với
+          <code>PHIEU_NOT_FOUND</code>, <code>FORBIDDEN</code>,
+          <code>INVALID_STATE</code>, <code>CONCURRENCY_CONFLICT</code>, client
+          chỉ nhận
+          <strong>HTTP status + <code>Message</code> tiếng Việt</strong>; các
+          "mã lỗi" dưới đây là mã NỘI BỘ / quy ước, không xuất hiện trong body.
+          Chỉ <code>PVCD_CAP_EXCEEDED</code> và
+          <code>PHIEU_SUBMIT_VALIDATION_FAILED</code> thực sự có trong body (qua
+          field <code>error</code>).
+        </div>
+        <table class="error-table">
+          <thead>
+            <tr>
+              <th>Mã lỗi (nội bộ / quy ước)</th>
+              <th>HTTP</th>
+              <th>Khi nào xảy ra</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>PHIEU_NOT_FOUND</code></td>
+              <td><span class="badge status-4xx">404</span></td>
+              <td>
+                Phiếu không tồn tại hoặc đã bị xóa mềm (<code>da_xoa = 1</code>)
+              </td>
+            </tr>
+            <tr>
+              <td><code>CONCURRENCY_CONFLICT</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                Giá trị <code>RowVersion</code> gửi lên không khớp với giá trị
+                trong CSDL — phiếu đã bị cập nhật bởi request khác giữa thời
+                điểm GET và POST
+              </td>
+            </tr>
+            <tr>
+              <td><code>FORBIDDEN</code></td>
+              <td><span class="badge status-4xx">403</span></td>
+              <td>
+                Người thực hiện không có quyền trên phiếu này (GV xem phiếu
+                người khác, Khoa duyệt phiếu ngoài đơn vị…)
+              </td>
+            </tr>
+            <tr>
+              <td><code>INVALID_STATE</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                Trạng thái hiện tại của phiếu không cho phép thực hiện action
+                được yêu cầu (vd: submit khi phiếu đang ở trạng thái 2)
+              </td>
+            </tr>
+            <tr>
+              <td><code>PVCD_CAP_EXCEEDED</code></td>
+              <td><span class="badge status-4xx">422</span></td>
+              <td>
+                Tổng điểm PVCĐ của chi tiết sẽ vượt quá trần 20 điểm sau khi
+                thêm/sửa nhiệm vụ
+              </td>
+            </tr>
+            <tr>
+              <td><code>PHIEU_SUBMIT_VALIDATION_FAILED</code></td>
+              <td><span class="badge status-4xx">422</span></td>
+              <td>
+                Submit thất bại do còn tiêu chí có
+                <code>diem_tu_danh_gia &gt; 0</code> nhưng thiếu minh chứng
+                (<code>bat_buoc_minh_chung = 1</code>). Tiêu chí để trống hoặc
+                0đ được coi là "không kê khai" → không cần điểm, không cần minh
+                chứng. Cũng dùng cho <code>nop-lai</code> và
+                <code>khoa/duyet-ho-so</code> khi còn dòng chưa chốt.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>Mã lỗi của quy trình 4 giai đoạn</h4>
+        <p>
+          Nhóm này <strong>CÓ</strong> trong body qua field
+          <code>error_code</code> (khác nhóm ở trên).
+        </p>
+        <table class="error-table">
+          <thead>
+            <tr>
+              <th>Mã lỗi</th>
+              <th>HTTP</th>
+              <th>Khi nào xảy ra</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>THIEU_DIEM</code></td>
+              <td><span class="badge status-4xx">400</span></td>
+              <td>
+                <code>PUT /diem-khoa</code> không gửi <code>Diem</code> — dòng
+                chốt ngay tại đây nên không thể chốt mà thiếu điểm
+              </td>
+            </tr>
+            <tr>
+              <td><code>THIEU_LY_DO</code></td>
+              <td>
+                <span class="badge status-4xx">400</span> /
+                <span class="badge status-4xx">409</span>
+              </td>
+              <td>
+                Sửa điểm khác điểm GV tự kê khai mà thiếu <code>NhanXet</code>;
+                hoặc trả về dòng / trả về gói mà thiếu <code>LyDo</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>INVALID_STATE_DONG</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                <code>trang_thai_dong</code> của dòng không cho phép thao tác
+                này (thẩm định đòi 2; trả về thẩm định lại đòi 3)
+              </td>
+            </tr>
+            <tr>
+              <td><code>AUTO_SCORED</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                Thao tác trên tiêu chí chấm tự động (<code
+                  >loai_nguon_diem = 2</code
+                >) — engine đã khóa cứng
+                <code>diem_chinh_thuc</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>FORBIDDEN_DON_VI</code></td>
+              <td><span class="badge status-4xx">403</span></td>
+              <td>
+                Đơn vị của người đăng nhập không được giao chấm tiêu chí này
+                trong
+                <code>tieu_chi_don_vi_cham</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>KHONG_CO_DONG</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                <code>nop-lai</code> khi không còn dòng nào ở
+                <code>trang_thai_dong = 1</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>QUA_HAN</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                Quá hạn tự đánh giá (<code>MAX(ngay_dong, han_moi)</code>) và
+                chưa được gia hạn riêng
+              </td>
+            </tr>
+            <tr>
+              <td><code>CHUA_CHOT_HET</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                Trưởng khoa chốt hồ sơ khi còn dòng
+                <code>trang_thai_dong &lt;&gt; 3</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>VUOT_MUC_VIEN_CHUC</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                Viên chức/NLĐ (<code>loai_doi_tuong = 2</code>) bị kẹp trần mức
+                2 và không tranh hạn ngạch xuất sắc
+              </td>
+            </tr>
+            <tr>
+              <td><code>CHUA_DU_HO_SO</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                Đóng gói khi chưa đủ 100% hồ sơ được TK chốt — kèm
+                <code>HoSo[]</code> liệt kê người còn thiếu
+              </td>
+            </tr>
+            <tr>
+              <td><code>DONG_HANG</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                Số người đồng điểm tranh suất cuối &gt; số suất còn lại và chưa
+                ai được <code>uu_tien_xuat_sac</code>. Cố ý chặn — đây là quyết
+                định nhân sự
+              </td>
+            </tr>
+            <tr>
+              <td><code>TY_LE_KHONG_HOP_LE</code></td>
+              <td><span class="badge status-4xx">400</span></td>
+              <td><code>TyLeXuatSac</code> ngoài khoảng <code>(0, 1]</code></td>
+            </tr>
+            <tr>
+              <td><code>TRAN_LAN_TRINH</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>Gói đã đạt giới hạn số lần trình Hiệu trưởng</td>
+            </tr>
+            <tr>
+              <td><code>DANH_SACH_RONG</code></td>
+              <td><span class="badge status-4xx">400</span></td>
+              <td><code>ht-tra-lai</code> với <code>IdPhieuList</code> rỗng</td>
+            </tr>
+            <tr>
+              <td><code>HO_SO_KHONG_HOP_LE</code></td>
+              <td><span class="badge status-4xx">409</span></td>
+              <td>
+                <code>ht-tra-lai</code> có id không thuộc gói hoặc hồ sơ không ở
+                trạng thái 4
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>Ví dụ response lỗi điển hình</h4>
+        <div class="pre-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>HTTP/1.1 409 Conflict
+{
+  "Success": false,
+  "Message": "Phieu da bi nguoi khac cap nhat. Vui long tai lai trang."
+}</code></pre>
+          <p style="margin: 0.4rem 0 0">
+            Body KHÔNG chứa <code>error_code</code> — chỉ phân biệt qua HTTP 409
+            và <code>Message</code>.
+          </p>
+        </div>
+
+        <div class="pre-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>HTTP/1.1 422 Unprocessable Entity
+{
+  "error": "PVCD_CAP_EXCEEDED",
+  "currentTotal": 18.0,
+  "attemptedAdd": 7.0,
+  "remaining": 2.0
+}</code></pre>
+        </div>
+
+        <div class="pre-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>HTTP/1.1 422 Unprocessable Entity
+{
+  "error": "PHIEU_SUBMIT_VALIDATION_FAILED",
+  "message": "Còn 2 tiêu chí chưa hoàn tất.",
+  "missingItems": [
+    {
+      "idChiTiet": 5,
+      "idTieuChi": 3,
+      "tenTieuChi": "Giờ giảng lý thuyết",
+      "missingDiemTuDanhGia": true,
+      "missingMinhChung": false,
+      "batBuocMinhChung": false
+    }
+  ]
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- SECTION 13 -->
+      <section class="section section-anchor" id="s13">
+        <h2>13. Response chuẩn</h2>
+        <p>
+          Hầu hết các endpoint phiếu đánh giá trả về dạng PascalCase envelope
+          sau:
+        </p>
+        <div class="pre-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>{
+  "Success": true,
+  "Message": "Thao tác thành công.",
+  "Item": { "..." },     // kết quả đơn lẻ
+  "Items": [ "..." ]     // danh sách (không cùng lúc với Item)
+}</code></pre>
+        </div>
+
+        <p>
+          Lưu ý: Định dạng response lỗi không hoàn toàn đồng nhất trên tất cả
+          endpoint:
+        </p>
+        <ul>
+          <li>
+            Lỗi trạng thái phiếu (<code>INVALID_STATE</code>), không tìm thấy
+            (404), không có quyền (403) và xung đột phiên bản (409
+            <code>CONCURRENCY_CONFLICT</code>) CHỈ trả về
+            <code>{ "Success": false, "Message": "..." }</code> — KHÔNG có field
+            <code>error_code</code> trong body; phân biệt qua HTTP status +
+            thông điệp tiếng Việt.
+          </li>
+          <li>
+            Lỗi PVCĐ và Submit Validation trả về cấu trúc riêng với field
+            <code>error</code> (lowercase) — đây là trường hợp DUY NHẤT có mã
+            lỗi nằm trong body.
+          </li>
+          <li>
+            Lỗi xác thực model (400) có thể trả về <code>ModelState</code> dạng
+            ASP.NET Web API mặc định.
+          </li>
+        </ul>
+
+        <h4>Cấu trúc AuthResponse (riêng cho endpoint auth)</h4>
+        <div class="pre-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>{
+  "Success": true,
+  "Message": "...",
+  "User": {
+    "IdNhanVien": 1,
+    "MaNhanVien": "GV001",
+    "HoTen": "...",
+    "Email": "...",
+    "IdDonVi": 2,
+    "IdChucVu": null,
+    "IdChucDanh": null,
+    "ScienceUserId": null
+  },
+  "Tokens": {
+    "AccessToken": "eyJ...",
+    "RefreshToken": "...",
+    "AccessTokenExpiresAt": "2025-01-01T01:00:00Z",
+    "RefreshTokenExpiresAt": "2025-02-01T00:00:00Z"
+  }
+}</code></pre>
+          <p style="margin: 0.4rem 0 0">
+            <code>Tokens.*ExpiresAt</code> dùng
+            <code>NullValueHandling.Ignore</code> — chỉ xuất hiện ở response
+            <code>/refresh</code>; response <code>/login</code> bỏ qua 2 field
+            này.
+          </p>
+        </div>
+      </section>
+
+      <!-- SECTION 14 -->
+      <section class="section section-anchor" id="s14">
+        <h2>14. rowVersion &amp; Optimistic Concurrency</h2>
+        <p>Chi tiết đầy đủ: <a href="concurrency">Concurrency</a></p>
+
+        <div class="callout callout-blue">
+          <strong>Tóm tắt cơ chế:</strong><br />
+          <code>RowVersion</code> là kiểu dữ liệu <code>ROWVERSION</code> của
+          SQL Server (8 byte, tăng đơn điệu tự động mỗi khi hàng được cập nhật).
+          Mỗi response GET phiếu đều trả về <code>RowVersion</code> dưới dạng
+          chuỗi Base64 (ví dụ: <code>"AAAAAAAAB9Q="</code>). Khi thực hiện các
+          thao tác ghi (submit, duyet, tra-lai, chot, mo-lai), client phải gửi
+          lại đúng giá trị <code>RowVersion</code> này. Nếu có request khác đã
+          sửa phiếu trong khoảng thời gian giữa GET và POST của bạn, server sẽ
+          phát hiện không khớp và trả về <code>CONCURRENCY_CONFLICT</code> (409)
+          — client cần GET lại phiếu để lấy <code>RowVersion</code> mới trước
+          khi thử lại.
+        </div>
+
+        <h4>Luồng xử lý concurrency</h4>
+        <ol>
+          <li>
+            Client gọi <code>GET /api/phieu/{id}</code> → nhận
+            <code>RowVersion = "AAAAAAAAB9Q="</code>
+          </li>
+          <li>Client thực hiện thay đổi cục bộ (nhập điểm, xem lại…)</li>
+          <li>
+            Client gọi <code>POST /api/phieu/{id}/submit</code> với body
+            <code>{ "RowVersion": "AAAAAAAAB9Q=" }</code>
+          </li>
+          <li>
+            Server so sánh RowVersion — nếu khớp: thực hiện và trả về RowVersion
+            mới; nếu không khớp: 409 <code>CONCURRENCY_CONFLICT</code>
+          </li>
+          <li>
+            Nếu 409: client quay lại bước 1 — GET lại để lấy trạng thái mới nhất
+          </li>
+        </ol>
+      </section>
+    </div>
+    <!-- end .main -->
+
+    <script>
+      function toggleCard(header) {
+        var body = header.nextElementSibling;
+        var toggle = header.querySelector(".endpoint-toggle");
+        if (body.classList.contains("open")) {
+          body.classList.remove("open");
+          toggle.style.transform = "";
+        } else {
+          body.classList.add("open");
+          toggle.style.transform = "rotate(180deg)";
+        }
+      }
+
+      function toggleMobileToc() {
+        var list = document.getElementById("mob-list");
+        list.classList.toggle("open");
+      }
+
+      function copyCode(btn) {
+        var pre = btn.parentElement.querySelector("pre");
+        var text = pre ? pre.innerText : "";
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(function () {
+            btn.textContent = "Copied!";
+            setTimeout(function () {
+              btn.textContent = "Copy";
+            }, 1500);
+          });
+        }
+      }
+
+      // Scroll spy
+      (function () {
+        var tocLinks = document.querySelectorAll('#toc-desktop a[href^="#"]');
+        var sections = [];
+        tocLinks.forEach(function (link) {
+          var id = link.getAttribute("href").slice(1);
+          var el = document.getElementById(id);
+          if (el) sections.push({ id: id, el: el, link: link });
+        });
+
+        function onScroll() {
+          var scrollY = window.scrollY || window.pageYOffset;
+          var active = null;
+          for (var i = 0; i < sections.length; i++) {
+            if (sections[i].el.getBoundingClientRect().top <= 60) {
+              active = sections[i];
+            }
+          }
+          tocLinks.forEach(function (l) {
+            l.classList.remove("active");
+          });
+          if (active) active.link.classList.add("active");
+        }
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+      })();
+    </script>
+  </body>
+</html>

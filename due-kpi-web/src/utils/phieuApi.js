@@ -404,9 +404,63 @@ export const fetchLichSuChamDiem = async (idChiTiet) => {
   return data.Items || [];
 };
 
+/**
+ * Lịch sử chấm điểm của TOÀN phiếu, cùng dạng nhóm như bản theo tiêu chí.
+ * Một request thay cho n request `chitiet/{id}/lich-su-cham-diem` khi màn hình
+ * cần hiện lịch sử ở mọi tiêu chí.
+ */
+export const fetchLichSuChamDiemPhieu = async (idPhieu) => {
+  const data = await getJson(
+    `phieu/${idPhieu}/lich-su-cham-diem`,
+    'Không tải được lịch sử chấm điểm của phiếu',
+  );
+  return data.Items || [];
+};
+
+/**
+ * Gom lịch sử toàn phiếu về Map<IdChiTiet, nhóm[]> để từng tiêu chí tra O(1).
+ * Nhóm sắp theo vòng đánh giá rồi tới cấp chấm (tự đánh giá → đơn vị → HT),
+ * đúng thứ tự thời gian mà người xem mong đợi.
+ */
+export const gomLichSuTheoChiTiet = (items) => {
+  const map = new Map();
+  (items || []).forEach((nhom) => {
+    const key = Number(nhom.IdChiTiet);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(nhom);
+  });
+  map.forEach((nhomList) =>
+    nhomList.sort((a, b) => (a.LanDanhGia - b.LanDanhGia) || (a.Cap - b.Cap)),
+  );
+  return map;
+};
+
+/**
+ * lich_su_cham_diem.cap — 1 Tự ĐG, 2 Khoa, 3 Trường (xem docs/schema.sql §4.7).
+ *
+ * Cấp 3 KHÔNG đồng nghĩa "Hiệu trưởng chấm": bước "Trường chấm điểm" đã bị bỏ,
+ * không còn đường ghi tay nào vào nhóm cột diem_truong*. Dòng cấp 3 sinh ra hôm
+ * nay chỉ có hai nguồn — engine chấm tự động (hành động Chấm) và thao tác chốt
+ * điểm chính thức (hành động Chốt).
+ */
 export const CAP_CHAM = { TU_DG: 1, KHOA: 2, TRUONG: 3 };
-export const TEN_CAP_CHAM = { 1: 'Tự đánh giá', 2: 'Đơn vị', 3: 'Hiệu trưởng' };
+export const TEN_CAP_CHAM = { 1: 'Giảng viên tự đánh giá', 2: 'Đơn vị chấm', 3: 'Cấp trường' };
+
+export const HANH_DONG_CHAM = { CHAM: 1, SUA: 2, CHOT: 3 };
 export const TEN_HANH_DONG_CHAM = { 1: 'Chấm', 2: 'Sửa', 3: 'Chốt' };
+
+/**
+ * Lượt lịch sử này do MÁY ghi hay do người chấm?
+ *
+ * Tiêu chí LoaiNguonDiem = 2 không đi qua cấp chấm tay nào: engine ghi thẳng
+ * diem_chinh_thuc và để lại một dòng cấp 3 / hành động Chấm. IdNguoiThucHien của
+ * dòng đó là người bấm NỘP PHIẾU (thường là chính giảng viên), không phải người
+ * chấm — hiển thị "Chấm bởi <tên>" ở đây là sai sự thật.
+ */
+export const laLuotChamTuDong = (entry, chiTiet) =>
+  !laTieuChiChamTay(chiTiet) &&
+  Number(entry?.Cap) === CAP_CHAM.TRUONG &&
+  Number(entry?.HanhDong) === HANH_DONG_CHAM.CHAM;
 
 /* ------------------------------------------------------------------ */
 /* Phân quyền chấm tiêu chí                                            */

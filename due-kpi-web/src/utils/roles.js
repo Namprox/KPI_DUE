@@ -62,6 +62,17 @@ export const ROLE_SETS = {
   TRUONG_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG],
 
   /**
+   * Nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò (KPI Nhóm III).
+   *
+   * Module chỉ áp dụng cho KHOA (`ma_don_vi LIKE 'K_%'`) nên Trưởng Phòng bị
+   * loại — gọi với đơn vị khác server trả `KHONG_PHAI_KHOA`. Thư ký Khoa có mặt
+   * vì thực tế họ là người gõ dữ liệu, nhưng CHỐT KỲ là thẩm quyền của trưởng
+   * đơn vị: đừng suy quyền thao tác từ tập này, hãy đọc cờ `CanNhap` / `CanChot`
+   * do endpoint `/nhiem-vu-khoa/ky` trả về.
+   */
+  NHIEM_VU_KHOA: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.THU_KY_KHOA],
+
+  /**
    * Người chấm KPI cho cả đơn vị: thư ký Khoa/Phòng là người nhập, trưởng
    * Khoa / Khoa lớn / Phòng là người chịu trách nhiệm ký.
    */

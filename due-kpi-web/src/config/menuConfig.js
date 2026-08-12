@@ -59,6 +59,27 @@ export const MENU_GROUPS = [
         chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
       },
       {
+        // KPI Nhóm III: phục vụ cộng đồng và các nhiệm vụ khác, theo phân công
+        // của Khoa. Server suy người dùng TỪ TOKEN nên đây chỉ là lối vào; gate
+        // theo NGẠCH giống "Phản hồi sinh viên" vì chỉ giảng viên của Khoa mới
+        // phát sinh dữ liệu này.
+        name: "Phục vụ cộng đồng",
+        icon: "fa-solid fa-hands-holding-circle",
+        path: "/nhiem-vu-khoa-cua-toi",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
+        // Vi phạm giảng dạy do đơn vị ghi nhận cho chính mình (điểm trừ KPI).
+        // Server tự giới hạn GET /viphamgiangday về người đăng nhập, nên đây chỉ
+        // là lối vào; gate theo NGẠCH vì chỉ giảng viên thuộc Khoa mới bị ghi nhận.
+        name: "Vi phạm của tôi",
+        icon: "fa-solid fa-triangle-exclamation",
+        path: "/vi-pham-cua-toi",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
         // Tra cứu minh chứng của chính mình, xuyên năm. Chỉ đọc — server tự giới
         // hạn về người đăng nhập nên không cần gate theo chức vụ/chức danh.
         name: "Kho minh chứng",
@@ -98,6 +119,15 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-circle-exclamation",
         path: "/quan-ly/vi-pham",
         roles: ROLE_SETS.TRUONG_DON_VI,
+      },
+      {
+        // Khoa nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò cho giảng
+        // viên (KPI Nhóm III). Thư ký Khoa cũng vào được vì họ là người gõ dữ
+        // liệu; nút Chốt kỳ trên màn hình vẫn tắt theo cờ CanChot của server.
+        name: "Phân công phục vụ cộng đồng",
+        icon: "fa-solid fa-hands-holding-circle",
+        path: "/quan-ly/nhiem-vu-khoa",
+        roles: ROLE_SETS.NHIEM_VU_KHOA,
       },
       {
         name: "Báo cáo đơn vị",

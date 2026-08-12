@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 /**
  * Trả phiếu về cho GV sửa lại (POST api/phieu/{id}/khoa/tra-lai).
  * LyDo là bắt buộc — server từ chối khi rỗng, và GV cần biết phải sửa gì.
  */
 const TraLaiPhieuModal = ({ hoTen, dangGui, onDong, onXacNhan }) => {
-  const [lyDo, setLyDo] = useState('');
-  const [nhanXet, setNhanXet] = useState('');
-  const [loi, setLoi] = useState('');
+  const [lyDo, setLyDo] = useState("");
+  const [nhanXet, setNhanXet] = useState("");
+  const [loi, setLoi] = useState("");
 
   const handleXacNhan = () => {
     if (!lyDo.trim()) {
-      setLoi('Vui lòng nhập lý do trả lại — giảng viên cần biết phải sửa nội dung nào.');
+      setLoi(
+        "Vui lòng nhập lý do trả lại — giảng viên cần biết phải sửa nội dung nào.",
+      );
       return;
     }
-    setLoi('');
+    setLoi("");
     onXacNhan({ lyDo: lyDo.trim(), nhanXet: nhanXet.trim() });
   };
 
@@ -29,13 +31,13 @@ const TraLaiPhieuModal = ({ hoTen, dangGui, onDong, onXacNhan }) => {
         </div>
 
         <div className="modal-body">
-          <p style={{ marginTop: 0, fontSize: '14px', color: '#475569' }}>
-            Phiếu của <b>{hoTen}</b> sẽ quay lại trạng thái <b>GV đang nhập</b>. Điểm đơn vị
-            đã chấm được giữ nguyên trong lịch sử, nhưng giảng viên có thể sửa lại phần tự
-            đánh giá và phải gửi lên lại.
+          <p style={{ marginTop: 0, fontSize: "14px", color: "#475569" }}>
+            Phiếu của <b>{hoTen}</b> sẽ quay lại trạng thái <b>GV đang nhập</b>.
+            Điểm đơn vị đã chấm được giữ nguyên trong lịch sử, nhưng giảng viên
+            có thể sửa lại phần tự đánh giá và phải gửi lên lại.
           </p>
 
-          <div className="form-group" style={{ marginBottom: '15px' }}>
+          <div className="form-group" style={{ marginBottom: "15px" }}>
             <label>
               Lý do trả lại <span className="text-red">*</span>
             </label>
@@ -47,7 +49,7 @@ const TraLaiPhieuModal = ({ hoTen, dangGui, onDong, onXacNhan }) => {
               placeholder="VD: Thiếu minh chứng cho tiêu chí 2.1, mô tả hoàn thành chưa rõ..."
               onChange={(e) => {
                 setLyDo(e.target.value);
-                if (loi) setLoi('');
+                if (loi) setLoi("");
               }}
             />
           </div>
@@ -74,7 +76,11 @@ const TraLaiPhieuModal = ({ hoTen, dangGui, onDong, onXacNhan }) => {
           <button className="btn-cancel" onClick={onDong} disabled={dangGui}>
             Hủy
           </button>
-          <button className="btn-submit" onClick={handleXacNhan} disabled={dangGui}>
+          <button
+            className="btn-submit"
+            onClick={handleXacNhan}
+            disabled={dangGui}
+          >
             {dangGui ? (
               <>
                 <i className="fa-solid fa-spinner fa-spin"></i> Đang gửi...

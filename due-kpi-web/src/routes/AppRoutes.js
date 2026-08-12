@@ -30,11 +30,14 @@ import ThongTinCaNhan from "../pages/ThongTinCaNhan";
 import TongQuanCaNhan from "../pages/CaNhan/TongQuanCaNhan";
 import KhoMinhChung from "../pages/CaNhan/KhoMinhChung";
 import PhanHoiSinhVienCuaToi from "../pages/CaNhan/PhanHoiSinhVienCuaToi";
+import NhiemVuKhoaCuaToi from "../pages/CaNhan/NhiemVuKhoaCuaToi";
+import ViPhamCuaToi from "../pages/CaNhan/ViPhamCuaToi";
 import ChoCham from "../pages/QuanLyChamDiem/ChoCham";
 import DanhSachPhieu from "../pages/QuanLyChamDiem/DanhSachPhieu";
 import ChamDiemPhieu from "../pages/QuanLyChamDiem/ChamDiemPhieu";
 import HoSoKpiGiangVien from "../pages/QuanLyChamDiem/HoSoKpiGiangVien";
 import BaoCaoDonVi from "../pages/QuanLyChamDiem/BaoCaoDonVi";
+import PhanCongNhiemVuKhoa from "../pages/QuanLyChamDiem/PhanCongNhiemVuKhoa";
 import RequireRole from "../components/RequireRole";
 
 const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
@@ -60,6 +63,11 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
           path="/phan-hoi-sinh-vien-cua-toi"
           element={<PhanHoiSinhVienCuaToi />}
         />
+        <Route
+          path="/nhiem-vu-khoa-cua-toi"
+          element={<NhiemVuKhoaCuaToi />}
+        />
+        <Route path="/vi-pham-cua-toi" element={<ViPhamCuaToi />} />
         <Route path="/quan-ly-nguoi-dung" element={<QLNhanVien />} />
         <Route
           path="/quan-ly-nguoi-dung/them-moi"
@@ -124,6 +132,10 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         />
         <Route path="/quan-ly/vi-pham" element={<QLViPham />} />
         <Route path="/quan-ly/bao-cao" element={<BaoCaoDonVi />} />
+        <Route
+          path="/quan-ly/nhiem-vu-khoa"
+          element={<PhanCongNhiemVuKhoa />}
+        />
       </Route>
     </Routes>
   );

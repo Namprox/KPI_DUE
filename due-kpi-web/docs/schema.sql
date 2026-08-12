@@ -709,9 +709,14 @@ GO
 
 -- =============================================================================
 -- 4. DỮ LIỆU ĐÁNH GIÁ
---    trang_thai: 1 NHAP → 2 DON_VI_CHAM → 3 CHO_HT_DUYET → 4 HT_DA_DUYET → 5 HOAN_TAT.
---    State machine chi tiết (2→3 tự động, trả lại, hủy nộp, mở lại, hạn tự đánh giá):
---    xem schema_ghi_chu.md mục 4.
+--    Quy trình 4 giai đoạn. HAI trục trạng thái song song:
+--      phieu_danh_gia.trang_thai      : 1 NHAP → 2 THAM_DINH → 3 CHO_TK_DUYET
+--                                       → 4 TK_DA_DUYET → 5 HOAN_TAT
+--      chi_tiet_danh_gia.trang_thai_dong : 1 KE_KHAI → 2 CHO_THAM_DINH → 3 DA_CHOT
+--    Phiếu ở trạng thái 2 BAO TRÙM cả lúc GV đang sửa dòng bị trả về — chỉ DÒNG
+--    tụt về KE_KHAI, các dòng khác giữ nguyên tiến độ.
+--    State machine chi tiết (trigger 2↔3 tự động, trả về từng dòng, hủy nộp,
+--    mở lại, hạn tự đánh giá, hạn ngạch 20%): xem schema_ghi_chu.md mục 4 và 8.
 -- =============================================================================
 
 -- 4.0. Lookup: nhóm vai trò PVCĐ theo đơn vị (NULL = default toàn trường / mọi năm)
@@ -774,8 +779,19 @@ CREATE TABLE phieu_danh_gia (
     tong_diem_tich_luy    DECIMAL(6,2)   NULL,   -- = co_ban + vuot_troi
 
     -- Xếp loại & các điều kiện kết luận ────────
+    -- xep_loai = KẾT QUẢ CUỐI CÙNG, chỉ ghi ở bước đóng gói tờ trình Khoa.
+    -- Trưởng khoa chọn xep_loai_khoa (1/2/3); mức 4 do hạn ngạch 20% nâng lên.
     xep_loai              TINYINT        NULL,   -- 1/2/3/4 (xem chú thích trên)
     ghi_chu_xep_loai      NVARCHAR(1000) NULL,
+    id_to_trinh           INT            NULL,   -- Gói KPI Khoa, gán lúc đóng gói
+    xep_loai_khoa         TINYINT        NULL,   -- Trưởng khoa chọn tay, chỉ 1/2/3
+    xep_loai_de_xuat      TINYINT        NULL,   -- Hệ thống gợi ý (XepLoaiCalculator), chỉ để đối chiếu
+    id_nguoi_xep_loai     INT            NULL,
+    ngay_xep_loai         DATETIME       NULL,
+    ly_do_xep_loai        NVARCHAR(1000) NULL,   -- Bắt buộc khi TK chọn khác mức đề xuất
+    uu_tien_xuat_sac      BIT            NOT NULL DEFAULT 0,  -- TK chỉ định khi đồng hạng ở ranh giới hạn ngạch
+    hang_trong_khoa       INT            NULL,   -- Thứ hạng trong Khoa, snapshot lúc đóng gói
+    ly_do_ht_tra_ve       NVARCHAR(1000) NULL,   -- Ghi chú chỉ đạo khi HT trả riêng hồ sơ này về TK
     du_dinh_muc_gio_nckh    BIT          NULL,   -- 1 = đạt, 0 = không đạt định mức giờ NCKH
     khong_vi_pham_phap_luat BIT          NULL,   -- 1 = không vi phạm, 0 = có vi phạm
     muc_nckhcn_qd838        TINYINT      NULL,   -- 0: Chưa/Không đạt, 1: HT Tốt KHCN, 2: HT Xuất sắc KHCN
@@ -817,8 +833,13 @@ CREATE TABLE phieu_danh_gia (
     CONSTRAINT fk_phieu_nguoi_mol  FOREIGN KEY (id_nguoi_mo_lai)    REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_phieu_chuc_vu    FOREIGN KEY (id_chuc_vu)         REFERENCES chuc_vu(id_chuc_vu),
     CONSTRAINT fk_phieu_chuc_danh  FOREIGN KEY (id_chuc_danh)       REFERENCES chuc_danh_nghe_nghiep(id_chuc_danh),
+    CONSTRAINT fk_phieu_nguoi_xl   FOREIGN KEY (id_nguoi_xep_loai)  REFERENCES nhan_vien(id_nhan_vien),
+    -- FK id_to_trinh → to_trinh_kpi_khoa nằm ở mục 8.3 (ALTER TABLE): bảng đó
+    -- khai báo sau nên không tham chiếu inline được.
 
     CONSTRAINT chk_trang_thai_phieu    CHECK (trang_thai IN (1,2,3,4,5)),
+    CONSTRAINT chk_phieu_xep_loai_khoa     CHECK (xep_loai_khoa    IS NULL OR xep_loai_khoa    IN (1,2,3)),
+    CONSTRAINT chk_phieu_xep_loai_de_xuat  CHECK (xep_loai_de_xuat IS NULL OR xep_loai_de_xuat IN (1,2,3,4)),
     CONSTRAINT chk_phieu_loai_doi_tuong CHECK (loai_doi_tuong IN (1, 2)),
     CONSTRAINT chk_tong_diem_co_ban    CHECK (tong_diem_co_ban    >= 0),
     CONSTRAINT chk_tong_diem_vuot_troi CHECK (tong_diem_vuot_troi >= 0),
@@ -875,12 +896,27 @@ CREATE TABLE chi_tiet_danh_gia (
     ly_do_dac_biet         NVARCHAR(500)  NULL,
     ngay_tao               DATETIME       DEFAULT GETDATE(),
 
+    -- Trạng thái THEO TỪNG DÒNG (thẩm định độc lập từng tiêu chí) ─────────────
+    trang_thai_dong        TINYINT        NOT NULL DEFAULT 1,
+        -- 1: KE_KHAI       — chủ phiếu sửa được (kê khai lần đầu HOẶC đang sửa sau khi bị trả về)
+        -- 2: CHO_THAM_DINH — đơn vị được giao trong tieu_chi_don_vi_cham chấm được
+        -- 3: DA_CHOT       — đã chốt điểm, diem_chinh_thuc đã ghi, khóa cứng
+    nguon_tra_ve           TINYINT        NULL,    -- Yêu cầu trả về ĐANG MỞ; NULL = không có
+        -- 2: chuyên viên thẩm định trả về cho GV   3: Trưởng khoa trả về cho đơn vị thẩm định
+    ly_do_tra_ve           NVARCHAR(1000) NULL,
+    id_nguoi_tra_ve        INT            NULL,
+    ngay_tra_ve            DATETIME       NULL,
+    so_lan_tra_ve          TINYINT        NOT NULL DEFAULT 0,   -- Cộng dồn, KHÔNG reset khi nộp lại
+    id_don_vi_tham_dinh    INT            NULL,    -- Snapshot đơn vị đã thẩm định dòng này
+
     CONSTRAINT fk_ct_phieu      FOREIGN KEY (id_phieu)           REFERENCES phieu_danh_gia(id_phieu) ON DELETE CASCADE,
     CONSTRAINT fk_ct_tieu_chi   FOREIGN KEY (id_tieu_chi)        REFERENCES tieu_chi_danh_gia(id_tieu_chi),
     CONSTRAINT fk_ct_thang_diem FOREIGN KEY (id_thang_diem_chon) REFERENCES thang_diem(id_thang_diem),
     CONSTRAINT fk_ct_nguoi_kh   FOREIGN KEY (id_nguoi_dg_khoa)   REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_ct_nguoi_tr   FOREIGN KEY (id_nguoi_dg_truong) REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_ct_nguoi_td   FOREIGN KEY (id_nguoi_tu_dong)   REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ctdg_nguoi_tra_ve     FOREIGN KEY (id_nguoi_tra_ve)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ctdg_don_vi_tham_dinh FOREIGN KEY (id_don_vi_tham_dinh) REFERENCES don_vi(id_don_vi),
 
     CONSTRAINT chk_ct_diem_tdg     CHECK (diem_tu_danh_gia >= 0),
     CONSTRAINT chk_ct_diem_khoa    CHECK (diem_khoa        >= 0),
@@ -888,6 +924,8 @@ CREATE TABLE chi_tiet_danh_gia (
     CONSTRAINT chk_ct_diem_ct      CHECK (diem_chinh_thuc  >= 0),
     CONSTRAINT chk_ct_diem_td      CHECK (diem_tu_dong     >= 0),
     CONSTRAINT chk_ct_nguon_diem   CHECK (loai_nguon_diem IN (1,2)),
+    CONSTRAINT chk_ctdg_trang_thai_dong CHECK (trang_thai_dong IN (1,2,3)),
+    CONSTRAINT chk_ctdg_nguon_tra_ve    CHECK (nguon_tra_ve IS NULL OR nguon_tra_ve IN (2,3)),
     CONSTRAINT uq_chi_tiet_unique  UNIQUE (id_phieu, id_tieu_chi)
 );
 GO
@@ -975,8 +1013,11 @@ CREATE TABLE lich_su_cham_diem (
     id_chi_tiet        INT            NOT NULL,
     id_phieu           INT            NOT NULL,        -- Denormalize cho query nhanh
     lan_danh_gia       TINYINT        NOT NULL,        -- Snapshot từ phieu.lan_danh_gia
-    cap                TINYINT        NOT NULL,        -- 1: Tự ĐG, 2: Khoa, 3: Trường
-    hanh_dong          TINYINT        NOT NULL,        -- 1: Chấm, 2: Sửa, 3: Chốt điểm chính thức
+    cap                TINYINT        NOT NULL,        -- 1: Tự ĐG, 2: Đơn vị thẩm định, 3: Trường/HT, 4: Trưởng khoa
+    hanh_dong          TINYINT        NOT NULL,
+        -- 1: Chấm   2: Sửa   3: Chốt điểm chính thức
+        -- 4: Duyệt giữ nguyên điểm (thẩm định đồng ý với điểm GV tự kê khai)
+        -- 5: Trả về dòng
     diem               DECIMAL(5,2)   NULL,
     nhan_xet           NVARCHAR(1000) NULL,
     id_nguoi_thuc_hien INT            NOT NULL,
@@ -984,8 +1025,8 @@ CREATE TABLE lich_su_cham_diem (
     CONSTRAINT fk_lscd_ct    FOREIGN KEY (id_chi_tiet)        REFERENCES chi_tiet_danh_gia(id_chi_tiet),
     CONSTRAINT fk_lscd_phieu FOREIGN KEY (id_phieu)           REFERENCES phieu_danh_gia(id_phieu) ON DELETE CASCADE,
     CONSTRAINT fk_lscd_nguoi FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
-    CONSTRAINT chk_lscd_cap  CHECK (cap IN (1, 2, 3)),
-    CONSTRAINT chk_lscd_hd   CHECK (hanh_dong IN (1, 2, 3)),
+    CONSTRAINT chk_lscd_cap  CHECK (cap IN (1, 2, 3, 4)),
+    CONSTRAINT chk_lscd_hd   CHECK (hanh_dong IN (1, 2, 3, 4, 5)),
     CONSTRAINT chk_lscd_diem CHECK (diem IS NULL OR diem >= 0)
 );
 GO
@@ -1004,7 +1045,10 @@ CREATE TABLE lich_su_trang_thai_phieu (
         -- 4: Chốt (vào HOAN_TAT)
         -- 5: Mở lại (từ HOAN_TAT về 1/2/3)
         -- 6: Hủy nộp (GV tự rút, 2 → 1, giữ nguyên lan_danh_gia)
-    cap_thuc_hien      TINYINT        NULL,         -- 1: GV, 2: Khoa, 3: Trường (NULL khi do hệ thống)
+        -- 7: Nộp lại sau khi bị trả về DÒNG (giữ nguyên lan_danh_gia — khác hẳn "trả lại phiếu")
+        -- 8: Trưởng khoa chốt hồ sơ cá nhân
+        -- 9: Hiệu trưởng trả riêng hồ sơ về Trưởng khoa
+    cap_thuc_hien      TINYINT        NULL,         -- 1: GV, 2: Đơn vị thẩm định, 3: Trường/HT, 4: Trưởng khoa (NULL khi do hệ thống)
     id_nguoi_thuc_hien INT            NOT NULL,
     ly_do              NVARCHAR(1000) NULL,         -- BẮT BUỘC (ở tầng API) khi hanh_dong IN (3, 5)
     nhan_xet           NVARCHAR(1000) NULL,
@@ -1013,8 +1057,8 @@ CREATE TABLE lich_su_trang_thai_phieu (
     CONSTRAINT fk_lstt_nv        FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT chk_lstt_tt_sau   CHECK (trang_thai_sau   IN (1,2,3,4,5)),
     CONSTRAINT chk_lstt_tt_truoc CHECK (trang_thai_truoc IS NULL OR trang_thai_truoc IN (1,2,3,4,5)),
-    CONSTRAINT chk_lstt_hd       CHECK (hanh_dong IN (1, 2, 3, 4, 5, 6)),
-    CONSTRAINT chk_lstt_cap      CHECK (cap_thuc_hien IS NULL OR cap_thuc_hien IN (1, 2, 3))
+    CONSTRAINT chk_lstt_hd       CHECK (hanh_dong IN (1, 2, 3, 4, 5, 6, 7, 8, 9)),
+    CONSTRAINT chk_lstt_cap      CHECK (cap_thuc_hien IS NULL OR cap_thuc_hien IN (1, 2, 3, 4))
 );
 GO
 
@@ -1300,10 +1344,14 @@ CREATE INDEX ix_phieu_chuc_vu     ON phieu_danh_gia(id_chuc_vu)         WHERE id
 CREATE INDEX ix_phieu_xep_loai    ON phieu_danh_gia(id_nam, xep_loai) WHERE xep_loai IS NOT NULL;
 CREATE INDEX ix_phieu_nguoi_kh    ON phieu_danh_gia(id_nguoi_dg_khoa)   WHERE id_nguoi_dg_khoa   IS NOT NULL;
 CREATE INDEX ix_phieu_nguoi_tr    ON phieu_danh_gia(id_nguoi_dg_truong) WHERE id_nguoi_dg_truong IS NOT NULL;
+CREATE INDEX ix_phieu_to_trinh    ON phieu_danh_gia(id_to_trinh)        WHERE id_to_trinh        IS NOT NULL;
 
 -- chi tiết đánh giá
 CREATE INDEX ix_ct_phieu          ON chi_tiet_danh_gia(id_phieu);
 CREATE INDEX ix_ct_tieu_chi       ON chi_tiet_danh_gia(id_tieu_chi);
+-- hàng đợi thẩm định theo DÒNG + phép kiểm NOT EXISTS của trigger 2↔3
+CREATE INDEX ix_ctdg_trang_thai_dong  ON chi_tiet_danh_gia(trang_thai_dong, id_phieu);
+CREATE INDEX ix_ctdg_don_vi_tham_dinh ON chi_tiet_danh_gia(id_don_vi_tham_dinh, trang_thai_dong) WHERE id_don_vi_tham_dinh IS NOT NULL;
 
 -- nhiệm vụ PVCĐ & minh chứng
 CREATE INDEX ix_nvcd_ct           ON nhiem_vu_cong_dong(id_chi_tiet);
@@ -1339,4 +1387,270 @@ CREATE INDEX ix_mcdv_ct           ON minh_chung_don_vi(id_chi_tiet_dv) WHERE da_
 -- dữ liệu NCKH đồng bộ từ API (khi chấm điểm sẽ lọc theo năm; tra theo giảng viên đã được PK phủ)
 CREATE INDEX ix_tong_hop_nckh_nam  ON nckh_tong_hop(id_nam);
 CREATE INDEX ix_phan_loai_nckh_nam ON nckh_phan_loai(id_nam, loai);
+GO
+
+-- =============================================================================
+-- 7. NHIỆM VỤ THEO PHÂN CÔNG CỦA KHOA (KPI Nhóm III)
+--    Khoa phân công - giảng viên phản hồi. Thay thế luồng GV tự kê khai
+--    (nhiem_vu_cong_dong). Mô tả nghiệp vụ: xem schema_ghi_chu.md mục 7.
+-- =============================================================================
+
+-- 7.1. Kỳ nhiệm vụ theo (năm × Khoa). Trạng thái duyệt gắn vào KỲ, không gắn
+--      vào từng bản ghi phân công.
+CREATE TABLE ky_nhiem_vu_khoa (
+    id_ky         INT           IDENTITY(1,1) PRIMARY KEY,
+    id_nam        INT           NOT NULL,
+    id_don_vi     INT           NOT NULL,   -- Khoa (ma_don_vi LIKE 'K_%')
+    trang_thai    TINYINT       NOT NULL DEFAULT 1,   -- 1: Đang mở, 2: Đã chốt
+    han_phan_hoi  DATE          NULL,       -- Hết hạn KHÔNG khoá ghi, chỉ là nhãn
+    id_nguoi_chot INT           NULL,
+    ngay_chot     DATETIME      NULL,
+    ghi_chu       NVARCHAR(500) NULL,
+    ngay_tao      DATETIME      NOT NULL DEFAULT GETDATE(),
+    ngay_cap_nhat DATETIME      NULL,
+    CONSTRAINT fk_kynvk_nam         FOREIGN KEY (id_nam)        REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_kynvk_don_vi      FOREIGN KEY (id_don_vi)     REFERENCES don_vi(id_don_vi),
+    CONSTRAINT fk_kynvk_nguoi_chot  FOREIGN KEY (id_nguoi_chot) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT uq_kynvk             UNIQUE (id_nam, id_don_vi),
+    CONSTRAINT chk_kynvk_trang_thai CHECK (trang_thai IN (1, 2))
+);
+GO
+
+-- 7.2. Nhiệm vụ do Khoa đặt ra, thuộc 1 trong 7 nhóm công tác cố định
+CREATE TABLE nhiem_vu_khoa (
+    id_nhiem_vu_khoa INT            IDENTITY(1,1) PRIMARY KEY,
+    id_ky            INT            NOT NULL,   -- mang sẵn cả id_nam + id_don_vi
+    id_nhom_nv       INT            NOT NULL,
+    ten_nhiem_vu     NVARCHAR(500)  NOT NULL,
+    mo_ta            NVARCHAR(1000) NULL,
+    id_nguoi_tao     INT            NOT NULL,
+    ngay_tao         DATETIME       NOT NULL DEFAULT GETDATE(),
+    ngay_cap_nhat    DATETIME       NULL,
+    da_xoa           BIT            NOT NULL DEFAULT 0,
+    ngay_xoa         DATETIME       NULL,
+    CONSTRAINT fk_nvk_ky        FOREIGN KEY (id_ky)        REFERENCES ky_nhiem_vu_khoa(id_ky),
+    CONSTRAINT fk_nvk_nhom      FOREIGN KEY (id_nhom_nv)   REFERENCES danh_muc_nhom_nhiem_vu(id_nhom_nv),
+    CONSTRAINT fk_nvk_nguoi_tao FOREIGN KEY (id_nguoi_tao) REFERENCES nhan_vien(id_nhan_vien)
+);
+GO
+
+-- 7.3. Phân công: nối nhiệm vụ với giảng viên, mang vai trò và ĐIỂM GHI CỨNG
+--      (snapshot tại thời điểm gán — đổi mức điểm ở kỳ sau không làm đổi kỳ cũ)
+CREATE TABLE phan_cong_nhiem_vu_khoa (
+    id_phan_cong         INT           IDENTITY(1,1) PRIMARY KEY,
+    id_nhiem_vu_khoa     INT           NOT NULL,
+    id_nhan_vien         INT           NOT NULL,
+    id_vai_tro           INT           NOT NULL,
+    ma_vai_tro_snapshot  NVARCHAR(30)  NOT NULL,
+    ten_vai_tro_snapshot NVARCHAR(200) NOT NULL,
+    diem_snapshot        DECIMAL(5,2)  NOT NULL,
+    la_chu_tri           BIT           NOT NULL DEFAULT 0,   -- 1 khi ma_vai_tro_snapshot = 'CT'
+    ghi_chu              NVARCHAR(500) NULL,
+    id_nguoi_gan         INT           NOT NULL,
+    ngay_tao             DATETIME      NOT NULL DEFAULT GETDATE(),
+    ngay_cap_nhat        DATETIME      NULL,
+    CONSTRAINT fk_pcnvk_nhiem_vu FOREIGN KEY (id_nhiem_vu_khoa) REFERENCES nhiem_vu_khoa(id_nhiem_vu_khoa) ON DELETE CASCADE,
+    CONSTRAINT fk_pcnvk_nv       FOREIGN KEY (id_nhan_vien)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_pcnvk_vai_tro  FOREIGN KEY (id_vai_tro)       REFERENCES danh_muc_vai_tro_pvcd(id_vai_tro),
+    CONSTRAINT fk_pcnvk_nguoi    FOREIGN KEY (id_nguoi_gan)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT uq_pcnvk          UNIQUE (id_nhiem_vu_khoa, id_nhan_vien),
+    CONSTRAINT chk_pcnvk_diem    CHECK (diem_snapshot >= 0)
+);
+GO
+
+-- 7.4. Phản hồi của giảng viên (1: sai vai trò, 2: thiếu nhiệm vụ)
+CREATE TABLE phan_hoi_nhiem_vu_khoa (
+    id_phan_hoi      INT            IDENTITY(1,1) PRIMARY KEY,
+    id_ky            INT            NOT NULL,
+    id_nhan_vien     INT            NOT NULL,   -- người gửi
+    loai_phan_hoi    TINYINT        NOT NULL,   -- 1: Sai vai trò, 2: Thiếu nhiệm vụ
+    id_nhiem_vu_khoa INT            NULL,       -- bắt buộc khi loại = 1
+    id_nhom_nv       INT            NULL,       -- gợi ý nhóm khi loại = 2
+    noi_dung         NVARCHAR(1000) NOT NULL,
+    trang_thai       TINYINT        NOT NULL DEFAULT 1,   -- 1: Chờ xử lý, 2: Đã xử lý
+    ghi_chu_xu_ly    NVARCHAR(1000) NULL,
+    id_nguoi_xu_ly   INT            NULL,
+    ngay_xu_ly       DATETIME       NULL,
+    ngay_tao         DATETIME       NOT NULL DEFAULT GETDATE(),
+    da_xoa           BIT            NOT NULL DEFAULT 0,
+    ngay_xoa         DATETIME       NULL,
+    CONSTRAINT fk_phnvk_ky          FOREIGN KEY (id_ky)            REFERENCES ky_nhiem_vu_khoa(id_ky),
+    CONSTRAINT fk_phnvk_nv          FOREIGN KEY (id_nhan_vien)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_phnvk_nhiem_vu    FOREIGN KEY (id_nhiem_vu_khoa) REFERENCES nhiem_vu_khoa(id_nhiem_vu_khoa),
+    CONSTRAINT fk_phnvk_nhom        FOREIGN KEY (id_nhom_nv)       REFERENCES danh_muc_nhom_nhiem_vu(id_nhom_nv),
+    CONSTRAINT fk_phnvk_nguoi_xl    FOREIGN KEY (id_nguoi_xu_ly)   REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_phnvk_trang_thai CHECK (trang_thai IN (1, 2)),
+    CONSTRAINT chk_phnvk_loai CHECK (
+        (loai_phan_hoi = 1 AND id_nhiem_vu_khoa IS NOT NULL)
+     OR (loai_phan_hoi = 2 AND id_nhiem_vu_khoa IS NULL))
+);
+GO
+
+-- 7.5. Minh chứng PDF HAI CẤP: 1 = cấp nhiệm vụ (dùng chung), 2 = cấp phản hồi
+CREATE TABLE minh_chung_nhiem_vu_khoa (
+    id_minh_chung_nvk INT           IDENTITY(1,1) PRIMARY KEY,
+    cap_gan           TINYINT       NOT NULL,   -- 1: Nhiệm vụ, 2: Phản hồi
+    id_nhiem_vu_khoa  INT           NULL,
+    id_phan_hoi       INT           NULL,
+    ten_hien_thi      NVARCHAR(255) NOT NULL,
+    ten_file_goc      NVARCHAR(255) NOT NULL,
+    duong_dan         NVARCHAR(500) NOT NULL,   -- tương đối với ~/App_Data
+    loai_file         NVARCHAR(50)  NOT NULL,
+    kich_thuoc_kb     INT           NULL,
+    nguoi_tai_len     INT           NOT NULL,
+    ngay_tai_len      DATETIME      NOT NULL DEFAULT GETDATE(),
+    da_xoa            BIT           NOT NULL DEFAULT 0,
+    ngay_xoa          DATETIME      NULL,
+    CONSTRAINT fk_mcnvk_nhiem_vu FOREIGN KEY (id_nhiem_vu_khoa) REFERENCES nhiem_vu_khoa(id_nhiem_vu_khoa),
+    CONSTRAINT fk_mcnvk_phan_hoi FOREIGN KEY (id_phan_hoi)      REFERENCES phan_hoi_nhiem_vu_khoa(id_phan_hoi),
+    CONSTRAINT fk_mcnvk_nguoi    FOREIGN KEY (nguoi_tai_len)    REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_mcnvk_cap CHECK (
+        (cap_gan = 1 AND id_nhiem_vu_khoa IS NOT NULL AND id_phan_hoi IS NULL)
+     OR (cap_gan = 2 AND id_phan_hoi IS NOT NULL AND id_nhiem_vu_khoa IS NULL)),
+    CONSTRAINT chk_mcnvk_pdf CHECK (duong_dan LIKE N'%.pdf'),
+    CONSTRAINT chk_mcnvk_kb  CHECK (kich_thuoc_kb IS NULL OR kich_thuoc_kb > 0)
+);
+GO
+
+-- 7.6. Nhật ký: mọi thay đổi vai trò, điểm và thao tác chốt kỳ
+CREATE TABLE lich_su_nhiem_vu_khoa (
+    id                 BIGINT         IDENTITY(1,1) PRIMARY KEY,
+    id_ky              INT            NOT NULL,
+    id_nhiem_vu_khoa   INT            NULL,
+    id_nhan_vien       INT            NULL,   -- GV bị ảnh hưởng (dòng phân công)
+    hanh_dong          TINYINT        NOT NULL,
+        -- 1: Tạo nhiệm vụ    2: Sửa nhiệm vụ      3: Xoá nhiệm vụ
+        -- 4: Thêm phân công  5: Đổi vai trò/điểm  6: Gỡ phân công
+        -- 7: Chốt kỳ         8: Mở lại kỳ         9: Xử lý phản hồi
+    vai_tro_truoc      NVARCHAR(30)   NULL,
+    vai_tro_sau        NVARCHAR(30)   NULL,
+    diem_truoc         DECIMAL(5,2)   NULL,
+    diem_sau           DECIMAL(5,2)   NULL,
+    mo_ta              NVARCHAR(1000) NULL,
+    id_nguoi_thuc_hien INT            NOT NULL,
+    ngay_thuc_hien     DATETIME       NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT fk_lsnvk_ky       FOREIGN KEY (id_ky)              REFERENCES ky_nhiem_vu_khoa(id_ky),
+    CONSTRAINT fk_lsnvk_nhiem_vu FOREIGN KEY (id_nhiem_vu_khoa)   REFERENCES nhiem_vu_khoa(id_nhiem_vu_khoa),
+    CONSTRAINT fk_lsnvk_nv       FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_lsnvk_nguoi    FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_lsnvk_hd CHECK (hanh_dong IN (1,2,3,4,5,6,7,8,9))
+);
+GO
+
+-- 7.7. TVP: danh sách phân công gửi lên trong 1 request (một form, một lần lưu)
+CREATE TYPE dbo.PhanCongNhiemVuKhoaRow AS TABLE (
+    id_nhan_vien INT           NOT NULL,
+    id_vai_tro   INT           NOT NULL,
+    ghi_chu      NVARCHAR(500) NULL,
+    PRIMARY KEY (id_nhan_vien)
+);
+GO
+
+-- 7.8. Index của module
+CREATE INDEX ix_nvk_ky_active      ON nhiem_vu_khoa(id_ky) WHERE da_xoa = 0;
+CREATE INDEX ix_nvk_nhom           ON nhiem_vu_khoa(id_nhom_nv);
+CREATE INDEX ix_pcnvk_nhan_vien    ON phan_cong_nhiem_vu_khoa(id_nhan_vien);
+-- BẤT BIẾN: mỗi nhiệm vụ tối đa MỘT chủ trì (chặn ở DB, kèm kiểm tường minh
+-- trong sp_nhiem_vu_khoa_save để trả error_code TRUNG_CHU_TRI thay vì lỗi 2601)
+CREATE UNIQUE INDEX ux_pcnvk_chu_tri ON phan_cong_nhiem_vu_khoa(id_nhiem_vu_khoa) WHERE la_chu_tri = 1;
+CREATE INDEX ix_phnvk_ky_cho       ON phan_hoi_nhiem_vu_khoa(id_ky) WHERE da_xoa = 0 AND trang_thai = 1;
+CREATE INDEX ix_phnvk_nv           ON phan_hoi_nhiem_vu_khoa(id_nhan_vien, id_ky) WHERE da_xoa = 0;
+CREATE INDEX ix_mcnvk_nhiem_vu     ON minh_chung_nhiem_vu_khoa(id_nhiem_vu_khoa) WHERE da_xoa = 0;
+CREATE INDEX ix_mcnvk_phan_hoi     ON minh_chung_nhiem_vu_khoa(id_phan_hoi) WHERE da_xoa = 0;
+CREATE INDEX ix_lsnvk_ky           ON lich_su_nhiem_vu_khoa(id_ky, ngay_thuc_hien DESC);
+CREATE INDEX ix_lsnvk_nhiem_vu     ON lich_su_nhiem_vu_khoa(id_nhiem_vu_khoa, ngay_thuc_hien DESC) WHERE id_nhiem_vu_khoa IS NOT NULL;
+GO
+
+
+-- =============================================================================
+-- 8. TỜ TRÌNH KPI KHOA (gói hồ sơ Khoa trình Hiệu trưởng)
+--    Nơi DUY NHẤT tính hạn ngạch 20% và nâng xếp loại lên mức 4.
+--    Mô tả nghiệp vụ + luật hạn ngạch: xem schema_ghi_chu.md mục 8.
+-- =============================================================================
+
+-- 8.1. Tờ trình: 1 gói / (năm × đơn vị)
+CREATE TABLE to_trinh_kpi_khoa (
+    id_to_trinh        INT            IDENTITY(1,1) PRIMARY KEY,
+    id_nam             INT            NOT NULL,
+    id_don_vi          INT            NOT NULL,   -- Khoa / Phòng lập tờ trình
+    trang_thai         TINYINT        NOT NULL DEFAULT 1,
+        -- 1: DANG_TONG_HOP — chưa đủ 100% hồ sơ được Trưởng khoa chốt
+        -- 2: DA_DONG_GOI   — đã tính hạn ngạch + nâng xuất sắc; mở nút "Trình Hiệu trưởng"
+        -- 3: DA_TRINH      — chờ Hiệu trưởng duyệt
+        -- 4: HT_DA_DUYET   — chốt số liệu toàn Khoa, khóa chiến dịch
+        -- 5: HT_TRA_VE     — HT trả về ≥1 hồ sơ; TK xử lý rồi trình lại
+
+    -- Snapshot hạn ngạch tại thời điểm đóng gói (quy định có thể đổi theo năm)
+    so_giang_vien      INT            NULL,       -- Mẫu số: đếm loai_doi_tuong = 1
+    ty_le_xuat_sac     DECIMAL(5,4)   NOT NULL DEFAULT 0.2000,
+    han_ngach_xuat_sac INT            NULL,       -- FLOOR(so_giang_vien * ty_le_xuat_sac)
+    so_dat_xuat_sac    INT            NULL,
+
+    lan_trinh          TINYINT        NOT NULL DEFAULT 0,   -- +1 mỗi lần trình HT
+    id_nguoi_dong_goi  INT            NULL,
+    ngay_dong_goi      DATETIME       NULL,
+    id_nguoi_trinh     INT            NULL,
+    ngay_trinh         DATETIME       NULL,
+    id_nguoi_duyet     INT            NULL,
+    ngay_duyet         DATETIME       NULL,
+    nhan_xet_ht        NVARCHAR(2000) NULL,
+    ly_do_tra_ve       NVARCHAR(1000) NULL,
+
+    row_version        ROWVERSION     NOT NULL,   -- Kiểm soát xung đột, đồng bộ với các SP mutation khác
+    ngay_tao           DATETIME       NOT NULL DEFAULT GETDATE(),
+    ngay_cap_nhat      DATETIME       NULL,
+
+    CONSTRAINT fk_ttkk_nam      FOREIGN KEY (id_nam)            REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_ttkk_don_vi   FOREIGN KEY (id_don_vi)         REFERENCES don_vi(id_don_vi),
+    CONSTRAINT fk_ttkk_nguoi_dg FOREIGN KEY (id_nguoi_dong_goi) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ttkk_nguoi_tr FOREIGN KEY (id_nguoi_trinh)    REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ttkk_nguoi_dt FOREIGN KEY (id_nguoi_duyet)    REFERENCES nhan_vien(id_nhan_vien),
+
+    CONSTRAINT chk_ttkk_trang_thai CHECK (trang_thai IN (1,2,3,4,5)),
+    CONSTRAINT chk_ttkk_ty_le      CHECK (ty_le_xuat_sac > 0 AND ty_le_xuat_sac <= 1),
+    CONSTRAINT chk_ttkk_so_gv      CHECK (so_giang_vien      IS NULL OR so_giang_vien      >= 0),
+    CONSTRAINT chk_ttkk_han_ngach  CHECK (han_ngach_xuat_sac IS NULL OR han_ngach_xuat_sac >= 0),
+    CONSTRAINT chk_ttkk_so_dat     CHECK (so_dat_xuat_sac    IS NULL OR so_dat_xuat_sac    >= 0),
+    -- Mỗi (năm, đơn vị) chỉ có 1 tờ trình
+    CONSTRAINT uq_ttkk_nam_don_vi  UNIQUE (id_nam, id_don_vi)
+);
+GO
+
+-- 8.2. Lịch sử tờ trình (mirror lich_su_trang_thai_phieu; mỗi row = 1 transition)
+CREATE TABLE lich_su_to_trinh_kpi_khoa (
+    id                 BIGINT         IDENTITY(1,1) PRIMARY KEY,
+    id_to_trinh        INT            NOT NULL,
+    lan_trinh          TINYINT        NOT NULL,
+    trang_thai_truoc   TINYINT        NULL,        -- NULL = lần đầu tạo tờ trình
+    trang_thai_sau     TINYINT        NOT NULL,
+    hanh_dong          TINYINT        NOT NULL,
+        -- 1: Đóng gói (tính hạn ngạch, nâng xuất sắc)
+        -- 2: Trình Hiệu trưởng
+        -- 3: Hiệu trưởng duyệt gói
+        -- 4: Hiệu trưởng trả về (kèm danh sách hồ sơ bị trả)
+        -- 5: Mở lại gói đã duyệt
+    so_ho_so_tra_ve    INT            NULL,        -- Chỉ có nghĩa khi hanh_dong = 4
+    id_nguoi_thuc_hien INT            NOT NULL,
+    ly_do              NVARCHAR(1000) NULL,        -- BẮT BUỘC (ở tầng API) khi hanh_dong IN (4, 5)
+    nhan_xet           NVARCHAR(1000) NULL,
+    ngay_thuc_hien     DATETIME       NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT fk_lsttkk_to_trinh FOREIGN KEY (id_to_trinh)        REFERENCES to_trinh_kpi_khoa(id_to_trinh) ON DELETE CASCADE,
+    CONSTRAINT fk_lsttkk_nguoi    FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_lsttkk_tt_sau   CHECK (trang_thai_sau   IN (1,2,3,4,5)),
+    CONSTRAINT chk_lsttkk_tt_truoc CHECK (trang_thai_truoc IS NULL OR trang_thai_truoc IN (1,2,3,4,5)),
+    CONSTRAINT chk_lsttkk_hd       CHECK (hanh_dong IN (1,2,3,4,5))
+);
+GO
+
+-- 8.3. FK phiếu → tờ trình. Đặt ở đây (không inline ở mục 4.1) vì phieu_danh_gia
+--      khai báo TRƯỚC to_trinh_kpi_khoa. KHÔNG cascade: xóa tờ trình khi còn hồ
+--      sơ gán vào phải báo lỗi, không được âm thầm gỡ liên kết.
+ALTER TABLE phieu_danh_gia
+    ADD CONSTRAINT fk_phieu_to_trinh FOREIGN KEY (id_to_trinh) REFERENCES to_trinh_kpi_khoa(id_to_trinh);
+GO
+
+-- 8.4. Index của module
+CREATE INDEX ix_ttkk_trang_thai ON to_trinh_kpi_khoa(trang_thai, id_nam);
+CREATE INDEX ix_lsttkk_to_trinh ON lich_su_to_trinh_kpi_khoa(id_to_trinh, ngay_thuc_hien DESC);
 GO

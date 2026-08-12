@@ -82,6 +82,7 @@ const DanhGiaPhuLuc2 = () => {
 
   // Refs holding the freshest values for async flows (create phieu / save draft / submit)
   const phieuRef = useRef(null); // { IdPhieu, RowVersion, TrangThai, IdMau, ChiTiet, ... }
+  const taoPhieuRef = useRef(null); // Promise tạo phiếu đang bay, để gộp lời gọi trùng
   const idMauRef = useRef(null);
   const chiTietMapRef = useRef({}); // IdTieuChi -> IdChiTiet
   const formDataRef = useRef({});
@@ -164,6 +165,7 @@ const DanhGiaPhuLuc2 = () => {
 
       // Reset all state + refs for the new year
       phieuRef.current = null;
+      taoPhieuRef.current = null;
       idMauRef.current = null;
       chiTietMapRef.current = {};
       dirtyRef.current = new Set();
@@ -398,10 +400,34 @@ const DanhGiaPhuLuc2 = () => {
     markDirty(idTieuChi);
   };
 
-  // Create the phieu on demand (POST /api/phieu) so chi_tiet rows / IdChiTiet exist
-  const ensurePhieu = async () => {
-    if (phieuRef.current) return phieuRef.current;
+  // Ghi nhận phiếu mới nhất từ server, kèm map IdTieuChi -> IdChiTiet mà các thao
+  // tác sau (lưu nháp, tải minh chứng) cần để biết đính vào dòng chi tiết nào.
+  const apDungPhieu = (item) => {
+    phieuRef.current = item;
+    const map = { ...chiTietMapRef.current };
+    (item.ChiTiet || item.chiTiet || []).forEach((ct) => {
+      if (ct.IdTieuChi != null) map[ct.IdTieuChi] = ct.IdChiTiet;
+    });
+    chiTietMapRef.current = map;
+    return item;
+  };
 
+  const refreshPhieu = async () => {
+    try {
+      const res = await apiFetch(`phieu/me/${selectedYearRef.current}`);
+      if (res.ok) {
+        const result = await res.json();
+        const item = result.Item || result.data || result.phieu;
+        if (item) return apDungPhieu(item);
+      }
+    } catch (err) {
+      console.error("Lỗi làm mới phiếu:", err);
+    }
+    return phieuRef.current;
+  };
+
+  // Create the phieu on demand (POST /api/phieu) so chi_tiet rows / IdChiTiet exist
+  const taoPhieu = async () => {
     const res = await apiFetch("phieu", {
       method: "POST",
       body: JSON.stringify({
@@ -410,22 +436,47 @@ const DanhGiaPhuLuc2 = () => {
         IdMau: idMauRef.current,
       }),
     });
-    const result = await res.json();
+    const result = await res.json().catch(() => ({}));
     const isSuccess =
       result.Success !== undefined ? result.Success : result.success;
     const item = result.Item || result.data;
-    if (!res.ok || !isSuccess || !item) {
-      throw new Error(result.Message || result.message || "Không thể tạo phiếu đánh giá");
+
+    if (res.ok && isSuccess && item) {
+      apDungPhieu(item);
+      setTrangThaiPhieu(item.TrangThai ?? 1);
+      return item;
     }
 
-    phieuRef.current = item;
-    const map = { ...chiTietMapRef.current };
-    (item.ChiTiet || item.chiTiet || []).forEach((ct) => {
-      if (ct.IdTieuChi != null) map[ct.IdTieuChi] = ct.IdChiTiet;
-    });
-    chiTietMapRef.current = map;
-    setTrangThaiPhieu(item.TrangThai ?? 1);
-    return item;
+    // "Phiếu đã tồn tại" KHÔNG phải hỏng: điều kiện để đi tiếp (đã có phiếu) thực
+    // ra đã thỏa. Xảy ra khi GET phieu/me lúc mở trang lỗi/hết phiên, hoặc phiếu
+    // vừa được tạo ở tab khác. Lấy lại phiếu sẵn có thay vì hủy cả thao tác.
+    const daCo = await refreshPhieu();
+    if (daCo) {
+      setTrangThaiPhieu(daCo.TrangThai ?? 1);
+      return daCo;
+    }
+
+    throw new Error(
+      result.Message || result.message || "Không thể tạo phiếu đánh giá",
+    );
+  };
+
+  /**
+   * Bảo đảm đã có phiếu trước khi lưu nháp / tải minh chứng.
+   *
+   * Gộp mọi lời gọi trùng vào MỘT request: ô chọn tệp của từng tiêu chí không bị
+   * khóa trong lúc tải, nên hai thao tác chạy song song (tải tệp ở hai tiêu chí,
+   * hoặc bấm Lưu nháp xen vào) đều thấy phieuRef rỗng và cùng POST /api/phieu —
+   * lần thứ hai bị server trả "Phiếu đã tồn tại".
+   */
+  const ensurePhieu = async () => {
+    if (phieuRef.current) return phieuRef.current;
+    if (!taoPhieuRef.current) {
+      taoPhieuRef.current = taoPhieu().finally(() => {
+        taoPhieuRef.current = null;
+      });
+    }
+    return taoPhieuRef.current;
   };
 
   // Persist every dirty manual criterion via PUT /api/chitiet/{id}/tu-danh-gia
@@ -465,23 +516,6 @@ const DanhGiaPhuLuc2 = () => {
     }
   };
 
-  const refreshPhieu = async () => {
-    try {
-      const res = await apiFetch(`phieu/me/${selectedYearRef.current}`);
-      if (res.ok) {
-        const result = await res.json();
-        const item = result.Item || result.data || result.phieu;
-        if (item) {
-          phieuRef.current = item;
-          return item;
-        }
-      }
-    } catch (err) {
-      console.error("Lỗi làm mới phiếu:", err);
-    }
-    return phieuRef.current;
-  };
-
   const handleSaveDraft = async () => {
     setIsSubmitting(true);
     toast.current?.show({
@@ -505,7 +539,7 @@ const DanhGiaPhuLuc2 = () => {
       toast.current?.show({
         severity: "error",
         summary: "Lỗi",
-        detail: "Không thể lưu bản nháp!",
+        detail: err.message || "Không thể lưu bản nháp!",
         life: 4000,
       });
     } finally {
@@ -595,7 +629,7 @@ const DanhGiaPhuLuc2 = () => {
       toast.current?.show({
         severity: "error",
         summary: "Lỗi",
-        detail: "Không thể tải tệp minh chứng lên!",
+        detail: err.message || "Không thể tải tệp minh chứng lên!",
         life: 4000,
       });
     } finally {

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-  fetchLichSuChamDiem,
+  CAP_CHAM,
   fetchMinhChung,
   fetchNhiemVuCongDong,
   formatDiem,
   formatNgayGio,
+  laLuotChamTuDong,
   laTieuChiChamTay,
   TEN_CAP_CHAM,
   TEN_HANH_DONG_CHAM,
@@ -97,13 +98,15 @@ const MinhChungRow = ({ mc, onXem, onTai }) => {
  *
  * Điểm quan trọng về dữ liệu: GET api/phieu/{id} đã nhúng sẵn MinhChung[] và
  * NhiemVuCongDong[] trong từng chi tiết, nên chỉ gọi API khi bản ghi thiếu mảng
- * đó (tránh n request thừa). Lịch sử chấm điểm không nằm trong detail nên phải
- * gọi riêng, và chỉ gọi khi tiêu chí đã từng được chấm — tiêu chí chưa ai chấm
- * chắc chắn chưa có lượt nào, gọi cũng chỉ nhận về mảng rỗng.
+ * đó (tránh n request thừa). Lịch sử chấm điểm không nằm trong detail và trang
+ * cha lấy một lần cho cả phiếu qua GET api/phieu/{id}/lich-su-cham-diem rồi
+ * truyền xuống đây — card không tự gọi API lịch sử nữa.
  */
 const TieuChiChamCard = ({
   chiTiet,
   stt,
+  lichSu = [],
+  dangTaiLichSu = false,
   choPhepNhap,
   lyDoKhoa,
   dangLuu,
@@ -125,13 +128,11 @@ const TieuChiChamCard = ({
   const [nhiemVu, setNhiemVu] = useState(
     Array.isArray(chiTiet.NhiemVuCongDong) ? chiTiet.NhiemVuCongDong : null,
   );
-  const [lichSu, setLichSu] = useState(null);
   const [dangTaiPhu, setDangTaiPhu] = useState(false);
 
   // Sau mỗi lần lưu, phiếu được tải lại → đồng bộ lại ô nhập theo dữ liệu server
   // (nếu không giá trị cũ của người dùng sẽ che mất giá trị server vừa ghi nhận)
-  // rồi nạp phần dữ liệu kèm theo còn thiếu. Lịch sử luôn nạp lại vì lượt chấm
-  // vừa lưu chính là một dòng mới trong đó.
+  // rồi nạp phần dữ liệu kèm theo còn thiếu.
   useEffect(() => {
     setDiem(chiTiet.DiemKhoa ?? '');
     setNhanXet(chiTiet.NhanXetKhoa ?? '');
@@ -141,26 +142,21 @@ const TieuChiChamCard = ({
     const nvNhung = Array.isArray(chiTiet.NhiemVuCongDong) ? chiTiet.NhiemVuCongDong : null;
     setMinhChung(mcNhung);
     setNhiemVu(nvNhung);
-    setLichSu(null);
 
     const canTaiMinhChung = mcNhung === null;
     const canTaiNhiemVu = nvNhung === null;
-    const canTaiLichSu =
-      chiTiet.DiemKhoa != null || chiTiet.DiemChinhThuc != null || !!chiTiet.NgayDgKhoa;
-    if (!canTaiMinhChung && !canTaiNhiemVu && !canTaiLichSu) return undefined;
+    if (!canTaiMinhChung && !canTaiNhiemVu) return undefined;
 
     let huy = false;
     setDangTaiPhu(true);
     Promise.allSettled([
       canTaiMinhChung ? fetchMinhChung(chiTiet.IdChiTiet) : Promise.resolve(mcNhung),
       canTaiNhiemVu ? fetchNhiemVuCongDong(chiTiet.IdChiTiet) : Promise.resolve(nvNhung),
-      canTaiLichSu ? fetchLichSuChamDiem(chiTiet.IdChiTiet) : Promise.resolve([]),
     ]).then((ketQua) => {
       if (huy) return;
       // Một endpoint lỗi (403/404) không được làm hỏng cả panel — coi như rỗng.
       setMinhChung(ketQua[0].status === 'fulfilled' ? ketQua[0].value : []);
       setNhiemVu(ketQua[1].status === 'fulfilled' ? ketQua[1].value : []);
-      setLichSu(ketQua[2].status === 'fulfilled' ? ketQua[2].value : []);
       setDangTaiPhu(false);
     });
 
@@ -201,13 +197,14 @@ const TieuChiChamCard = ({
   const coMinhChung = (minhChung?.length ?? 0) > 0;
   const coNhiemVu = (nhiemVu?.length ?? 0) > 0;
   const coLichSu = (lichSu?.length ?? 0) > 0;
+  const soLuotCham = (lichSu || []).reduce((tong, nhom) => tong + (nhom.Entries?.length || 0), 0);
   const coDuLieuPhu = coMinhChung || coNhiemVu || coLichSu;
   const moRong = !daThuGon;
 
   const nhanKhoiPhu = [
     coMinhChung ? `minh chứng (${minhChung.length})` : null,
     coNhiemVu ? `nhiệm vụ cộng đồng (${nhiemVu.length})` : null,
-    coLichSu ? 'lịch sử chấm' : null,
+    coLichSu ? `lịch sử chấm (${soLuotCham})` : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -295,7 +292,7 @@ const TieuChiChamCard = ({
             )}
           </div>
 
-          {dangTaiPhu && (
+          {(dangTaiPhu || dangTaiLichSu) && (
             <div style={{ marginTop: '10px', fontSize: '13px', color: '#64748b' }}>
               <i className="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu kèm theo...
             </div>
@@ -361,23 +358,35 @@ const TieuChiChamCard = ({
 
               {coLichSu && (
                 <div className="cd-box">
-                  <div className="cd-box-title">Lịch sử chấm điểm</div>
+                  <div className="cd-box-title">Lịch sử chấm điểm ({soLuotCham})</div>
                   <div style={{ display: 'grid', gap: '10px' }}>
-                    {lichSu.map((nhom) => (
-                      <div key={`${nhom.LanDanhGia}-${nhom.Cap}`}>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
-                          Vòng {nhom.LanDanhGia} · {TEN_CAP_CHAM[nhom.Cap] || `Cấp ${nhom.Cap}`}
-                        </div>
-                        {(nhom.Entries || []).map((e) => (
-                          <div key={e.IdLichSu} style={{ fontSize: '12px', color: '#64748b', paddingLeft: '10px' }}>
-                            <b style={{ color: '#0f172a' }}>{formatDiem(e.Diem)}</b> ·{' '}
-                            {TEN_HANH_DONG_CHAM[e.HanhDong] || 'Cập nhật'} bởi {e.TenNguoiThucHien || `#${e.IdNguoiThucHien}`} ·{' '}
-                            {formatNgayGio(e.NgayThucHien)}
-                            {e.NhanXet ? ` — ${e.NhanXet}` : ''}
+                    {lichSu.map((nhom) => {
+                      const nhomTuDong = !chamTay && Number(nhom.Cap) === CAP_CHAM.TRUONG;
+                      return (
+                        <div key={`${nhom.LanDanhGia}-${nhom.Cap}`}>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                            Vòng {nhom.LanDanhGia} ·{' '}
+                            {nhomTuDong ? 'Hệ thống tính' : TEN_CAP_CHAM[nhom.Cap] || `Cấp ${nhom.Cap}`}
                           </div>
-                        ))}
-                      </div>
-                    ))}
+                          {(nhom.Entries || []).map((e) => {
+                            const may = laLuotChamTuDong(e, chiTiet);
+                            const nguoi = e.TenNguoiThucHien || `#${e.IdNguoiThucHien}`;
+                            return (
+                              <div key={e.IdLichSu} style={{ fontSize: '12px', color: '#64748b', paddingLeft: '10px' }}>
+                                <b style={{ color: '#0f172a' }}>{formatDiem(e.Diem)}</b> ·{' '}
+                                {may
+                                  ? `Hệ thống chấm tự động khi ${nguoi} nộp phiếu`
+                                  : `${TEN_HANH_DONG_CHAM[e.HanhDong] || 'Cập nhật'} bởi ${nguoi}`}{' '}
+                                · {formatNgayGio(e.NgayThucHien)}
+                                {/* Nhận xét của dòng máy chỉ là dấu vết kỹ thuật ("Cham tu dong
+                                    khi nop phieu.") — nhãn phía trên đã nói đúng điều đó rồi. */}
+                                {e.NhanXet && !may ? ` — ${e.NhanXet}` : ''}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
