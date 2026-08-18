@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "../../css/Pages.css";
@@ -16,6 +16,37 @@ const KY_HOC_OPTIONS = [
   { value: "2", label: "Kỳ 2" },
   { value: "3", label: "Kỳ Hè" },
 ];
+
+const toTwoDigitYear = (raw) => {
+  const num = parseInt(raw, 10);
+  if (isNaN(num)) return raw;
+  return num > 100 ? num % 100 : num;
+};
+
+const buildNamOptions = (list) =>
+  list.map((item) => {
+    const rawVal = item.IdNam || item.idNam || item.NamHoc || item.namHoc;
+    const twoDigit = toTwoDigitYear(rawVal);
+    const label =
+      item.TenNam ||
+      item.tenNam ||
+      item.TenNamHoc ||
+      item.tenNamHoc ||
+      (rawVal ? `Năm ${rawVal}` : `Năm ${twoDigit}`);
+    return { value: twoDigit, label };
+  });
+
+// Năm hiện hành nếu có trong danh mục, không thì lấy năm mới nhất
+const pickDefaultNam = (options) => {
+  if (!options.length) return "";
+  const current = toTwoDigitYear(new Date().getFullYear());
+  const matched = options.find((o) => String(o.value) === String(current));
+  if (matched) return matched.value;
+  const numeric = options
+    .map((o) => parseInt(o.value, 10))
+    .filter((n) => !isNaN(n));
+  return numeric.length ? Math.max(...numeric) : options[0].value;
+};
 
 const QL_DanhGiaSinhVien = () => {
   const navigate = useNavigate();
@@ -65,16 +96,21 @@ const QL_DanhGiaSinhVien = () => {
   const canManage = isAdmin || isManager;
 
   useEffect(() => {
-    fetchData(
-      1,
-      pageSize,
-      selectedDonVi,
-      searchHoTen,
-      searchMaHocPhan,
-      searchNamHoc,
-      searchKyHoc,
-    );
-    fetchNamList();
+    const init = async () => {
+      const list = await fetchNamList();
+      const defaultNam = pickDefaultNam(buildNamOptions(list));
+      setSearchNamHoc(defaultNam);
+      fetchData(
+        1,
+        pageSize,
+        selectedDonVi,
+        searchHoTen,
+        searchMaHocPhan,
+        defaultNam,
+        searchKyHoc,
+      );
+    };
+    init();
     fetchNhanVienList();
     fetchDonViList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,14 +157,19 @@ const QL_DanhGiaSinhVien = () => {
       ) {
         const kyStr = String(filterKyHoc).trim();
         let kyVal = parseInt(kyStr, 10);
+        const namVal = parseInt(filterNamHoc, 10);
         if (!isNaN(kyVal)) {
-          if (kyStr.length === 1 && filterNamHoc) {
-            const namVal = parseInt(filterNamHoc, 10);
-            if (!isNaN(namVal)) {
+          if (kyStr.length === 1) {
+            // Kỳ 1 chữ số chỉ có nghĩa khi ghép với năm: 26 + 1 -> 261
+            if (isNaN(namVal)) {
+              kyVal = null;
+            } else {
               kyVal = namVal * 10 + kyVal;
             }
           }
-          params.append("kyHoc", kyVal);
+          if (kyVal !== null) {
+            params.append("kyHoc", kyVal);
+          }
         }
       }
 
@@ -156,11 +197,14 @@ const QL_DanhGiaSinhVien = () => {
       const response = await apiFetch("namdanhgia");
       if (response.ok) {
         const result = await response.json();
-        setNamList(result.Items || (Array.isArray(result) ? result : []));
+        const list = result.Items || (Array.isArray(result) ? result : []);
+        setNamList(list);
+        return list;
       }
     } catch (error) {
       console.error("Lỗi tải danh sách năm đánh giá:", error);
     }
+    return [];
   };
 
   const fetchNhanVienList = async () => {
@@ -187,6 +231,13 @@ const QL_DanhGiaSinhVien = () => {
     }
   };
 
+  const namOptions = useMemo(() => buildNamOptions(namList), [namList]);
+
+  const handleNamHocChange = (v) => {
+    setSearchNamHoc(v);
+    if (!v) setSearchKyHoc("");
+  };
+
   // Filter Khoa (don vi where code starts with K_)
   const khoaList = donViList.filter((dv) => {
     const ma = dv.MaDonVi || dv.maDonVi || "";
@@ -208,13 +259,14 @@ const QL_DanhGiaSinhVien = () => {
   };
 
   const handleResetFilters = () => {
+    const defaultNam = pickDefaultNam(namOptions);
     setSelectedDonVi("");
     setSearchHoTen("");
     setSearchMaHocPhan("");
-    setSearchNamHoc("");
+    setSearchNamHoc(defaultNam);
     setSearchKyHoc("");
     setPage(1);
-    fetchData(1, pageSize, "", "", "", "", "");
+    fetchData(1, pageSize, "", "", "", defaultNam, "");
   };
 
   const handlePageChange = (newPage, newPageSize) => {
@@ -495,26 +547,10 @@ const QL_DanhGiaSinhVien = () => {
               </label>
               <SearchSelect
                 value={searchNamHoc}
-                onChange={(v) => setSearchNamHoc(v)}
+                onChange={handleNamHocChange}
                 options={[
                   { value: "", label: "-- Tất cả Năm --" },
-                  ...namList.map((item) => {
-                    const rawVal =
-                      item.IdNam || item.idNam || item.NamHoc || item.namHoc;
-                    const num = parseInt(rawVal, 10);
-                    const twoDigit = !isNaN(num)
-                      ? num > 100
-                        ? num % 100
-                        : num
-                      : rawVal;
-                    const label =
-                      item.TenNam ||
-                      item.tenNam ||
-                      item.TenNamHoc ||
-                      item.tenNamHoc ||
-                      (rawVal ? `Năm ${rawVal}` : `Năm ${twoDigit}`);
-                    return { value: twoDigit, label };
-                  }),
+                  ...namOptions,
                 ]}
                 placeholder="-- Tất cả Năm --"
               />
@@ -536,7 +572,10 @@ const QL_DanhGiaSinhVien = () => {
                 value={searchKyHoc}
                 onChange={(v) => setSearchKyHoc(v)}
                 options={KY_HOC_OPTIONS}
-                placeholder="-- Tất cả Kỳ --"
+                placeholder={
+                  searchNamHoc ? "-- Tất cả Kỳ --" : "-- Chọn Năm học trước --"
+                }
+                disabled={!searchNamHoc}
               />
             </div>
 

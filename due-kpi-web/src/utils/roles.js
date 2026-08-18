@@ -50,8 +50,27 @@ export const ROLE_SETS = {
     ROLE.TRUONG_BO_MON,
   ],
 
-  /** Trưởng Khoa và Trưởng Khoa lớn — xem số liệu Khoa mình phụ trách. */
+  /**
+   * Trưởng Khoa và Trưởng Khoa lớn — xem số liệu Khoa mình phụ trách, và là
+   * nhóm DUY NHẤT được thực hiện giai đoạn 3–4 của quy trình đánh giá: chốt hồ
+   * sơ cá nhân kèm chọn xếp loại, trả dòng về đơn vị thẩm định, đóng gói và
+   * trình tờ trình KPI Khoa.
+   *
+   * Trưởng Phòng CỐ Ý nằm ngoài: họ thẩm định các tiêu chí được giao (xem
+   * TRUONG_DON_VI) nhưng không duyệt hồ sơ giảng viên. Gọi các endpoint giai
+   * đoạn 3–4 với chức vụ TP sẽ nhận 403.
+   */
   TRUONG_KHOA: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON],
+
+  /**
+   * Cấp Trường trong quy trình đánh giá: duyệt / trả lại GÓI KPI của Khoa, mở
+   * lại phiếu đã hoàn tất. Hiệu trưởng KHÔNG còn duyệt từng phiếu lẻ — đơn vị
+   * thao tác là cả tờ trình.
+   *
+   * Admin có mặt để xem và hỗ trợ vận hành; riêng thao tác duyệt gói và mở lại
+   * phiếu server chỉ chấp nhận đúng mã chức vụ HT.
+   */
+  CAP_TRUONG: [ROLE.HIEU_TRUONG, ROLE.ADMIN],
 
   /**
    * Trưởng đơn vị — nhóm được chấm điểm cấp Khoa cho phiếu KPI cá nhân.

@@ -1,22 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
-  CAP_CHAM,
   fetchMinhChung,
   fetchNhiemVuCongDong,
   formatDiem,
   formatNgayGio,
-  laLuotChamTuDong,
   laTieuChiChamTay,
-  TEN_CAP_CHAM,
-  TEN_HANH_DONG_CHAM,
-} from '../../utils/phieuApi';
+  TRANG_THAI_DONG,
+} from "../../utils/phieuApi";
+import LichSuChamDong from "./LichSuChamDong";
+import { NguonTraVeBadge, TrangThaiDongBadge } from "./TrangThaiBadge";
 import {
   duoiFile,
   formatKb,
   iconFile,
   laMinhChungFile,
   LOAI_MINH_CHUNG,
-} from '../../utils/minhChungPhieuApi';
+} from "../../utils/minhChungPhieuApi";
 
 /**
  * Một minh chứng. Tệp tải lên (LoaiMinhChung = 1) phải đi qua
@@ -30,7 +29,10 @@ const MinhChungRow = ({ mc, onXem, onTai }) => {
   if (!laMinhChungFile(mc)) {
     return (
       <div className="cd-mc-row">
-        <i className="fa-solid fa-link cd-mc-icon" style={{ color: '#0ea5e9' }}></i>
+        <i
+          className="fa-solid fa-link cd-mc-icon"
+          style={{ color: "#0ea5e9" }}
+        ></i>
         <div className="cd-mc-main">
           <a
             className="cd-mc-name"
@@ -43,8 +45,8 @@ const MinhChungRow = ({ mc, onXem, onTai }) => {
           </a>
           <div className="cd-mc-meta">
             {Number(mc.LoaiMinhChung) === LOAI_MINH_CHUNG.DOI
-              ? 'DOI / liên kết học thuật'
-              : 'Liên kết ngoài'}
+              ? "DOI / liên kết học thuật"
+              : "Liên kết ngoài"}
           </div>
         </div>
         <a
@@ -67,11 +69,14 @@ const MinhChungRow = ({ mc, onXem, onTai }) => {
     mc.NgayTaiLen ? formatNgayGio(mc.NgayTaiLen) : null,
   ]
     .filter(Boolean)
-    .join(' • ');
+    .join(" • ");
 
   return (
     <div className="cd-mc-row">
-      <i className={`${icon.className} cd-mc-icon`} style={{ color: icon.color }}></i>
+      <i
+        className={`${icon.className} cd-mc-icon`}
+        style={{ color: icon.color }}
+      ></i>
       <div className="cd-mc-main">
         <button
           type="button"
@@ -81,12 +86,22 @@ const MinhChungRow = ({ mc, onXem, onTai }) => {
         >
           {nhan}
         </button>
-        <div className="cd-mc-meta">{meta || '—'}</div>
+        <div className="cd-mc-meta">{meta || "—"}</div>
       </div>
-      <button type="button" className="cd-mc-act" onClick={() => onXem(mc)} title="Xem trước tệp">
+      <button
+        type="button"
+        className="cd-mc-act"
+        onClick={() => onXem(mc)}
+        title="Xem trước tệp"
+      >
         <i className="fa-solid fa-eye"></i> Xem
       </button>
-      <button type="button" className="cd-mc-act" onClick={() => onTai(mc)} title="Tải tệp về máy">
+      <button
+        type="button"
+        className="cd-mc-act"
+        onClick={() => onTai(mc)}
+        title="Tải tệp về máy"
+      >
         <i className="fa-solid fa-download"></i> Tải về
       </button>
     </div>
@@ -94,7 +109,18 @@ const MinhChungRow = ({ mc, onXem, onTai }) => {
 };
 
 /**
- * Một tiêu chí trên màn hình chấm.
+ * Một tiêu chí trên màn hình thẩm định.
+ *
+ * Mỗi DÒNG có ba kết cục và card này dựng đủ cả ba, thay cho một nút "Lưu điểm"
+ * như luồng cũ:
+ *   - duyệt giữ nguyên điểm giảng viên  → onDuyet    (không cần lý do)
+ *   - sửa điểm                           → onSuaDiem (mở hộp thoại chọn mức)
+ *   - trả dòng về cho giảng viên bổ sung → onTraVe    (bắt buộc lý do)
+ * Card KHÔNG còn ô nhập điểm: chấm là CHỌN LẠI MỨC trên đúng thang điểm của tiêu
+ * chí, việc đó cần cả danh sách mức lẫn mô tả nên làm trong hộp thoại riêng
+ * (SuaDiemModal). Ở đây chỉ còn các nút.
+ * Ở chế độ Trưởng khoa (`vaiTro="truongKhoa"`) chỉ còn một thao tác: trả dòng
+ * ĐÃ CHỐT về cho đơn vị thẩm định làm lại → onTraThamDinh.
  *
  * Điểm quan trọng về dữ liệu: GET api/phieu/{id} đã nhúng sẵn MinhChung[] và
  * NhiemVuCongDong[] trong từng chi tiết, nên chỉ gọi API khi bản ghi thiếu mảng
@@ -107,19 +133,26 @@ const TieuChiChamCard = ({
   stt,
   lichSu = [],
   dangTaiLichSu = false,
+  vaiTro = "thamDinh",
+  // Dòng bị server chỉ đích danh trong missingItems của 422 CHUA_CHOT_HET — tô đỏ
+  // để người chốt thấy ngay phải đợi tiêu chí nào, thay vì chỉ đọc một dòng báo lỗi.
+  noiBat = false,
   choPhepNhap,
+  choPhepTraThamDinh = false,
   lyDoKhoa,
   dangLuu,
-  onLuu,
+  onSuaDiem,
+  onDuyet,
+  onTraVe,
+  onTraThamDinh,
   onXemMinhChung,
   onTaiMinhChung,
 }) => {
   const chamTay = laTieuChiChamTay(chiTiet);
-  const daCham = chiTiet.DiemKhoa != null;
+  const trangThaiDong = Number(chiTiet.TrangThaiDong);
+  const daChot = trangThaiDong === TRANG_THAI_DONG.DA_CHOT;
+  const laTruongKhoa = vaiTro === "truongKhoa";
 
-  const [diem, setDiem] = useState(chiTiet.DiemKhoa ?? '');
-  const [nhanXet, setNhanXet] = useState(chiTiet.NhanXetKhoa ?? '');
-  const [loiNhap, setLoiNhap] = useState('');
   const [daThuGon, setDaThuGon] = useState(false);
 
   const [minhChung, setMinhChung] = useState(
@@ -130,16 +163,13 @@ const TieuChiChamCard = ({
   );
   const [dangTaiPhu, setDangTaiPhu] = useState(false);
 
-  // Sau mỗi lần lưu, phiếu được tải lại → đồng bộ lại ô nhập theo dữ liệu server
-  // (nếu không giá trị cũ của người dùng sẽ che mất giá trị server vừa ghi nhận)
-  // rồi nạp phần dữ liệu kèm theo còn thiếu.
+  // Sau mỗi lần lưu, phiếu được tải lại → nạp lại phần dữ liệu kèm theo còn thiếu
+  // của bản ghi mới.
   useEffect(() => {
-    setDiem(chiTiet.DiemKhoa ?? '');
-    setNhanXet(chiTiet.NhanXetKhoa ?? '');
-    setLoiNhap('');
-
     const mcNhung = Array.isArray(chiTiet.MinhChung) ? chiTiet.MinhChung : null;
-    const nvNhung = Array.isArray(chiTiet.NhiemVuCongDong) ? chiTiet.NhiemVuCongDong : null;
+    const nvNhung = Array.isArray(chiTiet.NhiemVuCongDong)
+      ? chiTiet.NhiemVuCongDong
+      : null;
     setMinhChung(mcNhung);
     setNhiemVu(nvNhung);
 
@@ -150,13 +180,17 @@ const TieuChiChamCard = ({
     let huy = false;
     setDangTaiPhu(true);
     Promise.allSettled([
-      canTaiMinhChung ? fetchMinhChung(chiTiet.IdChiTiet) : Promise.resolve(mcNhung),
-      canTaiNhiemVu ? fetchNhiemVuCongDong(chiTiet.IdChiTiet) : Promise.resolve(nvNhung),
+      canTaiMinhChung
+        ? fetchMinhChung(chiTiet.IdChiTiet)
+        : Promise.resolve(mcNhung),
+      canTaiNhiemVu
+        ? fetchNhiemVuCongDong(chiTiet.IdChiTiet)
+        : Promise.resolve(nvNhung),
     ]).then((ketQua) => {
       if (huy) return;
       // Một endpoint lỗi (403/404) không được làm hỏng cả panel — coi như rỗng.
-      setMinhChung(ketQua[0].status === 'fulfilled' ? ketQua[0].value : []);
-      setNhiemVu(ketQua[1].status === 'fulfilled' ? ketQua[1].value : []);
+      setMinhChung(ketQua[0].status === "fulfilled" ? ketQua[0].value : []);
+      setNhiemVu(ketQua[1].status === "fulfilled" ? ketQua[1].value : []);
       setDangTaiPhu(false);
     });
 
@@ -165,39 +199,20 @@ const TieuChiChamCard = ({
     };
   }, [chiTiet]);
 
-  const kiemTraDiem = (giaTri) => {
-    if (giaTri === '' || giaTri === null) return 'Chưa nhập điểm';
-    const so = Number(giaTri);
-    if (isNaN(so)) return 'Điểm phải là số';
-    if (so < 0) return 'Điểm không được âm';
-    if (chiTiet.DiemToiDa != null && so > Number(chiTiet.DiemToiDa)) {
-      return `Điểm vượt mức tối đa (${formatDiem(chiTiet.DiemToiDa)})`;
-    }
-    return '';
-  };
-
-  const handleLuu = () => {
-    const loi = kiemTraDiem(diem);
-    if (loi) {
-      setLoiNhap(loi);
-      return;
-    }
-    setLoiNhap('');
-    onLuu(chiTiet, { diem: Number(diem), nhanXet: nhanXet.trim() || null });
-  };
-
-  const coThayDoi =
-    String(diem) !== String(chiTiet.DiemKhoa ?? '') ||
-    (nhanXet || '') !== (chiTiet.NhanXetKhoa || '');
-
-  const lopThe = !chamTay ? 'cd-tu-dong' : daCham ? 'cd-da-cham' : choPhepNhap ? 'cd-mo-nhap' : '';
+  // Tiêu chí tự động không đi qua ai chấm nên DiemKhoa/DiemTuDanhGia thường trống;
+  // điểm thật nằm ở DiemChinhThuc do hệ thống ghi.
+  const diemTuDong =
+    chiTiet.DiemChinhThuc ?? chiTiet.DiemKhoa ?? chiTiet.DiemTuDanhGia;
 
   // Khối kèm theo chỉ dựng cho phần thực sự có dữ liệu và mặc định mở sẵn —
   // tiêu chí trống thì không cần một hàng "không có gì" để người chấm bấm vào.
   const coMinhChung = (minhChung?.length ?? 0) > 0;
   const coNhiemVu = (nhiemVu?.length ?? 0) > 0;
   const coLichSu = (lichSu?.length ?? 0) > 0;
-  const soLuotCham = (lichSu || []).reduce((tong, nhom) => tong + (nhom.Entries?.length || 0), 0);
+  const soLuotCham = (lichSu || []).reduce(
+    (tong, nhom) => tong + (nhom.Entries?.length || 0),
+    0,
+  );
   const coDuLieuPhu = coMinhChung || coNhiemVu || coLichSu;
   const moRong = !daThuGon;
 
@@ -207,263 +222,348 @@ const TieuChiChamCard = ({
     coLichSu ? `lịch sử chấm (${soLuotCham})` : null,
   ]
     .filter(Boolean)
-    .join(', ');
+    .join(", ");
+
+  // Ba khối phụ giống hệt nhau ở cả hai kiểu thẻ, chỉ khác lớp CSS của hộp —
+  // dựng một lần rồi truyền lớp vào để khỏi chép đôi.
+  const khoiTuDanhGia = (lopHop, lopTieuDe) =>
+    (chiTiet.MoTaHoanThanh || chiTiet.NhanXetTuDanhGia) && (
+      <div className={lopHop}>
+        <div className={lopTieuDe}>Giảng viên tự đánh giá</div>
+        {chiTiet.MoTaHoanThanh && (
+          <p className="cd-tdg-mota">{chiTiet.MoTaHoanThanh}</p>
+        )}
+        {chiTiet.NhanXetTuDanhGia && (
+          <p className="cd-tdg-nhan-xet">
+            <i className="fa-solid fa-quote-left"></i>
+            {chiTiet.NhanXetTuDanhGia}
+          </p>
+        )}
+      </div>
+    );
+
+  const khoiDuLieuPhu = (lopHop, lopTieuDe) => (
+    <>
+      {coMinhChung && (
+        <div className={lopHop}>
+          <div className={lopTieuDe}>Minh chứng ({minhChung.length})</div>
+          <div>
+            {minhChung.map((mc) => (
+              <MinhChungRow
+                key={mc.IdMinhChung}
+                mc={mc}
+                onXem={onXemMinhChung}
+                onTai={onTaiMinhChung}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {coNhiemVu && (
+        <div className={lopHop}>
+          <div className={lopTieuDe}>Nhiệm vụ cộng đồng ({nhiemVu.length})</div>
+          <table className="custom-table" style={{ fontSize: "14px" }}>
+            <thead>
+              <tr>
+                <th style={{ padding: "8px 10px" }}>Nhiệm vụ</th>
+                <th style={{ padding: "8px 10px" }}>Nhóm</th>
+                <th style={{ padding: "8px 10px" }}>Vai trò</th>
+                <th style={{ padding: "8px 10px", textAlign: "right" }}>
+                  Điểm
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {nhiemVu.map((nv) => (
+                <tr key={nv.IdNhiemVu}>
+                  <td style={{ padding: "8px 10px" }}>{nv.TenNhiemVu}</td>
+                  <td style={{ padding: "8px 10px" }}>{nv.TenNhom || "—"}</td>
+                  <td style={{ padding: "8px 10px" }}>{nv.TenVaiTro || "—"}</td>
+                  <td
+                    style={{
+                      padding: "8px 10px",
+                      textAlign: "right",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {formatDiem(nv.DiemSnapshot)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {coLichSu && (
+        <div className={lopHop}>
+          <div className={lopTieuDe}>Lịch sử chấm điểm ({soLuotCham})</div>
+          <LichSuChamDong lichSu={lichSu} chiTiet={chiTiet} />
+        </div>
+      )}
+    </>
+  );
+
+  const nutMoRong = (lopNut) =>
+    coDuLieuPhu && (
+      <button
+        type="button"
+        className={lopNut}
+        onClick={() => setDaThuGon((truoc) => !truoc)}
+      >
+        <i
+          className={`fa-solid ${moRong ? "fa-chevron-up" : "fa-chevron-down"}`}
+        ></i>
+        {moRong ? "Thu gọn" : `Xem ${nhanKhoiPhu}`}
+      </button>
+    );
+
+  const dangTai = (dangTaiPhu || dangTaiLichSu) && (
+    <div className="cd-dang-tai-phu">
+      <i className="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu kèm
+      theo...
+    </div>
+  );
+
+  // Yêu cầu đang mở của dòng. Cặp NguonTraVe + LyDoTraVe được server xóa khi
+  // dòng được nộp lại hoặc chấm lại, nên còn giá trị nghĩa là việc chưa xong.
+  const khoiYeuCau = chiTiet.NguonTraVe != null && (
+    <div className="cd-yeu-cau-bo-sung">
+      <div className="cd-yc-head">
+        <NguonTraVeBadge nguonTraVe={chiTiet.NguonTraVe} />
+        {chiTiet.NgayTraVe && (
+          <span className="cd-yc-meta">{formatNgayGio(chiTiet.NgayTraVe)}</span>
+        )}
+      </div>
+      <p className="cd-yc-lydo">{chiTiet.LyDoTraVe || "Không ghi lý do."}</p>
+      {chiTiet.TenDonViThamDinh && (
+        <div className="cd-yc-meta">
+          Đơn vị thẩm định: {chiTiet.TenDonViThamDinh}
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className={`cd-tieu-chi ${lopThe}`}>
-      <div className="cd-tc-head">
-        <div style={{ flex: '1 1 340px', minWidth: 0 }}>
-          <p className="cd-tc-ten">
+    <div
+      id={`tieu-chi-${chiTiet.IdChiTiet}`}
+      className={`cdm-the${noiBat ? " cdm-the-thieu" : ""}`}
+    >
+      <div className="cdm-main">
+        <div className="cdm-dau">
+          <p className="cdm-ten">
             {stt}. {chiTiet.TenTieuChi || `Tiêu chí #${chiTiet.IdTieuChi}`}
           </p>
-          <div>
-            <span className="cd-tc-tag">Tối đa {formatDiem(chiTiet.DiemToiDa)}</span>
-            <span className="cd-tc-tag">
-              {chamTay ? (
-                <>
-                  <i className="fa-solid fa-pen-to-square"></i> Chấm tay
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-robot"></i> Điểm tự động
-                </>
-              )}
-            </span>
-            {chiTiet.LaTruongHopDacBiet && (
-              <span
-                className="cd-tc-tag"
-                style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }}
-                title={chiTiet.LyDoDacBiet || ''}
-              >
-                <i className="fa-solid fa-star"></i> Trường hợp đặc biệt
-              </span>
+          <div className="cdm-diem-nhom">
+            {chamTay ? (
+              <>
+                <div className="cdm-diem-o">
+                  <div className="cdm-diem-nhan">GV tự chấm</div>
+                  <div
+                    className={`cdm-diem-gt${chiTiet.DiemTuDanhGia == null ? " cdm-diem-trong" : ""}`}
+                  >
+                    {formatDiem(chiTiet.DiemTuDanhGia)}
+                  </div>
+                </div>
+                <div className="cdm-diem-o">
+                  <div className="cdm-diem-nhan">Đơn vị chấm</div>
+                  <div
+                    className={`cdm-diem-gt${
+                      chiTiet.DiemKhoa == null
+                        ? " cdm-diem-trong"
+                        : daChot
+                          ? " cdm-diem-chot"
+                          : ""
+                    }`}
+                  >
+                    {formatDiem(chiTiet.DiemKhoa)}
+                  </div>
+                </div>
+                {chiTiet.DiemChinhThuc != null && (
+                  <div className="cdm-diem-o">
+                    <div className="cdm-diem-nhan">Chính thức</div>
+                    <div className="cdm-diem-gt cdm-diem-chinh-thuc">
+                      {formatDiem(chiTiet.DiemChinhThuc)}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="cdm-diem-o">
+                <div className="cdm-diem-nhan">Hệ thống tính</div>
+                <div className="cdm-diem-gt cdm-diem-he-thong">
+                  {formatDiem(diemTuDong)}
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '18px', alignItems: 'center' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div className="cd-meta-label">GV tự chấm</div>
-            <div style={{ fontSize: '17px', fontWeight: 700, color: '#334155' }}>
-              {formatDiem(chiTiet.DiemTuDanhGia)}
-            </div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div className="cd-meta-label">Đơn vị chấm</div>
-            <div
-              style={{
-                fontSize: '17px',
-                fontWeight: 700,
-                color: daCham ? '#047857' : '#cbd5e1',
-              }}
+        <div className="cdm-tags">
+          {chamTay && <TrangThaiDongBadge trangThaiDong={trangThaiDong} />}
+          <span className="cdm-pill">
+            Tối đa {formatDiem(chiTiet.DiemToiDa)}
+          </span>
+          <span className="cdm-pill">
+            {chamTay ? (
+              <>
+                <i className="fa-solid fa-pen-to-square"></i> Chấm thủ công
+              </>
+            ) : (
+              <>
+                <i className="fa-solid fa-robot"></i> Điểm tự động
+              </>
+            )}
+          </span>
+          {chiTiet.SoLanTraVe > 0 && (
+            <span
+              className="cdm-pill cdm-pill-canh-bao"
+              title="Số lần tiêu chí này bị trả về, tính dồn qua mọi vòng"
             >
-              {formatDiem(chiTiet.DiemKhoa)}
-            </div>
-          </div>
-          {chiTiet.DiemChinhThuc != null && (
-            <div style={{ textAlign: 'center' }}>
-              <div className="cd-meta-label">Chính thức</div>
-              <div style={{ fontSize: '17px', fontWeight: 700, color: '#1d4ed8' }}>
-                {formatDiem(chiTiet.DiemChinhThuc)}
-              </div>
-            </div>
+              <i className="fa-solid fa-rotate-left"></i> Đã trả về{" "}
+              {chiTiet.SoLanTraVe} lần
+            </span>
+          )}
+          {chiTiet.LaTruongHopDacBiet && (
+            <span
+              className="cdm-pill cdm-pill-dac-biet"
+              title={chiTiet.LyDoDacBiet || ""}
+            >
+              <i className="fa-solid fa-star"></i> Trường hợp đặc biệt
+            </span>
           )}
         </div>
+
+        {khoiYeuCau}
+
+        {khoiTuDanhGia("cdm-hop", "cdm-hop-tieu-de")}
+
+        {dangTai}
+
+        {nutMoRong("cdm-toggle")}
+
+        {coDuLieuPhu && moRong && (
+          <div className="cdm-khoi-phu">
+            {khoiDuLieuPhu("cdm-hop", "cdm-hop-tieu-de")}
+          </div>
+        )}
       </div>
 
-      <div className="cd-tc-body">
-        <div>
-          <div className="cd-box">
-            <div className="cd-box-title">Giảng viên tự đánh giá</div>
-            {chiTiet.MoTaHoanThanh ? (
-              <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#334155', lineHeight: 1.6 }}>
-                {chiTiet.MoTaHoanThanh}
-              </p>
-            ) : (
-              <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>
-                Không có mô tả mức độ hoàn thành.
-              </p>
-            )}
-            {chiTiet.NhanXetTuDanhGia && (
-              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                <i className="fa-solid fa-quote-left" style={{ marginRight: '6px', color: '#cbd5e1' }}></i>
-                {chiTiet.NhanXetTuDanhGia}
-              </p>
-            )}
+      {chamTay ? (
+        <div className="cdm-ben">
+          <div className="cdm-ben-tieu-de">
+            {choPhepNhap ? "Thẩm định tiêu chí" : "Điểm đơn vị (chỉ đọc)"}
           </div>
 
-          {(dangTaiPhu || dangTaiLichSu) && (
-            <div style={{ marginTop: '10px', fontSize: '13px', color: '#64748b' }}>
-              <i className="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu kèm theo...
-            </div>
-          )}
-
-          {coDuLieuPhu && (
-            <button
-              type="button"
-              className="cd-link-btn"
-              style={{ marginTop: '10px' }}
-              onClick={() => setDaThuGon((truoc) => !truoc)}
-            >
-              <i className={`fa-solid ${moRong ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
-              {moRong ? 'Thu gọn' : `Xem ${nhanKhoiPhu}`}
-            </button>
-          )}
-
-          {coDuLieuPhu && moRong && (
-            <div style={{ marginTop: '12px', display: 'grid', gap: '12px' }}>
-              {coMinhChung && (
-                <div className="cd-box">
-                  <div className="cd-box-title">Minh chứng ({minhChung.length})</div>
-                  <div>
-                    {minhChung.map((mc) => (
-                      <MinhChungRow
-                        key={mc.IdMinhChung}
-                        mc={mc}
-                        onXem={onXemMinhChung}
-                        onTai={onTaiMinhChung}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {coNhiemVu && (
-                <div className="cd-box">
-                  <div className="cd-box-title">Nhiệm vụ cộng đồng ({nhiemVu.length})</div>
-                  <table className="custom-table" style={{ fontSize: '13px' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ padding: '8px 10px' }}>Nhiệm vụ</th>
-                        <th style={{ padding: '8px 10px' }}>Nhóm</th>
-                        <th style={{ padding: '8px 10px' }}>Vai trò</th>
-                        <th style={{ padding: '8px 10px', textAlign: 'right' }}>Điểm</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {nhiemVu.map((nv) => (
-                        <tr key={nv.IdNhiemVu}>
-                          <td style={{ padding: '8px 10px' }}>{nv.TenNhiemVu}</td>
-                          <td style={{ padding: '8px 10px' }}>{nv.TenNhom || '—'}</td>
-                          <td style={{ padding: '8px 10px' }}>{nv.TenVaiTro || '—'}</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>
-                            {formatDiem(nv.DiemSnapshot)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {coLichSu && (
-                <div className="cd-box">
-                  <div className="cd-box-title">Lịch sử chấm điểm ({soLuotCham})</div>
-                  <div style={{ display: 'grid', gap: '10px' }}>
-                    {lichSu.map((nhom) => {
-                      const nhomTuDong = !chamTay && Number(nhom.Cap) === CAP_CHAM.TRUONG;
-                      return (
-                        <div key={`${nhom.LanDanhGia}-${nhom.Cap}`}>
-                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
-                            Vòng {nhom.LanDanhGia} ·{' '}
-                            {nhomTuDong ? 'Hệ thống tính' : TEN_CAP_CHAM[nhom.Cap] || `Cấp ${nhom.Cap}`}
-                          </div>
-                          {(nhom.Entries || []).map((e) => {
-                            const may = laLuotChamTuDong(e, chiTiet);
-                            const nguoi = e.TenNguoiThucHien || `#${e.IdNguoiThucHien}`;
-                            return (
-                              <div key={e.IdLichSu} style={{ fontSize: '12px', color: '#64748b', paddingLeft: '10px' }}>
-                                <b style={{ color: '#0f172a' }}>{formatDiem(e.Diem)}</b> ·{' '}
-                                {may
-                                  ? `Hệ thống chấm tự động khi ${nguoi} nộp phiếu`
-                                  : `${TEN_HANH_DONG_CHAM[e.HanhDong] || 'Cập nhật'} bởi ${nguoi}`}{' '}
-                                · {formatNgayGio(e.NgayThucHien)}
-                                {/* Nhận xét của dòng máy chỉ là dấu vết kỹ thuật ("Cham tu dong
-                                    khi nop phieu.") — nhãn phía trên đã nói đúng điều đó rồi. */}
-                                {e.NhanXet && !may ? ` — ${e.NhanXet}` : ''}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className={`cd-box cd-cham-box${choPhepNhap ? '' : ' cd-khoa'}`}>
-          <div className="cd-box-title">
-            {choPhepNhap ? 'Chấm điểm đơn vị' : 'Điểm đơn vị (chỉ đọc)'}
-          </div>
-
-          <label className="cd-label" htmlFor={`diem-${chiTiet.IdChiTiet}`}>
-            Điểm (0 – {formatDiem(chiTiet.DiemToiDa)})
-          </label>
-          <input
-            id={`diem-${chiTiet.IdChiTiet}`}
-            type="number"
-            step="0.01"
-            min="0"
-            max={chiTiet.DiemToiDa ?? undefined}
-            className="cd-diem-input"
-            value={diem}
-            disabled={!choPhepNhap || dangLuu}
-            onChange={(e) => {
-              setDiem(e.target.value);
-              if (loiNhap) setLoiNhap('');
-            }}
-          />
-
-          <label className="cd-label" style={{ marginTop: '12px' }} htmlFor={`nx-${chiTiet.IdChiTiet}`}>
-            Nhận xét
-          </label>
-          <textarea
-            id={`nx-${chiTiet.IdChiTiet}`}
-            className="cd-textarea"
-            value={nhanXet}
-            disabled={!choPhepNhap || dangLuu}
-            placeholder="Nhận xét của đơn vị (không bắt buộc)"
-            onChange={(e) => setNhanXet(e.target.value)}
-          />
-
-          {loiNhap && (
-            <div className="cd-hint cd-hint-error">
-              <i className="fa-solid fa-circle-exclamation"></i> {loiNhap}
-            </div>
-          )}
-
-          {choPhepNhap ? (
-            <button
-              type="button"
-              className="btn-submit"
-              style={{ marginTop: '12px', width: '100%', justifyContent: 'center' }}
-              disabled={dangLuu || !coThayDoi}
-              onClick={handleLuu}
-            >
-              {dangLuu ? (
-                <>
-                  <i className="fa-solid fa-spinner fa-spin"></i> Đang lưu...
-                </>
+          <div className="cdm-ben-diem">
+            <span className="cdm-ben-diem-nhan">Điểm đơn vị</span>
+            <span className="cdm-ben-diem-gt">
+              {chiTiet.DiemKhoa != null ? (
+                <b className="cdm-ben-diem-so">
+                  {formatDiem(chiTiet.DiemKhoa)}
+                </b>
               ) : (
-                <>
-                  <i className="fa-solid fa-floppy-disk"></i> {daCham ? 'Cập nhật điểm' : 'Lưu điểm'}
-                </>
+                <span className="cdm-pill">Chưa chấm</span>
               )}
-            </button>
-          ) : (
-            <div className="cd-hint cd-hint-warn" style={{ marginTop: '10px' }}>
+              <span>/ {formatDiem(chiTiet.DiemToiDa)}</span>
+            </span>
+          </div>
+
+          {chiTiet.NhanXetKhoa && (
+            <div className="cdm-nhan-xet">
+              <i className="fa-solid fa-quote-left"></i> {chiTiet.NhanXetKhoa}
+            </div>
+          )}
+
+          {choPhepNhap && (
+            <>
+              {/* Duyệt giữ nguyên là lối đi thường gặp nhất và không đòi lý do —
+                  để trước để người thẩm định khỏi phải mở hộp thoại chọn lại
+                  đúng mức giảng viên đã chọn. */}
+              <button
+                type="button"
+                className="cdm-btn cdm-btn-chinh"
+                disabled={dangLuu}
+                onClick={() => onDuyet(chiTiet, { nhanXet: null })}
+                title="Chốt tiêu chí ở đúng mức điểm giảng viên tự kê khai"
+              >
+                <i className="fa-solid fa-check"></i> Duyệt giữ nguyên{" "}
+                {formatDiem(chiTiet.DiemTuDanhGia)}
+              </button>
+              <button
+                type="button"
+                className="cdm-btn cdm-btn-phu"
+                disabled={dangLuu}
+                onClick={() => onSuaDiem(chiTiet)}
+                title="Mở bảng thang điểm để chọn lại mức cho tiêu chí này"
+              >
+                <i className="fa-solid fa-pen"></i> Chỉnh sửa điểm
+              </button>
+              <button
+                type="button"
+                className="cdm-btn cdm-btn-canh-bao"
+                disabled={dangLuu}
+                onClick={() => onTraVe(chiTiet)}
+                title="Trả tiêu chí về cho giảng viên bổ sung; các tiêu chí khác giữ nguyên tiến độ"
+              >
+                <i className="fa-solid fa-rotate-left"></i> Trả về giảng viên
+              </button>
+            </>
+          )}
+
+          {!choPhepNhap && (
+            <div className="cdm-ghi-chu cdm-ghi-chu-khoa">
               <i className="fa-solid fa-lock"></i> {lyDoKhoa}
             </div>
           )}
 
+          {laTruongKhoa && choPhepTraThamDinh && (
+            <button
+              type="button"
+              className="cdm-btn cdm-btn-canh-bao"
+              disabled={dangLuu}
+              onClick={() => onTraThamDinh(chiTiet)}
+              title="Trả tiêu chí về cho đơn vị đã thẩm định chấm lại"
+            >
+              <i className="fa-solid fa-rotate-left"></i> Trả về đơn vị thẩm
+              định
+            </button>
+          )}
+
+          {dangLuu && (
+            <div className="cdm-ghi-chu">
+              <i className="fa-solid fa-spinner fa-spin"></i> Đang gửi...
+            </div>
+          )}
+
           {chiTiet.NgayDgKhoa && (
-            <div className="cd-hint">Chấm lúc {formatNgayGio(chiTiet.NgayDgKhoa)}</div>
+            <div className="cdm-ghi-chu">
+              Thẩm định lúc {formatNgayGio(chiTiet.NgayDgKhoa)}
+            </div>
           )}
         </div>
-      </div>
+      ) : (
+        <div className="cdm-ben cdm-ben-tu-dong">
+          <div className="cdm-ben-tieu-de">Điểm hệ thống tính</div>
+
+          <div className="cdm-tu-dong-diem">
+            <span
+              className={`cdm-tu-dong-so${diemTuDong == null ? " cdm-tu-dong-trong" : ""}`}
+            >
+              {diemTuDong != null ? formatDiem(diemTuDong) : "Chưa tính"}
+            </span>
+            <span className="cdm-tu-dong-max">
+              / {formatDiem(chiTiet.DiemToiDa)}
+            </span>
+          </div>
+
+          <div className="cdm-tu-dong-chu-thich">
+            <i className="fa-solid fa-robot"></i> Hệ thống tự tính từ dữ liệu đã
+            ghi nhận.
+          </div>
+        </div>
+      )}
     </div>
   );
 };

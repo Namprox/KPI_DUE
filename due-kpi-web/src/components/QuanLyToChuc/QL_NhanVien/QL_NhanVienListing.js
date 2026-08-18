@@ -4,15 +4,17 @@ import "../../../css/QuanLyToChuc/QL_NhanVien.css";
 
 const QL_NhanVienListing = ({
   data,
+  first,
+  rows,
+  totalRecords,
+  onPageChange,
   onEdit,
   onDelete,
   onResetPassword,
   isLoading,
   canManage,
 }) => {
-  const [first, setFirst] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
-  const rows = 20;
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth > 992);
@@ -20,13 +22,6 @@ const QL_NhanVienListing = ({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  useEffect(() => {
-    setFirst(0);
-  }, [data]);
-
-  const paginatedData = data.slice(first, first + rows);
-  const onPageChange = (event) => setFirst(event.first);
 
   return (
     <div
@@ -87,7 +82,7 @@ const QL_NhanVienListing = ({
               </tr>
             </thead>
             <tbody>
-              {paginatedData.map((item, index) => {
+              {data.map((item, index) => {
                 const actualIndex = first + index + 1;
                 return (
                   <tr key={item.IdNhanVien}>
@@ -207,7 +202,7 @@ const QL_NhanVienListing = ({
               })}
             </tbody>
           </table>
-          {data.length > rows && (
+          {totalRecords > rows && (
             <div
               style={{
                 marginTop: "15px",
@@ -218,7 +213,7 @@ const QL_NhanVienListing = ({
               <Paginator
                 first={first}
                 rows={rows}
-                totalRecords={data.length}
+                totalRecords={totalRecords}
                 onPageChange={onPageChange}
                 template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport"
                 style={{ background: "transparent", border: "none" }}

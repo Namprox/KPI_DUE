@@ -965,6 +965,12 @@ paths:
         doi, khong reset khi nop lai.
 
         LyDo BAT BUOC. Sau do chu phieu sua dong roi goi POST /api/phieu/{id}/nop-lai.
+
+        ENDPOINT NAY KHONG KIEM TRA HAN - tham dinh vien tra ve duoc bat cu luc nao.
+        Chu phieu sau do gate bang ngay_dong_danh_gia_cap_tren (khong phai han tu danh
+        gia), nen tra ve sau khi han tu danh gia dong van hoan toan binh thuong.
+        Chi luu y: neu han THAM DINH cung da het thi dong tra ve nay se khong ai hoan
+        thanh duoc - khi do phai cap gia han qua POST /api/gia-han.
       operationId: chiTietThamDinhTraVe
       parameters:
         - name: idChiTiet
@@ -1126,7 +1132,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/MinhChungResponse"
         "409":
-          description: Phieu not in NHAP state
+          description: >-
+            Dong tieu chi khong o trang_thai_dong = 1 KE_KHAI (dang cho tham dinh hoac
+            da chot diem), hoac da qua han. Gate theo DONG chu khong theo trang thai
+            phieu - dong vua bi tra ve van ghi minh chung duoc du phieu o trang thai 2.
+            Han lay theo giai doan phieu: trang thai 1 -> ngay_dong_tu_danh_gia;
+            trang thai 2 -> ngay_dong_danh_gia_cap_tren.
           content:
             application/json:
               schema:
@@ -1175,7 +1186,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/MinhChungResponse"
         "409":
-          description: Phieu not in NHAP state
+          description: >-
+            Dong tieu chi khong o trang_thai_dong = 1 KE_KHAI (dang cho tham dinh hoac
+            da chot diem), hoac da qua han. Gate theo DONG chu khong theo trang thai
+            phieu - dong vua bi tra ve van ghi minh chung duoc du phieu o trang thai 2.
+            Han lay theo giai doan phieu: trang thai 1 -> ngay_dong_tu_danh_gia;
+            trang thai 2 -> ngay_dong_danh_gia_cap_tren.
           content:
             application/json:
               schema:
@@ -1358,8 +1374,10 @@ paths:
         DuongDan CHI sua duoc voi minh chung dang Link (2) / DOI (3); voi dang File (1)
         do la duong dan vat ly do server sinh ra nen API tra 400 kem
         ErrorCode = MINH_CHUNG_LA_FILE (muon doi tep thi xoa roi tai len tep moi).
-        Rang buoc giong DELETE: phieu phai o trang thai Nhap (1) va nguoi goi phai la chu
-        phieu hoac cap Truong (HT/ADMIN).
+        Rang buoc giong DELETE: DONG tieu chi chua minh chung phai o trang_thai_dong = 1
+        KE_KHAI (khong phai "phieu o trang thai Nhap" - dong vua bi tham dinh tra ve van
+        sua duoc du phieu dang o trang thai 2), con trong han cua giai doan tuong ung, va
+        nguoi goi phai la chu phieu hoac cap Truong (HT/ADMIN).
       operationId: minhChungUpdate
       parameters:
         - name: idMinhChung
@@ -1403,7 +1421,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/MinhChungResponse"
         "409":
-          description: Phieu khong o trang thai Nhap (1)
+          description: >-
+            Dong tieu chi khong o trang_thai_dong = 1 KE_KHAI, hoac da qua han
+            (theo giai doan phieu - xem PhieuKiemTraHopLeDto.HanNop).
           content:
             application/json:
               schema:
@@ -1439,7 +1459,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/MinhChungResponse"
         "409":
-          description: Phieu not in NHAP state
+          description: >-
+            Dong tieu chi khong o trang_thai_dong = 1 KE_KHAI, hoac da qua han
+            (theo giai doan phieu - xem PhieuKiemTraHopLeDto.HanNop).
           content:
             application/json:
               schema:
@@ -1471,12 +1493,16 @@ paths:
     post:
       tags:
         - NhiemVuCongDong
-      summary: Add a community-service task (Group III) to a chi_tiet
+      summary: "[DA NGUNG] Add a community-service task (Group III) to a chi_tiet"
+      deprecated: true
       description: |
-        Validates that the parent phieu is in NHAP (1) state and the current user owns it.
-        Resolves the vai tro using the Phase-1.1 priority logic for the phieu's (don_vi, nam).
-        Snapshots diem_quy_doi at write time. Rejects with 422 if the new task would push
-        the Group-III total above the 20-point hard cap.
+        LUONG TU KE KHAI DA NGUNG - endpoint nay LUON tra 409, khong con ghi duoc gi.
+        KPI Nhom III chuyen sang mo hinh KHOA PHAN CONG: dung api/nhiem-vu-khoa.
+        Ly do: vai tro chu tri / phoi hop la quan he tuong doi giua nhieu nguoi trong
+        cung mot nhiem vu, de GV tu ke khai thi nhieu nguoi cung khai "chu tri".
+
+        Cac ma phan hoi 201 / 400 / 403 / 404 / 422 duoi day GIU LAI cho muc dich lich
+        su - thuc te khong con duong nao cham toi chung.
       operationId: nhiemVuCreate
       parameters:
         - name: idChiTiet
@@ -1516,7 +1542,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuCongDongResponse"
         "409":
-          description: Phieu not in NHAP state
+          description: >-
+            LUON TRA VE MA NAY. Luong tu ke khai da ngung -
+            "Luong tu ke khai da ngung. Nhiem vu nhom III nay do Khoa phan cong
+            (xem api/nhiem-vu-khoa)."
           content:
             application/json:
               schema:
@@ -1565,11 +1594,11 @@ paths:
     put:
       tags:
         - NhiemVuCongDong
-      summary: Update a community-service task
+      summary: "[DA NGUNG] Update a community-service task"
+      deprecated: true
       description: |
-        idVaiTro and/or idNhomNv may change; the snapshot is recomputed and the 20-point
-        cap is re-evaluated excluding the task itself from the running total.
-        Only allowed when the parent phieu is in NHAP (1) state and the caller owns it.
+        LUONG TU KE KHAI DA NGUNG - endpoint nay LUON tra 409, khong con ghi duoc gi.
+        Dung api/nhiem-vu-khoa (Khoa phan cong) thay the.
       operationId: nhiemVuUpdate
       parameters:
         - name: idNhiemVu
@@ -1609,7 +1638,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuCongDongResponse"
         "409":
-          description: Phieu not in NHAP state
+          description: >-
+            LUON TRA VE MA NAY. Luong tu ke khai da ngung -
+            "Luong tu ke khai da ngung. Nhiem vu nhom III nay do Khoa phan cong
+            (xem api/nhiem-vu-khoa)."
           content:
             application/json:
               schema:
@@ -1623,10 +1655,11 @@ paths:
     delete:
       tags:
         - NhiemVuCongDong
-      summary: Soft-delete a community-service task
+      summary: "[DA NGUNG] Soft-delete a community-service task"
+      deprecated: true
       description: |
-        Sets da_xoa = 1. Only allowed when the parent phieu is in NHAP (1) state and
-        the caller owns it. No cap re-check needed — deletion only reduces the running total.
+        LUONG TU KE KHAI DA NGUNG - endpoint nay LUON tra 409, khong con ghi duoc gi.
+        Dung api/nhiem-vu-khoa (Khoa phan cong) thay the.
       operationId: nhiemVuDelete
       parameters:
         - name: idNhiemVu
@@ -1654,7 +1687,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuCongDongResponse"
         "409":
-          description: Phieu not in NHAP state
+          description: >-
+            LUON TRA VE MA NAY. Luong tu ke khai da ngung -
+            "Luong tu ke khai da ngung. Nhiem vu nhom III nay do Khoa phan cong
+            (xem api/nhiem-vu-khoa)."
           content:
             application/json:
               schema:
@@ -2555,9 +2591,10 @@ paths:
                 $ref: "#/components/schemas/PhieuDanhGiaResponse"
         "409":
           description: >
-            Conflict - phieu not in NHAP state, qua han tu danh gia (QUA_HAN - da qua
-            ngay_dong_tu_danh_gia / han gia han rieng), or concurrency conflict
-            (phieu was modified by another user)
+            Conflict - phieu not in NHAP state, qua han TU DANH GIA (QUA_HAN - da qua
+            ngay_dong_tu_danh_gia / han gia han rieng; nop lan dau luon dung han giai
+            doan 1, khac POST /nop-lai), or concurrency conflict (phieu was modified by
+            another user)
           content:
             application/json:
               schema:
@@ -2587,6 +2624,12 @@ paths:
         PHIEU, phieu dang o trang_thai = 2 (cho Khoa danh gia), Khoa CHUA cham bat ky
         tieu chi nao, va con trong han tu danh gia (ngay_dong_tu_danh_gia cua nam hoac
         han gia han rieng - xem GET /api/gia-han/me/{idNam}).
+
+        NGOAI LE CO CHU DICH: du phieu dang o trang_thai = 2, endpoint nay van gate bang
+        ngay_dong_tu_danh_gia (KHONG dung ngay_dong_danh_gia_cap_tren nhu POST /nop-lai).
+        Huy nop la hanh vi cua giai doan 1 - khong duoc bien no thanh duong vong de sua
+        bai sau khi han tu danh gia da het. Vi vay sau han tu danh gia, chu phieu co the
+        nop lai dong bi tra ve nhung KHONG the huy nop ca phieu.
 
         Giu nguyen lan_danh_gia (khac khoa-tra-lai). Ghi lich_su_trang_thai_phieu voi
         hanh_dong = 6 (Huy nop), trang_thai_truoc = 2, trang_thai_sau = 1.
@@ -2637,7 +2680,8 @@ paths:
         "409":
           description: >
             Conflict - phieu khong o trang_thai = 2 (INVALID_STATE), Khoa da bat dau cham
-            (DA_CHAM), qua han tu danh gia (QUA_HAN), hoac concurrency conflict.
+            (DA_CHAM), qua han TU DANH GIA (QUA_HAN - luon la ngay_dong_tu_danh_gia, xem
+            mo ta), hoac concurrency conflict.
           content:
             application/json:
               schema:
@@ -2680,7 +2724,13 @@ paths:
       description: |
         Moi (idNam, idNhanVien) chi giu 1 dong gia han hieu luc - goi lai = ghi de han cu.
         HanMoi phai tu hom nay tro di va sau ngay_dong_tu_danh_gia cua nam.
-        Han tu danh gia hieu luc cua nguoi do = MAX(ngay_dong_tu_danh_gia, HanMoi).
+        Han hieu luc cua nguoi do = MAX(han cua giai doan phieu dang o, HanMoi) - tuc
+        gia han nay nang han o CA HAI giai doan, khong rieng giai doan tu danh gia.
+
+        KHI NAO THUC SU CAN: tu khi han cua tung giai doan duoc tach bach (dong bi tham
+        dinh tra ve gate bang ngay_dong_danh_gia_cap_tren), gia han KHONG con can cho
+        truong hop thong thuong "bi tra ve sau han tu danh gia" nua. Chi dung khi ca han
+        tham dinh cung da het, hoac khi mot ca nhan can them thoi gian ke khai lan dau.
       operationId: giaHanUpsert
       requestBody:
         required: true
@@ -2792,9 +2842,14 @@ paths:
         THAY THE POST /api/phieu/{id}/khoa/tra-lai cua luong cu - tra ve nay nay lam
         o cap DONG (POST /api/chitiet/{idChiTiet}/tham-dinh/tra-ve).
 
-        LUU Y VAN HANH: neu chuyen vien tra ve mot dong SAU khi da qua han tu danh
-        gia thi chu phieu khong nop lai duoc (409 QUA_HAN) - phai cap gia han rieng
-        qua POST /api/gia-han. Day la hanh vi CO CHU DICH.
+        HAN AP DUNG (khac POST /submit - doc ky): buoc nay gate bang
+        ngay_dong_danh_gia_cap_tren, KHONG phai ngay_dong_tu_danh_gia. Ly do: giai doan
+        tham dinh theo thiet ke chay sau khi han tu danh gia da dong, nen neu gate bang
+        han tu danh gia thi gan nhu moi lan tra ve deu bi 409 QUA_HAN. Nguyen tac: con
+        quyen tra ve thi con quyen tra loi - hai ben dong cung luc.
+        Han hieu luc = MAX(ngay_dong_danh_gia_cap_tren, han gia han rieng); doc gia tri
+        thuc te o GET /api/phieu/{id}/kiem-tra-hop-le (truong HanNop).
+        Chi khi han THAM DINH cung da het thi moi can cap gia han qua POST /api/gia-han.
       operationId: phieuDanhGiaNopLai
       parameters:
         - name: id
@@ -2824,8 +2879,8 @@ paths:
         "409":
           description: >-
             Conflict - phieu khong o trang thai 2 (INVALID_STATE), khong con dong nao
-            cho nop (KHONG_CO_DONG_CHO_NOP), da qua han tu danh gia (QUA_HAN),
-            hoac concurrency conflict.
+            cho nop (KHONG_CO_DONG_CHO_NOP), da qua han THAM DINH (QUA_HAN - qua
+            ngay_dong_danh_gia_cap_tren / han gia han rieng), hoac concurrency conflict.
           content:
             application/json:
               schema:
@@ -2836,6 +2891,88 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhieuSubmitValidationResponse"
+  /api/phieu/{id}/xem-truoc-chot:
+    get:
+      tags:
+        - PhieuDanhGia
+      summary: Xem truoc man hinh chot ho so (dry-run, khong ghi DB)
+      description: |
+        GIAI DOAN 3. Cap toan bo so lieu cho man hinh "Chot ho so" cua Truong khoa
+        TRUOC khi bam POST /api/phieu/{id}/khoa/duyet-ho-so.
+
+        VI SAO CAN: ba cot tong_diem_co_ban / tong_diem_vuot_troi / tong_diem_tich_luy
+        va xep_loai_de_xuat CHI duoc UPDATE trong sp_phieu_khoa_duyet_ho_so, tuc la
+        tai chinh buoc chot. Truoc do GET /api/phieu/{id} tra NULL cho ca 4 cot, nen
+        FE khong co nguon nao de hien khoi diem va muc de xuat. Endpoint nay tinh
+        bang DUNG cong thuc ma buoc chot se dung, KHONG ghi gi vao DB.
+
+        FE goi lai moi khi nguoi dung doi 1 trong 3 dieu kien ket luan (3 query
+        param ben duoi) de con so tren man hinh luon trung con so luc chot.
+
+        AI GOI: giong POST .../khoa/duyet-ho-so - ma_chuc_vu TK/TKL/TP trong pham vi
+        cay don vi cua minh, hoac ADMIN. Nguoi khac nhan 403.
+
+        CacMucChonDuoc la danh sach muc Truong khoa duoc phep chon, tinh san o server:
+        luon la 1..XepLoaiDeXuat. Truong khoa KHONG nang xep loai o buoc nay, va muc 4
+        khong bao gio co mat (han ngach 20% quyet dinh o buoc dong goi to trinh).
+        FE render dung danh sach nay; muc khong co trong day thi hien "Da khoa" kem
+        cau GiaiThichMucDeXuat.
+
+        SanSangChot = true chi khi phieu o trang_thai 3 VA 100% dong da chot diem;
+        nguoc lai FE tat nut Chot va hien DongChuaChot.
+      operationId: phieuDanhGiaXemTruocChot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: duNckh
+          in: query
+          required: false
+          description: |
+            Dieu kien "du dinh muc gio NCKH" ma nguoi dung dang tick. Bo trong =
+            lay ket luan tu dong cua he thong (DuDinhMucGioNckhTuDong).
+          schema:
+            type: boolean
+        - name: khongViPham
+          in: query
+          required: false
+          description: |
+            Dieu kien "khong vi pham phap luat". Bo trong = gia tri da luu tren
+            phieu, chua co thi mac dinh true.
+          schema:
+            type: boolean
+        - name: qd838
+          in: query
+          required: false
+          description: |
+            Muc NCKHCN theo QD 838 - 0 chua/khong dat, 1 HT tot, 2 HT xuat sac.
+            Bi BO QUA (ep null) khi khong phai giang vien hoac nam hoc < 2025-2026;
+            xem co BatBuocQd838 trong response de biet co hien khoi nay hay khong.
+          schema:
+            type: integer
+            format: int32
+            enum: [0, 1, 2]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuXemTruocChotResponse"
+        "403":
+          description: Khong phai truong don vi chu quan cua ho so
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuXemTruocChotResponse"
+        "404":
+          description: Khong tim thay phieu danh gia
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuXemTruocChotResponse"
   /api/phieu/{id}/khoa/duyet-ho-so:
     post:
       tags:
@@ -2851,13 +2988,24 @@ paths:
         (POST /api/to-trinh-khoa/{id}/ht-duyet).
 
         XEP LOAI - ba cot khac nhau, dung nham la sai nghiep vu:
-        - XepLoaiDeXuat: he thong tinh (XepLoaiCalculator), CHI de doi chieu.
+        - XepLoaiDeXuat: he thong tinh (XepLoaiCalculator), la TRAN duoc chon.
         - XepLoaiKhoa: Truong khoa CHON TAY, chi 1/2/3. Gui 4 -> 400
           (muc 4 do han ngach 20% cua Khoa quyet dinh o buoc dong goi to trinh).
         - xep_loai: ket qua CUOI CUNG, VAN NULL sau buoc nay - chi
           POST /api/to-trinh-khoa/{id}/dong-goi duoc ghi.
 
-        LyDoXepLoai BAT BUOC khi XepLoaiKhoa khac muc he thong de xuat.
+        ⚠️ KHONG NANG XEP LOAI DUOC O BUOC NAY. XepLoaiKhoa > XepLoaiDeXuat -> 400
+        CAM_NANG_XEP_LOAI, ghi LyDoXepLoai cung khong qua. Truong khoa chi duoc GIU
+        NGUYEN hoac HA muc; nang muc anh huong toi han ngach 20% cua ca Khoa nen phai
+        di qua buoc dong goi to trinh. Dung GET /api/phieu/{id}/xem-truoc-chot de lay
+        CacMucChonDuoc (= 1..XepLoaiDeXuat) truoc khi render man hinh.
+
+        LyDoXepLoai BAT BUOC khi XepLoaiKhoa khac muc he thong de xuat - sau chan tran
+        o tren thi "khac" chi con nghia la HA muc.
+
+        DIEU KIEN DIEM TICH LUY LA TIEN QUYET, chan cung trong SP bang tong ma SP TU
+        TINH LAI (khong tin so BLL gui len): muc >= 2 can tong tich luy >= 80, muc >= 3
+        can tong tich luy > 100. Khong dat -> 400 DIEM_KHONG_DU.
 
         Vien chuc / NLD (loai_doi_tuong = 2) toi da muc 2; khong tranh han ngach.
 
@@ -2888,9 +3036,11 @@ paths:
                 $ref: "#/components/schemas/PhieuDanhGiaResponse"
         "400":
           description: >-
-            Bad request - XepLoaiKhoa = 4 hoac ngoai 1..3, thieu LyDoXepLoai khi lech
-            muc de xuat, thieu MucNckhcnQd838 voi giang vien nam >= 2025-2026, hoac GV
-            chua co chuc danh / chua cau hinh dinh muc.
+            Bad request - XepLoaiKhoa = 4 hoac ngoai 1..3; XepLoaiKhoa > XepLoaiDeXuat
+            (CAM_NANG_XEP_LOAI); tong diem tich luy khong du cho muc da chon
+            (DIEM_KHONG_DU); thieu LyDoXepLoai khi ha muc khac de xuat (THIEU_LY_DO);
+            thieu MucNckhcnQd838 voi giang vien nam >= 2025-2026; hoac GV chua co chuc
+            danh / chua cau hinh dinh muc.
           content:
             application/json:
               schema:
@@ -9995,6 +10145,99 @@ components:
           type: string
           format: byte
           description: "Obtained from GET phieu response; prevents concurrent edits"
+    PhieuXemTruocChotResponse:
+      type: object
+      description: |
+        Ket qua GET /api/phieu/{id}/xem-truoc-chot. Tat ca deu la so TAM TINH:
+        khong co gi duoc ghi vao DB cho den khi goi POST .../khoa/duyet-ho-so.
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        IdPhieu:
+          type: integer
+        IdNam:
+          type: integer
+          description: "id_nam >= 2025 nghia la nam hoc 2025-2026 (moc ap dung QD 838)."
+        LoaiDoiTuong:
+          type: integer
+          description: "1 = Giang vien, 2 = Vien chuc/NLD."
+          enum: [1, 2]
+        TrangThai:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+        TrangThaiText:
+          type: string
+        RowVersion:
+          type: string
+          format: byte
+          description: "Dung lai truc tiep cho POST .../khoa/duyet-ho-so."
+        TongDiemCoBan:
+          type: number
+          format: double
+        TongDiemVuotTroi:
+          type: number
+          format: double
+        TongDiemTichLuy:
+          type: number
+          format: double
+          description: "= TongDiemCoBan + TongDiemVuotTroi."
+        XepLoaiDeXuat:
+          type: integer
+          description: "Muc he thong goi y, da kep tran ve 3."
+          enum: [1, 2, 3]
+        XepLoaiDeXuatText:
+          type: string
+        CacMucChonDuoc:
+          type: array
+          description: "Cac muc Truong khoa duoc phep chon: luon 1..XepLoaiDeXuat."
+          items:
+            type: integer
+        GiaiThichMucDeXuat:
+          type: string
+          description: "Cau giai thich vi sao he thong de xuat muc nay - do thang vao UI."
+        DuDinhMucGioNckhApDung:
+          type: boolean
+          description: "Gia tri thuc su da dung de tinh XepLoaiDeXuat."
+        KhongViPhamPhapLuatApDung:
+          type: boolean
+        MucNckhcnQd838ApDung:
+          type: integer
+          nullable: true
+        BatBuocQd838:
+          type: boolean
+          description: "true khi la giang vien VA id_nam >= 2025. FE dua vao day de hien dau *."
+        DuDinhMucGioNckhTuDong:
+          type: boolean
+          nullable: true
+          description: "Ket luan tu dong cua he thong; null khi khong doc duoc dinh muc."
+        GioNckhThucTe:
+          type: number
+          format: double
+          nullable: true
+        GioNckhDinhMucApDung:
+          type: number
+          format: double
+          nullable: true
+        MienNckh:
+          type: boolean
+          description: "Tap su / duoc mien dieu kien du gio NCKH."
+        CanhBaoDinhMuc:
+          type: string
+          nullable: true
+          description: "Khac null khi GV chua co chuc danh / chua cau hinh dinh muc."
+        SoDongDaChot:
+          type: integer
+        SoDongTongCong:
+          type: integer
+        SanSangChot:
+          type: boolean
+          description: "true khi trang_thai = 3 VA moi dong da chot diem."
+        DongChuaChot:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhieuSubmitMissingItemDto"
     PhieuKhoaDuyetHoSoRequest:
       type: object
       required:
@@ -10469,11 +10712,18 @@ components:
           format: date
           nullable: true
           description: >
-            Han tu danh gia hieu luc cua chu phieu = MAX(ngay_dong_tu_danh_gia cua nam,
-            han gia han rieng). Null = khong gioi han.
+            Han hieu luc cua chu phieu = MAX(han cua GIAI DOAN phieu dang o, han gia han
+            rieng). Null = khong gioi han.
+            HAN CUA GIAI DOAN phu thuoc TrangThai: TrangThai = 1 (ke khai lan dau) dung
+            ngay_dong_tu_danh_gia; TrangThai = 2 (co dong bi tham dinh tra ve) dung
+            ngay_dong_danh_gia_cap_tren - vi giai doan tham dinh chay SAU khi han tu
+            danh gia dong. Vi vay HanNop cua cung mot phieu SE DOI khi phieu chuyen 1 -> 2;
+            FE khong duoc cache gia tri nay qua cac lan doi trang thai.
         QuaHan:
           type: boolean
-          description: true = da qua han, phieu bi khoa (CoTheNop luon = false).
+          description: >
+            true = da qua HanNop, chu phieu bi khoa (CoTheNop luon = false, va nop lai
+            cung bi 409 QUA_HAN).
         ThieuMinhChung:
           type: array
           description: Cung kieu voi MissingItems tra ve tu POST submit khi VALIDATION_FAILED.

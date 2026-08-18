@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   chuanHoaFileMinhChung,
   ACCEPT_PDF,
 } from "../../../utils/minhChungPhieuApi";
 import { formatNgay as formatNgayChung } from "../../../utils/phieuApi";
+import LichSuChamDong from "../../QuanLyChamDiem/LichSuChamDong";
 
 /**
  * Khác formatNgay dùng chung ở chỗ trả chuỗi RỖNG thay vì "—": dòng meta của
@@ -15,25 +16,103 @@ const formatNgay = (value) => {
   return ngay === "—" ? "" : ngay;
 };
 
+/**
+ * Khối "lịch sử vòng trước" của một tiêu chí đang chờ chủ phiếu sửa.
+ *
+ * MỞ SẴN: người đang phải sửa cần đọc ngay vòng trước bị chấm bao nhiêu và
+ * chuyên viên nhận xét gì — bắt bấm thêm một nút nữa mới thấy thì gần như không
+ * ai mở. Vẫn giữ nút thu gọn cho tiêu chí bị trả về nhiều lần, lúc đó danh sách
+ * lượt chấm dài và đẩy ô nhập điểm xuống dưới màn hình.
+ *
+ * KHÔNG truyền `chiTiet` xuống LichSuChamDong: khối này chỉ dựng cho dòng chấm
+ * tay (tiêu chí tự động không bao giờ chờ chủ phiếu bổ sung), mà tham số đó chỉ
+ * dùng để nhận diện lượt chấm của máy.
+ */
+const LichSuDongTruoc = ({ lichSu = [], dangTai = false }) => {
+  const [moRong, setMoRong] = useState(true);
+
+  if (dangTai) {
+    return (
+      <div className="pl2-lich-su-tai">
+        <i className="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử chấm
+        điểm...
+      </div>
+    );
+  }
+  if (lichSu.length === 0) return null;
+
+  const soLuot = lichSu.reduce(
+    (tong, nhom) => tong + (nhom.Entries?.length || 0),
+    0,
+  );
+
+  return (
+    <div className="pl2-lich-su">
+      <button
+        type="button"
+        className="pl2-lich-su-nut"
+        onClick={() => setMoRong((truoc) => !truoc)}
+      >
+        <i
+          className={`fa-solid ${moRong ? "fa-chevron-up" : "fa-chevron-down"}`}
+        ></i>{" "}
+        Lịch sử chấm điểm trước đó ({soLuot})
+        <span className="pl2-lich-su-phu">
+          {moRong ? "— thu gọn" : "— xem"}
+        </span>
+      </button>
+      {moRong && (
+        <div className="pl2-lich-su-noi-dung">
+          <LichSuChamDong lichSu={lichSu} />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const formatDiem = (value) => {
   const n = Number(value) || 0;
   return n % 1 === 0 ? String(n) : n.toFixed(2);
 };
 
+/**
+ * Biểu mẫu tự đánh giá.
+ *
+ * Từ quy trình 4 giai đoạn, việc khóa/mở ô nhập tính theo TỪNG DÒNG chứ không
+ * theo trạng thái phiếu: sau khi nộp, một tiêu chí bị trả về vẫn sửa được trong
+ * khi các tiêu chí khác đang chờ thẩm định thì không. Vì vậy component KHÔNG tự
+ * suy diễn từ trạng thái phiếu nữa mà nhận hai hàm từ trang cha:
+ *
+ *   laDongMoNhap(tc)    → tiêu chí này có cho sửa điểm / minh chứng không
+ *   thongTinDong(tc)    → { trangThaiDong, canBoSung, nguonTraVe, lyDoTraVe,
+ *                          ngayTraVe, soLanTraVe } để hiện badge và yêu cầu bổ
+ *                          sung; trả null thì bỏ qua
+ *   lichSuDong(tc)      → lịch sử chấm của dòng, đã gom theo (LanDanhGia, Cap).
+ *                          Chỉ dựng cho dòng đang chờ bổ sung: người phải sửa
+ *                          cần biết vòng trước bị chấm bao nhiêu và vì sao
+ *
+ * `hanhDong` là toàn bộ cụm nút ở góc phải header. Trang cha quyết định nộp /
+ * nộp lại / hủy nộp vì mỗi luồng có điều kiện riêng — form không đoán hộ.
+ */
 const DanhGiaPhuLuc2Form = ({
   criteriaList,
+  // Danh sách dùng để đếm tiến độ ở header. Mặc định trùng criteriaList; trang
+  // cha truyền danh sách ĐẦY ĐỦ khi đang lọc bớt tiêu chí, nếu không thanh tiến
+  // độ sẽ báo "1/1 tiêu chí" trong khi tổng điểm bên cạnh vẫn của cả phiếu.
+  tieuChiThongKe,
   formData,
   autoScores = {},
   tongDiemCoBan,
-  isSubmitting,
-  trangThaiPhieu,
   lyDoTraVe,
+  laDongMoNhap = () => false,
+  thongTinDong = () => null,
+  lichSuDong = () => [],
+  dangTaiLichSu = false,
+  hanhDong = null,
   onScoreChange,
   onTextChange,
   onFileChange,
   onRemoveFile,
-  onSubmit,
-  onRecall,
   onNckhChange,
   onRemoveNckh,
   isKhoaEvaluating = false,
@@ -55,8 +134,9 @@ const DanhGiaPhuLuc2Form = ({
     return v == null || v === "" ? null : Number(v);
   };
 
-  const totalCount = criteriaList.length;
-  const answeredCount = criteriaList.filter(
+  const danhSachThongKe = tieuChiThongKe || criteriaList;
+  const totalCount = danhSachThongKe.length;
+  const answeredCount = danhSachThongKe.filter(
     (tc) => getScoreOf(tc) != null,
   ).length;
   const progressPercent =
@@ -105,48 +185,7 @@ const DanhGiaPhuLuc2Form = ({
           </div>
         </div>
 
-        <div className="pl2-header-actions">
-          {trangThaiPhieu <= 1 && !isKhoaEvaluating && (
-            <>
-              <button
-                onClick={() => onSubmit(1)}
-                disabled={isSubmitting}
-                className="btn-luu-nhap"
-              >
-                <i className="fa-solid fa-floppy-disk"></i> Lưu nháp
-              </button>
-              <button
-                onClick={() => onSubmit(2)}
-                disabled={isSubmitting}
-                className="btn-nop-phieu"
-              >
-                <i className="fa-solid fa-paper-plane"></i> Nộp Phiếu
-              </button>
-            </>
-          )}
-          {trangThaiPhieu === 2 && !isKhoaEvaluating && onRecall && (
-            <button
-              onClick={onRecall}
-              disabled={isSubmitting}
-              className="btn-thu-hoi"
-              title="Đưa phiếu về trạng thái nháp để chỉnh sửa rồi nộp lại"
-            >
-              <i className="fa-solid fa-rotate-left"></i> Hủy nộp để chỉnh sửa
-            </button>
-          )}
-          {trangThaiPhieu === 2 && !isKhoaEvaluating && !onRecall && (
-            <div className="pl2-approved pl2-waiting">
-              <i className="fa-solid fa-paper-plane"></i> Phiếu đã nộp, chờ Khoa
-              đánh giá
-            </div>
-          )}
-          {trangThaiPhieu >= 3 && !isKhoaEvaluating && (
-            <div className="pl2-approved">
-              <i className="fa-solid fa-check-circle"></i> Phiếu đã được phê
-              duyệt
-            </div>
-          )}
-        </div>
+        <div className="pl2-header-actions">{hanhDong}</div>
       </div>
 
       {lyDoTraVe && (
@@ -399,23 +438,55 @@ const DanhGiaPhuLuc2Form = ({
                 const fileList = formData[tc.IdTieuChi]?.DanhSachFile || [];
                 const nckhList = formData[tc.IdTieuChi]?.DanhSachNCKH || [];
 
-                let disabledRadio = false;
-                let disabledText = false;
-
-                if (isKhoaEvaluating) {
-                  disabledRadio = trangThaiPhieu >= 3;
-                  disabledText = trangThaiPhieu >= 3;
-                } else {
-                  disabledRadio = trangThaiPhieu >= 2;
-                  disabledText = trangThaiPhieu >= 2;
-                }
+                // Quyền sửa của DÒNG này, do trang cha quyết định.
+                const moNhap = laDongMoNhap(tc);
+                const disabledRadio = !moNhap;
+                const disabledText = !moNhap;
+                const dong = thongTinDong(tc);
+                const biTraVe = dong?.nguonTraVe != null;
 
                 return (
                   <div
                     key={tc.IdTieuChi}
-                    className={`pl2-criteria ${isActive ? "active" : ""}`}
+                    className={`pl2-criteria ${isActive ? "active" : ""} ${biTraVe ? "pl2-bi-tra-ve" : ""}`}
                   >
                     {criteriaHeader}
+
+                    {dong?.nhan && (
+                      <div className="pl2-dong-trang-thai">
+                        <span
+                          className={`pl2-dong-badge pl2-dong-${dong.trangThaiDong}`}
+                        >
+                          {dong.nhan}
+                        </span>
+                        {dong.soLanTraVe > 0 && (
+                          <span className="pl2-dong-meta">
+                            Đã bị trả về {dong.soLanTraVe} lần
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {biTraVe && dong.lyDoTraVe && (
+                      <div className="pl2-return-note">
+                        <i className="fa-solid fa-circle-exclamation"></i>
+                        <div>
+                          <b>Ghi chú trả về:</b> {dong.lyDoTraVe}
+                          {dong.ngayTraVe && (
+                            <div className="pl2-dong-ngay-tra-ve">
+                              Trả về ngày {formatNgay(dong.ngayTraVe)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {dong?.canBoSung && (
+                      <LichSuDongTruoc
+                        lichSu={lichSuDong(tc)}
+                        dangTai={dangTaiLichSu}
+                      />
+                    )}
 
                     {tc.LoaiThangDiem === 2 ? (
                       <div className="pl2-score-input-container">
@@ -549,7 +620,7 @@ const DanhGiaPhuLuc2Form = ({
                     />
 
                     <div className="pl2-file-upload">
-                      {trangThaiPhieu <= 1 && !isKhoaEvaluating && (
+                      {moNhap && !isKhoaEvaluating && (
                         <div className="pl2-file-actions">
                           <button
                             type="button"
@@ -626,7 +697,7 @@ const DanhGiaPhuLuc2Form = ({
                                     {fileNameDisplay}
                                   </span>
                                 )}
-                                {trangThaiPhieu <= 1 && !isKhoaEvaluating && (
+                                {moNhap && !isKhoaEvaluating && (
                                   <button
                                     type="button"
                                     className="pl2-chip-remove"
@@ -652,20 +723,18 @@ const DanhGiaPhuLuc2Form = ({
                                 <i className="fa-solid fa-book-open"></i>[
                                 {nckhItem.QRanking}] {nckhItem.MoTa}
                               </span>
-                              {trangThaiPhieu <= 1 &&
-                                !isKhoaEvaluating &&
-                                onRemoveNckh && (
-                                  <button
-                                    type="button"
-                                    className="pl2-chip-remove"
-                                    title="Xóa"
-                                    onClick={() =>
-                                      onRemoveNckh(tc.IdTieuChi, nckhIndex)
-                                    }
-                                  >
-                                    <i className="fa-solid fa-xmark"></i>
-                                  </button>
-                                )}
+                              {moNhap && !isKhoaEvaluating && onRemoveNckh && (
+                                <button
+                                  type="button"
+                                  className="pl2-chip-remove"
+                                  title="Xóa"
+                                  onClick={() =>
+                                    onRemoveNckh(tc.IdTieuChi, nckhIndex)
+                                  }
+                                >
+                                  <i className="fa-solid fa-xmark"></i>
+                                </button>
+                              )}
                             </div>
                           ))}
                         </div>

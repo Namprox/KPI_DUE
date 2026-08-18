@@ -3,20 +3,41 @@ import { useNavigate } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
 import '../../css/Pages.css';
 import '../../css/QuanLyChamDiem.css';
-import { fetchPhieuChoCham, formatNgay } from '../../utils/phieuApi';
+import {
+  fetchPhieuChoCham,
+  fetchPhieuDetail,
+  formatNgay,
+  laTieuChiChamTay,
+  TRANG_THAI_DONG,
+} from '../../utils/phieuApi';
 import { useNamDanhGia } from '../../hooks/useNamDanhGia';
 import { chuCaiDau, thongTinNhanVien, useNhanVienIndex } from '../../hooks/useNhanVienIndex';
 import TienDoCham from '../../components/QuanLyChamDiem/TienDoCham';
 import SearchSelect from '../../components/Common/SearchSelect';
 
 const PAGE_SIZE = 20;
+const SO_PHIEU_TAI_SONG_SONG = 5;
 
 /**
- * Hàng đợi phiếu chờ đơn vị chấm.
+ * Hàng đợi gom theo HỒ SƠ — lối vào duy nhất của chuyên viên thẩm định.
+ *
+ * Từ đây bấm "Thẩm định" để mở /quan-ly/phieu/:id và chấm từng tiêu chí. Hàng
+ * đợi theo từng dòng tiêu chí (HangDoiThamDinh) đã bị ẩn khỏi menu vì nó không
+ * xem được minh chứng nên vẫn phải mở hồ sơ mới chấm được — hai lối vào cho
+ * cùng một việc chỉ làm rối. Đừng thêm link sang đó nữa.
  *
  * Server đã lọc sẵn theo JWT + bảng tieu_chi_don_vi_cham: chỉ trả phiếu
  * (trang_thai = 2) mà đơn vị đang đăng nhập có ít nhất một tiêu chí được giao.
  * FE không lọc lại phạm vi, chỉ hiển thị và điều hướng.
+ *
+ * SoTieuChiDaCham đếm theo trang_thai_dong = 3 (đã chốt), KHÔNG theo
+ * diem_khoa IS NOT NULL: một dòng bị trả về vẫn còn điểm của vòng trước nên
+ * đếm theo cột đó sẽ báo nhầm "đã xong" trong khi việc vẫn còn.
+ *
+ * Cột Tiến độ hiện hai thanh: phần việc của đơn vị đang đăng nhập (lấy thẳng từ
+ * hàng đợi) và tiến độ toàn phiếu của giảng viên (gộp mọi đơn vị) — hồ sơ chỉ tự
+ * lên Trưởng khoa khi thanh toàn phiếu đầy, nên chấm xong phần mình mà thanh kia
+ * chưa đầy nghĩa là còn phải chờ đơn vị khác.
  *
  * Phân trang: PhieuDanhGiaResponse không trả tổng số trang, nên nút "Trang sau"
  * chỉ mở khi trang hiện tại đầy (đủ pageSize dòng) — hết dữ liệu sẽ tự khóa lại.
@@ -28,6 +49,7 @@ const ChoCham = () => {
   const { nhanVienIndex } = useNhanVienIndex();
 
   const [rows, setRows] = useState([]);
+  const [tienDoToanPhieu, setTienDoToanPhieu] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('ngay_gui');
@@ -66,6 +88,62 @@ const ChoCham = () => {
     setPage(1);
   }, [selectedNam, sortBy]);
 
+  /**
+   * Tiến độ TOÀN PHIẾU không có trong /phieu/khoa/pending (endpoint chỉ đếm phần
+   * việc của đơn vị đang đăng nhập), nên phải mở chi tiết từng phiếu để đếm.
+   * Tải sau khi bảng đã hiện, theo lô 5 phiếu để không bắn 20 request cùng lúc và
+   * để thanh tiến trình hiện dần thay vì chờ cả trang.
+   *
+   * Giá trị `undefined` = đang tải, `null` = tải hỏng — một phiếu lỗi chỉ mất
+   * thanh của chính nó, không làm hỏng cả bảng.
+   */
+  useEffect(() => {
+    setTienDoToanPhieu({});
+    if (rows.length === 0) return undefined;
+
+    let daHuy = false;
+    (async () => {
+      const ids = rows.map((p) => p.IdPhieu);
+      for (let i = 0; i < ids.length; i += SO_PHIEU_TAI_SONG_SONG) {
+        if (daHuy) return;
+        const lo = ids.slice(i, i + SO_PHIEU_TAI_SONG_SONG);
+        // eslint-disable-next-line no-await-in-loop
+        const ketQua = await Promise.all(
+          lo.map(async (id) => {
+            try {
+              const phieu = await fetchPhieuDetail(id);
+              const chamTay = (phieu?.ChiTiet || []).filter(laTieuChiChamTay);
+              return [
+                id,
+                {
+                  tong: chamTay.length,
+                  xong: chamTay.filter(
+                    (ct) => Number(ct.TrangThaiDong) === TRANG_THAI_DONG.DA_CHOT,
+                  ).length,
+                },
+              ];
+            } catch (error) {
+              console.error('Lỗi tải tiến độ toàn phiếu:', error);
+              return [id, null];
+            }
+          }),
+        );
+        if (daHuy) return;
+        setTienDoToanPhieu((truoc) => {
+          const sau = { ...truoc };
+          ketQua.forEach(([id, giaTri]) => {
+            sau[id] = giaTri;
+          });
+          return sau;
+        });
+      }
+    })();
+
+    return () => {
+      daHuy = true;
+    };
+  }, [rows]);
+
   const rowsHienThi = useMemo(() => {
     const withNames = rows.map((p) => ({ ...p, nv: thongTinNhanVien(nhanVienIndex, p.IdNhanVien) }));
     const q = timKiem.trim().toLowerCase();
@@ -92,10 +170,11 @@ const ChoCham = () => {
 
       <div className="page-header">
         <h2 style={{ margin: 0, color: '#1e293b', fontSize: '22px', fontWeight: 700 }}>
-          Hàng đợi chờ chấm
+          Hồ sơ chờ đơn vị thẩm định
         </h2>
         <span className="breadcrumb">
-          Phiếu đã gửi lên và đơn vị của bạn được giao chấm ít nhất một tiêu chí
+          Hồ sơ đã nộp mà đơn vị của bạn được giao thẩm định ít nhất một tiêu chí —
+          xem tiến độ theo từng hồ sơ
         </span>
       </div>
 
@@ -162,6 +241,7 @@ const ChoCham = () => {
           <div>
             <div className="stat-label">Tiêu chí bạn được giao</div>
             <div className="stat-value">{tongTienDo.tong}</div>
+            <div className="stat-label">trên trang hiện tại</div>
           </div>
         </div>
         <div className="stat-card">
@@ -169,7 +249,7 @@ const ChoCham = () => {
             <i className="fa-solid fa-circle-check"></i>
           </div>
           <div>
-            <div className="stat-label">Tiêu chí đã chấm</div>
+            <div className="stat-label">Tiêu chí đã chốt điểm</div>
             <div className="stat-value">{tongTienDo.xong}</div>
           </div>
         </div>
@@ -204,11 +284,11 @@ const ChoCham = () => {
             <table className="custom-table" style={{ minWidth: '900px' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '30%' }}>Giảng viên</th>
-                  <th style={{ width: '20%' }}>Đơn vị</th>
-                  <th style={{ width: '12%' }}>Ngày gửi</th>
-                  <th style={{ width: '10%', textAlign: 'center' }}>Vòng</th>
-                  <th style={{ width: '20%' }}>Tiến độ phần bạn chấm</th>
+                  <th style={{ width: '27%' }}>Giảng viên</th>
+                  <th style={{ width: '17%' }}>Đơn vị</th>
+                  <th style={{ width: '11%' }}>Ngày gửi</th>
+                  <th style={{ width: '9%', textAlign: 'center' }}>Vòng</th>
+                  <th style={{ width: '28%' }}>Tiến độ</th>
                   <th style={{ width: '8%', textAlign: 'center' }}>Thao tác</th>
                 </tr>
               </thead>
@@ -216,6 +296,7 @@ const ChoCham = () => {
                 {rowsHienThi.map((p) => {
                   const xong = p.SoTieuChiDaCham || 0;
                   const tong = p.SoTieuChiDuocGiao || 0;
+                  const toanPhieu = tienDoToanPhieu[p.IdPhieu];
                   return (
                     <tr key={p.IdPhieu}>
                       <td>
@@ -233,16 +314,32 @@ const ChoCham = () => {
                         <span className="tag-badge">Lần {p.LanDanhGia}</span>
                       </td>
                       <td>
-                        <TienDoCham xong={xong} tong={tong} nhan="Đã chấm" />
+                        <div className="cd-progress-stack">
+                          <TienDoCham xong={xong} tong={tong} nhan="Phần bạn thẩm định" />
+                          {toanPhieu === undefined ? (
+                            <div className="cd-progress-ghichu">
+                              <i className="fa-solid fa-spinner fa-spin"></i> Đang tính tiến độ toàn phiếu...
+                            </div>
+                          ) : toanPhieu === null ? (
+                            <div className="cd-progress-ghichu">Không tải được tiến độ toàn phiếu</div>
+                          ) : (
+                            <TienDoCham
+                              xong={toanPhieu.xong}
+                              tong={toanPhieu.tong}
+                              nhan="Toàn phiếu giảng viên"
+                              phu
+                            />
+                          )}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <button
                           className="btn-submit"
-                          title="Mở màn hình chấm"
+                          title="Mở hồ sơ để thẩm định từng tiêu chí"
                           style={{ padding: '8px 14px' }}
                           onClick={() => navigate(`/quan-ly/phieu/${p.IdPhieu}`)}
                         >
-                          <i className="fa-solid fa-pen-to-square"></i> Chấm
+                          <i className="fa-solid fa-pen-to-square"></i> Thẩm định
                         </button>
                       </td>
                     </tr>

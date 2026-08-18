@@ -14,8 +14,9 @@ import QLNgoaiLeDinhMuc from "../pages/QuanLyKeHoach/QL_NgoaiLeDinhMuc";
 import DanhGiaPhuLuc2 from "../pages/DanhGia/DanhGiaPhuLuc2";
 import DanhGiaNhanVien from "../pages/DanhGia/DanhGiaNhanVien";
 import LichSuDanhGia from "../pages/DanhGia/LichSuDanhGia";
-import DanhSachDuyetPhieu from "../pages/QuanLyDanhGia/DanhSachDuyetPhieu";
-import ChiTietDuyetPhieu from "../pages/QuanLyDanhGia/ChiTietDuyetPhieu";
+import ChiTietPhieuCuaToi from "../pages/DanhGia/ChiTietPhieuCuaToi";
+import DuyetToTrinh from "../pages/QuanLyDanhGia/DuyetToTrinh";
+import TheoDoiPhieuTruong from "../pages/QuanLyDanhGia/TheoDoiPhieuTruong";
 import QLGioGiang from "../pages/QuanLyKeHoach/QL_GioGiang";
 import QLViPham from "../pages/QuanLyKeHoach/QL_ViPham";
 import QLLoaiViPham from "../pages/QuanLyKeHoach/QL_LoaiViPham";
@@ -33,8 +34,13 @@ import PhanHoiSinhVienCuaToi from "../pages/CaNhan/PhanHoiSinhVienCuaToi";
 import NhiemVuKhoaCuaToi from "../pages/CaNhan/NhiemVuKhoaCuaToi";
 import ViPhamCuaToi from "../pages/CaNhan/ViPhamCuaToi";
 import ChoCham from "../pages/QuanLyChamDiem/ChoCham";
+// HangDoiThamDinh (hàng đợi theo dòng tiêu chí) đã bị ẩn — xem ghi chú ở
+// menuConfig.js. File màn hình vẫn giữ trong pages/QuanLyChamDiem/.
 import DanhSachPhieu from "../pages/QuanLyChamDiem/DanhSachPhieu";
 import ChamDiemPhieu from "../pages/QuanLyChamDiem/ChamDiemPhieu";
+import DuyetHoSoKhoa from "../pages/QuanLyChamDiem/DuyetHoSoKhoa";
+import ChotHoSoKhoa from "../pages/QuanLyChamDiem/ChotHoSoKhoa";
+import ToTrinhKhoa from "../pages/QuanLyChamDiem/ToTrinhKhoa";
 import HoSoKpiGiangVien from "../pages/QuanLyChamDiem/HoSoKpiGiangVien";
 import BaoCaoDonVi from "../pages/QuanLyChamDiem/BaoCaoDonVi";
 import PhanCongNhiemVuKhoa from "../pages/QuanLyChamDiem/PhanCongNhiemVuKhoa";
@@ -58,6 +64,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/danh-gia-phu-luc-2" element={<DanhGiaPhuLuc2 />} />
         <Route path="/danh-gia-kpi-nhan-vien" element={<DanhGiaNhanVien />} />
         <Route path="/lich-su-danh-gia" element={<LichSuDanhGia />} />
+        <Route path="/lich-su-danh-gia/:id" element={<ChiTietPhieuCuaToi />} />
         <Route path="/kho-minh-chung" element={<KhoMinhChung />} />
         <Route
           path="/phan-hoi-sinh-vien-cua-toi"
@@ -104,8 +111,8 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         />
         <Route path="/quan-ly-chuc-danh" element={<QLChucDanh />} />
         <Route path="/quan-ly-chuc-vu" element={<QLChucVu />} />
-        <Route path="/danh-sach-duyet-phieu" element={<DanhSachDuyetPhieu />} />
-        <Route path="/chi-tiet-duyet-phieu" element={<ChiTietDuyetPhieu />} />
+        <Route path="/truong/to-trinh" element={<DuyetToTrinh />} />
+        <Route path="/truong/phieu" element={<TheoDoiPhieuTruong />} />
         <Route path="/quan-ly-gio-giang" element={<QLGioGiang />} />
         <Route path="/quan-ly-vi-pham" element={<QLViPham />} />
         <Route path="/danh-muc-loai-vi-pham" element={<QLLoaiViPham />} />
@@ -126,6 +133,9 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/quan-ly/cho-cham" element={<ChoCham />} />
         <Route path="/quan-ly/phieu" element={<DanhSachPhieu />} />
         <Route path="/quan-ly/phieu/:id" element={<ChamDiemPhieu />} />
+        <Route path="/quan-ly/duyet-ho-so" element={<DuyetHoSoKhoa />} />
+        <Route path="/quan-ly/duyet-ho-so/:id" element={<ChotHoSoKhoa />} />
+        <Route path="/quan-ly/to-trinh" element={<ToTrinhKhoa />} />
         <Route
           path="/quan-ly/giang-vien/:idNv"
           element={<HoSoKpiGiangVien />}

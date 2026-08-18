@@ -34,18 +34,17 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
         chucDanh: CHUC_DANH_SETS.NHAN_VIEN,
       },
-      {
-        // Chấm cho cả đơn vị: thư ký Khoa/Phòng nhập, trưởng đơn vị ký.
-        // Đây là quyền theo chức vụ nên KHÔNG gate theo chức danh.
-        name: "Đánh giá KPI Đơn vị",
-        icon: "fa-solid fa-users-gear",
-        path: "/danh-gia-kpi-don-vi",
-        roles: ROLE_SETS.DANH_GIA_DON_VI,
-      },
+      // Mục "Đánh giá KPI Đơn vị" (/danh-gia-kpi-don-vi) đã được gỡ khỏi đây:
+      // phân hệ phiếu đơn vị chạy trên bộ API riêng (/api/phieu-don-vi) và chưa
+      // có màn hình nào trong AppRoutes, nên mục này chỉ dẫn tới trang trắng.
+      // Khai lại khi phân hệ đó được xây, cùng ROLE_SETS.DANH_GIA_DON_VI.
       {
         name: "Lịch sử đánh giá",
         icon: "fa-solid fa-clock-rotate-left",
         path: "/lich-su-danh-gia",
+        // Bản chỉ đọc của màn hình chấm điểm, mở từ nút trong bảng. Cùng quyền
+        // với trang cha vì server đã giới hạn phiếu về đúng người đăng nhập.
+        childPaths: ["/lich-su-danh-gia/:id"],
         roles: MOI_NGUOI,
       },
       {
@@ -98,7 +97,12 @@ export const MENU_GROUPS = [
     icon: "fa-clipboard-check",
     items: [
       {
-        name: "Hàng đợi chờ chấm",
+        // Giai đoạn 2 — lối vào duy nhất của chuyên viên thẩm định. Hàng đợi
+        // theo TỪNG DÒNG tiêu chí (/quan-ly/tham-dinh) đã bị ẩn khỏi menu và
+        // AppRoutes: nó không xem được minh chứng nên vẫn phải mở hồ sơ để
+        // chấm, thành ra chỉ nhân đôi lối đi. File màn hình vẫn còn ở
+        // pages/QuanLyChamDiem/HangDoiThamDinh.js nếu cần bật lại.
+        name: "Hồ sơ chờ thẩm định",
         icon: "fa-solid fa-inbox",
         path: "/quan-ly/cho-cham",
         roles: ROLE_SETS.TRUONG_DON_VI,
@@ -111,6 +115,21 @@ export const MENU_GROUPS = [
         // Màn hình chấm và hồ sơ tra cứu không có mục sidebar riêng nhưng phải
         // được khai ở đây, nếu không <RequireRole> sẽ chặn khi mở bằng URL.
         childPaths: ["/quan-ly/phieu/:id", "/quan-ly/giang-vien/:idNv"],
+      },
+      {
+        // Giai đoạn 3 — thẩm quyền của TRƯỞNG KHOA, Trưởng Phòng không vào được.
+        name: "Duyệt hồ sơ KPI",
+        icon: "fa-solid fa-user-check",
+        path: "/quan-ly/duyet-ho-so",
+        roles: ROLE_SETS.TRUONG_KHOA,
+        childPaths: ["/quan-ly/duyet-ho-so/:id"],
+      },
+      {
+        // Giai đoạn 4 phía Khoa — đóng gói hạn ngạch xuất sắc rồi trình Hiệu trưởng.
+        name: "Tờ trình KPI Khoa",
+        icon: "fa-solid fa-file-signature",
+        path: "/quan-ly/to-trinh",
+        roles: ROLE_SETS.TRUONG_KHOA,
       },
       {
         // Cùng màn hình với mục "Ghi nhận vi phạm" ở nhóm kế hoạch — chỉ khác
@@ -142,12 +161,6 @@ export const MENU_GROUPS = [
     label: "Thiết lập kế hoạch",
     icon: "fa-calendar-check",
     items: [
-      {
-        name: "Danh sách phiếu đánh giá",
-        icon: "fa-solid fa-clipboard-check",
-        path: "/quan-ly-phieu",
-        roles: ROLE_SETS.QUAN_TRI,
-      },
       {
         name: "Quản lý năm đánh giá",
         icon: "fa-solid fa-calendar-days",
@@ -274,16 +287,23 @@ export const MENU_GROUPS = [
     ],
   },
   {
+    // Phân hệ CẤP TRƯỜNG. Hiệu trưởng không còn duyệt từng phiếu lẻ: đơn vị
+    // thao tác là cả GÓI KPI của một Khoa (tờ trình).
     key: "evaluationMgmt",
     label: "Quản lý đánh giá",
     icon: "fa-check-double",
     items: [
       {
-        name: "Danh sách duyệt phiếu",
-        icon: "fa-solid fa-file-pen",
-        path: "/danh-sach-duyet-phieu",
-        roles: ROLE_SETS.QUAN_TRI,
-        childPaths: ["/chi-tiet-duyet-phieu"],
+        name: "Duyệt tờ trình KPI",
+        icon: "fa-solid fa-stamp",
+        path: "/truong/to-trinh",
+        roles: ROLE_SETS.CAP_TRUONG,
+      },
+      {
+        name: "Theo dõi phiếu toàn trường",
+        icon: "fa-solid fa-binoculars",
+        path: "/truong/phieu",
+        roles: ROLE_SETS.CAP_TRUONG,
       },
     ],
   },

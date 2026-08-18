@@ -6,28 +6,57 @@ import '../../css/QuanLyChamDiem.css';
 import { useAuth } from '../../context/AuthContext';
 import { useNamDanhGia } from '../../hooks/useNamDanhGia';
 import {
+  fetchPhieuDetail,
   fetchPhieuList,
   formatDiem,
   formatNgay,
+  laTieuChiChamTay,
+  NGUON_TRA_VE,
   TRANG_THAI,
+  TRANG_THAI_DONG,
   TRANG_THAI_META,
 } from '../../utils/phieuApi';
-import { duongDanPhieuTuDanhGia } from '../../utils/roles';
 import {
   TrangThaiBadge,
   XepLoaiBadge,
 } from '../../components/QuanLyChamDiem/TrangThaiBadge';
+import TienDoCham from '../../components/QuanLyChamDiem/TienDoCham';
 import SearchSelect from '../../components/Common/SearchSelect';
 
 const PAGE_SIZE = 20;
+const SO_PHIEU_TAI_SONG_SONG = 5;
 
 const MOI_TRANG_THAI = [
   TRANG_THAI.NHAP,
-  TRANG_THAI.DON_VI_CHAM,
-  TRANG_THAI.CHO_HT_DUYET,
-  TRANG_THAI.HT_DA_DUYET,
+  TRANG_THAI.THAM_DINH,
+  TRANG_THAI.CHO_TK_DUYET,
+  TRANG_THAI.TK_DA_DUYET,
   TRANG_THAI.HOAN_TAT,
 ];
+
+/**
+ * Tiến độ chấm của một phiếu, đếm từ ChiTiet[] của bản chi tiết.
+ *
+ * Mẫu số là tiêu chí CHẤM TAY (giống tinhTienDoCham): dòng LoaiNguonDiem = 2
+ * được engine chốt ngay trong giao dịch nộp phiếu nên gộp vào sẽ khiến thanh
+ * tiến độ báo gần đầy khi chưa ai thẩm định.
+ *
+ * `choBoSung` đếm dòng đang mở yêu cầu trả về cho chủ phiếu — đây là phần việc
+ * của chính người đang xem bảng, nên tách riêng khỏi "chưa chốt".
+ */
+const doTienDoPhieu = (phieu) => {
+  const chiTiet = phieu?.ChiTiet || [];
+  const chamTay = chiTiet.filter(laTieuChiChamTay);
+  return {
+    tong: chamTay.length,
+    xong: chamTay.filter(
+      (ct) => Number(ct.TrangThaiDong) === TRANG_THAI_DONG.DA_CHOT,
+    ).length,
+    choBoSung: chiTiet.filter(
+      (ct) => Number(ct.NguonTraVe) === NGUON_TRA_VE.DON_VI_THAM_DINH,
+    ).length,
+  };
+};
 
 /**
  * Danh sách phiếu đánh giá của CHÍNH NGƯỜI ĐANG ĐĂNG NHẬP, qua các năm.
@@ -46,6 +75,8 @@ const LichSuDanhGia = () => {
   const { namList, selectedNam, dangTaiNam } = useNamDanhGia();
 
   const [rows, setRows] = useState([]);
+  // IdPhieu -> tiến độ chấm. undefined = đang tải, null = tải hỏng.
+  const [tienDoTheoPhieu, setTienDoTheoPhieu] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [idNam, setIdNam] = useState(''); // '' = mọi năm
   const [trangThaiChon, setTrangThaiChon] = useState([]); // rỗng = mọi trạng thái
@@ -96,22 +127,104 @@ const LichSuDanhGia = () => {
     setPage(1);
   }, [idNam, trangThaiChon, sortBy]);
 
+  /**
+   * Trạng thái chấm không có trong PhieuDanhGiaDto của danh sách (chỉ có trạng
+   * thái HỒ SƠ), nên phải mở chi tiết từng phiếu để đếm dòng đã chốt. Tải sau khi
+   * bảng đã hiện, theo lô 5 phiếu để không bắn cả trang request cùng lúc và để
+   * từng dòng sáng dần thay vì chờ hết.
+   *
+   * Một phiếu lỗi chỉ mất ô của chính nó, không làm hỏng cả bảng.
+   */
+  useEffect(() => {
+    setTienDoTheoPhieu({});
+    if (rows.length === 0) return undefined;
+
+    let daHuy = false;
+    (async () => {
+      // Phiếu chưa nộp thì chưa ai chấm — bỏ qua để khỏi tốn một request cho ô
+      // vốn chỉ hiện dòng chữ "chưa nộp".
+      const ids = rows
+        .filter((p) => Number(p.TrangThai) !== TRANG_THAI.NHAP)
+        .map((p) => p.IdPhieu);
+      for (let i = 0; i < ids.length; i += SO_PHIEU_TAI_SONG_SONG) {
+        if (daHuy) return;
+        const lo = ids.slice(i, i + SO_PHIEU_TAI_SONG_SONG);
+        // eslint-disable-next-line no-await-in-loop
+        const ketQua = await Promise.all(
+          lo.map(async (id) => {
+            try {
+              return [id, doTienDoPhieu(await fetchPhieuDetail(id))];
+            } catch (error) {
+              console.error('Lỗi tải tiến độ chấm của phiếu:', error);
+              return [id, null];
+            }
+          }),
+        );
+        if (daHuy) return;
+        setTienDoTheoPhieu((truoc) => {
+          const sau = { ...truoc };
+          ketQua.forEach(([id, giaTri]) => {
+            sau[id] = giaTri;
+          });
+          return sau;
+        });
+      }
+    })();
+
+    return () => {
+      daHuy = true;
+    };
+  }, [rows]);
+
   const toggleTrangThai = (tt) => {
     setTrangThaiChon((cur) =>
       cur.includes(tt) ? cur.filter((x) => x !== tt) : [...cur, tt].sort((a, b) => a - b),
     );
   };
 
-  const moPhieu = (p) => {
-    const duongDan = duongDanPhieuTuDanhGia(currentUser, p.IdNam);
-    if (duongDan) navigate(duongDan);
-    else {
-      showToast(
-        'warn',
-        'Không mở được phiếu',
-        'Chức danh nghề nghiệp của bạn không gắn với biểu mẫu KPI cá nhân nào.',
+  /**
+   * Ô "Trạng thái chấm". Phiếu chưa nộp thì không có gì để chấm — hiện 0/0 chỉ
+   * bịa ra một phần việc chưa tồn tại.
+   */
+  const veTrangThaiCham = (p) => {
+    if (Number(p.TrangThai) === TRANG_THAI.NHAP) {
+      return (
+        <span style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>
+          Chưa nộp, chưa chấm
+        </span>
       );
     }
+
+    const td = tienDoTheoPhieu[p.IdPhieu];
+    if (td === undefined) {
+      return (
+        <div className="cd-progress-ghichu">
+          <i className="fa-solid fa-spinner fa-spin"></i> Đang tính...
+        </div>
+      );
+    }
+    if (td === null) {
+      return <div className="cd-progress-ghichu">Không tải được tiến độ</div>;
+    }
+    if (td.tong === 0) {
+      return (
+        <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+          Không có tiêu chí chấm tay
+        </span>
+      );
+    }
+
+    return (
+      <div className="cd-progress-stack">
+        <TienDoCham xong={td.xong} tong={td.tong} nhan="Đã chốt điểm" />
+        {td.choBoSung > 0 && (
+          <div className="cd-progress-ghichu" style={{ color: '#c2410c' }}>
+            <i className="fa-solid fa-rotate-left"></i> {td.choBoSung} tiêu chí
+            chờ bạn bổ sung
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -225,15 +338,16 @@ const LichSuDanhGia = () => {
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table className="custom-table" style={{ minWidth: '900px' }}>
+            <table className="custom-table" style={{ minWidth: '1080px' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '12%' }}>Năm học</th>
-                  <th style={{ width: '20%', textAlign: 'center' }}>Trạng thái</th>
-                  <th style={{ width: '14%', textAlign: 'right' }}>Tổng điểm</th>
-                  <th style={{ width: '20%', textAlign: 'center' }}>Xếp loại</th>
-                  <th style={{ width: '16%' }}>Ngày gửi</th>
-                  <th style={{ width: '12%', textAlign: 'center' }}>Thao tác</th>
+                  <th style={{ width: '9%' }}>Năm học</th>
+                  <th style={{ width: '16%', textAlign: 'center' }}>Trạng thái</th>
+                  <th style={{ width: '20%' }}>Trạng thái chấm</th>
+                  <th style={{ width: '11%', textAlign: 'right' }}>Tổng điểm</th>
+                  <th style={{ width: '16%', textAlign: 'center' }}>Xếp loại</th>
+                  <th style={{ width: '13%' }}>Ngày gửi</th>
+                  <th style={{ width: '15%', textAlign: 'center' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -243,6 +357,7 @@ const LichSuDanhGia = () => {
                     <td style={{ textAlign: 'center' }}>
                       <TrangThaiBadge trangThai={p.TrangThai} />
                     </td>
+                    <td>{veTrangThaiCham(p)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
                       {formatDiem(p.TongDiemTichLuy)}
                     </td>
@@ -256,19 +371,23 @@ const LichSuDanhGia = () => {
                         <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Chưa nộp</span>
                       )}
                     </td>
+                    {/* Bảng này chỉ để TRA CỨU. Lối vào form tự đánh giá nằm ở
+                        mục riêng trên sidebar, không nhân bản vào đây: form đi
+                        theo NĂM chứ không theo IdPhieu, và với phiếu đã qua thẩm
+                        định nó chỉ là bản chỉ đọc nghèo hơn trang chi tiết. */}
                     <td>
                       <div className="table-actions">
                         <button
                           type="button"
                           className="action-btn view-btn"
-                          title="Xem phiếu đánh giá năm này"
-                          onClick={() => moPhieu(p)}
+                          title="Xem điểm từng tiêu chí, minh chứng và lịch sử chấm"
+                          onClick={() => navigate(`/lich-su-danh-gia/${p.IdPhieu}`)}
                         >
-                          <i className="fa-solid fa-eye"></i>
+                          <i className="fa-solid fa-list-check"></i>
                         </button>
                         <button
                           type="button"
-                          className="action-btn edit-btn"
+                          className="action-btn view-btn"
                           title="Xem minh chứng của phiếu này"
                           onClick={() => navigate(`/kho-minh-chung?idPhieu=${p.IdPhieu}`)}
                         >

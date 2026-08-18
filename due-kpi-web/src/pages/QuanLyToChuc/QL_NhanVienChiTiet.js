@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "../../css/Pages.css";
 import { apiFetch } from "../../utils/api";
+import { fetchAllNhanVien } from "../../utils/nhanVienApi";
 import SearchSelect from "../../components/Common/SearchSelect";
 
 const QL_NhanVienChiTiet = () => {
@@ -145,8 +146,8 @@ const QL_NhanVienChiTiet = () => {
 
   useEffect(() => {
     fetchDropdownData();
+    fetchNhanVienList();
     if (isEditing) {
-      fetchEmployeeDetail();
       fetchChucDanhHistory();
       fetchChucVuConcurrent();
     }
@@ -155,11 +156,10 @@ const QL_NhanVienChiTiet = () => {
 
   const fetchDropdownData = async () => {
     try {
-      const [dvRes, cvRes, cdRes, nvRes] = await Promise.all([
+      const [dvRes, cvRes, cdRes] = await Promise.all([
         apiFetch("donvi"),
         apiFetch("chucvu"),
         apiFetch("chuc-danh-nghe-nghiep"),
-        apiFetch("nhan-vien"),
       ]);
 
       if (dvRes.ok) {
@@ -185,44 +185,38 @@ const QL_NhanVienChiTiet = () => {
           });
         setChucDanhList(processedList);
       }
-      if (nvRes.ok) {
-        const res = await nvRes.json();
-        const list = res.Items || (Array.isArray(res) ? res : []);
-        setQuanLyList(list);
-      }
     } catch (error) {
       console.error("Lỗi tải dữ liệu dropdown:", error);
     }
   };
 
-  const fetchEmployeeDetail = async () => {
-    setIsLoading(true);
+  const fetchNhanVienList = async () => {
+    if (isEditing) setIsLoading(true);
     try {
-      const response = await apiFetch("nhan-vien");
-      if (response.ok) {
-        const result = await response.json();
-        const list = result.Items || (Array.isArray(result) ? result : []);
-        const found = list.find((item) => item.IdNhanVien === parseInt(id));
-        if (found) {
-          const detail = {
-            ...found,
-            IdDonVi: found.IdDonVi || "",
-            IdChucVu: found.IdChucVu || "",
-            IdChucDanh: found.IdChucDanh || "",
-            IdQuanLyTrucTiep: found.IdQuanLyTrucTiep || "",
-            MatKhau: "", // empty by default when editing
-          };
-          setFormData(detail);
-          setOriginalFormData(detail);
-        } else {
-          alert("Không tìm thấy nhân viên này!");
-          navigate("/quan-ly-nguoi-dung");
-        }
+      const list = await fetchAllNhanVien({ trangThai: null });
+      setQuanLyList(list);
+      if (!isEditing) return;
+
+      const found = list.find((item) => item.IdNhanVien === parseInt(id));
+      if (found) {
+        const detail = {
+          ...found,
+          IdDonVi: found.IdDonVi || "",
+          IdChucVu: found.IdChucVu || "",
+          IdChucDanh: found.IdChucDanh || "",
+          IdQuanLyTrucTiep: found.IdQuanLyTrucTiep || "",
+          MatKhau: "", // empty by default when editing
+        };
+        setFormData(detail);
+        setOriginalFormData(detail);
+      } else {
+        alert("Không tìm thấy nhân viên này!");
+        navigate("/quan-ly-nguoi-dung");
       }
     } catch (error) {
       console.error("Lỗi tải chi tiết nhân viên:", error);
     } finally {
-      setIsLoading(false);
+      if (isEditing) setIsLoading(false);
     }
   };
 

@@ -17,31 +17,49 @@ import {
   fetchPhieuCuaToi,
   formatDiem,
   formatNgay,
+  laDongBiTraVe,
+  locDongChoBoSung,
+  moTaHanNop,
+  nhanHanNop,
+  parseNgay,
   tenTrangThai,
   tinhCuaSoTuDanhGia,
   TRANG_THAI,
   TRANG_THAI_META,
 } from "../../utils/phieuApi";
-import { duongDanPhieuTuDanhGia } from "../../utils/roles";
+import { duongDanPhieuTuDanhGia, hasRole, ROLE_SETS } from "../../utils/roles";
 import SearchSelect from "../../components/Common/SearchSelect";
+import ThieuTieuChiChecklist from "../../components/DanhGia/ThieuTieuChiChecklist";
 import {
   TrangThaiBadge,
   XepLoaiBadge,
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
+import TongQuanKhoa from "../../components/QuanLyChamDiem/TongQuanKhoa";
 
-/** Màu thẻ "hạn tự đánh giá" theo mức độ gấp. */
+/** Màu thẻ hạn theo mức độ gấp. */
 const MAU_HAN = {
   "chua-mo": { bg: "#f1f5f9", color: "#475569" },
   "dang-mo": { bg: "#ecfdf5", color: "#047857" },
+  "sap-het": { bg: "#fffbeb", color: "#b45309" },
   "da-dong": { bg: "#fef2f2", color: "#b91c1c" },
   "khong-ro": { bg: "#f1f5f9", color: "#64748b" },
 };
 
-const mauHanGap = (cuaSo) => {
-  if (cuaSo.trangThai === "dang-mo" && cuaSo.soNgayConLai <= 7) {
-    return { bg: "#fffbeb", color: "#b45309" };
-  }
-  return MAU_HAN[cuaSo.trangThai] || MAU_HAN["khong-ro"];
+const MOT_NGAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Số ngày còn lại tính từ một mốc hạn do SERVER cấp (HanNop).
+ *
+ * Đây chỉ là định dạng hiển thị, không phải suy diễn hạn: cột hạn trong DB là
+ * DATE nên phải kéo đến hết ngày trước khi trừ, nếu không người dùng mất trắng
+ * ngày cuối.
+ */
+const soNgayToiHan = (han) => {
+  const ngay = parseNgay(han);
+  if (!ngay) return null;
+  const hetNgay = new Date(ngay);
+  hetNgay.setHours(23, 59, 59, 999);
+  return Math.ceil((hetNgay.getTime() - Date.now()) / MOT_NGAY_MS);
 };
 
 /**
@@ -62,6 +80,11 @@ const TongQuanCaNhan = () => {
   const [phieu, setPhieu] = useState(null);
   const [kiemTra, setKiemTra] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Khối Khoa tự quản lý vòng đời dữ liệu của nó; nút "Làm mới" chung chỉ đẩy
+  // token này sang để nó tải lại, thay vì kéo state của Khoa lên trang cha.
+  const [lanLamMoi, setLanLamMoi] = useState(0);
+
+  const laTruongKhoa = hasRole(ROLE_SETS.TRUONG_KHOA, currentUser);
 
   const showToast = (severity, summary, detail) => {
     toast.current?.show({ severity, summary, detail, life: 4000 });
@@ -77,9 +100,11 @@ const TongQuanCaNhan = () => {
     const phieuCuaToi = await fetchPhieuCuaToi(selectedNam);
     setPhieu(phieuCuaToi);
 
-    // Checklist chỉ có nghĩa khi phiếu còn ở trạng thái Nhập — phiếu đã nộp thì
-    // không còn gì để bổ sung, gọi thêm chỉ tốn một vòng mạng.
-    if (phieuCuaToi?.IdPhieu && phieuCuaToi.TrangThai === TRANG_THAI.NHAP) {
+    // Gọi cho MỌI phiếu, không chỉ phiếu đang ở trạng thái Nhập: từ khi hạn được
+    // chọn theo giai đoạn, đây là chỗ duy nhất biết hạn hiệu lực và cờ QuaHan
+    // của phiếu ở trạng thái 2 (vòng lặp trả về). SoTieuChiThieu cũng chỉ đếm
+    // dòng đang chờ kê khai nên dùng chung được cho cả nộp lại.
+    if (phieuCuaToi?.IdPhieu) {
       try {
         setKiemTra(await fetchKiemTraHopLe(phieuCuaToi.IdPhieu));
       } catch (error) {
@@ -100,7 +125,53 @@ const TongQuanCaNhan = () => {
     [namList, selectedNam],
   );
 
-  const cuaSo = useMemo(() => tinhCuaSoTuDanhGia(namDangChon), [namDangChon]);
+  /**
+   * Cửa sổ tự đánh giá theo cấu hình NĂM — chỉ dùng khi CHƯA có phiếu.
+   * Có phiếu rồi thì hạn hiệu lực do server chọn theo giai đoạn và chỉ đọc được
+   * ở kiem-tra-hop-le; tự tính lại sẽ báo "đã đóng" cho cả người đang trong hạn
+   * bổ sung theo yêu cầu thẩm định.
+   */
+  const cuaSoNam = useMemo(
+    () => tinhCuaSoTuDanhGia(namDangChon),
+    [namDangChon],
+  );
+
+  /**
+   * Chủ phiếu còn việc phải làm không.
+   *
+   * Nộp lại KHÔNG đưa phiếu ra khỏi trạng thái 2 (đúng thiết kế — không phải
+   * vòng đánh giá mới) nên `HanNop` vẫn là hạn thẩm định và vẫn còn giá trị.
+   * Nhưng lúc đó bóng đã sang chân đơn vị thẩm định, hiện tiếp một cái hạn chỉ
+   * khiến người dùng tưởng mình còn phải nộp gì nữa.
+   */
+  const conViecCuaChuPhieu =
+    !phieu ||
+    Number(phieu.TrangThai) === TRANG_THAI.NHAP ||
+    locDongChoBoSung(phieu.ChiTiet || []).length > 0;
+
+  const quaHan = kiemTra
+    ? Boolean(kiemTra.QuaHan)
+    : cuaSoNam.trangThai === "da-dong";
+
+  // Nhãn tự đổi theo giai đoạn: "Hạn tự đánh giá" ở trạng thái 1, "Hạn bổ sung
+  // theo yêu cầu thẩm định" ở trạng thái 2.
+  const nhanHan = kiemTra ? nhanHanNop(kiemTra.TrangThai) : "Hạn tự đánh giá";
+  const thongDiepHan = kiemTra ? moTaHanNop(kiemTra) : cuaSoNam.thongDiep;
+
+  const hanNop = kiemTra ? kiemTra.HanNop : cuaSoNam.ngayDong;
+  const soNgayConLai = quaHan ? null : soNgayToiHan(hanNop);
+
+  const mauHan = !conViecCuaChuPhieu
+    ? MAU_HAN["dang-mo"]
+    : quaHan
+      ? MAU_HAN["da-dong"]
+      : !kiemTra && cuaSoNam.trangThai === "chua-mo"
+        ? MAU_HAN["chua-mo"]
+        : soNgayConLai == null
+          ? MAU_HAN["khong-ro"]
+          : soNgayConLai <= 7
+            ? MAU_HAN["sap-het"]
+            : MAU_HAN["dang-mo"];
 
   /**
    * Điểm tạm tính khi server chưa chốt TongDiemTichLuy: cộng dồn điểm tự đánh giá
@@ -116,9 +187,21 @@ const TongQuanCaNhan = () => {
     );
   }, [phieu]);
 
+  /**
+   * Tiêu chí đơn vị thẩm định đã trả về cho chính người đang xem (NguonTraVe = 2).
+   * Chỉ dòng có yêu cầu trả về ĐANG MỞ mới còn giữ trường này — nộp lại xong là
+   * server xóa, nên không cần lọc thêm theo TrangThaiDong.
+   *
+   * NguonTraVe = 3 (Trưởng khoa trả đơn vị thẩm định làm lại) KHÔNG thuộc việc
+   * của giảng viên, đừng gộp vào đây.
+   */
+  const dongBiTraVe = useMemo(
+    () => (phieu?.ChiTiet || []).filter(laDongBiTraVe),
+    [phieu],
+  );
+
   const daChotDiem = phieu?.TongDiemTichLuy != null;
   const thieu = kiemTra?.ThieuMinhChung || [];
-  const mauHan = mauHanGap(cuaSo);
 
   const moPhieu = () => {
     if (duongDanPhieu) navigate(duongDanPhieu);
@@ -130,9 +213,6 @@ const TongQuanCaNhan = () => {
 
       <div className="page-header">
         <h2 className="tq-title">Xin chào, {currentUser.HoTen || "bạn"}</h2>
-        <span className="breadcrumb">
-          Tổng quan phiếu đánh giá KPI của bạn trong năm học đang chọn
-        </span>
       </div>
 
       <div className="cd-toolbar">
@@ -151,13 +231,29 @@ const TongQuanCaNhan = () => {
 
         <button
           className="btn-cancel"
-          onClick={taiDuLieu}
+          onClick={() => {
+            taiDuLieu();
+            setLanLamMoi((n) => n + 1);
+          }}
           disabled={isLoading || dangTaiNam}
         >
           <i className={`fa-solid fa-rotate${isLoading ? " fa-spin" : ""}`}></i>{" "}
           Làm mới
         </button>
       </div>
+
+      {/* Đặt TRÊN phần cá nhân và ngoài nhánh isLoading: với Trưởng khoa thì số
+          liệu Khoa mới là việc hằng ngày, và để ngoài thì hai nửa tải song song
+          thay vì nửa dưới phải chờ phiếu cá nhân xong. */}
+      {laTruongKhoa && !dangTaiNam && (
+        <TongQuanKhoa
+          idNam={selectedNam}
+          idDonVi={currentUser.IdDonVi}
+          reloadKey={lanLamMoi}
+        />
+      )}
+
+      {laTruongKhoa && <p className="sub-title">PHIẾU KPI CỦA BẠN</p>}
 
       {isLoading || dangTaiNam ? (
         <div className="modern-table-card">
@@ -243,45 +339,92 @@ const TongQuanCaNhan = () => {
               >
                 <i className="fa-solid fa-hourglass-half"></i>
               </div>
-              <div>
-                <div className="stat-label">Hạn tự đánh giá</div>
-                <div className="stat-value" style={{ color: mauHan.color }}>
-                  {cuaSo.trangThai === "dang-mo"
-                    ? `${cuaSo.soNgayConLai} ngày`
-                    : cuaSo.trangThai === "da-dong"
+              {/* Không còn việc thì thẻ này nói về tình trạng chứ không nói về
+                  hạn: hạn của giai đoạn vẫn còn hiệu lực nhưng không phải việc
+                  của chủ phiếu nữa. */}
+              {conViecCuaChuPhieu ? (
+                <div>
+                  <div className="stat-label">{nhanHan}</div>
+                  <div className="stat-value" style={{ color: mauHan.color }}>
+                    {quaHan
                       ? "Đã đóng"
-                      : cuaSo.trangThai === "chua-mo"
+                      : !kiemTra && cuaSoNam.trangThai === "chua-mo"
                         ? "Chưa mở"
-                        : "—"}
-                </div>
-                {cuaSo.ngayDong && (
-                  <div className="cd-hint" style={{ marginTop: 0 }}>
-                    Hạn chót {formatNgay(cuaSo.ngayDong)}
+                        : !hanNop
+                          ? "Không giới hạn"
+                          : `${soNgayConLai} ngày`}
                   </div>
-                )}
-              </div>
+                  {hanNop && (
+                    <div className="cd-hint" style={{ marginTop: 0 }}>
+                      Hạn chót {formatNgay(hanNop)}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <div className="stat-label">Việc của bạn</div>
+                  <div className="stat-value" style={{ color: "#047857" }}>
+                    Đã xong
+                  </div>
+                  <div className="cd-hint" style={{ marginTop: 0 }}>
+                    Phiếu đang {tenTrangThai(phieu?.TrangThai).toLowerCase()}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+
+          {dongBiTraVe.length > 0 && (
+            <div className="cd-canh-bao tq-canh-bao-tra-ve">
+              <i className="fa-solid fa-rotate-left"></i>
+              <span>
+                Đơn vị thẩm định đã trả về <b>{dongBiTraVe.length} tiêu chí</b>{" "}
+                cần bạn bổ sung rồi nộp lại. Các tiêu chí khác vẫn giữ nguyên
+                tiến độ.
+                {/* Hạn chặn việc bổ sung là hạn THẨM ĐỊNH chứ không phải hạn tự
+                    đánh giá — QuaHan của kiem-tra-hop-le đã phản ánh đúng hạn
+                    của giai đoạn phiếu đang đứng. */}
+                {quaHan && (
+                  <>
+                    {" "}
+                    {thongDiepHan} nên bạn cần được gia hạn riêng mới sửa được —
+                    liên hệ đơn vị quản lý.
+                  </>
+                )}
+              </span>
+            </div>
+          )}
 
           <div className="cd-phieu-header">
             <div className="cd-phieu-top">
               <div style={{ flex: "1 1 320px" }}>
-                <div
-                  className={`cd-hint tq-status-line ${
-                    cuaSo.trangThai === "da-dong"
-                      ? "cd-hint-error"
-                      : cuaSo.trangThai === "dang-mo"
-                        ? ""
-                        : "cd-hint-warn"
-                  }`}
-                  style={{ marginTop: 0 }}
-                >
-                  <i
-                    className="fa-solid fa-calendar-day"
-                    style={{ marginRight: "8px" }}
-                  ></i>
-                  {cuaSo.thongDiep}
-                </div>
+                {conViecCuaChuPhieu ? (
+                  <div
+                    className={`cd-hint tq-status-line ${
+                      quaHan
+                        ? "cd-hint-error"
+                        : !kiemTra && cuaSoNam.trangThai !== "dang-mo"
+                          ? "cd-hint-warn"
+                          : ""
+                    }`}
+                    style={{ marginTop: 0 }}
+                  >
+                    <i
+                      className="fa-solid fa-calendar-day"
+                      style={{ marginRight: "8px" }}
+                    ></i>
+                    {thongDiepHan}
+                  </div>
+                ) : (
+                  <div className="cd-hint tq-status-line" style={{ marginTop: 0 }}>
+                    <i
+                      className="fa-solid fa-circle-check"
+                      style={{ color: "#047857", marginRight: "8px" }}
+                    ></i>
+                    Bạn đã nộp xong phần của mình. Phiếu đang{" "}
+                    <b>{tenTrangThai(phieu?.TrangThai).toLowerCase()}</b>.
+                  </div>
+                )}
                 {phieu && (
                   <div
                     className="cd-meta-grid"
@@ -318,14 +461,18 @@ const TongQuanCaNhan = () => {
               {duongDanPhieu && (
                 <button className="btn-submit" onClick={moPhieu}>
                   <i className="fa-solid fa-file-pen"></i>{" "}
-                  {phieu ? "Mở phiếu tự đánh giá" : "Bắt đầu tự đánh giá"}
+                  {dongBiTraVe.length > 0
+                    ? `Bổ sung ${dongBiTraVe.length} tiêu chí`
+                    : phieu
+                      ? "Mở phiếu tự đánh giá"
+                      : "Bắt đầu tự đánh giá"}
                 </button>
               )}
             </div>
           </div>
 
           <p className="sub-title" style={{ marginBottom: "10px" }}>
-            CÒN THIẾU GÌ ĐỂ NỘP
+            {dongBiTraVe.length > 0 ? "CẦN BẠN BỔ SUNG" : "CÒN THIẾU GÌ ĐỂ NỘP"}
           </p>
           <div
             className="modern-table-card"
@@ -355,6 +502,54 @@ const TongQuanCaNhan = () => {
                   </>
                 )}
               </div>
+            ) : dongBiTraVe.length > 0 ? (
+              <>
+                <div
+                  className="cd-hint cd-hint-warn tq-status-line"
+                  style={{ marginTop: 0, marginBottom: "14px" }}
+                >
+                  <i
+                    className="fa-solid fa-rotate-left"
+                    style={{ marginRight: "8px" }}
+                  ></i>
+                  {dongBiTraVe.length} tiêu chí bị trả về — sửa xong bấm{" "}
+                  <b>Nộp lại</b> trong phiếu tự đánh giá
+                </div>
+
+                {dongBiTraVe.map((ct) => (
+                  <div className="cd-mc-row" key={ct.IdChiTiet}>
+                    <i
+                      className="fa-solid fa-circle-exclamation cd-mc-icon"
+                      style={{ color: "#ea580c" }}
+                    ></i>
+                    <div className="cd-mc-main">
+                      <div
+                        className="cd-mc-name"
+                        style={{ color: "#0f172a", cursor: "default" }}
+                      >
+                        {ct.TenTieuChi || `Tiêu chí #${ct.IdTieuChi}`}
+                      </div>
+                      {ct.LyDoTraVe && (
+                        <div className="tq-tra-ve-ly-do">{ct.LyDoTraVe}</div>
+                      )}
+                      <div className="cd-mc-meta">
+                        {ct.TenDonViThamDinh || "Đơn vị thẩm định"} trả về
+                        {ct.NgayTraVe ? ` ngày ${formatNgay(ct.NgayTraVe)}` : ""}
+                        {ct.SoLanTraVe > 1 ? ` · lần thứ ${ct.SoLanTraVe}` : ""}
+                      </div>
+                    </div>
+                    {duongDanPhieu && (
+                      <button
+                        type="button"
+                        className="cd-mc-act"
+                        onClick={moPhieu}
+                      >
+                        <i className="fa-solid fa-arrow-right"></i> Bổ sung
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </>
             ) : phieu.TrangThai !== TRANG_THAI.NHAP ? (
               <div className="cd-hint tq-status-line" style={{ marginTop: 0 }}>
                 <i
@@ -399,59 +594,13 @@ const TongQuanCaNhan = () => {
                     : `Còn ${kiemTra.SoTieuChiThieu}/${kiemTra.TongSoTieuChi} tiêu chí chưa xong`}
                 </div>
 
-                {/* Phần tử của ThieuMinhChung[] dùng camelCase, khác phần còn lại
-                    của DTO — xem chú thích ở fetchKiemTraHopLe. */}
-                {thieu.map((item) => (
-                  <div className="cd-mc-row" key={item.idChiTiet}>
-                    <i
-                      className="fa-solid fa-circle-exclamation cd-mc-icon"
-                      style={{ color: "#f59e0b" }}
-                    ></i>
-                    <div className="cd-mc-main">
-                      <div
-                        className="cd-mc-name"
-                        style={{ color: "#0f172a", cursor: "default" }}
-                      >
-                        {item.tenTieuChi || `Tiêu chí #${item.idTieuChi}`}
-                      </div>
-                      <div style={{ marginTop: "4px" }}>
-                        {item.missingDiemTuDanhGia && (
-                          <span
-                            className="cd-tc-tag"
-                            style={{
-                              background: "#fef2f2",
-                              color: "#b91c1c",
-                              borderColor: "#fecaca",
-                            }}
-                          >
-                            Chưa chấm điểm
-                          </span>
-                        )}
-                        {item.missingMinhChung && (
-                          <span
-                            className="cd-tc-tag"
-                            style={{
-                              background: "#fffbeb",
-                              color: "#b45309",
-                              borderColor: "#fde68a",
-                            }}
-                          >
-                            Thiếu minh chứng
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {duongDanPhieu && (
-                      <button
-                        type="button"
-                        className="cd-mc-act"
-                        onClick={moPhieu}
-                      >
-                        <i className="fa-solid fa-arrow-right"></i> Bổ sung
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {/* Cùng schema với missingItems của 422 /submit và /nop-lai nên
+                    dùng chung đúng một component checklist. */}
+                <ThieuTieuChiChecklist
+                  items={thieu}
+                  onMo={duongDanPhieu ? moPhieu : undefined}
+                />
+
               </>
             )}
           </div>

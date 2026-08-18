@@ -10,24 +10,38 @@ import {
   fetchBaoCaoTongQuan,
   formatDiem,
   formatNgay,
+  LOAI_DOI_TUONG,
   TRANG_THAI_META,
 } from '../../utils/phieuApi';
+import { useAuth } from '../../context/AuthContext';
 import { useNamDanhGia } from '../../hooks/useNamDanhGia';
+import { useChuaTuCham } from '../../hooks/useChuaTuCham';
 import { TrangThaiBadge } from '../../components/QuanLyChamDiem/TrangThaiBadge';
 import SearchSelect from '../../components/Common/SearchSelect';
 
 /** Số ngày trôi mà một phiếu chưa hoàn tất bị coi là "để quá lâu". */
 const NGUONG_TRE = 30;
 
+const TEN_LOAI_DOI_TUONG = {
+  [LOAI_DOI_TUONG.GIANG_VIEN]: 'Giảng viên',
+  [LOAI_DOI_TUONG.VIEN_CHUC]: 'Viên chức / NLĐ',
+};
+
 /**
  * Báo cáo tiến độ và kết quả KPI của đơn vị.
  *
  * Cả ba endpoint đều BẮT BUỘC idNam (thiếu là 400) và tự giới hạn phạm vi theo
  * chức vụ trong JWT, nên bộ lọc đơn vị ở đây chỉ để thu hẹp trong phạm vi sẵn có.
+ *
+ * Khối cuối trang KHÔNG đến từ báo cáo: /bao-cao/chua-hoan-tat chỉ liệt kê phiếu
+ * ĐÃ TỒN TẠI, nên người chưa bấm lưu lần nào không lọt vào bất kỳ con số nào phía
+ * trên — kể cả "Tổng số phiếu". Danh sách chưa lập phiếu được ghép riêng ở client
+ * (useChuaTuCham) và cố tình để tách bảng: nó đếm NGƯỜI, không đếm phiếu.
  */
 const BaoCaoDonVi = () => {
   const toast = useRef(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
 
   const [donViList, setDonViList] = useState([]);
@@ -36,6 +50,17 @@ const BaoCaoDonVi = () => {
   const [tongQuan, setTongQuan] = useState(null);
   const [diemTb, setDiemTb] = useState([]);
   const [chuaHoanTat, setChuaHoanTat] = useState([]);
+
+  const {
+    chuaLapPhieu,
+    dangTai: dangTaiChuaLap,
+    loi: loiChuaLap,
+    taiLai: taiLaiChuaLap,
+  } = useChuaTuCham({
+    idNam: selectedNam,
+    idDonViGoc: user?.IdDonVi,
+    idDonViLoc: idDonVi || undefined,
+  });
 
   const showToast = (severity, summary, detail) => {
     toast.current?.show({ severity, summary, detail, life: 4000 });
@@ -134,7 +159,10 @@ const BaoCaoDonVi = () => {
 
         <button
           className="btn-cancel"
-          onClick={taiBaoCao}
+          onClick={() => {
+            taiBaoCao();
+            taiLaiChuaLap();
+          }}
           disabled={isLoading}
         >
           <i className={`fa-solid fa-rotate${isLoading ? ' fa-spin' : ''}`}></i> Làm mới
@@ -300,6 +328,72 @@ const BaoCaoDonVi = () => {
                         </tr>
                       );
                     })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <p className="sub-title" style={{ marginTop: '24px', marginBottom: '10px' }}>
+            CHƯA LẬP PHIẾU ({dangTaiChuaLap ? '…' : chuaLapPhieu.length} người)
+          </p>
+          <div className="modern-table-card">
+            {loiChuaLap ? (
+              <div className="cd-empty">
+                <i className="fa-solid fa-triangle-exclamation" style={{ color: '#f59e0b' }}></i>
+                {loiChuaLap}
+              </div>
+            ) : dangTaiChuaLap ? (
+              <div className="cd-empty">
+                <i className="fa-solid fa-spinner fa-spin"></i>
+                Đang đối chiếu danh bạ đơn vị với danh sách phiếu...
+              </div>
+            ) : chuaLapPhieu.length === 0 ? (
+              <div className="cd-empty">
+                <i className="fa-solid fa-circle-check" style={{ color: '#10b981' }}></i>
+                Mọi người thuộc diện đánh giá trong phạm vi của bạn đều đã có phiếu.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="custom-table" style={{ minWidth: '800px' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: '30%' }}>Họ tên</th>
+                      <th style={{ width: '26%' }}>Đơn vị</th>
+                      <th style={{ width: '22%' }}>Chức danh</th>
+                      <th style={{ width: '14%' }}>Loại phiếu</th>
+                      <th style={{ width: '8%', textAlign: 'center' }}>Mở</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chuaLapPhieu.map((r) => (
+                      <tr key={r.key}>
+                        <td>
+                          <b style={{ color: '#0f172a', display: 'block' }}>{r.HoTen}</b>
+                          {r.MaNhanVien && <span className="code-pill">{r.MaNhanVien}</span>}
+                        </td>
+                        <td style={{ fontSize: '13px', color: '#475569' }}>
+                          {r.TenDonVi || '—'}
+                        </td>
+                        <td style={{ fontSize: '13px', color: '#475569' }}>
+                          {r.TenChucDanh || '—'}
+                        </td>
+                        <td style={{ fontSize: '13px', color: '#475569' }}>
+                          {TEN_LOAI_DOI_TUONG[Number(r.LoaiDoiTuong)] || '—'}
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              className="action-btn view-btn"
+                              title="Xem hồ sơ KPI của người này"
+                              onClick={() => navigate(`/quan-ly/giang-vien/${r.IdNhanVien}`)}
+                            >
+                              <i className="fa-solid fa-id-card"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
