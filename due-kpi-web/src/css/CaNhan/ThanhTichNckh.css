@@ -1,0 +1,168 @@
+.nckh-page .stat-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 5px;
+}
+
+.nckh-page .stat-value {
+  font-size: 24px;
+}
+
+.nckh-moc-box {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.nckh-ghi-chu {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.nckh-ghi-chu i {
+  margin-top: 4px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.nckh-moc-nhom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nckh-moc-nhom + .nckh-moc-nhom {
+  margin-top: 14px;
+}
+
+.nckh-moc-ten {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.nckh-moc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nckh-moc-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nckh-moc {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  border: 1px solid #e3e5e9;
+  background-color: #f1f2f5;
+  color: #414855;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.nckh-moc i {
+  flex-shrink: 0;
+  color: #8e949f;
+}
+
+.nckh-moc.nckh-moc-dat {
+  border-color: #a7f3d0;
+  background-color: #ecfdf5;
+  color: #047857;
+  font-weight: 600;
+}
+
+.nckh-moc.nckh-moc-dat i {
+  color: #059669;
+}
+
+.nckh-canh-bao {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #fde68a;
+  background-color: #fffbeb;
+  color: #b45309;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.nckh-canh-bao i {
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.nckh-tieu-de-cong-trinh {
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.45;
+}
+
+.nckh-phu-de {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.nckh-trong {
+  color: #94a3b8;
+}
+
+.nckh-badge {
+  font-size: 13px;
+  padding: 5px 11px;
+  white-space: nowrap;
+}
+
+.nckh-badge-duyet {
+  background-color: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.nckh-badge-cho {
+  background-color: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.nckh-badge-tu-choi {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+@media screen and (max-width: 1100px) {
+  .nckh-moc-grid,
+  .nckh-moc-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .nckh-moc-grid,
+  .nckh-moc-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .nckh-page .stat-value {
+    font-size: 22px;
+  }
+}

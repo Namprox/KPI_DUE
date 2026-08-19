@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
+import { useAuth } from "../../context/AuthContext";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import { useViPhamMinhChungPreview } from "../../hooks/useViPhamMinhChungPreview";
 import SearchSelect from "../../components/Common/SearchSelect";
@@ -10,6 +11,7 @@ import { formatDiem, formatNgay } from "../../utils/phieuApi";
 import { downloadExcel } from "../../utils/excelUtils";
 import {
   TRAN_DIEM_TRU_CA_NHAN,
+  fetchTongHopViPhamCuaToi,
   fetchViPhamCuaToi,
   nhomTheoNhomViPham,
   sapXepMoiNhat,
@@ -21,13 +23,18 @@ import {
  *
  * Trang chỉ đọc: giảng viên không sửa/xóa được ghi nhận của mình (server chỉ cho
  * đơn vị đã lập hoặc Admin), nên ở đây không có nút thao tác nào ngoài xem minh
- * chứng. Phạm vi dữ liệu do TOKEN quyết định — xem chú thích ở viPhamCaNhanApi.js.
+ * chứng. Luôn hỏi API theo idNhanVien của chính mình: TK/TKL/HT mở trang này mà
+ * không kèm id sẽ nhận danh sách cả đơn vị / toàn trường — xem viPhamCaNhanApi.js.
  */
 const ViPhamCuaToi = () => {
   const toast = useRef(null);
+  const { user } = useAuth();
+  const idNhanVien = user?.IdNhanVien;
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
 
   const [danhSach, setDanhSach] = useState([]);
+  // Dòng tổng hợp của server — null nghĩa là phải tự cộng từ danhSach
+  const [tongHopServer, setTongHopServer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loi, setLoi] = useState("");
   const [filterNhom, setFilterNhom] = useState("");
@@ -41,18 +48,35 @@ const ViPhamCuaToi = () => {
   const taiDuLieu = useCallback(async () => {
     if (!selectedNam) return;
 
+    // Không có id nhân viên thì không gọi API: gọi trống sẽ ra dữ liệu người khác
+    if (!idNhanVien) {
+      setDanhSach([]);
+      setTongHopServer(null);
+      setLoi("Tài khoản chưa gắn với hồ sơ nhân viên nên chưa xem được vi phạm.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setLoi("");
     try {
-      const items = await fetchViPhamCuaToi({ idNam: selectedNam });
+      // Tổng hợp không được chặn trang: hỏng thì tomTat tự cộng lại từ danh sách
+      const [items, tongHop] = await Promise.all([
+        fetchViPhamCuaToi({ idNam: selectedNam, idNhanVien }),
+        fetchTongHopViPhamCuaToi({ idNam: selectedNam, idNhanVien }).catch(
+          () => null,
+        ),
+      ]);
       setDanhSach(sapXepMoiNhat(items));
+      setTongHopServer(tongHop);
     } catch (error) {
       console.error("Lỗi tải vi phạm cá nhân:", error);
       setDanhSach([]);
+      setTongHopServer(null);
       setLoi(error.message);
     }
     setIsLoading(false);
-  }, [selectedNam]);
+  }, [selectedNam, idNhanVien]);
 
   useEffect(() => {
     if (!dangTaiNam) taiDuLieu();
@@ -65,7 +89,11 @@ const ViPhamCuaToi = () => {
 
   // Tóm tắt và danh mục nhóm luôn tính trên CẢ NĂM, không theo bộ lọc: điểm trừ
   // đưa vào KPI là con số cả năm, lọc theo nhóm mà tổng cũng đổi thì rất dễ hiểu nhầm.
-  const tomTat = useMemo(() => tongHopViPham(danhSach), [danhSach]);
+  // Điểm trừ lấy thẳng từ endpoint tổng hợp của server để không lệch với phiếu KPI.
+  const tomTat = useMemo(
+    () => tongHopViPham(danhSach, tongHopServer),
+    [danhSach, tongHopServer],
+  );
   const theoNhom = useMemo(() => nhomTheoNhomViPham(danhSach), [danhSach]);
 
   const danhSachHienThi = useMemo(

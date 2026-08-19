@@ -46,10 +46,16 @@ const formatDate = (dateString) => {
  * idDonVi từ URL: một Trưởng Khoa chỉ thấy đúng Khoa mình phụ trách. Số liệu toàn
  * trường nằm ở màn hình "Tổng hợp điểm trừ vi phạm".
  *
- * Nguồn dữ liệu (đều lọc theo idNam + idDonVi của Khoa):
- *   GET api/viphamgiangday                — danh sách vi phạm chi tiết
- *   GET api/vi-pham/tong-hop-giang-vien   — điểm trừ từng GV (đã áp trần 15đ)
- *   GET api/vi-pham/diem-tru-khoa         — điểm trừ tập thể (trần 7,5đ)
+ * Nguồn dữ liệu:
+ *   GET api/viphamgiangday                — danh sách vi phạm chi tiết (CHỈ idNam)
+ *   GET api/vi-pham/tong-hop-giang-vien   — điểm trừ từng GV (idNam + idDonVi)
+ *   GET api/vi-pham/diem-tru-khoa         — điểm trừ tập thể (idNam + idDonVi)
+ *
+ * viphamgiangday KHÔNG được gửi idDonVi: ở endpoint đó idDonVi là đơn vị chủ
+ * quản của giảng viên và so khớp CHÍNH XÁC, nên lọc theo id Khoa sẽ rụng hết
+ * giảng viên nằm ở Bộ môn con. Với TK/TKL server đã tự giới hạn "đơn vị mình +
+ * đơn vị con" theo token nên chỉ cần idNam. Hai endpoint tổng hợp thì ngược
+ * lại: idDonVi của chúng đã là Khoa chủ quản (đã roll-up) nên lọc được an toàn.
  */
 const QL_ThongKeViPhamKhoa = () => {
   const toast = useRef(null);
@@ -204,13 +210,14 @@ const QL_ThongKeViPhamKhoa = () => {
   const loadThongKe = async (idNam, idKhoa) => {
     setIsLoading(true);
     try {
-      const qs = new URLSearchParams({ idNam, idDonVi: idKhoa }).toString();
+      const qsNam = new URLSearchParams({ idNam }).toString();
+      const qsKhoa = new URLSearchParams({ idNam, idDonVi: idKhoa }).toString();
 
       const [chiTietRes, gvRes, khoaRes] = await Promise.all([
         // Lưu ý: route này KHÔNG có dấu gạch ngang (khác api/vi-pham/...)
-        apiFetch(`viphamgiangday?${qs}`),
-        apiFetch(`vi-pham/tong-hop-giang-vien?${qs}`),
-        apiFetch(`vi-pham/diem-tru-khoa?${qs}`),
+        apiFetch(`viphamgiangday?${qsNam}`),
+        apiFetch(`vi-pham/tong-hop-giang-vien?${qsKhoa}`),
+        apiFetch(`vi-pham/diem-tru-khoa?${qsKhoa}`),
       ]);
 
       if (chiTietRes.ok) {

@@ -69,6 +69,18 @@ export const MENU_GROUPS = [
         chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
       },
       {
+        // Công trình NCKH đồng bộ từ hệ thống nghiên cứu khoa học của trường —
+        // nguồn của các tiêu chí NCKH chấm tự động. Endpoint /api/nckh/* nhận
+        // id_nhan_vien qua query (không suy từ token) nhưng màn hình chỉ truyền
+        // id của chính người đăng nhập; gate theo NGẠCH vì chỉ giảng viên mới có
+        // tiêu chí NCKH trong phiếu.
+        name: "Thành tích NCKH",
+        icon: "fa-solid fa-flask",
+        path: "/thanh-tich-nckh",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
         // Vi phạm giảng dạy do đơn vị ghi nhận cho chính mình (điểm trừ KPI).
         // Server tự giới hạn GET /viphamgiangday về người đăng nhập, nên đây chỉ
         // là lối vào; gate theo NGẠCH vì chỉ giảng viên thuộc Khoa mới bị ghi nhận.

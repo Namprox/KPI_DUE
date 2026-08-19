@@ -33,6 +33,7 @@ import KhoMinhChung from "../pages/CaNhan/KhoMinhChung";
 import PhanHoiSinhVienCuaToi from "../pages/CaNhan/PhanHoiSinhVienCuaToi";
 import NhiemVuKhoaCuaToi from "../pages/CaNhan/NhiemVuKhoaCuaToi";
 import ViPhamCuaToi from "../pages/CaNhan/ViPhamCuaToi";
+import ThanhTichNckh from "../pages/CaNhan/ThanhTichNckh";
 import ChoCham from "../pages/QuanLyChamDiem/ChoCham";
 // HangDoiThamDinh (hàng đợi theo dòng tiêu chí) đã bị ẩn — xem ghi chú ở
 // menuConfig.js. File màn hình vẫn giữ trong pages/QuanLyChamDiem/.
@@ -75,6 +76,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
           element={<NhiemVuKhoaCuaToi />}
         />
         <Route path="/vi-pham-cua-toi" element={<ViPhamCuaToi />} />
+        <Route path="/thanh-tich-nckh" element={<ThanhTichNckh />} />
         <Route path="/quan-ly-nguoi-dung" element={<QLNhanVien />} />
         <Route
           path="/quan-ly-nguoi-dung/them-moi"

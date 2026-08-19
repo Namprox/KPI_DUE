@@ -257,7 +257,7 @@ const QL_ViPham = () => {
           : String(currentYear);
       setSelectedNam(defaultYear);
 
-      await loadViPhamData(defaultYear, "", "");
+      await loadViPhamData(defaultYear, "");
     } catch (error) {
       console.error("Lỗi khởi tạo dữ liệu vi phạm:", error);
       showToast("error", "Lỗi", "Không thể khởi tạo dữ liệu");
@@ -266,13 +266,21 @@ const QL_ViPham = () => {
     }
   };
 
-  const loadViPhamData = async (idNam, idNhanVien, idDonVi) => {
+  /**
+   * Chỉ gửi idNam + idNhanVien lên server.
+   *
+   * KHÔNG gửi idDonVi: tham số này so khớp CHÍNH XÁC đơn vị chủ quản của giảng
+   * viên, nên lọc theo id của Khoa sẽ rụng hết giảng viên nằm ở Bộ môn con.
+   * Lọc theo Khoa được làm ở client bằng cách roll-up đơn vị của từng dòng.
+   * Phạm vi dữ liệu vẫn do token quyết định: TK/TKL/TP nhận đơn vị mình + đơn vị
+   * con, HT/ADMIN nhận toàn trường.
+   */
+  const loadViPhamData = async (idNam, idNhanVien) => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
       if (idNam) params.set("idNam", idNam);
       if (idNhanVien) params.set("idNhanVien", idNhanVien);
-      if (idDonVi) params.set("idDonVi", idDonVi);
       const qs = params.toString();
 
       // Lưu ý: route này KHÔNG có dấu gạch ngang (khác api/vi-pham/...)
@@ -281,7 +289,7 @@ const QL_ViPham = () => {
         const result = await response.json();
         const list = result.Items || (Array.isArray(result) ? result : []);
         setData(list);
-        applyFilters(list, searchQuery, filterNhom);
+        applyFilters(list, searchQuery, filterNhom, selectedDonViFilter);
       } else {
         const err = await readApiError(
           response,
@@ -303,8 +311,18 @@ const QL_ViPham = () => {
     rawList = data,
     search = searchQuery,
     nhomFilter = filterNhom,
+    khoaFilter = selectedDonViFilter,
   ) => {
     let result = [...rawList];
+
+    // Roll-up Bộ môn → Khoa: dòng vi phạm mang đơn vị chủ quản của giảng viên,
+    // có thể là Bộ môn con nên không so trực tiếp với id của Khoa được.
+    if (khoaFilter) {
+      result = result.filter((item) => {
+        const khoa = resolveKhoaCuaNhanVien(item.IdDonVi, donViIndex);
+        return khoa && String(khoa.IdDonVi) === String(khoaFilter);
+      });
+    }
 
     if (nhomFilter) {
       const nhom = nhomList.find(
@@ -335,17 +353,17 @@ const QL_ViPham = () => {
 
   const handleNamChange = (val) => {
     setSelectedNam(val);
-    loadViPhamData(val, selectedNhanVienFilter, selectedDonViFilter);
+    loadViPhamData(val, selectedNhanVienFilter);
   };
 
   const handleDonViFilterChange = (val) => {
     setSelectedDonViFilter(val);
-    loadViPhamData(selectedNam, selectedNhanVienFilter, val);
+    applyFilters(data, searchQuery, filterNhom, val);
   };
 
   const handleNhanVienFilterChange = (val) => {
     setSelectedNhanVienFilter(val);
-    loadViPhamData(selectedNam, val, selectedDonViFilter);
+    loadViPhamData(selectedNam, val);
   };
 
   const handleNhomFilterChange = (val) => {
@@ -539,11 +557,7 @@ const QL_ViPham = () => {
           );
         }
         closeModal();
-        loadViPhamData(
-          selectedNam,
-          selectedNhanVienFilter,
-          selectedDonViFilter,
-        );
+        loadViPhamData(selectedNam, selectedNhanVienFilter);
       } else {
         const err = await readApiError(response, "Lưu thất bại");
         showToast("error", "Lỗi", err.message);
@@ -577,11 +591,7 @@ const QL_ViPham = () => {
           });
           if (response.ok) {
             showToast("success", "Thành công", "Đã xóa ghi nhận vi phạm");
-            loadViPhamData(
-              selectedNam,
-              selectedNhanVienFilter,
-              selectedDonViFilter,
-            );
+            loadViPhamData(selectedNam, selectedNhanVienFilter);
           } else {
             const err = await readApiError(response, "Xóa thất bại");
             showToast("error", "Lỗi", err.message);
