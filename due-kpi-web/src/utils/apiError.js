@@ -36,7 +36,11 @@ export const PHIEU_ERROR_MESSAGES = {
   INVALID_STATE_DONG:
     "Tiêu chí không còn ở bước cho phép thao tác này, vui lòng tải lại",
   AUTO_SCORED: "Tiêu chí do hệ thống chấm tự động, không thao tác tay được",
-  FORBIDDEN_DON_VI: "Đơn vị của bạn không được giao thẩm định tiêu chí này",
+  FORBIDDEN_DON_VI:
+    "Bạn có chức vụ đó nhưng không phải tại đơn vị này (đơn vị không có quyền thao tác)",
+  PHIEU_KHONG_NHAN_DIEM_TU_DONG: null, // rơi về server message chứa số hiệu phiếu đang giữ điểm tự động
+  TAI_KHOAN_CHUA_GAN_DON_VI_CHINH:
+    "Tài khoản chưa được gán đơn vị chính. Vui lòng liên hệ quản trị viên.",
   // Nút "Nộp lại" lẽ ra đã bị ẩn khi không còn dòng nào chờ bổ sung — gặp mã này
   // là lệch state ở client, bên gọi phải log lại rồi tải lại phiếu.
   KHONG_CO_DONG_CHO_NOP:

@@ -74,7 +74,7 @@ const TongQuanCaNhan = () => {
   const toast = useRef(null);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const currentUser = user || {};
+  const currentUser = useMemo(() => user || {}, [user]);
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
 
   const [phieu, setPhieu] = useState(null);
@@ -85,6 +85,16 @@ const TongQuanCaNhan = () => {
   const [lanLamMoi, setLanLamMoi] = useState(0);
 
   const laTruongKhoa = hasRole(ROLE_SETS.TRUONG_KHOA, currentUser);
+
+  const idDonViKhoa = useMemo(() => {
+    if (currentUser?.DonVi && Array.isArray(currentUser.DonVi)) {
+      const dvKhoa = currentUser.DonVi.find((d) =>
+        ['TK', 'TKL'].includes(String(d.MaChucVu || '').trim().toUpperCase()),
+      );
+      if (dvKhoa) return dvKhoa.IdDonVi;
+    }
+    return currentUser.IdDonVi;
+  }, [currentUser]);
 
   const showToast = (severity, summary, detail) => {
     toast.current?.show({ severity, summary, detail, life: 4000 });
@@ -248,7 +258,7 @@ const TongQuanCaNhan = () => {
       {laTruongKhoa && !dangTaiNam && (
         <TongQuanKhoa
           idNam={selectedNam}
-          idDonVi={currentUser.IdDonVi}
+          idDonVi={idDonViKhoa}
           reloadKey={lanLamMoi}
         />
       )}

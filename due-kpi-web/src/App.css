@@ -684,7 +684,6 @@ body {
 .sidebar .menu-list .menu-item.active {
   background-color: #ffffff;
   color: #003399;
-  border-radius: 5px;
   font-weight: bold;
 }
 
@@ -697,7 +696,6 @@ body {
   background-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
   font-weight: bold;
-  border-radius: 3px;
 }
 
 @media screen and (max-width: 992px) {

@@ -7,13 +7,12 @@ import { normalizeRole } from "../utils/roles";
 import { visibleGroups } from "../config/menuConfig";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser } = useAuth();
   const user = authUser || {};
   const navigate = useNavigate();
   const location = useLocation();
 
   const [openMenus, setOpenMenus] = useState({});
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const isExpanded = !isCollapsed || isHovered;
@@ -48,12 +47,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         item.path === location.pathname ||
         (item.path !== "/" && location.pathname.startsWith(item.path + "/")),
     );
-  };
-
-  const handleLogout = async (e) => {
-    e.stopPropagation();
-    await logout();
-    navigate("/login");
   };
 
   const renderSubMenu = (items) => {
@@ -119,88 +112,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-          <div
-            className="user-info"
-            onClick={() => isExpanded && setIsUserMenuOpen(!isUserMenuOpen)}
-            style={{ cursor: isExpanded ? "pointer" : "default" }}
-          >
-            <div className="avatar">
-              {user.AvatarUrl ? (
-                <img src={user.AvatarUrl} alt="Avatar" />
-              ) : (
-                user.HoTen.trim().split(/\s+/).pop()[0] || "U"
-              )}
-            </div>
-
-            {isExpanded && (
-              <div style={{ marginLeft: "12px", overflow: "hidden", flex: 1 }}>
-                <div
-                  style={{
-                    fontWeight: "600",
-                    fontSize: "14px",
-                    whiteSpace: "nowrap",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span className="text-truncate">
-                    {user.HoTen || "Người dùng"}
-                  </span>
-                  <i
-                    className={`fa-solid fa-caret-down arrow ${isUserMenuOpen ? "open" : ""}`}
-                    style={{ margin: 0 }}
-                  ></i>
-                </div>
-                <div
-                  style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)" }}
-                  className="text-truncate"
-                >
-                  {user.RoleName || "Giảng viên"}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div
-            className={`user-dropdown-wrapper ${isExpanded && isUserMenuOpen ? "open" : ""}`}
-          >
-            <div className="user-dropdown-inner">
-              <div
-                className="user-dropdown-item"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsUserMenuOpen(false);
-                  navigate("/thong-tin-lien-he");
-                }}
-              >
-                <i
-                  className="fa-solid fa-user"
-                  style={{ marginRight: "8px", width: "16px" }}
-                ></i>{" "}
-                Hồ sơ của tôi
-              </div>
-
-              <div
-                className="user-dropdown-item"
-                onClick={handleLogout}
-                style={{ color: "#ff6b6b" }}
-              >
-                <i
-                  className="fa-solid fa-arrow-right-from-bracket"
-                  style={{
-                    marginRight: "8px",
-                    width: "16px",
-                    color: "inherit",
-                  }}
-                ></i>{" "}
-                Đăng xuất
-              </div>
-            </div>
-          </div>
-        </div>
-
         <ul className="menu-list">
           <li
             className={`menu-item ${location.pathname === "/" ? "active" : ""}`}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../../css/Pages.css";
@@ -156,7 +156,60 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   const dirtyRef = useRef(new Set()); // IdTieuChi with unsaved manual edits
 
   const { user } = useAuth();
-  const currentUser = user || {};
+  const currentUser = useMemo(() => user || {}, [user]);
+
+  const donViList = useMemo(() => {
+    if (Array.isArray(currentUser?.DonVi) && currentUser.DonVi.length > 0) {
+      return currentUser.DonVi;
+    }
+    if (currentUser?.IdDonVi) {
+      return [
+        {
+          IdDonVi: currentUser.IdDonVi,
+          MaDonVi: currentUser.MaDonVi,
+          TenDonVi: currentUser.TenDonVi,
+          IdChucVu: currentUser.IdChucVu,
+          MaChucVu: currentUser.MaChucVu,
+          TenChucVu: currentUser.TenChucVu,
+          LaChinh: true,
+        },
+      ];
+    }
+    return [];
+  }, [currentUser]);
+
+  const defaultDonViId = useMemo(() => {
+    const primary = donViList.find((d) => d.LaChinh);
+    return primary ? primary.IdDonVi : donViList[0]?.IdDonVi || null;
+  }, [donViList]);
+
+  const [selectedDonViId, setSelectedDonViId] = useState(defaultDonViId);
+
+  useEffect(() => {
+    if (defaultDonViId && !selectedDonViId) {
+      setSelectedDonViId(defaultDonViId);
+    }
+  }, [defaultDonViId, selectedDonViId]);
+
+  const selectedDonVi = useMemo(() => {
+    return (
+      donViList.find((d) => Number(d.IdDonVi) === Number(selectedDonViId)) ||
+      donViList[0] ||
+      null
+    );
+  }, [donViList, selectedDonViId]);
+
+  // LoaiDoiTuong giờ suy từ ĐƠN VỊ CỦA PHIẾU:
+  // - MaDonVi bắt đầu bằng K_ VÀ người có chức danh nghề nghiệp => 1 (mẫu Giảng viên)
+  // - mọi trường hợp còn lại (Phòng, Trung tâm...) => 2 (mẫu Viên chức/NLĐ)
+  const activeLoaiDoiTuong = useMemo(() => {
+    if (selectedDonVi?.MaDonVi) {
+      const isKhoa = String(selectedDonVi.MaDonVi).startsWith("K_");
+      const hasChucDanh = !!currentUser?.IdChucDanh;
+      return isKhoa && hasChucDanh ? 1 : 2;
+    }
+    return loaiDoiTuong || 1;
+  }, [selectedDonVi, currentUser?.IdChucDanh, loaiDoiTuong]);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -172,6 +225,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   // Keep refs in sync with state so unmount / async closures read the latest values
   const selectedYearRef = useRef(selectedYear);
   const idNhanVienRef = useRef(currentUser.IdNhanVien);
+  const selectedDonViRef = useRef(selectedDonVi);
   useEffect(() => {
     formDataRef.current = formData;
   }, [formData]);
@@ -184,6 +238,9 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   useEffect(() => {
     idNhanVienRef.current = currentUser.IdNhanVien;
   }, [currentUser.IdNhanVien]);
+  useEffect(() => {
+    selectedDonViRef.current = selectedDonVi;
+  }, [selectedDonVi]);
 
   /**
    * Tải lại PhieuKiemTraHopLeDto — hạn hiệu lực, QuaHan, SoTieuChiThieu.
@@ -274,7 +331,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
     const fetchScoringData = async () => {
       setIsLoading(true);
 
-      // Reset all state + refs for the new year
+      // Reset all state + refs for the new year / unit
       phieuRef.current = null;
       taoPhieuRef.current = null;
       idMauRef.current = null;
@@ -298,9 +355,11 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         let chiTiet = [];
         let idMau = null;
 
-        // 1. Load the current user's phieu for this year (if any)
+        // 1. Load the current user's phieu for this year & selected unit (if any)
         try {
-          const resPhieu = await apiFetch(`phieu/me/${selectedYear}`);
+          const idDv = selectedDonVi?.IdDonVi;
+          const qs = idDv ? `?kemLichSu=true&idDonVi=${idDv}` : "?kemLichSu=true";
+          const resPhieu = await apiFetch(`phieu/me/${selectedYear}${qs}`);
           if (resPhieu.ok) {
             const resultPhieu = await resPhieu.json();
             const isSuccess =
@@ -319,11 +378,11 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           console.error("Lỗi khi tải phiếu cá nhân:", e);
         }
 
-        // 2. No phieu yet -> resolve the template for this year (phieu is created lazily later)
+        // 2. No phieu yet -> resolve the template for this year and LoaiDoiTuong
         if (!idMau) {
           try {
             const resTemplates = await apiFetch(
-              `maudanhgia?loaiDoiTuong=${loaiDoiTuong}`,
+              `maudanhgia?loaiDoiTuong=${activeLoaiDoiTuong}`,
             );
             if (resTemplates.ok) {
               const resultTemplates = await resTemplates.json();
@@ -378,9 +437,6 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           console.error("Lỗi khi tải điểm tự động:", e);
         }
 
-        // Điểm TB phản hồi SV đã nằm trong MinhChung của lời gọi trên -> không gọi
-        // thêm diem-tb-phan-hoi-sv (API đó trả cả danh sách GV và chặn quyền theo đơn vị).
-
         setAutoScores(autoMap);
         autoScoresRef.current = autoMap;
 
@@ -391,8 +447,6 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           setLyDoTraVe(phieu.NhanXetKhoa || "");
           setDaCoDongChot(docCoDongChot(chiTiet));
           setChiTietMap(docChiTietTheoTieuChi(chiTiet));
-          // Hạn hiệu lực chỉ biết được sau khi đã có phiếu, vì server chọn nó
-          // theo giai đoạn phiếu đang đứng.
           taiKiemTra(phieu.IdPhieu);
           taiLichSu(phieu.IdPhieu, phieu.TrangThai);
 
@@ -402,7 +456,6 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
             if (ct.IdTieuChi == null) return;
             map[ct.IdTieuChi] = ct.IdChiTiet;
 
-            // Auto-scored criteria are not editable -> keep them out of the form state
             if (autoMap[ct.IdTieuChi]) return;
 
             initialFormData[ct.IdTieuChi] = {
@@ -432,7 +485,13 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
     if (listYears.length > 0 && currentUser.IdNhanVien) {
       fetchScoringData();
     }
-  }, [selectedYear, currentUser.IdNhanVien, listYears.length, loaiDoiTuong]);
+  }, [
+    selectedYear,
+    currentUser.IdNhanVien,
+    listYears.length,
+    activeLoaiDoiTuong,
+    selectedDonVi?.IdDonVi,
+  ]);
 
   const activeYear = yearDetails.find((y) => y.IdNam === selectedYear);
 
@@ -649,7 +708,9 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
 
   const refreshPhieu = async () => {
     try {
-      const res = await apiFetch(`phieu/me/${selectedYearRef.current}`);
+      const idDv = selectedDonViRef.current?.IdDonVi;
+      const qs = idDv ? `?kemLichSu=true&idDonVi=${idDv}` : "?kemLichSu=true";
+      const res = await apiFetch(`phieu/me/${selectedYearRef.current}${qs}`);
       if (res.ok) {
         const result = await res.json();
         const item = result.Item || result.data || result.phieu;
@@ -669,6 +730,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         IdNam: selectedYearRef.current,
         IdNhanVien: idNhanVienRef.current,
         IdMau: idMauRef.current,
+        IdDonVi: selectedDonViRef.current?.IdDonVi || null,
       }),
     });
     const result = await res.json().catch(() => ({}));
@@ -1276,6 +1338,97 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
             </div>
           </div>
         </div>
+
+        {/* Bộ chọn đơn vị công tác khi người dùng kiêm nhiệm nhiều đơn vị */}
+        {donViList.length > 1 && (
+          <div
+            style={{
+              backgroundColor: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: "8px",
+              padding: "12px 16px",
+              marginBottom: "20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "13.5px",
+                fontWeight: "600",
+                color: "#1e293b",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <i className="fa-solid fa-building" style={{ color: "#003399" }}></i>
+              Đơn vị đánh giá:
+            </span>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {donViList.map((dv) => {
+                const isSelected =
+                  Number(selectedDonViId) === Number(dv.IdDonVi);
+                return (
+                  <button
+                    key={dv.IdDonVi}
+                    type="button"
+                    style={{
+                      cursor: "pointer",
+                      padding: "6px 14px",
+                      borderRadius: "20px",
+                      fontSize: "13px",
+                      fontWeight: isSelected ? "600" : "500",
+                      border: isSelected
+                        ? "1px solid #003399"
+                        : "1px solid #cbd5e1",
+                      backgroundColor: isSelected ? "#003399" : "#fff",
+                      color: isSelected ? "#fff" : "#475569",
+                      boxShadow: isSelected
+                        ? "0 2px 4px rgba(0,51,153,0.2)"
+                        : "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      transition: "all 0.2s ease",
+                    }}
+                    onClick={() => setSelectedDonViId(dv.IdDonVi)}
+                  >
+                    <span>{dv.TenDonVi || dv.MaDonVi}</span>
+                    {dv.LaChinh && (
+                      <span
+                        style={{
+                          fontSize: "10.5px",
+                          padding: "1px 6px",
+                          borderRadius: "10px",
+                          backgroundColor: isSelected
+                            ? "rgba(255,255,255,0.25)"
+                            : "#e2e8f0",
+                          color: isSelected ? "#fff" : "#475569",
+                        }}
+                      >
+                        Chính
+                      </span>
+                    )}
+                    {dv.TenChucVu && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          opacity: isSelected ? 0.9 : 0.75,
+                        }}
+                      >
+                        ({dv.TenChucVu})
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
 
         {/* Dải hạn chỉ dựng khi chủ phiếu còn việc. Nộp lại xong phiếu vẫn ở
             trạng thái 2 nên HanNop vẫn còn giá trị, nhưng lúc đó việc đã sang

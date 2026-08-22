@@ -620,10 +620,11 @@ export const fetchPhieuListDayDu = async (params = {}) => {
  * lần đầu, nên mọi phản hồi không-2xx đều quy về null thay vì ném lỗi — màn hình
  * tổng quan không được báo đỏ chỉ vì người dùng chưa mở phiếu bao giờ.
  */
-export const fetchPhieuCuaToi = async (idNam) => {
+export const fetchPhieuCuaToi = async (idNam, idDonVi) => {
   if (!idNam) return null;
   try {
-    const response = await apiFetch(`phieu/me/${idNam}`);
+    const query = buildQuery({ kemLichSu: true, idDonVi: idDonVi || undefined });
+    const response = await apiFetch(`phieu/me/${idNam}${query}`);
     if (!response.ok) return null;
     const data = await response.json();
     return data.Item || null;
@@ -631,6 +632,26 @@ export const fetchPhieuCuaToi = async (idNam) => {
     console.error('Lỗi tải phiếu cá nhân:', error);
     return null;
   }
+};
+
+/**
+ * Tổng hợp điểm tự động (NCKH, phản hồi SV, vi phạm giảng dạy, nhiệm vụ Khoa).
+ * Trong một năm CHỈ MỘT phiếu được chấm tự động.
+ * Gọi trên phiếu còn lại sẽ nhận 409 PHIEU_KHONG_NHAN_DIEM_TU_DONG.
+ */
+export const tongHopTuDong = async (idPhieu) => {
+  const response = await apiFetch(`phieu/${idPhieu}/tong-hop-tu-dong`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    const errorInfo = await readApiError(response, 'Tổng hợp điểm tự động thất bại');
+    const err = new Error(errorInfo.message);
+    err.errorCode = errorInfo.errorCode;
+    err.rawMessage = errorInfo.rawMessage;
+    throw err;
+  }
+  const data = await response.json().catch(() => ({}));
+  return data.Item || data;
 };
 
 /**

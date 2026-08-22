@@ -69,7 +69,19 @@ const QL_NhanVienListing = ({
                 </th>
                 <th width="11%">MÃ NHÂN VIÊN</th>
                 <th width="15%">HỌ VÀ TÊN</th>
-                <th width="15%">ĐƠN VỊ CÔNG TÁC</th>
+                <th width="15%">
+                  ĐƠN VỊ CÔNG TÁC
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: "normal",
+                      color: "#64748b",
+                      display: "block",
+                    }}
+                  >
+                    (Đơn vị chính)
+                  </span>
+                </th>
                 <th width="12%">CHỨC VỤ</th>
                 <th width="12%">CHỨC DANH</th>
                 <th width="14%">THÔNG TIN LIÊN HỆ</th>

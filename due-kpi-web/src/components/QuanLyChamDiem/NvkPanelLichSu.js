@@ -73,7 +73,7 @@ const NvkPanelLichSu = ({ idNam, idDonVi, onError }) => {
             Kỳ này chưa phát sinh thao tác nào.
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div className="table-scroll">
             <table className="custom-table nvk-ls-bang">
               <thead>
                 <tr>

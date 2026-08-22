@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Paginator } from "primereact/paginator";
 
+/**
+ * SoLuotDanhGia server trả về là số DÒNG TRẢ LỜI (mỗi phiếu khảo sát gồm
+ * 12 câu), còn cột này hiển thị số LƯỢT đánh giá nên phải chia lại.
+ */
+const SO_CAU_HOI_MOI_PHIEU = 12;
+
+const soLuotDanhGia = (soDongTraLoi) => {
+  const so = Number(soDongTraLoi);
+  if (!Number.isFinite(so)) return null;
+  return Math.round(so / SO_CAU_HOI_MOI_PHIEU);
+};
+
 const QL_DiemTbDanhGiaSinhVienListing = ({ data, isLoading }) => {
   const [first, setFirst] = useState(0);
   const rows = 15;
@@ -93,6 +105,7 @@ const QL_DiemTbDanhGiaSinhVienListing = ({ data, isLoading }) => {
                     : "---";
                 const isGoodScore =
                   item.DiemTrungBinh !== null && Number(item.DiemTrungBinh) >= 4.0;
+                const soLuot = soLuotDanhGia(item.SoLuotDanhGia);
 
                 return (
                   <tr key={item.IdNhanVien || item.MaCanBo || index}>
@@ -118,7 +131,7 @@ const QL_DiemTbDanhGiaSinhVienListing = ({ data, isLoading }) => {
                           fontWeight: "500",
                         }}
                       >
-                        {item.SoLuotDanhGia ?? "---"}
+                        {soLuot ?? "---"}
                       </span>
                     </td>
                     <td style={{ textAlign: "center" }}>

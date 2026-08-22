@@ -37,17 +37,17 @@ const DU_LIEU_RONG = {
 };
 
 const LOP_BADGE = {
-  duyet: "nckh-badge-duyet",
-  cho: "nckh-badge-cho",
-  tuChoi: "nckh-badge-tu-choi",
-  khac: "",
+  duyet: "pill-green",
+  cho: "pill-amber",
+  tuChoi: "pill-red",
+  khac: "pill-gray",
 };
 
-const ICON_BADGE = {
-  duyet: "fa-solid fa-circle-check",
-  cho: "fa-regular fa-clock",
-  tuChoi: "fa-solid fa-circle-xmark",
-  khac: "",
+const NHAN_BAN_GHI = {
+  baiBao: "bài báo",
+  deTai: "đề tài / dự án",
+  sach: "sách",
+  keKhai: "kê khai",
 };
 
 const Gach = () => <span className="nckh-trong">—</span>;
@@ -57,13 +57,7 @@ const hoacGach = (value) => (value == null || value === "" ? <Gach /> : value);
 const BadgeTrangThai = ({ trangThai }) => {
   if (!trangThai) return <Gach />;
   const kieu = kieuTrangThai(trangThai);
-  const icon = ICON_BADGE[kieu];
-  return (
-    <span className={`tag-badge nckh-badge ${LOP_BADGE[kieu]}`}>
-      {icon && <i className={icon} style={{ marginRight: "5px" }}></i>}
-      {trangThai}
-    </span>
-  );
+  return <span className={`status-pill ${LOP_BADGE[kieu]}`}>{trangThai}</span>;
 };
 
 const BangBaiBao = ({ items }) => (
@@ -538,12 +532,13 @@ const ThanhTichNckh = () => {
                 onClick={() => setTab(t.key)}
               >
                 <i className={t.icon}></i>
-                {t.nhan} ({demTheoTab[t.key]})
+                {t.nhan}
+                <span className="cd-tab-dem">{demTheoTab[t.key]}</span>
               </button>
             ))}
           </div>
 
-          <div className="modern-table-card" style={{ overflowX: "auto" }}>
+          <div className="modern-table-card">
             {duLieuTab.items.length === 0 ? (
               <div className="cd-empty">
                 <i className="fa-regular fa-folder-open"></i>
@@ -556,7 +551,21 @@ const ThanhTichNckh = () => {
                 </p>
               </div>
             ) : (
-              <Bang items={duLieuTab.items} />
+              <>
+                <div className="table-scroll">
+                  <Bang items={duLieuTab.items} />
+                </div>
+                <div className="table-foot">
+                  <span>
+                    {duLieuTab.items.length} {NHAN_BAN_GHI[tab]}
+                  </span>
+                  {duLieuTab.tongSo > duLieuTab.items.length && (
+                    <span>
+                      Tổng cộng <strong>{duLieuTab.tongSo}</strong>
+                    </span>
+                  )}
+                </div>
+              </>
             )}
           </div>
 
@@ -570,9 +579,9 @@ const ThanhTichNckh = () => {
           <div className="nckh-ghi-chu" style={{ marginTop: "16px" }}>
             <i className="fa-solid fa-circle-info"></i>
             <div>
-              Dữ liệu chỉ đọc, được kéo về từ hệ thống NCKH theo từng năm. Nếu
-              thiếu hoặc sai công trình, hãy cập nhật trên hệ NCKH rồi báo quản
-              trị KPI đồng bộ lại năm {selectedNam}.
+              Dữ liệu chỉ đọc, được đồng bộ từ hệ thống NCKH theo từng năm. Nếu
+              thiếu hoặc sai công trình, hãy cập nhật trên website NCKH rồi báo
+              quản trị KPI đồng bộ lại năm {selectedNam}.
             </div>
           </div>
         </div>

@@ -105,13 +105,14 @@
     display: inline-block;
     margin-left: 8px;
     min-width: 20px;
-    padding: 1px 6px;
-    border-radius: 10px;
-    background: #fee2e2;
-    color: #b91c1c;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: #fdecec;
+    color: #c0392b;
     font-size: 11px;
-    font-weight: 700;
-    line-height: 1.6;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
 }
 
 .nvk-badge-nut {
@@ -124,8 +125,16 @@
 }
 
 .nvk-ql-bang {
-    min-width: 960px;
-    font-size: 13px;
+    min-width: 1180px;
+    table-layout: fixed;
+}
+
+.nvk-mc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+    min-width: 0;
 }
 
 .nvk-ql-bang td {
@@ -133,93 +142,96 @@
 }
 
 .nvk-ql-ten {
-    font-weight: 600;
-    color: #1e293b;
-    line-height: 1.5;
+    font-size: 15px;
+    font-weight: 500;
+    color: #172033;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
 }
 
 .nvk-ql-mo-ta {
-    margin-top: 4px;
-    font-size: 12px;
-    color: #64748b;
-    line-height: 1.5;
+    margin-top: 5px;
+    font-size: 13px;
+    color: #8b93a5;
+    line-height: 1.45;
 }
 
 .nvk-pc-cell {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     margin-bottom: 6px;
 }
 
 .nvk-pc-item {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 200px) 96px 52px;
     align-items: center;
     gap: 8px;
-    font-size: 12px;
-    line-height: 1.5;
+    padding: 5px 0;
+    font-size: 14px;
+    line-height: 1.45;
 }
 
 .nvk-pc-ten {
-    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 600;
-    color: #1e293b;
-}
-
-.nvk-pc-ten i {
-    margin-right: 5px;
-    color: #f59e0b;
+    color: #172033;
 }
 
 .nvk-pc-vai-tro {
-    flex: 0 0 auto;
-    padding: 2px 8px;
-    border-radius: 6px;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    color: #475569;
-    font-size: 11px;
-    font-weight: 600;
+    display: block;
+    width: 100%;
+    padding: 3px 6px;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.5;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.nvk-vt-chu-tri {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    color: #4338ca;
+.nvk-vt-ct {
+    background: #eaf2fd;
+    color: #2f5f9e;
+}
+
+.nvk-vt-phc {
+    background: #f4f1fe;
+    color: #5b3fbd;
+}
+
+.nvk-vt-ph {
+    background: #f4f8fe;
+    color: #5c82ad;
 }
 
 .nvk-pc-diem-o {
-    flex: 0 0 44px;
     text-align: right;
-    font-weight: 700;
-    color: #0f172a;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: #172033;
     white-space: nowrap;
 }
 
-.nvk-chip-canh-bao {
-    background: #fffbeb;
-    border-color: #fde68a;
-    color: #b45309;
+.nvk-pc-thieu-chu-tri {
+    margin-top: 4px;
 }
 
-.nvk-ql-mc-dem {
-    font-weight: 600;
-    color: #475569;
-}
-
-.nvk-ql-mc-dem i {
-    color: #dc2626;
-    margin-right: 4px;
+.nvk-ql-nhom {
+    padding: 4px 9px;
+    font-size: 13px;
+    white-space: normal;
+    text-wrap: pretty;
 }
 
 .nvk-trong {
-    font-size: 12px;
-    color: #94a3b8;
+    font-size: 13.5px;
+    color: #a8afbd;
     font-style: italic;
 }
 
@@ -441,7 +453,6 @@
 
 .nvk-th-bang {
     min-width: 1040px;
-    font-size: 13px;
 }
 
 .nvk-th-vuot td {
@@ -450,8 +461,9 @@
 
 .nvk-th-quy-doi {
     text-align: right;
-    font-weight: 700;
-    color: #047857;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #067a55;
 }
 
 .nvk-th-chu-giai {
@@ -565,7 +577,6 @@
 
 .nvk-ls-bang {
     min-width: 1000px;
-    font-size: 13px;
 }
 
 .nvk-ls-them {

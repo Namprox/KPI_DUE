@@ -19,7 +19,15 @@ export { normalizeRole };
 export const isAdminRole = (user) => normalizeRole(user) === 'ADMIN';
 
 /** Trưởng Khoa / Trưởng Khoa lớn / Trưởng Phòng — nhóm được ghi nhận vi phạm. */
-export const isTruongDonVi = (user) => ROLE_TRUONG_DON_VI.includes(normalizeRole(user));
+export const isTruongDonVi = (user) => {
+  if (ROLE_TRUONG_DON_VI.includes(normalizeRole(user))) return true;
+  if (user?.DonVi && Array.isArray(user.DonVi)) {
+    return user.DonVi.some((d) =>
+      ROLE_TRUONG_DON_VI.includes(String(d.MaChucVu || '').trim().toUpperCase())
+    );
+  }
+  return false;
+};
 
 /** Cấp Trường — chỉ được XEM toàn bộ, không nằm trong nhóm ghi nhận. */
 export const isCapTruong = (user) => ['HT', 'PHT'].includes(normalizeRole(user));
@@ -82,7 +90,15 @@ export const laDonViKhoa = (donVi) =>
  * lớn: mỗi người xem đúng Khoa mình phụ trách, không có lựa chọn Khoa khác.
  * Cấp Trường xem số liệu toàn trường ở màn hình tổng hợp.
  */
-export const canXemThongKeKhoa = (user) => ['TK', 'TKL'].includes(normalizeRole(user));
+export const canXemThongKeKhoa = (user) => {
+  if (['TK', 'TKL'].includes(normalizeRole(user))) return true;
+  if (user?.DonVi && Array.isArray(user.DonVi)) {
+    return user.DonVi.some((d) =>
+      ['TK', 'TKL'].includes(String(d.MaChucVu || '').trim().toUpperCase())
+    );
+  }
+  return false;
+};
 
 /**
  * Khoa mà người dùng đang phụ trách — nguồn duy nhất xác định phạm vi dữ liệu của
@@ -93,7 +109,16 @@ export const canXemThongKeKhoa = (user) => ['TK', 'TKL'].includes(normalizeRole(
  */
 export const resolveKhoaCuaToi = (user, donViList = []) => {
   if (!canXemThongKeKhoa(user)) return null;
-  const khoa = resolveKhoaCuaNhanVien(user?.IdDonVi, buildDonViIndex(donViList));
+  const donViIndex = buildDonViIndex(donViList);
+  if (user?.DonVi && Array.isArray(user.DonVi)) {
+    for (const d of user.DonVi) {
+      if (['TK', 'TKL'].includes(String(d.MaChucVu || '').trim().toUpperCase())) {
+        const k = resolveKhoaCuaNhanVien(d.IdDonVi, donViIndex);
+        if (laDonViKhoa(k)) return k;
+      }
+    }
+  }
+  const khoa = resolveKhoaCuaNhanVien(user?.IdDonVi, donViIndex);
   return laDonViKhoa(khoa) ? khoa : null;
 };
 

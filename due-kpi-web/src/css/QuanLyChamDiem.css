@@ -36,19 +36,23 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  padding: 4px 11px;
   border-radius: 20px;
   font-size: 13px;
-  font-weight: 600;
-  line-height: 1.6;
+  font-weight: 500;
+  line-height: 1.45;
   white-space: nowrap;
   border: 1px solid transparent;
+}
+
+.cd-status-badge i {
+  font-size: 11px;
 }
 
 .cd-progress {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   min-width: 180px;
 }
 
@@ -56,32 +60,40 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 10px;
-  font-size: 13px;
-  color: #64748b;
+  gap: 12px;
+  font-size: 13.5px;
+  color: #5c5e69;
 }
 
 .cd-progress-head b {
-  color: #0f172a;
-  font-size: 14px;
+  color: #172033;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cd-progress-pct {
+  font-weight: 500;
+  color: #8b8c96;
 }
 
 .cd-progress-track {
-  height: 8px;
-  border-radius: 999px;
-  background: #e2e8f0;
+  height: 7px;
+  border-radius: 4px;
+  background: #ebebef;
   overflow: hidden;
 }
 
 .cd-progress-fill {
   height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 4px;
+  background: #3b82f6;
   transition: width 0.3s ease;
 }
 
 .cd-progress-fill.cd-done {
-  background: linear-gradient(90deg, #10b981, #047857);
+  background: #16a34a;
 }
 
 .cd-progress-stack {
@@ -89,19 +101,17 @@
   flex-direction: column;
   gap: 10px;
   min-width: 200px;
+  max-width: 380px;
 }
 
-.cd-progress-phu .cd-progress-fill {
-  background: linear-gradient(90deg, #a78bfa, #7c3aed);
-}
-
+.cd-progress-phu .cd-progress-fill,
 .cd-progress-phu .cd-progress-fill.cd-done {
-  background: linear-gradient(90deg, #34d399, #059669);
+  background: #8b5cf6;
 }
 
 .cd-progress-ghichu {
   font-size: 13px;
-  color: #94a3b8;
+  color: #8b93a5;
 }
 
 .cd-phieu-header {
@@ -541,34 +551,57 @@ button.cd-chip:hover {
 
 .cd-tabs {
   display: flex;
-  gap: 6px;
-  border-bottom: 2px solid #e2e8f0;
+  gap: 4px;
+  border-bottom: 1px solid #e5e5e9;
   margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
 .cd-tab {
-  padding: 10px 16px;
+  padding: 11px 14px 12px;
   border: none;
   background: none;
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 600;
-  color: #64748b;
+  color: #6b7488;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  transition: color 0.18s ease;
 }
 
 .cd-tab:hover {
-  color: #1d4ed8;
+  color: #172033;
 }
 
 .cd-tab.cd-tab-active {
-  color: #1d4ed8;
-  border-bottom-color: #1d4ed8;
+  color: #2f5bd7;
+  font-weight: 700;
+  border-bottom-color: #2f5bd7;
+}
+
+.cd-tab-dem {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background-color: #f1f3f7;
+  color: #98a0b0;
+  border-radius: 20px;
+  padding: 2px 7px;
+  line-height: 1.5;
+}
+
+.cd-tab.cd-tab-active .cd-tab-dem {
+  background-color: #e8eeff;
+  color: #2f5bd7;
+}
+
+.cd-tab-dem.cd-tab-dem-canh-bao {
+  background-color: #fdecec;
+  color: #c0392b;
 }
 
 .cd-loc-bar {
@@ -753,10 +786,11 @@ button.cd-chip:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 20px;
-  border-top: 1px solid #e2e8f0;
-  font-size: 14px;
-  color: #64748b;
+  padding: 11px 20px;
+  background-color: #f3f3f5;
+  border-top: 1px solid #ececf0;
+  font-size: 13.5px;
+  color: #71727d;
 }
 
 .cd-canh-bao {
@@ -848,11 +882,13 @@ button.cd-chip:hover {
   font-size: 13px;
 }
 
-.cd-row-uu-tien {
+.custom-table tbody tr.cd-row-uu-tien,
+.custom-table tbody tr.cd-row-uu-tien:hover {
   background: #fff7ed;
 }
 
-.cd-row-xuat-sac {
+.custom-table tbody tr.cd-row-xuat-sac,
+.custom-table tbody tr.cd-row-xuat-sac:hover {
   background: #f5f3ff;
 }
 

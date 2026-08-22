@@ -141,6 +141,10 @@
   overflow: hidden;
 }
 
+.select-panel.is-portal {
+  z-index: 4000;
+}
+
 .select-panel.is-up {
   top: auto;
   bottom: calc(100% + 4px);
@@ -188,11 +192,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #526071;
+  font-size: 13.5px;
 }
 
 .select-option:hover,
 .select-option.is-active {
   background: var(--select-hover-bg);
+  color: #0f172a;
 }
 
 .select-option.is-selected {

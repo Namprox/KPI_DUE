@@ -90,12 +90,23 @@ const DuyetHoSoKhoa = () => {
   const { user } = useAuth();
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
   const { nhanVienIndex } = useNhanVienIndex();
+
+  const idDonViKhoa = useMemo(() => {
+    if (user?.DonVi && Array.isArray(user.DonVi)) {
+      const dvKhoa = user.DonVi.find((d) =>
+        ['TK', 'TKL'].includes(String(d.MaChucVu || '').trim().toUpperCase()),
+      );
+      if (dvKhoa) return dvKhoa.IdDonVi;
+    }
+    return user?.IdDonVi;
+  }, [user]);
+
   const {
     tatCa: chuaTuCham,
     dangTai: dangTaiChuaCham,
     loi: loiChuaCham,
     taiLai: taiLaiChuaCham,
-  } = useChuaTuCham({ idNam: selectedNam, idDonViGoc: user?.IdDonVi });
+  } = useChuaTuCham({ idNam: selectedNam, idDonViGoc: idDonViKhoa });
 
   const [tab, setTab] = useState(TAB.CHO_CHOT);
   const [duLieu, setDuLieu] = useState({

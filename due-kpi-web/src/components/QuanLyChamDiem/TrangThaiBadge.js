@@ -6,6 +6,7 @@ import {
   XEP_LOAI_META,
 } from '../../utils/phieuApi';
 import { TRANG_THAI_TO_TRINH_META } from '../../utils/toTrinhApi';
+import { TRANG_THAI_DV_META } from '../../utils/phieuDonViApi';
 import { TRANG_THAI_CHUA_LAP, TRANG_THAI_CHUA_LAP_META } from '../../utils/chuaLapPhieu';
 
 /** Khung badge dùng chung — mọi bảng lấy màu từ cùng một chỗ nên không lệch nhau. */
@@ -54,6 +55,16 @@ export const TrangThaiBadge = ({ trangThai }) => (
  */
 export const TrangThaiDongBadge = ({ trangThaiDong }) => (
   <Badge meta={TRANG_THAI_DONG_META[trangThaiDong]} />
+);
+
+/**
+ * Trạng thái PHIẾU KPI ĐƠN VỊ (phieu_danh_gia_don_vi.trang_thai).
+ *
+ * Cùng dải 1–5 với TrangThaiBadge nhưng là quy trình khác (thư ký nhập → trưởng
+ * đơn vị duyệt → Hiệu trưởng duyệt & chốt) — đừng dùng lẫn hai component.
+ */
+export const TrangThaiDonViBadge = ({ trangThai }) => (
+  <Badge meta={TRANG_THAI_DV_META[trangThai]} />
 );
 
 /** Trạng thái GÓI KPI Khoa (to_trinh_kpi_khoa.trang_thai). */

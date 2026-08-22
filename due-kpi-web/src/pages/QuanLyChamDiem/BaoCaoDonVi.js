@@ -51,6 +51,18 @@ const BaoCaoDonVi = () => {
   const [diemTb, setDiemTb] = useState([]);
   const [chuaHoanTat, setChuaHoanTat] = useState([]);
 
+  const idDonViGoc = useMemo(() => {
+    if (user?.DonVi && Array.isArray(user.DonVi)) {
+      const dv = user.DonVi.find((d) =>
+        ['TK', 'TKL', 'TP', 'PTP'].includes(
+          String(d.MaChucVu || '').trim().toUpperCase(),
+        ),
+      );
+      if (dv) return dv.IdDonVi;
+    }
+    return user?.IdDonVi;
+  }, [user]);
+
   const {
     chuaLapPhieu,
     dangTai: dangTaiChuaLap,
@@ -58,7 +70,7 @@ const BaoCaoDonVi = () => {
     taiLai: taiLaiChuaLap,
   } = useChuaTuCham({
     idNam: selectedNam,
-    idDonViGoc: user?.IdDonVi,
+    idDonViGoc,
     idDonViLoc: idDonVi || undefined,
   });
 

@@ -115,9 +115,16 @@ const PhanCongNhiemVuKhoa = () => {
 
   /** Khoa chủ quản của người đăng nhập — phạm vi dữ liệu của cả màn hình. */
   const khoaCuaToi = useMemo(() => {
+    const donViIndex = buildDonViIndex(donViList);
+    if (user?.DonVi && Array.isArray(user.DonVi)) {
+      for (const d of user.DonVi) {
+        const k = resolveKhoaCuaNhanVien(d.IdDonVi, donViIndex);
+        if (laDonViKhoa(k)) return k;
+      }
+    }
     const khoa = resolveKhoaCuaNhanVien(
       user?.IdDonVi,
-      buildDonViIndex(donViList),
+      donViIndex,
     );
     return laDonViKhoa(khoa) ? khoa : null;
   }, [user, donViList]);

@@ -103,12 +103,12 @@ const QL_LoaiViPhamForm = ({
                             <div className="form-group">
                                 <label style={labelStyle}>Thứ tự hiển thị</label>
                                 <input
-                                    type="number"
+                                    type="text"
                                     name="ThuTuHienThi"
                                     className="form-input"
                                     value={formData.ThuTuHienThi ?? ''}
                                     onChange={handleChange}
-                                    min="0"
+                                    placeholder="VD: 0"
                                 />
                             </div>
                         </div>

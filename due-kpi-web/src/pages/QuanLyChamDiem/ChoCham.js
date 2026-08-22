@@ -11,7 +11,7 @@ import {
   TRANG_THAI_DONG,
 } from '../../utils/phieuApi';
 import { useNamDanhGia } from '../../hooks/useNamDanhGia';
-import { chuCaiDau, thongTinNhanVien, useNhanVienIndex } from '../../hooks/useNhanVienIndex';
+import { thongTinNhanVien, useNhanVienIndex } from '../../hooks/useNhanVienIndex';
 import TienDoCham from '../../components/QuanLyChamDiem/TienDoCham';
 import SearchSelect from '../../components/Common/SearchSelect';
 
@@ -280,16 +280,16 @@ const ChoCham = () => {
             </p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="custom-table" style={{ minWidth: '900px' }}>
+          <div className="table-scroll">
+            <table className="custom-table" style={{ minWidth: '1080px' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '27%' }}>Giảng viên</th>
-                  <th style={{ width: '17%' }}>Đơn vị</th>
-                  <th style={{ width: '11%' }}>Ngày gửi</th>
-                  <th style={{ width: '9%', textAlign: 'center' }}>Vòng</th>
-                  <th style={{ width: '28%' }}>Tiến độ</th>
-                  <th style={{ width: '8%', textAlign: 'center' }}>Thao tác</th>
+                  <th style={{ width: '24%' }}>Giảng viên</th>
+                  <th style={{ width: '15%' }}>Đơn vị</th>
+                  <th style={{ width: '11%', textAlign: 'right' }}>Ngày gửi</th>
+                  <th style={{ width: '8%', textAlign: 'center' }}>Vòng</th>
+                  <th style={{ width: '30%' }}>Tiến độ</th>
+                  <th style={{ width: '12%', textAlign: 'right' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -300,18 +300,15 @@ const ChoCham = () => {
                   return (
                     <tr key={p.IdPhieu}>
                       <td>
-                        <div className="teacher-avatar-wrapper">
-                          <div className="teacher-avatar">{chuCaiDau(p.nv.hoTen)}</div>
-                          <div>
-                            <b style={{ color: '#0f172a', display: 'block' }}>{p.nv.hoTen}</b>
-                            {p.nv.maNhanVien && <span className="code-pill">{p.nv.maNhanVien}</span>}
-                          </div>
-                        </div>
+                        <div className="table-person-name">{p.nv.hoTen}</div>
+                        {p.nv.maNhanVien && (
+                          <div className="table-person-code">{p.nv.maNhanVien}</div>
+                        )}
                       </td>
-                      <td style={{ fontSize: '13px', color: '#475569' }}>{p.nv.tenDonVi || '—'}</td>
-                      <td style={{ fontSize: '13px' }}>{formatNgay(p.NgayGui)}</td>
+                      <td>{p.nv.tenDonVi || <span className="table-empty-mark">—</span>}</td>
+                      <td className="table-num">{formatNgay(p.NgayGui)}</td>
                       <td style={{ textAlign: 'center' }}>
-                        <span className="tag-badge">Lần {p.LanDanhGia}</span>
+                        <span className="tag-badge tag-blue">Lần {p.LanDanhGia}</span>
                       </td>
                       <td>
                         <div className="cd-progress-stack">
@@ -332,11 +329,10 @@ const ChoCham = () => {
                           )}
                         </div>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td style={{ textAlign: 'right' }}>
                         <button
-                          className="btn-submit"
+                          className="table-btn-primary"
                           title="Mở hồ sơ để thẩm định từng tiêu chí"
-                          style={{ padding: '8px 14px' }}
                           onClick={() => navigate(`/quan-ly/phieu/${p.IdPhieu}`)}
                         >
                           <i className="fa-solid fa-pen-to-square"></i> Thẩm định
@@ -350,30 +346,20 @@ const ChoCham = () => {
           </div>
         )}
 
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '14px 20px',
-            borderTop: '1px solid #e2e8f0',
-            fontSize: '13px',
-            color: '#64748b',
-          }}
-        >
-          <span>Trang {page}</span>
-          <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="table-pager">
+          <span>
+            Trang <strong style={{ color: '#172033' }}>{page}</strong>
+          </span>
+          <div style={{ display: 'flex', gap: '6px' }}>
             <button
-              className="btn-cancel"
-              style={{ padding: '8px 14px' }}
+              className="table-pager-btn"
               disabled={page <= 1 || isLoading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <i className="fa-solid fa-chevron-left"></i> Trước
             </button>
             <button
-              className="btn-cancel"
-              style={{ padding: '8px 14px' }}
+              className="table-pager-btn"
               disabled={rows.length < PAGE_SIZE || isLoading}
               onClick={() => setPage((p) => p + 1)}
             >

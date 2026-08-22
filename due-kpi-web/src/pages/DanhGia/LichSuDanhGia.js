@@ -16,6 +16,7 @@ import {
   TRANG_THAI_DONG,
   TRANG_THAI_META,
 } from '../../utils/phieuApi';
+import { fetchDonViList, getTenDonViFromList } from '../../utils/donViApi';
 import {
   TrangThaiBadge,
   XepLoaiBadge,
@@ -74,6 +75,8 @@ const LichSuDanhGia = () => {
   // selectedNam của hook làm giá trị mặc định lúc mở trang.
   const { namList, selectedNam, dangTaiNam } = useNamDanhGia();
 
+  const [donViList, setDonViList] = useState([]);
+  const [idDonVi, setIdDonVi] = useState('');
   const [rows, setRows] = useState([]);
   // IdPhieu -> tiến độ chấm. undefined = đang tải, null = tải hỏng.
   const [tienDoTheoPhieu, setTienDoTheoPhieu] = useState({});
@@ -90,6 +93,10 @@ const LichSuDanhGia = () => {
     toast.current?.show({ severity, summary, detail, life: 4000 });
   };
 
+  useEffect(() => {
+    fetchDonViList().then(setDonViList);
+  }, []);
+
   // Mặc định bám theo năm đang mở, người dùng vẫn chuyển sang "mọi năm" được.
   useEffect(() => {
     if (dangTaiNam) return;
@@ -103,6 +110,7 @@ const LichSuDanhGia = () => {
     try {
       const items = await fetchPhieuList({
         idNam: idNam || undefined,
+        idDonVi: idDonVi || undefined,
         idNhanVien: currentUser.IdNhanVien,
         trangThai: trangThaiChon.length > 0 ? trangThaiChon : undefined,
         page,
@@ -117,7 +125,7 @@ const LichSuDanhGia = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser.IdNhanVien, idNam, trangThaiChon, page, sortBy]);
+  }, [currentUser.IdNhanVien, idNam, idDonVi, trangThaiChon, page, sortBy]);
 
   useEffect(() => {
     if (daSanSang) taiDanhSach();
@@ -125,7 +133,7 @@ const LichSuDanhGia = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [idNam, trangThaiChon, sortBy]);
+  }, [idNam, idDonVi, trangThaiChon, sortBy]);
 
   /**
    * Trạng thái chấm không có trong PhieuDanhGiaDto của danh sách (chỉ có trạng
@@ -258,6 +266,24 @@ const LichSuDanhGia = () => {
           />
         </div>
 
+        {Array.isArray(currentUser?.DonVi) && currentUser.DonVi.length > 1 && (
+          <div className="cd-field">
+            <label className="cd-label">Đơn vị</label>
+            <SearchSelect
+              value={idDonVi}
+              onChange={(v) => setIdDonVi(v)}
+              options={[
+                { value: '', label: '-- Tất cả đơn vị --' },
+                ...currentUser.DonVi.map((d) => ({
+                  value: d.IdDonVi,
+                  label: d.TenDonVi || d.MaDonVi,
+                })),
+              ]}
+              placeholder="-- Tất cả đơn vị --"
+            />
+          </div>
+        )}
+
         <div className="cd-field">
           <label className="cd-label">Sắp xếp</label>
           <SearchSelect
@@ -341,19 +367,23 @@ const LichSuDanhGia = () => {
             <table className="custom-table" style={{ minWidth: '1080px' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '9%' }}>Năm học</th>
-                  <th style={{ width: '16%', textAlign: 'center' }}>Trạng thái</th>
-                  <th style={{ width: '20%' }}>Trạng thái chấm</th>
-                  <th style={{ width: '11%', textAlign: 'right' }}>Tổng điểm</th>
-                  <th style={{ width: '16%', textAlign: 'center' }}>Xếp loại</th>
-                  <th style={{ width: '13%' }}>Ngày gửi</th>
-                  <th style={{ width: '15%', textAlign: 'center' }}>Thao tác</th>
+                  <th style={{ width: '8%' }}>Năm học</th>
+                  <th style={{ width: '16%' }}>Đơn vị</th>
+                  <th style={{ width: '14%', textAlign: 'center' }}>Trạng thái</th>
+                  <th style={{ width: '18%' }}>Trạng thái chấm</th>
+                  <th style={{ width: '10%', textAlign: 'right' }}>Tổng điểm</th>
+                  <th style={{ width: '14%', textAlign: 'center' }}>Xếp loại</th>
+                  <th style={{ width: '10%' }}>Ngày gửi</th>
+                  <th style={{ width: '10%', textAlign: 'center' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((p) => (
                   <tr key={p.IdPhieu}>
                     <td style={{ fontWeight: 700, color: '#0f172a' }}>{p.IdNam}</td>
+                    <td style={{ fontSize: '13px', color: '#334155', fontWeight: 500 }}>
+                      {getTenDonViFromList(donViList, p.IdDonVi) || '—'}
+                    </td>
                     <td style={{ textAlign: 'center' }}>
                       <TrangThaiBadge trangThai={p.TrangThai} />
                     </td>

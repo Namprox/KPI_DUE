@@ -301,7 +301,7 @@ const HangDoiThamDinh = () => {
             </p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll">
             <table className="custom-table" style={{ minWidth: '1080px' }}>
               <thead>
                 <tr>
@@ -415,19 +415,19 @@ const HangDoiThamDinh = () => {
         )}
 
         <div className="cd-pager">
-          <span>Trang {page}</span>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <span>
+            Trang <strong style={{ color: '#172033' }}>{page}</strong>
+          </span>
+          <div style={{ display: 'flex', gap: '6px' }}>
             <button
-              className="btn-cancel"
-              style={{ padding: '8px 14px' }}
+              className="table-pager-btn"
               disabled={page <= 1 || isLoading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <i className="fa-solid fa-chevron-left"></i> Trước
             </button>
             <button
-              className="btn-cancel"
-              style={{ padding: '8px 14px' }}
+              className="table-pager-btn"
               disabled={rows.length < PAGE_SIZE || isLoading}
               onClick={() => setPage((p) => p + 1)}
             >

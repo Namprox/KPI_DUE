@@ -59,9 +59,14 @@ CREATE TABLE nhan_vien (
     mat_khau               NVARCHAR(255) NOT NULL,
     so_lan_dang_nhap_sai   TINYINT       NOT NULL DEFAULT 0,
     khoa_dang_nhap_den     DATETIME2     NULL,
-    id_don_vi              INT           NOT NULL,
-    id_chuc_vu             INT           NULL,        -- Denormalize: chức vụ áp dụng hiện tại
+    -- ĐỢT 4 (kiêm nhiệm đa đơn vị): id_don_vi + id_chuc_vu ĐÃ BỊ BỎ khỏi bảng này.
+    -- Quan hệ (người × đơn vị × chức vụ × thời gian) nằm trọn trong nhan_vien_chuc_vu.
+    -- Đọc "đơn vị chính / chức vụ chính": dbo.v_nhan_vien_chinh (1 dòng / nhân viên).
+    -- Đọc TẤT CẢ đơn vị của một người: dbo.fn_pham_vi_don_vi.
     id_chuc_danh           INT           NULL,        -- NULL nếu không phải giảng viên
+                                                      -- GIỮ NGUYÊN ở Đợt 4: chức danh nghề
+                                                      -- nghiệp thuộc về CON NGƯỜI, không
+                                                      -- thuộc quan hệ với đơn vị.
     gioi_tinh              TINYINT       NULL,        -- 1: Nam, 2: Nữ, 3: Khác ???
     ngay_sinh              DATE          NULL,
     -- ID tương ứng trong hệ thống NCKH (đồng bộ qua API)
@@ -71,23 +76,27 @@ CREATE TABLE nhan_vien (
     refresh_token_hash     VARCHAR(64),
     refresh_token_het_han  DATETIME2,
     CONSTRAINT uq_ma_nhan_vien   UNIQUE (ma_nhan_vien),
-    CONSTRAINT fk_nv_don_vi      FOREIGN KEY (id_don_vi)            REFERENCES don_vi(id_don_vi),
-    CONSTRAINT fk_nv_chuc_vu     FOREIGN KEY (id_chuc_vu)           REFERENCES chuc_vu(id_chuc_vu),
+    -- fk_nv_don_vi / fk_nv_chuc_vu đã bị drop cùng 2 cột ở Đợt 4.
+    -- Chúng chuyển thành fk_nvcv_dv / fk_nvcv_cv trên nhan_vien_chuc_vu.
     CONSTRAINT fk_nv_chuc_danh   FOREIGN KEY (id_chuc_danh)         REFERENCES chuc_danh_nghe_nghiep(id_chuc_danh),
     CONSTRAINT chk_nv_gioi_tinh     CHECK (gioi_tinh IS NULL OR gioi_tinh IN (1, 2, 3))
 );
 GO
 
--- 1.5. Lịch sử chức vụ kiêm nhiệm (1 GV ↔ N chức vụ theo thời gian)
+-- 1.5. Quan hệ nhân viên ↔ đơn vị ↔ chức vụ theo thời gian (kiêm nhiệm đa đơn vị)
 CREATE TABLE nhan_vien_chuc_vu (
     id_nv_chuc_vu INT           IDENTITY(1,1) PRIMARY KEY,
     id_nhan_vien  INT           NOT NULL,
-    id_chuc_vu    INT           NOT NULL,
+    id_don_vi     INT           NOT NULL,   -- đơn vị của quan hệ này
+    id_chuc_vu    INT           NULL,       -- NULL = chỉ là thành viên, không giữ chức vụ
+    la_chinh      BIT           NOT NULL CONSTRAINT df_nvcv_la_chinh DEFAULT 0,
+                                            -- 1 = đơn vị chính (nguồn của claim JWT)
     tu_ngay       DATE          NOT NULL,
     den_ngay      DATE          NULL,
     ghi_chu       NVARCHAR(500) NULL,
     ngay_tao      DATETIME      DEFAULT GETDATE(),
     CONSTRAINT fk_nvcv_nv     FOREIGN KEY (id_nhan_vien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_nvcv_dv     FOREIGN KEY (id_don_vi)    REFERENCES don_vi(id_don_vi),
     CONSTRAINT fk_nvcv_cv     FOREIGN KEY (id_chuc_vu)   REFERENCES chuc_vu(id_chuc_vu),
     CONSTRAINT chk_nvcv_ngay  CHECK (den_ngay IS NULL OR den_ngay >= tu_ngay)
 );
@@ -851,8 +860,10 @@ CREATE TABLE phieu_danh_gia (
     CONSTRAINT chk_gio_giang_dm_ap     CHECK (gio_giang_dinh_muc_ap_dung IS NULL OR gio_giang_dinh_muc_ap_dung >= 0),
     CONSTRAINT chk_gio_nckh_dm_ap      CHECK (gio_nckh_dinh_muc_ap_dung  IS NULL OR gio_nckh_dinh_muc_ap_dung  >= 0),
     CONSTRAINT chk_gio_pvcd_dm_ap      CHECK (gio_pvcd_dinh_muc_ap_dung  IS NULL OR gio_pvcd_dinh_muc_ap_dung  >= 0),
-    -- Mỗi GV chỉ có 1 phiếu / năm
-    CONSTRAINT uq_phieu_unique         UNIQUE (id_nam, id_nhan_vien)
+    -- 1 phiếu / người / ĐƠN VỊ / năm (Đợt 3 — kiêm nhiệm đa đơn vị).
+    -- Người kiêm nhiệm 2 đơn vị nộp 2 phiếu, mỗi phiếu vào tờ trình + hạn ngạch
+    -- 20% của đúng đơn vị đó. Trước Đợt 3 khoá này là UNIQUE (id_nam, id_nhan_vien).
+    CONSTRAINT uq_phieu_unique         UNIQUE (id_nam, id_nhan_vien, id_don_vi)
 );
 GO
 
@@ -1303,9 +1314,9 @@ GO
 -- =============================================================================
 
 -- nhan_vien
-CREATE INDEX ix_nv_don_vi      ON nhan_vien(id_don_vi, trang_thai);
+-- ix_nv_don_vi / ix_nv_chuc_vu đã bị drop ở Đợt 4 cùng 2 cột tương ứng.
+-- Thay thế: ix_nvcv_don_vi + ix_nvcv_chuc_vu trên nhan_vien_chuc_vu (xem bên dưới).
 CREATE INDEX ix_nv_chuc_danh   ON nhan_vien(id_chuc_danh) WHERE id_chuc_danh IS NOT NULL;
-CREATE INDEX ix_nv_chuc_vu     ON nhan_vien(id_chuc_vu)   WHERE id_chuc_vu   IS NOT NULL;
 CREATE INDEX ix_nv_science_uid ON nhan_vien(science_user_id) WHERE science_user_id IS NOT NULL;
 -- Cho phép nhiều NULL, science_user_id đã gán phải duy nhất
 CREATE UNIQUE INDEX ux_nhan_vien_science_user_not_null
@@ -1314,6 +1325,15 @@ CREATE UNIQUE INDEX ux_nhan_vien_science_user_not_null
 -- chức vụ kiêm nhiệm (resolve "chức vụ áp dụng" của 1 GV theo ngày)
 CREATE INDEX ix_nvcv_nv_ngay   ON nhan_vien_chuc_vu(id_nhan_vien, tu_ngay, den_ngay);
 CREATE INDEX ix_nvcv_chuc_vu   ON nhan_vien_chuc_vu(id_chuc_vu);
+-- tra cứu ngược "ai thuộc đơn vị này"
+CREATE INDEX ix_nvcv_don_vi    ON nhan_vien_chuc_vu(id_don_vi, den_ngay)
+    INCLUDE (id_nhan_vien, id_chuc_vu, la_chinh);
+-- tối đa 1 đơn vị CHÍNH đang hiệu lực / người (JWT chỉ mang được 1 id_don_vi)
+CREATE UNIQUE INDEX ux_nvcv_chinh
+    ON nhan_vien_chuc_vu(id_nhan_vien) WHERE la_chinh = 1 AND den_ngay IS NULL;
+-- không trùng cặp (người, đơn vị, chức vụ) trên các dòng đang hiệu lực
+CREATE UNIQUE INDEX ux_nvcv_hieu_luc
+    ON nhan_vien_chuc_vu(id_nhan_vien, id_don_vi, id_chuc_vu) WHERE den_ngay IS NULL;
 
 -- cấu hình KPI
 CREATE INDEX ix_tieu_chi_nhom     ON tieu_chi_danh_gia(id_nhom, trang_thai);
@@ -1653,4 +1673,187 @@ GO
 -- 8.4. Index của module
 CREATE INDEX ix_ttkk_trang_thai ON to_trinh_kpi_khoa(trang_thai, id_nam);
 CREATE INDEX ix_lsttkk_to_trinh ON lich_su_to_trinh_kpi_khoa(id_to_trinh, ngay_thuc_hien DESC);
+GO
+
+-- =============================================================================
+-- 9. KÊ KHAI GIỜ QUY ĐỔI THEO PHỤ LỤC II
+--    "Quy đổi các hoạt động chuyên môn ra giờ chuẩn giảng dạy".
+--    Giảng viên TỰ KÊ KHAI số lượng theo từng đầu việc; TK/TKL/TP duyệt hoặc
+--    từ chối TỪNG DÒNG và được sửa số lượng trước khi chốt.
+--
+--    Đây là NGUỒN THỨ HAI của "thời gian thực hiện" trong năm. Nguồn thứ nhất
+--    (tiết giảng dạy quy đổi theo từng loại) do hệ thống ngoài gọi về — CHƯA
+--    làm ở đợt này, nên module này KHÔNG ghi vào gio_thuc_hien_gv và KHÔNG nối
+--    vào sp_phieu_tong_hop_tu_dong. Chỉ lưu + phát API tổng hợp.
+--
+--    Mô tả nghiệp vụ: xem schema_ghi_chu.md mục 9.
+-- =============================================================================
+
+-- 9.1. Danh mục đầu việc quy đổi (cây tự tham chiếu, tối đa 4 cấp).
+--      Độ sâu KHÔNG đều: lá có thể nằm ở cấp 2 ("Hướng dẫn đề án môn học"),
+--      cấp 3 ("Hoàn thành đề cương chi tiết") hoặc cấp 4 ("Chủ tịch").
+--      Chỉ nút có la_la = 1 mới kê khai được.
+--
+--      Cách đọc hệ số: giờ = ROUND(so_luong * he_so_quy_doi / so_luong_mau, 2).
+--      Ví dụ "1,0/10 bài" => he_so_quy_doi = 1.000, so_luong_mau = 10,
+--      don_vi_tinh = N'bài'. GV nhập SỐ BÀI, không nhập giờ.
+CREATE TABLE danh_muc_cong_viec_quy_doi (
+    id_cong_viec    INT           IDENTITY(1,1) PRIMARY KEY,
+    id_cha          INT           NULL,
+    cap             TINYINT       NOT NULL,              -- 1..4
+    ma_cong_viec    NVARCHAR(50)  NOT NULL,
+    ten_cong_viec   NVARCHAR(500) NOT NULL,
+    so_thu_tu       NVARCHAR(10)  NULL,                  -- 'stt' gốc trong QĐ: '1', 'a', 'b'
+    la_la           BIT           NOT NULL DEFAULT 0,    -- 1: kê khai được
+    he_so_quy_doi   DECIMAL(8,3)  NULL,                  -- chỉ có khi la_la = 1
+    so_luong_mau    INT           NOT NULL DEFAULT 1,    -- mẫu số: 10 bài, 5 bài, 20 bài...
+    don_vi_tinh     NVARCHAR(50)  NULL,                  -- 'học viên', 'bộ đề', 'bài', 'LV(ĐA)'...
+    ghi_chu_quy_doi NVARCHAR(200) NULL,                  -- chuỗi gốc trong QĐ: '1,0/10 bài'
+    thu_tu          INT           NOT NULL DEFAULT 0,
+    trang_thai      BIT           NOT NULL DEFAULT 1,
+    CONSTRAINT fk_dmcvqd_cha  FOREIGN KEY (id_cha) REFERENCES danh_muc_cong_viec_quy_doi(id_cong_viec),
+    CONSTRAINT uq_dmcvqd_ma   UNIQUE (ma_cong_viec),
+    CONSTRAINT chk_dmcvqd_cap CHECK (cap BETWEEN 1 AND 4),
+    CONSTRAINT chk_dmcvqd_mau CHECK (so_luong_mau >= 1),
+    CONSTRAINT chk_dmcvqd_la  CHECK (
+        (la_la = 0 AND he_so_quy_doi IS NULL)
+     OR (la_la = 1 AND he_so_quy_doi IS NOT NULL AND he_so_quy_doi >= 0))
+);
+GO
+
+-- 9.2. Bản kê khai: 1 bản / giảng viên / năm.
+--      row_version dùng cho các thao tác 2 người cùng đụng (nộp / chốt / trả lại),
+--      giống module phiếu — xem sp_phieu_submit.
+CREATE TABLE ke_khai_gio_quy_doi (
+    id_ke_khai       INT            IDENTITY(1,1) PRIMARY KEY,
+    id_nhan_vien     INT            NOT NULL,
+    id_nam           INT            NOT NULL,
+    trang_thai       TINYINT        NOT NULL DEFAULT 1,
+        -- 1: NHAP       — GV đang nhập, sửa thoải mái
+        -- 2: CHO_DUYET  — đã nộp, GV không sửa được nữa
+        -- 3: DA_DUYET   — TK/TKL đã chốt, khoá cứng
+        -- 4: TRA_LAI    — TK/TKL trả về, GV sửa rồi nộp lại
+    tong_gio_ke_khai DECIMAL(10,2)  NOT NULL DEFAULT 0,  -- SUM(gio_ke_khai) các dòng còn sống
+    tong_gio_duyet   DECIMAL(10,2)  NOT NULL DEFAULT 0,  -- SUM(gio_duyet) các dòng được duyệt
+    ngay_nop         DATETIME       NULL,
+    id_nguoi_duyet   INT            NULL,
+    ngay_duyet       DATETIME       NULL,
+    nhan_xet_duyet   NVARCHAR(1000) NULL,                -- lý do trả lại / ghi chú khi chốt
+    ngay_tao         DATETIME       NOT NULL DEFAULT GETDATE(),
+    ngay_cap_nhat    DATETIME       NULL,
+    row_version      ROWVERSION,
+    CONSTRAINT fk_kkgqd_nv         FOREIGN KEY (id_nhan_vien)   REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_kkgqd_nam        FOREIGN KEY (id_nam)         REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_kkgqd_nguoi_duyet FOREIGN KEY (id_nguoi_duyet) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT uq_kkgqd_nv_nam     UNIQUE (id_nhan_vien, id_nam),
+    CONSTRAINT chk_kkgqd_trang_thai CHECK (trang_thai IN (1, 2, 3, 4))
+);
+GO
+
+-- 9.3. Dòng kê khai.
+--      CỐ Ý KHÔNG UNIQUE (id_ke_khai, id_cong_viec): cùng một đầu việc có thể
+--      kê nhiều dòng cho các học viên / học phần / kỳ học khác nhau.
+--
+--      he_so_snapshot + so_luong_mau_snapshot + ten_cong_viec_snapshot:
+--      chốt cứng tại thời điểm nhập (pattern phan_cong_nhiem_vu_khoa.diem_snapshot).
+--      Sửa danh mục về sau KHÔNG làm đổi số liệu của bản kê đã lưu.
+CREATE TABLE chi_tiet_ke_khai_gio_quy_doi (
+    id_chi_tiet            INT            IDENTITY(1,1) PRIMARY KEY,
+    id_ke_khai             INT            NOT NULL,
+    id_cong_viec           INT            NOT NULL,
+    ky_hoc                 SMALLINT       NULL,          -- 261/262/263 — để đối chiếu gio_giang_import
+    so_luong               DECIMAL(10,2)  NOT NULL,      -- GV kê
+    so_luong_duyet         DECIMAL(10,2)  NULL,          -- TK sửa; NULL = chưa xét
+    he_so_snapshot         DECIMAL(8,3)   NOT NULL,
+    so_luong_mau_snapshot  INT            NOT NULL,
+    ten_cong_viec_snapshot NVARCHAR(500)  NOT NULL,
+    don_vi_tinh_snapshot   NVARCHAR(50)   NULL,
+    gio_ke_khai            DECIMAL(10,2)  NOT NULL DEFAULT 0,  -- server tính, client không gửi
+    gio_duyet              DECIMAL(10,2)  NULL,
+    trang_thai_dong        TINYINT        NOT NULL DEFAULT 1,
+        -- 1: CHO_DUYET   2: DA_DUYET   3: TU_CHOI
+    mo_ta                  NVARCHAR(1000) NULL,          -- GV ghi tên học viên / lớp / học phần
+    nhan_xet_duyet         NVARCHAR(1000) NULL,
+    ngay_tao               DATETIME       NOT NULL DEFAULT GETDATE(),
+    ngay_cap_nhat          DATETIME       NULL,
+    da_xoa                 BIT            NOT NULL DEFAULT 0,
+    ngay_xoa               DATETIME       NULL,
+    CONSTRAINT fk_ctkkgqd_ke_khai   FOREIGN KEY (id_ke_khai)   REFERENCES ke_khai_gio_quy_doi(id_ke_khai),
+    CONSTRAINT fk_ctkkgqd_cong_viec FOREIGN KEY (id_cong_viec) REFERENCES danh_muc_cong_viec_quy_doi(id_cong_viec),
+    CONSTRAINT chk_ctkkgqd_so_luong CHECK (so_luong > 0),
+    CONSTRAINT chk_ctkkgqd_sl_duyet CHECK (so_luong_duyet IS NULL OR so_luong_duyet >= 0),
+    CONSTRAINT chk_ctkkgqd_tt_dong  CHECK (trang_thai_dong IN (1, 2, 3)),
+    CONSTRAINT chk_ctkkgqd_ky_hoc   CHECK (ky_hoc IS NULL OR (ky_hoc >= 100 AND (ky_hoc % 10) IN (1, 2, 3)))
+);
+GO
+
+-- 9.4. Minh chứng PDF gắn vào DÒNG kê khai. Tuỳ chọn — không bắt buộc để nộp.
+CREATE TABLE minh_chung_ke_khai_gio_quy_doi (
+    id_minh_chung_kk INT           IDENTITY(1,1) PRIMARY KEY,
+    id_chi_tiet      INT           NOT NULL,
+    ten_hien_thi     NVARCHAR(255) NOT NULL,
+    ten_file_goc     NVARCHAR(255) NOT NULL,
+    duong_dan        NVARCHAR(500) NOT NULL,   -- tương đối với ~/App_Data
+    loai_file        NVARCHAR(50)  NOT NULL,
+    kich_thuoc_kb    INT           NULL,
+    nguoi_tai_len    INT           NOT NULL,
+    ngay_tai_len     DATETIME      NOT NULL DEFAULT GETDATE(),
+    da_xoa           BIT           NOT NULL DEFAULT 0,
+    ngay_xoa         DATETIME      NULL,
+    CONSTRAINT fk_mckk_chi_tiet FOREIGN KEY (id_chi_tiet)   REFERENCES chi_tiet_ke_khai_gio_quy_doi(id_chi_tiet),
+    CONSTRAINT fk_mckk_nguoi    FOREIGN KEY (nguoi_tai_len) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_mckk_pdf     CHECK (duong_dan LIKE N'%.pdf'),
+    CONSTRAINT chk_mckk_kb      CHECK (kich_thuoc_kb IS NULL OR kich_thuoc_kb > 0)
+);
+GO
+
+-- 9.5. Nhật ký: mọi thay đổi dòng và mọi chuyển trạng thái của bản kê.
+CREATE TABLE lich_su_ke_khai_gio_quy_doi (
+    id                 BIGINT         IDENTITY(1,1) PRIMARY KEY,
+    id_ke_khai         INT            NOT NULL,
+    id_chi_tiet        INT            NULL,
+    hanh_dong          TINYINT        NOT NULL,
+        -- 1: Tạo dòng    2: Sửa dòng     3: Xoá dòng
+        -- 4: Nộp         5: Duyệt dòng   6: Từ chối dòng
+        -- 7: Chốt bản kê 8: Trả lại      9: Huỷ nộp
+    so_luong_truoc     DECIMAL(10,2)  NULL,
+    so_luong_sau       DECIMAL(10,2)  NULL,
+    gio_truoc          DECIMAL(10,2)  NULL,
+    gio_sau            DECIMAL(10,2)  NULL,
+    mo_ta              NVARCHAR(1000) NULL,
+    id_nguoi_thuc_hien INT            NOT NULL,
+    ngay_thuc_hien     DATETIME       NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT fk_lskkgqd_ke_khai  FOREIGN KEY (id_ke_khai)         REFERENCES ke_khai_gio_quy_doi(id_ke_khai),
+    CONSTRAINT fk_lskkgqd_chi_tiet FOREIGN KEY (id_chi_tiet)        REFERENCES chi_tiet_ke_khai_gio_quy_doi(id_chi_tiet),
+    CONSTRAINT fk_lskkgqd_nguoi    FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_lskkgqd_hd      CHECK (hanh_dong IN (1,2,3,4,5,6,7,8,9))
+);
+GO
+
+-- 9.6. TVP: một form kê khai gửi lên trong 1 request; một lần duyệt gửi lên
+--      quyết định của nhiều dòng.
+CREATE TYPE dbo.ChiTietKeKhaiGioQuyDoiRow AS TABLE (
+    thu_tu       INT            NOT NULL PRIMARY KEY,  -- chỉ để làm PK cho TVP, không lưu
+    id_chi_tiet  INT            NULL,                  -- NULL = dòng mới
+    id_cong_viec INT            NOT NULL,
+    ky_hoc       SMALLINT       NULL,
+    so_luong     DECIMAL(10,2)  NOT NULL,
+    mo_ta        NVARCHAR(1000) NULL
+);
+GO
+
+CREATE TYPE dbo.DuyetChiTietKeKhaiRow AS TABLE (
+    id_chi_tiet    INT            NOT NULL PRIMARY KEY,
+    quyet_dinh     TINYINT        NOT NULL,            -- 2: Duyệt, 3: Từ chối
+    so_luong_duyet DECIMAL(10,2)  NULL,                -- NULL = giữ nguyên số GV kê
+    nhan_xet       NVARCHAR(1000) NULL
+);
+GO
+
+-- 9.7. Index của module
+CREATE INDEX ix_dmcvqd_cha      ON danh_muc_cong_viec_quy_doi(id_cha, thu_tu);
+CREATE INDEX ix_kkgqd_nam_tt    ON ke_khai_gio_quy_doi(id_nam, trang_thai);
+CREATE INDEX ix_ctkkgqd_ke_khai ON chi_tiet_ke_khai_gio_quy_doi(id_ke_khai, da_xoa);
+CREATE INDEX ix_mckk_chi_tiet   ON minh_chung_ke_khai_gio_quy_doi(id_chi_tiet, da_xoa);
+CREATE INDEX ix_lskkgqd_ke_khai ON lich_su_ke_khai_gio_quy_doi(id_ke_khai, ngay_thuc_hien DESC);
 GO

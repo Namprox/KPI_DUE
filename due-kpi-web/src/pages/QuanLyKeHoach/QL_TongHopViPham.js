@@ -272,7 +272,7 @@ const QL_TongHopViPham = () => {
                 <button
                     className="btn-submit"
                     onClick={handleExport}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '14px', height: 'fit-content' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0 18px', fontSize: '14px', height: '43px', flex: '0 0 auto', whiteSpace: 'nowrap' }}
                 >
                     <i className="fa-solid fa-file-excel"></i> Xuất Excel
                 </button>

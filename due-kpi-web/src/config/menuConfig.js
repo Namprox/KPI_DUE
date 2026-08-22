@@ -2,9 +2,11 @@ import { matchPath } from "react-router-dom";
 import {
   ROLE_SETS,
   CHUC_DANH_SETS,
+  DON_VI_SETS,
   MOI_NGUOI,
   hasRole,
   hasChucDanh,
+  hasDonVi,
 } from "../utils/roles";
 
 export const PUBLIC_ROUTES = [
@@ -34,10 +36,20 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
         chucDanh: CHUC_DANH_SETS.NHAN_VIEN,
       },
-      // Mục "Đánh giá KPI Đơn vị" (/danh-gia-kpi-don-vi) đã được gỡ khỏi đây:
-      // phân hệ phiếu đơn vị chạy trên bộ API riêng (/api/phieu-don-vi) và chưa
-      // có màn hình nào trong AppRoutes, nên mục này chỉ dẫn tới trang trắng.
-      // Khai lại khi phân hệ đó được xây, cùng ROLE_SETS.DANH_GIA_DON_VI.
+      {
+        // Phiếu KPI của cả ĐƠN VỊ (Khoa/Phòng), chạy trên bộ API riêng
+        // /api/phieu-don-vi với máy trạng thái riêng — không liên quan tới phiếu
+        // KPI cá nhân ở hai mục trên.
+        //
+        // Gate theo NHAP_PHIEU_DON_VI (chỉ TKK) chứ không phải DANH_GIA_DON_VI:
+        // màn hình mới dựng phần việc nhập của thư ký, chưa có màn hình cho cấp
+        // duyệt. Không xét chức danh — đây là việc theo chức vụ.
+        name: "Đánh giá KPI Đơn vị",
+        icon: "fa-solid fa-building-columns",
+        path: "/danh-gia-kpi-don-vi",
+        roles: ROLE_SETS.NHAP_PHIEU_DON_VI,
+        childPaths: ["/danh-gia-kpi-don-vi/:id"],
+      },
       {
         name: "Lịch sử đánh giá",
         icon: "fa-solid fa-clock-rotate-left",
@@ -65,6 +77,17 @@ export const MENU_GROUPS = [
         name: "Phục vụ cộng đồng",
         icon: "fa-solid fa-hands-holding-circle",
         path: "/nhiem-vu-khoa-cua-toi",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
+        // Kê khai giờ quy đổi theo PHỤ LỤC II — "quy đổi các hoạt động chuyên
+        // môn ra giờ chuẩn giảng dạy". Giảng viên TỰ kê số lượng từng đầu việc,
+        // TK/TKL duyệt từng dòng. Server suy người dùng TỪ TOKEN nên đây chỉ là
+        // lối vào; gate theo NGẠCH vì chỉ giảng viên mới có định mức giờ chuẩn.
+        name: "Kê khai giờ quy đổi",
+        icon: "fa-solid fa-stopwatch",
+        path: "/ke-khai-gio-quy-doi",
         roles: MOI_NGUOI,
         chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
       },
@@ -144,21 +167,18 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.TRUONG_KHOA,
       },
       {
-        // Cùng màn hình với mục "Ghi nhận vi phạm" ở nhóm kế hoạch — chỉ khác
-        // lối vào dành cho trưởng đơn vị, không nhân bản trang.
-        name: "Ghi nhận vi phạm",
-        icon: "fa-solid fa-circle-exclamation",
-        path: "/quan-ly/vi-pham",
-        roles: ROLE_SETS.TRUONG_DON_VI,
-      },
-      {
-        // Khoa nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò cho giảng
-        // viên (KPI Nhóm III). Thư ký Khoa cũng vào được vì họ là người gõ dữ
-        // liệu; nút Chốt kỳ trên màn hình vẫn tắt theo cờ CanChot của server.
-        name: "Phân công phục vụ cộng đồng",
-        icon: "fa-solid fa-hands-holding-circle",
-        path: "/quan-ly/nhiem-vu-khoa",
-        roles: ROLE_SETS.NHIEM_VU_KHOA,
+        // Duyệt bản kê giờ quy đổi (Phụ lục II) của giảng viên trong phạm vi
+        // đơn vị. Trục nghiệp vụ RIÊNG, không nằm trong máy trạng thái của phiếu
+        // KPI: module cố ý chưa ghi vào gio_thuc_hien_gv, chỉ lưu và phát API
+        // đọc cho bước cộng với giờ giảng dạy sau này.
+        //
+        // Tập vai trò rộng hơn các mục khác của nhóm (thêm HT/Admin) vì server
+        // cho hai chức vụ đó xem toàn trường — xem ROLE_SETS.DUYET_KE_KHAI_GIO.
+        name: "Duyệt kê khai giờ quy đổi",
+        icon: "fa-solid fa-stopwatch",
+        path: "/quan-ly/ke-khai-gio-quy-doi",
+        roles: ROLE_SETS.DUYET_KE_KHAI_GIO,
+        childPaths: ["/quan-ly/ke-khai-gio-quy-doi/:id"],
       },
       {
         name: "Báo cáo đơn vị",
@@ -170,14 +190,14 @@ export const MENU_GROUPS = [
   },
   {
     key: "planMgmt",
-    label: "Thiết lập kế hoạch",
+    label: "Thiết lập đánh giá KPI",
     icon: "fa-calendar-check",
     items: [
       {
         name: "Quản lý năm đánh giá",
         icon: "fa-solid fa-calendar-days",
         path: "/quan-ly-nam-danh-gia",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.NAM_DANH_GIA,
       },
       {
         name: "Định mức giảng viên",
@@ -204,16 +224,25 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.ADMIN,
       },
       {
+        // Lối vào DUY NHẤT của màn hình ghi nhận vi phạm. Trước đây nhóm
+        // "Chấm điểm KPI đơn vị" còn một mục nữa trỏ vào cùng trang qua
+        // /quan-ly/vi-pham; giữ đường dẫn đó làm childPath để các link cũ
+        // (ví dụ nút trong Hồ sơ KPI giảng viên) không bị RequireRole chặn.
         name: "Ghi nhận vi phạm",
         icon: "fa-solid fa-circle-exclamation",
         path: "/quan-ly-vi-pham",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.GHI_NHAN_VI_PHAM,
+        childPaths: ["/quan-ly/vi-pham"],
       },
       {
+        // Cùng luật vào trang với "Quản lý đánh giá sinh viên": chức vụ Trưởng
+        // Phòng VÀ thuộc đúng phòng giám sát giảng dạy (Admin được miễn ràng
+        // buộc đơn vị).
         name: "Tổng hợp điểm trừ vi phạm",
         icon: "fa-solid fa-square-poll-vertical",
         path: "/tong-hop-vi-pham",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.GIAM_SAT_GIANG_DAY,
+        donVi: DON_VI_SETS.GIAM_SAT_GIANG_DAY,
       },
       {
         name: "Thống kê vi phạm của Khoa",
@@ -222,16 +251,29 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.TRUONG_KHOA,
       },
       {
+        // Hai điều kiện phải cùng đúng: chức vụ Trưởng Phòng VÀ thuộc đúng phòng
+        // giám sát giảng dạy. Đây là màn hình nghiệp vụ của riêng phòng đó,
+        // không phải màn hình quản trị dữ liệu chung.
         name: "Quản lý đánh giá sinh viên",
         icon: "fa-solid fa-user-graduate",
         path: "/quan-ly-danh-gia-sinh-vien",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.GIAM_SAT_GIANG_DAY,
+        donVi: DON_VI_SETS.GIAM_SAT_GIANG_DAY,
       },
       {
         name: "Điểm trung bình ĐGSV",
         icon: "fa-solid fa-square-poll-vertical",
         path: "/diem-trung-binh-danh-gia-sinh-vien",
         roles: ROLE_SETS.QUAN_TRI,
+      },
+      {
+        // Khoa nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò cho giảng
+        // viên (KPI Nhóm III). Thư ký Khoa cũng vào được vì họ là người gõ dữ
+        // liệu; nút Chốt kỳ trên màn hình vẫn tắt theo cờ CanChot của server.
+        name: "Phân công phục vụ cộng đồng",
+        icon: "fa-solid fa-hands-holding-circle",
+        path: "/quan-ly/nhiem-vu-khoa",
+        roles: ROLE_SETS.NHIEM_VU_KHOA,
       },
     ],
   },
@@ -325,7 +367,11 @@ const buildRouteRules = () => {
   const rules = [...PUBLIC_ROUTES];
   MENU_GROUPS.forEach((group) => {
     group.items.forEach((item) => {
-      const rule = { roles: item.roles, chucDanh: item.chucDanh };
+      const rule = {
+        roles: item.roles,
+        chucDanh: item.chucDanh,
+        donVi: item.donVi,
+      };
       rules.push({ path: item.path, ...rule });
       (item.childPaths || []).forEach((child) => {
         rules.push({ path: child, ...rule });
@@ -342,8 +388,46 @@ export const ROUTE_RULES = buildRouteRules();
 export const findRouteRule = (pathname) =>
   ROUTE_RULES.find((rule) => matchPath(rule.path, pathname)) || null;
 
-export const canAccessRule = (rule, user) =>
-  hasRole(rule.roles, user) && hasChucDanh(rule.chucDanh, user);
+export const canAccessRule = (rule, user) => {
+  if (!user) return false;
+
+  // Xử lý đặc biệt cho 2 mẫu tự đánh giá khi kiêm nhiệm:
+  // - Nếu có đơn vị Khoa (K_) + chức danh giảng viên => được vào /danh-gia-phu-luc-2
+  // - Nếu có đơn vị ngoài Khoa (Phòng, TT...) => được vào /danh-gia-kpi-nhan-vien
+  if (rule.path === "/danh-gia-phu-luc-2") {
+    if (hasChucDanh(CHUC_DANH_SETS.GIANG_VIEN, user)) return true;
+    if (Array.isArray(user?.DonVi) && user.DonVi.some((d) => String(d.MaDonVi || "").startsWith("K_")) && user?.IdChucDanh) {
+      return true;
+    }
+    return false;
+  }
+
+  if (rule.path === "/danh-gia-kpi-nhan-vien") {
+    if (hasChucDanh(CHUC_DANH_SETS.NHAN_VIEN, user)) return true;
+    if (Array.isArray(user?.DonVi) && user.DonVi.some((d) => !String(d.MaDonVi || "").startsWith("K_"))) {
+      return true;
+    }
+    return false;
+  }
+
+  // Nếu rule yêu cầu cả đơn vị lẫn chức vụ cụ thể
+  if (rule.donVi && rule.roles && rule.roles !== MOI_NGUOI) {
+    if (hasRole(ROLE_SETS.ADMIN, user)) return true;
+    if (Array.isArray(user?.DonVi)) {
+      const match = user.DonVi.some((dv) => {
+        const r = String(dv.MaChucVu || "").trim().toUpperCase();
+        return rule.donVi.includes(Number(dv.IdDonVi)) && rule.roles.includes(r);
+      });
+      if (match) return true;
+    }
+  }
+
+  return (
+    hasRole(rule.roles, user) &&
+    hasChucDanh(rule.chucDanh, user) &&
+    hasDonVi(rule.donVi, user)
+  );
+};
 
 export const canAccessPath = (pathname, user) => {
   const rule = findRouteRule(pathname);

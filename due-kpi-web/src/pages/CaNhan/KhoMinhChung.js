@@ -85,6 +85,15 @@ const KhoMinhChung = () => {
     );
   }, [rows, timKiem]);
 
+  const tongDungLuongKb = useMemo(
+    () =>
+      rowsHienThi.reduce(
+        (tong, mc) => tong + (laMinhChungFile(mc) ? Number(mc.KichThuocKb) || 0 : 0),
+        0,
+      ),
+    [rowsHienThi],
+  );
+
   const boLocPhieu = () => {
     const con = new URLSearchParams(searchParams);
     con.delete('idPhieu');
@@ -171,7 +180,7 @@ const KhoMinhChung = () => {
             </p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll">
             <table className="custom-table" style={{ minWidth: '1000px' }}>
               <thead>
                 <tr>
@@ -226,22 +235,17 @@ const KhoMinhChung = () => {
                       </td>
                       <td style={{ fontSize: '13px', color: '#475569' }}>
                         {mc.TenTieuChi || `Tiêu chí #${mc.IdTieuChi}`}
-                        {mc.BatBuocMinhChung && (
-                          <span className="cd-tc-tag" style={{ marginLeft: '6px' }}>
-                            Bắt buộc
-                          </span>
-                        )}
                       </td>
-                      <td style={{ textAlign: 'center', fontWeight: 600, color: '#0f172a' }}>
+                      <td className="table-num-strong" style={{ textAlign: 'center' }}>
                         {mc.IdNam}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <TrangThaiBadge trangThai={mc.TrangThaiPhieu} />
                       </td>
-                      <td style={{ textAlign: 'right', fontSize: '13px' }}>
-                        {laFile ? formatKb(mc.KichThuocKb) : '—'}
+                      <td className="table-num">
+                        {laFile ? formatKb(mc.KichThuocKb) : <span className="table-empty-mark">—</span>}
                       </td>
-                      <td style={{ fontSize: '13px' }}>{formatNgay(mc.NgayTaiLen)}</td>
+                      <td className="table-num">{formatNgay(mc.NgayTaiLen)}</td>
                       <td>
                         <div className="table-actions">
                           {laFile ? (
@@ -254,7 +258,7 @@ const KhoMinhChung = () => {
                               <i className="fa-solid fa-download"></i>
                             </button>
                           ) : (
-                            <span style={{ color: '#cbd5e1' }}>—</span>
+                            <span className="table-empty-mark">—</span>
                           )}
                         </div>
                       </td>
@@ -267,16 +271,14 @@ const KhoMinhChung = () => {
         )}
 
         {!isLoading && rowsHienThi.length > 0 && (
-          <div
-            style={{
-              padding: '14px 20px',
-              borderTop: '1px solid #e2e8f0',
-              fontSize: '13px',
-              color: '#64748b',
-            }}
-          >
-            {rowsHienThi.length} minh chứng
-            {timKiem && rows.length !== rowsHienThi.length ? ` / ${rows.length} tổng cộng` : ''}
+          <div className="table-foot">
+            <span>
+              {rowsHienThi.length} minh chứng
+              {timKiem && rows.length !== rowsHienThi.length ? ` / ${rows.length} tổng cộng` : ''}
+            </span>
+            <span>
+              Tổng dung lượng <strong>{formatKb(tongDungLuongKb)}</strong>
+            </span>
           </div>
         )}
       </div>

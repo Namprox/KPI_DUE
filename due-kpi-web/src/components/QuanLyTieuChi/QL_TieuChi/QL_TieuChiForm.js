@@ -364,9 +364,9 @@ const QL_TieuChiForm = ({
                             Thứ tự
                           </label>
                           <input
-                            type="number"
+                            type="text"
                             className="form-input"
-                            value={item.ThuTuHienThi ?? 1}
+                            value={item.ThuTuHienThi ?? ""}
                             onChange={(e) =>
                               handleThangDiemChange(
                                 index,
@@ -374,6 +374,7 @@ const QL_TieuChiForm = ({
                                 e.target.value,
                               )
                             }
+                            placeholder="VD: 1"
                             style={{
                               padding: "6px 10px",
                               height: "36px",
@@ -509,11 +510,12 @@ const QL_TieuChiForm = ({
               <div className="form-group">
                 <label>Thứ tự hiển thị (Trên phiếu)</label>
                 <input
-                  type="number"
+                  type="text"
                   name="ThuTuHienThi"
                   className="form-input"
-                  value={formData.ThuTuHienThi || 1}
+                  value={formData.ThuTuHienThi ?? ""}
                   onChange={handleChange}
+                  placeholder="VD: 1"
                 />
               </div>
               <div

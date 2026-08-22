@@ -23,6 +23,10 @@ export const AuthProvider = ({ children }) => {
         setUser(extractUser(data) || null);
         return true;
       }
+      if (res.status === 403) {
+        const errData = await res.json().catch(() => null);
+        console.warn("Tài khoản chưa được gán đơn vị chính:", errData?.Message || errData?.message);
+      }
     } catch (err) {
       console.error("Lỗi khôi phục phiên đăng nhập:", err);
     }
@@ -38,28 +42,40 @@ export const AuthProvider = ({ children }) => {
     return () => setSessionExpiredHandler(null);
   }, [refreshUser]);
 
-  const login = useCallback(async (credentials) => {
-    const res = await apiFetch("auth/login", {
-      method: "POST",
-      body: JSON.stringify(credentials),
-    });
+  const login = useCallback(
+    async (credentials) => {
+      const res = await apiFetch("auth/login", {
+        method: "POST",
+        body: JSON.stringify(credentials),
+      });
 
-    let result = {};
-    try {
-      result = await res.json();
-    } catch (err) {
-      result = {};
-    }
+      let result = {};
+      try {
+        result = await res.json();
+      } catch (err) {
+        result = {};
+      }
 
-    if (res.ok && result.Success) {
-      setUser(extractUser(result) || null);
-      return { success: true };
-    }
-    return {
-      success: false,
-      message: result.message || "Sai thông tin đăng nhập!",
-    };
-  }, []);
+      if (res.ok && result.Success) {
+        // Nạp đầy đủ thông tin User kèm mảng DonVi[] từ GET /api/auth/me
+        await refreshUser();
+        return { success: true };
+      }
+
+      const msg =
+        result.Message ||
+        result.message ||
+        (res.status === 403
+          ? "Tài khoản chưa được gán đơn vị chính. Vui lòng liên hệ quản trị viên."
+          : "Sai thông tin đăng nhập!");
+
+      return {
+        success: false,
+        message: msg,
+      };
+    },
+    [refreshUser],
+  );
 
   const logout = useCallback(async () => {
     try {

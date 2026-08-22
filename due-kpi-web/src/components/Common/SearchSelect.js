@@ -1,4 +1,12 @@
-import { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useCallback,
+} from "react";
+import { createPortal } from "react-dom";
 import "../../css/select.css";
 
 const PANEL_MAX_HEIGHT = 300;
@@ -43,13 +51,16 @@ export default function SearchSelect({
   required = false,
   name,
   className = "",
+  portal = false,
 }) {
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [active, setActive] = useState(0);
   const [dropUp, setDropUp] = useState(false);
+  const [viTri, setViTri] = useState(null);
 
   const wrapRef = useRef(null);
+  const panelRef = useRef(null);
   const searchRef = useRef(null);
   const listRef = useRef(null);
 
@@ -61,9 +72,10 @@ export default function SearchSelect({
     return options.filter((o) => String(o.label).toLowerCase().includes(k));
   }, [keyword, options, searchable]);
 
-  // đóng khi bấm ra ngoài
+  // đóng khi bấm ra ngoài (bảng chọn bung ra body nên phải xét cả hai vùng)
   useEffect(() => {
     const onDocDown = (e) => {
+      if (panelRef.current?.contains(e.target)) return;
       if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
     };
     document.addEventListener("mousedown", onDocDown);
@@ -82,14 +94,45 @@ export default function SearchSelect({
   }, [open]);
 
   // thiếu chỗ bên dưới thì bung lên trên để không bị hộp thoại cắt mất
-  useLayoutEffect(() => {
-    if (!open || !wrapRef.current) return;
+  const doViTri = useCallback(() => {
+    if (!wrapRef.current) return;
     const rect = wrapRef.current.getBoundingClientRect();
-    const clip = getClippingRect(wrapRef.current);
+    // Ở chế độ portal, ô cuộn cha không còn cắt được bảng chọn nữa nên chỗ
+    // trống phải đo theo cửa sổ, không đo theo ô cuộn.
+    const clip = portal
+      ? { top: 0, bottom: window.innerHeight }
+      : getClippingRect(wrapRef.current);
     const spaceBelow = clip.bottom - rect.bottom;
     const spaceAbove = rect.top - clip.top;
-    setDropUp(spaceBelow < PANEL_MAX_HEIGHT && spaceAbove > spaceBelow);
+    const len = spaceBelow < PANEL_MAX_HEIGHT && spaceAbove > spaceBelow;
+    setDropUp(len);
+    if (!portal) return;
+    setViTri({
+      left: rect.left,
+      width: rect.width,
+      top: len ? undefined : rect.bottom + 4,
+      bottom: len ? window.innerHeight - rect.top + 4 : undefined,
+    });
+  }, [portal]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    doViTri();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Bảng chọn nằm ngoài luồng cuộn của trang: không bám lại thì nó sẽ "trôi"
+  // khỏi ô chọn ngay khi người dùng cuộn bảng hoặc đổi cỡ cửa sổ.
+  useEffect(() => {
+    if (!open || !portal) return;
+    const doLai = () => doViTri();
+    window.addEventListener("scroll", doLai, true);
+    window.addEventListener("resize", doLai);
+    return () => {
+      window.removeEventListener("scroll", doLai, true);
+      window.removeEventListener("resize", doLai);
+    };
+  }, [open, portal, doViTri]);
 
   // giữ dòng đang chọn trong tầm nhìn
   useEffect(() => {
@@ -130,6 +173,62 @@ export default function SearchSelect({
   ]
     .filter(Boolean)
     .join(" ");
+
+  const bangChon = (
+    <div
+      ref={panelRef}
+      className={`select-panel${dropUp ? " is-up" : ""}${portal ? " is-portal" : ""}`}
+      style={
+        portal && viTri
+          ? { ...viTri, position: "fixed", right: "auto" }
+          : undefined
+      }
+    >
+      {searchable && (
+        <div className="select-search-box">
+          <input
+            ref={searchRef}
+            className="select-search"
+            value={keyword}
+            placeholder={searchPlaceholder}
+            onChange={(e) => {
+              setKeyword(e.target.value);
+              setActive(0);
+            }}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="select-no-result">{emptyText}</div>
+      ) : (
+        <ul className="select-options" role="listbox" ref={listRef}>
+          {filtered.map((o, i) => (
+            <li
+              key={String(o.value)}
+              role="option"
+              aria-selected={o === selected}
+              title={String(o.label)}
+              className={[
+                "select-option",
+                o === selected ? "is-selected" : "",
+                i === active ? "is-active" : "",
+                o.disabled ? "is-disabled" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onMouseEnter={() => setActive(i)}
+              onClick={() => pick(o)}
+            >
+              {o.label}
+              {o.note && <span className="select-option-note">{o.note}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 
   return (
     <div className={classes} ref={wrapRef}>
@@ -177,53 +276,7 @@ export default function SearchSelect({
         />
       )}
 
-      {open && (
-        <div className={`select-panel${dropUp ? " is-up" : ""}`}>
-          {searchable && (
-            <div className="select-search-box">
-              <input
-                ref={searchRef}
-                className="select-search"
-                value={keyword}
-                placeholder={searchPlaceholder}
-                onChange={(e) => {
-                  setKeyword(e.target.value);
-                  setActive(0);
-                }}
-                onKeyDown={handleKeyDown}
-              />
-            </div>
-          )}
-
-          {filtered.length === 0 ? (
-            <div className="select-no-result">{emptyText}</div>
-          ) : (
-            <ul className="select-options" role="listbox" ref={listRef}>
-              {filtered.map((o, i) => (
-                <li
-                  key={String(o.value)}
-                  role="option"
-                  aria-selected={o === selected}
-                  title={String(o.label)}
-                  className={[
-                    "select-option",
-                    o === selected ? "is-selected" : "",
-                    i === active ? "is-active" : "",
-                    o.disabled ? "is-disabled" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onMouseEnter={() => setActive(i)}
-                  onClick={() => pick(o)}
-                >
-                  {o.label}
-                  {o.note && <span className="select-option-note">{o.note}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      {open && (portal ? createPortal(bangChon, document.body) : bangChon)}
     </div>
   );
 }

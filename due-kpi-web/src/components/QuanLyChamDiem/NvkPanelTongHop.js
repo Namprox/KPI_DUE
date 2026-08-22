@@ -186,7 +186,7 @@ const NvkPanelTongHop = ({
             Chưa có giảng viên nào trong danh sách của Khoa.
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div className="table-scroll">
             <table className="custom-table nvk-th-bang">
               <thead>
                 <tr>

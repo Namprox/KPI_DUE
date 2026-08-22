@@ -128,7 +128,7 @@
 .admin-container.collapsed .sidebar.sidebar-hovered .menu-item.active {
   margin: 0 !important;
   padding: 12px 20px !important;
-  border-radius: 5px !important;
+  border-radius: 0 !important;
   background-color: #ffffff !important;
   color: #003399 !important;
 }

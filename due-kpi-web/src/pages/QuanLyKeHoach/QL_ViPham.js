@@ -63,17 +63,18 @@ const QL_ViPham = () => {
   const currentUser = useMemo(() => user || {}, [user]);
   const canManage = canRecordViPham(currentUser);
   /**
-   * TK/TKL có màn hình thống kê riêng cho đúng Khoa mình phụ trách;
-   * TP và cấp Trường/Admin xem số liệu toàn trường ở màn hình tổng hợp.
+   * TK/TKL có màn hình thống kê riêng cho đúng Khoa mình phụ trách; số liệu
+   * toàn trường nằm ở màn hình tổng hợp.
    */
   const tongHopNav = canXemThongKeKhoa(currentUser)
     ? { path: "/thong-ke-vi-pham-khoa", label: "Thống kê vi phạm Khoa", icon: "fa-chart-pie" }
     : { path: "/tong-hop-vi-pham", label: "Tổng hợp điểm trừ", icon: "fa-square-poll-vertical" };
 
   /**
-   * Trang này mở cho cả Trưởng Phòng (qua lối vào /quan-ly/vi-pham của phân hệ
-   * chấm điểm), nhưng TP không có quyền vào /tong-hop-vi-pham. Hỏi đúng bảng
-   * quyền mà RequireRole dùng để không dẫn người dùng tới màn hình bị chặn.
+   * Trang này mở rộng hơn hẳn hai màn hình tổng hợp: /tong-hop-vi-pham chỉ dành
+   * cho phòng giám sát giảng dạy (+ Admin), /thong-ke-vi-pham-khoa chỉ dành cho
+   * TK/TKL. Hỏi đúng bảng quyền mà RequireRole dùng để không dẫn người dùng tới
+   * màn hình bị chặn.
    */
   const hienNutTongHop = canAccessPath(tongHopNav.path, currentUser);
 

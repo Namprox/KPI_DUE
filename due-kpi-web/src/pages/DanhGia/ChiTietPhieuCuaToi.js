@@ -28,6 +28,7 @@ import {
   TrangThaiBadge,
   XepLoaiBadge,
 } from '../../components/QuanLyChamDiem/TrangThaiBadge';
+import { fetchDonViList, getTenDonViFromList } from '../../utils/donViApi';
 
 /**
  * Bản CHỈ ĐỌC của màn hình thẩm định, dành cho chủ phiếu.
@@ -46,12 +47,17 @@ const ChiTietPhieuCuaToi = () => {
   const navigate = useNavigate();
   const toast = useRef(null);
 
+  const [donViList, setDonViList] = useState([]);
   const [phieu, setPhieu] = useState(null);
   const [lichSuItems, setLichSuItems] = useState([]);
   const [dangTaiLichSu, setDangTaiLichSu] = useState(true);
   const [tieuChiMauMap, setTieuChiMauMap] = useState(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [loiTai, setLoiTai] = useState('');
+
+  useEffect(() => {
+    fetchDonViList().then(setDonViList);
+  }, []);
 
   const { preview, openPreview, closePreview, downloadMinhChung } =
     useMinhChungPhieuPreview((message) =>
@@ -232,6 +238,14 @@ const ChiTietPhieuCuaToi = () => {
 
         <div className="cd-meta-grid">
           <TongDiemMeta phieu={phieu} tamTinh={tamTinh} />
+          {phieu.IdDonVi && (
+            <div>
+              <div className="cd-meta-label">Đơn vị</div>
+              <div className="cd-meta-value" style={{ fontWeight: 600 }}>
+                {getTenDonViFromList(donViList, phieu.IdDonVi)}
+              </div>
+            </div>
+          )}
           <div>
             <div className="cd-meta-label">Xếp loại</div>
             <div className="cd-meta-value">

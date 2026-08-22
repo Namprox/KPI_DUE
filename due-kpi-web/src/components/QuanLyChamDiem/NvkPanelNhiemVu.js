@@ -16,6 +16,12 @@ import {
  * chung; panel chỉ nhận giá trị đã áp dụng rồi gọi lại API. Server lo việc lọc,
  * không lọc lại trên dữ liệu đã tải.
  */
+/** Ba vai trò chỉ khác nhau ở màu chip, kích thước giữ nguyên. */
+const LOP_VAI_TRO = { CT: "nvk-vt-ct", PHC: "nvk-vt-phc", PH: "nvk-vt-ph" };
+
+const lopVaiTro = (pc) =>
+  LOP_VAI_TRO[pc.MaVaiTroSnapshot] || (pc.LaChuTri ? "nvk-vt-ct" : "nvk-vt-ph");
+
 const NvkPanelNhiemVu = ({
   idNam,
   idDonVi,
@@ -205,16 +211,21 @@ const NvkPanelNhiemVu = ({
       );
     }
 
+    const soChuaPhanCong = danhSach.filter(
+      (nv) => (nv.PhanCong || []).length === 0,
+    ).length;
+
     return (
-      <div style={{ overflowX: "auto" }}>
+      <>
+      <div className="table-scroll">
         <table className="custom-table nvk-ql-bang">
           <thead>
             <tr>
-              <th>Nhiệm vụ</th>
-              <th style={{ width: "190px" }}>Nhóm</th>
-              <th style={{ width: "340px" }}>Phân công</th>
-              <th style={{ width: "110px", textAlign: "center" }}>Minh chứng</th>
-              <th style={{ width: "110px", textAlign: "center" }}>Thao tác</th>
+              <th style={{ width: "32%" }}>Nhiệm vụ</th>
+              <th style={{ width: "17%" }}>Nhóm</th>
+              <th style={{ width: "30%" }}>Phân công</th>
+              <th style={{ width: "14%" }}>Minh chứng</th>
+              <th style={{ width: "7%", textAlign: "right" }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -225,12 +236,14 @@ const NvkPanelNhiemVu = ({
                   {nv.MoTa && <div className="nvk-ql-mo-ta">{nv.MoTa}</div>}
                 </td>
                 <td>
-                  <span className="tag-badge">{nv.TenNhom}</span>
+                  <span className="tag-badge tag-blue nvk-ql-nhom">
+                    {nv.TenNhom}
+                  </span>
                 </td>
                 <td>
                   {(nv.PhanCong || []).length === 0 ? (
-                    <span className="cd-chip nvk-chip-canh-bao">
-                      <i className="fa-solid fa-user-slash"></i> Chưa phân công
+                    <span className="status-pill pill-amber pill-dashed">
+                      Chưa phân công
                     </span>
                   ) : (
                     <>
@@ -240,14 +253,12 @@ const NvkPanelNhiemVu = ({
                       <div className="nvk-pc-cell">
                         {nv.PhanCong.map((pc) => (
                           <div key={pc.IdPhanCong} className="nvk-pc-item">
-                            <span className="nvk-pc-ten">
-                              {pc.LaChuTri && (
-                                <i className="fa-solid fa-star"></i>
-                              )}
+                            <span className="nvk-pc-ten" title={pc.HoTen}>
                               {pc.HoTen}
                             </span>
                             <span
-                              className={`nvk-pc-vai-tro${pc.LaChuTri ? " nvk-vt-chu-tri" : ""}`}
+                              className={`nvk-pc-vai-tro ${lopVaiTro(pc)}`}
+                              title={pc.TenVaiTroSnapshot}
                             >
                               {pc.TenVaiTroSnapshot}
                             </span>
@@ -258,26 +269,39 @@ const NvkPanelNhiemVu = ({
                         ))}
                       </div>
                       {!nv.CoChuTri && (
-                        <span className="cd-chip nvk-chip-canh-bao">
-                          <i className="fa-solid fa-triangle-exclamation"></i>{" "}
+                        <span className="status-pill pill-amber nvk-pc-thieu-chu-tri">
                           Chưa có chủ trì
                         </span>
                       )}
                     </>
                   )}
                 </td>
-                <td style={{ textAlign: "center" }}>
+                <td>
                   {(nv.MinhChung || []).length > 0 ? (
-                    <span className="nvk-ql-mc-dem">
-                      <i className="fa-solid fa-file-pdf"></i>{" "}
-                      {nv.MinhChung.length}
-                    </span>
+                    <div className="nvk-mc-list">
+                      {nv.MinhChung.map((mc) => {
+                        const ten =
+                          mc.TenHienThi || mc.TenFileGoc || "Tệp minh chứng";
+                        return (
+                          <button
+                            key={mc.IdMinhChungNvk}
+                            type="button"
+                            className="file-link"
+                            title={`Xem trước: ${ten}`}
+                            onClick={() => onXemMinhChung(mc)}
+                          >
+                            <span className="file-badge">PDF</span>
+                            <span className="file-name">{ten}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   ) : (
-                    <span className="nvk-trong">—</span>
+                    <span className="table-empty-mark">—</span>
                   )}
                 </td>
                 <td>
-                  <div className="action-group">
+                  <div className="action-group action-group-right">
                     <div
                       className="icon-wrapper edit-icon"
                       onClick={() => moForm(nv)}
@@ -303,6 +327,13 @@ const NvkPanelNhiemVu = ({
           </tbody>
         </table>
       </div>
+      <div className="table-foot">
+        <span>
+          {danhSach.length} nhiệm vụ
+          {soChuaPhanCong > 0 && ` · ${soChuaPhanCong} chưa phân công`}
+        </span>
+      </div>
+      </>
     );
   };
 
