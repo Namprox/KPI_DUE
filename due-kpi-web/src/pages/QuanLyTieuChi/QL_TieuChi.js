@@ -16,7 +16,6 @@ const QL_TieuChi = () => {
     const initialForm = {
         TenTieuChi: '',
         IdNhom: '',
-        CapDanhGia: '',
         MoTa: '',
         DiemToiDa: '',
         LoaiThangDiem: 1,
@@ -113,7 +112,6 @@ const QL_TieuChi = () => {
             ...formData,
             IdNhom: parseInt(formData.IdNhom) || 0,
             IdNam: null,
-            CapDanhGia: formData.CapDanhGia ? parseInt(formData.CapDanhGia) : null,
             DiemToiDa: parseFloat(formData.DiemToiDa) || 0,
             LoaiThangDiem: parseInt(formData.LoaiThangDiem) || 1,
             ThuTuHienThi: parseInt(formData.ThuTuHienThi) || 1,
@@ -220,7 +218,6 @@ const QL_TieuChi = () => {
         // Open modal with current item data first
         setFormData({
             ...item,
-            CapDanhGia: item.CapDanhGia || '',
             CongThucTinhDiem: item.CongThucTinhDiem || '',
             ThangDiemList: [],
             DeletedThangDiemIds: []

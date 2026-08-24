@@ -156,26 +156,6 @@ const QL_TieuChiListing = ({
                       <div style={{ fontWeight: "500", color: "#0284c7" }}>
                         {item.TenNhom}
                       </div>
-                      {item.CapDanhGia && (
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "#8b5cf6",
-                            marginTop: "4px",
-                          }}
-                        >
-                          <i
-                            className="fa-solid fa-layer-group"
-                            style={{ marginRight: "4px" }}
-                          ></i>
-                          Cấp:{" "}
-                          {item.CapDanhGia === 1
-                            ? "Trường"
-                            : item.CapDanhGia === 2
-                              ? "Khoa/Phòng"
-                              : "Bộ môn"}
-                        </div>
-                      )}
                     </td>
                     <td
                       style={{

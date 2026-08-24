@@ -191,7 +191,6 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
               <input
                 id={`sd-diem-${chiTiet.IdChiTiet}`}
                 type="number"
-                step="0.01"
                 min="0"
                 max={chiTiet.DiemToiDa ?? undefined}
                 className="cd-diem-input"

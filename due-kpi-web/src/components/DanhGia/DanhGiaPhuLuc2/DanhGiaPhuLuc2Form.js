@@ -501,7 +501,6 @@ const DanhGiaPhuLuc2Form = ({
                           disabled={disabledRadio}
                           min="0"
                           max={tc.DiemToiDa}
-                          step="any"
                           onChange={(e) => {
                             if (disabledRadio) return;
                             const val = e.target.value;

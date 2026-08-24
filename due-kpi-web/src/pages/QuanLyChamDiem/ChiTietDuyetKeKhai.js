@@ -63,7 +63,11 @@ const BadgeMeta = ({ meta }) => {
   return (
     <span
       className="cd-status-badge"
-      style={{ background: meta.bg, color: meta.color, borderColor: meta.border }}
+      style={{
+        background: meta.bg,
+        color: meta.color,
+        borderColor: meta.border,
+      }}
     >
       <i className={`fa-solid ${meta.icon}`}></i> {meta.label}
     </span>
@@ -444,9 +448,8 @@ const ChiTietDuyetKeKhai = () => {
       {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.TRA_LAI && (
         <div className="cd-hint cd-hint-warn kkq-banner">
           <i className="fa-solid fa-rotate-left"></i> Bản kê đã được trả về cho
-          giảng viên sửa. Lý do:{" "}
-          <b>{banKe.NhanXetDuyet || "không ghi"}</b>. Chờ giảng viên nộp lại rồi
-          duyệt tiếp.
+          giảng viên sửa. Lý do: <b>{banKe.NhanXetDuyet || "không ghi"}</b>. Chờ
+          giảng viên nộp lại rồi duyệt tiếp.
         </div>
       )}
 
@@ -653,7 +656,6 @@ const ChiTietDuyetKeKhai = () => {
                             type="number"
                             className="form-input cd-diem-input kkq-so"
                             min="0"
-                            step="0.01"
                             value={qd.soLuongDuyet ?? ""}
                             onChange={(e) =>
                               capNhat(ct.IdChiTiet, {
@@ -717,7 +719,11 @@ const ChiTietDuyetKeKhai = () => {
                     Giờ duyệt chỉ cộng dòng được duyệt
                   </td>
                   <td className="table-num kkq-gio">
-                    <b>{formatGio(duyetDuoc ? tongGioDuKien : banKe.TongGioDuyet)}</b>
+                    <b>
+                      {formatGio(
+                        duyetDuoc ? tongGioDuKien : banKe.TongGioDuyet,
+                      )}
+                    </b>
                   </td>
                   <td></td>
                 </tr>

@@ -531,7 +531,6 @@ const KeKhaiGioQuyDoi = () => {
                         type="number"
                         className="form-input kkq-so"
                         min="0"
-                        step="0.01"
                         value={r.soLuong}
                         onChange={(e) =>
                           capNhatDong(r.key, { soLuong: e.target.value })

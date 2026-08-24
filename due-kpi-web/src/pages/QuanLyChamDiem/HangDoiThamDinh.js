@@ -1,8 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Toast } from 'primereact/toast';
-import '../../css/Pages.css';
-import '../../css/QuanLyChamDiem.css';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import { Toast } from "primereact/toast";
+import "../../css/Pages.css";
+import "../../css/QuanLyChamDiem.css";
 import {
   duyetThamDinh,
   fetchPhieuDetail,
@@ -12,12 +18,12 @@ import {
   NGUON_TRA_VE,
   putDiemKhoa,
   traVeThamDinh,
-} from '../../utils/phieuApi';
-import { useNamDanhGia } from '../../hooks/useNamDanhGia';
-import { chuCaiDau } from '../../hooks/useNhanVienIndex';
-import SearchSelect from '../../components/Common/SearchSelect';
-import LyDoModal from '../../components/QuanLyChamDiem/LyDoModal';
-import { NguonTraVeBadge } from '../../components/QuanLyChamDiem/TrangThaiBadge';
+} from "../../utils/phieuApi";
+import { useNamDanhGia } from "../../hooks/useNamDanhGia";
+import { chuCaiDau } from "../../hooks/useNhanVienIndex";
+import SearchSelect from "../../components/Common/SearchSelect";
+import LyDoModal from "../../components/QuanLyChamDiem/LyDoModal";
+import { NguonTraVeBadge } from "../../components/QuanLyChamDiem/TrangThaiBadge";
 
 const PAGE_SIZE = 20;
 
@@ -43,8 +49,8 @@ const HangDoiThamDinh = () => {
   const [tongSoDong, setTongSoDong] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState('moi_nhat');
-  const [timKiem, setTimKiem] = useState('');
+  const [sortBy, setSortBy] = useState("moi_nhat");
+  const [timKiem, setTimKiem] = useState("");
 
   const [dangXuLy, setDangXuLy] = useState(null);
   const [dongSuaDiem, setDongSuaDiem] = useState(null);
@@ -79,8 +85,8 @@ const HangDoiThamDinh = () => {
       // Danh sách vừa nạp lại thì mọi RowVersion đang giữ đều có thể đã cũ.
       rowVersionRef.current.clear();
     } catch (error) {
-      console.error('Lỗi tải hàng đợi thẩm định:', error);
-      showToast('error', 'Lỗi', error.message);
+      console.error("Lỗi tải hàng đợi thẩm định:", error);
+      showToast("error", "Lỗi", error.message);
       setRows([]);
       setTongSoDong(null);
     } finally {
@@ -120,24 +126,24 @@ const HangDoiThamDinh = () => {
       // Dòng đã rời trạng thái CHO_THAM_DINH nên không còn thuộc hàng đợi này.
       setRows((truoc) => truoc.filter((r) => r.IdChiTiet !== dong.IdChiTiet));
 
-      showToast('success', 'Thành công', thongDiepXong);
+      showToast("success", "Thành công", thongDiepXong);
       if (trangThaiPhieu === 3) {
         showToast(
-          'info',
-          'Hồ sơ đã đủ điều kiện',
+          "info",
+          "Hồ sơ đã đủ điều kiện",
           `Mọi tiêu chí của ${dong.HoTen} đã thẩm định xong — hồ sơ chuyển sang chờ Trưởng khoa duyệt.`,
           6000,
         );
       }
     } catch (error) {
-      console.error('Lỗi thao tác thẩm định:', error);
+      console.error("Lỗi thao tác thẩm định:", error);
       if (error.isConflict) {
         // Ai đó vừa đụng vào phiếu này — RowVersion đang giữ chắc chắn hỏng.
         rowVersionRef.current.delete(dong.IdPhieu);
-        showToast('warn', 'Dữ liệu đã thay đổi', error.message, 6000);
+        showToast("warn", "Dữ liệu đã thay đổi", error.message, 6000);
         taiDanhSach();
       } else {
-        showToast('error', 'Lỗi', error.message, 6000);
+        showToast("error", "Lỗi", error.message, 6000);
       }
     } finally {
       setDangXuLy(null);
@@ -156,7 +162,8 @@ const HangDoiThamDinh = () => {
     setDongSuaDiem(null);
     return chayThaoTac(
       dong,
-      (rowVersion) => putDiemKhoa(dong.IdChiTiet, { diem, nhanXet, rowVersion }),
+      (rowVersion) =>
+        putDiemKhoa(dong.IdChiTiet, { diem, nhanXet, rowVersion }),
       `Đã chốt "${dong.TenTieuChi}" ở mức ${formatDiem(diem)} điểm.`,
     );
   };
@@ -176,7 +183,9 @@ const HangDoiThamDinh = () => {
     if (!q) return rows;
     return rows.filter((r) =>
       [r.HoTen, r.MaNhanVien, r.TenDonVi, r.TenTieuChi].some((f) =>
-        String(f || '').toLowerCase().includes(q),
+        String(f || "")
+          .toLowerCase()
+          .includes(q),
       ),
     );
   }, [rows, timKiem]);
@@ -184,7 +193,8 @@ const HangDoiThamDinh = () => {
   const thongKe = useMemo(
     () => ({
       soDong: rows.length,
-      soTraLai: rows.filter((r) => r.NguonTraVe === NGUON_TRA_VE.TRUONG_KHOA).length,
+      soTraLai: rows.filter((r) => r.NguonTraVe === NGUON_TRA_VE.TRUONG_KHOA)
+        .length,
       soGiangVien: new Set(rows.map((r) => r.IdNhanVien)).size,
     }),
     [rows],
@@ -195,12 +205,19 @@ const HangDoiThamDinh = () => {
       <Toast ref={toast} position="top-right" />
 
       <div className="page-header">
-        <h2 style={{ margin: 0, color: '#1e293b', fontSize: '22px', fontWeight: 700 }}>
+        <h2
+          style={{
+            margin: 0,
+            color: "#1e293b",
+            fontSize: "22px",
+            fontWeight: 700,
+          }}
+        >
           Hàng đợi thẩm định
         </h2>
         <span className="breadcrumb">
-          Từng tiêu chí được giao cho đơn vị bạn — duyệt giữ nguyên điểm, sửa điểm
-          (bắt buộc lý do) hoặc trả về cho giảng viên bổ sung
+          Từng tiêu chí được giao cho đơn vị bạn — duyệt giữ nguyên điểm, sửa
+          điểm (bắt buộc lý do) hoặc trả về cho giảng viên bổ sung
         </span>
       </div>
 
@@ -210,7 +227,10 @@ const HangDoiThamDinh = () => {
           <SearchSelect
             value={selectedNam}
             onChange={(v) => setSelectedNam(v)}
-            options={namList.map((n) => ({ value: n.IdNam, label: `Năm học ${n.IdNam}` }))}
+            options={namList.map((n) => ({
+              value: n.IdNam,
+              label: `Năm học ${n.IdNam}`,
+            }))}
             disabled={dangTaiNam}
           />
         </div>
@@ -221,13 +241,13 @@ const HangDoiThamDinh = () => {
             value={sortBy}
             onChange={(v) => setSortBy(v)}
             options={[
-              { value: 'moi_nhat', label: 'Mới nhất' },
-              { value: 'cu_nhat', label: 'Cũ nhất' },
+              { value: "moi_nhat", label: "Mới nhất" },
+              { value: "cu_nhat", label: "Cũ nhất" },
             ]}
           />
         </div>
 
-        <div className="cd-field" style={{ flex: '2 1 240px' }}>
+        <div className="cd-field" style={{ flex: "2 1 240px" }}>
           <label className="cd-label">Tìm nhanh</label>
           <input
             type="text"
@@ -238,8 +258,13 @@ const HangDoiThamDinh = () => {
           />
         </div>
 
-        <button className="btn-cancel" onClick={taiDanhSach} disabled={isLoading}>
-          <i className={`fa-solid fa-rotate${isLoading ? ' fa-spin' : ''}`}></i> Làm mới
+        <button
+          className="btn-cancel"
+          onClick={taiDanhSach}
+          disabled={isLoading}
+        >
+          <i className={`fa-solid fa-rotate${isLoading ? " fa-spin" : ""}`}></i>{" "}
+          Làm mới
         </button>
       </div>
 
@@ -277,8 +302,9 @@ const HangDoiThamDinh = () => {
         <div className="cd-canh-bao">
           <i className="fa-solid fa-triangle-exclamation"></i>
           <span>
-            Có <b>{thongKe.soTraLai}</b> tiêu chí bị Trưởng khoa trả về thẩm định lại.
-            Những dòng này đang chặn cả hồ sơ nên được xếp lên đầu — xử lý trước.
+            Có <b>{thongKe.soTraLai}</b> tiêu chí bị Trưởng khoa trả về thẩm
+            định lại. Những dòng này đang chặn cả hồ sơ nên được xếp lên đầu —
+            xử lý trước.
           </span>
         </div>
       )}
@@ -292,25 +318,31 @@ const HangDoiThamDinh = () => {
         ) : rowsHienThi.length === 0 ? (
           <div className="cd-empty">
             <i className="fa-solid fa-mug-hot"></i>
-            <h3 style={{ color: '#334155', margin: '0 0 6px 0' }}>
+            <h3 style={{ color: "#334155", margin: "0 0 6px 0" }}>
               Không còn tiêu chí nào chờ thẩm định
             </h3>
             <p style={{ margin: 0 }}>
-              Mọi tiêu chí thuộc phần việc của đơn vị bạn đã được xử lý, hoặc chưa
-              có giảng viên nào nộp phiếu.
+              Mọi tiêu chí thuộc phần việc của đơn vị bạn đã được xử lý, hoặc
+              chưa có giảng viên nào nộp phiếu.
             </p>
           </div>
         ) : (
           <div className="table-scroll">
-            <table className="custom-table" style={{ minWidth: '1080px' }}>
+            <table className="custom-table" style={{ minWidth: "1080px" }}>
               <thead>
                 <tr>
-                  <th style={{ width: '22%' }}>Giảng viên</th>
-                  <th style={{ width: '26%' }}>Tiêu chí</th>
-                  <th style={{ width: '10%', textAlign: 'center' }}>GV tự chấm</th>
-                  <th style={{ width: '10%', textAlign: 'center' }}>Minh chứng</th>
-                  <th style={{ width: '10%' }}>Ngày nộp</th>
-                  <th style={{ width: '22%', textAlign: 'center' }}>Thao tác</th>
+                  <th style={{ width: "22%" }}>Giảng viên</th>
+                  <th style={{ width: "26%" }}>Tiêu chí</th>
+                  <th style={{ width: "10%", textAlign: "center" }}>
+                    GV tự chấm
+                  </th>
+                  <th style={{ width: "10%", textAlign: "center" }}>
+                    Minh chứng
+                  </th>
+                  <th style={{ width: "10%" }}>Ngày nộp</th>
+                  <th style={{ width: "22%", textAlign: "center" }}>
+                    Thao tác
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -318,54 +350,76 @@ const HangDoiThamDinh = () => {
                   const dangChay = dangXuLy === r.IdChiTiet;
                   const traLaiBoiTk = r.NguonTraVe === NGUON_TRA_VE.TRUONG_KHOA;
                   return (
-                    <tr key={r.IdChiTiet} className={traLaiBoiTk ? 'cd-row-uu-tien' : undefined}>
+                    <tr
+                      key={r.IdChiTiet}
+                      className={traLaiBoiTk ? "cd-row-uu-tien" : undefined}
+                    >
                       <td>
                         <div className="teacher-avatar-wrapper">
-                          <div className="teacher-avatar">{chuCaiDau(r.HoTen)}</div>
+                          <div className="teacher-avatar">
+                            {chuCaiDau(r.HoTen)}
+                          </div>
                           <div>
-                            <b style={{ color: '#0f172a', display: 'block' }}>{r.HoTen}</b>
-                            {r.MaNhanVien && <span className="code-pill">{r.MaNhanVien}</span>}
-                            <div style={{ fontSize: '12px', color: '#64748b' }}>
-                              {r.TenDonVi || '—'}
+                            <b style={{ color: "#0f172a", display: "block" }}>
+                              {r.HoTen}
+                            </b>
+                            {r.MaNhanVien && (
+                              <span className="code-pill">{r.MaNhanVien}</span>
+                            )}
+                            <div style={{ fontSize: "12px", color: "#64748b" }}>
+                              {r.TenDonVi || "—"}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td>
-                        <b style={{ color: '#0f172a', display: 'block' }}>{r.TenTieuChi}</b>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>
-                          {r.TenNhom || '—'} · tối đa {formatDiem(r.DiemToiDa)}
+                        <b style={{ color: "#0f172a", display: "block" }}>
+                          {r.TenTieuChi}
+                        </b>
+                        <div style={{ fontSize: "12px", color: "#64748b" }}>
+                          {r.TenNhom || "—"} · tối đa {formatDiem(r.DiemToiDa)}
                         </div>
                         {traLaiBoiTk && (
-                          <div style={{ marginTop: '6px' }}>
+                          <div style={{ marginTop: "6px" }}>
                             <NguonTraVeBadge nguonTraVe={r.NguonTraVe} />
                             {r.LyDoTraVe && (
-                              <div className="cd-yc-lydo" style={{ marginTop: '4px' }}>
+                              <div
+                                className="cd-yc-lydo"
+                                style={{ marginTop: "4px" }}
+                              >
                                 {r.LyDoTraVe}
                               </div>
                             )}
                           </div>
                         )}
                       </td>
-                      <td style={{ textAlign: 'center', fontWeight: 700, color: '#334155' }}>
+                      <td
+                        style={{
+                          textAlign: "center",
+                          fontWeight: 700,
+                          color: "#334155",
+                        }}
+                      >
                         {formatDiem(r.DiemTuDanhGia)}
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td style={{ textAlign: "center" }}>
                         {/* Tiêu chí bắt buộc minh chứng mà nộp 0 tệp là dấu hiệu
                             cần trả về — làm nổi để chuyên viên khỏi bỏ sót. */}
                         <span
                           className="tag-badge"
                           style={
                             r.BatBuocMinhChung && !r.SoMinhChung
-                              ? { background: '#fef2f2', color: '#b91c1c' }
+                              ? { background: "#fef2f2", color: "#b91c1c" }
                               : undefined
                           }
                         >
                           {r.SoMinhChung || 0}
-                          {r.BatBuocMinhChung ? ' (bắt buộc)' : ''}
+                          {r.BatBuocMinhChung ? " (bắt buộc)" : ""}
                         </span>
                       </td>
-                      <td style={{ fontSize: '13px' }}>{formatNgay(r.NgayGui)}</td>
+                      <td style={{ fontSize: "13px" }}>
+                        {formatNgay(r.NgayGui)}
+                      </td>
                       <td>
                         <div className="cd-row-actions">
                           <button
@@ -378,7 +432,7 @@ const HangDoiThamDinh = () => {
                               <i className="fa-solid fa-spinner fa-spin"></i>
                             ) : (
                               <i className="fa-solid fa-check"></i>
-                            )}{' '}
+                            )}{" "}
                             Duyệt
                           </button>
                           <button
@@ -399,7 +453,9 @@ const HangDoiThamDinh = () => {
                           </button>
                           <button
                             className="cd-link-btn"
-                            onClick={() => navigate(`/quan-ly/phieu/${r.IdPhieu}`)}
+                            onClick={() =>
+                              navigate(`/quan-ly/phieu/${r.IdPhieu}`)
+                            }
                             title="Mở toàn bộ hồ sơ để xem minh chứng và các tiêu chí khác"
                           >
                             <i className="fa-solid fa-folder-open"></i> Mở hồ sơ
@@ -416,9 +472,9 @@ const HangDoiThamDinh = () => {
 
         <div className="cd-pager">
           <span>
-            Trang <strong style={{ color: '#172033' }}>{page}</strong>
+            Trang <strong style={{ color: "#172033" }}>{page}</strong>
           </span>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: "flex", gap: "6px" }}>
             <button
               className="table-pager-btn"
               disabled={page <= 1 || isLoading}
@@ -470,27 +526,29 @@ const HangDoiThamDinh = () => {
  * tại form thay vì để người dùng gửi lên rồi mới biết.
  */
 const SuaDiemModal = ({ dong, dangGui, onDong, onXacNhan }) => {
-  const [diem, setDiem] = useState(dong.DiemTuDanhGia ?? '');
-  const [nhanXet, setNhanXet] = useState('');
-  const [loi, setLoi] = useState('');
+  const [diem, setDiem] = useState(dong.DiemTuDanhGia ?? "");
+  const [nhanXet, setNhanXet] = useState("");
+  const [loi, setLoi] = useState("");
 
   const lech =
-    diem !== '' &&
+    diem !== "" &&
     dong.DiemTuDanhGia != null &&
     Number(diem) !== Number(dong.DiemTuDanhGia);
 
   const handleXacNhan = () => {
-    if (diem === '') return setLoi('Chưa nhập điểm.');
+    if (diem === "") return setLoi("Chưa nhập điểm.");
     const so = Number(diem);
-    if (isNaN(so)) return setLoi('Điểm phải là số.');
-    if (so < 0) return setLoi('Điểm không được âm.');
+    if (isNaN(so)) return setLoi("Điểm phải là số.");
+    if (so < 0) return setLoi("Điểm không được âm.");
     if (dong.DiemToiDa != null && so > Number(dong.DiemToiDa)) {
       return setLoi(`Điểm vượt mức tối đa (${formatDiem(dong.DiemToiDa)}).`);
     }
     if (lech && !nhanXet.trim()) {
-      return setLoi('Điểm khác mức giảng viên tự kê khai — bắt buộc ghi lý do điều chỉnh.');
+      return setLoi(
+        "Điểm khác mức giảng viên tự kê khai — bắt buộc ghi lý do điều chỉnh.",
+      );
     }
-    setLoi('');
+    setLoi("");
     onXacNhan({ diem: so, nhanXet: nhanXet.trim() || null });
   };
 
@@ -505,29 +563,28 @@ const SuaDiemModal = ({ dong, dangGui, onDong, onXacNhan }) => {
         </div>
 
         <div className="modal-body">
-          <p style={{ marginTop: 0, fontSize: '14px', color: '#475569' }}>
+          <p style={{ marginTop: 0, fontSize: "14px", color: "#475569" }}>
             <b>{dong.TenTieuChi}</b> — {dong.HoTen}
             <br />
-            Giảng viên tự chấm <b>{formatDiem(dong.DiemTuDanhGia)}</b> / tối đa{' '}
+            Giảng viên tự chấm <b>{formatDiem(dong.DiemTuDanhGia)}</b> / tối đa{" "}
             {formatDiem(dong.DiemToiDa)}.
           </p>
 
           {dong.NhanXetTuDanhGia && (
-            <div className="cd-box" style={{ marginBottom: '15px' }}>
+            <div className="cd-box" style={{ marginBottom: "15px" }}>
               <div className="cd-box-title">Giảng viên ghi chú</div>
-              <p style={{ margin: 0, fontSize: '13px', color: '#475569' }}>
+              <p style={{ margin: 0, fontSize: "13px", color: "#475569" }}>
                 {dong.NhanXetTuDanhGia}
               </p>
             </div>
           )}
 
-          <div className="form-group" style={{ marginBottom: '15px' }}>
+          <div className="form-group" style={{ marginBottom: "15px" }}>
             <label>
               Điểm thẩm định <span className="text-red">*</span>
             </label>
             <input
               type="number"
-              step="0.01"
               min="0"
               max={dong.DiemToiDa ?? undefined}
               className="cd-diem-input"
@@ -535,7 +592,7 @@ const SuaDiemModal = ({ dong, dangGui, onDong, onXacNhan }) => {
               disabled={dangGui}
               onChange={(e) => {
                 setDiem(e.target.value);
-                if (loi) setLoi('');
+                if (loi) setLoi("");
               }}
             />
           </div>
@@ -552,13 +609,13 @@ const SuaDiemModal = ({ dong, dangGui, onDong, onXacNhan }) => {
               placeholder="VD: Giảm 3đ — thiếu minh chứng cho 2 lớp học phần."
               onChange={(e) => {
                 setNhanXet(e.target.value);
-                if (loi) setLoi('');
+                if (loi) setLoi("");
               }}
             />
             {lech && (
               <div className="cd-hint cd-hint-warn">
-                <i className="fa-solid fa-circle-info"></i> Điểm khác mức giảng viên
-                tự kê khai nên bắt buộc ghi lý do.
+                <i className="fa-solid fa-circle-info"></i> Điểm khác mức giảng
+                viên tự kê khai nên bắt buộc ghi lý do.
               </div>
             )}
           </div>
@@ -574,7 +631,11 @@ const SuaDiemModal = ({ dong, dangGui, onDong, onXacNhan }) => {
           <button className="btn-cancel" onClick={onDong} disabled={dangGui}>
             Hủy
           </button>
-          <button className="btn-submit" onClick={handleXacNhan} disabled={dangGui}>
+          <button
+            className="btn-submit"
+            onClick={handleXacNhan}
+            disabled={dangGui}
+          >
             {dangGui ? (
               <>
                 <i className="fa-solid fa-spinner fa-spin"></i> Đang gửi...

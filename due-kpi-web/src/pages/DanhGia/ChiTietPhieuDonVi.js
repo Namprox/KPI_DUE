@@ -1,9 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Toast } from 'primereact/toast';
-import '../../css/Pages.css';
-import '../../css/QuanLyChamDiem.css';
-import { formatDiem, formatNgayGio } from '../../utils/phieuApi';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Toast } from "primereact/toast";
+import "../../css/Pages.css";
+import "../../css/QuanLyChamDiem.css";
+import { formatDiem, formatNgayGio } from "../../utils/phieuApi";
 import {
   diemHieuLucCuaDong,
   fetchPhieuDonViDetail,
@@ -13,16 +19,20 @@ import {
   tinhTongDiemDonViTamTinh,
   tongHopKpiDonVi,
   trinhPhieuDonVi,
-} from '../../utils/phieuDonViApi';
-import LyDoModal from '../../components/QuanLyChamDiem/LyDoModal';
+} from "../../utils/phieuDonViApi";
+import LyDoModal from "../../components/QuanLyChamDiem/LyDoModal";
 import {
   TrangThaiDonViBadge,
   XepLoaiBadge,
-} from '../../components/QuanLyChamDiem/TrangThaiBadge';
+} from "../../components/QuanLyChamDiem/TrangThaiBadge";
 
 /** Giá trị ô nhập: bản nháp người dùng đang gõ, chưa có thì lấy số của server. */
 const giaTriO = (nhap, goc) =>
-  nhap !== undefined ? nhap : goc === null || goc === undefined ? '' : String(goc);
+  nhap !== undefined
+    ? nhap
+    : goc === null || goc === undefined
+      ? ""
+      : String(goc);
 
 /**
  * Nhập điểm cho MỘT phiếu KPI đơn vị — phần việc của thư ký Khoa/Phòng.
@@ -54,7 +64,7 @@ const ChiTietPhieuDonVi = () => {
 
   const [phieu, setPhieu] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [loiTai, setLoiTai] = useState('');
+  const [loiTai, setLoiTai] = useState("");
 
   // Bản nháp CHỈ chứa dòng người dùng đã gõ. Ô nào không có ở đây thì lấy thẳng
   // số của server — nhờ vậy tải lại phiếu không xóa mất thứ đang gõ dở.
@@ -79,15 +89,17 @@ const ChiTietPhieuDonVi = () => {
       try {
         const item = await fetchPhieuDonViDetail(id);
         if (!item) {
-          setLoiTai('Không tìm thấy phiếu này, hoặc phiếu nằm ngoài phạm vi bạn được xem.');
+          setLoiTai(
+            "Không tìm thấy phiếu này, hoặc phiếu nằm ngoài phạm vi bạn được xem.",
+          );
           setPhieu(null);
           return null;
         }
         setPhieu(item);
-        setLoiTai('');
+        setLoiTai("");
         return item;
       } catch (error) {
-        console.error('Lỗi tải phiếu KPI đơn vị:', error);
+        console.error("Lỗi tải phiếu KPI đơn vị:", error);
         setLoiTai(error.message);
         setPhieu(null);
         return null;
@@ -119,7 +131,7 @@ const ChiTietPhieuDonVi = () => {
   const nhomList = useMemo(() => {
     const map = new Map();
     chiTietList.forEach((ct) => {
-      const ten = ct.TenNhom || 'Tiêu chí khác';
+      const ten = ct.TenNhom || "Tiêu chí khác";
       if (!map.has(ten)) map.set(ten, { ten, dong: [] });
       map.get(ten).dong.push(ct);
     });
@@ -138,8 +150,11 @@ const ChiTietPhieuDonVi = () => {
     const idCt = ct.IdChiTietDv;
     const diemMoi = nhapDiem[idCt];
     const nhanXetMoi = nhapNhanXet[idCt];
-    const diemCu = ct.DiemNhap === null || ct.DiemNhap === undefined ? '' : String(ct.DiemNhap);
-    const nhanXetCu = ct.NhanXetNhap || '';
+    const diemCu =
+      ct.DiemNhap === null || ct.DiemNhap === undefined
+        ? ""
+        : String(ct.DiemNhap);
+    const nhanXetCu = ct.NhanXetNhap || "";
     return (
       (diemMoi !== undefined && diemMoi !== diemCu) ||
       (nhanXetMoi !== undefined && nhanXetMoi !== nhanXetCu)
@@ -177,16 +192,22 @@ const ChiTietPhieuDonVi = () => {
                 ...cur,
                 RowVersion: newRowVersion,
                 ChiTiet: (cur.ChiTiet || []).map((dong) =>
-                  dong.IdChiTietDv === idCt && item ? { ...dong, ...item } : dong,
+                  dong.IdChiTietDv === idCt && item
+                    ? { ...dong, ...item }
+                    : dong,
                 ),
               }
             : cur,
         );
       }
-      showToast('success', 'Đã lưu', `Đã lưu điểm tiêu chí "${ct.TenTieuChi}".`);
+      showToast(
+        "success",
+        "Đã lưu",
+        `Đã lưu điểm tiêu chí "${ct.TenTieuChi}".`,
+      );
     } catch (error) {
-      console.error('Lỗi lưu điểm tiêu chí đơn vị:', error);
-      showToast('error', 'Lưu thất bại', error.message);
+      console.error("Lỗi lưu điểm tiêu chí đơn vị:", error);
+      showToast("error", "Lưu thất bại", error.message);
       if (error.isConflict) await taiPhieu({ imLang: true });
     } finally {
       setIdDangLuu(null);
@@ -203,13 +224,13 @@ const ChiTietPhieuDonVi = () => {
       if (item) setPhieu(item);
       else await taiPhieu({ imLang: true });
       showToast(
-        'success',
-        'Đã tổng hợp',
-        'Điểm của các tiêu chí tự động đã được cập nhật theo KPI thành viên.',
+        "success",
+        "Đã tổng hợp",
+        "Điểm của các tiêu chí tự động đã được cập nhật theo KPI thành viên.",
       );
     } catch (error) {
-      console.error('Lỗi tổng hợp KPI thành viên:', error);
-      showToast('error', 'Tổng hợp thất bại', error.message);
+      console.error("Lỗi tổng hợp KPI thành viên:", error);
+      showToast("error", "Tổng hợp thất bại", error.message);
       if (error.isConflict) await taiPhieu({ imLang: true });
     } finally {
       setDangTongHop(false);
@@ -227,14 +248,14 @@ const ChiTietPhieuDonVi = () => {
       if (item) setPhieu(item);
       else await taiPhieu({ imLang: true });
       showToast(
-        'success',
-        'Đã trình',
-        'Phiếu đã chuyển sang chờ Trưởng đơn vị duyệt.',
+        "success",
+        "Đã trình",
+        "Phiếu đã chuyển sang chờ Trưởng đơn vị duyệt.",
         5000,
       );
     } catch (error) {
-      console.error('Lỗi trình phiếu KPI đơn vị:', error);
-      showToast('error', 'Trình phiếu thất bại', error.message);
+      console.error("Lỗi trình phiếu KPI đơn vị:", error);
+      showToast("error", "Trình phiếu thất bại", error.message);
       if (error.isConflict) await taiPhieu({ imLang: true });
     } finally {
       setDangTrinh(false);
@@ -259,15 +280,23 @@ const ChiTietPhieuDonVi = () => {
       <div className="page-container">
         <div className="modern-table-card">
           <div className="cd-empty">
-            <i className="fa-solid fa-triangle-exclamation" style={{ color: '#f59e0b' }}></i>
-            <h3 style={{ color: '#334155', margin: '0 0 6px 0' }}>Không mở được phiếu</h3>
-            <p style={{ margin: '0 0 20px 0' }}>{loiTai || 'Phiếu không tồn tại.'}</p>
+            <i
+              className="fa-solid fa-triangle-exclamation"
+              style={{ color: "#f59e0b" }}
+            ></i>
+            <h3 style={{ color: "#334155", margin: "0 0 6px 0" }}>
+              Không mở được phiếu
+            </h3>
+            <p style={{ margin: "0 0 20px 0" }}>
+              {loiTai || "Phiếu không tồn tại."}
+            </p>
             <button
               className="btn-cancel"
-              style={{ margin: '0 auto' }}
-              onClick={() => navigate('/danh-gia-kpi-don-vi')}
+              style={{ margin: "0 auto" }}
+              onClick={() => navigate("/danh-gia-kpi-don-vi")}
             >
-              <i className="fa-solid fa-arrow-left"></i> Về danh sách phiếu đơn vị
+              <i className="fa-solid fa-arrow-left"></i> Về danh sách phiếu đơn
+              vị
             </button>
           </div>
         </div>
@@ -282,17 +311,25 @@ const ChiTietPhieuDonVi = () => {
       <div className="page-header">
         <button
           className="cd-link-btn"
-          style={{ marginBottom: '8px' }}
-          onClick={() => navigate('/danh-gia-kpi-don-vi')}
+          style={{ marginBottom: "8px" }}
+          onClick={() => navigate("/danh-gia-kpi-don-vi")}
         >
           <i className="fa-solid fa-arrow-left"></i> Danh sách phiếu KPI đơn vị
         </button>
-        <h2 style={{ margin: 0, color: '#1e293b', fontSize: '22px', fontWeight: 700 }}>
+        <h2
+          style={{
+            margin: 0,
+            color: "#1e293b",
+            fontSize: "22px",
+            fontWeight: 700,
+          }}
+        >
           {phieu.TenDonVi || `Đơn vị #${phieu.IdDonVi}`} — năm học {phieu.IdNam}
         </h2>
         <span className="breadcrumb">
-          {phieu.TenMau ? `${phieu.TenMau} · ` : ''}Lần đánh giá {phieu.LanDanhGia}
-          {phieu.LanMoLai > 0 ? ` · Đã mở lại ${phieu.LanMoLai} lần` : ''}
+          {phieu.TenMau ? `${phieu.TenMau} · ` : ""}Lần đánh giá{" "}
+          {phieu.LanDanhGia}
+          {phieu.LanMoLai > 0 ? ` · Đã mở lại ${phieu.LanMoLai} lần` : ""}
         </span>
       </div>
 
@@ -300,8 +337,11 @@ const ChiTietPhieuDonVi = () => {
         <div className="cd-phieu-top">
           <TrangThaiDonViBadge trangThai={phieu.TrangThai} />
           {!choPhepNhap && (
-            <span style={{ fontSize: '13px', color: '#64748b' }}>
-              <i className="fa-solid fa-lock" style={{ marginRight: '6px' }}></i>
+            <span style={{ fontSize: "13px", color: "#64748b" }}>
+              <i
+                className="fa-solid fa-lock"
+                style={{ marginRight: "6px" }}
+              ></i>
               Phiếu đã trình nên chỉ còn xem — mọi thay đổi thuộc về cấp duyệt.
             </span>
           )}
@@ -338,78 +378,92 @@ const ChiTietPhieuDonVi = () => {
           </div>
           <div>
             <div className="cd-meta-label">Cập nhật gần nhất</div>
-            <div className="cd-meta-value">{formatNgayGio(phieu.NgayCapNhat)}</div>
+            <div className="cd-meta-value">
+              {formatNgayGio(phieu.NgayCapNhat)}
+            </div>
           </div>
         </div>
 
         {phieu.TongDiemTichLuy == null && tamTinh && (
           <div className="cd-hint">
-            <i className="fa-solid fa-circle-info"></i> Hệ thống chỉ lưu tổng điểm
-            vào phiếu ở bước chốt. Các con số trên là tạm tính từ điểm hiện có của
-            từng tiêu chí
+            <i className="fa-solid fa-circle-info"></i> Hệ thống chỉ lưu tổng
+            điểm vào phiếu ở bước chốt. Các con số trên là tạm tính từ điểm hiện
+            có của từng tiêu chí
             {tamTinh.soDongChuaCoDiem > 0
               ? `, còn ${tamTinh.soDongChuaCoDiem} tiêu chí chưa có điểm.`
-              : '.'}
+              : "."}
           </div>
         )}
 
         {phieu.NhanXetDv && (
-          <div className="cd-box" style={{ marginTop: '16px' }}>
+          <div className="cd-box" style={{ marginTop: "16px" }}>
             <div className="cd-box-title">Nhận xét của Trưởng đơn vị</div>
-            <div style={{ fontSize: '14px', color: '#334155' }}>{phieu.NhanXetDv}</div>
+            <div style={{ fontSize: "14px", color: "#334155" }}>
+              {phieu.NhanXetDv}
+            </div>
           </div>
         )}
         {phieu.NhanXetTruong && (
-          <div className="cd-box" style={{ marginTop: '10px' }}>
+          <div className="cd-box" style={{ marginTop: "10px" }}>
             <div className="cd-box-title">Nhận xét của Hiệu trưởng</div>
-            <div style={{ fontSize: '14px', color: '#334155' }}>{phieu.NhanXetTruong}</div>
+            <div style={{ fontSize: "14px", color: "#334155" }}>
+              {phieu.NhanXetTruong}
+            </div>
           </div>
         )}
         {phieu.LyDoMoLai && (
-          <div className="cd-box" style={{ marginTop: '10px' }}>
+          <div className="cd-box" style={{ marginTop: "10px" }}>
             <div className="cd-box-title">Lý do mở lại phiếu</div>
-            <div style={{ fontSize: '14px', color: '#334155' }}>{phieu.LyDoMoLai}</div>
+            <div style={{ fontSize: "14px", color: "#334155" }}>
+              {phieu.LyDoMoLai}
+            </div>
           </div>
         )}
       </div>
 
       {choPhepNhap && (
-        <div className="cd-box" style={{ marginBottom: '18px' }}>
+        <div className="cd-box" style={{ marginBottom: "18px" }}>
           <div className="cd-box-title">Thao tác</div>
           <div
             style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '12px',
-              alignItems: 'center',
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "12px",
+              alignItems: "center",
             }}
           >
-            <button className="btn-cancel" onClick={handleTongHop} disabled={dangTongHop}>
+            <button
+              className="btn-cancel"
+              onClick={handleTongHop}
+              disabled={dangTongHop}
+            >
               {dangTongHop ? (
                 <>
-                  <i className="fa-solid fa-spinner fa-spin"></i> Đang tổng hợp...
+                  <i className="fa-solid fa-spinner fa-spin"></i> Đang tổng
+                  hợp...
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-calculator"></i> Tổng hợp KPI thành viên
+                  <i className="fa-solid fa-calculator"></i> Tổng hợp KPI thành
+                  viên
                 </>
               )}
             </button>
             <label
               className="cd-checkbox"
-              style={{ fontSize: '13px', color: '#475569' }}
+              style={{ fontSize: "13px", color: "#475569" }}
             >
               <input
                 type="checkbox"
                 checked={gomDonViCon}
                 disabled={dangTongHop}
                 onChange={(e) => setGomDonViCon(e.target.checked)}
-              />{' '}
+              />{" "}
               Gồm cả phiếu của đơn vị con
             </label>
             <button
               className="btn-submit"
-              style={{ marginLeft: 'auto' }}
+              style={{ marginLeft: "auto" }}
               onClick={() => setMoTrinh(true)}
             >
               <i className="fa-solid fa-paper-plane"></i> Trình Trưởng đơn vị
@@ -418,23 +472,23 @@ const ChiTietPhieuDonVi = () => {
 
           <div className="cd-hint">
             <i className="fa-solid fa-circle-info"></i> Tổng hợp ghi đè điểm của
-            mọi tiêu chí tự động bằng số liệu KPI mới nhất của thành viên — nên chạy
-            lại ngay trước khi trình.
+            mọi tiêu chí tự động bằng số liệu KPI mới nhất của thành viên — nên
+            chạy lại ngay trước khi trình.
           </div>
 
           {tongHop && (
-            <div className="cd-hint cd-hint-ok" style={{ marginTop: '10px' }}>
-              <i className="fa-solid fa-circle-check"></i> Đã tổng hợp{' '}
-              <b>{tongHop.SoPhieuThanhVien ?? 0}</b> phiếu thành viên ·{' '}
-              <b>{tongHop.SoXuatSac ?? 0}</b> xuất sắc ·{' '}
-              <b>{tongHop.SoHoanThanh ?? 0}</b> hoàn thành · điểm trung bình{' '}
+            <div className="cd-hint cd-hint-ok" style={{ marginTop: "10px" }}>
+              <i className="fa-solid fa-circle-check"></i> Đã tổng hợp{" "}
+              <b>{tongHop.SoPhieuThanhVien ?? 0}</b> phiếu thành viên ·{" "}
+              <b>{tongHop.SoXuatSac ?? 0}</b> xuất sắc ·{" "}
+              <b>{tongHop.SoHoanThanh ?? 0}</b> hoàn thành · điểm trung bình{" "}
               <b>{formatDiem(tongHop.DiemTrungBinh)}</b>.
             </div>
           )}
         </div>
       )}
 
-      <p className="sub-title" style={{ marginBottom: '12px' }}>
+      <p className="sub-title" style={{ marginBottom: "12px" }}>
         CHI TIẾT TIÊU CHÍ ({chiTietList.length})
       </p>
 
@@ -445,16 +499,18 @@ const ChiTietPhieuDonVi = () => {
             Phiếu chưa có tiêu chí nào. Kiểm tra lại mẫu đánh giá của đơn vị.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="custom-table" style={{ minWidth: '1000px' }}>
+          <div style={{ overflowX: "auto" }}>
+            <table className="custom-table" style={{ minWidth: "1000px" }}>
               <thead>
                 <tr>
-                  <th style={{ width: '5%' }}>STT</th>
-                  <th style={{ width: '33%' }}>Tiêu chí</th>
-                  <th style={{ width: '10%', textAlign: 'right' }}>Điểm tối đa</th>
-                  <th style={{ width: '16%' }}>Điểm</th>
-                  <th style={{ width: '28%' }}>Nhận xét</th>
-                  <th style={{ width: '8%', textAlign: 'center' }}>Lưu</th>
+                  <th style={{ width: "5%" }}>STT</th>
+                  <th style={{ width: "33%" }}>Tiêu chí</th>
+                  <th style={{ width: "10%", textAlign: "right" }}>
+                    Điểm tối đa
+                  </th>
+                  <th style={{ width: "16%" }}>Điểm</th>
+                  <th style={{ width: "28%" }}>Nhận xét</th>
+                  <th style={{ width: "8%", textAlign: "center" }}>Lưu</th>
                 </tr>
               </thead>
               <tbody>
@@ -479,16 +535,22 @@ const ChiTietPhieuDonVi = () => {
                         <tr key={idCt}>
                           <td>{sttTheoDong.get(idCt)}</td>
                           <td>
-                            <b style={{ color: '#0f172a' }}>{ct.TenTieuChi}</b>
+                            <b style={{ color: "#0f172a" }}>{ct.TenTieuChi}</b>
                             {!chamTay && (
-                              <div style={{ fontSize: '12.5px', color: '#64748b' }}>
-                                <i className="fa-solid fa-robot" style={{ marginRight: '6px' }}></i>
+                              <div
+                                style={{ fontSize: "12.5px", color: "#64748b" }}
+                              >
+                                <i
+                                  className="fa-solid fa-robot"
+                                  style={{ marginRight: "6px" }}
+                                ></i>
                                 Tự động tổng hợp từ KPI thành viên
                               </div>
                             )}
                           </td>
                           <td className="table-num">
-                            {ct.DiemToiDa === null || ct.DiemToiDa === undefined ? (
+                            {ct.DiemToiDa === null ||
+                            ct.DiemToiDa === undefined ? (
                               <span className="table-empty-mark">—</span>
                             ) : (
                               formatDiem(ct.DiemToiDa)
@@ -498,21 +560,27 @@ const ChiTietPhieuDonVi = () => {
                             {moO ? (
                               <input
                                 type="number"
-                                step="0.01"
                                 className="cd-diem-input"
-                                style={{ width: '100%', fontSize: '14px', padding: '8px 10px' }}
+                                style={{
+                                  width: "100%",
+                                  fontSize: "14px",
+                                  padding: "8px 10px",
+                                }}
                                 value={giaTriO(nhapDiem[idCt], ct.DiemNhap)}
                                 disabled={dangLuu}
                                 onChange={(e) =>
-                                  setNhapDiem((cur) => ({ ...cur, [idCt]: e.target.value }))
+                                  setNhapDiem((cur) => ({
+                                    ...cur,
+                                    [idCt]: e.target.value,
+                                  }))
                                 }
                               />
                             ) : (
                               <span
                                 style={{
                                   fontWeight: 700,
-                                  color: '#0f172a',
-                                  fontVariantNumeric: 'tabular-nums',
+                                  color: "#0f172a",
+                                  fontVariantNumeric: "tabular-nums",
                                 }}
                               >
                                 {diemHieuLucCuaDong(ct) === null ? (
@@ -529,33 +597,45 @@ const ChiTietPhieuDonVi = () => {
                                 type="text"
                                 className="form-input"
                                 placeholder="Ghi chú cho tiêu chí này..."
-                                value={giaTriO(nhapNhanXet[idCt], ct.NhanXetNhap)}
+                                value={giaTriO(
+                                  nhapNhanXet[idCt],
+                                  ct.NhanXetNhap,
+                                )}
                                 disabled={dangLuu}
                                 onChange={(e) =>
-                                  setNhapNhanXet((cur) => ({ ...cur, [idCt]: e.target.value }))
+                                  setNhapNhanXet((cur) => ({
+                                    ...cur,
+                                    [idCt]: e.target.value,
+                                  }))
                                 }
                               />
                             ) : (
-                              <span style={{ fontSize: '13px', color: '#475569' }}>
-                                {ct.NhanXetNhap || <span className="table-empty-mark">—</span>}
+                              <span
+                                style={{ fontSize: "13px", color: "#475569" }}
+                              >
+                                {ct.NhanXetNhap || (
+                                  <span className="table-empty-mark">—</span>
+                                )}
                               </span>
                             )}
                           </td>
-                          <td style={{ textAlign: 'center' }}>
+                          <td style={{ textAlign: "center" }}>
                             {moO ? (
                               <button
                                 className="action-btn edit-btn"
                                 title={
                                   daSua
-                                    ? 'Lưu điểm tiêu chí này'
-                                    : 'Chưa có thay đổi nào để lưu'
+                                    ? "Lưu điểm tiêu chí này"
+                                    : "Chưa có thay đổi nào để lưu"
                                 }
                                 disabled={!daSua || dangLuu}
                                 onClick={() => handleLuuDong(ct)}
                               >
                                 <i
                                   className={`fa-solid ${
-                                    dangLuu ? 'fa-spinner fa-spin' : 'fa-floppy-disk'
+                                    dangLuu
+                                      ? "fa-spinner fa-spin"
+                                      : "fa-floppy-disk"
                                   }`}
                                 ></i>
                               </button>
@@ -587,10 +667,13 @@ const ChiTietPhieuDonVi = () => {
           onXacNhan={handleTrinh}
         >
           {dongChamTayThieuDiem.length > 0 && (
-            <div className="cd-hint cd-hint-warn" style={{ marginBottom: '12px' }}>
-              <i className="fa-solid fa-triangle-exclamation"></i> Còn{' '}
-              <b>{dongChamTayThieuDiem.length}</b> tiêu chí chấm tay chưa có điểm.
-              Trình bây giờ thì Trưởng đơn vị sẽ nhận phiếu thiếu điểm.
+            <div
+              className="cd-hint cd-hint-warn"
+              style={{ marginBottom: "12px" }}
+            >
+              <i className="fa-solid fa-triangle-exclamation"></i> Còn{" "}
+              <b>{dongChamTayThieuDiem.length}</b> tiêu chí chấm tay chưa có
+              điểm. Trình bây giờ thì Trưởng đơn vị sẽ nhận phiếu thiếu điểm.
             </div>
           )}
         </LyDoModal>

@@ -325,18 +325,6 @@ const QL_ThangDiemByTieuChi = () => {
               </span>
             </div>
             <div>
-              <strong>Cấp đánh giá:</strong>{" "}
-              <span style={{ color: "#0f172a" }}>
-                {tieuChi.CapDanhGia === 1
-                  ? "Trường"
-                  : tieuChi.CapDanhGia === 2
-                    ? "Khoa/Viện"
-                    : tieuChi.CapDanhGia === 3
-                      ? "Bộ môn"
-                      : "---"}
-              </span>
-            </div>
-            <div>
               <strong>Loại thang điểm:</strong>{" "}
               <span style={{ color: "#0f172a" }}>
                 {getLoaiThangDiem(tieuChi.LoaiThangDiem)}
@@ -593,7 +581,6 @@ const QL_ThangDiemByTieuChi = () => {
                     </label>
                     <input
                       type="number"
-                      step="0.01"
                       name="GiaTriDiem"
                       className="form-input"
                       value={formData.GiaTriDiem || ""}

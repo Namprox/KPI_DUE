@@ -1,13 +1,6 @@
 import React from "react";
 import SearchSelect from "../../Common/SearchSelect";
 
-const CAP_DANH_GIA_OPTIONS = [
-  { value: "", label: "Dành cho mọi cấp" },
-  { value: 1, label: "Cấp Trường" },
-  { value: 2, label: "Cấp Khoa/Phòng" },
-  { value: 3, label: "Cấp Bộ môn" },
-];
-
 const LOAI_THANG_DIEM_OPTIONS = [
   { value: 1, label: "1 - Mức điểm rời rạc (VD: 2đ, 5đ, 10đ)" },
   { value: 2, label: "2 - Điểm liên tục (Tự nhập số)" },
@@ -165,22 +158,11 @@ const QL_TieuChiForm = ({
 
             <div className="form-grid-2" style={{ marginBottom: "20px" }}>
               <div className="form-group">
-                <label>Cấp đánh giá</label>
-                <SearchSelect
-                  name="CapDanhGia"
-                  value={formData.CapDanhGia || ""}
-                  onChange={handleSelect("CapDanhGia")}
-                  options={CAP_DANH_GIA_OPTIONS}
-                  placeholder="Dành cho mọi cấp"
-                />
-              </div>
-              <div className="form-group">
                 <label>
                   Điểm Tối Đa <span className="text-red">*</span>
                 </label>
                 <input
                   type="number"
-                  step="0.01"
                   name="DiemToiDa"
                   className="form-input"
                   value={formData.DiemToiDa || ""}
@@ -188,9 +170,6 @@ const QL_TieuChiForm = ({
                   required
                 />
               </div>
-            </div>
-
-            <div className="form-grid-2" style={{ marginBottom: "20px" }}>
               <div className="form-group">
                 <label>
                   Loại Thang Điểm <span className="text-red">*</span>
@@ -203,20 +182,6 @@ const QL_TieuChiForm = ({
                   required
                 />
               </div>
-              {/* <div className="form-group">
-                                <label>Công thức tính điểm {isFormula && <span className="text-red">*</span>}</label>
-                                <input
-                                    type="text"
-                                    name="CongThucTinhDiem"
-                                    className="form-input"
-                                    value={formData.CongThucTinhDiem || ''}
-                                    onChange={handleChange}
-                                    disabled={!isFormula}
-                                    required={isFormula}
-                                    placeholder={isFormula ? "VD: {SoGio} * 1.5" : "Chỉ mở khi Loại thang điểm = 4"}
-                                    style={{ backgroundColor: !isFormula ? '#f1f5f9' : '#fff', borderColor: isFormula ? '#e67e22' : '#ccc' }}
-                                />
-                            </div> */}
             </div>
 
             {Number(formData.LoaiThangDiem) === 1 && (
@@ -332,7 +297,6 @@ const QL_TieuChiForm = ({
                           </label>
                           <input
                             type="number"
-                            step="0.01"
                             className="form-input"
                             value={item.GiaTriDiem ?? ""}
                             onChange={(e) =>

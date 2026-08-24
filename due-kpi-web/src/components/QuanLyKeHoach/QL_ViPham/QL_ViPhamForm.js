@@ -412,7 +412,6 @@ const QL_ViPhamForm = ({
                   className="form-input"
                   value={formData.DiemTru ?? ""}
                   onChange={handleChange}
-                  step="0.5"
                   min="0"
                   max="15"
                   placeholder="Để trống = lấy mặc định của loại"
