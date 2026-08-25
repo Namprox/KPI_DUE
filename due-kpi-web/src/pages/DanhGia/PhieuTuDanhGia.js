@@ -39,6 +39,9 @@ const flattenTemplate = (itemDetail) => {
           flatCriteria.push({
             ...tc,
             TenNhom: nhomCha.TenNhom,
+            TenNhomCha: nhomCha.TenNhom,
+            IdNhomCha: nhomCha.IdNhom,
+            LoaiNhom: nhomCha.LoaiNhom,
             CacThangDiem: tc.ThangDiem || [],
           });
         });
@@ -50,6 +53,9 @@ const flattenTemplate = (itemDetail) => {
               flatCriteria.push({
                 ...tc,
                 TenNhom: nhomCon.TenNhom || nhomCha.TenNhom,
+                TenNhomCha: nhomCha.TenNhom,
+                IdNhomCha: nhomCha.IdNhom,
+                LoaiNhom: nhomCon.LoaiNhom || nhomCha.LoaiNhom,
                 CacThangDiem: tc.ThangDiem || [],
               });
             });

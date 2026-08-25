@@ -993,6 +993,7 @@ export const fetchTieuChiTheoMau = async (idMau) => {
       nap(nhomCon.TieuChi, nhomCon.LoaiNhom || nhom.LoaiNhom),
     );
   });
+  map.nhomTree = (data.Item || {}).Nhom || [];
   return map;
 };
 

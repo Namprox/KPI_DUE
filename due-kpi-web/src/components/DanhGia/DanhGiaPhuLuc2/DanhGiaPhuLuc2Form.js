@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   chuanHoaFileMinhChung,
   ACCEPT_PDF,
@@ -119,12 +119,59 @@ const DanhGiaPhuLuc2Form = ({
   // Có truyền thì chip tệp đã lưu bấm được để xem trước; không truyền thì chip chỉ hiển thị
   onXemMinhChung,
 }) => {
-  const groupedCriteria = criteriaList.reduce((groups, item) => {
-    const group = groups[item.TenNhom] || [];
-    group.push(item);
-    groups[item.TenNhom] = group;
-    return groups;
-  }, {});
+  const sections = useMemo(() => {
+    if (!Array.isArray(criteriaList) || criteriaList.length === 0) return [];
+
+    const loaiMap = new Map();
+    criteriaList.forEach((tc) => {
+      const loai =
+        Number(tc.LoaiNhom) ||
+        (String(tc.TenNhomCha || tc.TenNhom || "").startsWith("B") ? 2 : 1);
+      if (!loaiMap.has(loai)) {
+        loaiMap.set(loai, []);
+      }
+      loaiMap.get(loai).push(tc);
+    });
+
+    const sortedLoaiList = [...loaiMap.keys()].sort((a, b) => a - b);
+
+    return sortedLoaiList.map((loai) => {
+      const rowsOfLoai = loaiMap.get(loai) || [];
+      const firstRow = rowsOfLoai[0];
+      const tenCha =
+        firstRow?.TenNhomCha ||
+        (loai === 2
+          ? "B - Nhóm các tiêu chí liên quan đến thành tích vượt trội"
+          : "A - Nhóm các tiêu chí liên quan đến nhiệm vụ cơ bản");
+
+      // Gom tiếp theo nhóm con (TenNhom)
+      const nhomConMap = new Map();
+      rowsOfLoai.forEach((tc) => {
+        const tenCon = tc.TenNhom || "Tiêu chí";
+        if (!nhomConMap.has(tenCon)) {
+          nhomConMap.set(tenCon, []);
+        }
+        nhomConMap.get(tenCon).push(tc);
+      });
+
+      const nhomConList = [...nhomConMap.entries()].map(([tenCon, dong]) => {
+        const isDirect =
+          tenCon.trim().toLowerCase() === tenCha.trim().toLowerCase();
+
+        return {
+          ten: tenCon,
+          isDirect,
+          dong,
+        };
+      });
+
+      return {
+        loaiNhom: loai,
+        tenNhom: tenCha,
+        nhomConList,
+      };
+    });
+  }, [criteriaList]);
 
   // Current score of a criterion: auto score, or the manually entered/selected score
   const getScoreOf = (tc) => {
@@ -197,35 +244,64 @@ const DanhGiaPhuLuc2Form = ({
         </div>
       )}
 
-      {Object.keys(groupedCriteria).map((groupName, gIndex) => {
-        const items = groupedCriteria[groupName];
-        const { sum, max } = getGroupStats(items);
-        return (
-          <div key={groupName} className="pl2-group">
-            <div className="pl2-group-header">
-              <h3 className="pl2-group-title">{groupName}</h3>
-              <span className="pl2-group-score">
-                <i className="fa-solid fa-star"></i>{" "}
-                {sum % 1 === 0 ? sum : sum.toFixed(2)}
-                <span className="pl2-group-score-max">/ {max}đ</span>
-              </span>
-            </div>
-            <div className="pl2-group-items">
-              {items.map((tc, index) => {
-                const autoInfo = autoScores[tc.IdTieuChi];
-                const currentScore = getScoreOf(tc);
-                const hasScore = currentScore != null;
+      {sections.map((section, sIndex) => {
+        const isVuotTroi = Number(section.loaiNhom) === 2;
 
-                const criteriaHeader = (
-                  <div className="pl2-criteria-header">
-                    <div className="pl2-criteria-header-main">
-                      <span className="pl2-criteria-title">
-                        {gIndex + 1}.{index + 1}. {tc.TenTieuChi}
-                      </span>
-                      {tc.MoTa && (
-                        <div className="pl2-criteria-desc">{tc.MoTa}</div>
-                      )}
-                    </div>
+        return (
+          <div key={section.loaiNhom || sIndex} className="pl2-section">
+            {/* Header Nhóm Cha Cấp 1 */}
+            <div
+              className={`pl2-section-header ${isVuotTroi ? "vuot-troi" : ""}`}
+            >
+              <h3 className="pl2-section-title">
+                <i
+                  className={`fa-solid ${isVuotTroi ? "fa-award" : "fa-list-check"}`}
+                ></i>
+                {section.tenNhom}
+              </h3>
+            </div>
+
+            {/* Thân Nhóm Cha chứa các Nhóm Con Cấp 2 */}
+            <div className="pl2-section-body">
+              {section.nhomConList?.map((nhomCon, gIndex) => {
+                const items = nhomCon.dong || [];
+                const { sum, max } = getGroupStats(items);
+
+                return (
+                  <div key={nhomCon.ten || gIndex} className="pl2-group">
+                    {!nhomCon.isDirect && (
+                      <div className="pl2-group-header">
+                        <h4 className="pl2-group-title">{nhomCon.ten}</h4>
+                        <span className="pl2-group-score">
+                          <i className="fa-solid fa-star"></i>{" "}
+                          {sum % 1 === 0 ? sum : sum.toFixed(2)}
+                          <span className="pl2-group-score-max">/ {max}đ</span>
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="pl2-group-items">
+                      {items.map((tc, index) => {
+                        const autoInfo = autoScores[tc.IdTieuChi];
+                        const currentScore = getScoreOf(tc);
+                        const hasScore = currentScore != null;
+
+                        const prefix = !nhomCon.isDirect
+                          ? `${gIndex + 1}.${index + 1}.`
+                          : `${index + 1}.`;
+
+                        const criteriaHeader = (
+                          <div className="pl2-criteria-header">
+                            <div className="pl2-criteria-header-main">
+                              <span className="pl2-criteria-title">
+                                {prefix} {tc.TenTieuChi}
+                              </span>
+                              {tc.MoTa && (
+                                <div className="pl2-criteria-desc">
+                                  {tc.MoTa}
+                                </div>
+                              )}
+                            </div>
                     <div className="pl2-criteria-header-side">
                       {hasScore && (
                         <span
@@ -742,6 +818,10 @@ const DanhGiaPhuLuc2Form = ({
                   </div>
                 );
               })}
+            </div>
+          </div>
+        );
+      })}
             </div>
           </div>
         );

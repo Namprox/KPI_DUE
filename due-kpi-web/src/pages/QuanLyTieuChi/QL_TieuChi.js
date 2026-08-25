@@ -269,6 +269,12 @@ const QL_TieuChi = () => {
         });
     };
 
+    const handleAddNew = () => {
+        setFormData(initialForm);
+        setEditId(null);
+        setIsModalOpen(true);
+    };
+
     const closeModal = () => {
         setIsModalOpen(false);
         setFormData(initialForm);
@@ -288,7 +294,7 @@ const QL_TieuChi = () => {
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
                 {canManage && (
-                    <button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}>
+                    <button className="btn-add-new" onClick={handleAddNew} style={{ margin: 0 }}>
                         <i className="fa-solid fa-plus"></i> Thêm mới
                     </button>
                 )}
@@ -327,6 +333,7 @@ const QL_TieuChi = () => {
                 setFormData={setFormData}
                 isEditing={!!editId}
                 nhomTieuChiList={nhomTieuChiList}
+                tieuChiList={data}
             />
         </div>
     );

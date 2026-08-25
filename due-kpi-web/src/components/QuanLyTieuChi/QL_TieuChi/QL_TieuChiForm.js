@@ -15,6 +15,7 @@ const QL_TieuChiForm = ({
   setFormData,
   isEditing,
   nhomTieuChiList = [],
+  tieuChiList = [],
 }) => {
   if (!isOpen) return null;
 
@@ -23,8 +24,27 @@ const QL_TieuChiForm = ({
     setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
   };
 
-  const handleSelect = (name) => (value) =>
-    setFormData({ ...formData, [name]: value });
+  const handleSelect = (name) => (value) => {
+    if (name === "IdNhom" && !isEditing) {
+      const itemsInGroup = (tieuChiList || []).filter(
+        (item) => String(item.IdNhom) === String(value),
+      );
+      const nextOrder =
+        itemsInGroup.length > 0
+          ? Math.max(
+              ...itemsInGroup.map((item) => parseInt(item.ThuTuHienThi) || 0),
+              0,
+            ) + 1
+          : 1;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        ThuTuHienThi: nextOrder,
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
 
   const handleAddThangDiem = () => {
     const currentList = formData.ThangDiemList || [];

@@ -41,7 +41,7 @@ const QL_NhomTieuChi = () => {
     const isAdmin = roleCode === 'Admin';
     const isManager = ['HT', 'PHT', 'TK', 'TBM'].includes(roleCode);
     const canManage = isAdmin || isManager;
-    const showLoaiNhom = currentType !== '2';
+    const showLoaiNhom = !['2', '4'].includes(currentType);
 
     useEffect(() => {
         const isTypeEnabled = OBJECT_TYPES.some(t => t.key === currentType && t.enabled);

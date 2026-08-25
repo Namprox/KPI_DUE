@@ -9,22 +9,28 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
-import { formatDiem, formatNgayGio } from "../../utils/phieuApi";
+import "../../css/DanhGia/DanhGiaPhuLuc2.css";
+import {
+  fetchTieuChiTheoMau,
+  formatDiem,
+  formatNgayGio,
+} from "../../utils/phieuApi";
 import {
   diemHieuLucCuaDong,
   fetchPhieuDonViDetail,
   laDongChamTay,
   nhapDiemChiTietDonVi,
   suaDuocPhieu,
-  tinhTongDiemDonViTamTinh,
   tongHopKpiDonVi,
   trinhPhieuDonVi,
+  TRANG_THAI_DV,
 } from "../../utils/phieuDonViApi";
 import LyDoModal from "../../components/QuanLyChamDiem/LyDoModal";
 import {
   TrangThaiDonViBadge,
   XepLoaiBadge,
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
+import DanhGiaDonViForm from "../../components/DanhGia/DanhGiaKpiDonVi/DanhGiaDonViForm";
 
 /** Giá trị ô nhập: bản nháp người dùng đang gõ, chưa có thì lấy số của server. */
 const giaTriO = (nhap, goc) =>
@@ -35,27 +41,7 @@ const giaTriO = (nhap, goc) =>
       : String(goc);
 
 /**
- * Nhập điểm cho MỘT phiếu KPI đơn vị — phần việc của thư ký Khoa/Phòng.
- *
- * Ba điều quyết định cách trang này hoạt động:
- *
- * 1. Hai loại dòng không trộn lẫn. `loai_nguon_diem = 1` là dòng thư ký gõ tay;
- *    `= 2` là dòng hệ thống tổng hợp từ KPI của từng thành viên, gõ tay bị server
- *    từ chối. Dòng loại 2 chỉ đổi qua nút "Tổng hợp KPI thành viên", và nút đó
- *    ghi đè toàn bộ dòng loại 2 bằng số liệu mới nhất — chạy lại được nhiều lần.
- *
- * 2. RowVersion là của PHIẾU CHA kể cả khi lưu một dòng. Mỗi lần lưu, server trả
- *    row_version MỚI của phiếu và lần lưu kế tiếp phải dùng đúng giá trị đó, nếu
- *    không sẽ ăn 409. Thiếu giá trị mới thì trang tải lại phiếu chứ không đoán.
- *
- * 3. Lưu theo TỪNG DÒNG, không có nút "lưu tất cả": API chỉ có endpoint cấp dòng
- *    (PUT chi-tiet-don-vi/{id}/diem-nhap), gom nhiều dòng vào một nút chỉ tạo ảo
- *    giác nguyên tử — một dòng hỏng giữa chừng là trạng thái nửa vời không nói
- *    được cho người dùng.
- *
- * Trình phiếu (1 → 2) là ranh giới quyền: sau đó thư ký chỉ còn xem, mọi thao tác
- * thuộc về Trưởng đơn vị rồi Hiệu trưởng. Trang vẫn mở được ở các trạng thái sau
- * nhưng ở chế độ chỉ đọc.
+ * Màn hình nhập liệu Đánh giá KPI Đơn vị — dạng thẻ đồng bộ với KPI Giảng viên.
  */
 const ChiTietPhieuDonVi = () => {
   const { id } = useParams();
@@ -65,12 +51,13 @@ const ChiTietPhieuDonVi = () => {
   const [phieu, setPhieu] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loiTai, setLoiTai] = useState("");
+  const [tieuChiMap, setTieuChiMap] = useState(new Map());
 
-  // Bản nháp CHỈ chứa dòng người dùng đã gõ. Ô nào không có ở đây thì lấy thẳng
-  // số của server — nhờ vậy tải lại phiếu không xóa mất thứ đang gõ dở.
+  // Bản nháp cục bộ
   const [nhapDiem, setNhapDiem] = useState({});
   const [nhapNhanXet, setNhapNhanXet] = useState({});
   const [idDangLuu, setIdDangLuu] = useState(null);
+  const [dangLuuTatCa, setDangLuuTatCa] = useState(false);
 
   const [gomDonViCon, setGomDonViCon] = useState(true);
   const [dangTongHop, setDangTongHop] = useState(false);
@@ -97,6 +84,16 @@ const ChiTietPhieuDonVi = () => {
         }
         setPhieu(item);
         setLoiTai("");
+
+        // Tải cấu hình thang điểm mẫu nếu có
+        if (item.IdMau) {
+          try {
+            const tcMap = await fetchTieuChiTheoMau(item.IdMau);
+            setTieuChiMap(tcMap);
+          } catch (err) {
+            console.error("Lỗi tải thông tin thang điểm mẫu:", err);
+          }
+        }
         return item;
       } catch (error) {
         console.error("Lỗi tải phiếu KPI đơn vị:", error);
@@ -115,28 +112,127 @@ const ChiTietPhieuDonVi = () => {
   }, [taiPhieu]);
 
   const chiTietList = useMemo(() => phieu?.ChiTiet || [], [phieu]);
-  const tamTinh = useMemo(
-    () => tinhTongDiemDonViTamTinh(chiTietList),
-    [chiTietList],
-  );
   const choPhepNhap = suaDuocPhieu(phieu);
 
-  // Số thứ tự bám theo vị trí trong PHIẾU, không đánh lại theo từng nhóm.
-  const sttTheoDong = useMemo(
-    () => new Map(chiTietList.map((ct, index) => [ct.IdChiTietDv, index + 1])),
-    [chiTietList],
-  );
+  // Tính toán tổng điểm tạm tính thời gian thực (bao gồm cả dữ liệu đang gõ nháp)
+  const tamTinh = useMemo(() => {
+    if (!Array.isArray(chiTietList) || chiTietList.length === 0) return null;
+    let coBan = 0;
+    let vuotTroi = 0;
+    let tichLuy = 0;
+    let soDongChuaCoDiem = 0;
 
-  /** Gom theo nhóm tiêu chí, giữ nguyên thứ tự nhóm xuất hiện trong phiếu. */
-  const nhomList = useMemo(() => {
-    const map = new Map();
     chiTietList.forEach((ct) => {
-      const ten = ct.TenNhom || "Tiêu chí khác";
-      if (!map.has(ten)) map.set(ten, { ten, dong: [] });
-      map.get(ten).dong.push(ct);
+      const idCt = ct.IdChiTietDv;
+      let diem = null;
+      if (laDongChamTay(ct)) {
+        const draft = nhapDiem[idCt];
+        if (draft !== undefined) {
+          diem = draft === "" ? null : Number(draft);
+        } else {
+          diem =
+            ct.DiemNhap === null || ct.DiemNhap === undefined
+              ? null
+              : Number(ct.DiemNhap);
+        }
+      } else {
+        diem =
+          ct.DiemTongHop === null || ct.DiemTongHop === undefined
+            ? null
+            : Number(ct.DiemTongHop);
+      }
+
+      if (diem === null || isNaN(diem)) {
+        soDongChuaCoDiem += 1;
+        return;
+      }
+      tichLuy += diem;
+      if (Number(ct.LoaiNhom) === 2) vuotTroi += diem;
+      else coBan += diem;
     });
-    return [...map.values()];
-  }, [chiTietList]);
+
+    return { coBan, vuotTroi, tichLuy, soDongChuaCoDiem };
+  }, [chiTietList, nhapDiem]);
+
+  /** Gom theo phân cấp nhóm: Nhóm Cha (Cấp 1 theo LoaiNhom) -> Nhóm Con (Cấp 2 theo TenNhom) */
+  const sections = useMemo(() => {
+    if (!Array.isArray(chiTietList) || chiTietList.length === 0) return [];
+
+    const nhomTree = tieuChiMap?.nhomTree || [];
+    const nhomTreeByLoai = new Map();
+    nhomTree.forEach((n) => {
+      if (n.LoaiNhom != null) {
+        nhomTreeByLoai.set(Number(n.LoaiNhom), n);
+      }
+    });
+
+    // Gom các dòng theo LoaiNhom (1: Cơ bản, 2: Vượt trội, khác: Khác)
+    const loaiNhomMap = new Map();
+    chiTietList.forEach((ct) => {
+      const loai = Number(ct.LoaiNhom) || 1;
+      if (!loaiNhomMap.has(loai)) {
+        loaiNhomMap.set(loai, []);
+      }
+      loaiNhomMap.get(loai).push(ct);
+    });
+
+    const sortedLoaiList = [...loaiNhomMap.keys()].sort((a, b) => a - b);
+
+    return sortedLoaiList.map((loai) => {
+      const rowsOfLoai = loaiNhomMap.get(loai) || [];
+      const nhomChaFromTree = nhomTreeByLoai.get(loai);
+
+      const tenCha =
+        nhomChaFromTree?.TenNhom ||
+        (loai === 2
+          ? "B - Nhóm các tiêu chí liên quan đến thành tích vượt trội"
+          : "A - Nhóm các tiêu chí liên quan đến nhiệm vụ cơ bản");
+
+      const diemToiDaCha =
+        nhomChaFromTree?.DiemToiDa != null
+          ? Number(nhomChaFromTree.DiemToiDa)
+          : null;
+
+      // Gom theo nhóm con (TenNhom)
+      const nhomConMap = new Map();
+      rowsOfLoai.forEach((ct) => {
+        const tenCon = ct.TenNhom || "Tiêu chí";
+        if (!nhomConMap.has(tenCon)) {
+          nhomConMap.set(tenCon, []);
+        }
+        nhomConMap.get(tenCon).push(ct);
+      });
+
+      const nhomConList = [...nhomConMap.entries()].map(([tenCon, dong]) => {
+        const nhomConFromTree = nhomChaFromTree?.NhomCon?.find(
+          (nc) => nc.TenNhom === tenCon || (nc.IdNhom && nc.IdNhom === dong[0]?.IdNhomCha),
+        );
+        const diemToiDaCon =
+          nhomConFromTree?.DiemToiDa != null
+            ? Number(nhomConFromTree.DiemToiDa)
+            : null;
+
+        const isDirect =
+          tenCon.trim().toLowerCase() === tenCha.trim().toLowerCase() ||
+          (nhomChaFromTree &&
+            (!nhomChaFromTree.NhomCon || nhomChaFromTree.NhomCon.length === 0));
+
+        return {
+          ten: tenCon,
+          isDirect,
+          diemToiDa: diemToiDaCon,
+          dong,
+        };
+      });
+
+      return {
+        loaiNhom: loai,
+        tenNhom: tenCha,
+        diemToiDa: diemToiDaCha,
+        nhomConList,
+      };
+    });
+  }, [chiTietList, tieuChiMap]);
 
   const dongChamTayThieuDiem = useMemo(
     () =>
@@ -146,21 +242,43 @@ const ChiTietPhieuDonVi = () => {
     [chiTietList],
   );
 
-  const oDaSua = (ct) => {
-    const idCt = ct.IdChiTietDv;
-    const diemMoi = nhapDiem[idCt];
-    const nhanXetMoi = nhapNhanXet[idCt];
-    const diemCu =
-      ct.DiemNhap === null || ct.DiemNhap === undefined
-        ? ""
-        : String(ct.DiemNhap);
-    const nhanXetCu = ct.NhanXetNhap || "";
-    return (
-      (diemMoi !== undefined && diemMoi !== diemCu) ||
-      (nhanXetMoi !== undefined && nhanXetMoi !== nhanXetCu)
-    );
+  const oDaSua = useCallback(
+    (ct) => {
+      const idCt = ct.IdChiTietDv;
+      const diemMoi = nhapDiem[idCt];
+      const nhanXetMoi = nhapNhanXet[idCt];
+      const diemCu =
+        ct.DiemNhap === null || ct.DiemNhap === undefined
+          ? ""
+          : String(ct.DiemNhap);
+      const nhanXetCu = ct.NhanXetNhap || "";
+      return (
+        (diemMoi !== undefined && String(diemMoi) !== diemCu) ||
+        (nhanXetMoi !== undefined && nhanXetMoi !== nhanXetCu)
+      );
+    },
+    [nhapDiem, nhapNhanXet],
+  );
+
+  const soDongDaSua = useMemo(() => {
+    return chiTietList.filter((ct) => oDaSua(ct)).length;
+  }, [chiTietList, oDaSua]);
+
+  const handleDiemChange = (idCt, val) => {
+    setNhapDiem((prev) => ({
+      ...prev,
+      [idCt]: val,
+    }));
   };
 
+  const handleNhanXetChange = (idCt, val) => {
+    setNhapNhanXet((prev) => ({
+      ...prev,
+      [idCt]: val,
+    }));
+  };
+
+  // Lưu một tiêu chí đơn lẻ
   const handleLuuDong = async (ct) => {
     const idCt = ct.IdChiTietDv;
     setIdDangLuu(idCt);
@@ -171,7 +289,6 @@ const ChiTietPhieuDonVi = () => {
         rowVersion: phieu?.RowVersion,
       });
 
-      // Bỏ bản nháp của đúng dòng vừa lưu; các dòng khác giữ nguyên thứ đang gõ.
       setNhapDiem((cur) => {
         const { [idCt]: _bo, ...conLai } = cur;
         return conLai;
@@ -181,8 +298,6 @@ const ChiTietPhieuDonVi = () => {
         return conLai;
       });
 
-      // Không có row_version mới thì mọi lần lưu sau sẽ 409 — tải lại cả phiếu
-      // để lấy lại giá trị đúng thay vì gửi đi một giá trị đã cũ.
       if (!newRowVersion) {
         await taiPhieu({ imLang: true });
       } else {
@@ -211,6 +326,59 @@ const ChiTietPhieuDonVi = () => {
       if (error.isConflict) await taiPhieu({ imLang: true });
     } finally {
       setIdDangLuu(null);
+    }
+  };
+
+  // Lưu tất cả tiêu chí đã chỉnh sửa
+  const handleLuuTatCa = async () => {
+    const danhSachSua = chiTietList.filter((ct) => oDaSua(ct));
+    if (danhSachSua.length === 0) return;
+
+    setDangLuuTatCa(true);
+    let currentRowVersion = phieu?.RowVersion;
+    let savedCount = 0;
+    let hasError = false;
+
+    try {
+      for (const ct of danhSachSua) {
+        const idCt = ct.IdChiTietDv;
+        const { item, newRowVersion } = await nhapDiemChiTietDonVi(idCt, {
+          diem: giaTriO(nhapDiem[idCt], ct.DiemNhap),
+          nhanXet: giaTriO(nhapNhanXet[idCt], ct.NhanXetNhap),
+          rowVersion: currentRowVersion,
+        });
+
+        if (newRowVersion) currentRowVersion = newRowVersion;
+        savedCount++;
+
+        // Xóa bản nháp dòng đã lưu thành công
+        setNhapDiem((cur) => {
+          const { [idCt]: _bo, ...conLai } = cur;
+          return conLai;
+        });
+        setNhapNhanXet((cur) => {
+          const { [idCt]: _bo, ...conLai } = cur;
+          return conLai;
+        });
+      }
+
+      await taiPhieu({ imLang: true });
+      showToast(
+        "success",
+        "Đã lưu tất cả",
+        `Đã lưu thành công ${savedCount} tiêu chí có thay đổi.`,
+      );
+    } catch (error) {
+      hasError = true;
+      console.error("Lỗi lưu danh sách tiêu chí:", error);
+      showToast(
+        "error",
+        "Lưu chưa hoàn tất",
+        `${error.message} (Đã lưu ${savedCount}/${danhSachSua.length} tiêu chí)`,
+      );
+      await taiPhieu({ imLang: true });
+    } finally {
+      setDangLuuTatCa(false);
     }
   };
 
@@ -304,10 +472,101 @@ const ChiTietPhieuDonVi = () => {
     );
   }
 
+  // Khối hành động trên header
+  const headerActions = choPhepNhap ? (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        flexWrap: "wrap",
+      }}
+    >
+      <button
+        type="button"
+        className="btn-luu-nhap"
+        disabled={soDongDaSua === 0 || dangLuuTatCa || idDangLuu !== null}
+        onClick={handleLuuTatCa}
+        title="Lưu tất cả tiêu chí bạn đã sửa đổi"
+      >
+        <i
+          className={`fa-solid ${dangLuuTatCa ? "fa-spinner fa-spin" : "fa-floppy-disk"}`}
+        ></i>
+        {dangLuuTatCa
+          ? "Đang lưu..."
+          : soDongDaSua > 0
+            ? `Lưu thay đổi (${soDongDaSua})`
+            : "Lưu thay đổi"}
+      </button>
+
+      <button
+        type="button"
+        className="btn-tong-hop"
+        disabled={dangTongHop || dangLuuTatCa}
+        onClick={handleTongHop}
+        title="Tổng hợp lại điểm KPI từ các thành viên trong đơn vị"
+      >
+        <i
+          className={`fa-solid ${dangTongHop ? "fa-spinner fa-spin" : "fa-calculator"}`}
+        ></i>
+        {dangTongHop ? "Đang tổng hợp..." : "Tổng hợp KPI"}
+      </button>
+
+      <label
+        style={{
+          fontSize: "13px",
+          color: "#475569",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={gomDonViCon}
+          disabled={dangTongHop || dangLuuTatCa}
+          onChange={(e) => setGomDonViCon(e.target.checked)}
+        />
+        Gồm đơn vị con
+      </label>
+
+      <button
+        type="button"
+        className="btn-nop-phieu"
+        disabled={dangTrinh || dangLuuTatCa}
+        onClick={() => setMoTrinh(true)}
+      >
+        <i className="fa-solid fa-paper-plane"></i> Trình Trưởng đơn vị
+      </button>
+    </div>
+  ) : (
+    <div className="pl2-approved pl2-waiting">
+      {Number(phieu.TrangThai) === TRANG_THAI_DV.CHO_DV_DUYET ? (
+        <>
+          <i className="fa-solid fa-hourglass-half"></i> Chờ Trưởng đơn vị duyệt
+        </>
+      ) : Number(phieu.TrangThai) === TRANG_THAI_DV.DV_DA_DUYET ? (
+        <>
+          <i className="fa-solid fa-user-check"></i> Trưởng đơn vị đã duyệt
+        </>
+      ) : Number(phieu.TrangThai) === TRANG_THAI_DV.TRUONG_DA_DUYET ? (
+        <>
+          <i className="fa-solid fa-circle-check"></i> Hiệu trưởng đã duyệt
+        </>
+      ) : (
+        <>
+          <i className="fa-solid fa-lock"></i> Đã hoàn tất
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="page-container">
       <Toast ref={toast} position="top-right" />
 
+      {/* Tiêu đề & Breadcrumb & Badge */}
       <div className="page-header">
         <button
           className="cd-link-btn"
@@ -316,349 +575,67 @@ const ChiTietPhieuDonVi = () => {
         >
           <i className="fa-solid fa-arrow-left"></i> Danh sách phiếu KPI đơn vị
         </button>
-        <h2
+
+        <div
           style={{
-            margin: 0,
-            color: "#1e293b",
-            fontSize: "22px",
-            fontWeight: 700,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
           }}
         >
-          {phieu.TenDonVi || `Đơn vị #${phieu.IdDonVi}`} — năm học {phieu.IdNam}
-        </h2>
-        <span className="breadcrumb">
-          {phieu.TenMau ? `${phieu.TenMau} · ` : ""}Lần đánh giá{" "}
-          {phieu.LanDanhGia}
-          {phieu.LanMoLai > 0 ? ` · Đã mở lại ${phieu.LanMoLai} lần` : ""}
-        </span>
-      </div>
-
-      <div className="cd-phieu-header">
-        <div className="cd-phieu-top">
-          <TrangThaiDonViBadge trangThai={phieu.TrangThai} />
-          {!choPhepNhap && (
-            <span style={{ fontSize: "13px", color: "#64748b" }}>
-              <i
-                className="fa-solid fa-lock"
-                style={{ marginRight: "6px" }}
-              ></i>
-              Phiếu đã trình nên chỉ còn xem — mọi thay đổi thuộc về cấp duyệt.
+          <div>
+            <h2
+              style={{
+                margin: 0,
+                color: "#1e293b",
+                fontSize: "22px",
+                fontWeight: 700,
+              }}
+            >
+              {phieu.TenDonVi || `Đơn vị #${phieu.IdDonVi}`} — Năm học{" "}
+              {phieu.IdNam}
+            </h2>
+            <span className="breadcrumb">
+              {phieu.TenMau ? `${phieu.TenMau} · ` : ""}Lần đánh giá{" "}
+              {phieu.LanDanhGia}
+              {phieu.LanMoLai > 0 ? ` · Đã mở lại ${phieu.LanMoLai} lần` : ""}
             </span>
-          )}
-        </div>
+          </div>
 
-        <div className="cd-meta-grid">
-          <div>
-            <div className="cd-meta-label">Điểm cơ bản</div>
-            <div className="cd-meta-value">
-              {formatDiem(phieu.TongDiemCoBan ?? tamTinh?.coBan)}
-            </div>
-          </div>
-          <div>
-            <div className="cd-meta-label">Điểm vượt trội</div>
-            <div className="cd-meta-value">
-              {formatDiem(phieu.TongDiemVuotTroi ?? tamTinh?.vuotTroi)}
-            </div>
-          </div>
-          <div>
-            <div className="cd-meta-label">Tổng tích lũy</div>
-            <div className="cd-meta-value" style={{ fontWeight: 700 }}>
-              {formatDiem(phieu.TongDiemTichLuy ?? tamTinh?.tichLuy)}
-            </div>
-          </div>
-          <div>
-            <div className="cd-meta-label">Xếp loại</div>
-            <div className="cd-meta-value">
-              <XepLoaiBadge xepLoai={phieu.XepLoai} />
-            </div>
-          </div>
-          <div>
-            <div className="cd-meta-label">Ngày gửi</div>
-            <div className="cd-meta-value">{formatNgayGio(phieu.NgayGui)}</div>
-          </div>
-          <div>
-            <div className="cd-meta-label">Cập nhật gần nhất</div>
-            <div className="cd-meta-value">
-              {formatNgayGio(phieu.NgayCapNhat)}
-            </div>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <TrangThaiDonViBadge trangThai={phieu.TrangThai} />
+            <XepLoaiBadge xepLoai={phieu.XepLoai} />
           </div>
         </div>
-
-        {phieu.TongDiemTichLuy == null && tamTinh && (
-          <div className="cd-hint">
-            <i className="fa-solid fa-circle-info"></i> Hệ thống chỉ lưu tổng
-            điểm vào phiếu ở bước chốt. Các con số trên là tạm tính từ điểm hiện
-            có của từng tiêu chí
-            {tamTinh.soDongChuaCoDiem > 0
-              ? `, còn ${tamTinh.soDongChuaCoDiem} tiêu chí chưa có điểm.`
-              : "."}
-          </div>
-        )}
-
-        {phieu.NhanXetDv && (
-          <div className="cd-box" style={{ marginTop: "16px" }}>
-            <div className="cd-box-title">Nhận xét của Trưởng đơn vị</div>
-            <div style={{ fontSize: "14px", color: "#334155" }}>
-              {phieu.NhanXetDv}
-            </div>
-          </div>
-        )}
-        {phieu.NhanXetTruong && (
-          <div className="cd-box" style={{ marginTop: "10px" }}>
-            <div className="cd-box-title">Nhận xét của Hiệu trưởng</div>
-            <div style={{ fontSize: "14px", color: "#334155" }}>
-              {phieu.NhanXetTruong}
-            </div>
-          </div>
-        )}
-        {phieu.LyDoMoLai && (
-          <div className="cd-box" style={{ marginTop: "10px" }}>
-            <div className="cd-box-title">Lý do mở lại phiếu</div>
-            <div style={{ fontSize: "14px", color: "#334155" }}>
-              {phieu.LyDoMoLai}
-            </div>
-          </div>
-        )}
       </div>
 
-      {choPhepNhap && (
-        <div className="cd-box" style={{ marginBottom: "18px" }}>
-          <div className="cd-box-title">Thao tác</div>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "12px",
-              alignItems: "center",
-            }}
-          >
-            <button
-              className="btn-cancel"
-              onClick={handleTongHop}
-              disabled={dangTongHop}
-            >
-              {dangTongHop ? (
-                <>
-                  <i className="fa-solid fa-spinner fa-spin"></i> Đang tổng
-                  hợp...
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-calculator"></i> Tổng hợp KPI thành
-                  viên
-                </>
-              )}
-            </button>
-            <label
-              className="cd-checkbox"
-              style={{ fontSize: "13px", color: "#475569" }}
-            >
-              <input
-                type="checkbox"
-                checked={gomDonViCon}
-                disabled={dangTongHop}
-                onChange={(e) => setGomDonViCon(e.target.checked)}
-              />{" "}
-              Gồm cả phiếu của đơn vị con
-            </label>
-            <button
-              className="btn-submit"
-              style={{ marginLeft: "auto" }}
-              onClick={() => setMoTrinh(true)}
-            >
-              <i className="fa-solid fa-paper-plane"></i> Trình Trưởng đơn vị
-            </button>
-          </div>
+      {/* Biểu mẫu đánh giá dạng thẻ */}
+      <DanhGiaDonViForm
+        phieu={phieu}
+        chiTietList={chiTietList}
+        sections={sections}
+        tieuChiMap={tieuChiMap}
+        nhapDiem={nhapDiem}
+        nhapNhanXet={nhapNhanXet}
+        choPhepNhap={choPhepNhap}
+        idDangLuu={idDangLuu}
+        onDiemChange={handleDiemChange}
+        onNhanXetChange={handleNhanXetChange}
+        onLuuDong={handleLuuDong}
+        oDaSua={oDaSua}
+        hanhDong={headerActions}
+        tamTinh={tamTinh}
+        tongHop={tongHop}
+      />
 
-          <div className="cd-hint">
-            <i className="fa-solid fa-circle-info"></i> Tổng hợp ghi đè điểm của
-            mọi tiêu chí tự động bằng số liệu KPI mới nhất của thành viên — nên
-            chạy lại ngay trước khi trình.
-          </div>
-
-          {tongHop && (
-            <div className="cd-hint cd-hint-ok" style={{ marginTop: "10px" }}>
-              <i className="fa-solid fa-circle-check"></i> Đã tổng hợp{" "}
-              <b>{tongHop.SoPhieuThanhVien ?? 0}</b> phiếu thành viên ·{" "}
-              <b>{tongHop.SoXuatSac ?? 0}</b> xuất sắc ·{" "}
-              <b>{tongHop.SoHoanThanh ?? 0}</b> hoàn thành · điểm trung bình{" "}
-              <b>{formatDiem(tongHop.DiemTrungBinh)}</b>.
-            </div>
-          )}
-        </div>
-      )}
-
-      <p className="sub-title" style={{ marginBottom: "12px" }}>
-        CHI TIẾT TIÊU CHÍ ({chiTietList.length})
-      </p>
-
-      <div className="modern-table-card">
-        {chiTietList.length === 0 ? (
-          <div className="cd-empty">
-            <i className="fa-solid fa-list"></i>
-            Phiếu chưa có tiêu chí nào. Kiểm tra lại mẫu đánh giá của đơn vị.
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table className="custom-table" style={{ minWidth: "1000px" }}>
-              <thead>
-                <tr>
-                  <th style={{ width: "5%" }}>STT</th>
-                  <th style={{ width: "33%" }}>Tiêu chí</th>
-                  <th style={{ width: "10%", textAlign: "right" }}>
-                    Điểm tối đa
-                  </th>
-                  <th style={{ width: "16%" }}>Điểm</th>
-                  <th style={{ width: "28%" }}>Nhận xét</th>
-                  <th style={{ width: "8%", textAlign: "center" }}>Lưu</th>
-                </tr>
-              </thead>
-              <tbody>
-                {nhomList.map((nhom) => (
-                  <React.Fragment key={nhom.ten}>
-                    <tr className="table-group-row">
-                      <td colSpan={6}>
-                        <span className="table-group-bar"></span>
-                        {nhom.ten}
-                        <span className="table-group-count">
-                          {nhom.dong.length} tiêu chí
-                        </span>
-                      </td>
-                    </tr>
-                    {nhom.dong.map((ct) => {
-                      const idCt = ct.IdChiTietDv;
-                      const chamTay = laDongChamTay(ct);
-                      const moO = choPhepNhap && chamTay;
-                      const daSua = oDaSua(ct);
-                      const dangLuu = idDangLuu === idCt;
-                      return (
-                        <tr key={idCt}>
-                          <td>{sttTheoDong.get(idCt)}</td>
-                          <td>
-                            <b style={{ color: "#0f172a" }}>{ct.TenTieuChi}</b>
-                            {!chamTay && (
-                              <div
-                                style={{ fontSize: "12.5px", color: "#64748b" }}
-                              >
-                                <i
-                                  className="fa-solid fa-robot"
-                                  style={{ marginRight: "6px" }}
-                                ></i>
-                                Tự động tổng hợp từ KPI thành viên
-                              </div>
-                            )}
-                          </td>
-                          <td className="table-num">
-                            {ct.DiemToiDa === null ||
-                            ct.DiemToiDa === undefined ? (
-                              <span className="table-empty-mark">—</span>
-                            ) : (
-                              formatDiem(ct.DiemToiDa)
-                            )}
-                          </td>
-                          <td>
-                            {moO ? (
-                              <input
-                                type="number"
-                                className="cd-diem-input"
-                                style={{
-                                  width: "100%",
-                                  fontSize: "14px",
-                                  padding: "8px 10px",
-                                }}
-                                value={giaTriO(nhapDiem[idCt], ct.DiemNhap)}
-                                disabled={dangLuu}
-                                onChange={(e) =>
-                                  setNhapDiem((cur) => ({
-                                    ...cur,
-                                    [idCt]: e.target.value,
-                                  }))
-                                }
-                              />
-                            ) : (
-                              <span
-                                style={{
-                                  fontWeight: 700,
-                                  color: "#0f172a",
-                                  fontVariantNumeric: "tabular-nums",
-                                }}
-                              >
-                                {diemHieuLucCuaDong(ct) === null ? (
-                                  <span className="table-empty-mark">—</span>
-                                ) : (
-                                  formatDiem(diemHieuLucCuaDong(ct))
-                                )}
-                              </span>
-                            )}
-                          </td>
-                          <td>
-                            {moO ? (
-                              <input
-                                type="text"
-                                className="form-input"
-                                placeholder="Ghi chú cho tiêu chí này..."
-                                value={giaTriO(
-                                  nhapNhanXet[idCt],
-                                  ct.NhanXetNhap,
-                                )}
-                                disabled={dangLuu}
-                                onChange={(e) =>
-                                  setNhapNhanXet((cur) => ({
-                                    ...cur,
-                                    [idCt]: e.target.value,
-                                  }))
-                                }
-                              />
-                            ) : (
-                              <span
-                                style={{ fontSize: "13px", color: "#475569" }}
-                              >
-                                {ct.NhanXetNhap || (
-                                  <span className="table-empty-mark">—</span>
-                                )}
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            {moO ? (
-                              <button
-                                className="action-btn edit-btn"
-                                title={
-                                  daSua
-                                    ? "Lưu điểm tiêu chí này"
-                                    : "Chưa có thay đổi nào để lưu"
-                                }
-                                disabled={!daSua || dangLuu}
-                                onClick={() => handleLuuDong(ct)}
-                              >
-                                <i
-                                  className={`fa-solid ${
-                                    dangLuu
-                                      ? "fa-spinner fa-spin"
-                                      : "fa-floppy-disk"
-                                  }`}
-                                ></i>
-                              </button>
-                            ) : (
-                              <span className="table-empty-mark">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
+      {/* Modal xác nhận trình duyệt */}
       {moTrinh && (
         <LyDoModal
           tieuDe="Trình phiếu lên Trưởng đơn vị"
-          moTa="Phiếu chuyển sang trạng thái chờ Trưởng đơn vị duyệt. Sau bước này bạn không sửa được điểm nữa."
-          nhanLyDo="Nhận xét kèm theo"
+          moTa="Phiếu sẽ chuyển sang trạng thái chờ Trưởng đơn vị duyệt. Sau bước này bạn không sửa được điểm nữa."
+          nhanLyDo="Nhận xét / Ý kiến kèm theo"
           batBuocLyDo={false}
           nhanXacNhan="Trình phiếu"
           iconXacNhan="fa-paper-plane"
@@ -673,7 +650,8 @@ const ChiTietPhieuDonVi = () => {
             >
               <i className="fa-solid fa-triangle-exclamation"></i> Còn{" "}
               <b>{dongChamTayThieuDiem.length}</b> tiêu chí chấm tay chưa có
-              điểm. Trình bây giờ thì Trưởng đơn vị sẽ nhận phiếu thiếu điểm.
+              điểm. Nếu trình bây giờ thì Trưởng đơn vị sẽ nhận phiếu chưa đầy đủ
+              điểm.
             </div>
           )}
         </LyDoModal>
