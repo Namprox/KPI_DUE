@@ -1,11 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { formatGio } from "../../utils/keKhaiGioQuyDoiApi";
 
-const CHU_SO_LA_MA = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+const CHU_SO_LA_MA = [
+  "I",
+  "II",
+  "III",
+  "IV",
+  "V",
+  "VI",
+  "VII",
+  "VIII",
+  "IX",
+  "X",
+];
 const CHU_CAI = "abcdefghijklmnopqrstuvwxyz";
 
 /**
- * Bỏ dấu để tìm kiếm — gõ "de an" phải ra "đề án".
+ * Bỏ dấu để tìm kiếm - gõ "de an" phải ra "đề án".
  *
  * NFD tách được dấu thanh/dấu mũ thành ký tự tổ hợp, nhưng "đ" là một chữ cái
  * riêng chứ không phải "d + dấu" nên NFD không đụng tới; phải thay tay sau khi
@@ -30,13 +41,13 @@ const soThuTu = (cv, i, mac) => {
  *
  * Đọc đúng công thức của module: giờ = SoLuong × HeSoQuyDoi / SoLuongMau, nên
  * mẫu số > 1 phải nằm cạnh đơn vị tính ("1 giờ / 10 bài") chứ không được rút gọn
- * — rút gọn là đổi ý nghĩa của con số trong quyết định.
+ * - rút gọn là đổi ý nghĩa của con số trong quyết định.
  */
 const tachHeSo = (cv) => {
   const mau = Number(cv.SoLuongMau) || 1;
   const donVi = cv.DonViTinh || "đơn vị";
   return {
-    val: cv.HeSoQuyDoi != null ? formatGio(cv.HeSoQuyDoi, 3) : "—",
+    val: cv.HeSoQuyDoi != null ? formatGio(cv.HeSoQuyDoi, 3) : "-",
     unit: mau > 1 ? `${mau} ${donVi}` : donVi,
   };
 };
@@ -49,7 +60,7 @@ const tachHeSo = (cv) => {
  * lại bằng bố cục hai cột: cột trái là các nhánh của quyết định, cột phải là đầu
  * việc của nhánh đang chọn kèm hệ số quy đổi.
  *
- * Cây tối đa 4 cấp và **độ sâu KHÔNG đều** — lá nằm ở cấp 2, 3 hoặc 4 — nên cột
+ * Cây tối đa 4 cấp và **độ sâu KHÔNG đều** - lá nằm ở cấp 2, 3 hoặc 4 - nên cột
  * phải không thể giả định "luôn có một tầng nhóm con". Quy tắc dựng:
  *
  *  - cột trái = các con của mục cấp 1 (mỗi mục cấp 1 là một tiêu đề nhóm);
@@ -60,7 +71,7 @@ const tachHeSo = (cv) => {
  * đúng mà không phải đặc biệt hoá từng trường hợp.
  *
  * Đang tìm kiếm thì cột phải gộp kết quả của TOÀN BỘ danh mục (tiêu đề nhóm ghi
- * kèm đường dẫn để biết đang ở mục nào) và cột trái bỏ tô nhánh đang chọn — vì
+ * kèm đường dẫn để biết đang ở mục nào) và cột trái bỏ tô nhánh đang chọn - vì
  * lúc đó nội dung bên phải không còn thuộc về một nhánh nào nữa.
  *
  * @param {boolean}  isOpen
@@ -160,7 +171,7 @@ const DanhMucCongViecModal = ({ isOpen, danhMuc = [], onClose, onChon }) => {
       ].some((f) => boDau(f).includes(q));
   }, [dangTim, tuKhoa]);
 
-  /** Số đầu việc của từng nhánh — đang tìm thì đếm theo kết quả lọc. */
+  /** Số đầu việc của từng nhánh - đang tìm thì đếm theo kết quả lọc. */
   const demCua = useMemo(() => {
     const map = new Map();
     moiNhanh.forEach((n) => {
@@ -238,10 +249,7 @@ const DanhMucCongViecModal = ({ isOpen, danhMuc = [], onClose, onChon }) => {
       .filter((g) => g.items.length > 0);
   }, [khop, nhanhDangXem, moiNhanh, conCua, laCua]);
 
-  const soLa = useMemo(
-    () => danhMuc.filter((cv) => cv.LaLa).length,
-    [danhMuc],
-  );
+  const soLa = useMemo(() => danhMuc.filter((cv) => cv.LaLa).length, [danhMuc]);
 
   const soKetQua = useMemo(
     () => nhomHienThi.reduce((n, g) => n + g.items.length, 0),
@@ -254,12 +262,12 @@ const DanhMucCongViecModal = ({ isOpen, danhMuc = [], onClose, onChon }) => {
     ? `Kết quả tìm kiếm cho “${tuKhoa.trim()}”`
     : nhanhDangXem
       ? `${nhanhDangXem.num} ${nhanhDangXem.title}`
-      : "—";
+      : "-";
 
   const phuDePhai = dangTim
-    ? "Đang tìm trong toàn bộ danh mục — chọn nhánh bên trái để xem lại theo mục."
+    ? "Đang tìm trong toàn bộ danh mục - chọn nhánh bên trái để xem lại theo mục."
     : nhanhDangXem
-      ? `${nhanhDangXem.muc.TenCongViec} — nhập số lượng theo đơn vị tính, hệ thống tự quy ra giờ.`
+      ? `${nhanhDangXem.muc.TenCongViec} - nhập số lượng theo đơn vị tính, hệ thống tự quy ra giờ.`
       : "Danh mục chưa có đầu việc nào đang hoạt động.";
 
   return (
@@ -270,9 +278,7 @@ const DanhMucCongViecModal = ({ isOpen, danhMuc = [], onClose, onChon }) => {
       >
         <div className="kkq-dm-head">
           <div className="kkq-dm-head-text">
-            <div className="kkq-dm-head-title">
-              Danh mục đầu việc quy đổi
-            </div>
+            <div className="kkq-dm-head-title">Danh mục đầu việc quy đổi</div>
             <div className="kkq-dm-head-sub">
               Phụ lục II · {danhMuc.length} dòng, {soLa} đầu việc kê khai được
             </div>
@@ -383,9 +389,7 @@ const DanhMucCongViecModal = ({ isOpen, danhMuc = [], onClose, onChon }) => {
                             {cv.TenCongViec}
                           </span>
                           <span className="kkq-dm-chip">
-                            <span className="kkq-dm-chip-val">
-                              {heSo.val}
-                            </span>
+                            <span className="kkq-dm-chip-val">{heSo.val}</span>
                             <span className="kkq-dm-chip-unit">
                               giờ / {heSo.unit}
                             </span>

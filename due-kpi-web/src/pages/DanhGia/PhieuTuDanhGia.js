@@ -74,7 +74,7 @@ const flattenTemplate = (itemDetail) => {
  * "chờ bổ sung" đều tính theo TỪNG DÒNG nên cần đủ TrangThaiDong / NguonTraVe /
  * LoaiNguonDiem, và `suaDuocDong` của phieuApi nhận thẳng ChiTietDanhGiaDto.
  *
- * Chi tiết trả về từ POST /api/phieu (lúc vừa tạo) chưa có TrangThaiDong — coi
+ * Chi tiết trả về từ POST /api/phieu (lúc vừa tạo) chưa có TrangThaiDong - coi
  * như KE_KHAI, đúng với thực tế phiếu mới tạo.
  */
 const docChiTietTheoTieuChi = (chiTiet = []) => {
@@ -93,13 +93,13 @@ const docCoDongChot = (chiTiet = []) =>
   chiTiet.some((ct) => Number(ct.TrangThaiDong) === TRANG_THAI_DONG.DA_CHOT);
 
 /**
- * Màn hình TỰ ĐÁNH GIÁ của chủ phiếu — dùng chung cho cả hai ngạch.
+ * Màn hình TỰ ĐÁNH GIÁ của chủ phiếu - dùng chung cho cả hai ngạch.
  *
  * Giảng viên (Phụ lục 2, loaiDoiTuong = 1) và viên chức / người lao động
  * (loaiDoiTuong = 2) đi CÙNG một quy trình 4 giai đoạn trên cùng bảng
  * phieu_danh_gia; chỉ khác mẫu đánh giá được chọn và nhãn hiển thị. Trước đây
  * hai trang là hai bản cài đặt riêng và trang nhân viên còn gọi bộ API đời đầu
- * (`POST scoring`) không còn tồn tại — gộp về một chỗ để luật nghiệp vụ chỉ có
+ * (`POST scoring`) không còn tồn tại - gộp về một chỗ để luật nghiệp vụ chỉ có
  * một bản.
  *
  * Khác biệt duy nhất giữa hai ngạch nằm ở ba props dưới đây.
@@ -123,11 +123,11 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   // theo DiemKhoa: dòng bị trả về vẫn còn điểm của vòng trước.
   const [daCoDongChot, setDaCoDongChot] = useState(false);
   // Dòng chi tiết theo IdTieuChi. Đây là nguồn sự thật cho việc mở hay khóa ô
-  // nhập — trạng thái phiếu chỉ quyết định nút nào hiện ở header.
+  // nhập - trạng thái phiếu chỉ quyết định nút nào hiện ở header.
   const [chiTietMap, setChiTietMap] = useState({});
   // PhieuKiemTraHopLeDto: nguồn sự thật DUY NHẤT cho hạn (HanNop / QuaHan) và
   // cho SoTieuChiThieu. Hạn được server chọn theo GIAI ĐOẠN nên giá trị đổi khi
-  // phiếu chuyển 1 -> 2 — phải tải lại sau mỗi thao tác ghi, không được cache.
+  // phiếu chuyển 1 -> 2 - phải tải lại sau mỗi thao tác ghi, không được cache.
   const [kiemTra, setKiemTra] = useState(null);
   // Checklist "còn thiếu gì" của 422 (submit và nop-lai dùng chung schema).
   const [thieuTieuChi, setThieuTieuChi] = useState([]);
@@ -249,11 +249,11 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   }, [selectedDonVi]);
 
   /**
-   * Tải lại PhieuKiemTraHopLeDto — hạn hiệu lực, QuaHan, SoTieuChiThieu.
+   * Tải lại PhieuKiemTraHopLeDto - hạn hiệu lực, QuaHan, SoTieuChiThieu.
    *
    * Gọi sau MỌI thao tác ghi: hạn đổi khi phiếu chuyển giai đoạn, còn
    * SoTieuChiThieu đổi sau mỗi lần lưu nháp / thêm bớt minh chứng, và nó là điều
-   * kiện bật nút Nộp lại. Hỏng thì để null và chỉ mất phần hiển thị hạn — server
+   * kiện bật nút Nộp lại. Hỏng thì để null và chỉ mất phần hiển thị hạn - server
    * vẫn là chốt chặn cuối, không tự khóa form vì một lời gọi phụ thất bại.
    */
   /**
@@ -364,7 +364,9 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         // 1. Load the current user's phieu for this year & selected unit (if any)
         try {
           const idDv = selectedDonVi?.IdDonVi;
-          const qs = idDv ? `?kemLichSu=true&idDonVi=${idDv}` : "?kemLichSu=true";
+          const qs = idDv
+            ? `?kemLichSu=true&idDonVi=${idDv}`
+            : "?kemLichSu=true";
           const resPhieu = await apiFetch(`phieu/me/${selectedYear}${qs}`);
           if (resPhieu.ok) {
             const resultPhieu = await resPhieu.json();
@@ -502,7 +504,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   const activeYear = yearDetails.find((y) => y.IdNam === selectedYear);
 
   /**
-   * Cửa sổ tự đánh giá tính từ cấu hình NĂM — CHỈ dùng khi chưa có phiếu.
+   * Cửa sổ tự đánh giá tính từ cấu hình NĂM - CHỈ dùng khi chưa có phiếu.
    *
    * Chưa có phiếu thì chưa có IdPhieu để hỏi kiem-tra-hop-le, mà để form mở toang
    * rồi mới 409 lúc lưu là tệ hơn. Có phiếu rồi thì bỏ hẳn nhánh này: hạn hiệu
@@ -524,14 +526,14 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   /**
    * Ngữ cảnh quyền của chủ phiếu, đúng shape mà `suaDuocDong` nhận.
    *
-   * Chưa có phiếu thì chưa có LaChuPhieu từ server — người đang mở form chính là
+   * Chưa có phiếu thì chưa có LaChuPhieu từ server - người đang mở form chính là
    * người sẽ đứng tên phiếu (phiếu tạo lười theo IdNhanVien của phiên đăng nhập)
    * nên coi như true.
    */
   const ctxQuyen = kiemTra || { LaChuPhieu: true, QuaHan: quaHan };
 
   /**
-   * Một tiêu chí có sửa được không — tính theo TỪNG DÒNG.
+   * Một tiêu chí có sửa được không - tính theo TỪNG DÒNG.
    *
    * Đây là chỗ thay cho pseudo-status 2.5 của luồng cũ: trước đây cả phiếu khóa
    * hay mở cùng lúc, nay một phiếu ở trạng thái 2 có thể chứa đồng thời dòng
@@ -555,7 +557,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
     const biTraVe = laDongBiTraVe(dong);
     return {
       trangThaiDong: dong.TrangThaiDong,
-      // Dòng đang chờ chủ phiếu xử lý — form dựa vào cờ này để mở khối lịch sử
+      // Dòng đang chờ chủ phiếu xử lý - form dựa vào cờ này để mở khối lịch sử
       // vòng trước, thay vì tự suy lại từ trạng thái dòng.
       canBoSung:
         dong.TrangThaiDong === TRANG_THAI_DONG.KE_KHAI &&
@@ -565,7 +567,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
       nguonTraVe: biTraVe ? dong.NguonTraVe : null,
       lyDoTraVe: biTraVe ? dong.LyDoTraVe || "" : "",
       ngayTraVe: biTraVe ? dong.NgayTraVe || null : null,
-      // Cộng dồn cả vòng đời, KHÔNG reset khi nộp lại — chỉ là nhãn lịch sử.
+      // Cộng dồn cả vòng đời, KHÔNG reset khi nộp lại - chỉ là nhãn lịch sử.
       soLanTraVe: dong.SoLanTraVe || 0,
       nhan: biTraVe
         ? TEN_NGUON_TRA_VE[dong.NguonTraVe]
@@ -573,12 +575,12 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
     };
   };
 
-  /** Các dòng đang chờ chủ phiếu bổ sung — mẫu số của nút "Nộp lại". */
+  /** Các dòng đang chờ chủ phiếu bổ sung - mẫu số của nút "Nộp lại". */
   const dongCanBoSung = locDongChoBoSung(
     criteriaList.map((tc) => chiTietMap[tc.IdTieuChi]).filter(Boolean),
   );
 
-  /** Các dòng có yêu cầu trả về ĐANG MỞ — nguồn dữ liệu cho banner. */
+  /** Các dòng có yêu cầu trả về ĐANG MỞ - nguồn dữ liệu cho banner. */
   const dongBiTraVe = dongCanBoSung.filter(laDongBiTraVe);
 
   const chuaNop = trangThaiPhieu <= TRANG_THAI.NHAP;
@@ -588,7 +590,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   // không đọc) nên phải tự suy từ số dòng đang chờ bổ sung.
   const hienNutNopLai = dangThamDinh && dongCanBoSung.length > 0;
   // SoTieuChiThieu là ảnh chụp phía SERVER nên nó chưa thấy các ô vừa gõ mà chưa
-  // lưu — còn sửa dở thì vẫn cho bấm, executeResubmit lưu nháp trước rồi mới nộp
+  // lưu - còn sửa dở thì vẫn cho bấm, executeResubmit lưu nháp trước rồi mới nộp
   // lại, và nếu thực sự còn thiếu thì server trả 422 kèm checklist. Đọc ref ngay
   // trong render là an toàn vì mỗi lần gõ đều setFormData nên có re-render.
   const conSuaDo = dirtyRef.current.size > 0;
@@ -606,7 +608,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
    * Chủ phiếu còn việc phải làm không.
    *
    * Chỉ khi đó mới hiện dải hạn. Nộp lại KHÔNG đưa phiếu ra khỏi trạng thái 2
-   * (đúng thiết kế — không phải vòng đánh giá mới), nên `HanNop` vẫn là hạn thẩm
+   * (đúng thiết kế - không phải vòng đánh giá mới), nên `HanNop` vẫn là hạn thẩm
    * định và vẫn còn nguyên giá trị; nhưng lúc đó bóng đã sang chân đơn vị thẩm
    * định, để dải "Hạn bổ sung theo yêu cầu thẩm định" nằm đó chỉ khiến người
    * dùng tưởng mình còn phải nộp gì nữa.
@@ -774,7 +776,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
    *
    * Gộp mọi lời gọi trùng vào MỘT request: ô chọn tệp của từng tiêu chí không bị
    * khóa trong lúc tải, nên hai thao tác chạy song song (tải tệp ở hai tiêu chí,
-   * hoặc bấm Lưu nháp xen vào) đều thấy phieuRef rỗng và cùng POST /api/phieu —
+   * hoặc bấm Lưu nháp xen vào) đều thấy phieuRef rỗng và cùng POST /api/phieu -
    * lần thứ hai bị server trả "Phiếu đã tồn tại".
    */
   const ensurePhieu = async () => {
@@ -1114,7 +1116,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
    *
    * Bắt buộc kéo lại cả kiem-tra-hop-le: hạn hiệu lực đổi theo giai đoạn nên một
    * phiếu vừa chuyển 1 → 2 có HanNop khác hẳn bản đang giữ. Chi tiết dòng cũng
-   * phải đọc lại vì nộp lại xong server xóa NguonTraVe / LyDoTraVe — banner lý do
+   * phải đọc lại vì nộp lại xong server xóa NguonTraVe / LyDoTraVe - banner lý do
    * trả về chỉ biến mất khi ta refetch.
    */
   const dongBoTrangThai = async () => {
@@ -1133,7 +1135,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
    * Nộp lại các tiêu chí đã bổ sung sau khi bị trả về (POST phieu/{id}/nop-lai).
    *
    * Khác nộp phiếu lần đầu: hồ sơ GIỮ NGUYÊN trạng thái 2 và LanDanhGia không
-   * tăng — đây không phải một vòng đánh giá mới. Các dòng đang chờ thẩm định
+   * tăng - đây không phải một vòng đánh giá mới. Các dòng đang chờ thẩm định
    * hoặc đã chốt không bị đụng tới.
    */
   const executeResubmit = async () => {
@@ -1173,7 +1175,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
       }
 
       // Nút lẽ ra đã bị ẩn khi không còn dòng nào chờ bổ sung. Gặp mã này nghĩa
-      // là state client đã lệch với server — log lại rồi đồng bộ.
+      // là state client đã lệch với server - log lại rồi đồng bộ.
       if (err.errorCode === "KHONG_CO_DONG_CHO_NOP") {
         console.error(
           "Lệch trạng thái: bấm Nộp lại khi server không còn dòng nào chờ bổ sung",
@@ -1262,11 +1264,11 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   // Nói trước điều kiện hạn ở đây vì nút KHÔNG bị tắt theo `quaHan`: hủy nộp là
   // hành vi giai đoạn 1 nên luôn gate bằng hạn TỰ ĐÁNH GIÁ, khác hạn mà `quaHan`
   // đang phản ánh khi phiếu ở trạng thái 2. Sau hạn tự đánh giá, chủ phiếu vẫn
-  // nộp lại được nhưng không hủy nộp được — đó là hành vi đúng.
+  // nộp lại được nhưng không hủy nộp được - đó là hành vi đúng.
   const handleRecall = () => {
     confirmDialog({
       message:
-        "Phiếu sẽ được đưa về trạng thái nháp để bạn chỉnh sửa và nộp lại. Chỉ thực hiện được khi chưa tiêu chí nào bị chốt điểm và còn trong hạn TỰ ĐÁNH GIÁ — hạn này có thể đã đóng dù bạn vẫn đang trong hạn bổ sung theo yêu cầu thẩm định.",
+        "Phiếu sẽ được đưa về trạng thái nháp để bạn chỉnh sửa và nộp lại. Chỉ thực hiện được khi chưa tiêu chí nào bị chốt điểm và còn trong hạn TỰ ĐÁNH GIÁ - hạn này có thể đã đóng dù bạn vẫn đang trong hạn bổ sung theo yêu cầu thẩm định.",
       header: "Xác nhận hủy nộp phiếu",
       icon: "pi pi-info-circle",
       acceptLabel: "Hủy nộp phiếu",
@@ -1370,7 +1372,10 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
                 gap: "6px",
               }}
             >
-              <i className="fa-solid fa-building" style={{ color: "#003399" }}></i>
+              <i
+                className="fa-solid fa-building"
+                style={{ color: "#003399" }}
+              ></i>
               Đơn vị đánh giá:
             </span>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -1435,10 +1440,9 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           </div>
         )}
 
-
         {/* Dải hạn chỉ dựng khi chủ phiếu còn việc. Nộp lại xong phiếu vẫn ở
             trạng thái 2 nên HanNop vẫn còn giá trị, nhưng lúc đó việc đã sang
-            đơn vị thẩm định — xem `conViecCuaChuPhieu`. */}
+            đơn vị thẩm định - xem `conViecCuaChuPhieu`. */}
         {!conViecCuaChuPhieu ? null : quaHan ? (
           <div
             style={{
@@ -1455,7 +1459,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           >
             <i className="fa-solid fa-lock" style={{ fontSize: "20px" }}></i>
             <span style={{ fontWeight: "500" }}>
-              {thongDiepHan}. Hiện tại bạn không thể chỉnh sửa hoặc nộp phiếu —
+              {thongDiepHan}. Hiện tại bạn không thể chỉnh sửa hoặc nộp phiếu -
               cần được cấp gia hạn riêng mới thao tác tiếp được.
             </span>
           </div>
@@ -1517,7 +1521,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           </div>
         )}
 
-        {/* Checklist của 422 — /submit và /nop-lai trả cùng schema nên dùng chung
+        {/* Checklist của 422 - /submit và /nop-lai trả cùng schema nên dùng chung
             đúng một component. */}
         {thieuTieuChi.length > 0 && (
           <div className="pl2-banner-tra-ve" style={{ display: "block" }}>
@@ -1563,7 +1567,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
             hanhDong={
               /* Ba nút Nộp / Nộp lại / Hủy nộp loại trừ nhau. Nút nào hiện là do
                  trạng thái HỒ SƠ + số dòng đang chờ bổ sung quyết định, còn ô
-                 nhập nào mở là do trạng thái từng DÒNG — hai trục độc lập. */
+                 nhập nào mở là do trạng thái từng DÒNG - hai trục độc lập. */
               chuaNop ? (
                 <>
                   <button

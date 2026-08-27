@@ -4,11 +4,11 @@ import React, {
   useMemo,
   useRef,
   useState,
-} from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Toast } from 'primereact/toast';
-import '../../css/Pages.css';
-import '../../css/QuanLyChamDiem.css';
+} from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Toast } from "primereact/toast";
+import "../../css/Pages.css";
+import "../../css/QuanLyChamDiem.css";
 import {
   fetchLichSuChamDiemPhieu,
   fetchPhieuDetail,
@@ -18,17 +18,17 @@ import {
   laTieuChiChamTay,
   tinhTongDiemTamTinh,
   TRANG_THAI_DONG,
-} from '../../utils/phieuApi';
-import { useMinhChungPhieuPreview } from '../../hooks/useMinhChungPhieuPreview';
-import FilePreviewModal from '../../components/Common/FilePreviewModal';
-import TienDoCham from '../../components/QuanLyChamDiem/TienDoCham';
-import TieuChiChamCard from '../../components/QuanLyChamDiem/TieuChiChamCard';
-import TongDiemMeta from '../../components/QuanLyChamDiem/TongDiemMeta';
+} from "../../utils/phieuApi";
+import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
+import FilePreviewModal from "../../components/Common/FilePreviewModal";
+import TienDoCham from "../../components/QuanLyChamDiem/TienDoCham";
+import TieuChiChamCard from "../../components/QuanLyChamDiem/TieuChiChamCard";
+import TongDiemMeta from "../../components/QuanLyChamDiem/TongDiemMeta";
 import {
   TrangThaiBadge,
   XepLoaiBadge,
-} from '../../components/QuanLyChamDiem/TrangThaiBadge';
-import { fetchDonViList, getTenDonViFromList } from '../../utils/donViApi';
+} from "../../components/QuanLyChamDiem/TrangThaiBadge";
+import { fetchDonViList, getTenDonViFromList } from "../../utils/donViApi";
 
 /**
  * Bản CHỈ ĐỌC của màn hình thẩm định, dành cho chủ phiếu.
@@ -38,7 +38,7 @@ import { fetchDonViList, getTenDonViFromList } from '../../utils/donViApi';
  * trả về) nhưng KHÔNG có bất kỳ thao tác ghi nào: TieuChiChamCard nhận
  * choPhepNhap = false nên toàn bộ nút duyệt / sửa / trả về đều không được dựng.
  *
- * Phạm vi dữ liệu do server quyết định — GET api/phieu/{id} chỉ trả phiếu trong
+ * Phạm vi dữ liệu do server quyết định - GET api/phieu/{id} chỉ trả phiếu trong
  * phạm vi của người gọi, giảng viên chỉ đọc được phiếu của chính mình. Trang này
  * không tự kiểm tra lại quyền, chỉ hiển thị lỗi mà API trả về.
  */
@@ -53,7 +53,7 @@ const ChiTietPhieuCuaToi = () => {
   const [dangTaiLichSu, setDangTaiLichSu] = useState(true);
   const [tieuChiMauMap, setTieuChiMauMap] = useState(new Map());
   const [isLoading, setIsLoading] = useState(true);
-  const [loiTai, setLoiTai] = useState('');
+  const [loiTai, setLoiTai] = useState("");
 
   useEffect(() => {
     fetchDonViList().then(setDonViList);
@@ -62,8 +62,8 @@ const ChiTietPhieuCuaToi = () => {
   const { preview, openPreview, closePreview, downloadMinhChung } =
     useMinhChungPhieuPreview((message) =>
       toast.current?.show({
-        severity: 'error',
-        summary: 'Lỗi',
+        severity: "error",
+        summary: "Lỗi",
         detail: message,
         life: 4000,
       }),
@@ -74,14 +74,14 @@ const ChiTietPhieuCuaToi = () => {
     try {
       const item = await fetchPhieuDetail(id);
       if (!item) {
-        setLoiTai('Không tìm thấy phiếu này, hoặc phiếu không thuộc về bạn.');
+        setLoiTai("Không tìm thấy phiếu này, hoặc phiếu không thuộc về bạn.");
         setPhieu(null);
         return;
       }
       setPhieu(item);
-      setLoiTai('');
+      setLoiTai("");
     } catch (error) {
-      console.error('Lỗi tải phiếu:', error);
+      console.error("Lỗi tải phiếu:", error);
       setLoiTai(error.message);
       setPhieu(null);
     } finally {
@@ -103,7 +103,7 @@ const ChiTietPhieuCuaToi = () => {
         if (!huy) setLichSuItems(items);
       })
       .catch((error) => {
-        console.error('Lỗi tải lịch sử chấm điểm:', error);
+        console.error("Lỗi tải lịch sử chấm điểm:", error);
         if (!huy) setLichSuItems([]);
       })
       .finally(() => {
@@ -124,7 +124,7 @@ const ChiTietPhieuCuaToi = () => {
         if (!huy) setTieuChiMauMap(map);
       })
       .catch((error) => {
-        console.error('Lỗi tải chi tiết mẫu đánh giá:', error);
+        console.error("Lỗi tải chi tiết mẫu đánh giá:", error);
       });
     return () => {
       huy = true;
@@ -176,18 +176,18 @@ const ChiTietPhieuCuaToi = () => {
           <div className="cd-empty">
             <i
               className="fa-solid fa-triangle-exclamation"
-              style={{ color: '#f59e0b' }}
+              style={{ color: "#f59e0b" }}
             ></i>
-            <h3 style={{ color: '#334155', margin: '0 0 6px 0' }}>
+            <h3 style={{ color: "#334155", margin: "0 0 6px 0" }}>
               Không mở được phiếu
             </h3>
-            <p style={{ margin: '0 0 20px 0' }}>
-              {loiTai || 'Phiếu không tồn tại.'}
+            <p style={{ margin: "0 0 20px 0" }}>
+              {loiTai || "Phiếu không tồn tại."}
             </p>
             <button
               className="btn-cancel"
-              style={{ margin: '0 auto' }}
-              onClick={() => navigate('/lich-su-danh-gia')}
+              style={{ margin: "0 auto" }}
+              onClick={() => navigate("/lich-su-danh-gia")}
             >
               <i className="fa-solid fa-arrow-left"></i> Về danh sách phiếu
             </button>
@@ -204,17 +204,24 @@ const ChiTietPhieuCuaToi = () => {
       <div className="page-header">
         <button
           className="cd-link-btn"
-          style={{ marginBottom: '8px' }}
-          onClick={() => navigate('/lich-su-danh-gia')}
+          style={{ marginBottom: "8px" }}
+          onClick={() => navigate("/lich-su-danh-gia")}
         >
           <i className="fa-solid fa-arrow-left"></i> Phiếu đánh giá của tôi
         </button>
-        <h2 style={{ margin: 0, color: '#1e293b', fontSize: '22px', fontWeight: 700 }}>
-          Kết quả chấm điểm — năm học {phieu.IdNam}
+        <h2
+          style={{
+            margin: 0,
+            color: "#1e293b",
+            fontSize: "22px",
+            fontWeight: 700,
+          }}
+        >
+          Kết quả chấm điểm - năm học {phieu.IdNam}
         </h2>
         <span className="breadcrumb">
           Lần đánh giá {phieu.LanDanhGia}
-          {phieu.LanMoLai > 0 ? ` · Đã mở lại ${phieu.LanMoLai} lần` : ''} · Chỉ
+          {phieu.LanMoLai > 0 ? ` · Đã mở lại ${phieu.LanMoLai} lần` : ""} · Chỉ
           xem, không chỉnh sửa
         </span>
       </div>
@@ -266,34 +273,34 @@ const ChiTietPhieuCuaToi = () => {
 
         {phieu.TongDiemTichLuy == null && tamTinh && (
           <div className="cd-hint">
-            <i className="fa-solid fa-circle-info"></i> Hệ thống chỉ lưu tổng điểm
-            vào hồ sơ khi Trưởng khoa chốt. Số “tạm tính” do trình duyệt cộng từ
-            điểm hiện có của từng tiêu chí
+            <i className="fa-solid fa-circle-info"></i> Hệ thống chỉ lưu tổng
+            điểm vào hồ sơ khi Trưởng khoa chốt. Số “tạm tính” do trình duyệt
+            cộng từ điểm hiện có của từng tiêu chí
             {tamTinh.soDongChuaChot > 0
               ? `, còn ${tamTinh.soDongChuaChot} tiêu chí chưa chốt điểm.`
-              : '.'}
+              : "."}
           </div>
         )}
 
         {phieu.NhanXetKhoa && (
-          <div className="cd-box" style={{ marginTop: '16px' }}>
+          <div className="cd-box" style={{ marginTop: "16px" }}>
             <div className="cd-box-title">Nhận xét của đơn vị</div>
-            <div style={{ fontSize: '14px', color: '#334155' }}>
+            <div style={{ fontSize: "14px", color: "#334155" }}>
               {phieu.NhanXetKhoa}
             </div>
           </div>
         )}
         {phieu.NhanXetTruong && (
-          <div className="cd-box" style={{ marginTop: '10px' }}>
+          <div className="cd-box" style={{ marginTop: "10px" }}>
             <div className="cd-box-title">Nhận xét của Hiệu trưởng</div>
-            <div style={{ fontSize: '14px', color: '#334155' }}>
+            <div style={{ fontSize: "14px", color: "#334155" }}>
               {phieu.NhanXetTruong}
             </div>
           </div>
         )}
       </div>
 
-      <p className="sub-title" style={{ marginBottom: '12px' }}>
+      <p className="sub-title" style={{ marginBottom: "12px" }}>
         CHI TIẾT TIÊU CHÍ ({chiTietList.length})
       </p>
 

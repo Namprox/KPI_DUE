@@ -13,7 +13,7 @@ import React, { useEffect, useState } from "react";
  * @param {boolean}  isLoading  đang tải tệp từ máy chủ
  * @param {string}   error      thông điệp lỗi nếu tải thất bại
  * @param {Function} onClose
- * @param {Function} onDownload tùy chọn — hiện nút "Tải về" ở chân modal
+ * @param {Function} onDownload tùy chọn - hiện nút "Tải về" ở chân modal
  */
 const FilePreviewModal = ({
   isOpen,
@@ -61,7 +61,11 @@ const FilePreviewModal = ({
     if (error) {
       return (
         <div
-          style={{ textAlign: "center", color: "#b91c1c", padding: "30px 20px" }}
+          style={{
+            textAlign: "center",
+            color: "#b91c1c",
+            padding: "30px 20px",
+          }}
         >
           <i
             className="fa-solid fa-triangle-exclamation fa-2x"
@@ -76,7 +80,11 @@ const FilePreviewModal = ({
     if (kieu === null) {
       return (
         <div
-          style={{ textAlign: "center", color: "#475569", padding: "30px 20px" }}
+          style={{
+            textAlign: "center",
+            color: "#475569",
+            padding: "30px 20px",
+          }}
         >
           <i
             className="fa-regular fa-file fa-2x"
@@ -85,7 +93,9 @@ const FilePreviewModal = ({
           <p style={{ margin: 0 }}>
             Định dạng này không xem trước được trên trình duyệt.
           </p>
-          <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: "#64748b" }}>
+          <p
+            style={{ margin: "6px 0 0 0", fontSize: "13px", color: "#64748b" }}
+          >
             Hãy bấm <b>Tải về</b> để mở tệp bằng ứng dụng trên máy.
           </p>
         </div>
@@ -115,7 +125,7 @@ const FilePreviewModal = ({
           src={url}
           title={fileName || "Xem trước minh chứng"}
           onLoad={() => setIframeLoaded(true)}
-          // display:block bắt buộc — iframe mặc định là inline nên bị cộng thêm
+          // display:block bắt buộc - iframe mặc định là inline nên bị cộng thêm
           // khoảng trống descender phía dưới, làm khung cha sinh thanh cuộn thừa
           // chồng lên thanh cuộn của trình xem PDF.
           style={{
@@ -214,7 +224,10 @@ const FilePreviewModal = ({
             // PDF/ảnh tự lo phần cuộn bên trong; chỉ các trạng thái chữ
             // (đang tải / lỗi / không xem trước được) mới cần cuộn ở đây.
             overflow:
-              url && !isLoading && !error && (kieu === "pdf" || kieu === "image")
+              url &&
+              !isLoading &&
+              !error &&
+              (kieu === "pdf" || kieu === "image")
                 ? "hidden"
                 : "auto",
           }}

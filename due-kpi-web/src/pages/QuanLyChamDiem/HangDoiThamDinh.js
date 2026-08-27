@@ -28,7 +28,7 @@ import { NguonTraVeBadge } from "../../components/QuanLyChamDiem/TrangThaiBadge"
 const PAGE_SIZE = 20;
 
 /**
- * Hàng đợi thẩm định theo DÒNG TIÊU CHÍ — màn hình làm việc chính của chuyên
+ * Hàng đợi thẩm định theo DÒNG TIÊU CHÍ - màn hình làm việc chính của chuyên
  * viên ở giai đoạn 2.
  *
  * Khác "Hàng đợi chờ chấm" (gom theo phiếu, dùng để nhìn tổng quan tiến độ một
@@ -61,7 +61,7 @@ const HangDoiThamDinh = () => {
    *
    * ThamDinhPendingDto không mang RowVersion (nó là DTO cấp dòng), nhưng mọi
    * thao tác thẩm định lại cần RowVersion của phiếu. Nạp lười khi cần rồi cập
-   * nhật bằng NewRowVersion mà server trả về — nếu không, xử lý dòng thứ hai
+   * nhật bằng NewRowVersion mà server trả về - nếu không, xử lý dòng thứ hai
    * của cùng một hồ sơ sẽ chắc chắn dính 409.
    */
   const rowVersionRef = useRef(new Map());
@@ -131,14 +131,14 @@ const HangDoiThamDinh = () => {
         showToast(
           "info",
           "Hồ sơ đã đủ điều kiện",
-          `Mọi tiêu chí của ${dong.HoTen} đã thẩm định xong — hồ sơ chuyển sang chờ Trưởng khoa duyệt.`,
+          `Mọi tiêu chí của ${dong.HoTen} đã thẩm định xong - hồ sơ chuyển sang chờ Trưởng khoa duyệt.`,
           6000,
         );
       }
     } catch (error) {
       console.error("Lỗi thao tác thẩm định:", error);
       if (error.isConflict) {
-        // Ai đó vừa đụng vào phiếu này — RowVersion đang giữ chắc chắn hỏng.
+        // Ai đó vừa đụng vào phiếu này - RowVersion đang giữ chắc chắn hỏng.
         rowVersionRef.current.delete(dong.IdPhieu);
         showToast("warn", "Dữ liệu đã thay đổi", error.message, 6000);
         taiDanhSach();
@@ -216,7 +216,7 @@ const HangDoiThamDinh = () => {
           Hàng đợi thẩm định
         </h2>
         <span className="breadcrumb">
-          Từng tiêu chí được giao cho đơn vị bạn — duyệt giữ nguyên điểm, sửa
+          Từng tiêu chí được giao cho đơn vị bạn - duyệt giữ nguyên điểm, sửa
           điểm (bắt buộc lý do) hoặc trả về cho giảng viên bổ sung
         </span>
       </div>
@@ -303,7 +303,7 @@ const HangDoiThamDinh = () => {
           <i className="fa-solid fa-triangle-exclamation"></i>
           <span>
             Có <b>{thongKe.soTraLai}</b> tiêu chí bị Trưởng khoa trả về thẩm
-            định lại. Những dòng này đang chặn cả hồ sơ nên được xếp lên đầu —
+            định lại. Những dòng này đang chặn cả hồ sơ nên được xếp lên đầu -
             xử lý trước.
           </span>
         </div>
@@ -367,7 +367,7 @@ const HangDoiThamDinh = () => {
                               <span className="code-pill">{r.MaNhanVien}</span>
                             )}
                             <div style={{ fontSize: "12px", color: "#64748b" }}>
-                              {r.TenDonVi || "—"}
+                              {r.TenDonVi || "-"}
                             </div>
                           </div>
                         </div>
@@ -377,7 +377,7 @@ const HangDoiThamDinh = () => {
                           {r.TenTieuChi}
                         </b>
                         <div style={{ fontSize: "12px", color: "#64748b" }}>
-                          {r.TenNhom || "—"} · tối đa {formatDiem(r.DiemToiDa)}
+                          {r.TenNhom || "-"} · tối đa {formatDiem(r.DiemToiDa)}
                         </div>
                         {traLaiBoiTk && (
                           <div style={{ marginTop: "6px" }}>
@@ -404,7 +404,7 @@ const HangDoiThamDinh = () => {
                       </td>
                       <td style={{ textAlign: "center" }}>
                         {/* Tiêu chí bắt buộc minh chứng mà nộp 0 tệp là dấu hiệu
-                            cần trả về — làm nổi để chuyên viên khỏi bỏ sót. */}
+                            cần trả về - làm nổi để chuyên viên khỏi bỏ sót. */}
                         <span
                           className="tag-badge"
                           style={
@@ -522,7 +522,7 @@ const HangDoiThamDinh = () => {
  * Nhập điểm mới cho một dòng.
  *
  * Server bắt buộc nhận xét khi điểm khác mức giảng viên tự kê khai (409
- * THIEU_LY_DO) — đây là nguồn khiếu nại lớn nhất của quy trình cũ nên chặn ngay
+ * THIEU_LY_DO) - đây là nguồn khiếu nại lớn nhất của quy trình cũ nên chặn ngay
  * tại form thay vì để người dùng gửi lên rồi mới biết.
  */
 const SuaDiemModal = ({ dong, dangGui, onDong, onXacNhan }) => {
@@ -545,7 +545,7 @@ const SuaDiemModal = ({ dong, dangGui, onDong, onXacNhan }) => {
     }
     if (lech && !nhanXet.trim()) {
       return setLoi(
-        "Điểm khác mức giảng viên tự kê khai — bắt buộc ghi lý do điều chỉnh.",
+        "Điểm khác mức giảng viên tự kê khai - bắt buộc ghi lý do điều chỉnh.",
       );
     }
     setLoi("");
@@ -564,7 +564,7 @@ const SuaDiemModal = ({ dong, dangGui, onDong, onXacNhan }) => {
 
         <div className="modal-body">
           <p style={{ marginTop: 0, fontSize: "14px", color: "#475569" }}>
-            <b>{dong.TenTieuChi}</b> — {dong.HoTen}
+            <b>{dong.TenTieuChi}</b> - {dong.HoTen}
             <br />
             Giảng viên tự chấm <b>{formatDiem(dong.DiemTuDanhGia)}</b> / tối đa{" "}
             {formatDiem(dong.DiemToiDa)}.
@@ -606,7 +606,7 @@ const SuaDiemModal = ({ dong, dangGui, onDong, onXacNhan }) => {
               rows={3}
               value={nhanXet}
               disabled={dangGui}
-              placeholder="VD: Giảm 3đ — thiếu minh chứng cho 2 lớp học phần."
+              placeholder="VD: Giảm 3đ - thiếu minh chứng cho 2 lớp học phần."
               onChange={(e) => {
                 setNhanXet(e.target.value);
                 if (loi) setLoi("");

@@ -24,7 +24,7 @@ const sangInputDate = (value) => (value ? String(value).slice(0, 10) : "");
  *    con số dùng để báo cáo; `TongDiemThucTe` để người ký thấy ai bị cắt bao
  *    nhiêu. Vượt trần chỉ tô cảnh báo, KHÔNG chặn chốt.
  *  - **Server tự kiểm tra lại điều kiện khi chốt**, không tin kết quả màn hình
- *    kiểm tra mà client vừa xem — nên vẫn phải xử lý 422 CHOT_KHONG_HOP_LE vì
+ *    kiểm tra mà client vừa xem - nên vẫn phải xử lý 422 CHOT_KHONG_HOP_LE vì
  *    dữ liệu có thể đổi giữa hai lần gọi.
  */
 const NvkPanelTongHop = ({
@@ -57,7 +57,7 @@ const NvkPanelTongHop = ({
       const [th, kt] = await Promise.all([
         layTongHop({ idNam, idDonVi }),
         kiemTraChot({ idNam, idDonVi }).catch((error) => {
-          // Kỳ chưa mở thì endpoint này trả 404 — bảng tổng hợp vẫn xem được
+          // Kỳ chưa mở thì endpoint này trả 404 - bảng tổng hợp vẫn xem được
           if (error.status === 404) return null;
           throw error;
         }),
@@ -121,7 +121,7 @@ const NvkPanelTongHop = ({
     } catch (error) {
       console.error("Lỗi chốt kỳ:", error);
       onError(error.message);
-      // 422 nghĩa là dữ liệu đã đổi sau lần kiểm tra vừa rồi — soát lại ngay
+      // 422 nghĩa là dữ liệu đã đổi sau lần kiểm tra vừa rồi - soát lại ngay
       if (error.status === 422) tai();
     }
     setDangXuLy(false);
@@ -164,7 +164,9 @@ const NvkPanelTongHop = ({
     v.LoaiVanDe === LOAI_VAN_DE.PHAN_HOI_CHUA_XU_LY || !!v.IdNhiemVuKhoa;
 
   return (
-    <div style={{ opacity: dangTai ? 0.55 : 1, transition: "opacity 0.15s ease" }}>
+    <div
+      style={{ opacity: dangTai ? 0.55 : 1, transition: "opacity 0.15s ease" }}
+    >
       <div className="nvk-th-actions">
         <p className="sub-title" style={{ margin: 0 }}>
           BẢNG TỔNG HỢP TOÀN KHOA
@@ -241,7 +243,7 @@ const NvkPanelTongHop = ({
                       style={{ textAlign: "right" }}
                       title={
                         r.VuotTran
-                          ? `Vượt trần ${formatDiem(header?.TranDiem, 1)}đ — báo cáo dùng điểm quy đổi`
+                          ? `Vượt trần ${formatDiem(header?.TranDiem, 1)}đ - báo cáo dùng điểm quy đổi`
                           : undefined
                       }
                     >
@@ -289,8 +291,8 @@ const NvkPanelTongHop = ({
         <div className="nvk-chot-box">
           {vanDeChan.length === 0 && canhBao.length === 0 ? (
             <div className="nvk-vd-ok">
-              <i className="fa-solid fa-circle-check"></i> Không còn vấn đề nào —
-              kỳ đã sẵn sàng để chốt.
+              <i className="fa-solid fa-circle-check"></i> Không còn vấn đề nào
+              - kỳ đã sẵn sàng để chốt.
             </div>
           ) : (
             <>
@@ -298,7 +300,7 @@ const NvkPanelTongHop = ({
                 <div className="nvk-vd-nhom">
                   <div className="nvk-vd-tieu-de nvk-vd-chan">
                     <i className="fa-solid fa-circle-xmark"></i> Cần xử lý (
-                    {vanDeChan.length}) — chặn chốt kỳ
+                    {vanDeChan.length}) - chặn chốt kỳ
                   </div>
                   {vanDeChan.map((v, i) => (
                     <div key={`chan-${i}`} className="nvk-vd-dong">
@@ -326,7 +328,7 @@ const NvkPanelTongHop = ({
                 <div className="nvk-vd-nhom">
                   <div className="nvk-vd-tieu-de nvk-vd-luu-y">
                     <i className="fa-solid fa-circle-exclamation"></i> Lưu ý (
-                    {canhBao.length}) — không chặn chốt
+                    {canhBao.length}) - không chặn chốt
                   </div>
                   {canhBao.map((v, i) => (
                     <div key={`luuy-${i}`} className="nvk-vd-dong">
@@ -376,8 +378,9 @@ const NvkPanelTongHop = ({
               </>
             ) : !duocChot ? (
               <div className="nvk-chot-thong-tin">
-                <i className="fa-solid fa-circle-info"></i> Bạn nhập được dữ liệu
-                nhưng không có quyền chốt kỳ — thẩm quyền này thuộc trưởng đơn vị.
+                <i className="fa-solid fa-circle-info"></i> Bạn nhập được dữ
+                liệu nhưng không có quyền chốt kỳ - thẩm quyền này thuộc trưởng
+                đơn vị.
               </div>
             ) : (
               <div className="nvk-chot-hang">
@@ -419,7 +422,7 @@ const NvkPanelTongHop = ({
           </p>
           <div className="nvk-chot-box">
             <div className="cd-hint" style={{ marginTop: 0 }}>
-              Hết hạn KHÔNG khoá gì — đây chỉ là mốc nhắc việc, giảng viên không
+              Hết hạn KHÔNG khoá gì - đây chỉ là mốc nhắc việc, giảng viên không
               lên tiếng thì hiểu là đồng ý với phân công.
             </div>
             <div className="nvk-chot-hang">

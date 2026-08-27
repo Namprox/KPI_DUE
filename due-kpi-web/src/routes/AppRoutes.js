@@ -15,6 +15,8 @@ import DanhGiaPhuLuc2 from "../pages/DanhGia/DanhGiaPhuLuc2";
 import DanhGiaNhanVien from "../pages/DanhGia/DanhGiaNhanVien";
 import DanhGiaKpiDonVi from "../pages/DanhGia/DanhGiaKpiDonVi";
 import ChiTietPhieuDonVi from "../pages/DanhGia/ChiTietPhieuDonVi";
+import DanhGiaKpiPhong from "../pages/DanhGia/DanhGiaKpiPhong";
+import ChiTietPhieuPhong from "../pages/DanhGia/ChiTietPhieuPhong";
 import LichSuDanhGia from "../pages/DanhGia/LichSuDanhGia";
 import ChiTietPhieuCuaToi from "../pages/DanhGia/ChiTietPhieuCuaToi";
 import DuyetToTrinh from "../pages/QuanLyDanhGia/DuyetToTrinh";
@@ -38,7 +40,7 @@ import ViPhamCuaToi from "../pages/CaNhan/ViPhamCuaToi";
 import ThanhTichNckh from "../pages/CaNhan/ThanhTichNckh";
 import KeKhaiGioQuyDoi from "../pages/CaNhan/KeKhaiGioQuyDoi";
 import ChoCham from "../pages/QuanLyChamDiem/ChoCham";
-// HangDoiThamDinh (hàng đợi theo dòng tiêu chí) đã bị ẩn — xem ghi chú ở
+// HangDoiThamDinh (hàng đợi theo dòng tiêu chí) đã bị ẩn - xem ghi chú ở
 // menuConfig.js. File màn hình vẫn giữ trong pages/QuanLyChamDiem/.
 import DanhSachPhieu from "../pages/QuanLyChamDiem/DanhSachPhieu";
 import ChamDiemPhieu from "../pages/QuanLyChamDiem/ChamDiemPhieu";
@@ -74,6 +76,8 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
           path="/danh-gia-kpi-don-vi/:id"
           element={<ChiTietPhieuDonVi />}
         />
+        <Route path="/danh-gia-kpi-phong" element={<DanhGiaKpiPhong />} />
+        <Route path="/danh-gia-kpi-phong/:id" element={<ChiTietPhieuPhong />} />
         <Route path="/lich-su-danh-gia" element={<LichSuDanhGia />} />
         <Route path="/lich-su-danh-gia/:id" element={<ChiTietPhieuCuaToi />} />
         <Route path="/kho-minh-chung" element={<KhoMinhChung />} />
@@ -81,10 +85,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
           path="/phan-hoi-sinh-vien-cua-toi"
           element={<PhanHoiSinhVienCuaToi />}
         />
-        <Route
-          path="/nhiem-vu-khoa-cua-toi"
-          element={<NhiemVuKhoaCuaToi />}
-        />
+        <Route path="/nhiem-vu-khoa-cua-toi" element={<NhiemVuKhoaCuaToi />} />
         <Route path="/vi-pham-cua-toi" element={<ViPhamCuaToi />} />
         <Route path="/thanh-tich-nckh" element={<ThanhTichNckh />} />
         <Route path="/ke-khai-gio-quy-doi" element={<KeKhaiGioQuyDoi />} />

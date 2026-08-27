@@ -50,7 +50,7 @@ const NHAN_BAN_GHI = {
   keKhai: "kê khai",
 };
 
-const Gach = () => <span className="nckh-trong">—</span>;
+const Gach = () => <span className="nckh-trong">-</span>;
 
 const hoacGach = (value) => (value == null || value === "" ? <Gach /> : value);
 
@@ -228,7 +228,7 @@ const TIEU_DE_TRONG = {
  * Thành tích NCKH của CHÍNH người đăng nhập, theo từng năm đánh giá.
  *
  * Trang chỉ đọc: dữ liệu được kéo về từ hệ thống NCKH của trường, hệ KPI không
- * cho sửa. Phần "mốc ghi nhận" lấy thẳng snapshot `TongHop` của năm — đúng bộ cờ
+ * cho sửa. Phần "mốc ghi nhận" lấy thẳng snapshot `TongHop` của năm - đúng bộ cờ
  * mà engine dùng để chấm các tiêu chí NCKH tự động, nên người dùng đối chiếu
  * được vì sao phiếu của mình ra điểm như vậy.
  *
@@ -396,7 +396,7 @@ const ThanhTichNckh = () => {
             <p style={{ margin: 0 }}>
               Tài khoản của bạn chưa khớp được sang hệ thống NCKH (ghép theo
               email), hoặc năm {selectedNam} chưa được đồng bộ. Khi chưa liên
-              kết, các tiêu chí NCKH tự động sẽ ra 0 điểm — hãy báo quản trị KPI
+              kết, các tiêu chí NCKH tự động sẽ ra 0 điểm - hãy báo quản trị KPI
               kiểm tra email trên hai hệ thống.
             </p>
           </div>

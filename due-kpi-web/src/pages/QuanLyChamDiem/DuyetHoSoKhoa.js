@@ -58,14 +58,14 @@ const TEN_LOAI_DOI_TUONG = {
 };
 
 /**
- * Hàng đợi giai đoạn 3 của Trưởng khoa — các tab bám đúng chặng hồ sơ đi qua.
+ * Hàng đợi giai đoạn 3 của Trưởng khoa - các tab bám đúng chặng hồ sơ đi qua.
  *
  * Nguồn dữ liệu KHÁC NHAU cho từng tab, đừng gộp:
  *
  *  - "Chưa tự chấm"    KHÔNG lấy từ nhóm API phiếu. Người chưa bấm lưu lần nào
  *    không có dòng nào trong `phieu_danh_gia` nên mọi endpoint phiếu đều không
  *    thấy họ; tab này ghép danh bạ nhân viên với danh sách phiếu ở client
- *    (useChuaTuCham). Gồm cả người đã lưu nháp nhưng chưa nộp — dưới góc nhìn
+ *    (useChuaTuCham). Gồm cả người đã lưu nháp nhưng chưa nộp - dưới góc nhìn
  *    Trưởng khoa cả hai đều là hồ sơ chưa khởi động.
  *
  *  - "Chờ tôi chốt"    GET /api/phieu?trangThai=3. Endpoint tự giới hạn phạm vi về
@@ -75,7 +75,7 @@ const TEN_LOAI_DOI_TUONG = {
  *
  *  - "Đang thẩm định"  GET /api/phieu/khoa/pending. Bất chấp cái tên, đây KHÔNG
  *    phải hàng đợi chờ chốt: sp_phieu_khoa_get_pending lọc trang_thai = 2. Giá trị
- *    của nó là hai cột SoTieuChiDaCham / SoTieuChiDuocGiao — biết còn vướng đơn vị
+ *    của nó là hai cột SoTieuChiDaCham / SoTieuChiDuocGiao - biết còn vướng đơn vị
  *    nào trước khi hồ sơ rơi vào tab 1.
  *
  *  - "Đã chốt"         GET /api/phieu?trangThai=4,5. Gộp cả hồ sơ đã vào gói
@@ -94,7 +94,11 @@ const DuyetHoSoKhoa = () => {
   const idDonViKhoa = useMemo(() => {
     if (user?.DonVi && Array.isArray(user.DonVi)) {
       const dvKhoa = user.DonVi.find((d) =>
-        ['TK', 'TKL'].includes(String(d.MaChucVu || '').trim().toUpperCase()),
+        ["TK", "TKL"].includes(
+          String(d.MaChucVu || "")
+            .trim()
+            .toUpperCase(),
+        ),
       );
       if (dvKhoa) return dvKhoa.IdDonVi;
     }
@@ -334,7 +338,7 @@ const DuyetHoSoKhoa = () => {
         <div className="cd-goi-tom-tat">
           <TrangThaiToTrinhBadge trangThai={goiChinh.TrangThai} />
           <span>
-            Gói KPI {goiChinh.TenDonVi} — <b>{goiChinh.SoHoSoDaChot ?? 0}</b>/
+            Gói KPI {goiChinh.TenDonVi} - <b>{goiChinh.SoHoSoDaChot ?? 0}</b>/
             {goiChinh.SoHoSo ?? 0} hồ sơ đã chốt
           </span>
           <button
@@ -351,7 +355,7 @@ const DuyetHoSoKhoa = () => {
           <i className="fa-solid fa-triangle-exclamation"></i>
           <span>
             {loiChuaCham}. Tab "Chưa tự chấm" đang trống vì chưa đối chiếu được
-            danh bạ — con số ở đó không phản ánh thực tế.
+            danh bạ - con số ở đó không phản ánh thực tế.
           </span>
         </div>
       )}
@@ -466,7 +470,7 @@ const DuyetHoSoKhoa = () => {
                         </div>
                       </td>
                       <td style={{ fontSize: "13px", color: "#475569" }}>
-                        {TEN_LOAI_DOI_TUONG[Number(p.LoaiDoiTuong)] || "—"}
+                        {TEN_LOAI_DOI_TUONG[Number(p.LoaiDoiTuong)] || "-"}
                       </td>
 
                       {laThamDinh ? (
@@ -483,7 +487,7 @@ const DuyetHoSoKhoa = () => {
                         </td>
                       ) : laChuaCham ? (
                         <td style={{ fontSize: "13px", color: "#475569" }}>
-                          {p.nv.tenDonVi || p.TenDonVi || "—"}
+                          {p.nv.tenDonVi || p.TenDonVi || "-"}
                         </td>
                       ) : (
                         <>

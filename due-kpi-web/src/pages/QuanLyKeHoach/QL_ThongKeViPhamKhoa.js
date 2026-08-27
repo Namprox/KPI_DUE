@@ -40,16 +40,16 @@ const formatDate = (dateString) => {
 };
 
 /**
- * Thống kê vi phạm của Khoa — màn hình RIÊNG cho Trưởng Khoa.
+ * Thống kê vi phạm của Khoa - màn hình RIÊNG cho Trưởng Khoa.
  *
  * Khoa được suy ra từ tài khoản đăng nhập, không có ô chọn Khoa và không nhận
  * idDonVi từ URL: một Trưởng Khoa chỉ thấy đúng Khoa mình phụ trách. Số liệu toàn
  * trường nằm ở màn hình "Tổng hợp điểm trừ vi phạm".
  *
  * Nguồn dữ liệu:
- *   GET api/viphamgiangday                — danh sách vi phạm chi tiết (CHỈ idNam)
- *   GET api/vi-pham/tong-hop-giang-vien   — điểm trừ từng GV (idNam + idDonVi)
- *   GET api/vi-pham/diem-tru-khoa         — điểm trừ tập thể (idNam + idDonVi)
+ *   GET api/viphamgiangday                - danh sách vi phạm chi tiết (CHỈ idNam)
+ *   GET api/vi-pham/tong-hop-giang-vien   - điểm trừ từng GV (idNam + idDonVi)
+ *   GET api/vi-pham/diem-tru-khoa         - điểm trừ tập thể (idNam + idDonVi)
  *
  * viphamgiangday KHÔNG được gửi idDonVi: ở endpoint đó idDonVi là đơn vị chủ
  * quản của giảng viên và so khớp CHÍNH XÁC, nên lọc theo id Khoa sẽ rụng hết
@@ -82,7 +82,7 @@ const QL_ThongKeViPhamKhoa = () => {
   const { preview, openPreview, closePreview, downloadMinhChung } =
     useViPhamMinhChungPreview((message) => showToast("error", "Lỗi", message));
 
-  /** Khoa của chính người đăng nhập — không cho chọn Khoa khác. */
+  /** Khoa của chính người đăng nhập - không cho chọn Khoa khác. */
   const khoaHienTai = useMemo(
     () => resolveKhoaCuaToi(currentUser, donViList),
     [currentUser, donViList],
@@ -140,7 +140,7 @@ const QL_ThongKeViPhamKhoa = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Cả 3 endpoint đều BẮT BUỘC idNam — thiếu sẽ bị 400. */
+  /** Cả 3 endpoint đều BẮT BUỘC idNam - thiếu sẽ bị 400. */
   useEffect(() => {
     if (!isBootstrapped) return;
     if (!selectedNam || !khoaHienTai) {
@@ -247,7 +247,7 @@ const QL_ThongKeViPhamKhoa = () => {
       if (khoaRes.ok) {
         const result = await khoaRes.json();
         const list = result.Items || (Array.isArray(result) ? result : []);
-        // Endpoint trả về mảng kể cả khi lọc 1 Khoa — lấy đúng dòng của Khoa đang xem
+        // Endpoint trả về mảng kể cả khi lọc 1 Khoa - lấy đúng dòng của Khoa đang xem
         setKhoaRow(
           list.find((k) => String(k.IdDonVi) === String(idKhoa)) ||
             list[0] ||
@@ -382,7 +382,7 @@ const QL_ThongKeViPhamKhoa = () => {
             style={{ margin: "5px 0 0 0", color: "#64748b", fontSize: "14px" }}
           >
             {khoaHienTai
-              ? `${khoaHienTai.TenDonVi}${selectedNam ? ` — năm ${selectedNam}` : ""}`
+              ? `${khoaHienTai.TenDonVi}${selectedNam ? ` - năm ${selectedNam}` : ""}`
               : "Vi phạm và điểm trừ KPI của Khoa bạn phụ trách"}
           </p>
         </div>
@@ -421,12 +421,12 @@ const QL_ThongKeViPhamKhoa = () => {
           <p style={{ margin: 0, fontSize: "14px" }}>
             {khongCoQuyen
               ? "Thống kê vi phạm của Khoa chỉ dành cho Trưởng Khoa."
-              : "Đơn vị trong hồ sơ của bạn không thuộc Khoa nào — vui lòng liên hệ quản trị viên."}
+              : "Đơn vị trong hồ sơ của bạn không thuộc Khoa nào - vui lòng liên hệ quản trị viên."}
           </p>
         </div>
       ) : (
         <>
-          {/* Filter Bar — không có ô chọn Khoa: phạm vi lấy từ tài khoản đăng nhập */}
+          {/* Filter Bar - không có ô chọn Khoa: phạm vi lấy từ tài khoản đăng nhập */}
           <div
             style={{
               background: "#fff",

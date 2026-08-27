@@ -7,7 +7,7 @@ import { formatNgayGio } from "../../utils/phieuApi";
  * Một tệp minh chứng của module nhiệm vụ phục vụ cộng đồng.
  *
  * Dùng chung cho CẢ HAI cấp gán (`CapGan = 1` cấp nhiệm vụ, `= 2` cấp phản hồi)
- * vì hai cấp đi chung một endpoint tải về và cùng một luồng upload — khác biệt
+ * vì hai cấp đi chung một endpoint tải về và cùng một luồng upload - khác biệt
  * duy nhất là ai được xoá, và điều đó do bên gọi quyết định qua `onXoa`.
  *
  * Module chỉ nhận PDF (server kiểm cả đuôi file lẫn chữ ký `%PDF-`) nên không có
@@ -44,7 +44,7 @@ const MinhChungNvkRow = ({ mc, onXem, onTai, onXoa, dangXoa = false }) => {
         >
           {nhan}
         </button>
-        <div className="cd-mc-meta">{meta || "—"}</div>
+        <div className="cd-mc-meta">{meta || "-"}</div>
       </div>
       <button
         type="button"

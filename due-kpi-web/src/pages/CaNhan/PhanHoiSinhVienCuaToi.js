@@ -26,7 +26,7 @@ const TABS = [
   { key: "kyHoc", nhan: "Theo kỳ học", icon: "fa-calendar-days" },
 ];
 
-/** Thanh điểm 1..5 kèm nhãn số — dùng lại cho cả ba tab. */
+/** Thanh điểm 1..5 kèm nhãn số - dùng lại cho cả ba tab. */
 const ThanhDiem = ({ diem }) => {
   const mau = mauTheoDiem(diem);
   return (
@@ -65,7 +65,7 @@ const ThanhDiem = ({ diem }) => {
  * GET /phanhoisinhvien/cua-toi, kể cả điểm đã chốt. Mã cán bộ do server suy từ
  * token nên trang không cần biết người dùng là ai.
  *
- * Bộ lọc kỳ/học phần do SERVER áp — đổi bộ lọc là gọi lại API, không lọc lại trên
+ * Bộ lọc kỳ/học phần do SERVER áp - đổi bộ lọc là gọi lại API, không lọc lại trên
  * dữ liệu đã có. Riêng danh mục trong hai ô lọc và điểm chốt luôn là số cả năm,
  * nên chúng không đổi khi lọc (xem chú thích ở phanHoiSinhVienApi.js).
  */
@@ -102,7 +102,7 @@ const PhanHoiSinhVienCuaToi = () => {
     if (!dangTaiNam) taiDuLieu();
   }, [dangTaiNam, taiDuLieu]);
 
-  // Đổi năm là đổi hẳn tập học phần/kỳ — giữ bộ lọc cũ sẽ ra bảng trống khó hiểu.
+  // Đổi năm là đổi hẳn tập học phần/kỳ - giữ bộ lọc cũ sẽ ra bảng trống khó hiểu.
   useEffect(() => {
     setKyHoc("");
     setMaHocPhan("");
@@ -218,7 +218,7 @@ const PhanHoiSinhVienCuaToi = () => {
             value={kyHoc}
             onChange={(v) => setKyHoc(v)}
             options={[
-              { value: '', label: 'Tất cả các kỳ' },
+              { value: "", label: "Tất cả các kỳ" },
               ...boLoc.kyHoc.map((ky) => ({ value: ky, label: tenKyHoc(ky) })),
             ]}
             placeholder="Tất cả các kỳ"
@@ -232,7 +232,7 @@ const PhanHoiSinhVienCuaToi = () => {
             value={maHocPhan}
             onChange={(v) => setMaHocPhan(v)}
             options={[
-              { value: '', label: 'Tất cả học phần' },
+              { value: "", label: "Tất cả học phần" },
               ...boLoc.hocPhan.map((ma) => ({ value: ma, label: ma })),
             ]}
             placeholder="Tất cả học phần"
@@ -283,7 +283,7 @@ const PhanHoiSinhVienCuaToi = () => {
               Chưa có phản hồi nào trong năm {selectedNam}
             </h3>
             <p style={{ margin: 0 }}>
-              Dữ liệu khảo sát do phòng Quản lý chất lượng nhập theo từng đợt —
+              Dữ liệu khảo sát do phòng Quản lý chất lượng nhập theo từng đợt -
               nếu kỳ vừa rồi bạn có giảng dạy, hãy thử lại sau khi đợt khảo sát
               được nhập.
             </p>
@@ -305,7 +305,7 @@ const PhanHoiSinhVienCuaToi = () => {
                 </h3>
                 <p style={{ margin: "0 0 14px 0" }}>
                   Hai ô lọc liệt kê mọi kỳ và học phần của cả năm nên có thể
-                  ghép ra tổ hợp không tồn tại — ví dụ một học phần bạn không
+                  ghép ra tổ hợp không tồn tại - ví dụ một học phần bạn không
                   dạy trong kỳ đang chọn.
                 </p>
                 <button className="cd-link-btn" onClick={xoaBoLoc}>
@@ -389,7 +389,7 @@ const PhanHoiSinhVienCuaToi = () => {
                   >
                     {/* Khối này mang con số quan trọng nhất trang nên được phóng
                         lớn hơn một nấc so với .cd-box-title/.cd-hint/.cd-meta-*
-                        mặc định. Ghi đè tại chỗ, KHÔNG sửa file CSS dùng chung —
+                        mặc định. Ghi đè tại chỗ, KHÔNG sửa file CSS dùng chung -
                         các lớp đó còn phục vụ màn hình chấm điểm và hồ sơ KPI. */}
                     <div style={{ flex: "1 1 320px" }}>
                       <div
@@ -555,7 +555,7 @@ const PhanHoiSinhVienCuaToi = () => {
                     className="cd-hint"
                     style={{ marginTop: 0, marginBottom: "12px" }}
                   >
-                    Xếp theo điểm giảm dần — học phần cần cải thiện nằm ở cuối
+                    Xếp theo điểm giảm dần - học phần cần cải thiện nằm ở cuối
                     bảng.
                   </div>
                   <div style={{ overflowX: "auto" }}>

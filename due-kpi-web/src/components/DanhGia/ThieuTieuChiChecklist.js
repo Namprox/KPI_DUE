@@ -1,5 +1,5 @@
-import React from 'react';
-import '../../css/QuanLyChamDiem.css';
+import React from "react";
+import "../../css/QuanLyChamDiem.css";
 
 /**
  * Checklist "còn thiếu gì" của một phiếu.
@@ -11,13 +11,13 @@ import '../../css/QuanLyChamDiem.css';
  *   - `missingItems[]` của 422 POST /api/phieu/{id}/nop-lai.
  *
  * ⚠️ Phần tử dùng camelCase, khác phần còn lại của nhóm API phiếu vốn
- * PascalCase — xem chú thích ở fetchKiemTraHopLe.
+ * PascalCase - xem chú thích ở fetchKiemTraHopLe.
  *
  * @param {object[]} items    danh sách tiêu chí còn thiếu
  * @param {function} [onMo]   có truyền thì mỗi dòng có nút mở tới tiêu chí đó
  * @param {string}   [nhanMo] nhãn của nút đó
  */
-const ThieuTieuChiChecklist = ({ items = [], onMo, nhanMo = 'Bổ sung' }) => {
+const ThieuTieuChiChecklist = ({ items = [], onMo, nhanMo = "Bổ sung" }) => {
   if (items.length === 0) return null;
 
   return (
@@ -26,23 +26,23 @@ const ThieuTieuChiChecklist = ({ items = [], onMo, nhanMo = 'Bổ sung' }) => {
         <div className="cd-mc-row" key={item.idChiTiet ?? item.idTieuChi}>
           <i
             className="fa-solid fa-circle-exclamation cd-mc-icon"
-            style={{ color: '#f59e0b' }}
+            style={{ color: "#f59e0b" }}
           ></i>
           <div className="cd-mc-main">
             <div
               className="cd-mc-name"
-              style={{ color: '#0f172a', cursor: 'default' }}
+              style={{ color: "#0f172a", cursor: "default" }}
             >
               {item.tenTieuChi || `Tiêu chí #${item.idTieuChi}`}
             </div>
-            <div className="cd-tc-tags" style={{ marginTop: '4px' }}>
+            <div className="cd-tc-tags" style={{ marginTop: "4px" }}>
               {item.missingDiemTuDanhGia && (
                 <span
                   className="cd-tc-tag"
                   style={{
-                    background: '#fef2f2',
-                    color: '#b91c1c',
-                    borderColor: '#fecaca',
+                    background: "#fef2f2",
+                    color: "#b91c1c",
+                    borderColor: "#fecaca",
                   }}
                 >
                   Chưa chấm điểm
@@ -52,9 +52,9 @@ const ThieuTieuChiChecklist = ({ items = [], onMo, nhanMo = 'Bổ sung' }) => {
                 <span
                   className="cd-tc-tag"
                   style={{
-                    background: '#fffbeb',
-                    color: '#b45309',
-                    borderColor: '#fde68a',
+                    background: "#fffbeb",
+                    color: "#b45309",
+                    borderColor: "#fde68a",
                   }}
                 >
                   Thiếu minh chứng

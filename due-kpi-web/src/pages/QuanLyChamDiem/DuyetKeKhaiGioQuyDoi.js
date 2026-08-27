@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
@@ -25,11 +31,15 @@ const LOC_TRANG_THAI = [
 
 const BadgeTrangThai = ({ trangThai }) => {
   const meta = TRANG_THAI_KE_KHAI_META[trangThai];
-  if (!meta) return <span className="kkq-trong">—</span>;
+  if (!meta) return <span className="kkq-trong">-</span>;
   return (
     <span
       className="cd-status-badge"
-      style={{ background: meta.bg, color: meta.color, borderColor: meta.border }}
+      style={{
+        background: meta.bg,
+        color: meta.color,
+        borderColor: meta.border,
+      }}
     >
       <i className={`fa-solid ${meta.icon}`}></i> {meta.label}
     </span>
@@ -37,19 +47,19 @@ const BadgeTrangThai = ({ trangThai }) => {
 };
 
 /**
- * Hàng đợi duyệt bản kê giờ quy đổi — phía TRƯỞNG ĐƠN VỊ (TK/TKL/TP, và HT/Admin
+ * Hàng đợi duyệt bản kê giờ quy đổi - phía TRƯỞNG ĐƠN VỊ (TK/TKL/TP, và HT/Admin
  * xem toàn trường).
  *
  * Trang này chỉ là LỐI VÀO: mọi thao tác duyệt / từ chối / sửa số lượng / chốt /
  * trả lại đều nằm ở màn hình chi tiết, vì đơn vị nghiệp vụ là TỪNG DÒNG kê khai
  * chứ không phải cả bản kê.
  *
- * Phạm vi do SERVER quyết (đơn vị mình + đơn vị con; ADMIN/HT toàn trường) — FE
+ * Phạm vi do SERVER quyết (đơn vị mình + đơn vị con; ADMIN/HT toàn trường) - FE
  * không lọc lại, chỉ hiển thị và điều hướng. Bộ lọc đơn vị cố ý không dựng ở đây:
  * trưởng khoa chỉ có một phạm vi, thêm ô chọn chỉ tạo cảm giác chọn được nhiều
  * hơn thực tế.
  *
- * Cột "Chờ duyệt" là `SoDongChoDuyet` — khác 0 nghĩa là CHƯA chốt được bản kê
+ * Cột "Chờ duyệt" là `SoDongChoDuyet` - khác 0 nghĩa là CHƯA chốt được bản kê
  * (server trả 422 CON_DONG_CHUA_XET), nên đây là con số cần nhìn trước tiên.
  */
 const DuyetKeKhaiGioQuyDoi = () => {
@@ -119,7 +129,8 @@ const DuyetKeKhaiGioQuyDoi = () => {
 
   const timKiem = () => {
     setTuKhoa(oTuKhoa.trim());
-    if (!oTuKhoa.trim() && tuKhoa) showToast("info", "Đã bỏ lọc", "Hiện tất cả");
+    if (!oTuKhoa.trim() && tuKhoa)
+      showToast("info", "Đã bỏ lọc", "Hiện tất cả");
   };
 
   return (
@@ -130,7 +141,7 @@ const DuyetKeKhaiGioQuyDoi = () => {
         <h2 className="kkq-title">Duyệt kê khai giờ quy đổi</h2>
         <span className="breadcrumb">
           Bản kê giờ quy đổi theo Phụ lục II của giảng viên trong phạm vi đơn vị
-          bạn phụ trách — duyệt hoặc từ chối từng dòng rồi chốt
+          bạn phụ trách - duyệt hoặc từ chối từng dòng rồi chốt
         </span>
       </div>
 
@@ -262,7 +273,9 @@ const DuyetKeKhaiGioQuyDoi = () => {
                   <th style={{ width: "10%", textAlign: "right" }}>Ngày nộp</th>
                   <th style={{ width: "10%", textAlign: "center" }}>Số dòng</th>
                   <th style={{ width: "10%", textAlign: "right" }}>Giờ kê</th>
-                  <th style={{ width: "10%", textAlign: "right" }}>Giờ duyệt</th>
+                  <th style={{ width: "10%", textAlign: "right" }}>
+                    Giờ duyệt
+                  </th>
                   <th style={{ width: "12%" }}>Trạng thái</th>
                   <th style={{ width: "8%", textAlign: "right" }}>Thao tác</th>
                 </tr>
@@ -282,14 +295,14 @@ const DuyetKeKhaiGioQuyDoi = () => {
                       </td>
                       <td>
                         {r.TenDonVi || (
-                          <span className="table-empty-mark">—</span>
+                          <span className="table-empty-mark">-</span>
                         )}
                       </td>
                       <td className="table-num">
                         {r.NgayNop ? (
                           formatNgay(r.NgayNop)
                         ) : (
-                          <span className="table-empty-mark">—</span>
+                          <span className="table-empty-mark">-</span>
                         )}
                       </td>
                       <td style={{ textAlign: "center" }}>
@@ -323,8 +336,7 @@ const DuyetKeKhaiGioQuyDoi = () => {
                           }
                         >
                           <i className="fa-solid fa-pen-to-square"></i>{" "}
-                          {Number(r.TrangThai) ===
-                          TRANG_THAI_KE_KHAI.CHO_DUYET
+                          {Number(r.TrangThai) === TRANG_THAI_KE_KHAI.CHO_DUYET
                             ? "Duyệt"
                             : "Xem"}
                         </button>
@@ -341,7 +353,7 @@ const DuyetKeKhaiGioQuyDoi = () => {
           <span>
             Trang <strong style={{ color: "#172033" }}>{page}</strong> /{" "}
             {tongSoTrang}
-            {phanTrang?.TongSo != null ? ` — ${phanTrang.TongSo} bản kê` : ""}
+            {phanTrang?.TongSo != null ? ` - ${phanTrang.TongSo} bản kê` : ""}
           </span>
           <div style={{ display: "flex", gap: "6px" }}>
             <button

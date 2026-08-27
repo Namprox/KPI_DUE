@@ -57,7 +57,7 @@ const MinhChungDongBox = ({
           tenHienThi: chon.name,
         },
       ]);
-      onSuccess?.("Đã đính kèm tệp — bấm Lưu để tải lên máy chủ");
+      onSuccess?.("Đã đính kèm tệp - bấm Lưu để tải lên máy chủ");
       return;
     }
 
@@ -162,8 +162,8 @@ const MinhChungDongBox = ({
             {dangTai
               ? "Đang tải lên..."
               : danhSach.length === 0 && mcCho.length === 0
-              ? "Đính kèm minh chứng (PDF)"
-              : "Thêm tệp PDF"}
+                ? "Đính kèm minh chứng (PDF)"
+                : "Thêm tệp PDF"}
           </button>
         </div>
       )}

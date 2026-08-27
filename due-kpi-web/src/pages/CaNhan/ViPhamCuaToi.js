@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
@@ -24,7 +30,7 @@ import {
  * Trang chỉ đọc: giảng viên không sửa/xóa được ghi nhận của mình (server chỉ cho
  * đơn vị đã lập hoặc Admin), nên ở đây không có nút thao tác nào ngoài xem minh
  * chứng. Luôn hỏi API theo idNhanVien của chính mình: TK/TKL/HT mở trang này mà
- * không kèm id sẽ nhận danh sách cả đơn vị / toàn trường — xem viPhamCaNhanApi.js.
+ * không kèm id sẽ nhận danh sách cả đơn vị / toàn trường - xem viPhamCaNhanApi.js.
  */
 const ViPhamCuaToi = () => {
   const toast = useRef(null);
@@ -33,7 +39,7 @@ const ViPhamCuaToi = () => {
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
 
   const [danhSach, setDanhSach] = useState([]);
-  // Dòng tổng hợp của server — null nghĩa là phải tự cộng từ danhSach
+  // Dòng tổng hợp của server - null nghĩa là phải tự cộng từ danhSach
   const [tongHopServer, setTongHopServer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loi, setLoi] = useState("");
@@ -52,7 +58,9 @@ const ViPhamCuaToi = () => {
     if (!idNhanVien) {
       setDanhSach([]);
       setTongHopServer(null);
-      setLoi("Tài khoản chưa gắn với hồ sơ nhân viên nên chưa xem được vi phạm.");
+      setLoi(
+        "Tài khoản chưa gắn với hồ sơ nhân viên nên chưa xem được vi phạm.",
+      );
       setIsLoading(false);
       return;
     }
@@ -82,7 +90,7 @@ const ViPhamCuaToi = () => {
     if (!dangTaiNam) taiDuLieu();
   }, [dangTaiNam, taiDuLieu]);
 
-  // Đổi năm là đổi hẳn tập nhóm vi phạm — giữ bộ lọc cũ sẽ ra bảng trống khó hiểu.
+  // Đổi năm là đổi hẳn tập nhóm vi phạm - giữ bộ lọc cũ sẽ ra bảng trống khó hiểu.
   useEffect(() => {
     setFilterNhom("");
   }, [selectedNam]);
@@ -99,7 +107,9 @@ const ViPhamCuaToi = () => {
   const danhSachHienThi = useMemo(
     () =>
       filterNhom
-        ? danhSach.filter((vp) => (vp.TenNhom || "Chưa phân loại") === filterNhom)
+        ? danhSach.filter(
+            (vp) => (vp.TenNhom || "Chưa phân loại") === filterNhom,
+          )
         : danhSach,
     [danhSach, filterNhom],
   );
@@ -140,7 +150,8 @@ const ViPhamCuaToi = () => {
 
   // Lần tải đầu mới dựng khung chờ; đổi năm thì giữ nội dung cũ và làm mờ, để
   // trang không nháy trắng sau mỗi lần chọn.
-  const dangTaiLanDau = (isLoading || dangTaiNam) && danhSach.length === 0 && !loi;
+  const dangTaiLanDau =
+    (isLoading || dangTaiNam) && danhSach.length === 0 && !loi;
 
   return (
     <div className="page-container">
@@ -236,8 +247,8 @@ const ViPhamCuaToi = () => {
               Không có vi phạm nào trong năm {selectedNam}
             </h3>
             <p style={{ margin: 0 }}>
-              Vi phạm do đơn vị chủ trì ghi nhận. Nếu bạn cho rằng thiếu hoặc sai
-              thông tin, hãy liên hệ Khoa/Phòng đã lập ghi nhận.
+              Vi phạm do đơn vị chủ trì ghi nhận. Nếu bạn cho rằng thiếu hoặc
+              sai thông tin, hãy liên hệ Khoa/Phòng đã lập ghi nhận.
             </p>
           </div>
         </div>
@@ -296,7 +307,6 @@ const ViPhamCuaToi = () => {
                 <div className="stat-value">{tomTat.soBiKyLuat}</div>
               </div>
             </div>
-
           </div>
 
           {tomTat.chamTran && (

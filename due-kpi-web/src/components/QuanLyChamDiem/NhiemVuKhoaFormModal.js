@@ -22,7 +22,7 @@ const dongMoi = () => ({
  * Form tạo / sửa nhiệm vụ phục vụ cộng đồng của Khoa.
  *
  * **MỘT form, MỘT lần lưu.** Nhiệm vụ và toàn bộ danh sách phân công đi trong
- * một request duy nhất — không có endpoint riêng để thêm/xoá từng dòng phân
+ * một request duy nhất - không có endpoint riêng để thêm/xoá từng dòng phân
  * công. Khi sửa, hàm lưu gửi lên TOÀN BỘ danh sách sau khi sửa và server tự tính
  * diff (gỡ / đổi vai trò / thêm), nên "xoá một người khỏi nhiệm vụ" ở đây đơn
  * giản là bấm nút gỡ dòng rồi Lưu.
@@ -37,11 +37,11 @@ const dongMoi = () => ({
  *
  * Ngược lại, hai tình huống sau CỐ Ý không chặn:
  *  - nhiệm vụ chưa có chủ trì vẫn lưu được (Khoa nhập dở), chỉ chặn khi chốt kỳ;
- *  - giảng viên vượt trần điểm chỉ cảnh báo mềm — chặn là SAI nghiệp vụ.
+ *  - giảng viên vượt trần điểm chỉ cảnh báo mềm - chặn là SAI nghiệp vụ.
  *
  * Minh chứng vẫn đi bằng endpoint riêng cần `IdNhiemVuKhoa`, nhưng khi TẠO MỚI
  * form không bắt người nhập lưu rồi mở lại: file được xếp hàng chờ, lưu xong thì
- * form tự tải lên bằng id vừa nhận. Upload lỗi KHÔNG huỷ nhiệm vụ đã tạo — cùng
+ * form tự tải lên bằng id vừa nhận. Upload lỗi KHÔNG huỷ nhiệm vụ đã tạo - cùng
  * quy ước "đính kèm thất bại chỉ cảnh báo nhẹ" với luồng gửi phản hồi.
  */
 const NhiemVuKhoaFormModal = ({
@@ -138,7 +138,9 @@ const NhiemVuKhoaFormModal = ({
       if (!r.idNhanVien) return;
       dem.set(r.idNhanVien, (dem.get(r.idNhanVien) || 0) + 1);
     });
-    return new Set([...dem.entries()].filter(([, n]) => n > 1).map(([id]) => id));
+    return new Set(
+      [...dem.entries()].filter(([, n]) => n > 1).map(([id]) => id),
+    );
   }, [rows]);
 
   const capNhatDong = (key, thayDoi) =>
@@ -148,7 +150,7 @@ const NhiemVuKhoaFormModal = ({
 
   const goDong = (key) => setRows((prev) => prev.filter((r) => r.key !== key));
 
-  // Minh chứng lưu ngay khi tải lên, không chờ nút Lưu — báo ngược cho bảng ở
+  // Minh chứng lưu ngay khi tải lên, không chờ nút Lưu - báo ngược cho bảng ở
   // trang cha để cột đếm tệp không lệch sau khi đóng form.
   const capNhatMinhChung = (danhSach) => {
     setMinhChung(danhSach);
@@ -176,7 +178,7 @@ const NhiemVuKhoaFormModal = ({
       return "Một giảng viên chỉ được xuất hiện một lần trong cùng nhiệm vụ";
     }
     if (soChuTri > 1) {
-      return "Mỗi nhiệm vụ chỉ được có một chủ trì — hãy đổi vai trò của những người còn lại";
+      return "Mỗi nhiệm vụ chỉ được có một chủ trì - hãy đổi vai trò của những người còn lại";
     }
     return "";
   };
@@ -242,7 +244,7 @@ const NhiemVuKhoaFormModal = ({
 
         if (loiTai.length > 0) {
           onError(
-            `Nhiệm vụ đã lưu nhưng chưa đính kèm được ${loiTai.length} tệp (${loiTai.join(", ")}) — mở lại nhiệm vụ để tải lên.`,
+            `Nhiệm vụ đã lưu nhưng chưa đính kèm được ${loiTai.length} tệp (${loiTai.join(", ")}) - mở lại nhiệm vụ để tải lên.`,
           );
         }
       }
@@ -251,7 +253,7 @@ const NhiemVuKhoaFormModal = ({
       onSuccess(
         laSua ? `Đã lưu nhiệm vụ${nhanTep}` : `Đã tạo nhiệm vụ${nhanTep}`,
       );
-      // Response mang PhanCong[] kèm DiemSnapshot server vừa tính — dùng nó để
+      // Response mang PhanCong[] kèm DiemSnapshot server vừa tính - dùng nó để
       // cập nhật state thay vì tự đoán điểm ở FE.
       onSaved(ketQua);
     } catch (error) {
@@ -265,11 +267,11 @@ const NhiemVuKhoaFormModal = ({
   if (!isOpen) return null;
 
   const nhanVaiTro = (vt) =>
-    `${vt.TenVaiTro} — ${formatDiem(vt.DiemQuyDoi, 1)} điểm`;
+    `${vt.TenVaiTro} - ${formatDiem(vt.DiemQuyDoi, 1)} điểm`;
 
   const nhanGiangVien = (gv) => {
     const canhBao = vuotTran(gv.TongDiemThucTe, tranDiem) ? " ⚠" : "";
-    return `${gv.HoTen} (${gv.MaNhanVien}) — ${formatDiem(gv.TongDiemThucTe, 1)}đ / ${gv.SoNhiemVu} nhiệm vụ${canhBao}`;
+    return `${gv.HoTen} (${gv.MaNhanVien}) - ${formatDiem(gv.TongDiemThucTe, 1)}đ / ${gv.SoNhiemVu} nhiệm vụ${canhBao}`;
   };
 
   return (
@@ -358,7 +360,7 @@ const NhiemVuKhoaFormModal = ({
 
           {rows.length === 0 ? (
             <div className="cd-hint nvk-pc-trong">
-              Chưa gán ai. Nhiệm vụ không có người vẫn lưu được — nhưng sẽ chặn
+              Chưa gán ai. Nhiệm vụ không có người vẫn lưu được - nhưng sẽ chặn
               khi chốt kỳ.
             </div>
           ) : (
@@ -367,7 +369,8 @@ const NhiemVuKhoaFormModal = ({
                 const vt = vaiTroById.get(row.idVaiTro);
                 const laChuTri = vt?.MaVaiTro === MA_CHU_TRI;
                 const duKien = tinhDuKien(row);
-                const canhBaoTran = duKien != null && vuotTran(duKien, tranDiem);
+                const canhBaoTran =
+                  duKien != null && vuotTran(duKien, tranDiem);
                 const trungNguoi = nguoiTrungLap.has(row.idNhanVien);
 
                 return (
@@ -378,7 +381,9 @@ const NhiemVuKhoaFormModal = ({
                     <div className="nvk-pc-gv">
                       <SearchSelect
                         value={row.idNhanVien}
-                        onChange={(v) => capNhatDong(row.key, { idNhanVien: v })}
+                        onChange={(v) =>
+                          capNhatDong(row.key, { idNhanVien: v })
+                        }
                         options={giangVien.map((gv) => ({
                           value: gv.IdNhanVien,
                           label: nhanGiangVien(gv),
@@ -391,9 +396,9 @@ const NhiemVuKhoaFormModal = ({
                       />
                       {canhBaoTran && (
                         <div className="cd-hint cd-hint-warn nvk-pc-hint">
-                          <i className="fa-solid fa-circle-exclamation"></i> Tổng
-                          dự kiến {formatDiem(duKien, 1)}đ vượt trần{" "}
-                          {formatDiem(tranDiem, 1)}đ — sẽ được quy đổi về{" "}
+                          <i className="fa-solid fa-circle-exclamation"></i>{" "}
+                          Tổng dự kiến {formatDiem(duKien, 1)}đ vượt trần{" "}
+                          {formatDiem(tranDiem, 1)}đ - sẽ được quy đổi về{" "}
                           {formatDiem(tranDiem, 1)}đ khi báo cáo.
                         </div>
                       )}
@@ -438,7 +443,7 @@ const NhiemVuKhoaFormModal = ({
                     />
 
                     <div className="nvk-pc-diem">
-                      {vt ? `${formatDiem(vt.DiemQuyDoi, 1)}đ` : "—"}
+                      {vt ? `${formatDiem(vt.DiemQuyDoi, 1)}đ` : "-"}
                     </div>
 
                     {choPhepSua && (
@@ -460,8 +465,8 @@ const NhiemVuKhoaFormModal = ({
 
           {rows.length > 0 && soChuTri === 0 && (
             <div className="cd-hint cd-hint-warn nvk-pc-hint">
-              <i className="fa-solid fa-circle-exclamation"></i> Nhiệm vụ chưa có
-              chủ trì. Vẫn lưu được, nhưng phải bổ sung trước khi chốt kỳ.
+              <i className="fa-solid fa-circle-exclamation"></i> Nhiệm vụ chưa
+              có chủ trì. Vẫn lưu được, nhưng phải bổ sung trước khi chốt kỳ.
             </div>
           )}
 

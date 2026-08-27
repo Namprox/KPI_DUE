@@ -56,12 +56,12 @@ import {
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
 
 /**
- * Giai đoạn 3 — Trưởng khoa chốt hồ sơ cá nhân và CHỌN TAY xếp loại.
+ * Giai đoạn 3 - Trưởng khoa chốt hồ sơ cá nhân và CHỌN TAY xếp loại.
  *
  * Bốn điều phải nắm trước khi sửa trang này:
  *
  * 1. Trưởng khoa chỉ chọn được mức 1/2/3. Mức 4 (Hoàn thành xuất sắc) phụ thuộc
- *    thứ hạng trong cả Khoa nên chỉ bước đóng gói tờ trình mới nâng lên được —
+ *    thứ hạng trong cả Khoa nên chỉ bước đóng gói tờ trình mới nâng lên được -
  *    gửi XepLoaiKhoa = 4 sẽ bị server trả 400. Mức 4 KHÔNG được render ở bất kỳ
  *    đâu trong form; thay bằng dòng chú thích dưới nhóm nút.
  *
@@ -72,13 +72,13 @@ import {
  *      - ô "Lý do xếp loại" LUÔN hiện, không ẩn/hiện theo điều kiện;
  *      - mức gợi ý tính ở client chỉ để tham khảo (nhãn "tạm tính");
  *      - nếu vẫn dính 400 THIEU_LY_DO thì GIỮ NGUYÊN form, hiện lỗi inline ngay
- *        dưới ô lý do và đưa con trỏ vào đó — không được xóa những gì đã nhập.
+ *        dưới ô lý do và đưa con trỏ vào đó - không được xóa những gì đã nhập.
  *
  * 3. Chốt là điểm không quay đầu với Trưởng khoa: chỉ Hiệu trưởng gọi được
  *    phieu/{id}/mo-lai. Bắt buộc hộp xác nhận và phải nói thẳng hệ quả đó.
  *
  * 4. Trả một dòng về đơn vị thẩm định sẽ XÓA cả nhóm xếp loại và kéo hồ sơ về
- *    trạng thái 2 — không phải thao tác nhẹ, phải cảnh báo trước.
+ *    trạng thái 2 - không phải thao tác nhẹ, phải cảnh báo trước.
  */
 const ChotHoSoKhoa = () => {
   const { id } = useParams();
@@ -118,7 +118,7 @@ const ChotHoSoKhoa = () => {
   const [loiForm, setLoiForm] = useState({});
   const lyDoRef = useRef(null);
   const qd838Ref = useRef(null);
-  // Người dùng đã gõ gì chưa — quyết định có được phép nạp đè form từ server không.
+  // Người dùng đã gõ gì chưa - quyết định có được phép nạp đè form từ server không.
   const daSuaForm = useRef(false);
 
   const showToast = (severity, summary, detail, life = 4000) => {
@@ -212,7 +212,7 @@ const ChotHoSoKhoa = () => {
   const laVienChuc = Number(phieu?.LoaiDoiTuong) === LOAI_DOI_TUONG.VIEN_CHUC;
 
   // Ô tick "Đủ định mức giờ NCKH" là một phán quyết, không phải một con số tự
-  // động — nhưng người phán quyết cần thấy giờ thực tế / định mức trước khi tick.
+  // động - nhưng người phán quyết cần thấy giờ thực tế / định mức trước khi tick.
   // Hỏng thì bỏ trống, không chặn màn hình.
   useEffect(() => {
     const idNv = phieu?.IdNhanVien;
@@ -235,11 +235,11 @@ const ChotHoSoKhoa = () => {
   }, [phieu?.IdNhanVien, phieu?.IdNam, laVienChuc]);
 
   // Nạp form từ dữ liệu server mỗi khi hồ sơ được tải lại. Mức mặc định là mức
-  // hệ thống đề xuất (kẹp trần ở 3 vì Trưởng khoa không chọn được mức 4) —
+  // hệ thống đề xuất (kẹp trần ở 3 vì Trưởng khoa không chọn được mức 4) -
   // người dùng vẫn đổi được, đây chỉ là điểm xuất phát hợp lý.
   //
   // Nhưng KHÔNG nạp đè khi người dùng đã gõ: 409 làm màn hình tự tải lại phiếu,
-  // nạp đè ở đó là xóa trắng lý do vừa viết — đúng thứ họ sẽ phải viết lại.
+  // nạp đè ở đó là xóa trắng lý do vừa viết - đúng thứ họ sẽ phải viết lại.
   useEffect(() => {
     if (!phieu || daSuaForm.current) return;
     setForm({
@@ -282,7 +282,7 @@ const ChotHoSoKhoa = () => {
   const canQd838 = !laVienChuc && Number(phieu?.IdNam) >= NAM_AP_DUNG_QD838;
 
   // Server chỉ ghi tong_diem_* và xep_loai_de_xuat khi hồ sơ được CHỐT, mà đây
-  // lại đúng là màn hình đứng trước cái nút chốt đó — nên cả hai phải tính tạm ở
+  // lại đúng là màn hình đứng trước cái nút chốt đó - nên cả hai phải tính tạm ở
   // client, nếu không Trưởng khoa phải chọn mức xếp loại trong khi không nhìn
   // thấy điểm nào cả.
   const tamTinh = useMemo(
@@ -333,7 +333,7 @@ const ChotHoSoKhoa = () => {
    *
    * Điểm không tới ngưỡng thì mức cao hơn bị KHÓA chứ không chỉ cảnh báo: xếp
    * "Hoàn thành" cho hồ sơ dưới 80 điểm là chuyện lý do gì cũng không cứu được,
-   * và server sẽ tính lại rồi từ chối. Chiều ngược lại vẫn mở — Trưởng khoa luôn
+   * và server sẽ tính lại rồi từ chối. Chiều ngược lại vẫn mở - Trưởng khoa luôn
    * được xếp THẤP hơn mức điểm cho phép, chỉ cần ghi lý do.
    */
   const mucToiDaChon = mucGoiY ?? (laVienChuc ? 2 : 3);
@@ -352,7 +352,7 @@ const ChotHoSoKhoa = () => {
   const coMucBiKhoa = mucChonDuoc.some((m) => m > mucToiDaChon);
 
   // Bỏ tick một điều kiện hay hạ mức QĐ 838 có thể kéo trần xuống dưới mức đang
-  // chọn — hạ theo ngay, nếu không form sẽ giữ một mức đã bị khóa ngay bên cạnh.
+  // chọn - hạ theo ngay, nếu không form sẽ giữ một mức đã bị khóa ngay bên cạnh.
   useEffect(() => {
     if (form.xepLoaiKhoa != null && Number(form.xepLoaiKhoa) > mucToiDaChon) {
       setForm((truoc) => ({ ...truoc, xepLoaiKhoa: mucToiDaChon }));
@@ -360,7 +360,7 @@ const ChotHoSoKhoa = () => {
   }, [mucToiDaChon, form.xepLoaiKhoa]);
 
   // Điều kiện CẦN để được tranh hạn ngạch xuất sắc ở bước đóng gói tờ trình.
-  // Chọn mức 2 ở đây là tự loại người này khỏi cuộc đua — hệ quả nhân sự mà
+  // Chọn mức 2 ở đây là tự loại người này khỏi cuộc đua - hệ quả nhân sự mà
   // người bấm phải thấy trước khi bấm, không phải sau.
   const duTranhXuatSac =
     !laVienChuc &&
@@ -411,7 +411,7 @@ const ChotHoSoKhoa = () => {
     }
     if (lechDeXuat && !form.lyDoXepLoai.trim()) {
       loi.lyDoXepLoai =
-        "Mức bạn chọn khác mức hệ thống đề xuất — bắt buộc nêu lý do để hồ sơ có căn cứ.";
+        "Mức bạn chọn khác mức hệ thống đề xuất - bắt buộc nêu lý do để hồ sơ có căn cứ.";
     }
     if (canQd838 && form.mucNckhcnQd838 == null) {
       loi.mucNckhcnQd838 =
@@ -428,7 +428,7 @@ const ChotHoSoKhoa = () => {
 
   /**
    * Phân loại lỗi trả về của lời gọi chốt về đúng chỗ hiển thị.
-   * Mọi mã lỗi đều phải có chỗ đậu — không có nhánh nào rơi vào "chỉ toast đỏ".
+   * Mọi mã lỗi đều phải có chỗ đậu - không có nhánh nào rơi vào "chỉ toast đỏ".
    */
   const xuLyLoiChot = async (error) => {
     const ma = error.errorCode;
@@ -458,7 +458,7 @@ const ChotHoSoKhoa = () => {
     if (ma === "VUOT_MUC_VIEN_CHUC" || ma === "CAM_CHON_XUAT_SAC") {
       console.error("Form chốt hồ sơ đang render sai mức xếp loại:", ma, phieu);
       setLoiForm({
-        chung: `${thongDiep} Đây là lỗi hiển thị của hệ thống — vui lòng tải lại trang và báo quản trị.`,
+        chung: `${thongDiep} Đây là lỗi hiển thị của hệ thống - vui lòng tải lại trang và báo quản trị.`,
       });
       return;
     }
@@ -469,7 +469,7 @@ const ChotHoSoKhoa = () => {
       showToast("warn", "Dữ liệu đã thay đổi", thongDiep, 7000);
       setLoiForm({
         chung:
-          "Hồ sơ vừa được cập nhật ở nơi khác. Nội dung bạn nhập vẫn còn — bấm Chốt hồ sơ lần nữa để gửi lại.",
+          "Hồ sơ vừa được cập nhật ở nơi khác. Nội dung bạn nhập vẫn còn - bấm Chốt hồ sơ lần nữa để gửi lại.",
       });
       return;
     }
@@ -514,14 +514,14 @@ const ChotHoSoKhoa = () => {
         lyDo,
         rowVersion: phieu.RowVersion,
       });
-      // Hồ sơ vừa tụt về trạng thái 2 và nhóm xếp loại đã bị xóa — form cũ không
+      // Hồ sơ vừa tụt về trạng thái 2 và nhóm xếp loại đã bị xóa - form cũ không
       // còn nghĩa gì, cho phép nạp lại từ server.
       daSuaForm.current = false;
       await Promise.all([taiPhieu({ imLang: true }), taiLichSu()]);
       showToast(
         "success",
         "Đã trả về đơn vị thẩm định",
-        `"${chiTiet.TenTieuChi}" đã quay về đơn vị chấm lại. Hồ sơ trở lại bước thẩm định và nhóm xếp loại đã bị xóa — bạn sẽ chốt lại sau khi tiêu chí xong.`,
+        `"${chiTiet.TenTieuChi}" đã quay về đơn vị chấm lại. Hồ sơ trở lại bước thẩm định và nhóm xếp loại đã bị xóa - bạn sẽ chốt lại sau khi tiêu chí xong.`,
         8000,
       );
     } catch (error) {
@@ -603,7 +603,7 @@ const ChotHoSoKhoa = () => {
       };
   const diemLaTamTinh = !daCoDiemServer && tamTinh != null;
 
-  // Mức thấp nhất đang bị khóa — hộp giải thích phải gọi đúng số đó, không nói chung chung.
+  // Mức thấp nhất đang bị khóa - hộp giải thích phải gọi đúng số đó, không nói chung chung.
   const mucKhoaDauTien = mucChonDuoc.find((m) => m > mucToiDaChon);
   // Cột QĐ 838 chỉ tồn tại với giảng viên từ năm áp dụng trở đi nên số thứ tự
   // của cột xếp loại phải trượt theo.
@@ -615,7 +615,7 @@ const ChotHoSoKhoa = () => {
    * Nó cũng bịt lỗ hổng cũ: hồ sơ chọn mức 3 nhưng chưa ghi nhận QĐ 838 mức 2
    * thì không hint nào hiện, người bấm tưởng vẫn đang trong cuộc đua.
    *
-   * Năm chưa áp dụng QĐ 838 thì im lặng ở ca mức 3 — nói "chưa đạt QĐ 838" cho
+   * Năm chưa áp dụng QĐ 838 thì im lặng ở ca mức 3 - nói "chưa đạt QĐ 838" cho
    * một năm không thu thập chỉ tiêu đó là đổ lỗi sai chỗ.
    */
   const trangThaiXuatSac = (() => {
@@ -631,7 +631,7 @@ const ChotHoSoKhoa = () => {
       return {
         kieu: "cd-hint-warn",
         icon: "fa-circle-info",
-        text: `Chọn mức ${form.xepLoaiKhoa} là người này không còn tranh suất xuất sắc — chỉ hồ sơ mức 3 kèm QĐ 838 mức 2 mới vào cuộc.`,
+        text: `Chọn mức ${form.xepLoaiKhoa} là người này không còn tranh suất xuất sắc - chỉ hồ sơ mức 3 kèm QĐ 838 mức 2 mới vào cuộc.`,
       };
     }
     if (canQd838) {
@@ -658,7 +658,7 @@ const ChotHoSoKhoa = () => {
         <div className="cd-chot-o">
           <div className="cd-chot-o-nhan">1. Điều kiện kết luận</div>
           {/* Viên chức / NLĐ không có định mức giờ NCKH nên ô này không có
-              nghĩa với họ — server cũng bỏ qua. Ẩn hẳn thay vì bày một ô luôn
+              nghĩa với họ - server cũng bỏ qua. Ẩn hẳn thay vì bày một ô luôn
               tick. */}
           {!laVienChuc && (
             <label className="cd-checkbox">
@@ -787,7 +787,7 @@ const ChotHoSoKhoa = () => {
               </div>
               <p>{lyDoKhoaMuc()}</p>
               {/* Ngoại lệ này là một ĐƯỜNG KHÁC để lên mức, không phải lý do bị
-                  khóa — gộp chung một đoạn với câu trên thì không ai đọc ra. */}
+                  khóa - gộp chung một đoạn với câu trên thì không ai đọc ra. */}
               <div className="cd-khoa-ngoai-le">
                 <b>Ngoại lệ</b>
                 <span>
@@ -816,7 +816,7 @@ const ChotHoSoKhoa = () => {
                 và chỉ nâng cho giảng viên đủ cả ba điều kiện:
               </p>
               <ul>
-                <li>Được Khoa xếp mức 3 — Hoàn thành tốt nhiệm vụ</li>
+                <li>Được Khoa xếp mức 3 - Hoàn thành tốt nhiệm vụ</li>
                 <li>Hoàn thành xuất sắc nhiệm vụ theo QĐ 838 (mức 2)</li>
                 <li>Lọt hạn ngạch 20% của Khoa</li>
               </ul>
@@ -857,7 +857,7 @@ const ChotHoSoKhoa = () => {
           ) : lechDeXuat ? (
             <div className="cd-hint cd-hint-warn">
               <i className="fa-solid fa-circle-info"></i> Bạn chọn mức{" "}
-              {form.xepLoaiKhoa} trong khi mức tạm tính là {mucDoiChieu} — phải
+              {form.xepLoaiKhoa} trong khi mức tạm tính là {mucDoiChieu} - phải
               ghi lý do.
             </div>
           ) : null}
@@ -970,7 +970,7 @@ const ChotHoSoKhoa = () => {
                     {nv.maNhanVien}
                   </span>
                 )}
-                {nv.tenDonVi || "—"}
+                {nv.tenDonVi || "-"}
                 {phieu.TenChucDanh ? ` · ${phieu.TenChucDanh}` : ""}
                 {laVienChuc ? " · Viên chức / người lao động" : ""}
               </div>
@@ -1140,7 +1140,7 @@ const ChotHoSoKhoa = () => {
           dangTaiLichSu={dangTaiLichSu}
           vaiTro="truongKhoa"
           noiBat={idChiTietThieu.has(Number(ct.IdChiTiet))}
-          // Màn hình này CHỈ để chốt hồ sơ, không thẩm định — kể cả khi Trưởng
+          // Màn hình này CHỈ để chốt hồ sơ, không thẩm định - kể cả khi Trưởng
           // khoa đồng thời là đơn vị được giao chấm tiêu chí đó. Việc thẩm định
           // làm ở /quan-ly/phieu/:id; ở đây hồ sơ đang
           // ở trạng thái 3 nên mọi dòng đều đã chốt.
@@ -1234,7 +1234,7 @@ const ChotHoSoKhoa = () => {
                   style={{ marginTop: "12px" }}
                 >
                   <i className="fa-solid fa-circle-info"></i> Mức bạn chọn khác
-                  mức tạm tính ({mucDoiChieu}) — lý do đã ghi sẽ được lưu kèm hồ
+                  mức tạm tính ({mucDoiChieu}) - lý do đã ghi sẽ được lưu kèm hồ
                   sơ.
                 </div>
               )}

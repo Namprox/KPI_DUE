@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { fetchNhanVienPhaiNopKpi, tinhChuaTuCham } from '../utils/chuaLapPhieu';
-import { fetchPhieuListDayDu } from '../utils/phieuApi';
+import { useCallback, useEffect, useState } from "react";
+import { fetchNhanVienPhaiNopKpi, tinhChuaTuCham } from "../utils/chuaLapPhieu";
+import { fetchPhieuListDayDu } from "../utils/phieuApi";
 
 /**
  * Những người trong phạm vi đơn vị chưa tự chấm KPI xong.
@@ -12,15 +12,24 @@ import { fetchPhieuListDayDu } from '../utils/phieuApi';
  *    "chưa lập phiếu" oan.
  *  - `idDonViLoc` là đơn vị người dùng chọn trên thanh lọc. Bộ lọc idDonVi của
  *    GET /phieu khớp CHÍNH XÁC một đơn vị, nên khi có nó thì danh bạ cũng phải
- *    thu về đúng đơn vị đó — lấy kèm đơn vị con sẽ lệch hai đầu.
+ *    thu về đúng đơn vị đó - lấy kèm đơn vị con sẽ lệch hai đầu.
  *
  * Trả về hai rổ riêng: `chuaLapPhieu` (không có dòng phiếu nào) và `phieuNhap`
  * (đã lưu nhưng chưa nộp). Màn hình nào cần gộp thì dùng `tatCa`.
  */
-export const useChuaTuCham = ({ idNam, idDonViGoc, idDonViLoc, bat = true } = {}) => {
-  const [ketQua, setKetQua] = useState({ chuaLapPhieu: [], phieuNhap: [], tatCa: [] });
+export const useChuaTuCham = ({
+  idNam,
+  idDonViGoc,
+  idDonViLoc,
+  bat = true,
+} = {}) => {
+  const [ketQua, setKetQua] = useState({
+    chuaLapPhieu: [],
+    phieuNhap: [],
+    tatCa: [],
+  });
   const [dangTai, setDangTai] = useState(false);
-  const [loi, setLoi] = useState('');
+  const [loi, setLoi] = useState("");
 
   const idDonVi = idDonViLoc || idDonViGoc;
 
@@ -30,7 +39,7 @@ export const useChuaTuCham = ({ idNam, idDonViGoc, idDonViLoc, bat = true } = {}
       return;
     }
     setDangTai(true);
-    setLoi('');
+    setLoi("");
     try {
       const [nhanVienList, phieuList] = await Promise.all([
         fetchNhanVienPhaiNopKpi({ idDonVi, baoGomDonViCon: !idDonViLoc }),
@@ -40,8 +49,10 @@ export const useChuaTuCham = ({ idNam, idDonViGoc, idDonViLoc, bat = true } = {}
       ]);
       setKetQua(tinhChuaTuCham({ nhanVienList, phieuList }));
     } catch (error) {
-      console.error('Không đối chiếu được danh sách chưa tự chấm:', error);
-      setLoi(error?.message || 'Không đối chiếu được danh sách người chưa tự chấm');
+      console.error("Không đối chiếu được danh sách chưa tự chấm:", error);
+      setLoi(
+        error?.message || "Không đối chiếu được danh sách người chưa tự chấm",
+      );
       setKetQua({ chuaLapPhieu: [], phieuNhap: [], tatCa: [] });
     } finally {
       setDangTai(false);

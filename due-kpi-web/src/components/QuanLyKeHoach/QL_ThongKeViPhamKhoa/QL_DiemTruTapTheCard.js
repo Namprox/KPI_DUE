@@ -26,7 +26,7 @@ const cellValueStyle = {
 const monoStyle = { fontFamily: "ui-monospace, Menlo, Consolas, monospace" };
 
 /**
- * Điểm trừ tập thể của MỘT Khoa — dạng thẻ diễn giải công thức, thay cho bảng
+ * Điểm trừ tập thể của MỘT Khoa - dạng thẻ diễn giải công thức, thay cho bảng
  * nhiều Khoa ở màn hình tổng hợp toàn trường.
  *
  * @param {object|null} data dòng dữ liệu từ GET api/vi-pham/diem-tru-khoa của đúng Khoa đang xem

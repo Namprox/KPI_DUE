@@ -10,7 +10,7 @@ import {
 } from "../../utils/nhiemVuKhoaApi";
 
 /**
- * Tab "Nhiệm vụ" — danh sách nhiệm vụ của kỳ và form nhập.
+ * Tab "Nhiệm vụ" - danh sách nhiệm vụ của kỳ và form nhập.
  *
  * Bộ lọc (nhóm + từ khoá) do trang cha sở hữu vì chúng nằm trên thanh công cụ
  * chung; panel chỉ nhận giá trị đã áp dụng rồi gọi lại API. Server lo việc lọc,
@@ -73,14 +73,14 @@ const NvkPanelNhiemVu = ({
     tai();
   }, [tai]);
 
-  // Đổi năm hoặc Khoa là đổi hẳn tập giảng viên kèm tổng điểm — bỏ cache cũ,
+  // Đổi năm hoặc Khoa là đổi hẳn tập giảng viên kèm tổng điểm - bỏ cache cũ,
   // nếu không ô chọn người sẽ hiện điểm của năm trước.
   useEffect(() => {
     setGiangVien([]);
   }, [idNam, idDonVi]);
 
   /**
-   * Danh sách giảng viên kèm tổng điểm — nạp MỘT lần rồi cache.
+   * Danh sách giảng viên kèm tổng điểm - nạp MỘT lần rồi cache.
    * Endpoint đã LEFT JOIN sẵn bảng tổng hợp nên một truy vấn đủ cho cả form;
    * tuyệt đối không gọi cho từng dòng phân công.
    */
@@ -147,9 +147,7 @@ const NvkPanelNhiemVu = ({
       setDanhSach((prev) => {
         const co = prev.some((x) => x.IdNhiemVuKhoa === item.IdNhiemVuKhoa);
         return co
-          ? prev.map((x) =>
-              x.IdNhiemVuKhoa === item.IdNhiemVuKhoa ? item : x,
-            )
+          ? prev.map((x) => (x.IdNhiemVuKhoa === item.IdNhiemVuKhoa ? item : x))
           : [item, ...prev];
       });
     }
@@ -160,7 +158,7 @@ const NvkPanelNhiemVu = ({
   };
 
   /**
-   * Minh chứng upload/gỡ ngay tại chỗ, không đi qua nút Lưu — nên phải đồng bộ
+   * Minh chứng upload/gỡ ngay tại chỗ, không đi qua nút Lưu - nên phải đồng bộ
    * ngược về dòng trong bảng, nếu không cột đếm tệp sẽ lệch khi đóng form.
    */
   const capNhatMinhChungCuaDong = (idNhiemVuKhoa, minhChung) => {
@@ -217,122 +215,122 @@ const NvkPanelNhiemVu = ({
 
     return (
       <>
-      <div className="table-scroll">
-        <table className="custom-table nvk-ql-bang">
-          <thead>
-            <tr>
-              <th style={{ width: "32%" }}>Nhiệm vụ</th>
-              <th style={{ width: "17%" }}>Nhóm</th>
-              <th style={{ width: "30%" }}>Phân công</th>
-              <th style={{ width: "14%" }}>Minh chứng</th>
-              <th style={{ width: "7%", textAlign: "right" }}>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {danhSach.map((nv) => (
-              <tr key={nv.IdNhiemVuKhoa}>
-                <td>
-                  <div className="nvk-ql-ten">{nv.TenNhiemVu}</div>
-                  {nv.MoTa && <div className="nvk-ql-mo-ta">{nv.MoTa}</div>}
-                </td>
-                <td>
-                  <span className="tag-badge tag-blue nvk-ql-nhom">
-                    {nv.TenNhom}
-                  </span>
-                </td>
-                <td>
-                  {(nv.PhanCong || []).length === 0 ? (
-                    <span className="status-pill pill-amber pill-dashed">
-                      Chưa phân công
+        <div className="table-scroll">
+          <table className="custom-table nvk-ql-bang">
+            <thead>
+              <tr>
+                <th style={{ width: "32%" }}>Nhiệm vụ</th>
+                <th style={{ width: "17%" }}>Nhóm</th>
+                <th style={{ width: "30%" }}>Phân công</th>
+                <th style={{ width: "14%" }}>Minh chứng</th>
+                <th style={{ width: "7%", textAlign: "right" }}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {danhSach.map((nv) => (
+                <tr key={nv.IdNhiemVuKhoa}>
+                  <td>
+                    <div className="nvk-ql-ten">{nv.TenNhiemVu}</div>
+                    {nv.MoTa && <div className="nvk-ql-mo-ta">{nv.MoTa}</div>}
+                  </td>
+                  <td>
+                    <span className="tag-badge tag-blue nvk-ql-nhom">
+                      {nv.TenNhom}
                     </span>
-                  ) : (
-                    <>
-                      {/* Vai trò là thông tin chính của cột này (chủ trì / phối
+                  </td>
+                  <td>
+                    {(nv.PhanCong || []).length === 0 ? (
+                      <span className="status-pill pill-amber pill-dashed">
+                        Chưa phân công
+                      </span>
+                    ) : (
+                      <>
+                        {/* Vai trò là thông tin chính của cột này (chủ trì / phối
                           hợp chính / phối hợp quyết định điểm), nên bày thành
                           dòng riêng thay vì giấu trong tooltip của chip. */}
-                      <div className="nvk-pc-cell">
-                        {nv.PhanCong.map((pc) => (
-                          <div key={pc.IdPhanCong} className="nvk-pc-item">
-                            <span className="nvk-pc-ten" title={pc.HoTen}>
-                              {pc.HoTen}
-                            </span>
-                            <span
-                              className={`nvk-pc-vai-tro ${lopVaiTro(pc)}`}
-                              title={pc.TenVaiTroSnapshot}
-                            >
-                              {pc.TenVaiTroSnapshot}
-                            </span>
-                            <span className="nvk-pc-diem-o">
-                              {formatDiem(pc.DiemSnapshot, 1)}đ
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {!nv.CoChuTri && (
-                        <span className="status-pill pill-amber nvk-pc-thieu-chu-tri">
-                          Chưa có chủ trì
-                        </span>
-                      )}
-                    </>
-                  )}
-                </td>
-                <td>
-                  {(nv.MinhChung || []).length > 0 ? (
-                    <div className="nvk-mc-list">
-                      {nv.MinhChung.map((mc) => {
-                        const ten =
-                          mc.TenHienThi || mc.TenFileGoc || "Tệp minh chứng";
-                        return (
-                          <button
-                            key={mc.IdMinhChungNvk}
-                            type="button"
-                            className="file-link"
-                            title={`Xem trước: ${ten}`}
-                            onClick={() => onXemMinhChung(mc)}
-                          >
-                            <span className="file-badge">PDF</span>
-                            <span className="file-name">{ten}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <span className="table-empty-mark">—</span>
-                  )}
-                </td>
-                <td>
-                  <div className="action-group action-group-right">
-                    <div
-                      className="icon-wrapper edit-icon"
-                      onClick={() => moForm(nv)}
-                      title={choPhepSua ? "Sửa nhiệm vụ" : "Xem chi tiết"}
-                    >
-                      <i
-                        className={`fa-solid ${choPhepSua ? "fa-pen-to-square" : "fa-eye"}`}
-                      ></i>
-                    </div>
-                    {choPhepSua && (
-                      <div
-                        className="icon-wrapper delete-icon"
-                        onClick={() => xoa(nv)}
-                        title="Xoá nhiệm vụ"
-                      >
-                        <i className="fa-solid fa-trash"></i>
-                      </div>
+                        <div className="nvk-pc-cell">
+                          {nv.PhanCong.map((pc) => (
+                            <div key={pc.IdPhanCong} className="nvk-pc-item">
+                              <span className="nvk-pc-ten" title={pc.HoTen}>
+                                {pc.HoTen}
+                              </span>
+                              <span
+                                className={`nvk-pc-vai-tro ${lopVaiTro(pc)}`}
+                                title={pc.TenVaiTroSnapshot}
+                              >
+                                {pc.TenVaiTroSnapshot}
+                              </span>
+                              <span className="nvk-pc-diem-o">
+                                {formatDiem(pc.DiemSnapshot, 1)}đ
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        {!nv.CoChuTri && (
+                          <span className="status-pill pill-amber nvk-pc-thieu-chu-tri">
+                            Chưa có chủ trì
+                          </span>
+                        )}
+                      </>
                     )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="table-foot">
-        <span>
-          {danhSach.length} nhiệm vụ
-          {soChuaPhanCong > 0 && ` · ${soChuaPhanCong} chưa phân công`}
-        </span>
-      </div>
+                  </td>
+                  <td>
+                    {(nv.MinhChung || []).length > 0 ? (
+                      <div className="nvk-mc-list">
+                        {nv.MinhChung.map((mc) => {
+                          const ten =
+                            mc.TenHienThi || mc.TenFileGoc || "Tệp minh chứng";
+                          return (
+                            <button
+                              key={mc.IdMinhChungNvk}
+                              type="button"
+                              className="file-link"
+                              title={`Xem trước: ${ten}`}
+                              onClick={() => onXemMinhChung(mc)}
+                            >
+                              <span className="file-badge">PDF</span>
+                              <span className="file-name">{ten}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="table-empty-mark">-</span>
+                    )}
+                  </td>
+                  <td>
+                    <div className="action-group action-group-right">
+                      <div
+                        className="icon-wrapper edit-icon"
+                        onClick={() => moForm(nv)}
+                        title={choPhepSua ? "Sửa nhiệm vụ" : "Xem chi tiết"}
+                      >
+                        <i
+                          className={`fa-solid ${choPhepSua ? "fa-pen-to-square" : "fa-eye"}`}
+                        ></i>
+                      </div>
+                      {choPhepSua && (
+                        <div
+                          className="icon-wrapper delete-icon"
+                          onClick={() => xoa(nv)}
+                          title="Xoá nhiệm vụ"
+                        >
+                          <i className="fa-solid fa-trash"></i>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="table-foot">
+          <span>
+            {danhSach.length} nhiệm vụ
+            {soChuaPhanCong > 0 && ` · ${soChuaPhanCong} chưa phân công`}
+          </span>
+        </div>
       </>
     );
   };

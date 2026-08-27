@@ -89,7 +89,11 @@ const TongQuanCaNhan = () => {
   const idDonViKhoa = useMemo(() => {
     if (currentUser?.DonVi && Array.isArray(currentUser.DonVi)) {
       const dvKhoa = currentUser.DonVi.find((d) =>
-        ['TK', 'TKL'].includes(String(d.MaChucVu || '').trim().toUpperCase()),
+        ["TK", "TKL"].includes(
+          String(d.MaChucVu || "")
+            .trim()
+            .toUpperCase(),
+        ),
       );
       if (dvKhoa) return dvKhoa.IdDonVi;
     }
@@ -136,7 +140,7 @@ const TongQuanCaNhan = () => {
   );
 
   /**
-   * Cửa sổ tự đánh giá theo cấu hình NĂM — chỉ dùng khi CHƯA có phiếu.
+   * Cửa sổ tự đánh giá theo cấu hình NĂM - chỉ dùng khi CHƯA có phiếu.
    * Có phiếu rồi thì hạn hiệu lực do server chọn theo giai đoạn và chỉ đọc được
    * ở kiem-tra-hop-le; tự tính lại sẽ báo "đã đóng" cho cả người đang trong hạn
    * bổ sung theo yêu cầu thẩm định.
@@ -149,7 +153,7 @@ const TongQuanCaNhan = () => {
   /**
    * Chủ phiếu còn việc phải làm không.
    *
-   * Nộp lại KHÔNG đưa phiếu ra khỏi trạng thái 2 (đúng thiết kế — không phải
+   * Nộp lại KHÔNG đưa phiếu ra khỏi trạng thái 2 (đúng thiết kế - không phải
    * vòng đánh giá mới) nên `HanNop` vẫn là hạn thẩm định và vẫn còn giá trị.
    * Nhưng lúc đó bóng đã sang chân đơn vị thẩm định, hiện tiếp một cái hạn chỉ
    * khiến người dùng tưởng mình còn phải nộp gì nữa.
@@ -186,7 +190,7 @@ const TongQuanCaNhan = () => {
   /**
    * Điểm tạm tính khi server chưa chốt TongDiemTichLuy: cộng dồn điểm tự đánh giá
    * trên từng tiêu chí. Đây là con số GV nhìn thấy trong form, chưa gồm điểm cấp
-   * trên chấm lại — nhãn hiển thị phải nói rõ điều đó.
+   * trên chấm lại - nhãn hiển thị phải nói rõ điều đó.
    */
   const diemTamTinh = useMemo(() => {
     const chiTiet = phieu?.ChiTiet || [];
@@ -199,7 +203,7 @@ const TongQuanCaNhan = () => {
 
   /**
    * Tiêu chí đơn vị thẩm định đã trả về cho chính người đang xem (NguonTraVe = 2).
-   * Chỉ dòng có yêu cầu trả về ĐANG MỞ mới còn giữ trường này — nộp lại xong là
+   * Chỉ dòng có yêu cầu trả về ĐANG MỞ mới còn giữ trường này - nộp lại xong là
    * server xóa, nên không cần lọc thêm theo TrangThaiDong.
    *
    * NguonTraVe = 3 (Trưởng khoa trả đơn vị thẩm định làm lại) KHÔNG thuộc việc
@@ -392,12 +396,12 @@ const TongQuanCaNhan = () => {
                 cần bạn bổ sung rồi nộp lại. Các tiêu chí khác vẫn giữ nguyên
                 tiến độ.
                 {/* Hạn chặn việc bổ sung là hạn THẨM ĐỊNH chứ không phải hạn tự
-                    đánh giá — QuaHan của kiem-tra-hop-le đã phản ánh đúng hạn
+                    đánh giá - QuaHan của kiem-tra-hop-le đã phản ánh đúng hạn
                     của giai đoạn phiếu đang đứng. */}
                 {quaHan && (
                   <>
                     {" "}
-                    {thongDiepHan} nên bạn cần được gia hạn riêng mới sửa được —
+                    {thongDiepHan} nên bạn cần được gia hạn riêng mới sửa được -
                     liên hệ đơn vị quản lý.
                   </>
                 )}
@@ -426,7 +430,10 @@ const TongQuanCaNhan = () => {
                     {thongDiepHan}
                   </div>
                 ) : (
-                  <div className="cd-hint tq-status-line" style={{ marginTop: 0 }}>
+                  <div
+                    className="cd-hint tq-status-line"
+                    style={{ marginTop: 0 }}
+                  >
                     <i
                       className="fa-solid fa-circle-check"
                       style={{ color: "#047857", marginRight: "8px" }}
@@ -522,7 +529,7 @@ const TongQuanCaNhan = () => {
                     className="fa-solid fa-rotate-left"
                     style={{ marginRight: "8px" }}
                   ></i>
-                  {dongBiTraVe.length} tiêu chí bị trả về — sửa xong bấm{" "}
+                  {dongBiTraVe.length} tiêu chí bị trả về - sửa xong bấm{" "}
                   <b>Nộp lại</b> trong phiếu tự đánh giá
                 </div>
 
@@ -544,7 +551,9 @@ const TongQuanCaNhan = () => {
                       )}
                       <div className="cd-mc-meta">
                         {ct.TenDonViThamDinh || "Đơn vị thẩm định"} trả về
-                        {ct.NgayTraVe ? ` ngày ${formatNgay(ct.NgayTraVe)}` : ""}
+                        {ct.NgayTraVe
+                          ? ` ngày ${formatNgay(ct.NgayTraVe)}`
+                          : ""}
                         {ct.SoLanTraVe > 1 ? ` · lần thứ ${ct.SoLanTraVe}` : ""}
                       </div>
                     </div>
@@ -610,7 +619,6 @@ const TongQuanCaNhan = () => {
                   items={thieu}
                   onMo={duongDanPhieu ? moPhieu : undefined}
                 />
-
               </>
             )}
           </div>

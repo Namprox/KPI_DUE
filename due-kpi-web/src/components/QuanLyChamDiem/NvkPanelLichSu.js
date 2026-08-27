@@ -20,7 +20,7 @@ const MAU_HANH_DONG = {
 };
 
 /**
- * Tab "Nhật ký" — mọi thay đổi vai trò, điểm và thao tác chốt kỳ.
+ * Tab "Nhật ký" - mọi thay đổi vai trò, điểm và thao tác chốt kỳ.
  *
  * Nhật ký được ghi trong CÙNG transaction với thao tác nên đây là bản ghi đáng
  * tin để đối chiếu khi có tranh chấp về vai trò. Dòng `HanhDong = 5` mang đủ
@@ -51,9 +51,9 @@ const NvkPanelLichSu = ({ idNam, idDonVi, onError }) => {
     if (ls.HanhDong === HANH_DONG.DOI_VAI_TRO) {
       return (
         <span className="nvk-ls-doi">
-          {ls.VaiTroTruoc ?? "—"} ({formatDiem(ls.DiemTruoc, 1)}đ)
+          {ls.VaiTroTruoc ?? "-"} ({formatDiem(ls.DiemTruoc, 1)}đ)
           <i className="fa-solid fa-arrow-right"></i>
-          {ls.VaiTroSau ?? "—"} ({formatDiem(ls.DiemSau, 1)}đ)
+          {ls.VaiTroSau ?? "-"} ({formatDiem(ls.DiemSau, 1)}đ)
         </span>
       );
     }
@@ -61,11 +61,13 @@ const NvkPanelLichSu = ({ idNam, idDonVi, onError }) => {
     if (ls.VaiTroSau) {
       return `${ls.VaiTroSau} (${formatDiem(ls.DiemSau, 1)}đ)`;
     }
-    return <span className="nvk-trong">—</span>;
+    return <span className="nvk-trong">-</span>;
   };
 
   return (
-    <div style={{ opacity: dangTai ? 0.55 : 1, transition: "opacity 0.15s ease" }}>
+    <div
+      style={{ opacity: dangTai ? 0.55 : 1, transition: "opacity 0.15s ease" }}
+    >
       <div className="modern-table-card">
         {danhSach.length === 0 ? (
           <div className="cd-empty">
@@ -93,15 +95,18 @@ const NvkPanelLichSu = ({ idNam, idDonVi, onError }) => {
                       <span
                         className={`tag-badge ${MAU_HANH_DONG[ls.HanhDong] || ""}`}
                       >
-                        {TEN_HANH_DONG[ls.HanhDong] || `Hành động ${ls.HanhDong}`}
+                        {TEN_HANH_DONG[ls.HanhDong] ||
+                          `Hành động ${ls.HanhDong}`}
                       </span>
                     </td>
-                    <td>{ls.TenNhiemVu || <span className="nvk-trong">—</span>}</td>
                     <td>
-                      {ls.HoTenNhanVien || <span className="nvk-trong">—</span>}
+                      {ls.TenNhiemVu || <span className="nvk-trong">-</span>}
+                    </td>
+                    <td>
+                      {ls.HoTenNhanVien || <span className="nvk-trong">-</span>}
                     </td>
                     <td>{renderChiTiet(ls)}</td>
-                    <td>{ls.HoTenNguoiThucHien || "—"}</td>
+                    <td>{ls.HoTenNguoiThucHien || "-"}</td>
                   </tr>
                 ))}
               </tbody>

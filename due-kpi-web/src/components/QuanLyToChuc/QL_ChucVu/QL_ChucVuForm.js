@@ -138,7 +138,7 @@ const QL_ChucVuForm = ({
                 value={formData.GhiChuDieuKien || ""}
                 onChange={handleChange}
                 rows="2"
-                placeholder="Ví dụ: Bí thư chi bộ — Bảng 2.1 mục 12 QĐ 3237"
+                placeholder="Ví dụ: Bí thư chi bộ - Bảng 2.1 mục 12 QĐ 3237"
               ></textarea>
             </div>
             <div

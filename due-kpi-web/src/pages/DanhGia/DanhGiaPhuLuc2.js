@@ -4,7 +4,7 @@ import PhieuTuDanhGia from "./PhieuTuDanhGia";
 /**
  * Phiếu tự đánh giá KPI ngạch GIẢNG VIÊN (Phụ lục 2).
  *
- * Toàn bộ logic nằm ở PhieuTuDanhGia — hai ngạch đi chung một quy trình, chỉ
+ * Toàn bộ logic nằm ở PhieuTuDanhGia - hai ngạch đi chung một quy trình, chỉ
  * khác mẫu đánh giá được chọn theo loaiDoiTuong.
  */
 const DanhGiaPhuLuc2 = () => (

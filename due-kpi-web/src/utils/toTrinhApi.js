@@ -15,11 +15,11 @@
  * Gói được server tự tạo khi hồ sơ đầu tiên của một (năm, đơn vị) được chốt. Bất
  * kỳ hồ sơ nào rớt khỏi trạng thái 4 đều kéo gói về 1.
  *
- * RowVersion ở đây là của TỜ TRÌNH, không phải của phiếu — đừng lẫn hai giá trị.
+ * RowVersion ở đây là của TỜ TRÌNH, không phải của phiếu - đừng lẫn hai giá trị.
  */
 
-import { apiFetch } from './api';
-import { readApiError } from './apiError';
+import { apiFetch } from "./api";
+import { readApiError } from "./apiError";
 
 /* ------------------------------------------------------------------ */
 /* Trạng thái gói                                                      */
@@ -34,16 +34,46 @@ export const TRANG_THAI_TO_TRINH = {
 };
 
 export const TRANG_THAI_TO_TRINH_META = {
-  1: { label: 'Đang tổng hợp', icon: 'fa-inbox', bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' },
-  2: { label: 'Đã đóng gói', icon: 'fa-box-archive', bg: '#fffbeb', color: '#b45309', border: '#fde68a' },
-  3: { label: 'Đã trình Hiệu trưởng', icon: 'fa-hourglass-half', bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
-  4: { label: 'Hiệu trưởng đã duyệt', icon: 'fa-circle-check', bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' },
-  5: { label: 'Hiệu trưởng trả về', icon: 'fa-rotate-left', bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' },
+  1: {
+    label: "Đang tổng hợp",
+    icon: "fa-inbox",
+    bg: "#f1f5f9",
+    color: "#475569",
+    border: "#e2e8f0",
+  },
+  2: {
+    label: "Đã đóng gói",
+    icon: "fa-box-archive",
+    bg: "#fffbeb",
+    color: "#b45309",
+    border: "#fde68a",
+  },
+  3: {
+    label: "Đã trình Hiệu trưởng",
+    icon: "fa-hourglass-half",
+    bg: "#eff6ff",
+    color: "#1d4ed8",
+    border: "#bfdbfe",
+  },
+  4: {
+    label: "Hiệu trưởng đã duyệt",
+    icon: "fa-circle-check",
+    bg: "#ecfdf5",
+    color: "#047857",
+    border: "#a7f3d0",
+  },
+  5: {
+    label: "Hiệu trưởng trả về",
+    icon: "fa-rotate-left",
+    bg: "#fef2f2",
+    color: "#b91c1c",
+    border: "#fecaca",
+  },
 };
 
 export const tenTrangThaiToTrinh = (trangThai) =>
   TRANG_THAI_TO_TRINH_META[trangThai]?.label ||
-  `Không xác định (${trangThai ?? '—'})`;
+  `Không xác định (${trangThai ?? "-"})`;
 
 export const HANH_DONG_TO_TRINH = {
   DONG_GOI: 1,
@@ -54,11 +84,11 @@ export const HANH_DONG_TO_TRINH = {
 };
 
 export const TEN_HANH_DONG_TO_TRINH = {
-  1: 'Đóng gói tờ trình',
-  2: 'Trình Hiệu trưởng',
-  3: 'Hiệu trưởng duyệt gói',
-  4: 'Hiệu trưởng trả về',
-  5: 'Mở lại gói',
+  1: "Đóng gói tờ trình",
+  2: "Trình Hiệu trưởng",
+  3: "Hiệu trưởng duyệt gói",
+  4: "Hiệu trưởng trả về",
+  5: "Mở lại gói",
 };
 
 /** Tỷ lệ xuất sắc mặc định lưu trên gói (to_trinh_kpi_khoa.ty_le_xuat_sac). */
@@ -69,7 +99,7 @@ export const TY_LE_XUAT_SAC_MAC_DINH = 0.2;
  *
  * Mẫu số là TỔNG SỐ giảng viên của Khoa (loai_doi_tuong = 1), KHÔNG phải số
  * người đạt "Hoàn thành tốt": Khoa 30 giảng viên có 6 suất kể cả khi chỉ 10
- * người ở mức 3. Làm tròn XUỐNG — 27 giảng viên ra 5 suất, không phải 6.
+ * người ở mức 3. Làm tròn XUỐNG - 27 giảng viên ra 5 suất, không phải 6.
  */
 export const tinhHanNgach = (soGiangVien, tyLe = TY_LE_XUAT_SAC_MAC_DINH) => {
   const n = Number(soGiangVien);
@@ -98,7 +128,7 @@ const buildApiError = async (response, fallback) => {
   const isConflict = response.status === 409;
   const error = new Error(
     isConflict
-      ? info.message || 'Gói KPI đã bị thay đổi. Vui lòng tải lại trang.'
+      ? info.message || "Gói KPI đã bị thay đổi. Vui lòng tải lại trang."
       : info.message,
   );
   error.status = response.status;
@@ -129,11 +159,11 @@ const sendJson = async (endpoint, method, body, fallback) => {
 const buildQuery = (params) => {
   const qs = new URLSearchParams();
   Object.entries(params || {}).forEach(([key, value]) => {
-    if (value === null || value === undefined || value === '') return;
+    if (value === null || value === undefined || value === "") return;
     qs.set(key, String(value));
   });
   const s = qs.toString();
-  return s ? `?${s}` : '';
+  return s ? `?${s}` : "";
 };
 
 /* ------------------------------------------------------------------ */
@@ -153,7 +183,7 @@ export const fetchToTrinhList = async ({
 } = {}) => {
   const data = await getJson(
     `to-trinh-khoa${buildQuery({ idNam, idDonVi, trangThai, page, pageSize })}`,
-    'Không tải được danh sách tờ trình KPI',
+    "Không tải được danh sách tờ trình KPI",
   );
   return data.Items || [];
 };
@@ -163,19 +193,19 @@ export const fetchToTrinhList = async ({
  *
  * `SoGiangVien` là mẫu số đã SNAPSHOT lúc đóng gói; `SoGiangVienHienTai` (chỉ có
  * ở endpoint này) là số đếm tại thời điểm gọi. Hai giá trị lệch nhau nghĩa là
- * nhân sự Khoa đã thay đổi sau khi đóng gói — UI phải cảnh báo, hạn ngạch đang
+ * nhân sự Khoa đã thay đổi sau khi đóng gói - UI phải cảnh báo, hạn ngạch đang
  * hiển thị không còn đúng.
  */
 export const fetchToTrinhDetail = async (idToTrinh) => {
   const data = await getJson(
     `to-trinh-khoa/${idToTrinh}`,
-    'Không tải được chi tiết tờ trình KPI',
+    "Không tải được chi tiết tờ trình KPI",
   );
   return data.Item || null;
 };
 
 /* ------------------------------------------------------------------ */
-/* Ghi — Trưởng khoa                                                   */
+/* Ghi - Trưởng khoa                                                   */
 /* ------------------------------------------------------------------ */
 
 /**
@@ -188,17 +218,20 @@ export const fetchToTrinhDetail = async (idToTrinh) => {
  * `tyLeXuatSac` để trống = giữ tỷ lệ đang lưu trên gói (mặc định 0.2).
  *
  * Hai nhánh lỗi 409 mà UI BẮT BUỘC xử lý riêng thay vì chỉ báo đỏ:
- *  - CHUA_DU_HO_SO — `error.hoSo` liệt kê người chưa được Trưởng khoa chốt.
- *  - DONG_HANG — `error.dongHang.SoSuatConLai` và `error.hoSo` là những người
+ *  - CHUA_DU_HO_SO - `error.hoSo` liệt kê người chưa được Trưởng khoa chốt.
+ *  - DONG_HANG - `error.dongHang.SoSuatConLai` và `error.hoSo` là những người
  *    đồng điểm ở ranh giới. Server cố ý KHÔNG tự tie-break: đây là quyết định
  *    nhân sự, phải để Trưởng khoa chỉ định qua datUuTienXuatSac.
  */
-export const dongGoiToTrinh = async (idToTrinh, { tyLeXuatSac, rowVersion }) => {
+export const dongGoiToTrinh = async (
+  idToTrinh,
+  { tyLeXuatSac, rowVersion },
+) => {
   const data = await sendJson(
     `to-trinh-khoa/${idToTrinh}/dong-goi`,
-    'POST',
+    "POST",
     { TyLeXuatSac: tyLeXuatSac ?? null, RowVersion: rowVersion },
-    'Đóng gói tờ trình thất bại',
+    "Đóng gói tờ trình thất bại",
   );
   return { item: data.Item || null, hoSo: data.HoSo || [] };
 };
@@ -207,19 +240,19 @@ export const dongGoiToTrinh = async (idToTrinh, { tyLeXuatSac, rowVersion }) => 
 export const trinhToTrinh = async (idToTrinh, { nhanXet, rowVersion }) => {
   const data = await sendJson(
     `to-trinh-khoa/${idToTrinh}/trinh`,
-    'POST',
+    "POST",
     { NhanXet: nhanXet || null, RowVersion: rowVersion },
-    'Trình tờ trình thất bại',
+    "Trình tờ trình thất bại",
   );
   return data.Item || null;
 };
 
 /* ------------------------------------------------------------------ */
-/* Ghi — Hiệu trưởng                                                   */
+/* Ghi - Hiệu trưởng                                                   */
 /* ------------------------------------------------------------------ */
 
 /**
- * Hiệu trưởng duyệt CẢ GÓI — bước cuối cùng của toàn bộ quy trình.
+ * Hiệu trưởng duyệt CẢ GÓI - bước cuối cùng của toàn bộ quy trình.
  *
  * Gói 3 → 4 và MỌI hồ sơ trong gói 4 → 5 (HOAN_TAT), trở thành chỉ đọc. Không
  * hoàn tác được: sau bước này chỉ còn đường mở lại từng phiếu lẻ. UI phải hỏi
@@ -228,9 +261,9 @@ export const trinhToTrinh = async (idToTrinh, { nhanXet, rowVersion }) => {
 export const htDuyetToTrinh = async (idToTrinh, { nhanXet, rowVersion }) => {
   const data = await sendJson(
     `to-trinh-khoa/${idToTrinh}/ht-duyet`,
-    'POST',
+    "POST",
     { NhanXet: nhanXet || null, RowVersion: rowVersion },
-    'Duyệt gói KPI thất bại',
+    "Duyệt gói KPI thất bại",
   );
   return data.Item || null;
 };
@@ -248,9 +281,9 @@ export const htTraLaiToTrinh = async (
 ) => {
   const data = await sendJson(
     `to-trinh-khoa/${idToTrinh}/ht-tra-lai`,
-    'POST',
+    "POST",
     { IdPhieuList: idPhieuList, LyDo: lyDo, RowVersion: rowVersion },
-    'Trả lại hồ sơ thất bại',
+    "Trả lại hồ sơ thất bại",
   );
   return { item: data.Item || null, hoSo: data.HoSo || [] };
 };

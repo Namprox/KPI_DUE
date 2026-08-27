@@ -1,8 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  taiMinhChungVeMay,
-  taoUrlXemMinhChung,
-} from '../utils/nhiemVuKhoaApi';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { taiMinhChungVeMay, taoUrlXemMinhChung } from "../utils/nhiemVuKhoaApi";
 
 /**
  * Trạng thái xem trước / tải về minh chứng của module nhiệm vụ Khoa.
@@ -11,7 +8,7 @@ import {
  * hẳn nhánh "định dạng không xem trước được": module chỉ nhận PDF (server kiểm
  * cả đuôi file lẫn chữ ký `%PDF-`) nên luôn nhúng được vào iframe.
  *
- * Dùng chung cho cả minh chứng cấp nhiệm vụ (cấp 1) và cấp phản hồi (cấp 2) —
+ * Dùng chung cho cả minh chứng cấp nhiệm vụ (cấp 1) và cấp phản hồi (cấp 2) -
  * hai cấp đi chung một endpoint tải về.
  *
  * @param {(message: string) => void} [onError] hiển thị lỗi tải tệp (toast)
@@ -64,12 +61,12 @@ export const useMinhChungNvkPreview = (onError) => {
       urlRef.current = url;
       setPreview((prev) => ({ ...prev, url, isLoading: false }));
     } catch (error) {
-      console.error('Lỗi xem trước minh chứng nhiệm vụ Khoa:', error);
+      console.error("Lỗi xem trước minh chứng nhiệm vụ Khoa:", error);
       if (mcRef.current !== mc) return;
       setPreview((prev) => ({
         ...prev,
         isLoading: false,
-        error: error.message || 'Không mở được tệp minh chứng',
+        error: error.message || "Không mở được tệp minh chứng",
       }));
     }
   }, []);
@@ -91,9 +88,9 @@ export const useMinhChungNvkPreview = (onError) => {
     try {
       await taiMinhChungVeMay(mc);
     } catch (error) {
-      console.error('Lỗi tải tệp minh chứng nhiệm vụ Khoa:', error);
+      console.error("Lỗi tải tệp minh chứng nhiệm vụ Khoa:", error);
       if (onErrorRef.current) {
-        onErrorRef.current(error.message || 'Không tải được tệp minh chứng');
+        onErrorRef.current(error.message || "Không tải được tệp minh chứng");
       }
     }
   }, []);

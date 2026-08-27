@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 /**
- * Hộp thoại "nhập lý do rồi xác nhận" — dùng chung cho mọi thao tác trả về /
+ * Hộp thoại "nhập lý do rồi xác nhận" - dùng chung cho mọi thao tác trả về /
  * mở lại của quy trình 4 giai đoạn:
  *
  *   - trả một dòng về cho giảng viên      (chitiet/{id}/tham-dinh/tra-ve)
@@ -12,7 +12,7 @@ import React, { useState } from "react";
  * Tất cả đều bắt buộc lý do ở phía server, nên mặc định `batBuocLyDo` là true;
  * đặt false cho các thao tác chỉ cần ghi chú (duyệt, trình, chốt gói).
  *
- * `canhBao` hiện trong khung đỏ — dành cho thao tác có tác dụng phụ không hoàn
+ * `canhBao` hiện trong khung đỏ - dành cho thao tác có tác dụng phụ không hoàn
  * tác được, ví dụ trả dòng về đơn vị thẩm định sẽ xóa cả nhóm xếp loại.
  */
 const LyDoModal = ({
@@ -37,7 +37,7 @@ const LyDoModal = ({
   const handleXacNhan = () => {
     if (batBuocLyDo && !lyDo.trim()) {
       setLoi(
-        `Vui lòng nhập ${nhanLyDo.toLowerCase()} — người nhận cần biết phải xử lý gì.`,
+        `Vui lòng nhập ${nhanLyDo.toLowerCase()} - người nhận cần biết phải xử lý gì.`,
       );
       return;
     }

@@ -41,7 +41,7 @@ const giaTriO = (nhap, goc) =>
       : String(goc);
 
 /**
- * Màn hình nhập liệu Đánh giá KPI Đơn vị — dạng thẻ đồng bộ với KPI Giảng viên.
+ * Màn hình nhập liệu Đánh giá KPI Đơn vị - dạng thẻ đồng bộ với KPI Giảng viên.
  */
 const ChiTietPhieuDonVi = () => {
   const { id } = useParams();
@@ -205,7 +205,9 @@ const ChiTietPhieuDonVi = () => {
 
       const nhomConList = [...nhomConMap.entries()].map(([tenCon, dong]) => {
         const nhomConFromTree = nhomChaFromTree?.NhomCon?.find(
-          (nc) => nc.TenNhom === tenCon || (nc.IdNhom && nc.IdNhom === dong[0]?.IdNhomCha),
+          (nc) =>
+            nc.TenNhom === tenCon ||
+            (nc.IdNhom && nc.IdNhom === dong[0]?.IdNhomCha),
         );
         const diemToiDaCon =
           nhomConFromTree?.DiemToiDa != null
@@ -594,7 +596,7 @@ const ChiTietPhieuDonVi = () => {
                 fontWeight: 700,
               }}
             >
-              {phieu.TenDonVi || `Đơn vị #${phieu.IdDonVi}`} — Năm học{" "}
+              {phieu.TenDonVi || `Đơn vị #${phieu.IdDonVi}`} - Năm học{" "}
               {phieu.IdNam}
             </h2>
             <span className="breadcrumb">
@@ -650,8 +652,8 @@ const ChiTietPhieuDonVi = () => {
             >
               <i className="fa-solid fa-triangle-exclamation"></i> Còn{" "}
               <b>{dongChamTayThieuDiem.length}</b> tiêu chí chấm tay chưa có
-              điểm. Nếu trình bây giờ thì Trưởng đơn vị sẽ nhận phiếu chưa đầy đủ
-              điểm.
+              điểm. Nếu trình bây giờ thì Trưởng đơn vị sẽ nhận phiếu chưa đầy
+              đủ điểm.
             </div>
           )}
         </LyDoModal>

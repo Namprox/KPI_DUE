@@ -21,7 +21,7 @@ export const MENU_GROUPS = [
     icon: "fa-check-double",
     items: [
       {
-        // Phiếu tự đánh giá theo ngạch giảng viên — không xét chức vụ.
+        // Phiếu tự đánh giá theo ngạch giảng viên - không xét chức vụ.
         name: "Đánh giá KPI Giảng viên",
         icon: "fa-solid fa-file-pen",
         path: "/danh-gia-phu-luc-2",
@@ -38,17 +38,32 @@ export const MENU_GROUPS = [
       },
       {
         // Phiếu KPI của cả ĐƠN VỊ (Khoa/Phòng), chạy trên bộ API riêng
-        // /api/phieu-don-vi với máy trạng thái riêng — không liên quan tới phiếu
+        // /api/phieu-don-vi với máy trạng thái riêng - không liên quan tới phiếu
         // KPI cá nhân ở hai mục trên.
         //
         // Gate theo NHAP_PHIEU_DON_VI (chỉ TKK) chứ không phải DANH_GIA_DON_VI:
         // màn hình mới dựng phần việc nhập của thư ký, chưa có màn hình cho cấp
-        // duyệt. Không xét chức danh — đây là việc theo chức vụ.
+        // duyệt. Không xét chức danh - đây là việc theo chức vụ.
         name: "Đánh giá KPI Đơn vị",
         icon: "fa-solid fa-building-columns",
         path: "/danh-gia-kpi-don-vi",
         roles: ROLE_SETS.NHAP_PHIEU_DON_VI,
         childPaths: ["/danh-gia-kpi-don-vi/:id"],
+      },
+      {
+        // Phiếu KPI của PHÒNG / TRUNG TÂM - cùng bộ API /api/phieu-don-vi với mục
+        // trên, nhưng mẫu loại 4: nhóm tiêu chí phẳng (loai_nhom = NULL), tổng
+        // điểm cộng thẳng, ngưỡng xếp loại 80/60/50.
+        //
+        // Tách thành mục riêng vì màn hình này dựng TRỌN vòng đời (thư ký nhập →
+        // Trưởng phòng duyệt → cấp Trường duyệt → chốt → mở lại) nên tập vai trò
+        // rộng hơn hẳn mục KPI Đơn vị. Phân quyền theo từng thao tác nằm ở
+        // quyenPhieuPhong() chứ không suy từ tập này.
+        name: "Đánh giá KPI Phòng",
+        icon: "fa-solid fa-building-user",
+        path: "/danh-gia-kpi-phong",
+        roles: ROLE_SETS.KPI_PHONG,
+        childPaths: ["/danh-gia-kpi-phong/:id"],
       },
       {
         name: "Lịch sử đánh giá",
@@ -81,7 +96,7 @@ export const MENU_GROUPS = [
         chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
       },
       {
-        // Kê khai giờ quy đổi theo PHỤ LỤC II — "quy đổi các hoạt động chuyên
+        // Kê khai giờ quy đổi theo PHỤ LỤC II - "quy đổi các hoạt động chuyên
         // môn ra giờ chuẩn giảng dạy". Giảng viên TỰ kê số lượng từng đầu việc,
         // TK/TKL duyệt từng dòng. Server suy người dùng TỪ TOKEN nên đây chỉ là
         // lối vào; gate theo NGẠCH vì chỉ giảng viên mới có định mức giờ chuẩn.
@@ -92,7 +107,7 @@ export const MENU_GROUPS = [
         chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
       },
       {
-        // Công trình NCKH đồng bộ từ hệ thống nghiên cứu khoa học của trường —
+        // Công trình NCKH đồng bộ từ hệ thống nghiên cứu khoa học của trường -
         // nguồn của các tiêu chí NCKH chấm tự động. Endpoint /api/nckh/* nhận
         // id_nhan_vien qua query (không suy từ token) nhưng màn hình chỉ truyền
         // id của chính người đăng nhập; gate theo NGẠCH vì chỉ giảng viên mới có
@@ -114,7 +129,7 @@ export const MENU_GROUPS = [
         chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
       },
       {
-        // Tra cứu minh chứng của chính mình, xuyên năm. Chỉ đọc — server tự giới
+        // Tra cứu minh chứng của chính mình, xuyên năm. Chỉ đọc - server tự giới
         // hạn về người đăng nhập nên không cần gate theo chức vụ/chức danh.
         name: "Kho minh chứng",
         icon: "fa-solid fa-folder-tree",
@@ -125,14 +140,14 @@ export const MENU_GROUPS = [
   },
   {
     // Phân hệ của TRƯỞNG ĐƠN VỊ (TK/TKL/TP): chấm điểm cấp Khoa cho phiếu KPI
-    // cá nhân. Khác hẳn nhóm "Quản lý đánh giá" của Hiệu trưởng — HT duyệt/chốt
+    // cá nhân. Khác hẳn nhóm "Quản lý đánh giá" của Hiệu trưởng - HT duyệt/chốt
     // chứ không chấm tiêu chí, nên hai nhóm không dùng chung màn hình.
     key: "unitScoring",
     label: "Chấm điểm KPI đơn vị",
     icon: "fa-clipboard-check",
     items: [
       {
-        // Giai đoạn 2 — lối vào duy nhất của chuyên viên thẩm định. Hàng đợi
+        // Giai đoạn 2 - lối vào duy nhất của chuyên viên thẩm định. Hàng đợi
         // theo TỪNG DÒNG tiêu chí (/quan-ly/tham-dinh) đã bị ẩn khỏi menu và
         // AppRoutes: nó không xem được minh chứng nên vẫn phải mở hồ sơ để
         // chấm, thành ra chỉ nhân đôi lối đi. File màn hình vẫn còn ở
@@ -152,7 +167,7 @@ export const MENU_GROUPS = [
         childPaths: ["/quan-ly/phieu/:id", "/quan-ly/giang-vien/:idNv"],
       },
       {
-        // Giai đoạn 3 — thẩm quyền của TRƯỞNG KHOA, Trưởng Phòng không vào được.
+        // Giai đoạn 3 - thẩm quyền của TRƯỞNG KHOA, Trưởng Phòng không vào được.
         name: "Duyệt hồ sơ KPI",
         icon: "fa-solid fa-user-check",
         path: "/quan-ly/duyet-ho-so",
@@ -160,7 +175,7 @@ export const MENU_GROUPS = [
         childPaths: ["/quan-ly/duyet-ho-so/:id"],
       },
       {
-        // Giai đoạn 4 phía Khoa — đóng gói hạn ngạch xuất sắc rồi trình Hiệu trưởng.
+        // Giai đoạn 4 phía Khoa - đóng gói hạn ngạch xuất sắc rồi trình Hiệu trưởng.
         name: "Tờ trình KPI Khoa",
         icon: "fa-solid fa-file-signature",
         path: "/quan-ly/to-trinh",
@@ -173,7 +188,7 @@ export const MENU_GROUPS = [
         // đọc cho bước cộng với giờ giảng dạy sau này.
         //
         // Tập vai trò rộng hơn các mục khác của nhóm (thêm HT/Admin) vì server
-        // cho hai chức vụ đó xem toàn trường — xem ROLE_SETS.DUYET_KE_KHAI_GIO.
+        // cho hai chức vụ đó xem toàn trường - xem ROLE_SETS.DUYET_KE_KHAI_GIO.
         name: "Duyệt kê khai giờ quy đổi",
         icon: "fa-solid fa-stopwatch",
         path: "/quan-ly/ke-khai-gio-quy-doi",
@@ -396,7 +411,11 @@ export const canAccessRule = (rule, user) => {
   // - Nếu có đơn vị ngoài Khoa (Phòng, TT...) => được vào /danh-gia-kpi-nhan-vien
   if (rule.path === "/danh-gia-phu-luc-2") {
     if (hasChucDanh(CHUC_DANH_SETS.GIANG_VIEN, user)) return true;
-    if (Array.isArray(user?.DonVi) && user.DonVi.some((d) => String(d.MaDonVi || "").startsWith("K_")) && user?.IdChucDanh) {
+    if (
+      Array.isArray(user?.DonVi) &&
+      user.DonVi.some((d) => String(d.MaDonVi || "").startsWith("K_")) &&
+      user?.IdChucDanh
+    ) {
       return true;
     }
     return false;
@@ -404,7 +423,10 @@ export const canAccessRule = (rule, user) => {
 
   if (rule.path === "/danh-gia-kpi-nhan-vien") {
     if (hasChucDanh(CHUC_DANH_SETS.NHAN_VIEN, user)) return true;
-    if (Array.isArray(user?.DonVi) && user.DonVi.some((d) => !String(d.MaDonVi || "").startsWith("K_"))) {
+    if (
+      Array.isArray(user?.DonVi) &&
+      user.DonVi.some((d) => !String(d.MaDonVi || "").startsWith("K_"))
+    ) {
       return true;
     }
     return false;
@@ -415,8 +437,12 @@ export const canAccessRule = (rule, user) => {
     if (hasRole(ROLE_SETS.ADMIN, user)) return true;
     if (Array.isArray(user?.DonVi)) {
       const match = user.DonVi.some((dv) => {
-        const r = String(dv.MaChucVu || "").trim().toUpperCase();
-        return rule.donVi.includes(Number(dv.IdDonVi)) && rule.roles.includes(r);
+        const r = String(dv.MaChucVu || "")
+          .trim()
+          .toUpperCase();
+        return (
+          rule.donVi.includes(Number(dv.IdDonVi)) && rule.roles.includes(r)
+        );
       });
       if (match) return true;
     }
@@ -435,7 +461,7 @@ export const canAccessPath = (pathname, user) => {
     if (process.env.NODE_ENV !== "production") {
       console.warn(
         `[phân quyền] Route "${pathname}" chưa được khai trong menuConfig.js ` +
-          `— đang bị chặn. Thêm nó vào MENU_GROUPS (hoặc childPaths của mục cha).`,
+          `- đang bị chặn. Thêm nó vào MENU_GROUPS (hoặc childPaths của mục cha).`,
       );
     }
     return false;

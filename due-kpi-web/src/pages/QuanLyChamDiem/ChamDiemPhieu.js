@@ -60,7 +60,7 @@ import {
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
 
 /**
- * Màn hình thẩm định một hồ sơ — trang quan trọng nhất của phân hệ.
+ * Màn hình thẩm định một hồ sơ - trang quan trọng nhất của phân hệ.
  *
  * Ba điều dễ sai nếu không đọc kỹ luồng nghiệp vụ:
  *
@@ -74,7 +74,7 @@ import {
  *    vừa đổi. Response trả kèm TrangThaiPhieu để báo trước điều đó.
  *
  * 3. RowVersion là khóa lạc quan và là của PHIẾU CHA cho cả thao tác cấp dòng.
- *    Khi server trả 409 nghĩa là phiếu đã bị người khác sửa — ta tải lại và bắt
+ *    Khi server trả 409 nghĩa là phiếu đã bị người khác sửa - ta tải lại và bắt
  *    người dùng xem lại trước khi thử tiếp, không tự động gửi lại.
  *
  * Trang phục vụ hai vai: chuyên viên đơn vị thẩm định (thao tác trên dòng đang
@@ -83,7 +83,7 @@ import {
  *
  * 4. Danh sách tiêu chí có bộ lọc theo RỔ VIỆC và gom nhóm theo ĐƠN VỊ ĐƯỢC GIAO.
  *    Trưởng khoa cố ý thấy cả phiếu (locTieuChiHienThi chỉ cắt cho Trưởng phòng),
- *    nên bày phẳng là một danh sách dài mà đa số dòng đang khóa — mặc định mở vào
+ *    nên bày phẳng là một danh sách dài mà đa số dòng đang khóa - mặc định mở vào
  *    rổ "Cần bạn xử lý" chính là để tránh điều đó. Lọc và gom CHỈ đổi cách bày,
  *    mọi con số tiến độ vẫn tính trên danh sách đầy đủ. Trưởng phòng KHÔNG thấy
  *    lớp này: danh sách của họ đã bị cắt còn đúng phần được giao.
@@ -108,7 +108,7 @@ const ChamDiemPhieu = () => {
   const [lichSuItems, setLichSuItems] = useState([]);
   const [dangTaiLichSu, setDangTaiLichSu] = useState(true);
   // Dòng đang chờ nhập lý do. Hai chiều trả về khác hẳn nhau nên tách hai state
-  // thay vì một state kèm cờ — nhầm chiều là gửi sai endpoint.
+  // thay vì một state kèm cờ - nhầm chiều là gửi sai endpoint.
   const [dongTraVe, setDongTraVe] = useState(null);
   const [dongTraThamDinh, setDongTraThamDinh] = useState(null);
   // Dòng đang mở hộp thoại chọn lại mức điểm.
@@ -123,7 +123,7 @@ const ChamDiemPhieu = () => {
     toast.current?.show({ severity, summary, detail, life });
   };
 
-  // Xem trước / tải minh chứng của từng tiêu chí — modal dùng chung với trang vi phạm
+  // Xem trước / tải minh chứng của từng tiêu chí - modal dùng chung với trang vi phạm
   const { preview, openPreview, closePreview, downloadMinhChung } =
     useMinhChungPhieuPreview((message) => showToast("error", "Lỗi", message));
 
@@ -159,13 +159,13 @@ const ChamDiemPhieu = () => {
   }, [taiPhieu]);
 
   // Lịch sử chấm lấy một lần cho cả phiếu (thay vì mỗi tiêu chí một request) và
-  // nạp lại sau mỗi lần lưu điểm — lượt vừa lưu chính là một dòng mới trong đó.
+  // nạp lại sau mỗi lần lưu điểm - lượt vừa lưu chính là một dòng mới trong đó.
   const taiLichSu = useCallback(async () => {
     setDangTaiLichSu(true);
     try {
       setLichSuItems(await fetchLichSuChamDiemPhieu(id));
     } catch (error) {
-      // Thiếu lịch sử không được chặn màn hình chấm — chỉ mất khối tham khảo.
+      // Thiếu lịch sử không được chặn màn hình chấm - chỉ mất khối tham khảo.
       console.error("Lỗi tải lịch sử chấm điểm:", error);
       setLichSuItems([]);
     } finally {
@@ -203,7 +203,7 @@ const ChamDiemPhieu = () => {
       })
       .catch((error) => {
         // Không chặn màn hình: thiếu bảng phân quyền thì mọi tiêu chí rơi về quy
-        // tắc mặc định (đơn vị chủ quản chấm) — server vẫn là chốt chặn cuối.
+        // tắc mặc định (đơn vị chủ quản chấm) - server vẫn là chốt chặn cuối.
         console.error("Lỗi tải phân quyền chấm tiêu chí:", error);
       })
       .finally(() => {
@@ -216,7 +216,7 @@ const ChamDiemPhieu = () => {
 
   // Bảng tra tiêu chí lấy từ MẪU của phiếu: chi tiết phiếu chỉ có con số điểm,
   // không có danh sách mức để người thẩm định chọn lại, cũng không có loai_nhom
-  // để tách điểm cơ bản với vượt trội. Lỗi ở đây không chặn màn hình — hộp thoại
+  // để tách điểm cơ bản với vượt trội. Lỗi ở đây không chặn màn hình - hộp thoại
   // chấm rơi về ô nhập điểm tự do như trước.
   useEffect(() => {
     if (!phieu?.IdMau) return undefined;
@@ -240,7 +240,7 @@ const ChamDiemPhieu = () => {
 
   const chiTietList = useMemo(() => phieu?.ChiTiet || [], [phieu]);
   // Trưởng phòng chỉ thấy tiêu chí đơn vị mình được giao; TK/TKL thấy cả phiếu.
-  // Tiến độ vẫn tính trên danh sách ĐẦY ĐỦ — con số "toàn phiếu" là thứ giải
+  // Tiến độ vẫn tính trên danh sách ĐẦY ĐỦ - con số "toàn phiếu" là thứ giải
   // thích vì sao hồ sơ chưa tự chuyển bước, lọc theo vai sẽ báo sai.
   const chiTietHienThi = useMemo(
     () => locTieuChiHienThi(chiTietList, chamCtx),
@@ -272,14 +272,14 @@ const ChamDiemPhieu = () => {
   /**
    * Lọc và gom nhóm chỉ dành cho người nhìn CẢ phiếu (TK/TKL). Trưởng phòng đã
    * được locTieuChiHienThi cắt xuống đúng phần đơn vị mình được giao, nên với họ
-   * mọi thẻ đều là việc phải làm — thêm một lớp lọc nữa chỉ là bước thừa và có
+   * mọi thẻ đều là việc phải làm - thêm một lớp lọc nữa chỉ là bước thừa và có
    * nguy cơ giấu mất tiêu chí họ đang cần chấm.
    */
   const dungBoLoc = !laTruongPhong(user);
 
   /**
    * Rổ đang xem: ưu tiên lựa chọn tay, chưa chọn thì mở thẳng vào việc của mình.
-   * Trưởng khoa nhìn thấy CẢ phiếu nên vào bằng danh sách phẳng là rối nhất —
+   * Trưởng khoa nhìn thấy CẢ phiếu nên vào bằng danh sách phẳng là rối nhất -
    * mặc định này cắt nó xuống đúng phần phải thao tác.
    *
    * Chấm hết phần của mình → rổ CAN_XU_LY rỗng → tự rơi về "Tất cả" để màn hình
@@ -322,7 +322,7 @@ const ChamDiemPhieu = () => {
   /**
    * Tiến độ của TỪNG đơn vị, tính trên toàn bộ dòng của đơn vị đó chứ không theo
    * bộ lọc đang xem: đứng ở rổ "Đã chốt" mà nhóm nào cũng báo 4/4 thì con số vô
-   * nghĩa. Mẫu số là tiêu chí CHẤM TAY — giống tinhTienDoCham, vì dòng điểm tự
+   * nghĩa. Mẫu số là tiêu chí CHẤM TAY - giống tinhTienDoCham, vì dòng điểm tự
    * động không phải việc của đơn vị nào.
    *
    * `tuDong` đếm riêng chứ không cộng vào mẫu số: nó là lời giải thích cho khoảng
@@ -362,7 +362,7 @@ const ChamDiemPhieu = () => {
   );
   // Ba cột tong_diem_* của server chỉ có giá trị sau khi Trưởng khoa chốt hồ sơ,
   // tức là suốt cả bước thẩm định này header sẽ trống. Cộng tạm ở client để
-  // người chấm thấy điểm dồn tới đâu — luôn tính trên chiTietList đầy đủ, KHÔNG
+  // người chấm thấy điểm dồn tới đâu - luôn tính trên chiTietList đầy đủ, KHÔNG
   // phải danh sách đã lọc theo phạm vi của người đang xem.
   const tamTinh = useMemo(
     () => tinhTongDiemTamTinh(chiTietList, tieuChiMauMap),
@@ -391,7 +391,7 @@ const ChamDiemPhieu = () => {
         showToast(
           "success",
           "Đã thẩm định xong toàn hồ sơ",
-          "Đây là tiêu chí cuối cùng chưa chốt — hồ sơ đã tự chuyển sang chờ Trưởng khoa duyệt và rời khỏi hàng đợi thẩm định.",
+          "Đây là tiêu chí cuối cùng chưa chốt - hồ sơ đã tự chuyển sang chờ Trưởng khoa duyệt và rời khỏi hàng đợi thẩm định.",
           7000,
         );
       } else {
@@ -405,7 +405,7 @@ const ChamDiemPhieu = () => {
           "warn",
           "Dữ liệu đã thay đổi",
           error.message ||
-            "Hồ sơ vừa được người khác cập nhật. Màn hình đã tải lại — vui lòng kiểm tra rồi thao tác lại.",
+            "Hồ sơ vừa được người khác cập nhật. Màn hình đã tải lại - vui lòng kiểm tra rồi thao tác lại.",
           7000,
         );
       } else {
@@ -454,7 +454,7 @@ const ChamDiemPhieu = () => {
     );
   };
 
-  // Thẻ tiêu chí vẽ y hệt nhau ở cả hai kiểu bày (phẳng / gom nhóm theo đơn vị) —
+  // Thẻ tiêu chí vẽ y hệt nhau ở cả hai kiểu bày (phẳng / gom nhóm theo đơn vị) -
   // giữ một chỗ dựng để hai nhánh không lệch props.
   const veTheTieuChi = (ct) => {
     const choPhepNhap = oNhapDiemMo(ct, chamCtx);
@@ -578,7 +578,7 @@ const ChamDiemPhieu = () => {
             <i className="fa-solid fa-address-card"></i> Hồ sơ KPI giảng viên
           </button>
           {/* Hồ sơ đã đủ điều kiện chốt thì việc tiếp theo nằm ở màn hình của
-              Trưởng khoa — dẫn thẳng sang thay vì bắt người dùng tự tìm. */}
+              Trưởng khoa - dẫn thẳng sang thay vì bắt người dùng tự tìm. */}
           {vaiTro === "truongKhoa" &&
             phieu.TrangThai === TRANG_THAI.CHO_TK_DUYET && (
               <button
@@ -609,7 +609,7 @@ const ChamDiemPhieu = () => {
                   {nv.maNhanVien}
                 </span>
               )}
-              {nv.tenDonVi || "—"}
+              {nv.tenDonVi || "-"}
               {phieu.TenChucDanh ? ` · ${phieu.TenChucDanh}` : ""}
               {phieu.TenChucVu ? ` · ${phieu.TenChucVu}` : ""}
             </div>
@@ -759,7 +759,7 @@ const ChamDiemPhieu = () => {
       )}
 
       {/* Nói trước vì sao rổ này không có nút nào và vì sao nó không làm thanh
-          tiến độ nhích lên — nếu không, người thẩm định sẽ tưởng mình đang bị
+          tiến độ nhích lên - nếu không, người thẩm định sẽ tưởng mình đang bị
           khóa nhầm. */}
       {xemDiemTuDong && dongTheoBoLoc.length > 0 && (
         <div
@@ -833,7 +833,7 @@ const ChamDiemPhieu = () => {
                   <span className="cd-nhom-dv-toi">Đơn vị bạn</span>
                 )}
                 <span className="cd-nhom-dv-phai">
-                  {/* Đơn vị chỉ có dòng điểm tự động thì không có gì để chấm —
+                  {/* Đơn vị chỉ có dòng điểm tự động thì không có gì để chấm -
                       hiện 0/0 là bịa ra một phần việc không tồn tại. */}
                   {td && td.tong > 0 && (
                     <span
@@ -865,7 +865,7 @@ const ChamDiemPhieu = () => {
                       {td.tuDong} tự động
                     </span>
                   )}
-                  {/* Đang lọc thì số thẻ bày ra khác tổng của đơn vị — nói rõ
+                  {/* Đang lọc thì số thẻ bày ra khác tổng của đơn vị - nói rõ
                       "đang hiện" để nó không đá nhau với con số tiến độ. */}
                   <span className="cd-nhom-dv-dem">
                     {roDangXem === "tatCa"

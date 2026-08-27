@@ -6,7 +6,7 @@ import { formatNgayGio } from "../../utils/phieuApi";
  * Một tệp minh chứng gắn vào MỘT dòng kê khai giờ quy đổi.
  *
  * Song song với MinhChungNvkRow nhưng khoá theo `IdMinhChungKk` và đi endpoint
- * riêng của module — hai module không dùng chung bảng minh chứng nên đừng gộp.
+ * riêng của module - hai module không dùng chung bảng minh chứng nên đừng gộp.
  *
  * Module chỉ nhận PDF (server kiểm cả đuôi file lẫn chữ ký `%PDF-`) nên không có
  * nhánh "định dạng không xem trước được".
@@ -42,7 +42,7 @@ const MinhChungKeKhaiRow = ({ mc, onXem, onTai, onXoa, dangXoa = false }) => {
         >
           {nhan}
         </button>
-        <div className="cd-mc-meta">{meta || "—"}</div>
+        <div className="cd-mc-meta">{meta || "-"}</div>
       </div>
       <button
         type="button"

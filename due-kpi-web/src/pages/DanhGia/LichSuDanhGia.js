@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Toast } from 'primereact/toast';
-import '../../css/Pages.css';
-import '../../css/QuanLyChamDiem.css';
-import { useAuth } from '../../context/AuthContext';
-import { useNamDanhGia } from '../../hooks/useNamDanhGia';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Toast } from "primereact/toast";
+import "../../css/Pages.css";
+import "../../css/QuanLyChamDiem.css";
+import { useAuth } from "../../context/AuthContext";
+import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import {
   fetchPhieuDetail,
   fetchPhieuList,
@@ -15,14 +15,14 @@ import {
   TRANG_THAI,
   TRANG_THAI_DONG,
   TRANG_THAI_META,
-} from '../../utils/phieuApi';
-import { fetchDonViList, getTenDonViFromList } from '../../utils/donViApi';
+} from "../../utils/phieuApi";
+import { fetchDonViList, getTenDonViFromList } from "../../utils/donViApi";
 import {
   TrangThaiBadge,
   XepLoaiBadge,
-} from '../../components/QuanLyChamDiem/TrangThaiBadge';
-import TienDoCham from '../../components/QuanLyChamDiem/TienDoCham';
-import SearchSelect from '../../components/Common/SearchSelect';
+} from "../../components/QuanLyChamDiem/TrangThaiBadge";
+import TienDoCham from "../../components/QuanLyChamDiem/TienDoCham";
+import SearchSelect from "../../components/Common/SearchSelect";
 
 const PAGE_SIZE = 20;
 const SO_PHIEU_TAI_SONG_SONG = 5;
@@ -42,7 +42,7 @@ const MOI_TRANG_THAI = [
  * được engine chốt ngay trong giao dịch nộp phiếu nên gộp vào sẽ khiến thanh
  * tiến độ báo gần đầy khi chưa ai thẩm định.
  *
- * `choBoSung` đếm dòng đang mở yêu cầu trả về cho chủ phiếu — đây là phần việc
+ * `choBoSung` đếm dòng đang mở yêu cầu trả về cho chủ phiếu - đây là phần việc
  * của chính người đang xem bảng, nên tách riêng khỏi "chưa chốt".
  */
 const doTienDoPhieu = (phieu) => {
@@ -76,14 +76,14 @@ const LichSuDanhGia = () => {
   const { namList, selectedNam, dangTaiNam } = useNamDanhGia();
 
   const [donViList, setDonViList] = useState([]);
-  const [idDonVi, setIdDonVi] = useState('');
+  const [idDonVi, setIdDonVi] = useState("");
   const [rows, setRows] = useState([]);
   // IdPhieu -> tiến độ chấm. undefined = đang tải, null = tải hỏng.
   const [tienDoTheoPhieu, setTienDoTheoPhieu] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [idNam, setIdNam] = useState(''); // '' = mọi năm
+  const [idNam, setIdNam] = useState(""); // '' = mọi năm
   const [trangThaiChon, setTrangThaiChon] = useState([]); // rỗng = mọi trạng thái
-  const [sortBy, setSortBy] = useState('ngay_tao');
+  const [sortBy, setSortBy] = useState("ngay_tao");
   const [page, setPage] = useState(1);
   // Chỉ tải sau khi năm mặc định đã được gieo, nếu không lượt tải đầu tiên chạy
   // với bộ lọc rỗng rồi lập tức bị lượt thứ hai thay thế.
@@ -100,7 +100,7 @@ const LichSuDanhGia = () => {
   // Mặc định bám theo năm đang mở, người dùng vẫn chuyển sang "mọi năm" được.
   useEffect(() => {
     if (dangTaiNam) return;
-    setIdNam(String(selectedNam || ''));
+    setIdNam(String(selectedNam || ""));
     setDaSanSang(true);
   }, [dangTaiNam, selectedNam]);
 
@@ -119,8 +119,8 @@ const LichSuDanhGia = () => {
       });
       setRows(items);
     } catch (error) {
-      console.error('Lỗi tải danh sách phiếu của tôi:', error);
-      showToast('error', 'Lỗi', error.message);
+      console.error("Lỗi tải danh sách phiếu của tôi:", error);
+      showToast("error", "Lỗi", error.message);
       setRows([]);
     } finally {
       setIsLoading(false);
@@ -149,7 +149,7 @@ const LichSuDanhGia = () => {
 
     let daHuy = false;
     (async () => {
-      // Phiếu chưa nộp thì chưa ai chấm — bỏ qua để khỏi tốn một request cho ô
+      // Phiếu chưa nộp thì chưa ai chấm - bỏ qua để khỏi tốn một request cho ô
       // vốn chỉ hiện dòng chữ "chưa nộp".
       const ids = rows
         .filter((p) => Number(p.TrangThai) !== TRANG_THAI.NHAP)
@@ -163,7 +163,7 @@ const LichSuDanhGia = () => {
             try {
               return [id, doTienDoPhieu(await fetchPhieuDetail(id))];
             } catch (error) {
-              console.error('Lỗi tải tiến độ chấm của phiếu:', error);
+              console.error("Lỗi tải tiến độ chấm của phiếu:", error);
               return [id, null];
             }
           }),
@@ -186,18 +186,22 @@ const LichSuDanhGia = () => {
 
   const toggleTrangThai = (tt) => {
     setTrangThaiChon((cur) =>
-      cur.includes(tt) ? cur.filter((x) => x !== tt) : [...cur, tt].sort((a, b) => a - b),
+      cur.includes(tt)
+        ? cur.filter((x) => x !== tt)
+        : [...cur, tt].sort((a, b) => a - b),
     );
   };
 
   /**
-   * Ô "Trạng thái chấm". Phiếu chưa nộp thì không có gì để chấm — hiện 0/0 chỉ
+   * Ô "Trạng thái chấm". Phiếu chưa nộp thì không có gì để chấm - hiện 0/0 chỉ
    * bịa ra một phần việc chưa tồn tại.
    */
   const veTrangThaiCham = (p) => {
     if (Number(p.TrangThai) === TRANG_THAI.NHAP) {
       return (
-        <span style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic' }}>
+        <span
+          style={{ fontSize: "13px", color: "#94a3b8", fontStyle: "italic" }}
+        >
           Chưa nộp, chưa chấm
         </span>
       );
@@ -216,7 +220,7 @@ const LichSuDanhGia = () => {
     }
     if (td.tong === 0) {
       return (
-        <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+        <span style={{ fontSize: "13px", color: "#94a3b8" }}>
           Không có tiêu chí chấm tay
         </span>
       );
@@ -226,7 +230,7 @@ const LichSuDanhGia = () => {
       <div className="cd-progress-stack">
         <TienDoCham xong={td.xong} tong={td.tong} nhan="Đã chốt điểm" />
         {td.choBoSung > 0 && (
-          <div className="cd-progress-ghichu" style={{ color: '#c2410c' }}>
+          <div className="cd-progress-ghichu" style={{ color: "#c2410c" }}>
             <i className="fa-solid fa-rotate-left"></i> {td.choBoSung} tiêu chí
             chờ bạn bổ sung
           </div>
@@ -240,11 +244,18 @@ const LichSuDanhGia = () => {
       <Toast ref={toast} position="top-right" />
 
       <div className="page-header">
-        <h2 style={{ margin: 0, color: '#1e293b', fontSize: '22px', fontWeight: 700 }}>
+        <h2
+          style={{
+            margin: 0,
+            color: "#1e293b",
+            fontSize: "22px",
+            fontWeight: 700,
+          }}
+        >
           Phiếu đánh giá của tôi
         </h2>
         <span className="breadcrumb">
-          {currentUser.HoTen || 'Người dùng'} — toàn bộ phiếu KPI qua các năm
+          {currentUser.HoTen || "Người dùng"} - toàn bộ phiếu KPI qua các năm
         </span>
       </div>
 
@@ -255,7 +266,7 @@ const LichSuDanhGia = () => {
             value={idNam}
             onChange={(v) => setIdNam(v)}
             options={[
-              { value: '', label: '-- Tất cả các năm --' },
+              { value: "", label: "-- Tất cả các năm --" },
               ...namList.map((n) => ({
                 value: n.IdNam,
                 label: `Năm học ${n.IdNam}`,
@@ -273,7 +284,7 @@ const LichSuDanhGia = () => {
               value={idDonVi}
               onChange={(v) => setIdDonVi(v)}
               options={[
-                { value: '', label: '-- Tất cả đơn vị --' },
+                { value: "", label: "-- Tất cả đơn vị --" },
                 ...currentUser.DonVi.map((d) => ({
                   value: d.IdDonVi,
                   label: d.TenDonVi || d.MaDonVi,
@@ -290,8 +301,8 @@ const LichSuDanhGia = () => {
             value={sortBy}
             onChange={(v) => setSortBy(v)}
             options={[
-              { value: 'ngay_tao', label: 'Ngày tạo' },
-              { value: 'ngay_gui', label: 'Ngày gửi' },
+              { value: "ngay_tao", label: "Ngày tạo" },
+              { value: "ngay_gui", label: "Ngày gửi" },
             ]}
           />
         </div>
@@ -301,27 +312,30 @@ const LichSuDanhGia = () => {
           onClick={taiDanhSach}
           disabled={isLoading}
         >
-          <i className={`fa-solid fa-rotate${isLoading ? ' fa-spin' : ''}`}></i> Làm mới
+          <i className={`fa-solid fa-rotate${isLoading ? " fa-spin" : ""}`}></i>{" "}
+          Làm mới
         </button>
       </div>
 
       <div
         style={{
-          display: 'flex',
-          gap: '8px',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          marginBottom: '18px',
+          display: "flex",
+          gap: "8px",
+          flexWrap: "wrap",
+          alignItems: "center",
+          marginBottom: "18px",
         }}
       >
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Trạng thái:</span>
+        <span style={{ fontSize: "13px", fontWeight: 600, color: "#475569" }}>
+          Trạng thái:
+        </span>
         <button
           className="cd-status-badge"
           style={{
-            cursor: 'pointer',
-            background: trangThaiChon.length === 0 ? '#1d4ed8' : '#fff',
-            color: trangThaiChon.length === 0 ? '#fff' : '#475569',
-            borderColor: trangThaiChon.length === 0 ? '#1d4ed8' : '#e2e8f0',
+            cursor: "pointer",
+            background: trangThaiChon.length === 0 ? "#1d4ed8" : "#fff",
+            color: trangThaiChon.length === 0 ? "#fff" : "#475569",
+            borderColor: trangThaiChon.length === 0 ? "#1d4ed8" : "#e2e8f0",
           }}
           onClick={() => setTrangThaiChon([])}
         >
@@ -335,10 +349,10 @@ const LichSuDanhGia = () => {
               key={tt}
               className="cd-status-badge"
               style={{
-                cursor: 'pointer',
-                background: chon ? meta.bg : '#fff',
-                color: chon ? meta.color : '#94a3b8',
-                borderColor: chon ? meta.border : '#e2e8f0',
+                cursor: "pointer",
+                background: chon ? meta.bg : "#fff",
+                color: chon ? meta.color : "#94a3b8",
+                borderColor: chon ? meta.border : "#e2e8f0",
               }}
               onClick={() => toggleTrangThai(tt)}
             >
@@ -357,48 +371,75 @@ const LichSuDanhGia = () => {
         ) : rows.length === 0 ? (
           <div className="cd-empty">
             <i className="fa-solid fa-folder-open"></i>
-            <h3 style={{ color: '#334155', margin: '0 0 6px 0' }}>Không có phiếu nào</h3>
+            <h3 style={{ color: "#334155", margin: "0 0 6px 0" }}>
+              Không có phiếu nào
+            </h3>
             <p style={{ margin: 0 }}>
-              Bạn chưa có phiếu đánh giá khớp bộ lọc hiện tại. Thử chọn "Tất cả các năm".
+              Bạn chưa có phiếu đánh giá khớp bộ lọc hiện tại. Thử chọn "Tất cả
+              các năm".
             </p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="custom-table" style={{ minWidth: '1080px' }}>
+          <div style={{ overflowX: "auto" }}>
+            <table className="custom-table" style={{ minWidth: "1080px" }}>
               <thead>
                 <tr>
-                  <th style={{ width: '8%' }}>Năm học</th>
-                  <th style={{ width: '16%' }}>Đơn vị</th>
-                  <th style={{ width: '14%', textAlign: 'center' }}>Trạng thái</th>
-                  <th style={{ width: '18%' }}>Trạng thái chấm</th>
-                  <th style={{ width: '10%', textAlign: 'right' }}>Tổng điểm</th>
-                  <th style={{ width: '14%', textAlign: 'center' }}>Xếp loại</th>
-                  <th style={{ width: '10%' }}>Ngày gửi</th>
-                  <th style={{ width: '10%', textAlign: 'center' }}>Thao tác</th>
+                  <th style={{ width: "8%" }}>Năm học</th>
+                  <th style={{ width: "16%" }}>Đơn vị</th>
+                  <th style={{ width: "14%", textAlign: "center" }}>
+                    Trạng thái
+                  </th>
+                  <th style={{ width: "18%" }}>Trạng thái chấm</th>
+                  <th style={{ width: "10%", textAlign: "right" }}>
+                    Tổng điểm
+                  </th>
+                  <th style={{ width: "14%", textAlign: "center" }}>
+                    Xếp loại
+                  </th>
+                  <th style={{ width: "10%" }}>Ngày gửi</th>
+                  <th style={{ width: "10%", textAlign: "center" }}>
+                    Thao tác
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((p) => (
                   <tr key={p.IdPhieu}>
-                    <td style={{ fontWeight: 700, color: '#0f172a' }}>{p.IdNam}</td>
-                    <td style={{ fontSize: '13px', color: '#334155', fontWeight: 500 }}>
-                      {getTenDonViFromList(donViList, p.IdDonVi) || '—'}
+                    <td style={{ fontWeight: 700, color: "#0f172a" }}>
+                      {p.IdNam}
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td
+                      style={{
+                        fontSize: "13px",
+                        color: "#334155",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {getTenDonViFromList(donViList, p.IdDonVi) || "-"}
+                    </td>
+                    <td style={{ textAlign: "center" }}>
                       <TrangThaiBadge trangThai={p.TrangThai} />
                     </td>
                     <td>{veTrangThaiCham(p)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
+                    <td
+                      style={{
+                        textAlign: "right",
+                        fontWeight: 700,
+                        color: "#0f172a",
+                      }}
+                    >
                       {formatDiem(p.TongDiemTichLuy)}
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td style={{ textAlign: "center" }}>
                       <XepLoaiBadge xepLoai={p.XepLoai} />
                     </td>
-                    <td style={{ fontSize: '13px' }}>
+                    <td style={{ fontSize: "13px" }}>
                       {p.NgayGui ? (
                         formatNgay(p.NgayGui)
                       ) : (
-                        <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Chưa nộp</span>
+                        <span style={{ color: "#94a3b8", fontStyle: "italic" }}>
+                          Chưa nộp
+                        </span>
                       )}
                     </td>
                     {/* Bảng này chỉ để TRA CỨU. Lối vào form tự đánh giá nằm ở
@@ -411,7 +452,9 @@ const LichSuDanhGia = () => {
                           type="button"
                           className="action-btn view-btn"
                           title="Xem điểm từng tiêu chí, minh chứng và lịch sử chấm"
-                          onClick={() => navigate(`/lich-su-danh-gia/${p.IdPhieu}`)}
+                          onClick={() =>
+                            navigate(`/lich-su-danh-gia/${p.IdPhieu}`)
+                          }
                         >
                           <i className="fa-solid fa-list-check"></i>
                         </button>
@@ -419,7 +462,9 @@ const LichSuDanhGia = () => {
                           type="button"
                           className="action-btn view-btn"
                           title="Xem minh chứng của phiếu này"
-                          onClick={() => navigate(`/kho-minh-chung?idPhieu=${p.IdPhieu}`)}
+                          onClick={() =>
+                            navigate(`/kho-minh-chung?idPhieu=${p.IdPhieu}`)
+                          }
                         >
                           <i className="fa-solid fa-paperclip"></i>
                         </button>
@@ -436,20 +481,20 @@ const LichSuDanhGia = () => {
             <Paginator>: chỉ suy ra "còn trang sau" từ số dòng nhận được. */}
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '14px 20px',
-            borderTop: '1px solid #e2e8f0',
-            fontSize: '13px',
-            color: '#64748b',
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "14px 20px",
+            borderTop: "1px solid #e2e8f0",
+            fontSize: "13px",
+            color: "#64748b",
           }}
         >
           <span>Trang {page}</span>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: "flex", gap: "8px" }}>
             <button
               className="btn-cancel"
-              style={{ padding: '8px 14px' }}
+              style={{ padding: "8px 14px" }}
               disabled={page <= 1 || isLoading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
@@ -457,7 +502,7 @@ const LichSuDanhGia = () => {
             </button>
             <button
               className="btn-cancel"
-              style={{ padding: '8px 14px' }}
+              style={{ padding: "8px 14px" }}
               disabled={rows.length < PAGE_SIZE || isLoading}
               onClick={() => setPage((p) => p + 1)}
             >

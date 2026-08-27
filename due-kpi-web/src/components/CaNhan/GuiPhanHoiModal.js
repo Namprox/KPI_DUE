@@ -13,17 +13,17 @@ import {
  * Giảng viên gửi phản hồi về phân công của Khoa.
  *
  * ⚠️ Endpoint `POST /nhiem-vu-khoa/phan-hoi` CHỈ nhận `multipart/form-data`, kể
- * cả khi không đính kèm file — gửi JSON sẽ nhận 415. Việc dựng FormData nằm
+ * cả khi không đính kèm file - gửi JSON sẽ nhận 415. Việc dựng FormData nằm
  * trong `guiPhanHoi()` nên form này chỉ cần truyền giá trị thô.
  *
  * Hai loại phản hồi cần hai thứ khác nhau:
- *  - **Sai vai trò** BẮT BUỘC trỏ tới một nhiệm vụ của chính kỳ đó — chọn từ
+ *  - **Sai vai trò** BẮT BUỘC trỏ tới một nhiệm vụ của chính kỳ đó - chọn từ
  *    danh sách nhiệm vụ giảng viên đang được phân công.
  *  - **Thiếu nhiệm vụ** không trỏ tới nhiệm vụ nào (giảng viên KHÔNG tự tạo được
  *    nhiệm vụ), chỉ chọn nhóm gợi ý để Khoa biết xếp vào đâu.
  *
  * File là TUỲ CHỌN và được server đính kèm SAU khi phản hồi đã lưu, nên upload
- * lỗi không làm mất nội dung vừa gửi — trường hợp đó hiện cảnh báo nhẹ chứ không
+ * lỗi không làm mất nội dung vừa gửi - trường hợp đó hiện cảnh báo nhẹ chứ không
  * báo thất bại toàn bộ.
  */
 const GuiPhanHoiModal = ({
@@ -202,7 +202,7 @@ const GuiPhanHoiModal = ({
                 onChange={(v) => setIdNhiemVuKhoa(String(v ?? ""))}
                 options={nhiemVuCuaToi.map((nv) => ({
                   value: nv.IdNhiemVuKhoa,
-                  label: `${nv.TenNhiemVu} — ${nv.TenVaiTroSnapshot}`,
+                  label: `${nv.TenNhiemVu} - ${nv.TenVaiTroSnapshot}`,
                 }))}
                 placeholder="-- Chọn nhiệm vụ --"
                 searchable

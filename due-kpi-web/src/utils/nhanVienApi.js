@@ -1,8 +1,8 @@
-import { apiFetch } from './api';
+import { apiFetch } from "./api";
 
 /**
  * GET api/nhan-vien có PHÂN TRANG (pageSize mặc định 20, tối đa 200).
- * Gọi trần `apiFetch('nhan-vien')` chỉ lấy được 20 người đầu tiên — lỗi im lặng.
+ * Gọi trần `apiFetch('nhan-vien')` chỉ lấy được 20 người đầu tiên - lỗi im lặng.
  * Hàm này lặp qua toàn bộ trang để nạp đủ danh sách cho dropdown.
  */
 export const fetchAllNhanVien = async ({
@@ -18,12 +18,12 @@ export const fetchAllNhanVien = async ({
 
   do {
     const params = new URLSearchParams();
-    params.set('page', String(page));
-    params.set('pageSize', String(pageSize));
-    if (trangThai != null) params.set('trangThai', String(trangThai));
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+    if (trangThai != null) params.set("trangThai", String(trangThai));
     if (idDonVi) {
-      params.set('idDonVi', String(idDonVi));
-      if (baoGomDonViCon) params.set('baoGomDonViCon', 'true');
+      params.set("idDonVi", String(idDonVi));
+      if (baoGomDonViCon) params.set("baoGomDonViCon", "true");
     }
 
     const response = await apiFetch(`nhan-vien?${params.toString()}`);
@@ -37,7 +37,7 @@ export const fetchAllNhanVien = async ({
 
   if (page > maxPages && page <= totalPages) {
     console.warn(
-      `[fetchAllNhanVien] Đã chạm giới hạn ${maxPages} trang, danh sách nhân viên có thể bị thiếu.`
+      `[fetchAllNhanVien] Đã chạm giới hạn ${maxPages} trang, danh sách nhân viên có thể bị thiếu.`,
     );
   }
 

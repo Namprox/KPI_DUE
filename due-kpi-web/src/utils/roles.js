@@ -2,12 +2,12 @@
  * Mã chức vụ, chức danh nghề nghiệp và các tập quyền dùng chung toàn hệ thống.
  *
  * Đây là nơi DUY NHẤT định nghĩa "nhóm nào gồm những ai".
- * Sidebar, route guard và các trang đều phải lấy từ đây — không khai lại
+ * Sidebar, route guard và các trang đều phải lấy từ đây - không khai lại
  * mảng vai trò rời rạc trong từng file như trước.
  *
  * Hệ thống có HAI trục phân quyền độc lập, đừng trộn lẫn:
- *  - CHỨC VỤ (`nhan_vien.MaChucVu`: ADMIN/HT/TK/TKK/...) — "đang giữ vị trí gì".
- *  - CHỨC DANH nghề nghiệp (`nhan_vien.IdChucDanh`: GV/GVC/CV/...) — "ngạch gì".
+ *  - CHỨC VỤ (`nhan_vien.MaChucVu`: ADMIN/HT/TK/TKK/...) - "đang giữ vị trí gì".
+ *  - CHỨC DANH nghề nghiệp (`nhan_vien.IdChucDanh`: GV/GVC/CV/...) - "ngạch gì".
  * Phiếu KPI Giảng viên / KPI Nhân viên là hai biểu mẫu khác nhau nên chia theo
  * chức danh; các màn hình quản trị chia theo chức vụ.
  *
@@ -17,7 +17,9 @@
 
 /** Chuẩn hóa mã chức vụ về chữ hoa, không khoảng trắng thừa. */
 export const normalizeRole = (user) =>
-  String(user?.MaChucVu || "").trim().toUpperCase();
+  String(user?.MaChucVu || "")
+    .trim()
+    .toUpperCase();
 
 export const ROLE = {
   ADMIN: "ADMIN",
@@ -51,7 +53,7 @@ export const ROLE_SETS = {
   ],
 
   /**
-   * Trưởng Khoa và Trưởng Khoa lớn — xem số liệu Khoa mình phụ trách, và là
+   * Trưởng Khoa và Trưởng Khoa lớn - xem số liệu Khoa mình phụ trách, và là
    * nhóm DUY NHẤT được thực hiện giai đoạn 3–4 của quy trình đánh giá: chốt hồ
    * sơ cá nhân kèm chọn xếp loại, trả dòng về đơn vị thẩm định, đóng gói và
    * trình tờ trình KPI Khoa.
@@ -64,7 +66,7 @@ export const ROLE_SETS = {
 
   /**
    * Cấp Trường trong quy trình đánh giá: duyệt / trả lại GÓI KPI của Khoa, mở
-   * lại phiếu đã hoàn tất. Hiệu trưởng KHÔNG còn duyệt từng phiếu lẻ — đơn vị
+   * lại phiếu đã hoàn tất. Hiệu trưởng KHÔNG còn duyệt từng phiếu lẻ - đơn vị
    * thao tác là cả tờ trình.
    *
    * Admin có mặt để xem và hỗ trợ vận hành; riêng thao tác duyệt gói và mở lại
@@ -75,7 +77,7 @@ export const ROLE_SETS = {
   /**
    * Thiết lập kỳ đánh giá của toàn trường: mở/đóng năm, chốt mốc thời gian.
    *
-   * Hẹp hơn QUAN_TRI vì một năm đánh giá chi phối tất cả các Khoa — PHT, Trưởng
+   * Hẹp hơn QUAN_TRI vì một năm đánh giá chi phối tất cả các Khoa - PHT, Trưởng
    * Khoa và Trưởng Bộ môn chỉ làm việc trong năm đã mở, không tự mở năm mới.
    * Trùng thành viên với CAP_TRUONG nhưng tách riêng: bên kia là thẩm quyền
    * duyệt gói KPI, đổi một tập không kéo theo tập còn lại.
@@ -83,7 +85,7 @@ export const ROLE_SETS = {
   NAM_DANH_GIA: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
 
   /**
-   * Trưởng đơn vị — nhóm được chấm điểm cấp Khoa cho phiếu KPI cá nhân.
+   * Trưởng đơn vị - nhóm được chấm điểm cấp Khoa cho phiếu KPI cá nhân.
    * Gồm cả Trưởng Phòng: phòng ban ngoài Khoa vẫn được giao chấm một số tiêu
    * chí qua bảng `tieu_chi_don_vi_cham` (ví dụ P.QLCL chấm tiêu chí phản hồi SV).
    * Ai chấm được tiêu chí NÀO thì server quyết; ở đây chỉ mở cửa vào màn hình.
@@ -91,12 +93,12 @@ export const ROLE_SETS = {
   TRUONG_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG],
 
   /**
-   * Ghi nhận vi phạm giảng dạy — hợp của QUAN_TRI và TRUONG_DON_VI.
+   * Ghi nhận vi phạm giảng dạy - hợp của QUAN_TRI và TRUONG_DON_VI.
    *
    * Màn hình này trước đây có hai lối vào ở hai nhóm menu khác nhau (nhóm
    * quản trị dữ liệu và nhóm chấm điểm của trưởng đơn vị); nay gộp làm một mục
    * duy nhất nên tập vai trò cũng phải gộp theo. Ai ghi nhận được loại vi phạm
-   * NÀO và cho đơn vị nào thì server quyết — xem thêm viPhamPermissions.js.
+   * NÀO và cho đơn vị nào thì server quyết - xem thêm viPhamPermissions.js.
    */
   GHI_NHAN_VI_PHAM: [
     ROLE.ADMIN,
@@ -112,7 +114,7 @@ export const ROLE_SETS = {
    * Nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò (KPI Nhóm III).
    *
    * Module chỉ áp dụng cho KHOA (`ma_don_vi LIKE 'K_%'`) nên Trưởng Phòng bị
-   * loại — gọi với đơn vị khác server trả `KHONG_PHAI_KHOA`. Thư ký Khoa có mặt
+   * loại - gọi với đơn vị khác server trả `KHONG_PHAI_KHOA`. Thư ký Khoa có mặt
    * vì thực tế họ là người gõ dữ liệu, nhưng CHỐT KỲ là thẩm quyền của trưởng
    * đơn vị: đừng suy quyền thao tác từ tập này, hãy đọc cờ `CanNhap` / `CanChot`
    * do endpoint `/nhiem-vu-khoa/ky` trả về.
@@ -124,7 +126,7 @@ export const ROLE_SETS = {
    *
    * Khớp đúng `fn_ke_khai_gio_quy_doi_quyen` phía server: TK/TKL/TP duyệt trong
    * phạm vi đơn vị mình + đơn vị con, HT và Admin thấy toàn trường. Thư ký Khoa
-   * CỐ Ý bị loại — duyệt là thẩm quyền của trưởng đơn vị, giống nhiệm vụ Khoa.
+   * CỐ Ý bị loại - duyệt là thẩm quyền của trưởng đơn vị, giống nhiệm vụ Khoa.
    *
    * Rộng hơn TRUONG_DON_VI vì có thêm HT/Admin, nên đừng dùng lẫn hai tập: đổi
    * một bên không kéo theo bên kia.
@@ -153,7 +155,7 @@ export const ROLE_SETS = {
    * Màn hình NHẬP phiếu KPI đơn vị (/danh-gia-kpi-don-vi).
    *
    * Hẹp hơn DANH_GIA_DON_VI một cách CỐ Ý: màn hình hiện chỉ dựng đúng phần việc
-   * cấp 1 của quy trình — lập phiếu, gõ điểm tiêu chí chấm tay, tổng hợp KPI
+   * cấp 1 của quy trình - lập phiếu, gõ điểm tiêu chí chấm tay, tổng hợp KPI
    * thành viên, trình lên Trưởng đơn vị. Các bước duyệt (Trưởng đơn vị → Hiệu
    * trưởng → chốt) đã có endpoint nhưng chưa có màn hình, nên mở cửa cho TK/TKL/
    * TP/TKP vào đây chỉ dẫn họ tới một trang không làm được việc của họ.
@@ -163,12 +165,37 @@ export const ROLE_SETS = {
   NHAP_PHIEU_DON_VI: [ROLE.THU_KY_KHOA],
 
   /**
+   * Màn hình đánh giá KPI PHÒNG / TRUNG TÂM (/danh-gia-kpi-phong).
+   *
+   * Rộng hơn NHAP_PHIEU_DON_VI vì màn hình này dựng TRỌN vòng đời của phiếu, nên
+   * cả bốn vai trò trong quy trình đều có việc để làm ở đây:
+   *   TKP  nhập điểm rồi trình               (trạng thái 1)
+   *   TP   chấm đè lên điểm thư ký, duyệt    (trạng thái 2)
+   *   HT   chấm lớp cuối, duyệt, chốt, mở lại (trạng thái 3, 4, 5)
+   * Admin có mặt để xem và hỗ trợ vận hành; các thao tác mà SP chỉ chấp nhận
+   * đúng mã HT thì Admin gọi vẫn nhận 403.
+   *
+   * CỐ Ý không gộp vào NHAP_PHIEU_DON_VI: tập đó gác màn hình KPI Khoa, nơi mới
+   * chỉ dựng phần việc cấp 1 - mở cửa cho TP/HT vào đó chỉ dẫn họ tới một trang
+   * không làm được việc của họ.
+   *
+   * Ai làm được gì trên MỘT phiếu cụ thể thì quyenPhieuPhong() trong
+   * phieuPhongApi.js quyết; tập này chỉ mở cửa vào màn hình.
+   */
+  KPI_PHONG: [
+    ROLE.THU_KY_PHONG,
+    ROLE.TRUONG_PHONG,
+    ROLE.HIEU_TRUONG,
+    ROLE.ADMIN,
+  ],
+
+  /**
    * Giám sát hoạt động giảng dạy toàn trường: quản lý phiếu khảo sát ý kiến
    * sinh viên (/quan-ly-danh-gia-sinh-vien) và tổng hợp điểm trừ vi phạm
    * (/tong-hop-vi-pham).
    *
    * Nghiệp vụ của đúng MỘT phòng chuyên trách, nên PHẢI đi kèm
-   * DON_VI_SETS.GIAM_SAT_GIANG_DAY — trưởng phòng của phòng khác không có việc
+   * DON_VI_SETS.GIAM_SAT_GIANG_DAY - trưởng phòng của phòng khác không có việc
    * gì ở các màn hình này. Admin nằm ngoài ràng buộc đơn vị, xem hasDonVi().
    */
   GIAM_SAT_GIANG_DAY: [ROLE.TRUONG_PHONG, ROLE.ADMIN],
@@ -181,18 +208,21 @@ export const ROLE_SETS = {
 export const hasRole = (roles, user) => {
   if (roles === MOI_NGUOI) return true;
   if (!Array.isArray(roles) || roles.length === 0) return false; // fail closed
-  
+
   const mainRole = normalizeRole(user);
   if (roles.includes(mainRole)) return true;
 
   // HT và ADMIN có hiệu lực toàn hệ thống
   if (mainRole === ROLE.ADMIN && roles.includes(ROLE.ADMIN)) return true;
-  if (mainRole === ROLE.HIEU_TRUONG && roles.includes(ROLE.HIEU_TRUONG)) return true;
+  if (mainRole === ROLE.HIEU_TRUONG && roles.includes(ROLE.HIEU_TRUONG))
+    return true;
 
   // Kiểm tra vai trò trên từng đơn vị kiêm nhiệm (DonVi[])
   if (Array.isArray(user?.DonVi)) {
     return user.DonVi.some((dv) => {
-      const r = String(dv.MaChucVu || "").trim().toUpperCase();
+      const r = String(dv.MaChucVu || "")
+        .trim()
+        .toUpperCase();
       return r && roles.includes(r);
     });
   }
@@ -220,16 +250,29 @@ export const coQuyenTaiDonVi = (roles, idDonVi, user) => {
   const mainRole = normalizeRole(user);
 
   // HT và ADMIN có hiệu lực toàn hệ thống, không ràng buộc đơn vị
-  if (mainRole === ROLE.ADMIN && (roleArray.includes(ROLE.ADMIN) || roleArray.includes(MOI_NGUOI))) return true;
-  if (mainRole === ROLE.HIEU_TRUONG && (roleArray.includes(ROLE.HIEU_TRUONG) || roleArray.includes(MOI_NGUOI))) return true;
+  if (
+    mainRole === ROLE.ADMIN &&
+    (roleArray.includes(ROLE.ADMIN) || roleArray.includes(MOI_NGUOI))
+  )
+    return true;
+  if (
+    mainRole === ROLE.HIEU_TRUONG &&
+    (roleArray.includes(ROLE.HIEU_TRUONG) || roleArray.includes(MOI_NGUOI))
+  )
+    return true;
 
-  const donViList = Array.isArray(user?.DonVi) && user.DonVi.length > 0
-    ? user.DonVi
-    : (user?.IdDonVi ? [{ IdDonVi: user.IdDonVi, MaChucVu: user.MaChucVu, LaChinh: true }] : []);
+  const donViList =
+    Array.isArray(user?.DonVi) && user.DonVi.length > 0
+      ? user.DonVi
+      : user?.IdDonVi
+        ? [{ IdDonVi: user.IdDonVi, MaChucVu: user.MaChucVu, LaChinh: true }]
+        : [];
 
   if (idDonVi == null || idDonVi === "") {
     return donViList.some((dv) => {
-      const dvRole = String(dv.MaChucVu || "").trim().toUpperCase();
+      const dvRole = String(dv.MaChucVu || "")
+        .trim()
+        .toUpperCase();
       return dvRole && roleArray.includes(dvRole);
     });
   }
@@ -237,7 +280,9 @@ export const coQuyenTaiDonVi = (roles, idDonVi, user) => {
   const targetId = Number(idDonVi);
   return donViList.some((dv) => {
     if (Number(dv.IdDonVi) !== targetId) return false;
-    const dvRole = String(dv.MaChucVu || "").trim().toUpperCase();
+    const dvRole = String(dv.MaChucVu || "")
+      .trim()
+      .toUpperCase();
     return dvRole && roleArray.includes(dvRole);
   });
 };
@@ -249,14 +294,14 @@ export const coQuyenTaiDonVi = (roles, idDonVi, user) => {
 /**
  * Tập id chức danh theo loại phiếu KPI.
  *
- * Đây là ID trong bảng `chuc_danh_nghe_nghiep`, KHÔNG phải mã chức danh —
+ * Đây là ID trong bảng `chuc_danh_nghe_nghiep`, KHÔNG phải mã chức danh -
  * đổi dữ liệu danh mục thì phải sửa lại ở đây (và ở BLL tương ứng).
  */
 export const CHUC_DANH_SETS = {
-  /** Ngạch giảng viên — dùng phiếu KPI Giảng viên (Phụ lục 2). */
+  /** Ngạch giảng viên - dùng phiếu KPI Giảng viên (Phụ lục 2). */
   GIANG_VIEN: [3, 4, 5, 6, 7],
 
-  /** Ngạch viên chức / người lao động — dùng phiếu KPI Nhân viên. */
+  /** Ngạch viên chức / người lao động - dùng phiếu KPI Nhân viên. */
   NHAN_VIEN: [8, 9, 10],
 };
 
@@ -292,7 +337,9 @@ export const duongDanPhieuTuDanhGia = (user, idNam) => {
     return `/danh-gia-kpi-nhan-vien${query}`;
   }
   if (Array.isArray(user?.DonVi) && user.DonVi.length > 0) {
-    const coKhoa = user.DonVi.some((d) => String(d.MaDonVi || "").startsWith("K_"));
+    const coKhoa = user.DonVi.some((d) =>
+      String(d.MaDonVi || "").startsWith("K_"),
+    );
     if (coKhoa && user?.IdChucDanh) return `/danh-gia-phu-luc-2${query}`;
     return `/danh-gia-kpi-nhan-vien${query}`;
   }
@@ -333,7 +380,7 @@ export const hasDonVi = (donVi, user) => {
   if (donVi == null) return true;
   if (normalizeRole(user) === ROLE.ADMIN) return true;
   if (!Array.isArray(donVi) || donVi.length === 0) return false; // fail closed
-  
+
   const id = normalizeDonVi(user);
   if (id != null && donVi.includes(id)) return true;
 

@@ -1,5 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useNavigate } from "react-router-dom";
 import {
   fetchBaoCaoTongQuan,
   fetchThamDinhPending,
@@ -8,20 +14,20 @@ import {
   TRANG_THAI,
   TRANG_THAI_META,
   XEP_LOAI_META,
-} from '../../utils/phieuApi';
+} from "../../utils/phieuApi";
 import {
   fetchToTrinhDetail,
   fetchToTrinhList,
   tinhHanNgach,
   TRANG_THAI_TO_TRINH,
   TY_LE_XUAT_SAC_MAC_DINH,
-} from '../../utils/toTrinhApi';
-import { TRANG_THAI_CHUA_LAP_META } from '../../utils/chuaLapPhieu';
-import { useChuaTuCham } from '../../hooks/useChuaTuCham';
-import { TrangThaiToTrinhBadge } from './TrangThaiBadge';
-import TienDoCham from './TienDoCham';
+} from "../../utils/toTrinhApi";
+import { TRANG_THAI_CHUA_LAP_META } from "../../utils/chuaLapPhieu";
+import { useChuaTuCham } from "../../hooks/useChuaTuCham";
+import { TrangThaiToTrinhBadge } from "./TrangThaiBadge";
+import TienDoCham from "./TienDoCham";
 
-/** Thứ tự hiển thị của bảng xếp loại — mức cao trước, giống mọi bảng kết quả khác. */
+/** Thứ tự hiển thị của bảng xếp loại - mức cao trước, giống mọi bảng kết quả khác. */
 const THU_TU_XEP_LOAI = [4, 3, 2, 1];
 
 /**
@@ -34,12 +40,12 @@ const THU_TU_XEP_LOAI = [4, 3, 2, 1];
  * đang chờ mình duyệt, xanh lá = xong, xám = chưa cần đụng tới.
  */
 const MAU_O_ICON = {
-  'chua-lap': { background: '#fdecec', color: '#b91c1c' },
-  1: { background: '#eef0f6', color: '#565c74' },
-  2: { background: '#fef3e0', color: '#b4680a' },
-  3: { background: '#eef1fb', color: '#003399' },
-  4: { background: '#eaf7ee', color: '#15803d' },
-  5: { background: '#eef0f6', color: '#565c74' },
+  "chua-lap": { background: "#fdecec", color: "#b91c1c" },
+  1: { background: "#eef0f6", color: "#565c74" },
+  2: { background: "#fef3e0", color: "#b4680a" },
+  3: { background: "#eef1fb", color: "#003399" },
+  4: { background: "#eaf7ee", color: "#15803d" },
+  5: { background: "#eef0f6", color: "#565c74" },
 };
 
 /** Gói đã chạy thuật toán hạn ngạch → cột XepLoai mới có nghĩa. */
@@ -53,7 +59,7 @@ const TRANG_THAI_DA_AP_HAN_NGACH = [
  * Khối tổng quan KPI cấp Khoa trên trang chủ của Trưởng khoa / Trưởng khoa lớn.
  *
  * Ba endpoint chính đều tự kẹp phạm vi theo `ma_chuc_vu` trong JWT (TK/TKL chỉ
- * thấy cây đơn vị mình), nên KHÔNG truyền idDonVi — truyền vào chỉ thu hẹp thêm,
+ * thấy cây đơn vị mình), nên KHÔNG truyền idDonVi - truyền vào chỉ thu hẹp thêm,
  * và với Trưởng khoa lớn còn cắt mất các Khoa con. `idDonVi` ở đây dùng cho đúng
  * hai việc: chọn gói tờ trình của chính đơn vị mình, và làm gốc cây cho danh bạ
  * đối chiếu người chưa lập phiếu.
@@ -61,11 +67,11 @@ const TRANG_THAI_DA_AP_HAN_NGACH = [
  * Hai con số KHÔNG lấy từ báo cáo server, vì server không trả được:
  *
  *  - Người chưa lập phiếu: phiếu chỉ tồn tại sau khi giảng viên bấm lưu lần đầu,
- *    nên họ vắng mặt trong mọi endpoint đọc `phieu_danh_gia` — kể cả TongSoPhieu.
+ *    nên họ vắng mặt trong mọi endpoint đọc `phieu_danh_gia` - kể cả TongSoPhieu.
  *    Ghép ở client qua useChuaTuCham (danh bạ trừ đi danh sách phiếu).
  *  - Phân bố xếp loại: `DemTheoXepLoai` của /bao-cao/tong-quan chỉ đếm phiếu
  *    trang_thai = 5, tức sau khi Hiệu trưởng duyệt cả gói. Suốt mùa đánh giá nó
- *    rỗng — đúng lúc Trưởng khoa cần nhìn nhất. Ở đây đếm từ HoSo[] của tờ trình,
+ *    rỗng - đúng lúc Trưởng khoa cần nhìn nhất. Ở đây đếm từ HoSo[] của tờ trình,
  *    nguồn duy nhất có xếp loại ở MỌI giai đoạn.
  */
 const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
@@ -75,7 +81,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
   const [soDongThamDinh, setSoDongThamDinh] = useState(null);
   const [goi, setGoi] = useState(null);
   const [dangTai, setDangTai] = useState(true);
-  const [loi, setLoi] = useState('');
+  const [loi, setLoi] = useState("");
 
   const {
     chuaLapPhieu,
@@ -87,23 +93,25 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
   const tai = useCallback(async () => {
     if (!idNam) return;
     setDangTai(true);
-    setLoi('');
+    setLoi("");
 
     const [tq, td, ds] = await Promise.allSettled([
       fetchBaoCaoTongQuan({ idNam }),
-      // Chỉ cần TongSoDong nên lấy trang nhỏ nhất — không dòng nào được dùng tới.
+      // Chỉ cần TongSoDong nên lấy trang nhỏ nhất - không dòng nào được dùng tới.
       fetchThamDinhPending({ idNam, pageSize: 1 }),
       fetchToTrinhList({ idNam }),
     ]);
 
-    setTongQuan(tq.status === 'fulfilled' ? tq.value : null);
-    // Trưởng khoa không được giao tiêu chí nào thì endpoint trả 403 — đó là cấu
+    setTongQuan(tq.status === "fulfilled" ? tq.value : null);
+    // Trưởng khoa không được giao tiêu chí nào thì endpoint trả 403 - đó là cấu
     // hình hợp lệ, không phải lỗi: để null và ẩn hẳn dòng việc tương ứng.
-    setSoDongThamDinh(td.status === 'fulfilled' ? td.value.tongSoDong : null);
+    setSoDongThamDinh(td.status === "fulfilled" ? td.value.tongSoDong : null);
 
-    const dsGoi = ds.status === 'fulfilled' ? ds.value : [];
+    const dsGoi = ds.status === "fulfilled" ? ds.value : [];
     const goiCuaToi =
-      dsGoi.find((t) => Number(t.IdDonVi) === Number(idDonVi)) || dsGoi[0] || null;
+      dsGoi.find((t) => Number(t.IdDonVi) === Number(idDonVi)) ||
+      dsGoi[0] ||
+      null;
 
     if (!goiCuaToi) {
       setGoi(null);
@@ -113,14 +121,14 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
       } catch (error) {
         // Dòng tóm tắt trong danh sách vẫn đủ dựng khối gói; chỉ mất phân bố xếp
         // loại vì HoSo[] chỉ có ở endpoint chi tiết.
-        console.error('Lỗi tải chi tiết gói KPI Khoa:', error);
+        console.error("Lỗi tải chi tiết gói KPI Khoa:", error);
         setGoi(goiCuaToi);
       }
     }
 
-    if (tq.status === 'rejected') {
-      console.error('Lỗi tải báo cáo tổng quan Khoa:', tq.reason);
-      setLoi(tq.reason?.message || 'Không tải được số liệu KPI của Khoa');
+    if (tq.status === "rejected") {
+      console.error("Lỗi tải báo cáo tổng quan Khoa:", tq.reason);
+      setLoi(tq.reason?.message || "Không tải được số liệu KPI của Khoa");
     }
     setDangTai(false);
   }, [idNam, idDonVi]);
@@ -168,7 +176,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
   const theTrangThai = useMemo(
     () => [
       {
-        key: 'chua-lap',
+        key: "chua-lap",
         meta: TRANG_THAI_CHUA_LAP_META,
         soLuong: dangTaiChuaLap ? null : soChuaLap,
       },
@@ -185,31 +193,31 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
     () =>
       [
         {
-          key: 'chot',
+          key: "chot",
           so: soChoToiChot,
-          nhan: 'hồ sơ chờ bạn chốt và chọn xếp loại',
-          icon: 'fa-user-check',
-          mau: '#003399',
-          nen: '#eef1fb',
-          duongDan: '/quan-ly/duyet-ho-so',
+          nhan: "hồ sơ chờ bạn chốt và chọn xếp loại",
+          icon: "fa-user-check",
+          mau: "#003399",
+          nen: "#eef1fb",
+          duongDan: "/quan-ly/duyet-ho-so",
         },
         {
-          key: 'tham-dinh',
+          key: "tham-dinh",
           so: soDongThamDinh,
-          nhan: 'dòng tiêu chí đơn vị bạn phải thẩm định',
-          icon: 'fa-clipboard-check',
-          mau: '#b4680a',
-          nen: '#fef3e0',
-          duongDan: '/quan-ly/cho-cham',
+          nhan: "dòng tiêu chí đơn vị bạn phải thẩm định",
+          icon: "fa-clipboard-check",
+          mau: "#b4680a",
+          nen: "#fef3e0",
+          duongDan: "/quan-ly/cho-cham",
         },
         {
-          key: 'chua-lap',
+          key: "chua-lap",
           so: dangTaiChuaLap ? 0 : soChuaLap,
-          nhan: 'người chưa lập phiếu, cần nhắc nộp',
-          icon: 'fa-user-slash',
-          mau: '#b91c1c',
-          nen: '#fdecec',
-          duongDan: '/quan-ly/bao-cao',
+          nhan: "người chưa lập phiếu, cần nhắc nộp",
+          icon: "fa-user-slash",
+          mau: "#b91c1c",
+          nen: "#fdecec",
+          duongDan: "/quan-ly/bao-cao",
         },
       ].filter((v) => Number(v.so) > 0),
     [soChoToiChot, soDongThamDinh, soChuaLap, dangTaiChuaLap],
@@ -219,7 +227,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
    * Xếp loại của cả Khoa, đếm từ HoSo[] của gói.
    *
    * `XepLoai` chỉ được ghi ở bước đóng gói (và chỉ ở đó mới có mức 4), nên trước
-   * đó phải rơi về `XepLoaiKhoa` — mức Trưởng khoa chọn tay, trần là 3. Hai cột
+   * đó phải rơi về `XepLoaiKhoa` - mức Trưởng khoa chọn tay, trần là 3. Hai cột
    * này khác nghĩa nên nhãn hiển thị phải đổi theo trạng thái gói.
    */
   const phanBoXepLoai = useMemo(() => {
@@ -236,7 +244,9 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
     return { dem, chuaXep, tong: hoSo.length };
   }, [goi]);
 
-  const daApHanNgach = TRANG_THAI_DA_AP_HAN_NGACH.includes(Number(goi?.TrangThai));
+  const daApHanNgach = TRANG_THAI_DA_AP_HAN_NGACH.includes(
+    Number(goi?.TrangThai),
+  );
 
   /**
    * `NgayDongGoi` là dấu hiệu đáng tin duy nhất cho "đã có số liệu hạn ngạch
@@ -246,7 +256,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
   const daTinhHanNgach = goi?.NgayDongGoi != null;
 
   /**
-   * Mẫu số hạn ngạch — đếm PHIẾU, không đếm đầu người.
+   * Mẫu số hạn ngạch - đếm PHIẾU, không đếm đầu người.
    *
    * `so_giang_vien = COUNT(phiếu trong gói WHERE loai_doi_tuong = 1)`, xem
    * docs/schema_ghi_chu.md §8.2 và chú thích cột trong docs/schema.sql. Giảng viên
@@ -267,7 +277,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
     [goi],
   );
 
-  /** Giảng viên chưa lập phiếu — nhóm bị mẫu số bỏ sót. Viên chức/NLĐ không tính. */
+  /** Giảng viên chưa lập phiếu - nhóm bị mẫu số bỏ sót. Viên chức/NLĐ không tính. */
   const soGvChuaLapPhieu = useMemo(
     () =>
       chuaLapPhieu.filter(
@@ -276,9 +286,14 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
     [chuaLapPhieu],
   );
 
-  const mauSoHienTai = daTinhHanNgach ? (goi?.SoGiangVien ?? soGvCoPhieu) : soGvCoPhieu;
+  const mauSoHienTai = daTinhHanNgach
+    ? (goi?.SoGiangVien ?? soGvCoPhieu)
+    : soGvCoPhieu;
   const soGvToanKhoa = soGvCoPhieu + soGvChuaLapPhieu;
-  const hanNgachHienTai = useMemo(() => tinhHanNgach(mauSoHienTai), [mauSoHienTai]);
+  const hanNgachHienTai = useMemo(
+    () => tinhHanNgach(mauSoHienTai),
+    [mauSoHienTai],
+  );
 
   if (dangTai) {
     return (
@@ -295,8 +310,11 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
     <>
       <p className="sub-title tqk-title">
         TỔNG QUAN KPI KHOA
-        {goi?.TenDonVi ? ` — ${goi.TenDonVi.toUpperCase()}` : ''}
-        <button className="cd-link-btn" onClick={() => navigate('/quan-ly/bao-cao')}>
+        {goi?.TenDonVi ? ` - ${goi.TenDonVi.toUpperCase()}` : ""}
+        <button
+          className="cd-link-btn"
+          onClick={() => navigate("/quan-ly/bao-cao")}
+        >
           Xem báo cáo đầy đủ <i className="fa-solid fa-arrow-right"></i>
         </button>
       </p>
@@ -315,12 +333,12 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
           tong={soPhaiNop}
           ghiChu={
             // Chỉ giữ lại hai trạng thái BẤT THƯỜNG của mẫu số: đang đối chiếu và
-            // đối chiếu hỏng. Trường hợp bình thường không cần chú thích — số người
+            // đối chiếu hỏng. Trường hợp bình thường không cần chú thích - số người
             // chưa lập phiếu đã có thẻ đếm riêng ngay bên dưới.
             dangTaiChuaLap
-              ? 'Đang đối chiếu danh bạ đơn vị...'
+              ? "Đang đối chiếu danh bạ đơn vị..."
               : loiChuaLap
-                ? 'Mẫu số chỉ gồm người đã có phiếu — không đối chiếu được danh bạ.'
+                ? "Mẫu số chỉ gồm người đã có phiếu - không đối chiếu được danh bạ."
                 : undefined
           }
         />
@@ -337,12 +355,19 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
           <div className="stat-card" key={t.key}>
             <div
               className="stat-icon-box"
-              style={MAU_O_ICON[t.key] || { background: t.meta.bg, color: t.meta.color }}
+              style={
+                MAU_O_ICON[t.key] || {
+                  background: t.meta.bg,
+                  color: t.meta.color,
+                }
+              }
             >
               <i className={`fa-solid ${t.meta.icon}`}></i>
             </div>
             <div className="stat-label">{t.meta.label}</div>
-            <div className="stat-value">{t.soLuong == null ? '…' : t.soLuong}</div>
+            <div className="stat-value">
+              {t.soLuong == null ? "…" : t.soLuong}
+            </div>
           </div>
         ))}
       </div>
@@ -356,7 +381,10 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
               key={v.key}
               onClick={() => navigate(v.duongDan)}
             >
-              <span className="tqk-viec-icon" style={{ background: v.nen, color: v.mau }}>
+              <span
+                className="tqk-viec-icon"
+                style={{ background: v.nen, color: v.mau }}
+              >
                 <i className={`fa-solid ${v.icon}`}></i>
               </span>
               <span className="tqk-viec-so" style={{ color: v.mau }}>
@@ -375,8 +403,8 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
             <div className="tqk-goi-ten">Tờ trình KPI của Khoa</div>
             <div className="tqk-goi-phu">
               {goi
-                ? `Năm học ${goi.IdNam}${goi.LanTrinh > 0 ? ` · đã trình Hiệu trưởng ${goi.LanTrinh} lần` : ''}`
-                : 'Tờ trình được tạo tự động ngay khi bạn chốt hồ sơ đầu tiên của Khoa'}
+                ? `Năm học ${goi.IdNam}${goi.LanTrinh > 0 ? ` · đã trình Hiệu trưởng ${goi.LanTrinh} lần` : ""}`
+                : "Tờ trình được tạo tự động ngay khi bạn chốt hồ sơ đầu tiên của Khoa"}
             </div>
           </div>
           {goi ? (
@@ -394,7 +422,10 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
                 <div className="cd-meta-value">
                   {mauSoHienTai}
                   {soGvChuaLapPhieu > 0 && (
-                    <span className="tqk-mau-so-phu"> / {soGvToanKhoa} của Khoa</span>
+                    <span className="tqk-mau-so-phu">
+                      {" "}
+                      / {soGvToanKhoa} của Khoa
+                    </span>
                   )}
                 </div>
               </div>
@@ -403,22 +434,26 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
                   Suất Xuất sắc ({(TY_LE_XUAT_SAC_MAC_DINH * 100).toFixed(0)}%)
                 </div>
                 <div className="cd-meta-value tqk-nhan-manh">
-                  {daTinhHanNgach ? (goi.HanNgachXuatSac ?? 0) : hanNgachHienTai}{' '}
+                  {daTinhHanNgach
+                    ? (goi.HanNgachXuatSac ?? 0)
+                    : hanNgachHienTai}{" "}
                   <span className="tqk-don-vi">
-                    {daTinhHanNgach ? 'suất' : 'suất (dự kiến)'}
+                    {daTinhHanNgach ? "suất" : "suất (dự kiến)"}
                   </span>
                 </div>
               </div>
               <div>
                 <div className="cd-meta-label">Đã đạt Xuất sắc</div>
                 <div className="cd-meta-value">
-                  {daTinhHanNgach ? (goi.SoDatXuatSac ?? 0) : 'Chưa xét'}
+                  {daTinhHanNgach ? (goi.SoDatXuatSac ?? 0) : "Chưa xét"}
                 </div>
               </div>
               <div>
                 <div className="cd-meta-label">Đóng gói lần cuối</div>
                 <div className="cd-meta-value">
-                  {daTinhHanNgach ? formatNgayGio(goi.NgayDongGoi) : 'Chưa đóng gói'}
+                  {daTinhHanNgach
+                    ? formatNgayGio(goi.NgayDongGoi)
+                    : "Chưa đóng gói"}
                 </div>
               </div>
             </div>
@@ -426,9 +461,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
             {goi.LyDoTraVe && (
               <div className="cd-canh-bao tqk-canh-bao">
                 <i className="fa-solid fa-rotate-left"></i>
-                <span>
-                  Hiệu trưởng đã trả gói về: {goi.LyDoTraVe}
-                </span>
+                <span>Hiệu trưởng đã trả gói về: {goi.LyDoTraVe}</span>
               </div>
             )}
 
@@ -440,8 +473,13 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
                     : `Xếp loại bạn đã chọn khi chốt hồ sơ (${phanBoXepLoai.tong} hồ sơ)`}
                 </div>
                 <div className="tqk-xl-list">
-                  {THU_TU_XEP_LOAI.filter((muc) => phanBoXepLoai.dem.get(muc)).map((muc) => (
-                    <span className={`rating-badge ${XEP_LOAI_META[muc].className}`} key={muc}>
+                  {THU_TU_XEP_LOAI.filter((muc) =>
+                    phanBoXepLoai.dem.get(muc),
+                  ).map((muc) => (
+                    <span
+                      className={`rating-badge ${XEP_LOAI_META[muc].className}`}
+                      key={muc}
+                    >
                       {XEP_LOAI_META[muc].label}: {phanBoXepLoai.dem.get(muc)}
                     </span>
                   ))}
@@ -456,12 +494,12 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
 
             <button
               className="btn-submit tqk-goi-nut"
-              onClick={() => navigate('/quan-ly/to-trinh')}
+              onClick={() => navigate("/quan-ly/to-trinh")}
             >
-              <i className="fa-solid fa-file-signature"></i>{' '}
+              <i className="fa-solid fa-file-signature"></i>{" "}
               {Number(goi.TrangThai) === TRANG_THAI_TO_TRINH.DANG_TONG_HOP
-                ? 'Mở trang đóng gói tờ trình'
-                : 'Mở tờ trình KPI Khoa'}
+                ? "Mở trang đóng gói tờ trình"
+                : "Mở tờ trình KPI Khoa"}
             </button>
           </>
         )}

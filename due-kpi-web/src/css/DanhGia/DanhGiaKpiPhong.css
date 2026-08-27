@@ -1,0 +1,122 @@
+.phong-lop-diem {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.phong-lop-diem-o {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 108px;
+  padding: 7px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.phong-lop-diem-nhan {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.phong-lop-diem-so {
+  font-size: 15px;
+  font-weight: 700;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.phong-lop-diem-o.hieu-luc {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.phong-lop-diem-o.hieu-luc .phong-lop-diem-nhan {
+  color: #047857;
+}
+
+.phong-lop-diem-o.hieu-luc .phong-lop-diem-so {
+  color: #047857;
+}
+
+.phong-lop-diem-o.dang-cham {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.phong-lop-diem-o.chinh-thuc {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.phong-lop-diem-o.chinh-thuc .phong-lop-diem-nhan,
+.phong-lop-diem-o.chinh-thuc .phong-lop-diem-so {
+  color: #6d28d9;
+}
+
+.phong-chot-tong {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.phong-chot-tong-nhan {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.phong-chot-tong-so {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.phong-chot-tong-de-xuat {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: #475569;
+}
+
+.phong-mo-lai-chon {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phong-mo-lai-o {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.phong-mo-lai-o:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.phong-mo-lai-o.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}

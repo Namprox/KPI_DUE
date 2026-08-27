@@ -14,7 +14,7 @@ import {
 /**
  * Lịch sử chấm điểm của MỘT dòng tiêu chí, đã gom nhóm theo (LanDanhGia, Cap).
  *
- * Nhận thẳng kết quả của `gomLichSuTheoChiTiet(...)` cho dòng đó — component
+ * Nhận thẳng kết quả của `gomLichSuTheoChiTiet(...)` cho dòng đó - component
  * không tự gọi API vì trang cha lấy một lần cho cả phiếu qua
  * GET api/phieu/{id}/lich-su-cham-diem rồi phát xuống.
  *
@@ -23,7 +23,7 @@ import {
  * và ai chấm thì mới biết phải sửa gì.
  *
  * @param {object[]} lichSu  các nhóm { LanDanhGia, Cap, Entries[] }
- * @param {object}   chiTiet dòng tương ứng — chỉ dùng để nhận diện lượt chấm máy
+ * @param {object}   chiTiet dòng tương ứng - chỉ dùng để nhận diện lượt chấm máy
  */
 const LichSuChamDong = ({ lichSu = [], chiTiet }) => {
   if (lichSu.length === 0) return null;
@@ -67,7 +67,7 @@ const LichSuChamDong = ({ lichSu = [], chiTiet }) => {
                   {e.NhanXet
                     ? traVe
                       ? ` - Lý do: ${e.NhanXet}`
-                      : ` — ${e.NhanXet}`
+                      : ` - ${e.NhanXet}`
                     : ""}
                 </div>
               );

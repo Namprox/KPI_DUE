@@ -41,7 +41,7 @@ const initialForm = {
   DiemTru: "",
   BiKyLuat: false,
   NgayViPham: "",
-  // Minh chứng PDF — chỉ là trạng thái UI, không nằm trong body POST/PUT
+  // Minh chứng PDF - chỉ là trạng thái UI, không nằm trong body POST/PUT
   MinhChung: null, // metadata tệp đang có trên máy chủ (khi sửa)
   MinhChungFile: null, // tệp mới người dùng chọn, tải lên sau khi lưu bản ghi
   XoaMinhChung: false, // yêu cầu gỡ tệp hiện tại khi lưu
@@ -67,8 +67,16 @@ const QL_ViPham = () => {
    * toàn trường nằm ở màn hình tổng hợp.
    */
   const tongHopNav = canXemThongKeKhoa(currentUser)
-    ? { path: "/thong-ke-vi-pham-khoa", label: "Thống kê vi phạm Khoa", icon: "fa-chart-pie" }
-    : { path: "/tong-hop-vi-pham", label: "Tổng hợp điểm trừ", icon: "fa-square-poll-vertical" };
+    ? {
+        path: "/thong-ke-vi-pham-khoa",
+        label: "Thống kê vi phạm Khoa",
+        icon: "fa-chart-pie",
+      }
+    : {
+        path: "/tong-hop-vi-pham",
+        label: "Tổng hợp điểm trừ",
+        icon: "fa-square-poll-vertical",
+      };
 
   /**
    * Trang này mở rộng hơn hẳn hai màn hình tổng hợp: /tong-hop-vi-pham chỉ dành
@@ -114,7 +122,7 @@ const QL_ViPham = () => {
   );
   const khoaList = useMemo(() => donViList.filter(laDonViKhoa), [donViList]);
 
-  /** Giảng viên đang được chọn trong form — cần cho nhánh quyền "Khoa chủ quản". */
+  /** Giảng viên đang được chọn trong form - cần cho nhánh quyền "Khoa chủ quản". */
   const selectedLecturer = useMemo(
     () =>
       nhanVienList.find(
@@ -133,7 +141,7 @@ const QL_ViPham = () => {
 
   /**
    * Đối tượng chọn được trong form = đúng tập server cho phép: giảng viên thuộc Khoa.
-   * Bản ghi cũ có thể trỏ tới người đã đổi đơn vị/chức danh — vẫn giữ lại trong
+   * Bản ghi cũ có thể trỏ tới người đã đổi đơn vị/chức danh - vẫn giữ lại trong
    * danh sách khi đang sửa, nếu không select sẽ mất value và ghi đè mất dữ liệu.
    */
   const nhanVienChoForm = useMemo(() => {
@@ -242,7 +250,7 @@ const QL_ViPham = () => {
       } else {
         // Không chặn luồng: laGiangVien() sẽ bỏ qua bước lọc chức danh khi danh mục rỗng
         console.warn(
-          "Không tải được danh mục chức danh — bỏ qua lọc giảng viên phía client.",
+          "Không tải được danh mục chức danh - bỏ qua lọc giảng viên phía client.",
         );
       }
 
@@ -384,7 +392,7 @@ const QL_ViPham = () => {
     setIsModalOpen(true);
   };
 
-  /** Sửa/xóa chỉ dành cho đơn vị đã ghi nhận hoặc ADMIN — khớp PUT/DELETE của server. */
+  /** Sửa/xóa chỉ dành cho đơn vị đã ghi nhận hoặc ADMIN - khớp PUT/DELETE của server. */
   const canSuaXoa = (item) => canSuaXoaViPham(item, currentUser);
 
   const handleEdit = (item) => {
@@ -392,7 +400,7 @@ const QL_ViPham = () => {
       showToast(
         "warn",
         "Không có quyền",
-        `Ghi nhận này do ${item.TenDonViGhiNhan || "đơn vị khác"} lập — chỉ đơn vị đó hoặc Admin được sửa.`,
+        `Ghi nhận này do ${item.TenDonViGhiNhan || "đơn vị khác"} lập - chỉ đơn vị đó hoặc Admin được sửa.`,
       );
       return;
     }
@@ -462,7 +470,7 @@ const QL_ViPham = () => {
       !!formData.MinhChungFile ||
       (!!formData.MinhChung && !formData.XoaMinhChung);
     if (selectedLoai?.HoSoKemTheo && !coMinhChung) {
-      return `Loại vi phạm này yêu cầu hồ sơ kèm theo (${selectedLoai.HoSoKemTheo}) — vui lòng tải lên tệp PDF biên bản/hồ sơ`;
+      return `Loại vi phạm này yêu cầu hồ sơ kèm theo (${selectedLoai.HoSoKemTheo}) - vui lòng tải lên tệp PDF biên bản/hồ sơ`;
     }
     return null;
   };
@@ -503,7 +511,7 @@ const QL_ViPham = () => {
       return;
     }
 
-    // Người/đơn vị ghi nhận LUÔN lấy từ token — tuyệt đối không gửi IdNguoiGhiNhan/IdDonViGhiNhan
+    // Người/đơn vị ghi nhận LUÔN lấy từ token - tuyệt đối không gửi IdNguoiGhiNhan/IdDonViGhiNhan
     const payload = {
       IdNhanVien: parseInt(formData.IdNhanVien, 10),
       IdNam: parseInt(formData.IdNam, 10),
@@ -529,7 +537,7 @@ const QL_ViPham = () => {
 
       if (response.ok || response.status === 201) {
         const result = await response.json().catch(() => null);
-        // POST trả về bản ghi vừa tạo — cần IdViPham để tải tệp minh chứng lên
+        // POST trả về bản ghi vừa tạo - cần IdViPham để tải tệp minh chứng lên
         const idViPham = editId || result?.Item?.IdViPham || null;
 
         let canhBaoFile = null;
@@ -577,7 +585,7 @@ const QL_ViPham = () => {
       showToast(
         "warn",
         "Không có quyền",
-        `Ghi nhận này do ${item.TenDonViGhiNhan || "đơn vị khác"} lập — chỉ đơn vị đó hoặc Admin được xóa.`,
+        `Ghi nhận này do ${item.TenDonViGhiNhan || "đơn vị khác"} lập - chỉ đơn vị đó hoặc Admin được xóa.`,
       );
       return;
     }
@@ -652,7 +660,8 @@ const QL_ViPham = () => {
                 fontSize: "14px",
               }}
             >
-              <i className={`fa-solid ${tongHopNav.icon}`}></i> {tongHopNav.label}
+              <i className={`fa-solid ${tongHopNav.icon}`}></i>{" "}
+              {tongHopNav.label}
             </button>
           )}
           {canManage && (

@@ -13,7 +13,7 @@ let seqCho = 0;
 /**
  * Minh chứng CẤP NHIỆM VỤ (cap_gan = 1) trong form của Khoa.
  *
- * Đây là file DÙNG CHUNG cho cả nhóm — quyết định phân công, kế hoạch, biên bản:
+ * Đây là file DÙNG CHUNG cho cả nhóm - quyết định phân công, kế hoạch, biên bản:
  * tải lên một lần, mọi giảng viên được phân công đều xem được. Cho phép nhiều
  * file và bổ sung bất cứ lúc nào khi kỳ còn mở.
  *
@@ -21,7 +21,7 @@ let seqCho = 0;
  * tồn tại, nên khối này có HAI chế độ:
  *  - nhiệm vụ đã có id: upload đi NGAY khi bấm nút, không chờ nút Lưu của form;
  *  - nhiệm vụ chưa tạo: file được xếp vào HÀNG CHỜ ở FE, form tự tải lên ngay
- *    sau khi tạo nhiệm vụ xong — người nhập không phải lưu rồi mở lại.
+ *    sau khi tạo nhiệm vụ xong - người nhập không phải lưu rồi mở lại.
  *
  * @param {number|null} idNhiemVu       null = nhiệm vụ chưa được tạo
  * @param {object[]}    danhSach        minh chứng hiện có
@@ -116,9 +116,7 @@ const MinhChungNhiemVuBox = ({
     setDangXoaId(mc.IdMinhChungNvk);
     try {
       await xoaMinhChung(mc.IdMinhChungNvk);
-      onChange(
-        danhSach.filter((x) => x.IdMinhChungNvk !== mc.IdMinhChungNvk),
-      );
+      onChange(danhSach.filter((x) => x.IdMinhChungNvk !== mc.IdMinhChungNvk));
       onSuccess("Đã gỡ minh chứng");
     } catch (error) {
       console.error("Lỗi gỡ minh chứng nhiệm vụ:", error);

@@ -9,31 +9,37 @@
  * Đây chỉ là lớp gợi ý cho UI. Server vẫn chặn lại ở BLL + Stored Procedure.
  */
 
-import { normalizeRole } from './roles';
+import { normalizeRole } from "./roles";
 
-const ROLE_TRUONG_DON_VI = ['TK', 'TKL', 'TP'];
+const ROLE_TRUONG_DON_VI = ["TK", "TKL", "TP"];
 
 /** Re-export để các file đang import normalizeRole từ đây vẫn chạy. */
 export { normalizeRole };
 
-export const isAdminRole = (user) => normalizeRole(user) === 'ADMIN';
+export const isAdminRole = (user) => normalizeRole(user) === "ADMIN";
 
-/** Trưởng Khoa / Trưởng Khoa lớn / Trưởng Phòng — nhóm được ghi nhận vi phạm. */
+/** Trưởng Khoa / Trưởng Khoa lớn / Trưởng Phòng - nhóm được ghi nhận vi phạm. */
 export const isTruongDonVi = (user) => {
   if (ROLE_TRUONG_DON_VI.includes(normalizeRole(user))) return true;
   if (user?.DonVi && Array.isArray(user.DonVi)) {
     return user.DonVi.some((d) =>
-      ROLE_TRUONG_DON_VI.includes(String(d.MaChucVu || '').trim().toUpperCase())
+      ROLE_TRUONG_DON_VI.includes(
+        String(d.MaChucVu || "")
+          .trim()
+          .toUpperCase(),
+      ),
     );
   }
   return false;
 };
 
-/** Cấp Trường — chỉ được XEM toàn bộ, không nằm trong nhóm ghi nhận. */
-export const isCapTruong = (user) => ['HT', 'PHT'].includes(normalizeRole(user));
+/** Cấp Trường - chỉ được XEM toàn bộ, không nằm trong nhóm ghi nhận. */
+export const isCapTruong = (user) =>
+  ["HT", "PHT"].includes(normalizeRole(user));
 
 /** Có được phép ghi nhận vi phạm (gate chức vụ, chưa xét đơn vị) hay không. */
-export const canRecordViPham = (user) => isAdminRole(user) || isTruongDonVi(user);
+export const canRecordViPham = (user) =>
+  isAdminRole(user) || isTruongDonVi(user);
 
 /** Xem được màn hình tổng hợp điểm trừ Khoa của mọi Khoa. */
 export const canXemMoiKhoa = (user) =>
@@ -83,7 +89,10 @@ export const resolveKhoaCuaNhanVien = (idDonVi, donViIndex) => {
 export const laDonViKhoa = (donVi) =>
   !!donVi &&
   donVi.CapDonVi === CAP_KHOA_PHONG &&
-  String(donVi.MaDonVi || '').trim().toUpperCase().startsWith('K');
+  String(donVi.MaDonVi || "")
+    .trim()
+    .toUpperCase()
+    .startsWith("K");
 
 /**
  * Màn hình "Thống kê vi phạm theo Khoa" chỉ dành cho Trưởng Khoa / Trưởng Khoa
@@ -91,28 +100,38 @@ export const laDonViKhoa = (donVi) =>
  * Cấp Trường xem số liệu toàn trường ở màn hình tổng hợp.
  */
 export const canXemThongKeKhoa = (user) => {
-  if (['TK', 'TKL'].includes(normalizeRole(user))) return true;
+  if (["TK", "TKL"].includes(normalizeRole(user))) return true;
   if (user?.DonVi && Array.isArray(user.DonVi)) {
     return user.DonVi.some((d) =>
-      ['TK', 'TKL'].includes(String(d.MaChucVu || '').trim().toUpperCase())
+      ["TK", "TKL"].includes(
+        String(d.MaChucVu || "")
+          .trim()
+          .toUpperCase(),
+      ),
     );
   }
   return false;
 };
 
 /**
- * Khoa mà người dùng đang phụ trách — nguồn duy nhất xác định phạm vi dữ liệu của
+ * Khoa mà người dùng đang phụ trách - nguồn duy nhất xác định phạm vi dữ liệu của
  * màn hình thống kê Khoa (không nhận idDonVi từ URL hay dropdown).
  *
  * Trả null khi: không phải Trưởng Khoa, hoặc đơn vị của họ không roll-up ra Khoa nào.
- * Đây chỉ là lớp gợi ý cho UI — server vẫn kiểm tra lại theo token.
+ * Đây chỉ là lớp gợi ý cho UI - server vẫn kiểm tra lại theo token.
  */
 export const resolveKhoaCuaToi = (user, donViList = []) => {
   if (!canXemThongKeKhoa(user)) return null;
   const donViIndex = buildDonViIndex(donViList);
   if (user?.DonVi && Array.isArray(user.DonVi)) {
     for (const d of user.DonVi) {
-      if (['TK', 'TKL'].includes(String(d.MaChucVu || '').trim().toUpperCase())) {
+      if (
+        ["TK", "TKL"].includes(
+          String(d.MaChucVu || "")
+            .trim()
+            .toUpperCase(),
+        )
+      ) {
         const k = resolveKhoaCuaNhanVien(d.IdDonVi, donViIndex);
         if (laDonViKhoa(k)) return k;
       }
@@ -128,10 +147,10 @@ export const resolveKhoaCuaToi = (user, donViList = []) => {
 
 /**
  * Server chỉ cho ghi nhận vi phạm của giảng viên thuộc Khoa
- * (view v_giang_vien_khoa — chuc_danh_nghe_nghiep.ma_chuc_danh trong tập này).
+ * (view v_giang_vien_khoa - chuc_danh_nghe_nghiep.ma_chuc_danh trong tập này).
  * Sai đối tượng → 403 NOT_GIANG_VIEN_KHOA.
  */
-export const MA_CHUC_DANH_GIANG_VIEN = ['GV', 'GVC', 'GVCC', 'PGS', 'GS'];
+export const MA_CHUC_DANH_GIANG_VIEN = ["GV", "GVC", "GVCC", "PGS", "GS"];
 
 export const buildChucDanhIndex = (chucDanhList = []) => {
   const map = new Map();
@@ -144,7 +163,7 @@ export const buildChucDanhIndex = (chucDanhList = []) => {
 /**
  * NhanVienListItemDto chỉ có IdChucDanh/TenChucDanh (không có MaChucDanh)
  * nên phải tra mã qua danh mục chuc-danh-nghe-nghiep.
- * Nếu danh mục chưa nạp được thì KHÔNG chặn — nhường quyết định cho server,
+ * Nếu danh mục chưa nạp được thì KHÔNG chặn - nhường quyết định cho server,
  * tránh việc lỗi 1 endpoint lookup làm rỗng toàn bộ dropdown giảng viên.
  */
 export const laGiangVien = (nhanVien, chucDanhIndex) => {
@@ -153,7 +172,11 @@ export const laGiangVien = (nhanVien, chucDanhIndex) => {
   if (nhanVien.IdChucDanh == null) return false;
   const cd = chucDanhIndex.get(nhanVien.IdChucDanh);
   if (!cd) return false;
-  return MA_CHUC_DANH_GIANG_VIEN.includes(String(cd.MaChucDanh || '').trim().toUpperCase());
+  return MA_CHUC_DANH_GIANG_VIEN.includes(
+    String(cd.MaChucDanh || "")
+      .trim()
+      .toUpperCase(),
+  );
 };
 
 /** Đủ điều kiện bị ghi nhận vi phạm: vừa là giảng viên, vừa thuộc một Khoa. */
@@ -165,11 +188,13 @@ export const laGiangVienKhoa = (nhanVien, donViIndex, chucDanhIndex) =>
 export const getNhanVienBlockReason = (nhanVien, donViIndex, chucDanhIndex) => {
   if (!nhanVien) return null;
   if (!laGiangVien(nhanVien, chucDanhIndex)) {
-    const ten = nhanVien.TenChucDanh ? ` (chức danh: ${nhanVien.TenChucDanh})` : '';
-    return `${nhanVien.HoTen || 'Người này'} không có chức danh giảng viên${ten} — máy chủ sẽ từ chối ghi nhận.`;
+    const ten = nhanVien.TenChucDanh
+      ? ` (chức danh: ${nhanVien.TenChucDanh})`
+      : "";
+    return `${nhanVien.HoTen || "Người này"} không có chức danh giảng viên${ten} - máy chủ sẽ từ chối ghi nhận.`;
   }
   if (!laDonViKhoa(resolveKhoaCuaNhanVien(nhanVien.IdDonVi, donViIndex))) {
-    return `${nhanVien.HoTen || 'Người này'} không thuộc Khoa nào — chỉ ghi nhận được vi phạm của giảng viên thuộc Khoa.`;
+    return `${nhanVien.HoTen || "Người này"} không thuộc Khoa nào - chỉ ghi nhận được vi phạm của giảng viên thuộc Khoa.`;
   }
   return null;
 };
@@ -197,7 +222,7 @@ export const canSuaXoaViPham = (item, user) => {
 /**
  * @param {object} loai      LoaiViPhamDto
  * @param {object} user      người dùng hiện tại (từ auth/me)
- * @param {object} lecturer  giảng viên đang được chọn (NhanVienListItemDto) — cần cho nhánh (b)
+ * @param {object} lecturer  giảng viên đang được chọn (NhanVienListItemDto) - cần cho nhánh (b)
  * @param {Map}    donViIndex
  */
 export const canGhiNhanLoai = (loai, user, lecturer, donViIndex) => {
@@ -206,7 +231,8 @@ export const canGhiNhanLoai = (loai, user, lecturer, donViIndex) => {
   if (!isTruongDonVi(user)) return false;
 
   // (a) đơn vị cố định được phân quyền
-  if ((loai.DonViGhiNhan || []).some((d) => d.IdDonVi === user?.IdDonVi)) return true;
+  if ((loai.DonViGhiNhan || []).some((d) => d.IdDonVi === user?.IdDonVi))
+    return true;
 
   // (c) mọi đơn vị chủ trì
   if (loai.ChoPhepMoiDonVi === true) return true;
@@ -224,14 +250,16 @@ export const canGhiNhanLoai = (loai, user, lecturer, donViIndex) => {
 export const getLoaiBlockReason = (loai, user, lecturer, donViIndex) => {
   if (canGhiNhanLoai(loai, user, lecturer, donViIndex)) return null;
   if (!canRecordViPham(user)) {
-    return 'Chỉ trưởng đơn vị (TK/TKL/TP) hoặc Admin mới được ghi nhận vi phạm.';
+    return "Chỉ trưởng đơn vị (TK/TKL/TP) hoặc Admin mới được ghi nhận vi phạm.";
   }
   if (loai?.ChoPhepKhoaChuQuan === true && !lecturer) {
-    return 'Loại vi phạm này do Khoa chủ quản ghi nhận — hãy chọn giảng viên trước.';
+    return "Loại vi phạm này do Khoa chủ quản ghi nhận - hãy chọn giảng viên trước.";
   }
-  const dsDonVi = (loai?.DonViGhiNhan || []).map((d) => d.MaDonVi).filter(Boolean);
+  const dsDonVi = (loai?.DonViGhiNhan || [])
+    .map((d) => d.MaDonVi)
+    .filter(Boolean);
   if (dsDonVi.length > 0) {
-    return `Loại vi phạm này chỉ được ghi nhận bởi: ${dsDonVi.join(', ')}.`;
+    return `Loại vi phạm này chỉ được ghi nhận bởi: ${dsDonVi.join(", ")}.`;
   }
-  return 'Đơn vị của bạn không được phân quyền ghi nhận loại vi phạm này.';
+  return "Đơn vị của bạn không được phân quyền ghi nhận loại vi phạm này.";
 };

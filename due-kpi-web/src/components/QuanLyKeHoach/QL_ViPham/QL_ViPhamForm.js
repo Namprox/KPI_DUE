@@ -279,7 +279,7 @@ const QL_ViPhamForm = ({
                   className="fa-solid fa-triangle-exclamation"
                   style={{ marginRight: "6px" }}
                 ></i>
-                Bản ghi cũ chưa gán loại vi phạm — vui lòng chọn loại để cập
+                Bản ghi cũ chưa gán loại vi phạm - vui lòng chọn loại để cập
                 nhật.
               </div>
             )}
@@ -514,7 +514,7 @@ const QL_ViPhamForm = ({
               </div>
             </div>
 
-            {/* Minh chứng PDF — thay cho trường "Số hiệu hồ sơ" nhập tay trước đây */}
+            {/* Minh chứng PDF - thay cho trường "Số hiệu hồ sơ" nhập tay trước đây */}
             <div className="form-group" style={{ marginBottom: "20px" }}>
               <label style={labelStyle}>
                 Biên bản / Hồ sơ (PDF){" "}
@@ -700,7 +700,7 @@ const QL_ViPhamForm = ({
 
               <div style={hintStyle}>
                 Chỉ nhận tệp PDF, tối đa {formatKb(MAX_MINH_CHUNG_KB)}. Mỗi ghi
-                nhận giữ một tệp — tải tệp mới sẽ ghi đè tệp cũ.
+                nhận giữ một tệp - tải tệp mới sẽ ghi đè tệp cũ.
               </div>
             </div>
 
@@ -718,7 +718,7 @@ const QL_ViPhamForm = ({
                 className="fa-solid fa-user-check"
                 style={{ marginRight: "6px" }}
               ></i>
-              Người ghi nhận: <strong>{currentUser?.HoTen || "---"}</strong> —
+              Người ghi nhận: <strong>{currentUser?.HoTen || "---"}</strong> -
               tự động lấy từ phiên đăng nhập.
             </div>
           </form>

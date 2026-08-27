@@ -15,7 +15,9 @@ const QL_NhanVienChiTiet = () => {
   const roleCode = currentUser?.MaChucVu || "";
   const isAdmin = hasRole(ROLE_SETS.ADMIN, currentUser);
   const canManage =
-    isAdmin || roleCode === "Admin" || ["HT", "PHT", "TK", "TBM"].includes(roleCode);
+    isAdmin ||
+    roleCode === "Admin" ||
+    ["HT", "PHT", "TK", "TBM"].includes(roleCode);
 
   const isEditing = !!id;
 
@@ -634,9 +636,7 @@ const QL_NhanVienChiTiet = () => {
   };
 
   const handleDeleteChucVu = async (idNvChucVu) => {
-    if (
-      !window.confirm("Bạn có chắc chắn muốn xóa dòng công tác đơn vị này?")
-    )
+    if (!window.confirm("Bạn có chắc chắn muốn xóa dòng công tác đơn vị này?"))
       return;
     if (isEditing) {
       try {
@@ -1713,7 +1713,7 @@ const QL_NhanVienChiTiet = () => {
                                         }}
                                       />
                                     ) : (
-                                      item.GhiChu || "—"
+                                      item.GhiChu || "-"
                                     )}
                                   </td>
                                   {canManage && (
@@ -1885,7 +1885,8 @@ const QL_NhanVienChiTiet = () => {
                       Đơn vị & Chức vụ công tác
                     </h3>
                     <span style={{ fontSize: "12.5px", color: "#64748b" }}>
-                      Quản lý các đơn vị công tác và chức vụ kiêm nhiệm của nhân viên
+                      Quản lý các đơn vị công tác và chức vụ kiêm nhiệm của nhân
+                      viên
                     </span>
                   </div>
                   {canManage && !isAddingChucVu && (
@@ -1899,7 +1900,8 @@ const QL_NhanVienChiTiet = () => {
                         fontSize: "13px",
                       }}
                     >
-                      <i className="fa-solid fa-plus"></i> Thêm đơn vị / chức vụ mới
+                      <i className="fa-solid fa-plus"></i> Thêm đơn vị / chức vụ
+                      mới
                     </button>
                   )}
                 </div>
@@ -1949,7 +1951,8 @@ const QL_NhanVienChiTiet = () => {
                             <label
                               style={{ fontSize: "12px", marginBottom: "5px" }}
                             >
-                              Đơn vị công tác <span className="text-red">*</span>
+                              Đơn vị công tác{" "}
+                              <span className="text-red">*</span>
                             </label>
                             <SearchSelect
                               value={newDonViId}
@@ -1977,7 +1980,8 @@ const QL_NhanVienChiTiet = () => {
                               options={[
                                 {
                                   value: "",
-                                  label: "(Thành viên - không giữ chức vụ quản lý)",
+                                  label:
+                                    "(Thành viên - không giữ chức vụ quản lý)",
                                 },
                                 ...chucVuList.map((cv) => ({
                                   value: cv.id_chuc_vu || cv.IdChucVu,
@@ -2029,7 +2033,8 @@ const QL_NhanVienChiTiet = () => {
                                 cursor: "pointer",
                               }}
                             >
-                              Đặt làm Đơn vị chính của nhân viên (LaChinh = true)
+                              Đặt làm Đơn vị chính của nhân viên (LaChinh =
+                              true)
                             </label>
                           </div>
                         )}
@@ -2430,7 +2435,8 @@ const QL_NhanVienChiTiet = () => {
                                           },
                                           ...chucVuList.map((cv) => ({
                                             value: cv.id_chuc_vu || cv.IdChucVu,
-                                            label: cv.ten_chuc_vu || cv.TenChucVu,
+                                            label:
+                                              cv.ten_chuc_vu || cv.TenChucVu,
                                           })),
                                         ]}
                                         placeholder="Chọn chức vụ"
@@ -2465,7 +2471,7 @@ const QL_NhanVienChiTiet = () => {
                                   >
                                     {item.TyLeDinhMucGiang != null
                                       ? `${(item.TyLeDinhMucGiang * 100).toFixed(0)}%`
-                                      : "—"}
+                                      : "-"}
                                   </td>
 
                                   {/* Cột Từ ngày */}
@@ -2558,7 +2564,7 @@ const QL_NhanVienChiTiet = () => {
                                         }}
                                       />
                                     ) : (
-                                      item.GhiChu || "—"
+                                      item.GhiChu || "-"
                                     )}
                                   </td>
 

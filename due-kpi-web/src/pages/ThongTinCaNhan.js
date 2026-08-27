@@ -37,7 +37,7 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
     try {
       // 1. Tải thông tin hồ sơ cơ bản
       const response = await apiFetch(
-        "nhan-vien?search=" + encodeURIComponent(user.MaNhanVien)
+        "nhan-vien?search=" + encodeURIComponent(user.MaNhanVien),
       );
       if (response.ok) {
         const result = await response.json();
@@ -60,14 +60,18 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
 
         if (cvRes.ok) {
           const cvData = await cvRes.json();
-          setChucVuConcurrent(cvData.Items || (Array.isArray(cvData) ? cvData : []));
+          setChucVuConcurrent(
+            cvData.Items || (Array.isArray(cvData) ? cvData : []),
+          );
         } else if (Array.isArray(user.DonVi) && user.DonVi.length > 0) {
           setChucVuConcurrent(user.DonVi);
         }
 
         if (cdRes.ok) {
           const cdData = await cdRes.json();
-          setChucDanhHistory(cdData.Items || (Array.isArray(cdData) ? cdData : []));
+          setChucDanhHistory(
+            cdData.Items || (Array.isArray(cdData) ? cdData : []),
+          );
         }
       }
     } catch (error) {
@@ -120,7 +124,11 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
 
   // Đơn vị chính và các đơn vị kiêm nhiệm
   const primaryUnit = useMemo(() => {
-    return effectiveChucVuList.find((d) => d.LaChinh) || effectiveChucVuList[0] || null;
+    return (
+      effectiveChucVuList.find((d) => d.LaChinh) ||
+      effectiveChucVuList[0] ||
+      null
+    );
   }, [effectiveChucVuList]);
 
   const concurrentUnits = useMemo(() => {
@@ -193,7 +201,10 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
   }
 
   return (
-    <div className="page-container" style={{ background: "#f4f6fa", padding: "30px" }}>
+    <div
+      className="page-container"
+      style={{ background: "#f4f6fa", padding: "30px" }}
+    >
       <div className="page-header" style={{ marginBottom: "25px" }}>
         <div className="header-title">
           <h2>Hồ sơ của tôi</h2>
@@ -246,19 +257,39 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
               <img
                 src={profile.AvatarUrl}
                 alt="Avatar"
-                style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
               />
             ) : (
               getInitials(profile?.HoTen)
             )}
           </div>
 
-          <h3 style={{ margin: "0 0 10px 0", fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>
+          <h3
+            style={{
+              margin: "0 0 10px 0",
+              fontSize: "18px",
+              fontWeight: "700",
+              color: "#1e293b",
+            }}
+          >
             {profile?.HoTen}
           </h3>
 
           {/* Badges Chức danh & Chức vụ */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "center", marginBottom: "18px" }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "6px",
+              justifyContent: "center",
+              marginBottom: "18px",
+            }}
+          >
             <span
               style={{
                 background: "#e0f2fe",
@@ -272,28 +303,37 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                 gap: "5px",
               }}
             >
-              <i className="fa-solid fa-graduation-cap" style={{ fontSize: "11px" }}></i>
-              {currentTitle?.TenChucDanh || profile?.TenChucDanh || "Giảng viên"}
+              <i
+                className="fa-solid fa-graduation-cap"
+                style={{ fontSize: "11px" }}
+              ></i>
+              {currentTitle?.TenChucDanh ||
+                profile?.TenChucDanh ||
+                "Giảng viên"}
             </span>
 
-            {primaryUnit?.TenChucVu && primaryUnit.TenChucVu !== "Thành viên" && (
-              <span
-                style={{
-                  background: "#fef3c7",
-                  color: "#92400e",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  padding: "4px 12px",
-                  borderRadius: "20px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                }}
-              >
-                <i className="fa-solid fa-award" style={{ fontSize: "11px" }}></i>
-                {primaryUnit.TenChucVu}
-              </span>
-            )}
+            {primaryUnit?.TenChucVu &&
+              primaryUnit.TenChucVu !== "Thành viên" && (
+                <span
+                  style={{
+                    background: "#fef3c7",
+                    color: "#92400e",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    padding: "4px 12px",
+                    borderRadius: "20px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                  }}
+                >
+                  <i
+                    className="fa-solid fa-award"
+                    style={{ fontSize: "11px" }}
+                  ></i>
+                  {primaryUnit.TenChucVu}
+                </span>
+              )}
           </div>
 
           <div
@@ -304,45 +344,140 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
               textAlign: "left",
             }}
           >
-            <div style={{ marginBottom: "12px", display: "flex", alignItems: "center" }}>
-              <i className="fa-regular fa-envelope" style={{ color: "#64748b", marginRight: "10px", width: "16px" }}></i>
-              <span style={{ fontSize: "14px", color: "#475569", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div
+              style={{
+                marginBottom: "12px",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <i
+                className="fa-regular fa-envelope"
+                style={{ color: "#64748b", marginRight: "10px", width: "16px" }}
+              ></i>
+              <span
+                style={{
+                  fontSize: "14px",
+                  color: "#475569",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {profile?.Email || user?.Email}
               </span>
             </div>
 
-            <div style={{ marginBottom: "12px", display: "flex", alignItems: "center" }}>
-              <i className="fa-solid fa-id-card" style={{ color: "#64748b", marginRight: "10px", width: "16px" }}></i>
+            <div
+              style={{
+                marginBottom: "12px",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <i
+                className="fa-solid fa-id-card"
+                style={{ color: "#64748b", marginRight: "10px", width: "16px" }}
+              ></i>
               <span style={{ fontSize: "14px", color: "#475569" }}>
-                Mã nhân viên: <strong>{profile?.MaNhanVien || user?.MaNhanVien}</strong>
+                Mã nhân viên:{" "}
+                <strong>{profile?.MaNhanVien || user?.MaNhanVien}</strong>
               </span>
             </div>
 
             <div style={{ marginBottom: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "3px" }}>
-                <i className="fa-solid fa-building" style={{ color: "#0284c7", marginRight: "10px", width: "16px" }}></i>
-                <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "500" }}>Đơn vị chính:</span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "3px",
+                }}
+              >
+                <i
+                  className="fa-solid fa-building"
+                  style={{
+                    color: "#0284c7",
+                    marginRight: "10px",
+                    width: "16px",
+                  }}
+                ></i>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: "#64748b",
+                    fontWeight: "500",
+                  }}
+                >
+                  Đơn vị chính:
+                </span>
               </div>
-              <div style={{ paddingLeft: "26px", fontSize: "14px", fontWeight: "600", color: "#1e293b" }}>
+              <div
+                style={{
+                  paddingLeft: "26px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#1e293b",
+                }}
+              >
                 {primaryUnit?.TenDonVi || profile?.TenDonVi || "Chưa cập nhật"}
-                {primaryUnit?.TenChucVu && primaryUnit.TenChucVu !== "Thành viên" && (
-                  <span style={{ fontSize: "12px", color: "#0369a1", fontWeight: "500", marginLeft: "6px" }}>
-                    ({primaryUnit.TenChucVu})
-                  </span>
-                )}
+                {primaryUnit?.TenChucVu &&
+                  primaryUnit.TenChucVu !== "Thành viên" && (
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "#0369a1",
+                        fontWeight: "500",
+                        marginLeft: "6px",
+                      }}
+                    >
+                      ({primaryUnit.TenChucVu})
+                    </span>
+                  )}
               </div>
             </div>
 
             {concurrentUnits.length > 0 && (
               <div style={{ marginBottom: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", marginBottom: "4px" }}>
-                  <i className="fa-solid fa-layer-group" style={{ color: "#8b5cf6", marginRight: "10px", width: "16px" }}></i>
-                  <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "500" }}>Đơn vị kiêm nhiệm:</span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "4px",
+                  }}
+                >
+                  <i
+                    className="fa-solid fa-layer-group"
+                    style={{
+                      color: "#8b5cf6",
+                      marginRight: "10px",
+                      width: "16px",
+                    }}
+                  ></i>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      color: "#64748b",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Đơn vị kiêm nhiệm:
+                  </span>
                 </div>
-                <div style={{ paddingLeft: "26px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div
+                  style={{
+                    paddingLeft: "26px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                  }}
+                >
                   {concurrentUnits.map((cu, idx) => (
-                    <div key={idx} style={{ fontSize: "13px", color: "#334155" }}>
-                      • <strong>{cu.TenDonVi}</strong> {cu.TenChucVu ? `(${cu.TenChucVu})` : ""}
+                    <div
+                      key={idx}
+                      style={{ fontSize: "13px", color: "#334155" }}
+                    >
+                      • <strong>{cu.TenDonVi}</strong>{" "}
+                      {cu.TenChucVu ? `(${cu.TenChucVu})` : ""}
                     </div>
                   ))}
                 </div>
@@ -401,7 +536,10 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                 gap: "8px",
               }}
             >
-              <i className="fa-solid fa-user-gear" style={{ color: "#003399" }}></i>
+              <i
+                className="fa-solid fa-user-gear"
+                style={{ color: "#003399" }}
+              ></i>
               Thông tin chi tiết tài khoản
             </h3>
 
@@ -410,7 +548,13 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                 {/* Họ tên */}
                 <div className="form-group">
                   <label>Họ và Tên</label>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
                     <input
                       type="text"
                       className="form-input"
@@ -423,14 +567,27 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                         paddingRight: "36px",
                       }}
                     />
-                    <i className="fa-solid fa-lock" style={{ position: "absolute", right: "12px", color: "#cbd5e1" }}></i>
+                    <i
+                      className="fa-solid fa-lock"
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        color: "#cbd5e1",
+                      }}
+                    ></i>
                   </div>
                 </div>
 
                 {/* Mã nhân viên */}
                 <div className="form-group">
                   <label>Mã nhân viên</label>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
                     <input
                       type="text"
                       className="form-input"
@@ -443,7 +600,14 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                         paddingRight: "36px",
                       }}
                     />
-                    <i className="fa-solid fa-lock" style={{ position: "absolute", right: "12px", color: "#cbd5e1" }}></i>
+                    <i
+                      className="fa-solid fa-lock"
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        color: "#cbd5e1",
+                      }}
+                    ></i>
                   </div>
                 </div>
               </div>
@@ -452,7 +616,13 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                 {/* Email */}
                 <div className="form-group">
                   <label>Email tài khoản</label>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
                     <input
                       type="text"
                       className="form-input"
@@ -465,18 +635,35 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                         paddingRight: "36px",
                       }}
                     />
-                    <i className="fa-solid fa-lock" style={{ position: "absolute", right: "12px", color: "#cbd5e1" }}></i>
+                    <i
+                      className="fa-solid fa-lock"
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        color: "#cbd5e1",
+                      }}
+                    ></i>
                   </div>
                 </div>
 
                 {/* Chức danh nghề nghiệp */}
                 <div className="form-group">
                   <label>Chức danh nghề nghiệp hiện hành</label>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
                     <input
                       type="text"
                       className="form-input"
-                      value={currentTitle?.TenChucDanh || profile?.TenChucDanh || "Chưa thiết lập"}
+                      value={
+                        currentTitle?.TenChucDanh ||
+                        profile?.TenChucDanh ||
+                        "Chưa thiết lập"
+                      }
                       disabled
                       style={{
                         backgroundColor: "#f8fafc",
@@ -485,7 +672,14 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                         paddingRight: "36px",
                       }}
                     />
-                    <i className="fa-solid fa-lock" style={{ position: "absolute", right: "12px", color: "#cbd5e1" }}></i>
+                    <i
+                      className="fa-solid fa-lock"
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        color: "#cbd5e1",
+                      }}
+                    ></i>
                   </div>
                 </div>
               </div>
@@ -541,7 +735,8 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                 >
                   {isSaving ? (
                     <>
-                      <i className="fa-solid fa-spinner fa-spin"></i> Đang lưu...
+                      <i className="fa-solid fa-spinner fa-spin"></i> Đang
+                      lưu...
                     </>
                   ) : (
                     <>
@@ -588,11 +783,21 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                     gap: "8px",
                   }}
                 >
-                  <i className="fa-solid fa-building-user" style={{ color: "#003399" }}></i>
+                  <i
+                    className="fa-solid fa-building-user"
+                    style={{ color: "#003399" }}
+                  ></i>
                   Đơn vị & Chức vụ công tác
                 </h3>
-                <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#64748b" }}>
-                  Danh sách đơn vị chính và các đơn vị kiêm nhiệm / công tác của nhân viên
+                <p
+                  style={{
+                    margin: "4px 0 0 0",
+                    fontSize: "13px",
+                    color: "#64748b",
+                  }}
+                >
+                  Danh sách đơn vị chính và các đơn vị kiêm nhiệm / công tác của
+                  nhân viên
                 </p>
               </div>
               <span
@@ -626,11 +831,51 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
               >
                 <thead>
                   <tr style={{ background: "#f8fafc" }}>
-                    <th style={{ padding: "12px", textAlign: "left", width: "28%" }}>ĐƠN VỊ CÔNG TÁC</th>
-                    <th style={{ padding: "12px", textAlign: "left", width: "22%" }}>CHỨC VỤ</th>
-                    <th style={{ padding: "12px", textAlign: "center", width: "15%" }}>ĐỊNH MỨC GIỜ</th>
-                    <th style={{ padding: "12px", textAlign: "left", width: "18%" }}>THỜI GIAN</th>
-                    <th style={{ padding: "12px", textAlign: "left", width: "17%" }}>GHI CHÚ</th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "left",
+                        width: "28%",
+                      }}
+                    >
+                      ĐƠN VỊ CÔNG TÁC
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "left",
+                        width: "22%",
+                      }}
+                    >
+                      CHỨC VỤ
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "center",
+                        width: "15%",
+                      }}
+                    >
+                      ĐỊNH MỨC GIỜ
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "left",
+                        width: "18%",
+                      }}
+                    >
+                      THỜI GIAN
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "left",
+                        width: "17%",
+                      }}
+                    >
+                      GHI CHÚ
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -660,9 +905,24 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                           }}
                         >
                           {/* Đơn vị */}
-                          <td style={{ padding: "12px", fontWeight: "500", color: "#1e293b" }}>
-                            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
-                              <span style={{ fontWeight: "600" }}>{item.TenDonVi || `Đơn vị #${item.IdDonVi}`}</span>
+                          <td
+                            style={{
+                              padding: "12px",
+                              fontWeight: "500",
+                              color: "#1e293b",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                                gap: "6px",
+                              }}
+                            >
+                              <span style={{ fontWeight: "600" }}>
+                                {item.TenDonVi || `Đơn vị #${item.IdDonVi}`}
+                              </span>
                               {isMain ? (
                                 <span
                                   style={{
@@ -677,7 +937,13 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                                     border: "1px solid #bae6fd",
                                   }}
                                 >
-                                  <i className="fa-solid fa-star" style={{ marginRight: "4px", fontSize: "9px" }}></i>
+                                  <i
+                                    className="fa-solid fa-star"
+                                    style={{
+                                      marginRight: "4px",
+                                      fontSize: "9px",
+                                    }}
+                                  ></i>
                                   Đơn vị chính
                                 </span>
                               ) : (
@@ -694,7 +960,13 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                                     border: "1px solid #ede9fe",
                                   }}
                                 >
-                                  <i className="fa-solid fa-layer-group" style={{ marginRight: "4px", fontSize: "9px" }}></i>
+                                  <i
+                                    className="fa-solid fa-layer-group"
+                                    style={{
+                                      marginRight: "4px",
+                                      fontSize: "9px",
+                                    }}
+                                  ></i>
                                   Kiêm nhiệm
                                 </span>
                               )}
@@ -706,20 +978,40 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                             {item.TenChucVu ? (
                               <span
                                 style={{
-                                  fontWeight: item.TenChucVu !== "Thành viên" ? "600" : "400",
-                                  color: item.TenChucVu !== "Thành viên" ? "#0284c7" : "#475569",
+                                  fontWeight:
+                                    item.TenChucVu !== "Thành viên"
+                                      ? "600"
+                                      : "400",
+                                  color:
+                                    item.TenChucVu !== "Thành viên"
+                                      ? "#0284c7"
+                                      : "#475569",
                                 }}
                               >
                                 {item.TenChucVu}
                               </span>
                             ) : (
-                              <span style={{ color: "#94a3b8", fontStyle: "italic" }}>Thành viên</span>
+                              <span
+                                style={{
+                                  color: "#94a3b8",
+                                  fontStyle: "italic",
+                                }}
+                              >
+                                Thành viên
+                              </span>
                             )}
                           </td>
 
                           {/* Định mức giờ giảng */}
-                          <td style={{ padding: "12px", textAlign: "center", color: "#475569" }}>
-                            {item.TyLeDinhMucGiang !== null && item.TyLeDinhMucGiang !== undefined ? (
+                          <td
+                            style={{
+                              padding: "12px",
+                              textAlign: "center",
+                              color: "#475569",
+                            }}
+                          >
+                            {item.TyLeDinhMucGiang !== null &&
+                            item.TyLeDinhMucGiang !== undefined ? (
                               <span
                                 style={{
                                   fontWeight: "600",
@@ -733,7 +1025,7 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                                 {item.TyLeDinhMucGiang}%
                               </span>
                             ) : (
-                              "—"
+                              "-"
                             )}
                           </td>
 
@@ -745,7 +1037,9 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                               </div>
                             )}
                             {item.DenNgay ? (
-                              <div style={{ fontSize: "12px", color: "#64748b" }}>
+                              <div
+                                style={{ fontSize: "12px", color: "#64748b" }}
+                              >
                                 Đến: <strong>{formatDate(item.DenNgay)}</strong>
                               </div>
                             ) : (
@@ -763,15 +1057,27 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                                   marginTop: item.TuNgay ? "4px" : "0",
                                 }}
                               >
-                                <i className="fa-solid fa-circle-check" style={{ marginRight: "4px", fontSize: "9px" }}></i>
+                                <i
+                                  className="fa-solid fa-circle-check"
+                                  style={{
+                                    marginRight: "4px",
+                                    fontSize: "9px",
+                                  }}
+                                ></i>
                                 Đang công tác
                               </span>
                             )}
                           </td>
 
                           {/* Ghi chú */}
-                          <td style={{ padding: "12px", color: "#64748b", fontSize: "12px" }}>
-                            {item.GhiChu || "—"}
+                          <td
+                            style={{
+                              padding: "12px",
+                              color: "#64748b",
+                              fontSize: "12px",
+                            }}
+                          >
+                            {item.GhiChu || "-"}
                           </td>
                         </tr>
                       );
@@ -818,10 +1124,19 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                       gap: "8px",
                     }}
                   >
-                    <i className="fa-solid fa-graduation-cap" style={{ color: "#003399" }}></i>
+                    <i
+                      className="fa-solid fa-graduation-cap"
+                      style={{ color: "#003399" }}
+                    ></i>
                     Chức danh nghề nghiệp
                   </h3>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#64748b" }}>
+                  <p
+                    style={{
+                      margin: "4px 0 0 0",
+                      fontSize: "13px",
+                      color: "#64748b",
+                    }}
+                  >
                     Lịch sử bổ nhiệm chức danh nghề nghiệp
                   </p>
                 </div>
@@ -844,20 +1159,62 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                 >
                   <thead>
                     <tr style={{ background: "#f8fafc" }}>
-                      <th style={{ padding: "12px", textAlign: "left", width: "35%" }}>CHỨC DANH</th>
-                      <th style={{ padding: "12px", textAlign: "left", width: "20%" }}>TỪ NGÀY</th>
-                      <th style={{ padding: "12px", textAlign: "left", width: "20%" }}>ĐẾN NGÀY / TRẠNG THÁI</th>
-                      <th style={{ padding: "12px", textAlign: "left", width: "25%" }}>GHI CHÚ</th>
+                      <th
+                        style={{
+                          padding: "12px",
+                          textAlign: "left",
+                          width: "35%",
+                        }}
+                      >
+                        CHỨC DANH
+                      </th>
+                      <th
+                        style={{
+                          padding: "12px",
+                          textAlign: "left",
+                          width: "20%",
+                        }}
+                      >
+                        TỪ NGÀY
+                      </th>
+                      <th
+                        style={{
+                          padding: "12px",
+                          textAlign: "left",
+                          width: "20%",
+                        }}
+                      >
+                        ĐẾN NGÀY / TRẠNG THÁI
+                      </th>
+                      <th
+                        style={{
+                          padding: "12px",
+                          textAlign: "left",
+                          width: "25%",
+                        }}
+                      >
+                        GHI CHÚ
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {chucDanhHistory.map((item, idx) => (
-                      <tr key={item.IdNvChucDanh || idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "12px", fontWeight: "600", color: "#1e293b" }}>
-                          {item.TenChucDanh} {item.MaChucDanh ? `(${item.MaChucDanh})` : ""}
+                      <tr
+                        key={item.IdNvChucDanh || idx}
+                        style={{ borderBottom: "1px solid #f1f5f9" }}
+                      >
+                        <td
+                          style={{
+                            padding: "12px",
+                            fontWeight: "600",
+                            color: "#1e293b",
+                          }}
+                        >
+                          {item.TenChucDanh}{" "}
+                          {item.MaChucDanh ? `(${item.MaChucDanh})` : ""}
                         </td>
                         <td style={{ padding: "12px", color: "#475569" }}>
-                          {formatDate(item.TuNgay) || "—"}
+                          {formatDate(item.TuNgay) || "-"}
                         </td>
                         <td style={{ padding: "12px" }}>
                           {!item.DenNgay ? (
@@ -874,15 +1231,24 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                                 border: "1px solid #bbf7d0",
                               }}
                             >
-                              <i className="fa-solid fa-circle-check" style={{ marginRight: "4px", fontSize: "9px" }}></i>
+                              <i
+                                className="fa-solid fa-circle-check"
+                                style={{ marginRight: "4px", fontSize: "9px" }}
+                              ></i>
                               Hiện hành
                             </span>
                           ) : (
                             formatDate(item.DenNgay)
                           )}
                         </td>
-                        <td style={{ padding: "12px", color: "#64748b", fontSize: "12px" }}>
-                          {item.GhiChu || "—"}
+                        <td
+                          style={{
+                            padding: "12px",
+                            color: "#64748b",
+                            fontSize: "12px",
+                          }}
+                        >
+                          {item.GhiChu || "-"}
                         </td>
                       </tr>
                     ))}

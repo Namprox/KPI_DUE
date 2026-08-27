@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 /**
  * Trả bản kê về cho giảng viên sửa (2 → 4).
  *
- * Lý do BẮT BUỘC — server trả 400 nếu bỏ trống — và được lưu vào `NhanXetDuyet`
+ * Lý do BẮT BUỘC - server trả 400 nếu bỏ trống - và được lưu vào `NhanXetDuyet`
  * của header nên giảng viên đọc được nguyên văn. Vì vậy ô này không phải thủ tục:
  * đây là toàn bộ thông tin người kê nhận được để biết phải sửa gì.
  *

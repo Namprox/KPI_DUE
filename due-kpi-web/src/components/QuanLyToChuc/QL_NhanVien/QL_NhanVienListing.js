@@ -129,7 +129,7 @@ const QL_NhanVienListing = ({
                     </td>
                     <td style={{ whiteSpace: "nowrap" }}>
                       <div style={{ fontWeight: "500", color: "#475569" }}>
-                        {item.TenChucDanh || "—"}
+                        {item.TenChucDanh || "-"}
                       </div>
                     </td>
                     <td style={{ whiteSpace: "nowrap" }}>

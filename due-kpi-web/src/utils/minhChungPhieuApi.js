@@ -1,10 +1,10 @@
-import { apiFetch } from './api';
-import { readApiError } from './apiError';
+import { apiFetch } from "./api";
+import { readApiError } from "./apiError";
 import {
   formatKb,
   validatePdfFile,
   MAX_MINH_CHUNG_KB,
-} from './viPhamMinhChungApi';
+} from "./viPhamMinhChungApi";
 
 /**
  * Minh chứng của PHIẾU ĐÁNH GIÁ KPI (bảng minh_chung, khóa theo IdMinhChung).
@@ -13,7 +13,7 @@ import {
  *   - Mỗi chi tiết tiêu chí có NHIỀU minh chứng, mỗi bản ghi một IdMinhChung.
  *   - Server nhận pdf/doc/docx/xls/xlsx/png/jpg (trường LoaiFile) nên các bản ghi
  *     cũ vẫn có thể là doc/xls/ảnh: phần đọc phải phân nhánh "xem trước được" và
- *     "chỉ tải về". Còn phần TẢI LÊN thì nghiệp vụ chỉ cho phép PDF — xem locFilePdf.
+ *     "chỉ tải về". Còn phần TẢI LÊN thì nghiệp vụ chỉ cho phép PDF - xem locFilePdf.
  *
  * Endpoint (xem docs/openapi.yaml):
  *   GET api/chitiet/{idChiTiet}/minh-chung   → danh sách (nằm ở phieuApi.js)
@@ -28,7 +28,7 @@ import {
 export { formatKb, validatePdfFile, MAX_MINH_CHUNG_KB };
 
 /** Giá trị accept cho <input type="file"> minh chứng. */
-export const ACCEPT_PDF = 'application/pdf,.pdf';
+export const ACCEPT_PDF = "application/pdf,.pdf";
 
 /**
  * Lọc danh sách tệp người dùng vừa chọn, chỉ giữ lại PDF hợp lệ.
@@ -43,7 +43,7 @@ export const locFilePdf = (files) => {
   const loi = [];
   for (const file of files || []) {
     const thongBao = validatePdfFile(file);
-    if (thongBao) loi.push(`${file?.name || 'Tệp'}: ${thongBao}`);
+    if (thongBao) loi.push(`${file?.name || "Tệp"}: ${thongBao}`);
     else hopLe.push(file);
   }
   return { hopLe, loi };
@@ -56,13 +56,16 @@ export const laMinhChungFile = (mc) =>
 
 /** Đuôi tệp viết thường: ưu tiên LoaiFile do server ghi, fallback tên tệp gốc. */
 export const duoiFile = (mc) => {
-  const tho = String(mc?.LoaiFile || '').trim().replace(/^\./, '').toLowerCase();
+  const tho = String(mc?.LoaiFile || "")
+    .trim()
+    .replace(/^\./, "")
+    .toLowerCase();
   if (tho) return tho;
-  const khop = /\.([a-z0-9]+)$/i.exec(mc?.TenFileGoc || mc?.DuongDan || '');
-  return khop ? khop[1].toLowerCase() : '';
+  const khop = /\.([a-z0-9]+)$/i.exec(mc?.TenFileGoc || mc?.DuongDan || "");
+  return khop ? khop[1].toLowerCase() : "";
 };
 
-const DUOI_ANH = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'];
+const DUOI_ANH = ["png", "jpg", "jpeg", "gif", "webp", "bmp"];
 
 /**
  * Kiểu xem trước ngay trong modal.
@@ -71,40 +74,40 @@ const DUOI_ANH = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'];
  */
 export const kieuXemTruoc = (mc) => {
   const duoi = duoiFile(mc);
-  if (duoi === 'pdf') return 'pdf';
-  return DUOI_ANH.includes(duoi) ? 'image' : null;
+  if (duoi === "pdf") return "pdf";
+  return DUOI_ANH.includes(duoi) ? "image" : null;
 };
 
 /**
  * MIME đoán từ đuôi tệp. Cần ép lại type của blob vì server suy Content-Type từ
- * loai_file và trả application/octet-stream cho đuôi lạ — khi đó iframe/img sẽ
+ * loai_file và trả application/octet-stream cho đuôi lạ - khi đó iframe/img sẽ
  * tải xuống thay vì hiển thị.
  */
 const MIME_THEO_DUOI = {
-  pdf: 'application/pdf',
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  bmp: 'image/bmp',
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  bmp: "image/bmp",
 };
 
 /** Icon + màu theo định dạng, để danh sách minh chứng đọc được bằng mắt. */
 export const iconFile = (mc) => {
   switch (duoiFile(mc)) {
-    case 'pdf':
-      return { className: 'fa-solid fa-file-pdf', color: '#dc2626' };
-    case 'doc':
-    case 'docx':
-      return { className: 'fa-solid fa-file-word', color: '#1d4ed8' };
-    case 'xls':
-    case 'xlsx':
-      return { className: 'fa-solid fa-file-excel', color: '#047857' };
+    case "pdf":
+      return { className: "fa-solid fa-file-pdf", color: "#dc2626" };
+    case "doc":
+    case "docx":
+      return { className: "fa-solid fa-file-word", color: "#1d4ed8" };
+    case "xls":
+    case "xlsx":
+      return { className: "fa-solid fa-file-excel", color: "#047857" };
     default:
       return DUOI_ANH.includes(duoiFile(mc))
-        ? { className: 'fa-solid fa-file-image', color: '#7c3aed' }
-        : { className: 'fa-regular fa-file', color: '#64748b' };
+        ? { className: "fa-solid fa-file-image", color: "#7c3aed" }
+        : { className: "fa-regular fa-file", color: "#64748b" };
   }
 };
 
@@ -112,17 +115,17 @@ export const iconFile = (mc) => {
  * Chuẩn hóa một phần tử DanhSachFile về hình dạng MinhChungDto.
  *
  * Các form đánh giá (DanhGiaNhanVien, DanhGiaPhuLuc2, ChiTietDuyetPhieu) tự dựng
- * mảng DanhSachFile bằng tên trường camelCase riêng, còn GET api/approval — endpoint
- * chưa có trong docs/openapi.yaml — trả camelCase/snake_case lẫn lộn, nên phải đọc
+ * mảng DanhSachFile bằng tên trường camelCase riêng, còn GET api/approval - endpoint
+ * chưa có trong docs/openapi.yaml - trả camelCase/snake_case lẫn lộn, nên phải đọc
  * phòng hờ nhiều biến thể.
  *
  * IdMinhChung có thể null: endpoint tai-ve khóa theo id chứ không theo đường dẫn,
  * nên bản ghi cũ chỉ còn tên tệp (cột ten_file trên chi_tiet_danh_gia, có từ trước
- * khi tách bảng minh_chung) là không tải được — bên gọi phải nói rõ với người dùng
+ * khi tách bảng minh_chung) là không tải được - bên gọi phải nói rõ với người dùng
  * thay vì mở ra tab lỗi.
  */
 export const chuanHoaFileMinhChung = (file) => {
-  const duongDan = file?.fileName || file?.ten_file || file?.DuongDan || '';
+  const duongDan = file?.fileName || file?.ten_file || file?.DuongDan || "";
   const tenGoc =
     file?.originalName ||
     file?.ten_file_goc ||
@@ -140,7 +143,7 @@ export const chuanHoaFileMinhChung = (file) => {
     TenFileGoc: tenGoc,
     TenHienThi: tenGoc,
     DuongDan: duongDan,
-    LoaiFile: file?.fileType || file?.loai_file || file?.LoaiFile || '',
+    LoaiFile: file?.fileType || file?.loai_file || file?.LoaiFile || "",
     KichThuocKb:
       file?.fileSizeKB ?? file?.kich_thuoc_kb ?? file?.KichThuocKb ?? null,
   };
@@ -152,13 +155,13 @@ export const chuanHoaFileMinhChung = (file) => {
  * theo ngữ cảnh vi phạm ("Vi phạm này chưa có tệp…"), nên map lại ở đây.
  */
 const MINH_CHUNG_ERROR_MESSAGES = {
-  MINH_CHUNG_NOT_FOUND: 'Minh chứng không tồn tại hoặc đã bị xóa',
-  FILE_NOT_FOUND: 'Tệp minh chứng không còn trên máy chủ',
+  MINH_CHUNG_NOT_FOUND: "Minh chứng không tồn tại hoặc đã bị xóa",
+  FILE_NOT_FOUND: "Tệp minh chứng không còn trên máy chủ",
   MINH_CHUNG_KHONG_PHAI_FILE:
-    'Minh chứng này là liên kết nên không có tệp để tải về',
-  FORBIDDEN_CHUC_VU: 'Bạn không có quyền xem minh chứng của phiếu này',
+    "Minh chứng này là liên kết nên không có tệp để tải về",
+  FORBIDDEN_CHUC_VU: "Bạn không có quyền xem minh chứng của phiếu này",
   // Kho minh chứng (GET api/minhchung) dùng mã ngắn gọn hơn endpoint tải về
-  FORBIDDEN: 'Bạn không có quyền xem minh chứng của phiếu này',
+  FORBIDDEN: "Bạn không có quyền xem minh chứng của phiếu này",
 };
 
 /**
@@ -168,26 +171,30 @@ const MINH_CHUNG_ERROR_MESSAGES = {
  *   idPhieu > idNam > (không tham số = mọi năm của người đang đăng nhập).
  * idNhanVien chỉ dùng kèm idNam, mặc định là chính người đăng nhập.
  *
- * 404 nghĩa là "không có phiếu nào khớp bộ lọc" chứ không phải hỏng — quy về mảng
+ * 404 nghĩa là "không có phiếu nào khớp bộ lọc" chứ không phải hỏng - quy về mảng
  * rỗng để màn hình hiện trạng thái trống thay vì báo đỏ. 403 vẫn ném lỗi vì đó là
  * chuyện quyền, người dùng cần biết.
  *
- * @returns {Promise<Array>} MinhChungKhoDto[] — đã sắp theo năm giảm dần, rồi thứ
+ * @returns {Promise<Array>} MinhChungKhoDto[] - đã sắp theo năm giảm dần, rồi thứ
  *   tự hiển thị của tiêu chí
  */
-export const fetchKhoMinhChung = async ({ idPhieu, idNam, idNhanVien } = {}) => {
+export const fetchKhoMinhChung = async ({
+  idPhieu,
+  idNam,
+  idNhanVien,
+} = {}) => {
   const qs = new URLSearchParams();
-  if (idPhieu) qs.set('idPhieu', String(idPhieu));
-  if (idNam) qs.set('idNam', String(idNam));
-  if (idNhanVien) qs.set('idNhanVien', String(idNhanVien));
+  if (idPhieu) qs.set("idPhieu", String(idPhieu));
+  if (idNam) qs.set("idNam", String(idNam));
+  if (idNhanVien) qs.set("idNhanVien", String(idNhanVien));
   const query = qs.toString();
 
-  const response = await apiFetch(`minhchung${query ? `?${query}` : ''}`);
+  const response = await apiFetch(`minhchung${query ? `?${query}` : ""}`);
 
   if (response.status === 404) return [];
 
   if (!response.ok) {
-    const info = await readApiError(response, 'Không tải được kho minh chứng');
+    const info = await readApiError(response, "Không tải được kho minh chứng");
     const error = new Error(
       MINH_CHUNG_ERROR_MESSAGES[info.errorCode] || info.message,
     );
@@ -205,7 +212,7 @@ const fetchFileBlob = async (idMinhChung) => {
   const response = await apiFetch(`minhchung/${idMinhChung}/tai-ve`);
 
   if (!response.ok) {
-    const info = await readApiError(response, 'Không tải được tệp minh chứng');
+    const info = await readApiError(response, "Không tải được tệp minh chứng");
     const error = new Error(
       MINH_CHUNG_ERROR_MESSAGES[info.errorCode] || info.message,
     );
@@ -235,7 +242,7 @@ export const downloadMinhChungFile = async (mc) => {
   const blob = await fetchFileBlob(mc.IdMinhChung);
   const url = window.URL.createObjectURL(blob);
   try {
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download =
       mc.TenFileGoc || mc.TenHienThi || `minh-chung-${mc.IdMinhChung}`;

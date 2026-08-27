@@ -1,5 +1,5 @@
 /**
- * Phục vụ cộng đồng và các nhiệm vụ khác theo phân công của Khoa — lớp truy cập
+ * Phục vụ cộng đồng và các nhiệm vụ khác theo phân công của Khoa - lớp truy cập
  * API của cả module.
  *
  * Đây là **KPI Nhóm III** của phiếu đánh giá giảng viên: tiêu chí "Thực hiện
@@ -8,7 +8,7 @@
  *
  * Nghiệp vụ: **Khoa nhập liệu, giảng viên phản hồi.** Giảng viên KHÔNG tự kê khai
  * nhiệm vụ, vì vai trò chủ trì / phối hợp là quan hệ tương đối giữa nhiều người
- * trong CÙNG một nhiệm vụ — chỉ Khoa mới phân định được. (Luồng cũ để giảng viên
+ * trong CÙNG một nhiệm vụ - chỉ Khoa mới phân định được. (Luồng cũ để giảng viên
  * tự kê khai qua `nhiem_vu_cong_dong` đã bị khoá.)
  *
  * Mọi request đi qua apiFetch nên đã có sẵn `credentials: 'include'` và vòng
@@ -19,18 +19,18 @@
  *  1. Envelope PascalCase `{ Success, Message, ErrorCode?, Item?, Items?, Nhom? }`
  *     và server bật NullValueHandling.Ignore ⇒ trường null BIẾN MẤT khỏi JSON chứ
  *     không phải `null`. Đừng so sánh `=== null`, luôn `?.` và `??`.
- *  2. Lỗi từ filter xác thực trả hình dạng KHÁC — `{ "message": "..." }` chữ
+ *  2. Lỗi từ filter xác thực trả hình dạng KHÁC - `{ "message": "..." }` chữ
  *     thường, không có `Success`. docLoi() chịu được cả hai dạng.
  *  3. Lưu nhiệm vụ là MỘT form MỘT lần lưu: gửi TOÀN BỘ danh sách phân công sau
  *     khi sửa, server tự tính diff. Không có endpoint thêm/xoá từng dòng.
- *  4. Client KHÔNG gửi điểm — server resolve từ danh mục vai trò rồi ghi cứng vào
+ *  4. Client KHÔNG gửi điểm - server resolve từ danh mục vai trò rồi ghi cứng vào
  *     bản ghi (diem_snapshot). Điểm ở FE chỉ để hiển thị dự kiến.
  *
  * Nguồn chuẩn: docs/openapi.yaml (tag NhiemVuKhoa),
  * docs/frontend-nhiem-vu-khoa.md, docs/schema_ghi_chu.md mục 7.
  */
 
-import { apiFetch } from './api';
+import { apiFetch } from "./api";
 
 /* ------------------------------------------------------------------ */
 /* Hằng số nghiệp vụ                                                   */
@@ -71,29 +71,29 @@ export const HANH_DONG = {
 };
 
 export const TEN_LOAI_PHAN_HOI = {
-  [LOAI_PHAN_HOI.SAI_VAI_TRO]: 'Sai vai trò',
-  [LOAI_PHAN_HOI.THIEU_NHIEM_VU]: 'Thiếu nhiệm vụ',
+  [LOAI_PHAN_HOI.SAI_VAI_TRO]: "Sai vai trò",
+  [LOAI_PHAN_HOI.THIEU_NHIEM_VU]: "Thiếu nhiệm vụ",
 };
 
 export const TEN_HANH_DONG = {
-  [HANH_DONG.TAO_NHIEM_VU]: 'Tạo nhiệm vụ',
-  [HANH_DONG.SUA_NHIEM_VU]: 'Sửa nhiệm vụ',
-  [HANH_DONG.XOA_NHIEM_VU]: 'Xoá nhiệm vụ',
-  [HANH_DONG.THEM_PHAN_CONG]: 'Thêm phân công',
-  [HANH_DONG.DOI_VAI_TRO]: 'Đổi vai trò / điểm',
-  [HANH_DONG.GO_PHAN_CONG]: 'Gỡ phân công',
-  [HANH_DONG.CHOT_KY]: 'Chốt kỳ',
-  [HANH_DONG.MO_LAI_KY]: 'Mở lại kỳ',
-  [HANH_DONG.XU_LY_PHAN_HOI]: 'Xử lý phản hồi',
+  [HANH_DONG.TAO_NHIEM_VU]: "Tạo nhiệm vụ",
+  [HANH_DONG.SUA_NHIEM_VU]: "Sửa nhiệm vụ",
+  [HANH_DONG.XOA_NHIEM_VU]: "Xoá nhiệm vụ",
+  [HANH_DONG.THEM_PHAN_CONG]: "Thêm phân công",
+  [HANH_DONG.DOI_VAI_TRO]: "Đổi vai trò / điểm",
+  [HANH_DONG.GO_PHAN_CONG]: "Gỡ phân công",
+  [HANH_DONG.CHOT_KY]: "Chốt kỳ",
+  [HANH_DONG.MO_LAI_KY]: "Mở lại kỳ",
+  [HANH_DONG.XU_LY_PHAN_HOI]: "Xử lý phản hồi",
 };
 
 /**
- * Giới hạn upload mặc định — chỉ dùng khi CHƯA gọi được /cau-hinh/nhiem-vu-khoa.
+ * Giới hạn upload mặc định - chỉ dùng khi CHƯA gọi được /cau-hinh/nhiem-vu-khoa.
  * Cấu hình thật lấy từ server: Khoa/năm có thể có mức riêng.
  */
 export const CAU_HINH_MAC_DINH = {
-  AllowedExtensions: ['pdf'],
-  Accept: '.pdf',
+  AllowedExtensions: ["pdf"],
+  Accept: ".pdf",
   MaxFileSizeKb: 10240,
   MaxTenHienThiLength: 255,
 };
@@ -109,18 +109,18 @@ export const CAU_HINH_MAC_DINH = {
 export const NVK_ERROR_MESSAGES = {
   INVALID: null,
   KHONG_PHAI_KHOA:
-    'Đơn vị này không phải Khoa — module nhiệm vụ chỉ áp dụng cho Khoa',
+    "Đơn vị này không phải Khoa - module nhiệm vụ chỉ áp dụng cho Khoa",
   GV_NGOAI_KHOA:
-    'Có người trong danh sách không thuộc Khoa. Toàn bộ thay đổi đã bị huỷ, chưa lưu dòng nào.',
-  FORBIDDEN: 'Bạn không có quyền thực hiện thao tác này',
-  NOT_FOUND: 'Không tìm thấy dữ liệu',
+    "Có người trong danh sách không thuộc Khoa. Toàn bộ thay đổi đã bị huỷ, chưa lưu dòng nào.",
+  FORBIDDEN: "Bạn không có quyền thực hiện thao tác này",
+  NOT_FOUND: "Không tìm thấy dữ liệu",
   KY_DA_CHOT:
-    'Kỳ đã chốt nên không ghi được. Cần mở lại kỳ trước khi chỉnh sửa.',
+    "Kỳ đã chốt nên không ghi được. Cần mở lại kỳ trước khi chỉnh sửa.",
   TRUNG_CHU_TRI:
-    'Mỗi nhiệm vụ chỉ được có một chủ trì — hãy đổi vai trò của người còn lại',
+    "Mỗi nhiệm vụ chỉ được có một chủ trì - hãy đổi vai trò của người còn lại",
   CHOT_KHONG_HOP_LE:
-    'Vẫn còn vấn đề chặn nên chưa chốt được kỳ. Hãy mở lại màn hình kiểm tra chốt.',
-  SQL_ERROR: 'Lỗi hệ thống khi truy cập dữ liệu, vui lòng thử lại',
+    "Vẫn còn vấn đề chặn nên chưa chốt được kỳ. Hãy mở lại màn hình kiểm tra chốt.",
+  SQL_ERROR: "Lỗi hệ thống khi truy cập dữ liệu, vui lòng thử lại",
 };
 
 /** Đọc body an toàn: 204, body rỗng hay HTML lỗi đều không được làm vỡ luồng. */
@@ -139,7 +139,7 @@ const docBody = async (response) => {
  */
 const taoLoi = (response, body, fallback) => {
   const errorCode = body?.ErrorCode || null;
-  const rawMessage = body?.Message || body?.message || '';
+  const rawMessage = body?.Message || body?.message || "";
   const mapped = errorCode ? NVK_ERROR_MESSAGES[errorCode] : null;
 
   const error = new Error(mapped || rawMessage || fallback);
@@ -152,11 +152,11 @@ const taoLoi = (response, body, fallback) => {
 const buildQuery = (params) => {
   const qs = new URLSearchParams();
   Object.entries(params || {}).forEach(([key, value]) => {
-    if (value === null || value === undefined || value === '') return;
+    if (value === null || value === undefined || value === "") return;
     qs.set(key, String(value));
   });
   const s = qs.toString();
-  return s ? `?${s}` : '';
+  return s ? `?${s}` : "";
 };
 
 /**
@@ -189,7 +189,7 @@ const layItems = async (endpoint, options, fallback) => {
 };
 
 const jsonBody = (data) => ({
-  method: 'POST',
+  method: "POST",
   body: JSON.stringify(data),
 });
 
@@ -211,7 +211,7 @@ export const layCauHinh = async ({ idDonVi, idNam } = {}) => {
   const item = await layItem(
     `cau-hinh/nhiem-vu-khoa${buildQuery({ idDonVi, idNam })}`,
     undefined,
-    'Không tải được cấu hình module nhiệm vụ Khoa',
+    "Không tải được cấu hình module nhiệm vụ Khoa",
   );
   return item ? { ...CAU_HINH_MAC_DINH, ...item } : { ...CAU_HINH_MAC_DINH };
 };
@@ -226,7 +226,7 @@ export const layCauHinh = async ({ idDonVi, idNam } = {}) => {
  * Kỳ được TẠO LƯỜI: endpoint này tự INSERT nếu chưa có, nên màn hình KHÔNG cần
  * nút "mở kỳ".
  *
- * `Nhom` nằm ở cấp ENVELOPE chứ không trong Item — đây là endpoint duy nhất
+ * `Nhom` nằm ở cấp ENVELOPE chứ không trong Item - đây là endpoint duy nhất
  * (cùng với Item của /tong-hop) phát slot này.
  *
  * @returns {Promise<{ky: object|null, nhom: object[]}>}
@@ -235,7 +235,7 @@ export const layKy = async ({ idNam, idDonVi }) => {
   const envelope = await goiApi(
     `nhiem-vu-khoa/ky${buildQuery({ idNam, idDonVi })}`,
     undefined,
-    'Không tải được kỳ nhiệm vụ của Khoa',
+    "Không tải được kỳ nhiệm vụ của Khoa",
   );
   return {
     ky: envelope.Item ?? null,
@@ -246,7 +246,7 @@ export const layKy = async ({ idNam, idDonVi }) => {
 /**
  * Đặt hạn phản hồi / ghi chú, hoặc mở lại kỳ đã chốt.
  *
- * Hạn phản hồi chỉ là NHÃN hiển thị — hết hạn không khoá gì ("không lên tiếng =
+ * Hạn phản hồi chỉ là NHÃN hiển thị - hết hạn không khoá gì ("không lên tiếng =
  * đồng ý"). `xoaHan` ưu tiên hơn `hanPhanHoi`. Mở lại bắt buộc có `lyDo` và chỉ
  * người có `CanChot` mới làm được (TLGVK cố ý bị loại).
  */
@@ -260,9 +260,9 @@ export const capNhatKy = async ({
   lyDo,
 }) => {
   const envelope = await goiApi(
-    'nhiem-vu-khoa/ky',
+    "nhiem-vu-khoa/ky",
     {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({
         IdNam: idNam,
         IdDonVi: idDonVi,
@@ -273,7 +273,7 @@ export const capNhatKy = async ({
         LyDo: lyDo ?? null,
       }),
     },
-    moLai ? 'Mở lại kỳ thất bại' : 'Cập nhật kỳ thất bại',
+    moLai ? "Mở lại kỳ thất bại" : "Cập nhật kỳ thất bại",
   );
   return {
     ky: envelope.Item ?? null,
@@ -287,24 +287,24 @@ export const capNhatKy = async ({
 
 /**
  * Danh sách nhiệm vụ của kỳ. Mỗi dòng ĐÃ KÈM SẴN `PhanCong[]` và `MinhChung[]`
- * (SP trả 3 result set, C# ghép sẵn) — đừng gọi thêm gì cho từng dòng.
+ * (SP trả 3 result set, C# ghép sẵn) - đừng gọi thêm gì cho từng dòng.
  */
 export const layDanhSachNhiemVu = ({ idNam, idDonVi, idNhomNv, tuKhoa } = {}) =>
   layItems(
     `nhiem-vu-khoa${buildQuery({ idNam, idDonVi, idNhomNv, tuKhoa })}`,
     undefined,
-    'Không tải được danh sách nhiệm vụ',
+    "Không tải được danh sách nhiệm vụ",
   );
 
 export const layNhiemVu = (id) =>
-  layItem(`nhiem-vu-khoa/${id}`, undefined, 'Không tải được nhiệm vụ');
+  layItem(`nhiem-vu-khoa/${id}`, undefined, "Không tải được nhiệm vụ");
 
 /**
  * Chỉ giữ ba trường server nhận, bỏ mọi field snapshot của dòng đang hiển thị.
  *
  * Quan trọng: KHÔNG gửi `DiemSnapshot` / `MaVaiTroSnapshot` dù form đang có sẵn.
  * Server tự tra mức điểm rồi ghi cứng, và chỉ re-snapshot khi `IdVaiTro` THAY
- * ĐỔI — nhờ vậy sửa tên nhiệm vụ không làm điểm kỳ cũ nhảy theo quy chế mới.
+ * ĐỔI - nhờ vậy sửa tên nhiệm vụ không làm điểm kỳ cũ nhảy theo quy chế mới.
  */
 const chuanBiPhanCong = (danhSach) =>
   (danhSach || [])
@@ -316,7 +316,7 @@ const chuanBiPhanCong = (danhSach) =>
     }));
 
 /**
- * Tạo (không có `id`) hoặc sửa (có `id`) — MỘT form, MỘT lần lưu.
+ * Tạo (không có `id`) hoặc sửa (có `id`) - MỘT form, MỘT lần lưu.
  *
  * ⚠️ Khi sửa phải truyền TOÀN BỘ danh sách phân công SAU KHI SỬA, không phải
  * phần thay đổi. Server tự tính diff: dòng không còn trong danh sách = gỡ, dòng
@@ -324,12 +324,12 @@ const chuanBiPhanCong = (danhSach) =>
  * **Xoá một người khỏi nhiệm vụ = đơn giản là không gửi dòng đó nữa.**
  *
  * `phanCong` rỗng vẫn lưu được (Khoa nhập dở nhiệm vụ trước, gán người sau), và
- * nhiệm vụ chưa có chủ trì cũng lưu được — chỉ chặn ở bước CHỐT kỳ.
+ * nhiệm vụ chưa có chủ trì cũng lưu được - chỉ chặn ở bước CHỐT kỳ.
  *
  * `idNam` / `idDonVi` bị BỎ QUA khi sửa (server lấy từ chính nhiệm vụ).
  *
  * @returns {Promise<object>} nhiệm vụ đầy đủ kèm PhanCong[] với DiemSnapshot
- *   server vừa tính — DÙNG NÓ để cập nhật state, đừng tự đoán điểm ở FE.
+ *   server vừa tính - DÙNG NÓ để cập nhật state, đừng tự đoán điểm ở FE.
  */
 export const luuNhiemVu = async ({
   id,
@@ -344,29 +344,29 @@ export const luuNhiemVu = async ({
     IdNam: idNam,
     IdDonVi: idDonVi,
     IdNhomNv: Number(idNhomNv),
-    TenNhiemVu: (tenNhiemVu || '').trim(),
+    TenNhiemVu: (tenNhiemVu || "").trim(),
     MoTa: moTa?.trim() ? moTa.trim() : null,
     PhanCong: chuanBiPhanCong(phanCong),
   };
 
   return layItem(
-    id ? `nhiem-vu-khoa/${id}` : 'nhiem-vu-khoa',
-    { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) },
-    id ? 'Lưu nhiệm vụ thất bại' : 'Tạo nhiệm vụ thất bại',
+    id ? `nhiem-vu-khoa/${id}` : "nhiem-vu-khoa",
+    { method: id ? "PUT" : "POST", body: JSON.stringify(body) },
+    id ? "Lưu nhiệm vụ thất bại" : "Tạo nhiệm vụ thất bại",
   );
 };
 
-/** Xoá mềm nhiệm vụ — kéo theo cả phân công nên màn hình phải hỏi xác nhận. */
+/** Xoá mềm nhiệm vụ - kéo theo cả phân công nên màn hình phải hỏi xác nhận. */
 export const xoaNhiemVu = async (id) => {
   await goiApi(
     `nhiem-vu-khoa/${id}`,
-    { method: 'DELETE' },
-    'Xoá nhiệm vụ thất bại',
+    { method: "DELETE" },
+    "Xoá nhiệm vụ thất bại",
   );
 };
 
 /**
- * Toàn bộ giảng viên của Khoa kèm sẵn tổng điểm hiện tại — dùng cho ô chọn người.
+ * Toàn bộ giảng viên của Khoa kèm sẵn tổng điểm hiện tại - dùng cho ô chọn người.
  *
  * Gọi MỘT lần khi mở form rồi cache lại; không gọi cho từng dòng phân công.
  * `TongDiemThucTe > TranDiem` chỉ để tô cảnh báo, KHÔNG chặn chọn.
@@ -375,7 +375,7 @@ export const layGiangVien = ({ idNam, idDonVi, tuKhoa } = {}) =>
   layItems(
     `nhiem-vu-khoa/giang-vien${buildQuery({ idNam, idDonVi, tuKhoa })}`,
     undefined,
-    'Không tải được danh sách giảng viên của Khoa',
+    "Không tải được danh sách giảng viên của Khoa",
   );
 
 /* ------------------------------------------------------------------ */
@@ -385,7 +385,7 @@ export const layGiangVien = ({ idNam, idDonVi, tuKhoa } = {}) =>
 /**
  * Bảng điểm nhiệm vụ của CHÍNH người đang đăng nhập.
  *
- * Không cần `idDonVi` — server lấy từ token, ai cũng xem được của mình.
+ * Không cần `idDonVi` - server lấy từ token, ai cũng xem được của mình.
  * Khoa chưa mở kỳ thì `Header` vẫn trả về nhưng `Items` rỗng: hiện thông báo
  * "Khoa chưa phân công nhiệm vụ nào" thay vì màn hình trắng.
  *
@@ -395,7 +395,7 @@ export const layNhiemVuCuaToi = async (idNam) => {
   const item = await layItem(
     `nhiem-vu-khoa/cua-toi${buildQuery({ idNam })}`,
     undefined,
-    'Không tải được bảng nhiệm vụ của bạn',
+    "Không tải được bảng nhiệm vụ của bạn",
   );
   return {
     Header: item?.Header ?? null,
@@ -419,7 +419,7 @@ export const layTongHop = async ({ idNam, idDonVi }) => {
   const item = await layItem(
     `nhiem-vu-khoa/tong-hop${buildQuery({ idNam, idDonVi })}`,
     undefined,
-    'Không tải được bảng tổng hợp',
+    "Không tải được bảng tổng hợp",
   );
   return {
     Header: item?.Header ?? null,
@@ -437,19 +437,19 @@ export const kiemTraChot = ({ idNam, idDonVi }) =>
   layItem(
     `nhiem-vu-khoa/kiem-tra-chot${buildQuery({ idNam, idDonVi })}`,
     undefined,
-    'Không kiểm tra được điều kiện chốt kỳ',
+    "Không kiểm tra được điều kiện chốt kỳ",
   );
 
 /**
  * Chốt kỳ. Server TỰ TÍNH LẠI điều kiện chặn, không tin kết quả màn hình
- * kiểm-tra-chốt mà client vừa xem — nên vẫn phải xử lý 422 CHOT_KHONG_HOP_LE
+ * kiểm-tra-chốt mà client vừa xem - nên vẫn phải xử lý 422 CHOT_KHONG_HOP_LE
  * (dữ liệu có thể đổi giữa hai lần gọi).
  */
 export const chotKy = async ({ idNam, idDonVi, ghiChu }) => {
   const envelope = await goiApi(
-    'nhiem-vu-khoa/chot',
+    "nhiem-vu-khoa/chot",
     jsonBody({ IdNam: idNam, IdDonVi: idDonVi, GhiChu: ghiChu ?? null }),
-    'Chốt kỳ thất bại',
+    "Chốt kỳ thất bại",
   );
   return envelope.Item ?? null;
 };
@@ -458,17 +458,21 @@ export const chotKy = async ({ idNam, idDonVi, ghiChu }) => {
  * Xuất bảng tổng hợp ra Excel.
  *
  * Đi qua apiFetch thay vì `window.location`: API khác origin, và endpoint này
- * CÓ THỂ trả JSON (khi thiếu quyền) thay vì file — kiểm Content-Type trước khi
+ * CÓ THỂ trả JSON (khi thiếu quyền) thay vì file - kiểm Content-Type trước khi
  * dựng blob, nếu không người dùng sẽ tải về một file .xlsx chứa thông báo lỗi.
  */
 export const taiExcelTongHop = async ({ idNam, idDonVi, maDonVi }) => {
   const response = await apiFetch(
     `nhiem-vu-khoa/export${buildQuery({ idNam, idDonVi })}`,
   );
-  const contentType = response.headers.get('Content-Type') || '';
+  const contentType = response.headers.get("Content-Type") || "";
 
-  if (!response.ok || contentType.includes('application/json')) {
-    throw taoLoi(response, await docBody(response), 'Không xuất được file Excel');
+  if (!response.ok || contentType.includes("application/json")) {
+    throw taoLoi(
+      response,
+      await docBody(response),
+      "Không xuất được file Excel",
+    );
   }
 
   const blob = await response.blob();
@@ -486,7 +490,7 @@ export const taiExcelTongHop = async ({ idNam, idDonVi, maDonVi }) => {
  * Gửi JSON sẽ nhận 415. Đây là đánh đổi có chủ đích để "một endpoint gửi phản
  * hồi kèm file" đúng nghĩa trên .NET 4.0.
  *
- * Tên field bắt buộc là `file`, và KHÔNG tự đặt Content-Type — apiFetch đã bỏ
+ * Tên field bắt buộc là `file`, và KHÔNG tự đặt Content-Type - apiFetch đã bỏ
  * header khi body là FormData để trình duyệt tự sinh boundary.
  *
  * File được đính kèm SAU KHI phản hồi đã lưu: upload lỗi thì phản hồi vẫn được
@@ -505,32 +509,32 @@ export const guiPhanHoi = async ({
   tenHienThi,
 }) => {
   const fd = new FormData();
-  fd.append('idNam', String(idNam));
-  fd.append('loaiPhanHoi', String(loaiPhanHoi));
-  fd.append('noiDung', noiDung ?? '');
+  fd.append("idNam", String(idNam));
+  fd.append("loaiPhanHoi", String(loaiPhanHoi));
+  fd.append("noiDung", noiDung ?? "");
 
   // Trường tuỳ theo loại: loại 1 bắt buộc trỏ tới nhiệm vụ, loại 2 chỉ gợi ý nhóm
   if (Number(loaiPhanHoi) === LOAI_PHAN_HOI.SAI_VAI_TRO && idNhiemVuKhoa) {
-    fd.append('idNhiemVuKhoa', String(idNhiemVuKhoa));
+    fd.append("idNhiemVuKhoa", String(idNhiemVuKhoa));
   }
   if (Number(loaiPhanHoi) === LOAI_PHAN_HOI.THIEU_NHIEM_VU && idNhomNv) {
-    fd.append('idNhomNv', String(idNhomNv));
+    fd.append("idNhomNv", String(idNhomNv));
   }
   if (file) {
-    fd.append('file', file);
-    if (tenHienThi?.trim()) fd.append('tenHienThi', tenHienThi.trim());
+    fd.append("file", file);
+    if (tenHienThi?.trim()) fd.append("tenHienThi", tenHienThi.trim());
   }
 
   const envelope = await goiApi(
-    'nhiem-vu-khoa/phan-hoi',
-    { method: 'POST', body: fd },
-    'Gửi phản hồi thất bại',
+    "nhiem-vu-khoa/phan-hoi",
+    { method: "POST", body: fd },
+    "Gửi phản hồi thất bại",
   );
 
-  const message = envelope.Message || '';
+  const message = envelope.Message || "";
   return {
     item: envelope.Item ?? null,
-    canhBaoDinhKem: /dinh kem file that bai/i.test(message) ? message : '',
+    canhBaoDinhKem: /dinh kem file that bai/i.test(message) ? message : "",
   };
 };
 
@@ -542,7 +546,7 @@ export const layDanhSachPhanHoi = ({ idNam, idDonVi, trangThai } = {}) =>
   layItems(
     `nhiem-vu-khoa/phan-hoi${buildQuery({ idNam, idDonVi, trangThai })}`,
     undefined,
-    'Không tải được danh sách phản hồi',
+    "Không tải được danh sách phản hồi",
   );
 
 /** Đánh dấu đã xử lý; `moLai = true` trả phản hồi về trạng thái chờ. */
@@ -550,7 +554,7 @@ export const xuLyPhanHoi = (idPhanHoi, { ghiChuXuLy, moLai } = {}) =>
   layItem(
     `nhiem-vu-khoa/phan-hoi/${idPhanHoi}/xu-ly`,
     jsonBody({ GhiChuXuLy: ghiChuXuLy ?? null, MoLai: !!moLai }),
-    'Cập nhật trạng thái phản hồi thất bại',
+    "Cập nhật trạng thái phản hồi thất bại",
   );
 
 /* ------------------------------------------------------------------ */
@@ -559,15 +563,15 @@ export const xuLyPhanHoi = (idPhanHoi, { ghiChuXuLy, moLai } = {}) =>
 
 /** Kích thước hiển thị: dưới 1024 KB để KB, lớn hơn đổi sang MB. */
 export const formatKb = (kb) => {
-  if (kb == null) return '—';
+  if (kb == null) return "-";
   const num = Number(kb);
-  if (!Number.isFinite(num)) return '—';
+  if (!Number.isFinite(num)) return "-";
   return num >= 1024 ? `${(num / 1024).toFixed(1)} MB` : `${num} KB`;
 };
 
 /**
  * Kiểm tra sơ bộ phía client trước khi tốn một vòng upload.
- * Server vẫn kiểm HAI LỚP: đuôi file VÀ chữ ký `%PDF-` — đổi đuôi .docx thành
+ * Server vẫn kiểm HAI LỚP: đuôi file VÀ chữ ký `%PDF-` - đổi đuôi .docx thành
  * .pdf sẽ bị trả 400, nên đây chỉ là lớp chặn sớm cho êm tay người dùng.
  *
  * @param {File} file
@@ -577,12 +581,12 @@ export const formatKb = (kb) => {
 export const validatePdf = (file, cauHinh) => {
   const gioiHan = cauHinh?.MaxFileSizeKb || CAU_HINH_MAC_DINH.MaxFileSizeKb;
 
-  if (!file) return 'Chưa chọn tệp minh chứng';
-  if (file.size === 0) return 'Tệp rỗng, vui lòng chọn tệp khác';
+  if (!file) return "Chưa chọn tệp minh chứng";
+  if (file.size === 0) return "Tệp rỗng, vui lòng chọn tệp khác";
 
   const laPdf =
-    file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
-  if (!laPdf) return 'Chỉ chấp nhận tệp PDF';
+    file.type === "application/pdf" || /\.pdf$/i.test(file.name || "");
+  if (!laPdf) return "Chỉ chấp nhận tệp PDF";
 
   const kb = Math.ceil(file.size / 1024);
   if (kb > gioiHan) {
@@ -596,18 +600,18 @@ const uploadMinhChung = async (endpoint, file, tenHienThi, cauHinh) => {
   if (loi) throw new Error(loi);
 
   const fd = new FormData();
-  fd.append('file', file);
-  if (tenHienThi?.trim()) fd.append('tenHienThi', tenHienThi.trim());
+  fd.append("file", file);
+  if (tenHienThi?.trim()) fd.append("tenHienThi", tenHienThi.trim());
 
   return layItem(
     endpoint,
-    { method: 'POST', body: fd },
-    'Tải lên minh chứng thất bại',
+    { method: "POST", body: fd },
+    "Tải lên minh chứng thất bại",
   );
 };
 
 /**
- * Minh chứng CẤP NHIỆM VỤ (cấp 1): quyết định phân công, kế hoạch, biên bản —
+ * Minh chứng CẤP NHIỆM VỤ (cấp 1): quyết định phân công, kế hoạch, biên bản -
  * tải lên MỘT lần, mọi giảng viên trong nhiệm vụ đều xem được.
  */
 export const themMinhChungNhiemVu = (idNhiemVu, file, tenHienThi, cauHinh) =>
@@ -631,15 +635,15 @@ export const layMinhChungNhiemVu = (idNhiemVu) =>
   layItems(
     `nhiem-vu-khoa/${idNhiemVu}/minh-chung`,
     undefined,
-    'Không tải được danh sách minh chứng',
+    "Không tải được danh sách minh chứng",
   );
 
 /** Xoá mềm minh chứng + dọn file vật lý. Kỳ phải còn mở. */
 export const xoaMinhChung = async (idMinhChung) => {
   await goiApi(
     `minh-chung-nvk/${idMinhChung}`,
-    { method: 'DELETE' },
-    'Xoá minh chứng thất bại',
+    { method: "DELETE" },
+    "Xoá minh chứng thất bại",
   );
 };
 
@@ -648,12 +652,16 @@ export const xoaMinhChung = async (idMinhChung) => {
  *
  * Endpoint hỗ trợ cookie nên thẻ `<a href>` cũng xác thực được, nhưng đi qua
  * apiFetch giữ được vòng refresh phiên và đọc được body lỗi JSON khi server trả
- * 403/404 — cùng cách làm với minh chứng của phiếu và vi phạm.
+ * 403/404 - cùng cách làm với minh chứng của phiếu và vi phạm.
  */
 const taiBlobMinhChung = async (idMinhChung) => {
   const response = await apiFetch(`minh-chung-nvk/${idMinhChung}/tai-ve`);
   if (!response.ok) {
-    throw taoLoi(response, await docBody(response), 'Không tải được tệp minh chứng');
+    throw taoLoi(
+      response,
+      await docBody(response),
+      "Không tải được tệp minh chứng",
+    );
   }
   return response.blob();
 };
@@ -668,16 +676,16 @@ export const taoUrlXemMinhChung = async (idMinhChung) => {
   // Ép type: một số cấu hình server trả octet-stream khiến trình duyệt tải
   // xuống thay vì hiển thị. Module chỉ nhận PDF nên ép luôn là an toàn.
   const pdf =
-    blob.type === 'application/pdf'
+    blob.type === "application/pdf"
       ? blob
-      : new Blob([blob], { type: 'application/pdf' });
+      : new Blob([blob], { type: "application/pdf" });
   return window.URL.createObjectURL(pdf);
 };
 
 const taiBlobVeMay = (blob, tenFile) => {
   const url = window.URL.createObjectURL(blob);
   try {
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = tenFile;
     document.body.appendChild(link);
@@ -704,14 +712,14 @@ export const layLichSuKy = ({ idNam, idDonVi }) =>
   layItems(
     `nhiem-vu-khoa/lich-su${buildQuery({ idNam, idDonVi })}`,
     undefined,
-    'Không tải được nhật ký của kỳ',
+    "Không tải được nhật ký của kỳ",
   );
 
 export const layLichSuNhiemVu = (idNhiemVu) =>
   layItems(
     `nhiem-vu-khoa/${idNhiemVu}/lich-su`,
     undefined,
-    'Không tải được nhật ký của nhiệm vụ',
+    "Không tải được nhật ký của nhiệm vụ",
   );
 
 /* ------------------------------------------------------------------ */
@@ -734,7 +742,7 @@ export const coTheNhap = (ky) => ky?.CanNhap === true && !laKyDaChot(ky);
 export const coTheChot = (ky) => ky?.CanChot === true;
 
 /**
- * Vượt trần chỉ là CẢNH BÁO — tuyệt đối không dùng để chặn nút Lưu.
+ * Vượt trần chỉ là CẢNH BÁO - tuyệt đối không dùng để chặn nút Lưu.
  * Chênh lệch nhỏ hơn 0.005 coi như bằng nhau để tránh nhiễu số thực.
  */
 export const vuotTran = (diemThucTe, tranDiem) => {

@@ -19,7 +19,7 @@ import {
 
 /**
  * Một minh chứng. Tệp tải lên (LoaiMinhChung = 1) phải đi qua
- * GET api/minhchung/{id}/tai-ve — endpoint nằm sau [TokenAuthorize] nên không gắn
+ * GET api/minhchung/{id}/tai-ve - endpoint nằm sau [TokenAuthorize] nên không gắn
  * được vào <a href>, việc tải blob do useMinhChungPhieuPreview ở trang cha lo.
  * Liên kết / DOI (loại 2, 3) không có tệp trên đĩa nên mở thẳng DuongDan.
  */
@@ -86,7 +86,7 @@ const MinhChungRow = ({ mc, onXem, onTai }) => {
         >
           {nhan}
         </button>
-        <div className="cd-mc-meta">{meta || "—"}</div>
+        <div className="cd-mc-meta">{meta || "-"}</div>
       </div>
       <button
         type="button"
@@ -126,7 +126,7 @@ const MinhChungRow = ({ mc, onXem, onTai }) => {
  * NhiemVuCongDong[] trong từng chi tiết, nên chỉ gọi API khi bản ghi thiếu mảng
  * đó (tránh n request thừa). Lịch sử chấm điểm không nằm trong detail và trang
  * cha lấy một lần cho cả phiếu qua GET api/phieu/{id}/lich-su-cham-diem rồi
- * truyền xuống đây — card không tự gọi API lịch sử nữa.
+ * truyền xuống đây - card không tự gọi API lịch sử nữa.
  */
 const TieuChiChamCard = ({
   chiTiet,
@@ -134,7 +134,7 @@ const TieuChiChamCard = ({
   lichSu = [],
   dangTaiLichSu = false,
   vaiTro = "thamDinh",
-  // Dòng bị server chỉ đích danh trong missingItems của 422 CHUA_CHOT_HET — tô đỏ
+  // Dòng bị server chỉ đích danh trong missingItems của 422 CHUA_CHOT_HET - tô đỏ
   // để người chốt thấy ngay phải đợi tiêu chí nào, thay vì chỉ đọc một dòng báo lỗi.
   noiBat = false,
   choPhepNhap,
@@ -188,7 +188,7 @@ const TieuChiChamCard = ({
         : Promise.resolve(nvNhung),
     ]).then((ketQua) => {
       if (huy) return;
-      // Một endpoint lỗi (403/404) không được làm hỏng cả panel — coi như rỗng.
+      // Một endpoint lỗi (403/404) không được làm hỏng cả panel - coi như rỗng.
       setMinhChung(ketQua[0].status === "fulfilled" ? ketQua[0].value : []);
       setNhiemVu(ketQua[1].status === "fulfilled" ? ketQua[1].value : []);
       setDangTaiPhu(false);
@@ -204,7 +204,7 @@ const TieuChiChamCard = ({
   const diemTuDong =
     chiTiet.DiemChinhThuc ?? chiTiet.DiemKhoa ?? chiTiet.DiemTuDanhGia;
 
-  // Khối kèm theo chỉ dựng cho phần thực sự có dữ liệu và mặc định mở sẵn —
+  // Khối kèm theo chỉ dựng cho phần thực sự có dữ liệu và mặc định mở sẵn -
   // tiêu chí trống thì không cần một hàng "không có gì" để người chấm bấm vào.
   const coMinhChung = (minhChung?.length ?? 0) > 0;
   const coNhiemVu = (nhiemVu?.length ?? 0) > 0;
@@ -224,7 +224,7 @@ const TieuChiChamCard = ({
     .filter(Boolean)
     .join(", ");
 
-  // Ba khối phụ giống hệt nhau ở cả hai kiểu thẻ, chỉ khác lớp CSS của hộp —
+  // Ba khối phụ giống hệt nhau ở cả hai kiểu thẻ, chỉ khác lớp CSS của hộp -
   // dựng một lần rồi truyền lớp vào để khỏi chép đôi.
   const khoiTuDanhGia = (lopHop, lopTieuDe) =>
     (chiTiet.MoTaHoanThanh || chiTiet.NhanXetTuDanhGia) && (
@@ -278,8 +278,8 @@ const TieuChiChamCard = ({
               {nhiemVu.map((nv) => (
                 <tr key={nv.IdNhiemVu}>
                   <td style={{ padding: "8px 10px" }}>{nv.TenNhiemVu}</td>
-                  <td style={{ padding: "8px 10px" }}>{nv.TenNhom || "—"}</td>
-                  <td style={{ padding: "8px 10px" }}>{nv.TenVaiTro || "—"}</td>
+                  <td style={{ padding: "8px 10px" }}>{nv.TenNhom || "-"}</td>
+                  <td style={{ padding: "8px 10px" }}>{nv.TenVaiTro || "-"}</td>
                   <td
                     style={{
                       padding: "8px 10px",
@@ -478,7 +478,7 @@ const TieuChiChamCard = ({
 
           {choPhepNhap && (
             <>
-              {/* Duyệt giữ nguyên là lối đi thường gặp nhất và không đòi lý do —
+              {/* Duyệt giữ nguyên là lối đi thường gặp nhất và không đòi lý do -
                   để trước để người thẩm định khỏi phải mở hộp thoại chọn lại
                   đúng mức giảng viên đã chọn. */}
               <button

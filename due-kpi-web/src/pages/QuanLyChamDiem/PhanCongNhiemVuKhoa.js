@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
@@ -45,13 +51,13 @@ const NHOM_TAT_CA = "";
  *
  * Phạm vi dữ liệu: đúng Khoa của người đăng nhập, suy từ `IdDonVi` rồi roll-up
  * lên cấp Khoa (thư ký có thể nằm ở Bộ môn con). Không có dropdown chọn Khoa
- * khác — server cũng chặn lại theo token.
+ * khác - server cũng chặn lại theo token.
  *
  * Quyền thao tác lấy từ cờ `CanNhap` / `CanChot` do endpoint `/ky` trả về, KHÔNG
  * suy từ `MaChucVu`: server còn xét cả phạm vi đơn vị lẫn trạng thái kỳ. Thư ký
  * Khoa nhập được nhưng không chốt được.
  *
- * Kỳ được tạo LƯỜI — endpoint `/ky` tự tạo nếu chưa có, nên không có nút "mở kỳ".
+ * Kỳ được tạo LƯỜI - endpoint `/ky` tự tạo nếu chưa có, nên không có nút "mở kỳ".
  */
 const PhanCongNhiemVuKhoa = () => {
   const toast = useRef(null);
@@ -113,7 +119,7 @@ const PhanCongNhiemVuKhoa = () => {
     };
   }, [baoLoi]);
 
-  /** Khoa chủ quản của người đăng nhập — phạm vi dữ liệu của cả màn hình. */
+  /** Khoa chủ quản của người đăng nhập - phạm vi dữ liệu của cả màn hình. */
   const khoaCuaToi = useMemo(() => {
     const donViIndex = buildDonViIndex(donViList);
     if (user?.DonVi && Array.isArray(user.DonVi)) {
@@ -122,10 +128,7 @@ const PhanCongNhiemVuKhoa = () => {
         if (laDonViKhoa(k)) return k;
       }
     }
-    const khoa = resolveKhoaCuaNhanVien(
-      user?.IdDonVi,
-      donViIndex,
-    );
+    const khoa = resolveKhoaCuaNhanVien(user?.IdDonVi, donViIndex);
     return laDonViKhoa(khoa) ? khoa : null;
   }, [user, donViList]);
 
@@ -237,7 +240,7 @@ const PhanCongNhiemVuKhoa = () => {
       <div className="page-header">
         <h2 className="nvk-title">Phân công phục vụ cộng đồng</h2>
         <span className="breadcrumb">
-          Khoa nhập nhiệm vụ và phân định vai trò — nguồn điểm KPI Nhóm III của
+          Khoa nhập nhiệm vụ và phân định vai trò - nguồn điểm KPI Nhóm III của
           giảng viên
         </span>
       </div>
@@ -323,7 +326,7 @@ const PhanCongNhiemVuKhoa = () => {
             </h3>
             <p style={{ margin: 0 }}>
               Module này chỉ áp dụng cho Khoa. Đơn vị trong hồ sơ của bạn không
-              thuộc Khoa nào — liên hệ quản trị viên để cập nhật lại đơn vị.
+              thuộc Khoa nào - liên hệ quản trị viên để cập nhật lại đơn vị.
             </p>
           </div>
         </div>
@@ -375,9 +378,9 @@ const PhanCongNhiemVuKhoa = () => {
             <div className="cd-hint cd-hint-warn nvk-canh-bao">
               <i className="fa-solid fa-circle-exclamation"></i> Trần điểm của
               module ({formatDiem(cauHinh.TranDiem, 1)}) khác điểm tối đa của
-              tiêu chí trên phiếu KPI (
-              {formatDiem(cauHinh.DiemToiDaTieuChi, 1)}). Điểm chấm vào phiếu sẽ
-              lệch với bảng tổng hợp — báo quản trị viên rà lại cấu hình.
+              tiêu chí trên phiếu KPI ({formatDiem(cauHinh.DiemToiDaTieuChi, 1)}
+              ). Điểm chấm vào phiếu sẽ lệch với bảng tổng hợp - báo quản trị
+              viên rà lại cấu hình.
             </div>
           )}
 

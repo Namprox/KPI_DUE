@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import { formatDiem } from '../../../utils/phieuApi';
-import { laDongChamTay, LOAI_NHOM_DV } from '../../../utils/phieuDonViApi';
+import React, { useMemo } from "react";
+import { formatDiem } from "../../../utils/phieuApi";
+import { laDongChamTay, LOAI_NHOM_DV } from "../../../utils/phieuDonViApi";
 
 /**
- * Biểu mẫu nhập liệu Đánh giá KPI Đơn vị — phân cấp 2 tầng nhóm (Nhóm cha A, B -> Nhóm con I, II... -> Tiêu chí).
+ * Biểu mẫu nhập liệu Đánh giá KPI Đơn vị - phân cấp 2 tầng nhóm (Nhóm cha A, B -> Nhóm con I, II... -> Tiêu chí).
  */
 const DanhGiaDonViForm = ({
   phieu,
@@ -29,16 +29,23 @@ const DanhGiaDonViForm = ({
     if (laDongChamTay(ct)) {
       const draft = nhapDiem[idCt];
       if (draft !== undefined) {
-        return draft === '' ? null : Number(draft);
+        return draft === "" ? null : Number(draft);
       }
-      return ct.DiemNhap === null || ct.DiemNhap === undefined ? null : Number(ct.DiemNhap);
+      return ct.DiemNhap === null || ct.DiemNhap === undefined
+        ? null
+        : Number(ct.DiemNhap);
     }
-    return ct.DiemTongHop === null || ct.DiemTongHop === undefined ? null : Number(ct.DiemTongHop);
+    return ct.DiemTongHop === null || ct.DiemTongHop === undefined
+      ? null
+      : Number(ct.DiemTongHop);
   };
 
   const totalCount = chiTietList.length;
-  const answeredCount = chiTietList.filter((ct) => getScoreOf(ct) != null).length;
-  const progressPercent = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
+  const answeredCount = chiTietList.filter(
+    (ct) => getScoreOf(ct) != null,
+  ).length;
+  const progressPercent =
+    totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
 
   // Tính tổng điểm tích lũy / cơ bản / vượt trội
   const scoreTichLuy = phieu?.TongDiemTichLuy ?? tamTinh?.tichLuy ?? 0;
@@ -72,8 +79,8 @@ const DanhGiaDonViForm = ({
         loaiNhom: loai,
         tenNhom:
           loai === LOAI_NHOM_DV.VUOT_TROI
-            ? 'B - Nhóm các tiêu chí liên quan đến thành tích vượt trội'
-            : 'A - Nhóm các tiêu chí liên quan đến nhiệm vụ cơ bản',
+            ? "B - Nhóm các tiêu chí liên quan đến thành tích vượt trội"
+            : "A - Nhóm các tiêu chí liên quan đến nhiệm vụ cơ bản",
         diemToiDa: 100,
         nhomConList: list.map((nhom) => ({
           ten: nhom.ten,
@@ -103,7 +110,8 @@ const DanhGiaDonViForm = ({
           </div>
 
           <div className="pl2-header-score-note">
-            (Điểm cơ bản: <b>{formatDiem(scoreCoBan)}đ</b> · Điểm vượt trội: <b>{formatDiem(scoreVuotTroi)}đ</b>)
+            (Điểm cơ bản: <b>{formatDiem(scoreCoBan)}đ</b> · Điểm vượt trội:{" "}
+            <b>{formatDiem(scoreVuotTroi)}đ</b>)
           </div>
 
           <div className="pl2-progress">
@@ -151,11 +159,11 @@ const DanhGiaDonViForm = ({
       )}
 
       {tongHop && (
-        <div className="cd-hint cd-hint-ok" style={{ marginBottom: '20px' }}>
-          <i className="fa-solid fa-circle-check"></i> Đã tổng hợp{' '}
-          <b>{tongHop.SoPhieuThanhVien ?? 0}</b> phiếu thành viên ·{' '}
-          <b>{tongHop.SoXuatSac ?? 0}</b> xuất sắc ·{' '}
-          <b>{tongHop.SoHoanThanh ?? 0}</b> hoàn thành · Điểm trung bình{' '}
+        <div className="cd-hint cd-hint-ok" style={{ marginBottom: "20px" }}>
+          <i className="fa-solid fa-circle-check"></i> Đã tổng hợp{" "}
+          <b>{tongHop.SoPhieuThanhVien ?? 0}</b> phiếu thành viên ·{" "}
+          <b>{tongHop.SoXuatSac ?? 0}</b> xuất sắc ·{" "}
+          <b>{tongHop.SoHoanThanh ?? 0}</b> hoàn thành · Điểm trung bình{" "}
           <b>{formatDiem(tongHop.DiemTrungBinh)}đ</b>.
         </div>
       )}
@@ -167,10 +175,12 @@ const DanhGiaDonViForm = ({
         return (
           <div key={section.loaiNhom || sIndex} className="pl2-section">
             {/* Header Nhóm Cha Cấp 1 */}
-            <div className={`pl2-section-header ${isVuotTroi ? 'vuot-troi' : ''}`}>
+            <div
+              className={`pl2-section-header ${isVuotTroi ? "vuot-troi" : ""}`}
+            >
               <h3 className="pl2-section-title">
                 <i
-                  className={`fa-solid ${isVuotTroi ? 'fa-award' : 'fa-list-check'}`}
+                  className={`fa-solid ${isVuotTroi ? "fa-award" : "fa-list-check"}`}
                 ></i>
                 {section.tenNhom}
               </h3>
@@ -181,7 +191,8 @@ const DanhGiaDonViForm = ({
               {section.nhomConList?.map((nhomCon, gIndex) => {
                 const items = nhomCon.dong || [];
                 const { sum: subSum, max: subMax } = getGroupStats(items);
-                const maxCon = nhomCon.diemToiDa != null ? nhomCon.diemToiDa : subMax;
+                const maxCon =
+                  nhomCon.diemToiDa != null ? nhomCon.diemToiDa : subMax;
 
                 return (
                   <div key={nhomCon.ten || gIndex} className="pl2-group">
@@ -190,7 +201,8 @@ const DanhGiaDonViForm = ({
                       <div className="pl2-group-header">
                         <h4 className="pl2-group-title">{nhomCon.ten}</h4>
                         <span className="pl2-group-score">
-                          <i className="fa-solid fa-star"></i> {formatDiem(subSum)}
+                          <i className="fa-solid fa-star"></i>{" "}
+                          {formatDiem(subSum)}
                           <span className="pl2-group-score-max">
                             / {formatDiem(maxCon)}đ
                           </span>
@@ -219,13 +231,13 @@ const DanhGiaDonViForm = ({
                           nhapDiem[idCt] !== undefined
                             ? nhapDiem[idCt]
                             : ct.DiemNhap === null || ct.DiemNhap === undefined
-                              ? ''
+                              ? ""
                               : String(ct.DiemNhap);
 
                         const draftNhanXetVal =
                           nhapNhanXet[idCt] !== undefined
                             ? nhapNhanXet[idCt]
-                            : ct.NhanXetNhap || '';
+                            : ct.NhanXetNhap || "";
 
                         const prefix = !nhomCon.isDirect
                           ? `${gIndex + 1}.${index + 1}.`
@@ -246,7 +258,7 @@ const DanhGiaDonViForm = ({
                             <div className="pl2-criteria-header-side">
                               {hasScore && (
                                 <span className="pl2-criteria-score">
-                                  <i className="fa-solid fa-circle-check"></i>{' '}
+                                  <i className="fa-solid fa-circle-check"></i>{" "}
                                   {formatDiem(currentScore)}đ
                                 </span>
                               )}
@@ -291,10 +303,10 @@ const DanhGiaDonViForm = ({
                                     return (
                                       <li
                                         key={td.IdThangDiem}
-                                        className={`pl2-auto-thang-diem-item ${chon ? 'selected' : ''}`}
+                                        className={`pl2-auto-thang-diem-item ${chon ? "selected" : ""}`}
                                       >
                                         <i
-                                          className={`fa-solid ${chon ? 'fa-circle-check' : 'fa-circle'} pl2-auto-thang-diem-icon`}
+                                          className={`fa-solid ${chon ? "fa-circle-check" : "fa-circle"} pl2-auto-thang-diem-icon`}
                                         ></i>
                                         <span className="pl2-diem-badge">
                                           {formatDiem(td.GiaTriDiem)}đ
@@ -315,7 +327,7 @@ const DanhGiaDonViForm = ({
                         return (
                           <div
                             key={idCt}
-                            className={`pl2-criteria ${hasScore ? 'active' : ''} ${daSua ? 'modified' : ''}`}
+                            className={`pl2-criteria ${hasScore ? "active" : ""} ${daSua ? "modified" : ""}`}
                           >
                             {criteriaHeader}
 
@@ -324,13 +336,13 @@ const DanhGiaDonViForm = ({
                               <div className="pl2-thang-diem-list">
                                 {mucDiem.map((td) => {
                                   const isSelected =
-                                    draftDiemVal !== '' &&
+                                    draftDiemVal !== "" &&
                                     Number(draftDiemVal) ===
                                       Number(td.GiaTriDiem);
                                   return (
                                     <label
                                       key={td.IdThangDiem}
-                                      className={`pl2-thang-diem-item ${isSelected ? 'selected' : ''} ${!moNhap ? 'disabled' : ''}`}
+                                      className={`pl2-thang-diem-item ${isSelected ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
                                     >
                                       <input
                                         type="radio"
@@ -340,7 +352,7 @@ const DanhGiaDonViForm = ({
                                         onClick={() => {
                                           if (!moNhap || dangLuu) return;
                                           if (isSelected) {
-                                            onDiemChange(idCt, '');
+                                            onDiemChange(idCt, "");
                                           } else {
                                             onDiemChange(idCt, td.GiaTriDiem);
                                           }
@@ -360,7 +372,7 @@ const DanhGiaDonViForm = ({
                             ) : loaiThangDiem === 3 ? (
                               <div className="pl2-thang-diem-list">
                                 <label
-                                  className={`pl2-thang-diem-item ${Number(draftDiemVal) === Number(ct.DiemToiDa) ? 'selected' : ''} ${!moNhap ? 'disabled' : ''}`}
+                                  className={`pl2-thang-diem-item ${Number(draftDiemVal) === Number(ct.DiemToiDa) ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
                                 >
                                   <input
                                     type="radio"
@@ -383,13 +395,13 @@ const DanhGiaDonViForm = ({
                                   </span>
                                 </label>
                                 <label
-                                  className={`pl2-thang-diem-item ${draftDiemVal !== '' && Number(draftDiemVal) === 0 ? 'selected' : ''} ${!moNhap ? 'disabled' : ''}`}
+                                  className={`pl2-thang-diem-item ${draftDiemVal !== "" && Number(draftDiemVal) === 0 ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
                                 >
                                   <input
                                     type="radio"
                                     name={`yesno_${idCt}`}
                                     checked={
-                                      draftDiemVal !== '' &&
+                                      draftDiemVal !== "" &&
                                       Number(draftDiemVal) === 0
                                     }
                                     disabled={!moNhap || dangLuu}
@@ -421,16 +433,13 @@ const DanhGiaDonViForm = ({
                                   onChange={(e) => {
                                     if (!moNhap || dangLuu) return;
                                     const val = e.target.value;
-                                    if (val === '') {
-                                      onDiemChange(idCt, '');
+                                    if (val === "") {
+                                      onDiemChange(idCt, "");
                                     } else {
                                       let num = parseFloat(val);
                                       if (isNaN(num)) num = 0;
                                       if (num < 0) num = 0;
-                                      if (
-                                        ct.DiemToiDa &&
-                                        num > ct.DiemToiDa
-                                      )
+                                      if (ct.DiemToiDa && num > ct.DiemToiDa)
                                         num = ct.DiemToiDa;
                                       onDiemChange(idCt, num);
                                     }
@@ -460,23 +469,23 @@ const DanhGiaDonViForm = ({
                                 <div>
                                   {daSua ? (
                                     <span className="pl2-criteria-status-hint modified">
-                                      <i className="fa-solid fa-circle-dot"></i>{' '}
+                                      <i className="fa-solid fa-circle-dot"></i>{" "}
                                       Có thay đổi chưa lưu
                                     </span>
                                   ) : hasScore ? (
                                     <span className="pl2-criteria-status-hint">
                                       <i
                                         className="fa-solid fa-circle-check"
-                                        style={{ color: '#10b981' }}
-                                      ></i>{' '}
+                                        style={{ color: "#10b981" }}
+                                      ></i>{" "}
                                       Đã lưu điểm
                                     </span>
                                   ) : (
                                     <span className="pl2-criteria-status-hint">
                                       <i
                                         className="fa-regular fa-circle"
-                                        style={{ color: '#94a3b8' }}
-                                      ></i>{' '}
+                                        style={{ color: "#94a3b8" }}
+                                      ></i>{" "}
                                       Chưa có điểm
                                     </span>
                                   )}
@@ -490,14 +499,14 @@ const DanhGiaDonViForm = ({
                                     onClick={() => onLuuDong(ct)}
                                     title={
                                       daSua
-                                        ? 'Lưu điểm và ghi chú của tiêu chí này'
-                                        : 'Chưa có thay đổi'
+                                        ? "Lưu điểm và ghi chú của tiêu chí này"
+                                        : "Chưa có thay đổi"
                                     }
                                   >
                                     <i
-                                      className={`fa-solid ${dangLuu ? 'fa-spinner fa-spin' : 'fa-floppy-disk'}`}
+                                      className={`fa-solid ${dangLuu ? "fa-spinner fa-spin" : "fa-floppy-disk"}`}
                                     ></i>
-                                    {dangLuu ? 'Đang lưu...' : 'Lưu tiêu chí'}
+                                    {dangLuu ? "Đang lưu..." : "Lưu tiêu chí"}
                                   </button>
                                 </div>
                               </div>
@@ -518,4 +527,3 @@ const DanhGiaDonViForm = ({
 };
 
 export default DanhGiaDonViForm;
-

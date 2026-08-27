@@ -13,7 +13,7 @@
  * không có nghĩa là mọi dòng đều mở.
  *
  * Đây CHỈ là lớp gợi ý UI để disable ô nhập thay vì để người dùng gõ xong mới
- * ăn 403. Server vẫn kiểm tra lại — không được coi đây là hàng rào bảo mật.
+ * ăn 403. Server vẫn kiểm tra lại - không được coi đây là hàng rào bảo mật.
  */
 
 import { normalizeRole, ROLE } from "./roles";
@@ -22,13 +22,13 @@ import { TRANG_THAI_DONG, laTieuChiChamTay } from "./phieuApi";
 
 const ROLE_TRUONG_DON_VI = ["TK", "TKL", "TP"];
 
-/** Trưởng Phòng cũng thẩm định được — họ được giao tiêu chí qua bảng phân quyền. */
+/** Trưởng Phòng cũng thẩm định được - họ được giao tiêu chí qua bảng phân quyền. */
 export const laTruongDonVi = (user) =>
   ROLE_TRUONG_DON_VI.includes(normalizeRole(user));
 
 /**
  * Trưởng Phòng chỉ được giao đúng vài tiêu chí trong hồ sơ nên màn hình của họ
- * vốn đã là danh sách việc phải làm — không cần lọc thêm. Dùng để tắt các lớp
+ * vốn đã là danh sách việc phải làm - không cần lọc thêm. Dùng để tắt các lớp
  * điều hướng chỉ có ích cho người nhìn cả phiếu.
  */
 export const laTruongPhong = (user) =>
@@ -39,7 +39,7 @@ const ROLE_TRUONG_KHOA = ["TK", "TKL"];
 /**
  * Riêng các thao tác giai đoạn 3–4 (chốt hồ sơ, trả dòng về đơn vị thẩm định,
  * đóng gói và trình tờ trình) là thẩm quyền của TRƯỞNG KHOA. Trưởng Phòng nằm
- * ngoài — gọi các endpoint đó sẽ nhận 403.
+ * ngoài - gọi các endpoint đó sẽ nhận 403.
  */
 export const laTruongKhoa = (user) =>
   ROLE_TRUONG_KHOA.includes(normalizeRole(user));
@@ -109,7 +109,7 @@ export const duocChamTieuChi = (
 };
 
 /**
- * Tên đơn vị ĐƯỢC GIAO thẩm định tiêu chí — để nói thẳng "ai chấm" thay vì
+ * Tên đơn vị ĐƯỢC GIAO thẩm định tiêu chí - để nói thẳng "ai chấm" thay vì
  * "đơn vị khác". Theo đúng thứ tự ưu tiên của server: có dòng trong
  * `tieu_chi_don_vi_cham` thì lấy các đơn vị đó (một tiêu chí có thể giao cho
  * nhiều đơn vị → nối bằng dấu phẩy), không có dòng nào thì rơi về đơn vị chủ
@@ -118,7 +118,7 @@ export const duocChamTieuChi = (
  * Khác `chiTiet.TenDonViThamDinh`: cột đó là đơn vị ĐÃ chấm, chỉ có sau khi dòng
  * được chấm; hàm này trả lời được cả khi dòng còn trống.
  *
- * Trả null khi thiếu dữ liệu đơn vị — bên gọi phải có câu chữ dự phòng.
+ * Trả null khi thiếu dữ liệu đơn vị - bên gọi phải có câu chữ dự phòng.
  */
 export const tenDonViDuocGiaoCham = (
   chiTiet,
@@ -148,7 +148,7 @@ export const oNhapDiemMo = (chiTiet, ctx) =>
   laTieuChiChamTay(chiTiet) &&
   duocChamTieuChi(chiTiet, ctx);
 
-/** Lý do tiếng Việt để hiện cạnh ô bị khóa — giúp người dùng khỏi đoán. */
+/** Lý do tiếng Việt để hiện cạnh ô bị khóa - giúp người dùng khỏi đoán. */
 export const lyDoKhoaONhap = (chiTiet, ctx) => {
   if (!laTieuChiChamTay(chiTiet)) {
     return "Tiêu chí này do hệ thống tính điểm tự động, không chấm tay.";
@@ -175,7 +175,7 @@ export const lyDoKhoaONhap = (chiTiet, ctx) => {
  *
  *  - TU_DONG xét TRƯỚC hết. Engine chấm tự động chạy ngay trong giao dịch nộp
  *    phiếu và đẩy dòng LoaiNguonDiem = 2 lên thẳng trang_thai_dong = 3, nên nếu
- *    để DA_CHOT đứng trước thì rổ này luôn rỗng — chip lọc không bao giờ hiện và
+ *    để DA_CHOT đứng trước thì rổ này luôn rỗng - chip lọc không bao giờ hiện và
  *    không có lối nào xem riêng phần máy tính. Đổi lại, rổ DA_CHOT chỉ còn dòng
  *    CHẤM TAY đã xong, đúng bằng mẫu số của tinhTienDoCham.
  *  - DA_CHOT đứng trước hai rổ chờ: dòng đã chốt không còn là việc của ai nữa.
@@ -221,7 +221,7 @@ export const traThamDinhDuoc = (chiTiet, ctx) =>
  *
  * Trưởng khoa (TK/TKL) chịu trách nhiệm chốt cả hồ sơ nên phải xem hết, kể cả
  * phần đơn vị khác thẩm định. Trưởng phòng chỉ tham gia đúng các tiêu chí được
- * giao qua `tieu_chi_don_vi_cham` — hiện cả phiếu vừa gây nhiễu vừa để lọt điểm
+ * giao qua `tieu_chi_don_vi_cham` - hiện cả phiếu vừa gây nhiễu vừa để lọt điểm
  * và nhận xét của đơn vị khác.
  *
  * Đây là lọc HIỂN THỊ, không phải hàng rào bảo mật: dữ liệu đầy đủ vẫn nằm
@@ -247,7 +247,7 @@ export const buildChamContext = ({
 
 /**
  * Tiến độ thẩm định: đếm trên tiêu chí CHẤM TAY.
- * `cuaToi` = phần việc của đơn vị đang đăng nhập; `toanPhieu` = mọi đơn vị —
+ * `cuaToi` = phần việc của đơn vị đang đăng nhập; `toanPhieu` = mọi đơn vị -
  * hồ sơ chỉ tự lên Trưởng khoa khi `toanPhieu` đủ, nên cần hiện cả hai.
  *
  * Đếm theo TrangThaiDong = DA_CHOT, KHÔNG theo `DiemKhoa != null`: một dòng bị

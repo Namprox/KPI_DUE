@@ -1,24 +1,24 @@
 /**
- * "Ai trong đơn vị chưa tự chấm KPI?" — câu hỏi mà nhóm API phiếu KHÔNG trả lời được.
+ * "Ai trong đơn vị chưa tự chấm KPI?" - câu hỏi mà nhóm API phiếu KHÔNG trả lời được.
  *
  * Phiếu chỉ được tạo khi giảng viên bấm lưu lần đầu (xem fetchPhieuCuaToi trong
  * phieuApi.js), nên người chưa mở phiếu bao giờ không có dòng nào trong
- * `phieu_danh_gia`. Mọi endpoint ở đây — /phieu, /phieu/khoa/pending,
- * /bao-cao/chua-hoan-tat — đều đọc từ bảng đó, vì vậy họ VÔ HÌNH với Trưởng khoa.
+ * `phieu_danh_gia`. Mọi endpoint ở đây - /phieu, /phieu/khoa/pending,
+ * /bao-cao/chua-hoan-tat - đều đọc từ bảng đó, vì vậy họ VÔ HÌNH với Trưởng khoa.
  *
  * Server không có endpoint nào liệt kê "người chưa lập phiếu", nên chỗ này ghép
  * ở client: lấy danh bạ nhân viên của đơn vị rồi trừ đi những người đã có phiếu.
  *
  * Hai rổ trả về khác nhau và đừng gộp:
- *  - `chuaLapPhieu` — chưa có dòng phiếu nào, không mở được màn hình phiếu.
- *  - `phieuNhap`    — đã lưu nhưng còn ở trạng thái 1, phiếu tồn tại và mở được.
+ *  - `chuaLapPhieu` - chưa có dòng phiếu nào, không mở được màn hình phiếu.
+ *  - `phieuNhap`    - đã lưu nhưng còn ở trạng thái 1, phiếu tồn tại và mở được.
  * Dưới góc nhìn Trưởng khoa cả hai đều là "chưa tự chấm xong", nhưng thao tác
  * tiếp theo với từng rổ hoàn toàn khác nhau.
  */
 
-import { fetchAllNhanVien } from './nhanVienApi';
-import { LOAI_DOI_TUONG, TRANG_THAI } from './phieuApi';
-import { CHUC_DANH_SETS } from './roles';
+import { fetchAllNhanVien } from "./nhanVienApi";
+import { LOAI_DOI_TUONG, TRANG_THAI } from "./phieuApi";
+import { CHUC_DANH_SETS } from "./roles";
 
 /**
  * Trạng thái ẢO cho người chưa lập phiếu.
@@ -30,11 +30,11 @@ import { CHUC_DANH_SETS } from './roles';
 export const TRANG_THAI_CHUA_LAP = 0;
 
 export const TRANG_THAI_CHUA_LAP_META = {
-  label: 'Chưa lập phiếu',
-  icon: 'fa-user-slash',
-  bg: '#fef2f2',
-  color: '#b91c1c',
-  border: '#fecaca',
+  label: "Chưa lập phiếu",
+  icon: "fa-user-slash",
+  bg: "#fef2f2",
+  color: "#b91c1c",
+  border: "#fecaca",
 };
 
 const CHUC_DANH_LOAI = new Map([
@@ -63,9 +63,16 @@ export const loaiDoiTuongTheoChucDanh = (nhanVien) => {
  *   phạm vi mặc định của GET /phieu ở cấp Khoa); false khi người dùng đã chọn
  *   đích danh một đơn vị, vì bộ lọc idDonVi của GET /phieu khớp chính xác.
  */
-export const fetchNhanVienPhaiNopKpi = async ({ idDonVi, baoGomDonViCon = true } = {}) => {
+export const fetchNhanVienPhaiNopKpi = async ({
+  idDonVi,
+  baoGomDonViCon = true,
+} = {}) => {
   if (!idDonVi) return [];
-  const list = await fetchAllNhanVien({ idDonVi, baoGomDonViCon, trangThai: true });
+  const list = await fetchAllNhanVien({
+    idDonVi,
+    baoGomDonViCon,
+    trangThai: true,
+  });
   return list
     .map((nv) => ({ ...nv, LoaiDoiTuong: loaiDoiTuongTheoChucDanh(nv) }))
     .filter((nv) => nv.IdNhanVien != null && nv.LoaiDoiTuong != null);
@@ -79,13 +86,14 @@ const dungDong = (nhanVien, phieu) => ({
   TrangThai: phieu ? Number(phieu.TrangThai) : TRANG_THAI_CHUA_LAP,
   LoaiDoiTuong: phieu?.LoaiDoiTuong ?? nhanVien.LoaiDoiTuong,
   NgayTao: phieu?.NgayTao ?? null,
-  HoTen: nhanVien.HoTen || '',
-  MaNhanVien: nhanVien.MaNhanVien || '',
-  TenDonVi: nhanVien.TenDonVi || '',
-  TenChucDanh: nhanVien.TenChucDanh || '',
+  HoTen: nhanVien.HoTen || "",
+  MaNhanVien: nhanVien.MaNhanVien || "",
+  TenDonVi: nhanVien.TenDonVi || "",
+  TenChucDanh: nhanVien.TenChucDanh || "",
 });
 
-const theoHoTen = (a, b) => String(a.HoTen).localeCompare(String(b.HoTen), 'vi');
+const theoHoTen = (a, b) =>
+  String(a.HoTen).localeCompare(String(b.HoTen), "vi");
 
 /**
  * Ghép danh bạ với danh sách phiếu.

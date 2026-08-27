@@ -18,7 +18,7 @@ const BO_LOC = [
 /**
  * Một phản hồi kèm khung xử lý của Khoa.
  *
- * Điều hướng theo loại phản hồi — đây là điểm khiến màn hình này có ích thay vì
+ * Điều hướng theo loại phản hồi - đây là điểm khiến màn hình này có ích thay vì
  * chỉ là danh sách đọc:
  *  - loại 1 (sai vai trò) luôn trỏ tới một nhiệm vụ ⇒ mở thẳng form sửa;
  *  - loại 2 (thiếu nhiệm vụ) không trỏ tới nhiệm vụ nào, chỉ có nhóm gợi ý ⇒
@@ -112,7 +112,7 @@ const PhanHoiItem = ({
       {daXuLy && (
         <div className="nvk-ph-xu-ly">
           <b>Đã xử lý</b>
-          {ph.TenNguoiXuLy ? ` — ${ph.TenNguoiXuLy}` : ""}
+          {ph.TenNguoiXuLy ? ` - ${ph.TenNguoiXuLy}` : ""}
           {ph.NgayXuLy ? `, ${formatNgayGio(ph.NgayXuLy)}` : ""}
           {ph.GhiChuXuLy ? `: ${ph.GhiChuXuLy}` : "."}
         </div>
@@ -176,7 +176,7 @@ const PhanHoiItem = ({
 };
 
 /**
- * Tab "Phản hồi" — Khoa xem và xử lý phản hồi của giảng viên.
+ * Tab "Phản hồi" - Khoa xem và xử lý phản hồi của giảng viên.
  *
  * Phản hồi còn ở trạng thái CHỜ XỬ LÝ là một trong ba điều kiện CHẶN chốt kỳ,
  * nên mỗi lần xử lý xong phải làm mới tổng quan kỳ để badge đếm ngoài tab và
@@ -240,7 +240,9 @@ const NvkPanelPhanHoi = ({
   };
 
   return (
-    <div style={{ opacity: dangTai ? 0.55 : 1, transition: "opacity 0.15s ease" }}>
+    <div
+      style={{ opacity: dangTai ? 0.55 : 1, transition: "opacity 0.15s ease" }}
+    >
       <div className="nvk-ph-loc">
         {BO_LOC.map((bl) => (
           <button

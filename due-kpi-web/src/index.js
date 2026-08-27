@@ -13,7 +13,7 @@ if (
     url: "https://scv.udn.vn/huylv",
     disableMenu: false,
     tkName: "debug",
-    md5: "11929f3ef892b084af900ab1a488e211",
+    md5: "d6692dd335c3c6b2ad020e2758eed628",
   });
 }
 

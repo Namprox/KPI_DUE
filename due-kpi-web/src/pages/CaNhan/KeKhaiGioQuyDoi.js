@@ -66,7 +66,7 @@ const tuChiTiet = (ct) => ({
  *
  * `DuongDanTen` là chuỗi ghép từ gốc xuống nên đưa nguyên vào bảng sẽ thành một
  * dòng rất dài, đọc mãi mới tới tên đầu việc. Cắt đuôi bằng cách so với
- * `TenCongViec` thay vì tách theo dấu ">" — tên đầu việc trong quyết định có thể
+ * `TenCongViec` thay vì tách theo dấu ">" - tên đầu việc trong quyết định có thể
  * chứa dấu ngoặc, dấu gạch, nên tách theo ký tự phân cách là tự chuốc rủi ro.
  */
 const duongDanCha = (cv) => {
@@ -95,7 +95,7 @@ const chuKy = (rows) =>
   );
 
 const BadgeTrangThai = ({ meta, ghiChu }) => {
-  if (!meta) return <span className="kkq-trong">—</span>;
+  if (!meta) return <span className="kkq-trong">-</span>;
   return (
     <span
       className="cd-status-badge"
@@ -112,7 +112,7 @@ const BadgeTrangThai = ({ meta, ghiChu }) => {
 };
 
 /**
- * Kê khai giờ quy đổi theo PHỤ LỤC II — phía GIẢNG VIÊN.
+ * Kê khai giờ quy đổi theo PHỤ LỤC II - phía GIẢNG VIÊN.
  *
  * "Quy đổi các hoạt động chuyên môn ra giờ chuẩn giảng dạy": giảng viên tự kê số
  * lượng từng đầu việc (số học viên, số bài, số bộ đề...), hệ thống quy ra giờ,
@@ -127,12 +127,12 @@ const BadgeTrangThai = ({ meta, ghiChu }) => {
  *    thực sự mất khi bấm Lưu (server tự tính diff theo danh sách gửi lên).
  *  - **Nộp là mốc khoá ghi.** Sau khi nộp không sửa được nữa; huỷ nộp chỉ còn
  *    hiệu lực khi người duyệt chưa xét dòng nào, ngoài ra phải nhờ trả lại.
- *  - **Minh chứng là tuỳ chọn** — bản kê không có tệp nào vẫn nộp được. Dòng
+ *  - **Minh chứng là tuỳ chọn** - bản kê không có tệp nào vẫn nộp được. Dòng
  *    chưa lưu vẫn chọn được tệp: chúng nằm ở hàng chờ và tự tải lên ngay sau
  *    khi lưu, vì endpoint upload cần IdChiTiet do server cấp.
  *
  * Thêm dòng đi qua ĐÚNG MỘT lối: nút "Kê khai giờ quy đổi" mở danh mục Phụ lục
- * II rồi chọn đầu việc. Cố ý bỏ nút "Thêm dòng" tạo dòng trống — dòng trống bắt
+ * II rồi chọn đầu việc. Cố ý bỏ nút "Thêm dòng" tạo dòng trống - dòng trống bắt
  * người dùng dò lại đầu việc trong ô chọn phẳng, trong khi mọi dòng đều buộc
  * phải trỏ tới một đầu việc mới lưu được.
  *
@@ -183,7 +183,7 @@ const KeKhaiGioQuyDoi = () => {
     setIsLoading(true);
     setLoi("");
     try {
-      // Danh mục là văn bản quy định, đổi rất hiếm — nhưng vẫn tải cùng bản kê
+      // Danh mục là văn bản quy định, đổi rất hiếm - nhưng vẫn tải cùng bản kê
       // để một lần Làm mới là đủ khi Admin vừa bổ sung đầu việc.
       const [item, cay] = await Promise.all([
         layBanKeCuaToi(selectedNam),
@@ -231,7 +231,7 @@ const KeKhaiGioQuyDoi = () => {
     setRows((truoc) => truoc.filter((r) => r.key !== key));
 
   /**
-   * Chỉ chặn hai lỗi server sẽ trả 400 và HUỶ TOÀN BỘ lần lưu — bắt sớm ở đây
+   * Chỉ chặn hai lỗi server sẽ trả 400 và HUỶ TOÀN BỘ lần lưu - bắt sớm ở đây
    * rẻ hơn nhiều so với để người dùng mất cả bảng vì một dòng bỏ trống.
    */
   const kiemTraTruocKhiLuu = () => {
@@ -251,7 +251,7 @@ const KeKhaiGioQuyDoi = () => {
    *
    * Server trả về cả bản kê chứ không trả bản đồ "dòng gửi lên → id", nên phải
    * tự dò: chỉ xét những `IdChiTiet` CHƯA từng thấy trước lúc lưu, rồi khớp lần
-   * lượt theo đầu việc + kỳ học + số lượng và tiêu thụ mỗi id đúng một lần — kê
+   * lượt theo đầu việc + kỳ học + số lượng và tiêu thụ mỗi id đúng một lần - kê
    * hai dòng cùng đầu việc vẫn ra đúng id cho từng dòng.
    */
   const ghepIdChoDongMoi = (rowsCanTai, chiTietMoi, idCu) => {
@@ -375,7 +375,7 @@ const KeKhaiGioQuyDoi = () => {
       );
       if (loiTep.length > 0) {
         baoLoi(
-          `Không tải lên được ${loiTep.length} tệp (${loiTep.join(", ")}) — tệp vẫn nằm ở hàng chờ, hãy bấm Lưu lại.`,
+          `Không tải lên được ${loiTep.length} tệp (${loiTep.join(", ")}) - tệp vẫn nằm ở hàng chờ, hãy bấm Lưu lại.`,
         );
       }
     } catch (error) {
@@ -390,7 +390,7 @@ const KeKhaiGioQuyDoi = () => {
 
   const nop = async () => {
     const loiNhac = coThayDoi
-      ? "Bản kê còn thay đổi chưa lưu — hệ thống sẽ lưu (kèm tệp minh chứng đang chờ) rồi nộp luôn.\n\n"
+      ? "Bản kê còn thay đổi chưa lưu - hệ thống sẽ lưu (kèm tệp minh chứng đang chờ) rồi nộp luôn.\n\n"
       : "";
     if (
       !window.confirm(
@@ -436,7 +436,7 @@ const KeKhaiGioQuyDoi = () => {
     setDangNop(false);
   };
 
-  /** Tổng giờ dự kiến của bảng đang gõ — khác `TongGioKeKhai` khi chưa lưu. */
+  /** Tổng giờ dự kiến của bảng đang gõ - khác `TongGioKeKhai` khi chưa lưu. */
   const tongDuKien = useMemo(
     () =>
       rows.reduce((tong, r) => {
@@ -479,7 +479,7 @@ const KeKhaiGioQuyDoi = () => {
           <tbody>
             {rows.map((r, i) => {
               const cv = congViecById.get(String(r.idCongViec));
-              // Ô trống phải hiện "—": Number("") = 0 nên tính thẳng sẽ ra "0 giờ",
+              // Ô trống phải hiện "-": Number("") = 0 nên tính thẳng sẽ ra "0 giờ",
               // đọc như thể đã quy đổi xong trong khi người dùng chưa nhập gì.
               const coSoLuong = String(r.soLuong).trim() !== "";
               const gio =
@@ -509,7 +509,7 @@ const KeKhaiGioQuyDoi = () => {
                     ) : (
                       <div className="cd-hint cd-hint-error kkq-hint">
                         <i className="fa-solid fa-triangle-exclamation"></i> Đầu
-                        việc không còn trong danh mục đang hoạt động — hãy gỡ
+                        việc không còn trong danh mục đang hoạt động - hãy gỡ
                         dòng này rồi kê khai lại.
                       </div>
                     )}
@@ -551,7 +551,7 @@ const KeKhaiGioQuyDoi = () => {
                   <td className="table-num kkq-gio-cell">
                     <div className="kkq-gio-box">
                       {gio == null ? (
-                        <span className="kkq-trong">—</span>
+                        <span className="kkq-trong">-</span>
                       ) : (
                         <span className="kkq-gio-val">
                           {formatGio(gio)}{" "}
@@ -605,7 +605,7 @@ const KeKhaiGioQuyDoi = () => {
           <tfoot>
             <tr className="table-total-row">
               <td colSpan={4} className="kkq-tfoot-label">
-                Tổng <strong>{rows.length}</strong> dòng — Giờ quy đổi dự kiến:
+                Tổng <strong>{rows.length}</strong> dòng - Giờ quy đổi dự kiến:
               </td>
               <td className="table-num kkq-gio kkq-tfoot-gio">
                 <div className="kkq-gio-box">
@@ -695,7 +695,7 @@ const KeKhaiGioQuyDoi = () => {
                   </td>
                   <td className="table-num">
                     {ct.SoLuongDuyet == null ? (
-                      <span className="kkq-trong">—</span>
+                      <span className="kkq-trong">-</span>
                     ) : (
                       <span className={biSua ? "kkq-sua-so" : undefined}>
                         {formatGio(ct.SoLuongDuyet)}
@@ -704,7 +704,7 @@ const KeKhaiGioQuyDoi = () => {
                   </td>
                   <td className="table-num kkq-gio">
                     {ct.GioDuyet == null ? (
-                      <span className="kkq-trong">—</span>
+                      <span className="kkq-trong">-</span>
                     ) : (
                       <b>{formatGio(ct.GioDuyet)}</b>
                     )}
@@ -859,10 +859,10 @@ const KeKhaiGioQuyDoi = () => {
             <i className="fa-solid fa-rotate-left"></i>{" "}
             <b>Bản kê bị trả lại để sửa.</b>{" "}
             {banKe.NhanXetDuyet || "Người duyệt không ghi lý do."}
-            {banKe.TenNguoiDuyet ? ` — ${banKe.TenNguoiDuyet}` : ""}
+            {banKe.TenNguoiDuyet ? ` - ${banKe.TenNguoiDuyet}` : ""}
             {banKe.NgayDuyet ? `, ${formatNgayGio(banKe.NgayDuyet)}` : ""}
             <div style={{ marginTop: "6px" }}>
-              Toàn bộ kết quả duyệt trước đó đã bị xoá — sửa xong hãy bấm Lưu
+              Toàn bộ kết quả duyệt trước đó đã bị xoá - sửa xong hãy bấm Lưu
               rồi Nộp lại.
             </div>
           </div>
@@ -873,7 +873,7 @@ const KeKhaiGioQuyDoi = () => {
             <i className="fa-solid fa-lock"></i> Bản kê đã được chốt
             {banKe.TenNguoiDuyet ? ` bởi ${banKe.TenNguoiDuyet}` : ""}
             {banKe.NgayDuyet ? ` ngày ${formatNgayGio(banKe.NgayDuyet)}` : ""}.
-            Đây là số liệu cuối cùng của năm — muốn thay đổi phải liên hệ đơn vị
+            Đây là số liệu cuối cùng của năm - muốn thay đổi phải liên hệ đơn vị
             quản lý.
             {banKe.NhanXetDuyet ? ` Ghi chú: ${banKe.NhanXetDuyet}` : ""}
           </div>
@@ -883,7 +883,7 @@ const KeKhaiGioQuyDoi = () => {
           <div className="cd-hint cd-hint-warn kkq-banner">
             <i className="fa-solid fa-hourglass-half"></i> Bản kê đang chờ
             Trưởng đơn vị duyệt nên tạm khoá sửa. Nếu cần chỉnh, hãy bấm{" "}
-            <b>Huỷ nộp</b> — chỉ được khi người duyệt chưa xét dòng nào.
+            <b>Huỷ nộp</b> - chỉ được khi người duyệt chưa xét dòng nào.
           </div>
         )}
 
@@ -930,7 +930,7 @@ const KeKhaiGioQuyDoi = () => {
         <h2 className="kkq-title">Kê khai giờ quy đổi</h2>
         <span className="breadcrumb">
           Quy đổi các hoạt động chuyên môn ra giờ chuẩn giảng dạy theo Phụ lục
-          II — bạn kê số lượng, hệ thống tự tính giờ
+          II - bạn kê số lượng, hệ thống tự tính giờ
         </span>
       </div>
 
@@ -1026,7 +1026,7 @@ const KeKhaiGioQuyDoi = () => {
                 showToast(
                   "info",
                   "Đã thêm dòng",
-                  `${cv.TenCongViec} — nhập số lượng rồi bấm Lưu`,
+                  `${cv.TenCongViec} - nhập số lượng rồi bấm Lưu`,
                 );
               }
             : undefined

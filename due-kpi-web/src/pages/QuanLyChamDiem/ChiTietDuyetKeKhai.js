@@ -37,7 +37,7 @@ import {
 
 /**
  * Quyết định của người duyệt cho một dòng, ở dạng state cục bộ.
- * `quyetDinh = ""` nghĩa là chưa xét — khác hẳn "đã từ chối".
+ * `quyetDinh = ""` nghĩa là chưa xét - khác hẳn "đã từ chối".
  */
 const tuChiTiet = (ct) => {
   const tt = Number(ct.TrangThaiDong);
@@ -59,7 +59,7 @@ const chuKyQuyetDinh = (qd) =>
   JSON.stringify([qd.quyetDinh, String(qd.soLuongDuyet).trim(), qd.nhanXet]);
 
 const BadgeMeta = ({ meta }) => {
-  if (!meta) return <span className="kkq-trong">—</span>;
+  if (!meta) return <span className="kkq-trong">-</span>;
   return (
     <span
       className="cd-status-badge"
@@ -75,7 +75,7 @@ const BadgeMeta = ({ meta }) => {
 };
 
 /**
- * Duyệt một bản kê giờ quy đổi — màn hình thao tác của TK/TKL/TP (HT/Admin xem
+ * Duyệt một bản kê giờ quy đổi - màn hình thao tác của TK/TKL/TP (HT/Admin xem
  * toàn trường).
  *
  * Đơn vị nghiệp vụ là TỪNG DÒNG: mỗi đầu việc được duyệt hoặc từ chối riêng, và
@@ -88,7 +88,7 @@ const BadgeMeta = ({ meta }) => {
  *    "Giờ duyệt dự kiến" ở đây dùng đúng `HeSo`/`SoLuongMau` server đã ghi vào
  *    dòng, nên khớp với con số server sẽ tính.
  *  - **Dòng bị từ chối cho giờ duyệt = 0** nhưng vẫn giữ số lượng để đối chiếu.
- *  - **Chốt bị chặn khi còn dòng chưa xét** (422 CON_DONG_CHUA_XET) — nút Chốt
+ *  - **Chốt bị chặn khi còn dòng chưa xét** (422 CON_DONG_CHUA_XET) - nút Chốt
  *    tắt sẵn thay vì để bấm rồi báo lỗi.
  *  - **Chốt là ĐIỂM CUỐI**: chưa có endpoint mở lại, chốt nhầm phải sửa tay dưới
  *    DB. Vì vậy có bước xác nhận riêng và nêu rõ điều đó.
@@ -145,7 +145,7 @@ const ChiTietDuyetKeKhai = () => {
     try {
       const item = await layBanKeTheoId(id);
       apDungBanKe(item);
-      // Nhật ký hỏng không được làm mất màn hình duyệt — đây là dữ liệu phụ.
+      // Nhật ký hỏng không được làm mất màn hình duyệt - đây là dữ liệu phụ.
       try {
         setLichSu(await layLichSuBanKe(id));
       } catch (error) {
@@ -176,7 +176,7 @@ const ChiTietDuyetKeKhai = () => {
       [idChiTiet]: { ...truoc[idChiTiet], ...thayDoi },
     }));
 
-  /** Dòng có thay đổi so với server — chỉ những dòng này mới được gửi lên. */
+  /** Dòng có thay đổi so với server - chỉ những dòng này mới được gửi lên. */
   const dongThayDoi = useMemo(
     () =>
       chiTiet.filter((ct) => {
@@ -276,7 +276,7 @@ const ChiTietDuyetKeKhai = () => {
     }
     if (
       !window.confirm(
-        "Chốt bản kê này? Trạng thái ĐÃ CHỐT là điểm cuối — hệ thống chưa có chức năng mở lại, chốt nhầm phải nhờ quản trị sửa dưới cơ sở dữ liệu.",
+        "Chốt bản kê này? Trạng thái ĐÃ CHỐT là điểm cuối - hệ thống chưa có chức năng mở lại, chốt nhầm phải nhờ quản trị sửa dưới cơ sở dữ liệu.",
       )
     ) {
       return;
@@ -362,12 +362,12 @@ const ChiTietDuyetKeKhai = () => {
           <i className="fa-solid fa-arrow-left"></i> Danh sách bản kê
         </button>
         <h2 className="kkq-title">
-          Bản kê giờ quy đổi — {banKe.HoTen}
+          Bản kê giờ quy đổi - {banKe.HoTen}
           {banKe.MaNhanVien ? ` (${banKe.MaNhanVien})` : ""}
         </h2>
         <span className="breadcrumb">
           {banKe.TenDonVi || "Chưa rõ đơn vị"} • Năm học {banKe.IdNam} • Phụ lục
-          II — quy đổi hoạt động chuyên môn ra giờ chuẩn giảng dạy
+          II - quy đổi hoạt động chuyên môn ra giờ chuẩn giảng dạy
         </span>
       </div>
 
@@ -440,7 +440,7 @@ const ChiTietDuyetKeKhai = () => {
         <div className="cd-hint cd-hint-ok kkq-banner">
           <i className="fa-solid fa-lock"></i> Bản kê đã chốt
           {banKe.TenNguoiDuyet ? ` bởi ${banKe.TenNguoiDuyet}` : ""}
-          {banKe.NgayDuyet ? ` ngày ${formatNgayGio(banKe.NgayDuyet)}` : ""} —
+          {banKe.NgayDuyet ? ` ngày ${formatNgayGio(banKe.NgayDuyet)}` : ""} -
           chỉ đọc. Hệ thống chưa có chức năng mở lại bản kê đã chốt.
         </div>
       )}
@@ -496,7 +496,7 @@ const ChiTietDuyetKeKhai = () => {
             title={
               conDongChuaXet(banKe)
                 ? `Còn ${banKe.SoDongChoDuyet} dòng chưa duyệt hoặc chưa từ chối`
-                : "Chốt bản kê — không mở lại được"
+                : "Chốt bản kê - không mở lại được"
             }
           >
             <i
@@ -666,7 +666,7 @@ const ChiTietDuyetKeKhai = () => {
                             title="Bỏ trống = giữ nguyên số lượng giảng viên đã kê"
                           />
                         ) : ct.SoLuongDuyet == null ? (
-                          <span className="kkq-trong">—</span>
+                          <span className="kkq-trong">-</span>
                         ) : (
                           formatGio(ct.SoLuongDuyet)
                         )}
@@ -674,7 +674,7 @@ const ChiTietDuyetKeKhai = () => {
 
                       <td className="table-num kkq-gio">
                         {gioDuKien == null ? (
-                          <span className="kkq-trong">—</span>
+                          <span className="kkq-trong">-</span>
                         ) : (
                           <b>{formatGio(gioDuKien)}</b>
                         )}
@@ -700,7 +700,7 @@ const ChiTietDuyetKeKhai = () => {
                         ) : ct.NhanXetDuyet ? (
                           <div className="kkq-nhan-xet">{ct.NhanXetDuyet}</div>
                         ) : (
-                          <span className="kkq-trong">—</span>
+                          <span className="kkq-trong">-</span>
                         )}
                       </td>
                     </tr>
@@ -710,7 +710,7 @@ const ChiTietDuyetKeKhai = () => {
               <tfoot>
                 <tr className="table-total-row">
                   <td colSpan={3}>
-                    Tổng {chiTiet.length} dòng — {soChuaXet} chưa xét
+                    Tổng {chiTiet.length} dòng - {soChuaXet} chưa xét
                   </td>
                   <td className="table-num kkq-gio">
                     <b>{formatGio(banKe.TongGioKeKhai)}</b>
@@ -774,7 +774,7 @@ const ChiTietDuyetKeKhai = () => {
                         {TEN_HANH_DONG_KK[ls.HanhDong] ||
                           `Hành động ${ls.HanhDong}`}
                       </td>
-                      <td>{ls.TenNguoiThucHien || "—"}</td>
+                      <td>{ls.TenNguoiThucHien || "-"}</td>
                       <td>
                         {ls.MoTa && <div>{ls.MoTa}</div>}
                         {(ls.GioTruoc != null || ls.GioSau != null) && (

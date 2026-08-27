@@ -9,7 +9,7 @@ const bangNhau = (a, b) =>
  *
  * Người thẩm định chấm trên đúng thang điểm giảng viên đã dùng, nên hộp thoại
  * bày nguyên danh sách mức của tiêu chí (như màn hình tự đánh giá) và đánh dấu
- * mức giảng viên đang chọn — gõ tay một con số rời khỏi thang là cách cũ, dễ
+ * mức giảng viên đang chọn - gõ tay một con số rời khỏi thang là cách cũ, dễ
  * cho ra mức không tồn tại trong mẫu.
  *
  * Ba dạng thang điểm, lấy từ `thangDiem` (mẫu đánh giá):
@@ -18,7 +18,7 @@ const bangNhau = (a, b) =>
  *   2 liên tục → không có mức nào, rơi về ô nhập số
  * Không tải được mẫu cũng rơi về ô nhập số: thà chấm tay còn hơn chặn hẳn.
  *
- * Nhận xét bắt buộc khi điểm chọn lệch điểm giảng viên tự kê khai — server trả
+ * Nhận xét bắt buộc khi điểm chọn lệch điểm giảng viên tự kê khai - server trả
  * 409 THIEU_LY_DO trong đúng trường hợp này.
  */
 const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
@@ -88,7 +88,7 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
     }
     if (lechDiemGv && !nhanXet.trim()) {
       setLoi(
-        "Điểm khác mức giảng viên tự kê khai — bắt buộc ghi lý do điều chỉnh trong ô nhận xét.",
+        "Điểm khác mức giảng viên tự kê khai - bắt buộc ghi lý do điều chỉnh trong ô nhận xét.",
       );
       return;
     }
@@ -127,7 +127,7 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
             <div>
               <div className="cd-meta-label">Đơn vị đã chấm</div>
               <div className="cd-sd-so">
-                {chiTiet.DiemKhoa != null ? formatDiem(chiTiet.DiemKhoa) : "—"}
+                {chiTiet.DiemKhoa != null ? formatDiem(chiTiet.DiemKhoa) : "-"}
               </div>
             </div>
             <div>
@@ -232,7 +232,7 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
               <div className="cd-hint cd-hint-warn">
                 <i className="fa-solid fa-circle-info"></i> Mức bạn chọn (
                 {formatDiem(diemChon)}) khác mức giảng viên tự kê khai (
-                {formatDiem(chiTiet.DiemTuDanhGia)}) — phải ghi lý do.
+                {formatDiem(chiTiet.DiemTuDanhGia)}) - phải ghi lý do.
               </div>
             )}
 

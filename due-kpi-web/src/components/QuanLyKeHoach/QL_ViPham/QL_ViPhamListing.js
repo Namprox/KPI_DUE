@@ -330,7 +330,7 @@ const QL_ViPhamListing = ({
                       ) : (
                         <div
                           style={{ textAlign: "center", color: "#cbd5e1" }}
-                          title={`Do ${item.TenDonViGhiNhan || "đơn vị khác"} ghi nhận — bạn không có quyền sửa/xóa`}
+                          title={`Do ${item.TenDonViGhiNhan || "đơn vị khác"} ghi nhận - bạn không có quyền sửa/xóa`}
                         >
                           <i className="fa-solid fa-lock"></i>
                         </div>

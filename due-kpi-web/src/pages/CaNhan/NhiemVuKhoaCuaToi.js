@@ -61,7 +61,7 @@ const PhanHoiCard = ({ ph, onXem, onTai }) => {
       {daXuLy && (
         <div className="nvk-ph-xu-ly">
           <b>Khoa đã xử lý</b>
-          {ph.TenNguoiXuLy ? ` — ${ph.TenNguoiXuLy}` : ""}
+          {ph.TenNguoiXuLy ? ` - ${ph.TenNguoiXuLy}` : ""}
           {ph.NgayXuLy ? `, ${formatNgayGio(ph.NgayXuLy)}` : ""}
           {ph.GhiChuXuLy ? `: ${ph.GhiChuXuLy}` : "."}
         </div>
@@ -84,7 +84,7 @@ const PhanHoiCard = ({ ph, onXem, onTai }) => {
 };
 
 /**
- * Phục vụ cộng đồng và các nhiệm vụ khác theo phân công của Khoa — phía GIẢNG VIÊN.
+ * Phục vụ cộng đồng và các nhiệm vụ khác theo phân công của Khoa - phía GIẢNG VIÊN.
  *
  * Đây là KPI Nhóm III trên phiếu đánh giá giảng viên: tiêu chí "Thực hiện nhiệm
  * vụ theo phân công của Khoa", trần 20 điểm, cộng dồn từ điểm quy đổi của từng
@@ -98,7 +98,7 @@ const PhanHoiCard = ({ ph, onXem, onTai }) => {
  *  - **Luôn hiện CẢ HAI con số điểm.** `TongDiemQuyDoi` = MIN(thực tế, trần) là
  *    số đưa vào phiếu KPI; `TongDiemThucTe` để giảng viên thấy mình bị cắt bao
  *    nhiêu. Vượt trần là hợp lệ, chỉ tô cảnh báo chứ không phải lỗi.
- *  - **Hạn phản hồi hết hạn KHÔNG khoá gì** — chỉ là nhãn hiển thị: không lên
+ *  - **Hạn phản hồi hết hạn KHÔNG khoá gì** - chỉ là nhãn hiển thị: không lên
  *    tiếng thì hiểu là đồng ý. Chỉ `TrangThai = 2` (đã chốt) mới khoá ghi.
  *  - **Khoa chưa mở kỳ vẫn trả Header với Items rỗng** → hiện thông báo, không
  *    để màn hình trắng.
@@ -357,7 +357,7 @@ const NhiemVuKhoaCuaToi = () => {
                           <span
                             className={`tag-badge${nv.LaChuTri ? " nvk-tag-chu-tri" : ""}`}
                           >
-                            {nv.TenVaiTroSnapshot || "—"}
+                            {nv.TenVaiTroSnapshot || "-"}
                           </span>
                         </td>
                         <td className="nvk-diem">
@@ -387,7 +387,7 @@ const NhiemVuKhoaCuaToi = () => {
                 <tfoot>
                   <tr className="nvk-tong-row">
                     <td colSpan={2}>
-                      Tổng cộng {items.length} nhiệm vụ — điểm thực tế
+                      Tổng cộng {items.length} nhiệm vụ - điểm thực tế
                     </td>
                     <td className="nvk-diem">
                       {formatDiem(header.TongDiemThucTe, 1)}
@@ -432,7 +432,7 @@ const NhiemVuKhoaCuaToi = () => {
       <div className="page-header">
         <h2 className="nvk-title">Phục vụ cộng đồng và các nhiệm vụ khác</h2>
         <span className="breadcrumb">
-          Nhiệm vụ theo phân công của Khoa — điểm KPI Nhóm III trên phiếu đánh
+          Nhiệm vụ theo phân công của Khoa - điểm KPI Nhóm III trên phiếu đánh
           giá giảng viên
         </span>
       </div>
@@ -461,7 +461,7 @@ const NhiemVuKhoaCuaToi = () => {
         </button>
 
         {/* Kỳ đã chốt là khoá ghi TOÀN BỘ, kể cả gửi phản hồi (409 KY_DA_CHOT)
-            — ẩn nút thay vì để bấm rồi báo lỗi. */}
+            - ẩn nút thay vì để bấm rồi báo lỗi. */}
         {coTheGuiPhanHoi && (
           <button className="btn-submit" onClick={() => setFormPhanHoi(true)}>
             <i className="fa-solid fa-comment-dots"></i> Gửi phản hồi
