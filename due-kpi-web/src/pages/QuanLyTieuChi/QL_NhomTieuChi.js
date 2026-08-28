@@ -91,7 +91,7 @@ const QL_NhomTieuChi = () => {
         const payload = {
             ...formData,
             IdNhomCha: formData.IdNhomCha ? parseInt(formData.IdNhomCha) : null,
-            LoaiNhom: showLoaiNhom ? (parseInt(formData.LoaiNhom) || 1) : 1,
+            LoaiNhom: showLoaiNhom ? (parseInt(formData.LoaiNhom) || 1) : null,
             LoaiDoiTuong: parseInt(currentType),
             loaiDoiTuong: parseInt(currentType),
             DiemToiDa: formData.DiemToiDa ? parseFloat(formData.DiemToiDa) : null,
