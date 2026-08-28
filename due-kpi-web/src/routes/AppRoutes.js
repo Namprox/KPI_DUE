@@ -53,6 +53,11 @@ import PhanCongNhiemVuKhoa from "../pages/QuanLyChamDiem/PhanCongNhiemVuKhoa";
 import DuyetKeKhaiGioQuyDoi from "../pages/QuanLyChamDiem/DuyetKeKhaiGioQuyDoi";
 import ChiTietDuyetKeKhai from "../pages/QuanLyChamDiem/ChiTietDuyetKeKhai";
 import RequireRole from "../components/RequireRole";
+import ThamDinhNhanVienMockPage from "../pages/QuanLyChamDiem/ThamDinhNhanVienMockPage";
+import DanhSachNhanVienMockPage from "../pages/QuanLyChamDiem/DanhSachNhanVienMockPage";
+import ChiTietNhanVienMockPage from "../pages/QuanLyChamDiem/ChiTietNhanVienMockPage";
+import ToTrinhNhanVienMockPage from "../pages/QuanLyChamDiem/ToTrinhNhanVienMockPage";
+import AdminMauPhieuMockPage from "../pages/QuanLyChamDiem/AdminMauPhieuMockPage";
 
 const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
   return (
@@ -169,6 +174,11 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
           element={<ChiTietDuyetKeKhai />}
         />
       </Route>
+      <Route path="/mock-tham-dinh-nhan-vien" element={<ThamDinhNhanVienMockPage />} />
+      <Route path="/mock-danh-sach-nhan-vien" element={<DanhSachNhanVienMockPage />} />
+      <Route path="/mock-chi-tiet-nhan-vien" element={<ChiTietNhanVienMockPage />} />
+      <Route path="/mock-to-trinh-nhan-vien" element={<ToTrinhNhanVienMockPage />} />
+      <Route path="/mock-admin-mau-phieu" element={<AdminMauPhieuMockPage />} />
     </Routes>
   );
 };

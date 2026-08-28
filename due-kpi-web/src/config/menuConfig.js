@@ -21,6 +21,30 @@ export const MENU_GROUPS = [
     icon: "fa-check-double",
     items: [
       {
+        name: "[Mock] Thẩm định NV",
+        icon: "fa-solid fa-eye",
+        path: "/mock-tham-dinh-nhan-vien",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "[Mock] Danh sách duyệt",
+        icon: "fa-solid fa-users-viewfinder",
+        path: "/mock-danh-sach-nhan-vien",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "[Mock] Xem kết quả NV",
+        icon: "fa-solid fa-file-invoice",
+        path: "/mock-chi-tiet-nhan-vien",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "[Mock] Tờ trình NV",
+        icon: "fa-solid fa-file-signature",
+        path: "/mock-to-trinh-nhan-vien",
+        roles: MOI_NGUOI,
+      },
+      {
         // Phiếu tự đánh giá theo ngạch giảng viên - không xét chức vụ.
         name: "Đánh giá KPI Giảng viên",
         icon: "fa-solid fa-file-pen",
@@ -298,6 +322,12 @@ export const MENU_GROUPS = [
     icon: "fa-list-check",
     items: [
       {
+        name: "[Mock] Cấu hình Admin",
+        icon: "fa-solid fa-sliders",
+        path: "/mock-admin-mau-phieu",
+        roles: MOI_NGUOI,
+      },
+      {
         name: "Nhóm tiêu chí",
         icon: "fa-solid fa-layer-group",
         path: "/nhom-tieu-chi",
@@ -461,7 +491,7 @@ export const canAccessPath = (pathname, user) => {
     if (process.env.NODE_ENV !== "production") {
       console.warn(
         `[phân quyền] Route "${pathname}" chưa được khai trong menuConfig.js ` +
-          `- đang bị chặn. Thêm nó vào MENU_GROUPS (hoặc childPaths của mục cha).`,
+        `- đang bị chặn. Thêm nó vào MENU_GROUPS (hoặc childPaths của mục cha).`,
       );
     }
     return false;
