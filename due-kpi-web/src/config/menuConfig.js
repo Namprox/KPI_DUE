@@ -45,6 +45,30 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
       },
       {
+        name: "[Mock] Đánh giá GV",
+        icon: "fa-solid fa-chalkboard-user",
+        path: "/mock-danh-gia-giang-vien",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "[Mock] Duyệt KPI GV",
+        icon: "fa-solid fa-user-check",
+        path: "/mock-tham-dinh-giang-vien",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "[Mock] Đánh giá Khoa",
+        icon: "fa-solid fa-building-columns",
+        path: "/mock-danh-gia-khoa",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "[Mock] Đánh giá Phòng",
+        icon: "fa-solid fa-building-user",
+        path: "/mock-danh-gia-phong",
+        roles: MOI_NGUOI,
+      },
+      {
         // Phiếu tự đánh giá theo ngạch giảng viên - không xét chức vụ.
         name: "Đánh giá KPI Giảng viên",
         icon: "fa-solid fa-file-pen",
