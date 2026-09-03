@@ -270,7 +270,7 @@ export default function SearchSelect({
           tabIndex={-1}
           required
           value={value ?? ""}
-          onChange={() => {}}
+          onChange={() => { }}
           onFocus={() => setOpen(true)}
           style={requiredInputStyle}
         />

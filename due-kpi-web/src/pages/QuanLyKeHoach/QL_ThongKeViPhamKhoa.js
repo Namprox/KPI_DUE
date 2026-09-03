@@ -250,8 +250,8 @@ const QL_ThongKeViPhamKhoa = () => {
         // Endpoint trả về mảng kể cả khi lọc 1 Khoa - lấy đúng dòng của Khoa đang xem
         setKhoaRow(
           list.find((k) => String(k.IdDonVi) === String(idKhoa)) ||
-            list[0] ||
-            null,
+          list[0] ||
+          null,
         );
       } else {
         const err = await readApiError(

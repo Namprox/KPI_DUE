@@ -128,7 +128,7 @@ const QL_GioGiang = () => {
     }
 
     const prefix = parseInt(selectedYear) % 100;
-    
+
     // 1. Filter by year
     let result = allData.filter((item) => Math.floor((item.KyHoc || 0) / 10) === prefix);
 
@@ -751,7 +751,7 @@ const QL_GioGiang = () => {
 
               <div className="form-group" style={{ marginBottom: "20px" }}>
                 <label style={{ fontWeight: "bold", display: "block", marginBottom: "8px" }}>Chọn file Excel <span className="text-red">*</span></label>
-                <div 
+                <div
                   style={{
                     border: "2px dashed #cbd5e1",
                     borderRadius: "8px",
@@ -765,9 +765,9 @@ const QL_GioGiang = () => {
                   onClick={() => document.getElementById("modalExcelUpload").click()}
                 >
                   <i className="fa-solid fa-file-excel" style={{ fontSize: "36px", color: "#16a34a", marginBottom: "10px" }}></i>
-                  <p style={{ 
-                    margin: "0 0 5px 0", 
-                    fontWeight: "600", 
+                  <p style={{
+                    margin: "0 0 5px 0",
+                    fontWeight: "600",
                     color: "#334155",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -798,7 +798,7 @@ const QL_GioGiang = () => {
                 className="btn-submit"
                 onClick={handleModalImport}
                 disabled={isLoading || !importFile || !importYear || !importSemester}
-                style={{ 
+                style={{
                   opacity: (isLoading || !importFile || !importYear || !importSemester) ? 0.6 : 1,
                   display: "flex",
                   alignItems: "center"

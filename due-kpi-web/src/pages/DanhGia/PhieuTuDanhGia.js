@@ -185,17 +185,27 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   }, [currentUser]);
 
   const defaultDonViId = useMemo(() => {
+    // Tự động tìm đơn vị phù hợp với loại đối tượng (giảng viên/nhân viên)
+    const matchedDonVi = donViList.find((dv) => {
+      const isKhoa = String(dv.MaDonVi).startsWith("K_");
+      const hasChucDanh = !!currentUser?.IdChucDanh;
+      const type = isKhoa && hasChucDanh ? 1 : 2;
+      return type === loaiDoiTuong;
+    });
+
+    if (matchedDonVi) {
+      return matchedDonVi.IdDonVi;
+    }
+
     const primary = donViList.find((d) => d.LaChinh);
     return primary ? primary.IdDonVi : donViList[0]?.IdDonVi || null;
-  }, [donViList]);
+  }, [donViList, loaiDoiTuong, currentUser?.IdChucDanh]);
 
   const [selectedDonViId, setSelectedDonViId] = useState(defaultDonViId);
 
   useEffect(() => {
-    if (defaultDonViId && !selectedDonViId) {
-      setSelectedDonViId(defaultDonViId);
-    }
-  }, [defaultDonViId, selectedDonViId]);
+    setSelectedDonViId(defaultDonViId);
+  }, [defaultDonViId]);
 
   const selectedDonVi = useMemo(() => {
     return (
@@ -1347,8 +1357,8 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           </div>
         </div>
 
-        {/* Bộ chọn đơn vị công tác khi người dùng kiêm nhiệm nhiều đơn vị */}
-        {donViList.length > 1 && (
+        {/* Hiển thị tên đơn vị đánh giá */}
+        {selectedDonVi && (
           <div
             style={{
               backgroundColor: "#f8fafc",
@@ -1378,64 +1388,15 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
               ></i>
               Đơn vị đánh giá:
             </span>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {donViList.map((dv) => {
-                const isSelected =
-                  Number(selectedDonViId) === Number(dv.IdDonVi);
-                return (
-                  <button
-                    key={dv.IdDonVi}
-                    type="button"
-                    style={{
-                      cursor: "pointer",
-                      padding: "6px 14px",
-                      borderRadius: "20px",
-                      fontSize: "13px",
-                      fontWeight: isSelected ? "600" : "500",
-                      border: isSelected
-                        ? "1px solid #003399"
-                        : "1px solid #cbd5e1",
-                      backgroundColor: isSelected ? "#003399" : "#fff",
-                      color: isSelected ? "#fff" : "#475569",
-                      boxShadow: isSelected
-                        ? "0 2px 4px rgba(0,51,153,0.2)"
-                        : "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      transition: "all 0.2s ease",
-                    }}
-                    onClick={() => setSelectedDonViId(dv.IdDonVi)}
-                  >
-                    <span>{dv.TenDonVi || dv.MaDonVi}</span>
-                    {dv.LaChinh && (
-                      <span
-                        style={{
-                          fontSize: "10.5px",
-                          padding: "1px 6px",
-                          borderRadius: "10px",
-                          backgroundColor: isSelected
-                            ? "rgba(255,255,255,0.25)"
-                            : "#e2e8f0",
-                          color: isSelected ? "#fff" : "#475569",
-                        }}
-                      >
-                        Chính
-                      </span>
-                    )}
-                    {dv.TenChucVu && (
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          opacity: isSelected ? 0.9 : 0.75,
-                        }}
-                      >
-                        ({dv.TenChucVu})
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+               <span style={{ fontWeight: "600", color: "#003399", fontSize: "14px" }}>
+                 {selectedDonVi.TenDonVi || selectedDonVi.MaDonVi}
+               </span>
+               {selectedDonVi.TenChucVu && (
+                 <span style={{ fontSize: "13px", color: "#475569" }}>
+                   ({selectedDonVi.TenChucVu})
+                 </span>
+               )}
             </div>
           </div>
         )}

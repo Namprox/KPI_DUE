@@ -68,15 +68,15 @@ const QL_ViPham = () => {
    */
   const tongHopNav = canXemThongKeKhoa(currentUser)
     ? {
-        path: "/thong-ke-vi-pham-khoa",
-        label: "Thống kê vi phạm Khoa",
-        icon: "fa-chart-pie",
-      }
+      path: "/thong-ke-vi-pham-khoa",
+      label: "Thống kê vi phạm Khoa",
+      icon: "fa-chart-pie",
+    }
     : {
-        path: "/tong-hop-vi-pham",
-        label: "Tổng hợp điểm trừ",
-        icon: "fa-square-poll-vertical",
-      };
+      path: "/tong-hop-vi-pham",
+      label: "Tổng hợp điểm trừ",
+      icon: "fa-square-poll-vertical",
+    };
 
   /**
    * Trang này mở rộng hơn hẳn hai màn hình tổng hợp: /tong-hop-vi-pham chỉ dành

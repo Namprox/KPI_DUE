@@ -306,14 +306,14 @@ const ChiTietPhieuDonVi = () => {
         setPhieu((cur) =>
           cur
             ? {
-                ...cur,
-                RowVersion: newRowVersion,
-                ChiTiet: (cur.ChiTiet || []).map((dong) =>
-                  dong.IdChiTietDv === idCt && item
-                    ? { ...dong, ...item }
-                    : dong,
-                ),
-              }
+              ...cur,
+              RowVersion: newRowVersion,
+              ChiTiet: (cur.ChiTiet || []).map((dong) =>
+                dong.IdChiTietDv === idCt && item
+                  ? { ...dong, ...item }
+                  : dong,
+              ),
+            }
             : cur,
         );
       }
