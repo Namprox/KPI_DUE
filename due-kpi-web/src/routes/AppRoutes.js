@@ -58,6 +58,12 @@ import DanhSachNhanVienMockPage from "../pages/QuanLyChamDiem/DanhSachNhanVienMo
 import ChiTietNhanVienMockPage from "../pages/QuanLyChamDiem/ChiTietNhanVienMockPage";
 import ToTrinhNhanVienMockPage from "../pages/QuanLyChamDiem/ToTrinhNhanVienMockPage";
 import AdminMauPhieuMockPage from "../pages/QuanLyChamDiem/AdminMauPhieuMockPage";
+import DanhGiaGiangVienMock from "../pages/DanhGia/DanhGiaGiangVienMock";
+import DanhGiaKhoaMock from "../pages/DanhGia/DanhGiaKhoaMock";
+import DanhGiaPhongMock from "../pages/DanhGia/DanhGiaPhongMock";
+import ThamDinhGiangVienMockPage from "../pages/QuanLyChamDiem/ThamDinhGiangVienMockPage";
+import DanhGiaQuanLyKhoaMock from "../pages/DanhGia/DanhGiaQuanLyKhoaMock";
+import BangXepHangDonViMock from "../pages/QuanLyDanhGia/BangXepHangDonViMock";
 
 const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
   return (
@@ -179,6 +185,12 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
       <Route path="/mock-chi-tiet-nhan-vien" element={<ChiTietNhanVienMockPage />} />
       <Route path="/mock-to-trinh-nhan-vien" element={<ToTrinhNhanVienMockPage />} />
       <Route path="/mock-admin-mau-phieu" element={<AdminMauPhieuMockPage />} />
+      <Route path="/mock-danh-gia-giang-vien" element={<DanhGiaGiangVienMock />} />
+      <Route path="/mock-danh-gia-khoa" element={<DanhGiaKhoaMock />} />
+      <Route path="/mock-danh-gia-phong" element={<DanhGiaPhongMock />} />
+      <Route path="/mock-tham-dinh-giang-vien" element={<ThamDinhGiangVienMockPage />} />
+      <Route path="/mock-danh-gia-quan-ly-khoa" element={<DanhGiaQuanLyKhoaMock />} />
+      <Route path="/mock-bang-xep-hang-don-vi" element={<BangXepHangDonViMock />} />
     </Routes>
   );
 };
