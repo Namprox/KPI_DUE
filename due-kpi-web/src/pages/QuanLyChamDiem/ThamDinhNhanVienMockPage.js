@@ -1,37 +1,18 @@
-import React, { useState, useMemo } from "react";
-import ChamDiemNhanVienForm from "../../components/DanhGia/DanhGiaNhanVien/ChamDiemNhanVienForm";
+import React, { useState } from "react";
+import TieuChiHoanThanhMock from "../../components/DanhGia/DanhGiaNhanVien/TieuChiHoanThanhMock";
 import ChotPhieuNhanVienMockModal from "../../components/DanhGia/DanhGiaNhanVien/ChotPhieuNhanVienMockModal";
 import "../../css/Pages.css";
 
-const MOCK_CHI_TIET_FULL = [
-    { IdTieuChi: 101, TenTieuChi: "Hoàn thành công việc theo đúng kế hoạch, nhiệm vụ được phân công...", DiemToiDa: 70, LoaiNhom: 1, TenNhomCha: "I. Nhóm các tiêu chí liên quan đến nhiệm vụ cơ bản", MoTa: "Đúng kế hoạch: 70 điểm. Trễ hạn: -5đ, Sai sót: -10đ, Không HT: -20đ.", DiemTuDanhGia: 70, NhanXetTuDanhGia: "Hoàn thành toàn bộ công việc được giao." },
-    { IdTieuChi: 102, TenTieuChi: "Tuân thủ các quy định về giờ giấc, tác phong làm việc", DiemToiDa: 30, LoaiNhom: 1, TenNhomCha: "I. Nhóm các tiêu chí liên quan đến nhiệm vụ cơ bản", MoTa: "Tuân thủ: 30 điểm. Đi muộn: -1đ, Tự ý nghỉ: -5đ...", DiemTuDanhGia: 30, NhanXetTuDanhGia: "Đi làm đúng giờ." },
-    { IdTieuChi: 201, TenTieuChi: "Có sáng kiến, cải tiến công việc được công nhận", DiemToiDa: 20, LoaiNhom: 2, TenNhomCha: "II. Nhóm các tiêu chí liên quan đến thành tích vượt trội", MoTa: "Cấp Bộ: 20đ. Cấp Trường: 10đ. Đơn vị: 5đ.", DiemTuDanhGia: 10, NhanXetTuDanhGia: "Sáng kiến cấp trường." },
-    { IdTieuChi: 202, TenTieuChi: "Được khen thưởng đột xuất vì thành tích", DiemToiDa: 10, LoaiNhom: 2, TenNhomCha: "II. Nhóm các tiêu chí liên quan đến thành tích vượt trội", MoTa: "Cấp Bộ: 15đ. Cấp ĐHĐN/TP: 10đ. Cấp Trường: 5đ.", DiemTuDanhGia: 0 },
-    { IdTieuChi: 203, TenTieuChi: "Hoàn thành chương trình đào tạo, bồi dưỡng chuyên môn...", DiemToiDa: 10, LoaiNhom: 2, TenNhomCha: "II. Nhóm các tiêu chí liên quan đến thành tích vượt trội", MoTa: "Khóa <1 tuần: 2đ. Khóa >1 tháng: 5đ. Tổ chức workshop: 5đ.", DiemTuDanhGia: 5, NhanXetTuDanhGia: "Khóa bồi dưỡng nghiệp vụ 1 tháng." },
-    { IdTieuChi: 204, TenTieuChi: "Tham gia hoặc tổ chức chương trình, phong trào của Trường...", DiemToiDa: 10, LoaiNhom: 2, TenNhomCha: "II. Nhóm các tiêu chí liên quan đến thành tích vượt trội", MoTa: "Thành phần BTC: 5đ. Tham gia: 2đ. Không tham gia khi yêu cầu: -5đ.", DiemTuDanhGia: 2, NhanXetTuDanhGia: "Tham gia hỗ trợ tuyển sinh." },
-    { IdTieuChi: 301, TenTieuChi: "Chính trị, tư tưởng (chấp hành chủ trương, đường lối...)", DiemToiDa: 0, LoaiNhom: 3, TenNhomCha: "III. Chấp hành quy định", MoTa: "Vi phạm: bị trừ tối thiểu 10 điểm/lần.", DiemTuDanhGia: 0, NhanXetTuDanhGia: "Không vi phạm." },
-];
-
 const ThamDinhNhanVienMockPage = () => {
-    const [diemThamDinh, setDiemThamDinh] = useState({});
-    const [nhanXetThamDinh, setNhanXetThamDinh] = useState({});
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const handleDiemChange = (id, val) => {
-        setDiemThamDinh(prev => ({ ...prev, [id]: val }));
-    };
+    const [diemHieuQuaCongViec, setDiemHieuQuaCongViec] = useState(65);
 
-    const handleNhanXetChange = (id, val) => {
-        setNhanXetThamDinh(prev => ({ ...prev, [id]: val }));
-    };
+    const diemGioGiacAuto = 30 - 6;
+    const diemThanhTichAuto = 10;
+    const diemKyLuatAuto = 0;
 
-    const tongDiemSieuTinh = useMemo(() => {
-        return MOCK_CHI_TIET_FULL.reduce((sum, tc) => {
-            const diem = diemThamDinh[tc.IdTieuChi] !== undefined ? diemThamDinh[tc.IdTieuChi] : tc.DiemTuDanhGia;
-            return sum + (Number(diem) || 0);
-        }, 0);
-    }, [diemThamDinh]);
+    const tongDiemSieuTinh = diemHieuQuaCongViec + diemGioGiacAuto + diemThanhTichAuto - diemKyLuatAuto;
 
     return (
         <div className="page-container">
@@ -40,28 +21,96 @@ const ThamDinhNhanVienMockPage = () => {
                     <h2 style={{ margin: 0, color: "#1e293b", fontSize: "22px", fontWeight: 700 }}>
                         THẨM ĐỊNH KPI NHÂN VIÊN: Nguyễn Văn Test
                     </h2>
-                    <span className="breadcrumb">Phòng Đào tạo • Chế độ dùng thử Đầy đủ tiêu chí</span>
+                    <span className="breadcrumb">Phòng Đào tạo • Kỳ đánh giá 2026</span>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 'bold' }}>TỔNG ĐIỂM THẨM ĐỊNH</div>
-                    <div style={{ fontSize: '24px', color: '#1d4ed8', fontWeight: 'bold' }}>{tongDiemSieuTinh.toFixed(2)}</div>
+                    <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 'bold' }}>TỔNG ĐIỂM CHỐT</div>
+                    <div style={{ fontSize: '28px', color: '#1d4ed8', fontWeight: 'bold' }}>{tongDiemSieuTinh.toFixed(2)}</div>
                 </div>
             </div>
 
-            <div className="modern-table-card" style={{ padding: '20px', backgroundColor: '#f8fafc', marginBottom: '20px', borderLeft: '4px solid #f59e0b' }}>
-                <p style={{ margin: 0, fontSize: '14px', color: '#334155' }}>
-                    <i className="fa-solid fa-circle-info" style={{ color: '#f59e0b', marginRight: '8px' }}></i>
-                    Đây là màn hình <b>Cấp quản lý chấm điểm</b>. Danh sách tiêu chí đã cập nhật đúng 100% Phụ lục 3.
+            <div className="modern-table-card" style={{ padding: '20px', backgroundColor: '#eff6ff', marginBottom: '20px', borderLeft: '4px solid #3b82f6' }}>
+                <p style={{ margin: 0, fontSize: '14px', color: '#1e40af' }}>
+                    <i className="fa-solid fa-link" style={{ marginRight: '8px' }}></i>
+                    Giao diện Thẩm định thông minh. Các mục Thành tích và Vi phạm đã bị khóa lại để <b>đảm bảo tính toàn vẹn dữ liệu</b>, tự động đồng bộ từ Sổ ghi nhận sự kiện của đơn vị. Quản lý chỉ cần đánh giá Mục 1.
                 </p>
             </div>
 
-            <ChamDiemNhanVienForm
-                chiTietList={MOCK_CHI_TIET_FULL}
-                diemThamDinh={diemThamDinh}
-                nhanXetThamDinh={nhanXetThamDinh}
-                onDiemChange={handleDiemChange}
-                onNhanXetChange={handleNhanXetChange}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+
+                <div style={{ padding: '10px 15px', background: '#e2e8f0', fontWeight: 'bold', borderRadius: '4px' }}>
+                    I. Nhóm các tiêu chí liên quan đến nhiệm vụ cơ bản (100đ)
+                </div>
+
+                <TieuChiHoanThanhMock
+                    tieuChi={{
+                        ten: "1. Hoàn thành công việc theo đúng kế hoạch, nhiệm vụ được phân công",
+                        diemToiDa: 70,
+                        diemTuCham: diemHieuQuaCongViec,
+                        moTa: "Quản lý chấm điểm dựa trên tiến độ và chất lượng công việc thực tế."
+                    }}
+                />
+
+                <div style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "15px", backgroundColor: "#f8fafc", opacity: 0.85 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                            <h4 style={{ margin: "0 0 5px 0", color: "#475569" }}>2. Tuân thủ các quy định về giờ giấc, tác phong làm việc</h4>
+                            <div style={{ fontSize: "13px", color: "#64748b" }}>
+                                <span style={{ backgroundColor: "#e2e8f0", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold", marginRight: "8px" }}>
+                                    <i className="fa-solid fa-lock"></i> ĐỒNG BỘ TỪ HỆ THỐNG
+                                </span>
+                                Ghi nhận 2 lỗi vi phạm trong kỳ.
+                            </div>
+                        </div>
+                        <div style={{ fontSize: "20px", fontWeight: "bold", color: "#b45309" }}>
+                            {diemGioGiacAuto} / 30đ
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ padding: '10px 15px', background: '#e2e8f0', fontWeight: 'bold', borderRadius: '4px' }}>
+                    II. Nhóm các tiêu chí liên quan đến thành tích vượt trội
+                </div>
+
+                <div style={{ border: "1px solid #bbf7d0", borderRadius: "8px", padding: "15px", backgroundColor: "#f0fdf4" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                            <h4 style={{ margin: "0 0 5px 0", color: "#166534" }}>Tổng điểm thành tích, sáng kiến, khen thưởng</h4>
+                            <div style={{ fontSize: "13px", color: "#15803d" }}>
+                                <span style={{ backgroundColor: "#dcfce7", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold", marginRight: "8px" }}>
+                                    <i className="fa-solid fa-lock"></i> ĐỒNG BỘ TỪ HỆ THỐNG
+                                </span>
+                                Có 1 danh hiệu / sáng kiến được ghi nhận.
+                            </div>
+                        </div>
+                        <div style={{ fontSize: "20px", fontWeight: "bold", color: "#10b981" }}>
+                            +{diemThanhTichAuto}đ
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ padding: '10px 15px', background: '#e2e8f0', fontWeight: 'bold', borderRadius: '4px' }}>
+                    III. Chấp hành quy định (Điểm trừ kỷ luật)
+                </div>
+
+                <div style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "15px", backgroundColor: "#f8fafc", opacity: 0.85 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                            <h4 style={{ margin: "0 0 5px 0", color: "#475569" }}>Vi phạm chính trị, tư tưởng, pháp luật</h4>
+                            <div style={{ fontSize: "13px", color: "#64748b" }}>
+                                <span style={{ backgroundColor: "#e2e8f0", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold", marginRight: "8px" }}>
+                                    <i className="fa-solid fa-lock"></i> ĐỒNG BỘ TỪ HỆ THỐNG
+                                </span>
+                                Không có vi phạm.
+                            </div>
+                        </div>
+                        <div style={{ fontSize: "20px", fontWeight: "bold", color: "#64748b" }}>
+                            -{diemKyLuatAuto}đ
+                        </div>
+                    </div>
+                </div>
+
+            </div>
 
             <div style={{ padding: "20px", display: "flex", justifyContent: "flex-end", gap: "10px", backgroundColor: "#fff", marginTop: "20px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
                 <button className="btn-cancel"><i className="fa-solid fa-rotate-left"></i> Trả về bổ sung (Mock)</button>
@@ -77,7 +126,7 @@ const ThamDinhNhanVienMockPage = () => {
             <ChotPhieuNhanVienMockModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                tongDiem={Number(tongDiemSieuTinh.toFixed(2))}
+                tongDiem={tongDiemSieuTinh}
                 tenNhanVien="Nguyễn Văn Test"
             />
         </div>
