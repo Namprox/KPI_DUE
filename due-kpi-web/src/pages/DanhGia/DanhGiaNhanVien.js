@@ -49,12 +49,13 @@ const DanhGiaNhanVien = () => {
           tongDiemTichLuy={tongDiem}
           onScoreChange={handleScoreChange}
           onTextChange={handleTextChange}
+          hanhDong={
+            <>
+              <button className="btn-luu-nhap"><i className="fa-solid fa-floppy-disk"></i> Lưu nháp (Mock)</button>
+              <button className="btn-nop-phieu"><i className="fa-solid fa-paper-plane"></i> Nộp phiếu (Mock)</button>
+            </>
+          }
         />
-      </div>
-
-      <div style={{ padding: "20px", display: "flex", justifyContent: "center", gap: "10px", backgroundColor: "#fff", marginTop: "20px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
-        <button className="btn-cancel"><i className="fa-solid fa-floppy-disk"></i> Lưu nháp (Mock)</button>
-        <button className="btn-submit"><i className="fa-solid fa-paper-plane"></i> Nộp phiếu (Mock)</button>
       </div>
     </div>
   );

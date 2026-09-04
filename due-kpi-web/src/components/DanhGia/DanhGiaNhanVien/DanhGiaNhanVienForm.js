@@ -15,7 +15,8 @@ const DanhGiaNhanVienForm = ({
     onRemoveFile,
     onXemMinhChung,
     choPhepNhap = true,
-    tongDiemTichLuy = 0
+    tongDiemTichLuy = 0,
+    hanhDong
 }) => {
     const sections = useMemo(() => {
         if (!criteriaList.length) return [];
@@ -58,6 +59,10 @@ const DanhGiaNhanVienForm = ({
                             Đã đánh giá <b>{answeredCount}</b>/{totalCount} tiêu chí
                         </div>
                     </div>
+                </div>
+
+                <div className="pl2-header-actions">
+                    {hanhDong}
                 </div>
             </div>
 
