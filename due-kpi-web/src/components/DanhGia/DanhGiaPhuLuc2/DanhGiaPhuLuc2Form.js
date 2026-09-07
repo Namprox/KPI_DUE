@@ -122,31 +122,26 @@ const DanhGiaPhuLuc2Form = ({
   const sections = useMemo(() => {
     if (!Array.isArray(criteriaList) || criteriaList.length === 0) return [];
 
-    const loaiMap = new Map();
+    const nhomChaMap = new Map();
+    const nhomChaKeys = [];
     criteriaList.forEach((tc) => {
-      const loai =
-        Number(tc.LoaiNhom) ||
-        (String(tc.TenNhomCha || tc.TenNhom || "").startsWith("B") ? 2 : 1);
-      if (!loaiMap.has(loai)) {
-        loaiMap.set(loai, []);
+      const key = tc.IdNhomCha || tc.TenNhomCha || "Chung";
+      if (!nhomChaMap.has(key)) {
+        nhomChaMap.set(key, []);
+        nhomChaKeys.push(key);
       }
-      loaiMap.get(loai).push(tc);
+      nhomChaMap.get(key).push(tc);
     });
 
-    const sortedLoaiList = [...loaiMap.keys()].sort((a, b) => a - b);
-
-    return sortedLoaiList.map((loai) => {
-      const rowsOfLoai = loaiMap.get(loai) || [];
-      const firstRow = rowsOfLoai[0];
-      const tenCha =
-        firstRow?.TenNhomCha ||
-        (loai === 2
-          ? "B - Nhóm các tiêu chí liên quan đến thành tích vượt trội"
-          : "A - Nhóm các tiêu chí liên quan đến nhiệm vụ cơ bản");
+    return nhomChaKeys.map((key) => {
+      const rows = nhomChaMap.get(key) || [];
+      const firstRow = rows[0];
+      const tenCha = firstRow?.TenNhomCha || "Nhóm tiêu chí";
+      const loai = Number(firstRow?.LoaiNhom) || (String(tenCha).startsWith("B") ? 2 : 1);
 
       // Gom tiếp theo nhóm con (TenNhom)
       const nhomConMap = new Map();
-      rowsOfLoai.forEach((tc) => {
+      rows.forEach((tc) => {
         const tenCon = tc.TenNhom || "Tiêu chí";
         if (!nhomConMap.has(tenCon)) {
           nhomConMap.set(tenCon, []);
@@ -248,7 +243,7 @@ const DanhGiaPhuLuc2Form = ({
         const isVuotTroi = Number(section.loaiNhom) === 2;
 
         return (
-          <div key={section.loaiNhom || sIndex} className="pl2-section">
+          <div key={sIndex} className="pl2-section">
             {/* Header Nhóm Cha Cấp 1 */}
             <div
               className={`pl2-section-header ${isVuotTroi ? "vuot-troi" : ""}`}
@@ -272,11 +267,6 @@ const DanhGiaPhuLuc2Form = ({
                     {!nhomCon.isDirect && (
                       <div className="pl2-group-header">
                         <h4 className="pl2-group-title">{nhomCon.ten}</h4>
-                        <span className="pl2-group-score">
-                          <i className="fa-solid fa-star"></i>{" "}
-                          {sum % 1 === 0 ? sum : sum.toFixed(2)}
-                          <span className="pl2-group-score-max">/ {max}đ</span>
-                        </span>
                       </div>
                     )}
 

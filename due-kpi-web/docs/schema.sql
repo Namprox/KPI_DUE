@@ -562,7 +562,7 @@ CREATE TABLE nckh_ke_khai_khac (
 );
 GO
 
--- 3.6.6. Tổng hợp NCKH theo năm - 11 cờ boolean tự tính từ các bảng chi tiết
+-- 3.6.6. Tổng hợp NCKH theo năm — 11 cờ boolean tự tính từ các bảng chi tiết
 CREATE TABLE nckh_tong_hop (
     ma_nguoi_dung_nckh            INT       NOT NULL,
     id_nam                        INT       NOT NULL,   -- năm đánh giá (vd 2026)
@@ -587,7 +587,7 @@ CREATE TABLE nckh_tong_hop (
 );
 GO
 
--- 3.6.7. Phân loại NCKH (⚠️ số liệu TOÀN THỜI GIAN dù có id_nam - xem schema_ghi_chu.md)
+-- 3.6.7. Phân loại NCKH (⚠️ số liệu TOÀN THỜI GIAN dù có id_nam — xem schema_ghi_chu.md)
 CREATE TABLE nckh_phan_loai (
     id_phan_loai        INT           IDENTITY(1,1) PRIMARY KEY,
     ma_nguoi_dung_nckh  INT           NOT NULL,
@@ -604,7 +604,7 @@ CREATE TABLE nckh_phan_loai (
 GO
 
 -- TVP dùng cho sp_nckh_dong_bo (streaming từng dòng qua SqlDataRecord, không giữ bản sao trong RAM).
--- 2 type snapshot KHÔNG chứa id_nam - truyền scalar @id_nam để tránh lặp trên mỗi dòng.
+-- 2 type snapshot KHÔNG chứa id_nam — truyền scalar @id_nam để tránh lặp trên mỗi dòng.
 IF TYPE_ID(N'dbo.HoSoNckhRow') IS NOT NULL
     DROP TYPE dbo.HoSoNckhRow;
 GO
@@ -705,13 +705,103 @@ CREATE TYPE dbo.PhanLoaiNckhRow AS TABLE (
 );
 GO
 
+-- 3.6.8. Giờ NCKH — đồng bộ từ GET {NckhApiUrl}/api/kpisciencescoring
+CREATE TABLE nckh_gio_nckh (
+    ma_nguoi_dung_nckh  INT           NOT NULL,      -- = UserId từ API NCKH
+    id_nam              INT           NOT NULL,      -- = Year của chính dòng dữ liệu (vd 2025)
+    ho_ten              NVARCHAR(255) NULL,          -- FullName
+    email               NVARCHAR(255) NULL,          -- Email — khoá ánh xạ sang nhan_vien
+    ten_don_vi          NVARCHAR(255) NULL,          -- DepartmentName (đơn vị phía NCKH)
+    chuc_danh           NVARCHAR(255) NULL,          -- JobTitle (text, không map chuc_danh_nghe_nghiep)
+    ky_bao_cao          NVARCHAR(100) NULL,          -- Period, vd "01/07/2024 - 30/06/2025"
+    gio_chuan           DECIMAL(10,2) NULL,          -- StandardHours (vd 720)
+    ty_le_giam          DECIMAL(6,2)  NULL,          -- ReductionPercentage, đơn vị % (vd 85)
+    gio_nckh_dinh_muc   DECIMAL(10,2) NULL,          -- RequiredHours (vd 108)
+    gio_nckh_quy_doi    DECIMAL(10,2) NULL,          -- ConvertedHours (vd 100.02)
+    id_nguoi_dong_bo    INT           NULL,          -- nhân viên kích hoạt đồng bộ
+    thoi_gian_dong_bo   DATETIME      NOT NULL CONSTRAINT df_gio_nckh_thoi_gian DEFAULT GETDATE(),
+    CONSTRAINT pk_gio_nckh_nckh  PRIMARY KEY (ma_nguoi_dung_nckh, id_nam),
+    CONSTRAINT fk_gio_nckh_nguoi FOREIGN KEY (id_nguoi_dong_bo) REFERENCES nhan_vien(id_nhan_vien)
+);
+GO
+
+-- Truy vấn đọc lọc theo năm, trong khi id_nam KHÔNG phải cột dẫn đầu của PK.
+CREATE NONCLUSTERED INDEX ix_gio_nckh_nam ON nckh_gio_nckh(id_nam);
+GO
+
+-- TVP cho sp_nckh_gio_nckh_dong_bo. KHÁC 6 TVP ở trên: type này CÓ id_nam, vì mỗi
+-- dòng tự mang năm của nó (không thể truyền scalar @id_nam chung cho cả lô).
+IF TYPE_ID(N'dbo.GioNckhRow') IS NOT NULL
+    DROP TYPE dbo.GioNckhRow;
+GO
+CREATE TYPE dbo.GioNckhRow AS TABLE (
+    ma_nguoi_dung_nckh  INT           NOT NULL,
+    id_nam              INT           NOT NULL,
+    ho_ten              NVARCHAR(255) NULL,
+    email               NVARCHAR(255) NULL,
+    ten_don_vi          NVARCHAR(255) NULL,
+    chuc_danh           NVARCHAR(255) NULL,
+    ky_bao_cao          NVARCHAR(100) NULL,
+    gio_chuan           DECIMAL(10,2) NULL,
+    ty_le_giam          DECIMAL(6,2)  NULL,
+    gio_nckh_dinh_muc   DECIMAL(10,2) NULL,
+    gio_nckh_quy_doi    DECIMAL(10,2) NULL,
+    PRIMARY KEY (ma_nguoi_dung_nckh, id_nam)
+);
+GO
+
+-- 3.6.9. KPI bài báo quốc tế — đồng bộ từ GET {NckhApiUrl}/api/kpiinternationalarticle?year=YYYY
+--   KHÁC nckh_gio_nckh: API nguồn CÓ nhận tham số lọc `year`, và payload KHÔNG có trường năm
+--   ở cấp giảng viên ⇒ id_nam lấy từ THAM SỐ của lần gọi, đồng bộ ghi đè theo TỪNG NĂM.
+--   Điểm đã được phía NCKH tính sẵn; phía KPI chỉ lưu trữ để đối chiếu khi đánh giá.
+CREATE TABLE nckh_kpi_bai_bao_quoc_te (
+    ma_nguoi_dung_nckh   INT           NOT NULL,   -- = UserId từ API NCKH
+    id_nam               INT           NOT NULL,   -- = tham số year của lần gọi API
+    ho_ten               NVARCHAR(255) NULL,       -- FullName
+    email                NVARCHAR(255) NULL,       -- Email — khoá ánh xạ sang nhan_vien (làm lúc ĐỌC)
+    tong_bai_wos_scopus  INT           NULL,       -- TotalWosScopusArticles
+    co_q1_q2             BIT           NOT NULL CONSTRAINT df_kpi_bbqt_q1q2 DEFAULT 0,      -- HasQ1Q2
+    tong_diem_tac_gia    DECIMAL(10,2) NULL,       -- TotalAuthorScore
+    diem_kpi_cuoi        DECIMAL(10,2) NULL,       -- FinalKpiScore
+    so_bai_bao           INT           NOT NULL CONSTRAINT df_kpi_bbqt_so_bai DEFAULT 0,    -- = Articles.Count (dẫn xuất)
+    articles_json        NVARCHAR(MAX) NULL,       -- nguyên mảng Articles, quy ước như members_json
+    id_nguoi_dong_bo     INT           NULL,       -- nhân viên kích hoạt đồng bộ
+    thoi_gian_dong_bo    DATETIME      NOT NULL CONSTRAINT df_kpi_bbqt_thoi_gian DEFAULT GETDATE(),
+    CONSTRAINT pk_kpi_bbqt       PRIMARY KEY (ma_nguoi_dung_nckh, id_nam),
+    CONSTRAINT fk_kpi_bbqt_nguoi FOREIGN KEY (id_nguoi_dong_bo) REFERENCES nhan_vien(id_nhan_vien)
+);
+GO
+
+-- Đồng bộ + đọc đều lọc theo năm, trong khi id_nam KHÔNG phải cột dẫn đầu của PK.
+CREATE NONCLUSTERED INDEX ix_kpi_bbqt_nam ON nckh_kpi_bai_bao_quoc_te(id_nam);
+GO
+
+-- TVP cho sp_nckh_kpi_bai_bao_quoc_te_dong_bo. KHÁC GioNckhRow: type này KHÔNG có id_nam,
+-- vì cả lô đều thuộc đúng năm đã truyền sang API ⇒ dùng scalar @id_nam.
+IF TYPE_ID(N'dbo.KpiBaiBaoQuocTeRow') IS NOT NULL
+    DROP TYPE dbo.KpiBaiBaoQuocTeRow;
+GO
+CREATE TYPE dbo.KpiBaiBaoQuocTeRow AS TABLE (
+    ma_nguoi_dung_nckh   INT           NOT NULL,
+    ho_ten               NVARCHAR(255) NULL,
+    email                NVARCHAR(255) NULL,
+    tong_bai_wos_scopus  INT           NULL,
+    co_q1_q2             BIT           NOT NULL,
+    tong_diem_tac_gia    DECIMAL(10,2) NULL,
+    diem_kpi_cuoi        DECIMAL(10,2) NULL,
+    so_bai_bao           INT           NOT NULL,
+    articles_json        NVARCHAR(MAX) NULL,
+    PRIMARY KEY (ma_nguoi_dung_nckh)
+);
+GO
+
 -- =============================================================================
 -- 4. DỮ LIỆU ĐÁNH GIÁ
 --    Quy trình 4 giai đoạn. HAI trục trạng thái song song:
 --      phieu_danh_gia.trang_thai      : 1 NHAP → 2 THAM_DINH → 3 CHO_TK_DUYET
 --                                       → 4 TK_DA_DUYET → 5 HOAN_TAT
 --      chi_tiet_danh_gia.trang_thai_dong : 1 KE_KHAI → 2 CHO_THAM_DINH → 3 DA_CHOT
---    Phiếu ở trạng thái 2 BAO TRÙM cả lúc GV đang sửa dòng bị trả về - chỉ DÒNG
+--    Phiếu ở trạng thái 2 BAO TRÙM cả lúc GV đang sửa dòng bị trả về — chỉ DÒNG
 --    tụt về KE_KHAI, các dòng khác giữ nguyên tiến độ.
 --    State machine chi tiết (trigger 2↔3 tự động, trả về từng dòng, hủy nộp,
 --    mở lại, hạn tự đánh giá, hạn ngạch 20%): xem schema_ghi_chu.md mục 4 và 8.
@@ -850,7 +940,7 @@ CREATE TABLE phieu_danh_gia (
     CONSTRAINT chk_gio_giang_dm_ap     CHECK (gio_giang_dinh_muc_ap_dung IS NULL OR gio_giang_dinh_muc_ap_dung >= 0),
     CONSTRAINT chk_gio_nckh_dm_ap      CHECK (gio_nckh_dinh_muc_ap_dung  IS NULL OR gio_nckh_dinh_muc_ap_dung  >= 0),
     CONSTRAINT chk_gio_pvcd_dm_ap      CHECK (gio_pvcd_dinh_muc_ap_dung  IS NULL OR gio_pvcd_dinh_muc_ap_dung  >= 0),
-    -- 1 phiếu / người / ĐƠN VỊ / năm (Đợt 3 - kiêm nhiệm đa đơn vị).
+    -- 1 phiếu / người / ĐƠN VỊ / năm (Đợt 3 — kiêm nhiệm đa đơn vị).
     -- Người kiêm nhiệm 2 đơn vị nộp 2 phiếu, mỗi phiếu vào tờ trình + hạn ngạch
     -- 20% của đúng đơn vị đó. Trước Đợt 3 khoá này là UNIQUE (id_nam, id_nhan_vien).
     CONSTRAINT uq_phieu_unique         UNIQUE (id_nam, id_nhan_vien, id_don_vi)
@@ -884,7 +974,7 @@ CREATE TABLE chi_tiet_danh_gia (
     -- Điểm chính thức (chốt bởi Trường ở HOAN_TAT)
     diem_chinh_thuc       DECIMAL(5,2)   NULL,
 
-    -- Chấm điểm tự động (điểm KHÓA CỨNG - engine ghi thẳng diem_chinh_thuc)
+    -- Chấm điểm tự động (điểm KHÓA CỨNG — engine ghi thẳng diem_chinh_thuc)
     loai_nguon_diem       TINYINT        NOT NULL DEFAULT 1,   -- 1: thủ công, 2: tự động tổng hợp
     cong_thuc_snapshot    NVARCHAR(200)  NULL,                 -- mã công thức snapshot lúc tạo phiếu
     diem_tu_dong          DECIMAL(5,2)   NULL,                 -- điểm hệ thống tính (audit / re-run)
@@ -899,9 +989,9 @@ CREATE TABLE chi_tiet_danh_gia (
 
     -- Trạng thái THEO TỪNG DÒNG (thẩm định độc lập từng tiêu chí) ─────────────
     trang_thai_dong        TINYINT        NOT NULL CONSTRAINT df_ctdg_trang_thai_dong DEFAULT 1,
-        -- 1: KE_KHAI       - chủ phiếu sửa được (kê khai lần đầu HOẶC đang sửa sau khi bị trả về)
-        -- 2: CHO_THAM_DINH - đơn vị được giao trong tieu_chi_don_vi_cham chấm được
-        -- 3: DA_CHOT       - đã chốt điểm, diem_chinh_thuc đã ghi, khóa cứng
+        -- 1: KE_KHAI       — chủ phiếu sửa được (kê khai lần đầu HOẶC đang sửa sau khi bị trả về)
+        -- 2: CHO_THAM_DINH — đơn vị được giao trong tieu_chi_don_vi_cham chấm được
+        -- 3: DA_CHOT       — đã chốt điểm, diem_chinh_thuc đã ghi, khóa cứng
     nguon_tra_ve           TINYINT        NULL,    -- Yêu cầu trả về ĐANG MỞ; NULL = không có
         -- 2: chuyên viên thẩm định trả về cho GV   3: Trưởng khoa trả về cho đơn vị thẩm định
     ly_do_tra_ve           NVARCHAR(1000) NULL,
@@ -1051,7 +1141,7 @@ CREATE TABLE lich_su_trang_thai_phieu (
         -- 4: Chốt (vào HOAN_TAT)
         -- 5: Mở lại (từ HOAN_TAT về 1/2/3)
         -- 6: Hủy nộp (GV tự rút, 2 → 1, giữ nguyên lan_danh_gia)
-        -- 7: Nộp lại sau khi bị trả về DÒNG (giữ nguyên lan_danh_gia - khác hẳn "trả lại phiếu")
+        -- 7: Nộp lại sau khi bị trả về DÒNG (giữ nguyên lan_danh_gia — khác hẳn "trả lại phiếu")
         -- 8: Trưởng khoa chốt hồ sơ cá nhân
         -- 9: Hiệu trưởng trả riêng hồ sơ về Trưởng khoa
     cap_thuc_hien      TINYINT        NULL,         -- 1: GV, 2: Đơn vị thẩm định, 3: Trường/HT, 4: Trưởng khoa (NULL khi do hệ thống)
@@ -1070,7 +1160,7 @@ GO
 
 
 -- =============================================================================
--- 4.9 → 4.14. ĐÁNH GIÁ ĐƠN VỊ (KHOA / PHÒNG) - mirror luồng người, khoá theo
+-- 4.9 → 4.14. ĐÁNH GIÁ ĐƠN VỊ (KHOA / PHÒNG) — mirror luồng người, khoá theo
 --    id_phieu_dv / id_chi_tiet_dv. Quy trình & trạng thái: xem schema_ghi_chu.md.
 -- =============================================================================
 
@@ -1456,7 +1546,7 @@ CREATE TABLE nhiem_vu_khoa (
 GO
 
 -- 7.3. Phân công: nối nhiệm vụ với giảng viên, mang vai trò và ĐIỂM GHI CỨNG
---      (snapshot tại thời điểm gán - đổi mức điểm ở kỳ sau không làm đổi kỳ cũ)
+--      (snapshot tại thời điểm gán — đổi mức điểm ở kỳ sau không làm đổi kỳ cũ)
 CREATE TABLE phan_cong_nhiem_vu_khoa (
     id_phan_cong         INT           IDENTITY(1,1) PRIMARY KEY,
     id_nhiem_vu_khoa     INT           NOT NULL,
@@ -1595,11 +1685,11 @@ CREATE TABLE to_trinh_kpi_khoa (
     id_nam             INT            NOT NULL,
     id_don_vi          INT            NOT NULL,   -- Khoa / Phòng lập tờ trình
     trang_thai         TINYINT        NOT NULL DEFAULT 1,
-        -- 1: DANG_TONG_HOP - chưa đủ 100% hồ sơ được Trưởng khoa chốt
-        -- 2: DA_DONG_GOI   - đã tính hạn ngạch + nâng xuất sắc; mở nút "Trình Hiệu trưởng"
-        -- 3: DA_TRINH      - chờ Hiệu trưởng duyệt
-        -- 4: HT_DA_DUYET   - chốt số liệu toàn Khoa, khóa chiến dịch
-        -- 5: HT_TRA_VE     - HT trả về ≥1 hồ sơ; TK xử lý rồi trình lại
+        -- 1: DANG_TONG_HOP — chưa đủ 100% hồ sơ được Trưởng khoa chốt
+        -- 2: DA_DONG_GOI   — đã tính hạn ngạch + nâng xuất sắc; mở nút "Trình Hiệu trưởng"
+        -- 3: DA_TRINH      — chờ Hiệu trưởng duyệt
+        -- 4: HT_DA_DUYET   — chốt số liệu toàn Khoa, khóa chiến dịch
+        -- 5: HT_TRA_VE     — HT trả về ≥1 hồ sơ; TK xử lý rồi trình lại
 
     -- Snapshot hạn ngạch tại thời điểm đóng gói (quy định có thể đổi theo năm)
     so_giang_vien      INT            NULL,       -- Mẫu số: đếm loai_doi_tuong = 1
@@ -1683,7 +1773,7 @@ GO
 --    từ chối TỪNG DÒNG và được sửa số lượng trước khi chốt.
 --
 --    Đây là NGUỒN THỨ HAI của "thời gian thực hiện" trong năm. Nguồn thứ nhất
---    (tiết giảng dạy quy đổi theo từng loại) do hệ thống ngoài gọi về - CHƯA
+--    (tiết giảng dạy quy đổi theo từng loại) do hệ thống ngoài gọi về — CHƯA
 --    làm ở đợt này, nên module này KHÔNG ghi vào gio_thuc_hien_gv và KHÔNG nối
 --    vào sp_phieu_tong_hop_tu_dong. Chỉ lưu + phát API tổng hợp.
 --
@@ -1724,16 +1814,16 @@ GO
 
 -- 9.2. Bản kê khai: 1 bản / giảng viên / năm.
 --      row_version dùng cho các thao tác 2 người cùng đụng (nộp / chốt / trả lại),
---      giống module phiếu - xem sp_phieu_submit.
+--      giống module phiếu — xem sp_phieu_submit.
 CREATE TABLE ke_khai_gio_quy_doi (
     id_ke_khai       INT            IDENTITY(1,1) PRIMARY KEY,
     id_nhan_vien     INT            NOT NULL,
     id_nam           INT            NOT NULL,
     trang_thai       TINYINT        NOT NULL DEFAULT 1,
-        -- 1: NHAP       - GV đang nhập, sửa thoải mái
-        -- 2: CHO_DUYET  - đã nộp, GV không sửa được nữa
-        -- 3: DA_DUYET   - TK/TKL đã chốt, khoá cứng
-        -- 4: TRA_LAI    - TK/TKL trả về, GV sửa rồi nộp lại
+        -- 1: NHAP       — GV đang nhập, sửa thoải mái
+        -- 2: CHO_DUYET  — đã nộp, GV không sửa được nữa
+        -- 3: DA_DUYET   — TK/TKL đã chốt, khoá cứng
+        -- 4: TRA_LAI    — TK/TKL trả về, GV sửa rồi nộp lại
     tong_gio_ke_khai DECIMAL(10,2)  NOT NULL DEFAULT 0,  -- SUM(gio_ke_khai) các dòng còn sống
     tong_gio_duyet   DECIMAL(10,2)  NOT NULL DEFAULT 0,  -- SUM(gio_duyet) các dòng được duyệt
     ngay_nop         DATETIME       NULL,
@@ -1762,7 +1852,7 @@ CREATE TABLE chi_tiet_ke_khai_gio_quy_doi (
     id_chi_tiet            INT            IDENTITY(1,1) PRIMARY KEY,
     id_ke_khai             INT            NOT NULL,
     id_cong_viec           INT            NOT NULL,
-    ky_hoc                 SMALLINT       NULL,          -- 261/262/263 - để đối chiếu gio_giang_import
+    ky_hoc                 SMALLINT       NULL,          -- 261/262/263 — để đối chiếu gio_giang_import
     so_luong               DECIMAL(10,2)  NOT NULL,      -- GV kê
     so_luong_duyet         DECIMAL(10,2)  NULL,          -- TK sửa; NULL = chưa xét
     he_so_snapshot         DECIMAL(8,3)   NOT NULL,
@@ -1788,7 +1878,7 @@ CREATE TABLE chi_tiet_ke_khai_gio_quy_doi (
 );
 GO
 
--- 9.4. Minh chứng PDF gắn vào DÒNG kê khai. Tuỳ chọn - không bắt buộc để nộp.
+-- 9.4. Minh chứng PDF gắn vào DÒNG kê khai. Tuỳ chọn — không bắt buộc để nộp.
 CREATE TABLE minh_chung_ke_khai_gio_quy_doi (
     id_minh_chung_kk INT           IDENTITY(1,1) PRIMARY KEY,
     id_chi_tiet      INT           NOT NULL,

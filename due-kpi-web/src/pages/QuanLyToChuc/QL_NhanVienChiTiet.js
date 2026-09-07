@@ -29,9 +29,6 @@ const QL_NhanVienChiTiet = () => {
     MatKhau: "",
     HoTen: "",
     Email: "",
-    IdDonVi: "",
-    IdChucVu: "",
-    IdQuanLyTrucTiep: "",
     IdChucDanh: "",
     TrangThai: true,
   };
@@ -213,10 +210,7 @@ const QL_NhanVienChiTiet = () => {
       if (found) {
         const detail = {
           ...found,
-          IdDonVi: found.IdDonVi || "",
-          IdChucVu: found.IdChucVu || "",
           IdChucDanh: found.IdChucDanh || "",
-          IdQuanLyTrucTiep: found.IdQuanLyTrucTiep || "",
           MatKhau: "", // empty by default when editing
         };
         setFormData(detail);
@@ -383,8 +377,8 @@ const QL_NhanVienChiTiet = () => {
     if (editTitleToDate && editTitleToDate < item.TuNgay) {
       alert(
         "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu (" +
-          item.TuNgay +
-          ").",
+        item.TuNgay +
+        ").",
       );
       return;
     }
@@ -503,8 +497,8 @@ const QL_NhanVienChiTiet = () => {
         } else {
           alert(
             resData.Message ||
-              resData.message ||
-              "Thêm đơn vị / chức vụ công tác thất bại!",
+            resData.message ||
+            "Thêm đơn vị / chức vụ công tác thất bại!",
           );
         }
       } catch (err) {
@@ -561,8 +555,8 @@ const QL_NhanVienChiTiet = () => {
     if (editChucVuToDate && editChucVuToDate < item.TuNgay && !editLaChinh) {
       alert(
         "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu (" +
-          item.TuNgay +
-          ").",
+        item.TuNgay +
+        ").",
       );
       return;
     }
@@ -590,8 +584,8 @@ const QL_NhanVienChiTiet = () => {
         } else {
           alert(
             resData.Message ||
-              resData.message ||
-              "Cập nhật đơn vị / chức vụ thất bại!",
+            resData.message ||
+            "Cập nhật đơn vị / chức vụ thất bại!",
           );
         }
       } catch (err) {
@@ -649,8 +643,8 @@ const QL_NhanVienChiTiet = () => {
         } else {
           alert(
             resData.Message ||
-              resData.message ||
-              "Xóa công tác thất bại (không thể xóa đơn vị chính cuối cùng)!",
+            resData.message ||
+            "Xóa công tác thất bại (không thể xóa đơn vị chính cuối cùng)!",
           );
         }
       } catch (err) {
@@ -670,8 +664,6 @@ const QL_NhanVienChiTiet = () => {
       errorMsg = "Mã nhân viên là bắt buộc.";
     } else if (name === "HoTen" && !value) {
       errorMsg = "Họ và tên là bắt buộc.";
-    } else if (name === "IdDonVi" && !value) {
-      errorMsg = "Vui lòng chọn đơn vị trực thuộc.";
     } else if (name === "Email" && value) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(value)) {
@@ -709,7 +701,6 @@ const QL_NhanVienChiTiet = () => {
     // Validate basic form
     const errMa = !formData.MaNhanVien ? "Mã nhân viên là bắt buộc." : "";
     const errTen = !formData.HoTen ? "Họ và tên là bắt buộc." : "";
-    const errDV = !formData.IdDonVi ? "Vui lòng chọn đơn vị trực thuộc." : "";
     let errPass = "";
     if (!isEditing && !formData.MatKhau) {
       errPass = "Mật khẩu là bắt buộc khi thêm mới.";
@@ -722,11 +713,10 @@ const QL_NhanVienChiTiet = () => {
       }
     }
 
-    if (errMa || errTen || errDV || errPass || errEmail) {
+    if (errMa || errTen || errPass || errEmail) {
       setErrors({
         MaNhanVien: errMa,
         HoTen: errTen,
-        IdDonVi: errDV,
         MatKhau: errPass,
         Email: errEmail,
       });
@@ -745,17 +735,22 @@ const QL_NhanVienChiTiet = () => {
       return;
     }
 
+    // Validate Unit requirement (Đơn vị is mandatory)
+    const currentUnit = chucVuConcurrent.find((item) => !item.DenNgay);
+    if (!currentUnit) {
+      setActiveTab("position");
+      alert(
+        "Vui lòng thiết lập ít nhất một đơn vị công tác hiện hành trước khi lưu nhân viên!",
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     const method = isEditing ? "PUT" : "POST";
     const payload = {
       ...formData,
-      IdDonVi: formData.IdDonVi ? parseInt(formData.IdDonVi) : null,
-      IdChucVu: formData.IdChucVu ? parseInt(formData.IdChucVu) : null,
       IdChucDanh: currentTitle ? parseInt(currentTitle.IdChucDanh) : null, // Set main title from the active history item
-      IdQuanLyTrucTiep: formData.IdQuanLyTrucTiep
-        ? parseInt(formData.IdQuanLyTrucTiep)
-        : null,
       TrangThai: !!formData.TrangThai,
     };
 
@@ -1087,61 +1082,11 @@ const QL_NhanVienChiTiet = () => {
                   </div>
                 </div>
 
-                <div className="form-grid-2" style={{ marginTop: "15px" }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>
-                      Đơn vị trực thuộc <span className="text-red">*</span>
-                    </label>
-                    <SearchSelect
-                      name="IdDonVi"
-                      value={formData.IdDonVi || ""}
-                      onChange={handleSelect("IdDonVi")}
-                      options={donViList.map((dv) => ({
-                        value: dv.id_don_vi || dv.IdDonVi,
-                        label: dv.ten_don_vi || dv.TenDonVi,
-                      }))}
-                      placeholder="Chọn đơn vị"
-                      invalid={Boolean(errors.IdDonVi)}
-                      required
-                    />
-                    {errors.IdDonVi && (
-                      <span
-                        style={{
-                          color: "#ef4444",
-                          fontSize: "12px",
-                          marginTop: "4px",
-                          display: "block",
-                        }}
-                      >
-                        {errors.IdDonVi}
-                      </span>
-                    )}
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Người quản lý trực tiếp</label>
-                    <SearchSelect
-                      name="IdQuanLyTrucTiep"
-                      value={formData.IdQuanLyTrucTiep || ""}
-                      onChange={handleSelect("IdQuanLyTrucTiep")}
-                      options={[
-                        { value: "", label: "Không có" },
-                        ...quanLyList
-                          .filter((nv) => nv.IdNhanVien !== parseInt(id))
-                          .map((nv) => ({
-                            value: nv.IdNhanVien,
-                            label: `${nv.MaNhanVien} - ${nv.HoTen}`,
-                          })),
-                      ]}
-                      placeholder="Không có"
-                      searchable
-                      searchPlaceholder="Tìm theo mã hoặc tên..."
-                    />
-                  </div>
-                </div>
+
 
                 <div className="form-grid-2" style={{ marginTop: "15px" }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Email liên hệ</label>
+                    <label>Email</label>
                     <input
                       type="email"
                       name="Email"

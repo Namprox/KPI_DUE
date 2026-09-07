@@ -714,6 +714,12 @@ paths:
         idNhanVien — gọi toàn trường luôn trả mảng rỗng để tránh payload quá lớn.
         Minh chứng dùng chung bộ vị từ với sp_nckh_dong_bo (fn_nckh_minh_chung_tu_dong)
         nên luôn khớp với cờ trong nckh_tong_hop.
+
+        Riêng tiêu chí NCKH_GIO_TY_LE (điểm là kết quả một phép chia, không phải
+        đạt/không đạt) có thêm DuLieuGioNckh = dòng nckh_gio_nckh đã sinh ra điểm, và
+        LyDoDiemTuDong khi điểm 0 là do dữ liệu nguồn — đủ để FE hiển thị cách tính mà
+        không phải gọi thêm GET /api/nckh/gio-nckh. Hai trường này KHÔNG phụ thuộc
+        idNhanVien (gọi toàn trường vẫn có).
       operationId: mauDanhGiaGetDiemTuDong
       parameters:
         - name: id
@@ -3543,10 +3549,12 @@ paths:
     get:
       tags:
         - ViPhamGiangDay
-      summary: Danh sach vi pham (scope theo vai tro)
+      summary: Danh sach vi pham (giang vien VA vien chuc, scope theo vai tro)
       description: >
         HT/ADMIN xem tat ca; TK/TKL/TP xem don vi minh (+ don vi con) va cac vi pham
         do don vi minh ghi nhan; nguoi dung khac chi xem vi pham cua chinh minh.
+        Endpoint dung chung cho CA HAI doi tuong — loc theo doi tuong bang cach
+        doi chieu truong LoaiDoiTuong tra ve (1 = giang vien, 2 = vien chuc/NLD).
       operationId: viPhamGiangDayGetAll
       parameters:
         - name: idNam
@@ -3562,7 +3570,7 @@ paths:
         - name: idDonVi
           in: query
           required: false
-          description: Don vi chu quan cua giang vien bi ghi nhan
+          description: Don vi chinh cua nguoi bi ghi nhan (giang vien hoac vien chuc/NLD)
           schema:
             type: integer
       responses:
@@ -3579,7 +3587,18 @@ paths:
         - ViPhamGiangDay
       summary: Ghi nhan vi pham (TP/TK/TKL dung don vi, hoac ADMIN)
       description: >
-        Chi ghi nhan duoc cho GIANG VIEN thuoc KHOA (ma_don_vi LIKE 'K_%').
+        Doi tuong bi ghi nhan phai thuoc dung TAP cua loai vi pham:
+        LoaiDoiTuong = 1 -> giang vien thuoc Khoa (ma_don_vi LIKE 'K_%');
+        LoaiDoiTuong = 2 -> vien chuc / NLD (ke ca nhan vien van phong Khoa).
+        Nguoi kiem nhiem thuoc ca hai tap, moi tap theo dung don vi cua ho.
+
+
+        Muc DiemTru bi rang buoc boi CheDoDiemTru cua danh muc:
+        0 = tu do (nhap bao nhieu cung duoc);
+        1 = co dinh (server LUON ghi DiemTruMacDinh, bo qua gia tri gui len);
+        2 = toi thieu (phai >= DiemTruMacDinh; neu lon hon thi BAT BUOC co LyDoDieuChinh).
+
+
         Nguoi ghi nhan va don vi ghi nhan lay tu JWT, KHONG nhan tu body.
       operationId: viPhamGiangDayCreate
       requestBody:
@@ -3596,7 +3615,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/ViPhamGiangDayResponse"
         "400":
-          description: Du lieu khong hop le
+          description: >
+            Du lieu khong hop le. ErrorCode = VALIDATION,
+            DIEM_TRU_DUOI_TOI_THIEU (DiemTru thap hon muc toi thieu cua danh muc),
+            THIEU_LY_DO_DIEU_CHINH (tru cao hon muc toi thieu ma khong ghi ly do)
           content:
             application/json:
               schema:
@@ -3607,7 +3629,10 @@ paths:
           description: >
             ErrorCode = FORBIDDEN_CHUC_VU (khong phai TP/TK/TKL/ADMIN),
             FORBIDDEN_DON_VI (don vi khong duoc ghi loai vi pham nay),
-            NOT_GIANG_VIEN_KHOA (doi tuong khong phai giang vien thuoc Khoa)
+            NOT_GIANG_VIEN_KHOA (loai vi pham cua giang vien nhung doi tuong
+            khong phai giang vien thuoc Khoa),
+            NOT_VIEN_CHUC (loai vi pham cua vien chuc nhung doi tuong khong
+            thuoc tap vien chuc / NLD dang hoat dong)
           content:
             application/json:
               schema:
@@ -3661,6 +3686,9 @@ paths:
       tags:
         - ViPhamGiangDay
       summary: Cap nhat vi pham (chi don vi da ghi nhan hoac ADMIN)
+      description: >
+        Ap dung cung quy tac CheDoDiemTru nhu POST — xem mo ta cua
+        POST api/viphamgiangday.
       operationId: viPhamGiangDayUpdate
       parameters:
         - name: id
@@ -3682,7 +3710,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ViPhamGiangDayResponse"
         "400":
-          description: Du lieu khong hop le
+          description: >
+            Du lieu khong hop le. ErrorCode = VALIDATION,
+            DIEM_TRU_DUOI_TOI_THIEU, THIEU_LY_DO_DIEU_CHINH
           content:
             application/json:
               schema:
@@ -3690,7 +3720,9 @@ paths:
         "401":
           description: Thieu hoac sai token
         "403":
-          description: ErrorCode = FORBIDDEN_CHUC_VU / FORBIDDEN_DON_VI / NOT_GIANG_VIEN_KHOA
+          description: >
+            ErrorCode = FORBIDDEN_CHUC_VU / FORBIDDEN_DON_VI /
+            NOT_GIANG_VIEN_KHOA / NOT_VIEN_CHUC
           content:
             application/json:
               schema:
@@ -3919,6 +3951,8 @@ paths:
       description: >
         Chi liet ke giang vien THUOC KHOA. DiemTruCaNhan = MIN(tong diem tru trong nam, 15).
         IdDonVi tra ve la KHOA chu quan de khop voi api/vi-pham/diem-tru-khoa.
+        Vien chuc / NLD dung endpoint rieng api/vi-pham/tong-hop-nhan-vien (tran theo
+        tung nhom, khong phai tran 15 tong ca nhan).
       operationId: viPhamTongHopGiangVien
       parameters:
         - name: idNam
@@ -3950,6 +3984,72 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ViPhamTongHopGiangVienResponse"
+        "401":
+          description: Thieu hoac sai token
+  /api/vi-pham/tong-hop-nhan-vien:
+    get:
+      tags:
+        - ViPhamGiangDay
+      summary: Tong hop diem tru cua vien chuc / NLD theo TUNG NHOM (tran 70 / 30 / khong tran)
+      description: >
+        Chi liet ke VIEN CHUC / NLD (loai vi pham co LoaiDoiTuong = 2). Tra ve MOT DONG
+        cho moi cap (nhan vien x nhom vi pham) — KHONG gop thanh mot con so, vi moi nhom
+        se nap vao mot tieu chi rieng biet cua phieu.
+
+
+        DiemTruSauTran = MIN(TongDiemTruTho, TranDiemTru) voi TranDiemTru lay tu nhom:
+        "Hoan thanh cong viec" = 70, "Tuan thu gio giac / noi quy" = 30,
+        "Chinh tri, tu tuong" = null.
+
+
+        TranDiemTru = null nghia la nhom KHONG ap tran — DiemTruSauTran bang dung
+        TongDiemTruTho, cong don khong bi cat.
+
+
+        KHAC voi api/vi-pham/tong-hop-giang-vien: ben giang vien ap tran 15 diem tren
+        TONG ca nhan va tra ve 1 dong / giang vien.
+
+
+        IdDonVi tra ve la DON VI CHU QUAN (Khoa/Phong cap 2). Nguoi kiem nhiem nhieu
+        don vi se co mot bo dong cho MOI don vi chu quan, moi bo mang tong diem tru
+        day du cua ho — giong hanh vi cua api/vi-pham/tong-hop-giang-vien voi GV kiem
+        nhiem nhieu Khoa.
+
+
+        Scope doc: HT/ADMIN xem tat ca; TK/TKL/TP xem nhan vien thuoc don vi minh
+        (+ don vi con) va nhung vi pham do don vi minh ghi nhan; nguoi dung khac chi
+        xem cua chinh minh.
+      operationId: viPhamTongHopNhanVien
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          description: Loc theo don vi chu quan (Khoa/Phong)
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamTongHopNhanVienResponse"
+        "400":
+          description: Thieu idNam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViPhamTongHopNhanVienResponse"
         "401":
           description: Thieu hoac sai token
   /api/vi-pham/diem-tru-khoa:
@@ -3994,8 +4094,20 @@ paths:
     get:
       tags:
         - LoaiViPham
-      summary: Danh sach 6 nhom noi dung cong viec
+      summary: Danh sach nhom noi dung cong viec (6 nhom GV + 3 nhom vien chuc)
+      description: >
+        Ket qua tra ve o truong Nhom. Bo trong loaiDoiTuong se lay CA HAI ro danh muc —
+        UI nen luon truyen loaiDoiTuong de nguoi dung khong chon nham nhom cua doi tuong khac.
       operationId: nhomViPhamGetAll
+      parameters:
+        - name: loaiDoiTuong
+          in: query
+          required: false
+          description: >
+            1 = giang vien, 2 = vien chuc/NLD. Bo trong (hoac gia tri khac 1/2) = khong loc.
+          schema:
+            type: integer
+            enum: [1, 2]
       responses:
         "200":
           description: OK
@@ -4022,6 +4134,14 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: loaiDoiTuong
+          in: query
+          required: false
+          description: >
+            1 = giang vien, 2 = vien chuc/NLD. Bo trong (hoac gia tri khac 1/2) = khong loc.
+          schema:
+            type: integer
+            enum: [1, 2]
       responses:
         "200":
           description: OK
@@ -6225,6 +6345,151 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhSyncResult"
+  /api/nckh/gio-nckh/dong-bo:
+    post:
+      tags:
+        - Nckh
+      summary: Dong bo gio NCKH tu API ngoai (toan bo cac nam)
+      description: >-
+        Keo toan bo du lieu gio NCKH tu {NckhApiUrl}/api/kpisciencescoring va GHI DE
+        TOAN BANG nckh_gio_nckh trong 1 transaction. KHONG CO THAM SO: API nguon khong
+        nhan tham so loc (da kiem chung ?nam=2025 va ?nam=2026 tra ket qua giong het nhau),
+        moi dong tu mang nam cua no o truong Year -> id_nam duoc lay tu chinh dong do
+        (du lieu hien co ca cac nam 2021-2026).
+        Moi dong luu snapshot: ho ten, email, don vi, chuc danh (JobTitle), ky bao cao
+        (Period), gio chuan (StandardHours), ty le giam (ReductionPercentage), dinh muc
+        gio NCKH (RequiredHours), gio NCKH quy doi (ConvertedHours).
+        Neu API tra ve rong -> KHONG xoa du lieu cu (tranh mat du lieu khi API loi).
+        Du lieu nay chi phuc vu DOI CHIEU khi danh gia - KHONG tu dong ghi vao gio_thuc_hien_gv.
+      operationId: nckhGioNckhDongBo
+      responses:
+        "200":
+          description: OK — dong bo thanh cong; tra tong so dong da ghi.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhGioNckhSyncResult"
+        "409":
+          description: Conflict — loi ghi DB (da rollback toan bo transaction)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhGioNckhSyncResult"
+        "502":
+          description: Bad Gateway — khong goi/parse duoc API NCKH, hoac API tra rong
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhGioNckhSyncResult"
+  /api/nckh/bai-bao-quoc-te/dong-bo:
+    post:
+      tags:
+        - Nckh
+      summary: Dong bo KPI bai bao quoc te tu API ngoai (theo TUNG NAM)
+      description: >-
+        Keo diem KPI bai bao quoc te tu {NckhApiUrl}/api/kpiinternationalarticle?year=YYYY
+        va ghi de CAC DONG CUA RIENG NAM DO trong bang nckh_kpi_bai_bao_quoc_te
+        (DELETE WHERE id_nam roi INSERT lai, trong 1 transaction) - du lieu cac nam khac
+        GIU NGUYEN. KHAC /api/nckh/gio-nckh/dong-bo (ghi de toan bang): API nguon nay CO
+        nhan tham so loc 'year', va payload KHONG co truong nam o cap giang vien nen
+        id_nam lay tu THAM SO 'id_nam' cua request.
+        Moi dong luu snapshot diem DA DUOC PHIA NCKH TINH SAN: ho ten, email,
+        tong so bai WoS/Scopus (TotalWosScopusArticles), co bai Q1/Q2 hay khong (HasQ1Q2),
+        tong diem tac gia (TotalAuthorScore), diem KPI cuoi (FinalKpiScore), cung mang
+        Articles luu nguyen van vao cot JSON articles_json va cot dan xuat so_bai_bao.
+        Neu API tra ve rong -> KHONG xoa du lieu cu cua nam do (tranh mat du lieu khi API loi).
+        Du lieu nay hien CHI de LUU TRU/DOI CHIEU - chua co API doc va khong tu dong ghi
+        vao bang diem/phieu danh gia nao.
+      operationId: nckhBaiBaoQuocTeDongBo
+      parameters:
+        - name: id_nam
+          in: query
+          required: true
+          description: "Nam can dong bo (duoc truyen sang API NCKH duoi dang ?year=, vd: 2026)."
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK — dong bo thanh cong; tra so dong da ghi cho nam do.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
+        "400":
+          description: Bad Request — thieu hoac sai tham so 'id_nam'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
+        "409":
+          description: Conflict — loi ghi DB (da rollback toan bo transaction)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
+        "502":
+          description: Bad Gateway — khong goi/parse duoc API NCKH, hoac API tra rong
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
+  /api/nckh/gio-nckh:
+    get:
+      tags:
+        - Nckh
+      summary: Danh sach gio NCKH (moi giang vien 1 dong / nam)
+      description: >-
+        Doc bang phu nckh_gio_nckh, LEFT JOIN nhan_vien qua EMAIL (LOWER+TRIM).
+        Nguoi dung NCKH chua khop nhan vien nao van duoc liet ke voi IdNhanVien = null.
+        Phan trang + tim theo ho_ten / ma_nhan_vien (LIKE co phan biet dau tieng Viet).
+        Tra them 2 truong dan xuat: DatDinhMuc (GioNckhQuyDoi >= GioNckhDinhMuc) va
+        TyLeHoanThanh (%). Sap xep: nam moi nhat truoc, trong cung nam thi chua dat
+        dinh muc len truoc, roi den ho ten.
+      operationId: nckhGetGioNckhList
+      parameters:
+        - name: id_nam
+          in: query
+          required: false
+          description: "Nam cua dong du lieu (= truong Year phia NCKH, vd: 2025). Bo trong = lay tat ca cac nam."
+          schema:
+            type: integer
+        - name: id_nhan_vien
+          in: query
+          required: false
+          description: Loc 1 giang vien cu the (nhan_vien.id_nhan_vien). Bo trong = tat ca.
+          schema:
+            type: integer
+        - name: keyword
+          in: query
+          required: false
+          description: Tim theo ho_ten / ma_nhan_vien (LIKE).
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhGioNckhListResponse"
+        "400":
+          description: Bad Request (thieu/sai id_nam hoac id_nhan_vien)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhGioNckhListResponse"
   /api/nckh/tong-hop:
     get:
       tags:
@@ -10745,7 +11010,8 @@ components:
             NCKH_CHU_BIEN_GIAO_TRINH, NCKH_THANH_VIEN_GIAO_TRINH,
             NCKH_CHU_BIEN_THAM_KHAO, NCKH_THANH_VIEN_THAM_KHAO,
             NCKH_CHU_NHIEM_NN, NCKH_CHU_NHIEM_BO_TINH, NCKH_DE_TAI_CO_SO,
-            PHSV_DIEM_TB_GTE_3, VPGD_TUAN_THU.
+            PHSV_DIEM_TB_GTE_3, VPGD_TUAN_THU, NVK_PHAN_CONG_KHOA,
+            NCKH_GIO_TY_LE.
         DiemTuDong:
           type: number
           nullable: true
@@ -10756,6 +11022,12 @@ components:
             phải đạt/không đạt: điểm = diem_toi_da (15) − tổng diem_tru của các vi phạm
             trong năm, sàn ở 0 (không có đường nào ép về 0);
             giảng viên KHÔNG có vi phạm nào được trọn điểm.
+
+            Riêng NCKH_GIO_TY_LE (hoàn thành định mức giờ NCKH) là BẬC THANG theo tỷ lệ
+            gio_nckh_quy_doi / gio_nckh_dinh_muc: ≥ 100% → diem_toi_da (40);
+            > 75% và < 100% → diem_toi_da × 0.75 (30); > 50% và ≤ 75% → diem_toi_da × 0.50 (20);
+            ≤ 50% → 0. Không có dòng trong nckh_gio_nckh của năm đó, hoặc định mức ≤ 0,
+            hoặc giờ quy đổi null → 0.
         IdThangDiemChon:
           type: integer
           nullable: true
@@ -10791,6 +11063,32 @@ components:
             (với VPGD_TUAN_THU, rỗng nghĩa là không có vi phạm = trọn điểm).
           items:
             $ref: "#/components/schemas/MauDanhGiaMinhChungDto"
+        DuLieuGioNckh:
+          allOf:
+            - $ref: "#/components/schemas/NckhGioNckhItem"
+          nullable: true
+          description: >
+            CHỈ xuất hiện khi CongThucTongHop = NCKH_GIO_TY_LE — dòng nckh_gio_nckh
+            ĐÃ SINH RA DiemTuDong, để FE hiển thị được cách tính thay vì một con số
+            trần trụi (TyLeHoanThanh = gio_nckh_quy_doi / gio_nckh_dinh_muc × 100 là
+            con số quyết định bậc điểm — xem mô tả DiemTuDong ở trên).
+            Cùng shape với item của GET /api/nckh/gio-nckh nên FE dùng chung 1 bộ parser.
+            Server chọn dòng bằng đúng mệnh đề của fn_nckh_diem_tu_dong (khớp
+            nhan_vien.email = nckh_gio_nckh.email LOWER+TRIM, g.id_nam = năm của mẫu,
+            TOP 1 ORDER BY ma_nguoi_dung_nckh) nên luôn là dòng đã tạo ra điểm.
+            VẮNG MẶT (NullValueHandling.Ignore) khi tiêu chí dùng mã công thức khác,
+            hoặc không tìm thấy dòng khớp — trường hợp sau xem LyDoDiemTuDong.
+        LyDoDiemTuDong:
+          type: string
+          nullable: true
+          description: >
+            CHỈ xuất hiện khi CongThucTongHop = NCKH_GIO_TY_LE VÀ điểm bằng 0 vì DỮ LIỆU
+            NGUỒN chứ không phải vì giảng viên không đạt — hai trường hợp này đều ra 0
+            nhưng cách xử lý khác hẳn nhau. Các lý do: nhân viên chưa có email (không
+            đối chiếu được), không tìm thấy dòng giờ NCKH của năm mẫu khớp email (chưa
+            đồng bộ hoặc lệch năm), định mức ≤ 0 / trống, chưa có giờ quy đổi.
+            VẮNG MẶT khi đủ dữ liệu để tính — khi đó FE tự diễn giải từ
+            DuLieuGioNckh.TyLeHoanThanh.
     MauDanhGiaThangDiemMucDto:
       type: object
       description: >
@@ -12063,7 +12361,7 @@ components:
           nullable: true
           description: >
             Chi co nghia khi LoaiNguonDiem = 2. Ma cong thuc snapshot luc tao phieu
-            (vd NCKH_BAI_Q1Q2, PHSV_DIEM_TB_GTE_3, VPGD_TUAN_THU).
+            (vd NCKH_BAI_Q1Q2, PHSV_DIEM_TB_GTE_3, VPGD_TUAN_THU, NCKH_GIO_TY_LE).
             Chi duoc tra o GET /api/phieu/{id}.
         DiemTuDong:
           type: number
@@ -12404,7 +12702,9 @@ components:
       properties:
         IdNhanVien:
           type: integer
-          description: Bat buoc la giang vien thuoc Khoa (ma_don_vi LIKE 'K_%')
+          description: >
+            Phai thuoc dung tap cua loai vi pham: LoaiDoiTuong = 1 -> giang vien thuoc
+            Khoa (ma_don_vi LIKE 'K_%'); LoaiDoiTuong = 2 -> vien chuc / NLD.
         IdNam:
           type: integer
         IdLoaiViPham:
@@ -12418,7 +12718,20 @@ components:
           type: number
           format: double
           nullable: true
-          description: null = lay diem_tru_mac_dinh cua loai vi pham (thuong la 1)
+          description: >
+            null = lay DiemTruMacDinh cua loai vi pham. Bi rang buoc boi CheDoDiemTru:
+            che do 1 (co dinh) BO QUA gia tri nay va luon ghi DiemTruMacDinh;
+            che do 2 (toi thieu) yeu cau >= DiemTruMacDinh, neu khong -> 400
+            DIEM_TRU_DUOI_TOI_THIEU.
+        LyDoDieuChinh:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: >
+            Can cu khi tru CAO HON muc toi thieu (VD "Theo tham muu Phong CSVC",
+            "Theo ket qua hop don vi ngay 12/03/2026"). BAT BUOC khi loai vi pham co
+            CheDoDiemTru = 2 va DiemTru > DiemTruMacDinh, neu thieu -> 400
+            THIEU_LY_DO_DIEU_CHINH. Bi bo qua (ghi null) voi che do 1.
         BiKyLuat:
           type: boolean
           nullable: true
@@ -12452,6 +12765,15 @@ components:
           type: number
           format: double
           nullable: true
+          description: >
+            Cung rang buoc CheDoDiemTru nhu ViPhamGiangDayCreateRequest.DiemTru.
+        LyDoDieuChinh:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: >
+            Can cu khi tru cao hon muc toi thieu. BAT BUOC khi CheDoDiemTru = 2
+            va DiemTru > DiemTruMacDinh; bi bo qua voi che do 1.
         BiKyLuat:
           type: boolean
           nullable: true
@@ -12475,7 +12797,7 @@ components:
           type: string
         IdDonVi:
           type: integer
-          description: Don vi chu quan cua giang vien bi ghi nhan
+          description: Don vi CHINH cua nguoi bi ghi nhan (giang vien hoac vien chuc/NLD)
         MaDonVi:
           type: string
         TenDonVi:
@@ -12485,19 +12807,53 @@ components:
         IdLoaiViPham:
           type: integer
           nullable: true
+          description: null o cac dong du lieu cu tao truoc khi co danh muc
         MaLoaiViPham:
           type: string
           nullable: true
         NoiDung:
           type: string
           nullable: true
+        LoaiDoiTuong:
+          type: integer
+          nullable: true
+          enum: [1, 2]
+          description: >
+            1 = giang vien, 2 = vien chuc/NLD (lay tu danh muc loai vi pham).
+            null o cac dong cu chua gan loai vi pham.
+        CheDoDiemTru:
+          type: integer
+          nullable: true
+          enum: [0, 1, 2]
+          description: >
+            Cach ap muc tru cua danh muc: 0 = tu do, 1 = co dinh, 2 = toi thieu.
+            Xem LoaiViPhamDto.CheDoDiemTru.
+        DiemTruMacDinh:
+          type: number
+          format: double
+          nullable: true
+          description: Muc tru mac dinh cua danh muc; voi che do 2 day la muc TOI THIEU
+        IdNhomVp:
+          type: integer
+          nullable: true
         TenNhom:
           type: string
           nullable: true
+        TranDiemTru:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Tran diem tru cua nhom (vien chuc: 70 / 30); null = nhom khong ap tran —
+            moi nhom cua giang vien, va nhom "Chinh tri, tu tuong" cua vien chuc.
         DiemTru:
           type: number
           format: double
           nullable: true
+        LyDoDieuChinh:
+          type: string
+          nullable: true
+          description: Can cu khi tru cao hon muc toi thieu; null neu tru dung muc
         MoTa:
           type: string
         BiKyLuat:
@@ -12571,9 +12927,10 @@ components:
           type: string
           nullable: true
           description: >
-            FORBIDDEN_CHUC_VU, FORBIDDEN_DON_VI, NOT_GIANG_VIEN_KHOA,
+            FORBIDDEN_CHUC_VU, FORBIDDEN_DON_VI, NOT_GIANG_VIEN_KHOA, NOT_VIEN_CHUC,
             VI_PHAM_NOT_FOUND, LOAI_VI_PHAM_NOT_FOUND, LOAI_VI_PHAM_INACTIVE,
             NAM_NOT_FOUND, NHAN_VIEN_NOT_FOUND, MINH_CHUNG_NOT_FOUND, FILE_NOT_FOUND,
+            DIEM_TRU_DUOI_TOI_THIEU, THIEU_LY_DO_DIEU_CHINH,
             VALIDATION, IO_ERROR, DB_ERROR
         Item:
           $ref: "#/components/schemas/ViPhamGiangDayDto"
@@ -12623,6 +12980,62 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ViPhamTongHopGiangVienDto"
+    ViPhamTongHopNhanVienDto:
+      type: object
+      description: >
+        Mot dong = mot cap (nhan vien x nhom vi pham) trong nam.
+        Tran nam tren NHOM chu khong phai tran 15 tong ca nhan nhu ben giang vien.
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        IdDonVi:
+          type: integer
+          description: Don vi chu quan (Khoa/Phong cap 2)
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        IdNam:
+          type: integer
+        IdNhomVp:
+          type: integer
+        TenNhom:
+          type: string
+        TranDiemTru:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            70 (nhom "Hoan thanh cong viec") / 30 (nhom "Gio giac, noi quy") /
+            null = khong ap tran (nhom "Chinh tri, tu tuong")
+        SoViPham:
+          type: integer
+        TongDiemTruTho:
+          type: number
+          format: double
+          description: Tong diem tru cua nhom nay, chua ap tran
+        DiemTruSauTran:
+          type: number
+          format: double
+          description: MIN(TongDiemTruTho, TranDiemTru); bang TongDiemTruTho khi TranDiemTru = null
+    ViPhamTongHopNhanVienResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ViPhamTongHopNhanVienDto"
     ViPhamDiemTruKhoaDto:
       type: object
       properties:
@@ -12667,11 +13080,27 @@ components:
             $ref: "#/components/schemas/ViPhamDiemTruKhoaDto"
     NhomViPhamDto:
       type: object
+      description: >
+        Giang vien (LoaiDoiTuong = 1): 6 nhom, khong ap tran theo nhom.
+        Vien chuc/NLD (LoaiDoiTuong = 2): 3 nhom — "Hoan thanh cong viec..." (tran 70),
+        "Tuan thu gio giac, tac phong, noi quy" (tran 30) va
+        "Chinh tri, tu tuong" (KHONG ap tran).
       properties:
         IdNhomVp:
           type: integer
         TenNhom:
           type: string
+        LoaiDoiTuong:
+          type: integer
+          enum: [1, 2]
+          description: 1 = giang vien, 2 = vien chuc/NLD
+        TranDiemTru:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Diem tru toi da cua nhom nay tren mot ca nhan trong mot nam.
+            null = khong ap tran theo nhom (cac nhom giang vien chi chiu tran 15 tong ca nhan).
         ThuTuHienThi:
           type: integer
         TrangThai:
@@ -12701,6 +13130,11 @@ components:
           type: integer
         TenNhom:
           type: string
+        TranDiemTru:
+          type: number
+          format: double
+          nullable: true
+          description: Tran diem tru cua nhom cha; null = khong ap tran theo nhom
         MaLoaiViPham:
           type: string
         NoiDung:
@@ -12708,12 +13142,30 @@ components:
         DiemTruMacDinh:
           type: number
           format: double
+          description: >
+            Muc tru mac dinh. Voi CheDoDiemTru = 2 day DONG THOI la muc tru TOI THIEU (san).
+        LoaiDoiTuong:
+          type: integer
+          enum: [1, 2]
+          description: 1 = giang vien, 2 = vien chuc/NLD. Luon khop voi nhom cha.
+        CheDoDiemTru:
+          type: integer
+          enum: [0, 1, 2]
+          description: >
+            Cach ap muc tru khi ghi nhan —
+            0 = tu do: nhap bao nhieu cung duoc (mac dinh, hanh vi cu cua danh muc giang vien);
+            1 = co dinh: luon dung DiemTruMacDinh, bo qua gia tri client gui
+            (VD "Di lam muon: tru 01 diem/lan");
+            2 = toi thieu: phai >= DiemTruMacDinh, neu lon hon thi BAT BUOC co LyDoDieuChinh
+            (VD "tru toi thieu 5 diem/lan").
         HoSoKemTheo:
           type: string
           nullable: true
         ChoPhepKhoaChuQuan:
           type: boolean
-          description: Truong Khoa chu quan cua giang vien cung duoc ghi nhan
+          description: >
+            Truong DON VI CHU QUAN cua doi tuong cung duoc ghi nhan.
+            Voi giang vien = Khoa chu quan; voi vien chuc = Khoa/Phong chu quan.
         ChoPhepMoiDonVi:
           type: boolean
           description: Bat ky truong don vi nao cung duoc ghi nhan ("don vi chu tri")
@@ -12745,7 +13197,21 @@ components:
           type: number
           format: double
           nullable: true
-          description: null -> 1
+          description: null -> 1. Voi CheDoDiemTru = 2 day dong thoi la muc tru TOI THIEU.
+        LoaiDoiTuong:
+          type: integer
+          nullable: true
+          enum: [1, 2]
+          description: >
+            null = KE THUA loai doi tuong cua nhom cha (khuyen dung). Neu truyen thi
+            PHAI khop nhom cha, nguoc lai -> 400 LOAI_DOI_TUONG_KHONG_KHOP.
+        CheDoDiemTru:
+          type: integer
+          nullable: true
+          enum: [0, 1, 2]
+          description: >
+            0 = tu do (mac dinh khi bo trong), 1 = co dinh, 2 = toi thieu.
+            Xem LoaiViPhamDto.CheDoDiemTru.
         HoSoKemTheo:
           type: string
           nullable: true
@@ -12786,6 +13252,18 @@ components:
           type: number
           format: double
           nullable: true
+        LoaiDoiTuong:
+          type: integer
+          nullable: true
+          enum: [1, 2]
+          description: >
+            null = ke thua nhom cha (doi IdNhomVp sang nhom khac ro se tu doi theo).
+            Neu truyen thi PHAI khop nhom cha -> nguoc lai 400 LOAI_DOI_TUONG_KHONG_KHOP.
+        CheDoDiemTru:
+          type: integer
+          nullable: true
+          enum: [0, 1, 2]
+          description: null = GIU NGUYEN che do dang co
         HoSoKemTheo:
           type: string
           nullable: true
@@ -12827,7 +13305,9 @@ components:
         ErrorCode:
           type: string
           nullable: true
-          description: FORBIDDEN_CHUC_VU, LOAI_VI_PHAM_NOT_FOUND, NHOM_VI_PHAM_NOT_FOUND, DUPLICATE_MA, IN_USE, VALIDATION
+          description: >
+            FORBIDDEN_CHUC_VU, LOAI_VI_PHAM_NOT_FOUND, NHOM_VI_PHAM_NOT_FOUND,
+            DUPLICATE_MA, IN_USE, VALIDATION, LOAI_DOI_TUONG_KHONG_KHOP
         Item:
           $ref: "#/components/schemas/LoaiViPhamDto"
         Items:
@@ -13120,6 +13600,118 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/NckhTongHopItem"
+        Page:
+          type: integer
+        PageSize:
+          type: integer
+        TotalCount:
+          type: integer
+        TotalPages:
+          type: integer
+    NckhGioNckhSyncResult:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        GioNckhCount:
+          type: integer
+          nullable: true
+          description: Tong so dong gio NCKH da ghi (bang duoc ghi de toan bo moi lan dong bo).
+    NckhBaiBaoQuocTeSyncResult:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        IdNam:
+          type: integer
+          nullable: true
+          description: Nam vua dong bo (= tham so 'year' da goi sang API NCKH).
+        BaiBaoQuocTeCount:
+          type: integer
+          nullable: true
+          description: So dong da ghi cho RIENG nam do (cac nam khac khong bi dung toi).
+    NckhGioNckhItem:
+      type: object
+      properties:
+        MaNguoiDungNckh:
+          type: integer
+          description: UserId phia he thong NCKH.
+        IdNhanVien:
+          type: integer
+          nullable: true
+          description: id_nhan_vien khop duoc theo email. null = chua khop nhan vien nao trong KPI.
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+          description: Uu tien ho ten trong nhan_vien; thieu thi lay ho ten phia NCKH.
+        Email:
+          type: string
+          nullable: true
+        TenDonVi:
+          type: string
+          nullable: true
+          description: DepartmentName phia NCKH (khong phai don vi trong KPI).
+        ChucDanh:
+          type: string
+          nullable: true
+          description: "JobTitle dang text (vd: Pho giao su)."
+        IdNam:
+          type: integer
+          description: "Nam cua dong du lieu, lay tu truong Year phia NCKH (vd: 2025)."
+        KyBaoCao:
+          type: string
+          nullable: true
+          description: "Period - khoang thoi gian tinh gio, vd: 01/07/2024 - 30/06/2025. Moi GV co the khac nhau."
+        GioChuan:
+          type: number
+          format: double
+          nullable: true
+          description: "StandardHours - gio chuan tong/nam (vd: 720)."
+        TyLeGiam:
+          type: number
+          format: double
+          nullable: true
+          description: "ReductionPercentage - ty le giam tru dinh muc, don vi % (vd: 85)."
+        GioNckhDinhMuc:
+          type: number
+          format: double
+          nullable: true
+          description: "RequiredHours - dinh muc gio NCKH phai dat (vd: 108)."
+        GioNckhQuyDoi:
+          type: number
+          format: double
+          nullable: true
+          description: "ConvertedHours - gio NCKH quy doi thuc te (vd: 100.02)."
+        DatDinhMuc:
+          type: boolean
+          description: Dan xuat - GioNckhQuyDoi >= GioNckhDinhMuc. false khi thieu mot trong hai so lieu.
+        TyLeHoanThanh:
+          type: number
+          format: double
+          nullable: true
+          description: Dan xuat - GioNckhQuyDoi / GioNckhDinhMuc * 100. null neu dinh muc <= 0 hoac thieu so lieu.
+        ThoiGianDongBo:
+          type: string
+          format: date-time
+          nullable: true
+    NckhGioNckhListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NckhGioNckhItem"
         Page:
           type: integer
         PageSize:
