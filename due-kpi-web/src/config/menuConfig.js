@@ -81,6 +81,18 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
       },
       {
+        name: "[Mock] Ghi nhận vi phạm nhân viên",
+        icon: "fa-solid fa-circle-exclamation",
+        path: "/mock-ghi-nhan-vi-pham-nv",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "[Mock] Ghi nhận thành tích nhân viên",
+        icon: "fa-solid fa-medal",
+        path: "/mock-ghi-nhan-thanh-tich-nv",
+        roles: MOI_NGUOI,
+      },
+      {
         // Phiếu tự đánh giá theo ngạch giảng viên - không xét chức vụ.
         name: "Đánh giá KPI Giảng viên",
         icon: "fa-solid fa-file-pen",

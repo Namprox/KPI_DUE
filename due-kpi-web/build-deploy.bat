@@ -1,7 +1,7 @@
 @echo off
-set "PROJECT_DIR=C:\Users\Admin\Downloads\Phat\Code\KPI_DUE\due-kpi-web"
+set "PROJECT_DIR=D:\Code\KPI_DUE\due-kpi-web"
 set "BUILD_DIR=%PROJECT_DIR%\build"
-set "DEPLOY_DIR=D:\Phat\NetAPI\KPI_FE"
+set "DEPLOY_DIR=D:\PublishAPI\KPI_FE"
 
 cd /d "%PROJECT_DIR%"
 
