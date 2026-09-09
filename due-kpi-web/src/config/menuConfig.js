@@ -93,6 +93,24 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
       },
       {
+        name: "[Mock] Đề xuất tăng hạng",
+        icon: "fa-solid fa-arrow-trend-up",
+        path: "/mock-de-xuat-tang-hang",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "[Mock] Hiệu trưởng phê duyệt",
+        icon: "fa-solid fa-chart-column",
+        path: "/mock-hieu-truong-duyet",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "[Mock] Thống kê toàn trường",
+        icon: "fa-solid fa-chart-pie",
+        path: "/mock-thong-ke-toan-truong",
+        roles: MOI_NGUOI,
+      },
+      {
         // Phiếu tự đánh giá theo ngạch giảng viên - không xét chức vụ.
         name: "Đánh giá KPI Giảng viên",
         icon: "fa-solid fa-file-pen",

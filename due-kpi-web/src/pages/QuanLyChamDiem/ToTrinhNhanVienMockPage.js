@@ -23,17 +23,18 @@ const ToTrinhNhanVienMockPage = () => {
             <div className="modern-table-card" style={{ padding: "20px", marginBottom: "20px" }}>
                 <div style={{ display: "flex", gap: "20px", marginBottom: "15px" }}>
                     <div style={{ flex: 1, backgroundColor: "#eff6ff", padding: "15px", borderRadius: "8px", border: "1px solid #bfdbfe" }}>
-                        <div style={{ fontSize: "13px", color: "#1e40af", fontWeight: "bold" }}>TỔNG SỐ NHÂN VIÊN ĐÁNH GIÁ</div>
-                        <div style={{ fontSize: "24px", color: "#1d4ed8", fontWeight: "bold" }}>6</div>
+                        <div style={{ fontSize: "14px", color: "#1e40af", fontWeight: "bold" }}>TỔNG SỐ NHÂN VIÊN ĐÁNH GIÁ</div>
+                        <div style={{ fontSize: "25px", color: "#1d4ed8", fontWeight: "bold" }}>6</div>
                     </div>
-                    <div style={{ flex: 1, backgroundColor: "#fef3c7", padding: "15px", borderRadius: "8px", border: "1px solid #fde68a" }}>
-                        <div style={{ fontSize: "13px", color: "#92400e", fontWeight: "bold" }}>HẠN NGẠCH XUẤT SẮC (TOP 20%)</div>
-                        <div style={{ fontSize: "24px", color: "#b45309", fontWeight: "bold" }}>2 <span style={{ fontSize: '14px', fontWeight: 'normal' }}>suất</span></div>
+                    <div style={{ flex: 1, backgroundColor: "#fef2c7", padding: "15px", borderRadius: "8px", border: "1px solid #fde68a" }}>
+                        <div style={{ fontSize: "14px", color: "#92400e", fontWeight: "bold" }}>HẠN NGẠCH XUẤT SẮC (TOP 20%)</div>
+                        <div style={{ fontSize: "25px", color: "#b45309", fontWeight: "bold" }}>2 <span style={{ fontSize: '14px', fontWeight: 'normal' }}>suất</span></div>
                     </div>
                 </div>
 
-                <div className="cd-hint" style={{ padding: "10px 20px" }}>
-                    <i className="fa-solid fa-circle-info"></i> Đường kẻ đậm đứt nét bên dưới là ranh giới <b>2 suất xuất sắc</b> (Top 20% của đơn vị). Chỉ những nhân viên đạt từ 101 điểm trở lên và nằm trên vạch này mới được giữ mức "Hoàn thành xuất sắc".
+                <div className="cd-hint" style={{ padding: "12px 20px", fontSize: "15px", fontWeight: "500", color: "#334155", backgroundColor: "#f1f5f9", borderLeft: "4px solid #94a3b8", borderRadius: "4px", lineHeight: "1.5" }}>
+                    <i className="fa-solid fa-circle-info" style={{ color: "#64748b", marginRight: "8px" }}></i>
+                    Đường kẻ đậm đứt nét bên dưới là ranh giới <b>2 suất xuất sắc</b> (Top 20% của đơn vị). Chỉ những nhân viên đạt từ 101 điểm trở lên và nằm trên vạch này mới được giữ mức "Hoàn thành xuất sắc".
                 </div>
 
                 <table className="custom-table" style={{ width: "100%", marginTop: "15px" }}>

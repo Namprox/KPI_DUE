@@ -56,13 +56,13 @@ const ThamDinhGiangVienMockPage = () => {
 
             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                 <div style={{ flex: 1, background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>TỔNG ĐIỂM THẨM ĐỊNH</div>
-                    <div style={{ fontSize: '24px', color: '#1d4ed8', fontWeight: 'bold' }}>{tongDiem}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>TỔNG ĐIỂM THẨM ĐỊNH</div>
+                    <div style={{ fontSize: '25px', color: '#1d4ed8', fontWeight: 'bold' }}>{tongDiem}</div>
                 </div>
                 <div style={{ flex: 2, background: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>ĐỀ XUẤT XẾP LOẠI TỪ HỆ THỐNG</div>
-                    <div style={{ fontSize: '18px', color: xepLoai.color, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.text}</div>
-                    {xepLoai.alert && <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '4px', fontWeight: 'bold' }}><i className="fa-solid fa-triangle-exclamation"></i> {xepLoai.alert}</div>}
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>ĐỀ XUẤT XẾP LOẠI TỪ HỆ THỐNG</div>
+                    <div style={{ fontSize: '19px', color: xepLoai.color, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.text}</div>
+                    {xepLoai.alert && <div style={{ fontSize: '14px', color: '#ef4444', marginTop: '4px', fontWeight: 'bold' }}><i className="fa-solid fa-triangle-exclamation"></i> {xepLoai.alert}</div>}
                 </div>
             </div>
 

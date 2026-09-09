@@ -32,16 +32,16 @@ const DanhGiaKhoaMock = () => {
 
             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                 <div style={{ flex: 1, background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>ĐIỂM CƠ BẢN (MAX 100)</div>
-                    <div style={{ fontSize: '24px', color: '#0f172a', fontWeight: 'bold' }}>{tongCoBan}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>ĐIỂM CƠ BẢN (MAX 100)</div>
+                    <div style={{ fontSize: '25px', color: '#0f172a', fontWeight: 'bold' }}>{tongCoBan}</div>
                 </div>
                 <div style={{ flex: 1, background: '#f0fdf4', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>ĐIỂM VƯỢT TRỘI</div>
-                    <div style={{ fontSize: '24px', color: '#166534', fontWeight: 'bold' }}>+{tongVuotTroi}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>ĐIỂM VƯỢT TRỘI</div>
+                    <div style={{ fontSize: '25px', color: '#166534', fontWeight: 'bold' }}>+{tongVuotTroi}</div>
                 </div>
                 <div style={{ flex: 2, background: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>DỰ KIẾN XẾP LOẠI</div>
-                    <div style={{ fontSize: '18px', color: xepLoai.color, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.text}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>DỰ KIẾN XẾP LOẠI</div>
+                    <div style={{ fontSize: '19px', color: xepLoai.color, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.text}</div>
                     {tongTichLuy > 100 && (
                         <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
                             <i className="fa-solid fa-circle-info"></i> Để đạt Xuất sắc, Khoa phải thuộc Top 20% điểm cao nhất và 100% nhân sự hoàn thành nhiệm vụ.

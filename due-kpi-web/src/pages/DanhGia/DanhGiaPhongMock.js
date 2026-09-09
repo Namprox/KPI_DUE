@@ -32,13 +32,13 @@ const DanhGiaPhongMock = () => {
 
             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                 <div style={{ flex: 1, background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>TỔNG ĐIỂM TÍCH LŨY</div>
-                    <div style={{ fontSize: '24px', color: '#0f172a', fontWeight: 'bold' }}>{tongDiem} / 100</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>TỔNG ĐIỂM TÍCH LŨY</div>
+                    <div style={{ fontSize: '25px', color: '#0f172a', fontWeight: 'bold' }}>{tongDiem} / 100</div>
                 </div>
                 <div style={{ flex: 2, background: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>DỰ KIẾN XẾP LOẠI</div>
-                    <div style={{ fontSize: '18px', color: xepLoai.color, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.text}</div>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>DỰ KIẾN XẾP LOẠI</div>
+                    <div style={{ fontSize: '19px', color: xepLoai.color, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.text}</div>
+                    <div style={{ fontSize: '13px', color: '#516583', marginTop: '5px' }}>
                         <i className="fa-solid fa-circle-info"></i> Từ 50-60: HTNV | &gt;60: HT Tốt | &gt;80 & Top 20%: Xuất sắc.
                     </div>
                 </div>
