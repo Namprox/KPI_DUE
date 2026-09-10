@@ -140,6 +140,34 @@ export const ROLE_SETS = {
   ],
 
   /**
+   * Duyệt bản kê THÀNH TÍCH VƯỢT TRỘI (Nhóm II) của viên chức / NLĐ.
+   *
+   * Hợp của "trưởng đơn vị quản lý trực tiếp" và "trưởng phòng chuyên trách"
+   * (P.TCHC duyệt khen thưởng, P.KHHTQT duyệt sáng kiến), cộng HT/Admin xem
+   * toàn trường.
+   *
+   * CỐ Ý tách khỏi DUYET_KE_KHAI_GIO dù hiện TRÙNG thành viên, vì luật đằng sau
+   * khác hẳn: giờ quy đổi gác theo phạm vi "đơn vị mình + đơn vị con", còn ở đây
+   * gác theo TỪNG DÒNG qua `danh_muc_thanh_tich.id_don_vi_duyet` - một Trưởng
+   * Phòng của P.TCHC với riêng dòng khen thưởng phủ toàn trường. Trộn hai tập
+   * thì lần đầu ai đó xin mở thêm vai trò cho một bên sẽ lặng lẽ mở cả bên kia.
+   *
+   * TBM bị loại (bộ môn là đơn vị cấp 3, không bao giờ là đơn vị duyệt). TKP
+   * cũng bị loại dù thực tế thư ký P.TCHC là người xử lý khen thưởng: server
+   * chưa cho, thêm vào đây chỉ dẫn họ tới 403.
+   *
+   * Tập này chỉ MỞ CỬA vào màn hình; ai duyệt được dòng nào thì server quyết -
+   * gửi lẫn dòng của đơn vị khác sẽ nhận 403 FORBIDDEN_DONG cho cả request.
+   */
+  DUYET_KE_KHAI_THANH_TICH: [
+    ROLE.TRUONG_KHOA,
+    ROLE.TRUONG_KHOA_LON,
+    ROLE.TRUONG_PHONG,
+    ROLE.HIEU_TRUONG,
+    ROLE.ADMIN,
+  ],
+
+  /**
    * Người chấm KPI cho cả đơn vị: thư ký Khoa/Phòng là người nhập, trưởng
    * Khoa / Khoa lớn / Phòng là người chịu trách nhiệm ký.
    */

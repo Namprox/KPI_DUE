@@ -81,12 +81,6 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
       },
       {
-        name: "[Mock] Ghi nhận thành tích nhân viên",
-        icon: "fa-solid fa-medal",
-        path: "/mock-ghi-nhan-thanh-tich-nv",
-        roles: MOI_NGUOI,
-      },
-      {
         name: "[Mock] Đề xuất tăng hạng",
         icon: "fa-solid fa-arrow-trend-up",
         path: "/mock-de-xuat-tang-hang",
@@ -191,6 +185,24 @@ export const MENU_GROUPS = [
         chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
       },
       {
+        // Song sinh của mục trên cho VIÊN CHỨC / NLĐ: kê khai THÀNH TÍCH VƯỢT
+        // TRỘI (Nhóm II - sáng kiến, khen thưởng, đào tạo, phong trào). Nhân
+        // viên TỰ kê từng thành tích, đơn vị phụ trách duyệt từng dòng.
+        //
+        // Server suy người dùng TỪ TOKEN nên đây chỉ là lối vào.
+        //
+        // ⚠️ `chucDanh` bên dưới KHÔNG phải luật quyết định: đường dẫn này nằm
+        // trong DUONG_DAN_NGACH_NHAN_VIEN nên canAccessRule() xử lý riêng, cho
+        // qua cả người thuộc đơn vị ngoài Khoa dù chức danh trống hoặc lệch
+        // ngạch. Giữ lại trường này cho khớp cách khai của "Đánh giá KPI Nhân
+        // viên"; sửa luật thì sửa ở canAccessRule.
+        name: "Kê khai thành tích",
+        icon: "fa-solid fa-medal",
+        path: "/ke-khai-thanh-tich",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.NHAN_VIEN,
+      },
+      {
         // Công trình NCKH đồng bộ từ hệ thống nghiên cứu khoa học của trường -
         // nguồn của các tiêu chí NCKH chấm tự động. Endpoint /api/nckh/* nhận
         // id_nhan_vien qua query (không suy từ token) nhưng màn hình chỉ truyền
@@ -280,6 +292,19 @@ export const MENU_GROUPS = [
         childPaths: ["/quan-ly/ke-khai-gio-quy-doi/:id"],
       },
       {
+        // Duyệt bản kê thành tích vượt trội của viên chức / NLĐ.
+        //
+        // Khác mọi mục còn lại của nhóm ở chỗ phạm vi KHÔNG phải "đơn vị mình +
+        // đơn vị con": quyền gác theo TỪNG DÒNG qua đơn vị phụ trách của mức, nên
+        // Trưởng Phòng P.TCHC thấy dòng khen thưởng của nhân viên TOÀN TRƯỜNG.
+        // Vì vậy dùng tập vai trò riêng - xem ROLE_SETS.DUYET_KE_KHAI_THANH_TICH.
+        name: "Duyệt kê khai thành tích",
+        icon: "fa-solid fa-medal",
+        path: "/quan-ly/ke-khai-thanh-tich",
+        roles: ROLE_SETS.DUYET_KE_KHAI_THANH_TICH,
+        childPaths: ["/quan-ly/ke-khai-thanh-tich/:id"],
+      },
+      {
         name: "Báo cáo đơn vị",
         icon: "fa-solid fa-chart-line",
         path: "/quan-ly/bao-cao",
@@ -320,6 +345,20 @@ export const MENU_GROUPS = [
         name: "Danh mục loại vi phạm",
         icon: "fa-solid fa-list-check",
         path: "/danh-muc-loai-vi-pham",
+        roles: ROLE_SETS.ADMIN,
+      },
+      {
+        // Danh mục điểm CỘNG đối xứng với mục trên: cây 2 cấp của Nhóm II
+        // (4 tiêu chí + các mức quy đổi).
+        //
+        // Ngoài việc sửa điểm quy đổi, đây còn là nơi DUY NHẤT gán "đơn vị phụ
+        // trách" cho từng mức. Danh mục được seed để trống toàn bộ vì id của
+        // P.TCHC / P.KHHTQT khác nhau theo từng lần triển khai; chưa gán thì mọi
+        // dòng rơi về trưởng đơn vị quản lý trực tiếp và phòng chuyên trách
+        // không thấy gì để duyệt.
+        name: "Danh mục thành tích vượt trội",
+        icon: "fa-solid fa-trophy",
+        path: "/danh-muc-thanh-tich",
         roles: ROLE_SETS.ADMIN,
       },
       {
@@ -507,6 +546,23 @@ export const ROUTE_RULES = buildRouteRules();
 export const findRouteRule = (pathname) =>
   ROUTE_RULES.find((rule) => matchPath(rule.path, pathname)) || null;
 
+/**
+ * Các trang dành cho NGẠCH viên chức / người lao động.
+ *
+ * `IdChucDanh` một mình KHÔNG đủ để nhận ra nhóm này: nhiều tài khoản để trống
+ * chức danh, và người kiêm nhiệm có thể mang chức danh giảng viên nhưng làm
+ * việc ở Phòng/Trung tâm. Vì vậy mọi trang ở đây dùng chung luật hai nhánh bên
+ * dưới - đúng chức danh HOẶC thuộc một đơn vị ngoài Khoa.
+ *
+ * Thêm trang mới của nhóm này thì khai vào đây, đừng chỉ đặt
+ * `chucDanh: CHUC_DANH_SETS.NHAN_VIEN` ở mục menu: nhánh đó fail-closed nên sẽ
+ * ẩn mục với chính những người cần dùng nó.
+ */
+const DUONG_DAN_NGACH_NHAN_VIEN = [
+  "/danh-gia-kpi-nhan-vien",
+  "/ke-khai-thanh-tich",
+];
+
 export const canAccessRule = (rule, user) => {
   if (!user) return false;
 
@@ -525,7 +581,7 @@ export const canAccessRule = (rule, user) => {
     return false;
   }
 
-  if (rule.path === "/danh-gia-kpi-nhan-vien") {
+  if (DUONG_DAN_NGACH_NHAN_VIEN.includes(rule.path)) {
     if (hasChucDanh(CHUC_DANH_SETS.NHAN_VIEN, user)) return true;
     if (
       Array.isArray(user?.DonVi) &&

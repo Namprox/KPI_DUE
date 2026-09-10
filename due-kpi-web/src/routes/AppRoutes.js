@@ -24,6 +24,7 @@ import TheoDoiPhieuTruong from "../pages/QuanLyDanhGia/TheoDoiPhieuTruong";
 import QLGioGiang from "../pages/QuanLyKeHoach/QL_GioGiang";
 import QLViPham from "../pages/QuanLyKeHoach/QL_ViPham";
 import QLLoaiViPham from "../pages/QuanLyKeHoach/QL_LoaiViPham";
+import QLDanhMucThanhTich from "../pages/QuanLyKeHoach/QL_DanhMucThanhTich";
 import QLTongHopViPham from "../pages/QuanLyKeHoach/QL_TongHopViPham";
 import QLThongKeViPhamKhoa from "../pages/QuanLyKeHoach/QL_ThongKeViPhamKhoa";
 import QLDanhGiaSinhVien from "../pages/QuanLyKeHoach/QL_DanhGiaSinhVien";
@@ -39,6 +40,7 @@ import NhiemVuKhoaCuaToi from "../pages/CaNhan/NhiemVuKhoaCuaToi";
 import ViPhamCuaToi from "../pages/CaNhan/ViPhamCuaToi";
 import ThanhTichNckh from "../pages/CaNhan/ThanhTichNckh";
 import KeKhaiGioQuyDoi from "../pages/CaNhan/KeKhaiGioQuyDoi";
+import KeKhaiThanhTich from "../pages/CaNhan/KeKhaiThanhTich";
 import ChoCham from "../pages/QuanLyChamDiem/ChoCham";
 // HangDoiThamDinh (hàng đợi theo dòng tiêu chí) đã bị ẩn - xem ghi chú ở
 // menuConfig.js. File màn hình vẫn giữ trong pages/QuanLyChamDiem/.
@@ -52,6 +54,8 @@ import BaoCaoDonVi from "../pages/QuanLyChamDiem/BaoCaoDonVi";
 import PhanCongNhiemVuKhoa from "../pages/QuanLyChamDiem/PhanCongNhiemVuKhoa";
 import DuyetKeKhaiGioQuyDoi from "../pages/QuanLyChamDiem/DuyetKeKhaiGioQuyDoi";
 import ChiTietDuyetKeKhai from "../pages/QuanLyChamDiem/ChiTietDuyetKeKhai";
+import DuyetKeKhaiThanhTich from "../pages/QuanLyChamDiem/DuyetKeKhaiThanhTich";
+import ChiTietDuyetThanhTich from "../pages/QuanLyChamDiem/ChiTietDuyetThanhTich";
 import RequireRole from "../components/RequireRole";
 import ThamDinhNhanVienMockPage from "../pages/QuanLyChamDiem/ThamDinhNhanVienMockPage";
 import DanhSachNhanVienMockPage from "../pages/QuanLyChamDiem/DanhSachNhanVienMockPage";
@@ -65,7 +69,6 @@ import ThamDinhGiangVienMockPage from "../pages/QuanLyChamDiem/ThamDinhGiangVien
 import DanhGiaQuanLyKhoaMock from "../pages/DanhGia/DanhGiaQuanLyKhoaMock";
 import BangXepHangDonViMock from "../pages/QuanLyDanhGia/BangXepHangDonViMock";
 import GhiNhanViPhamNhanVien from "../pages/QuanLyKeHoach/GhiNhanViPhamNhanVien";
-import GhiNhanThanhTichNhanVienMock from "../pages/QuanLyKeHoach/GhiNhanThanhTichNhanVienMock";
 import DeXuatTangXepLoaiMock from "../pages/QuanLyDanhGia/DeXuatTangXepLoaiMock";
 import HieuTruongDuyetKpiMock from "../pages/QuanLyDanhGia/HieuTruongDuyetKpiMock";
 import ThongKeToanTruongMock from "../pages/QuanLyDanhGia/ThongKeToanTruongMock";
@@ -105,6 +108,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/vi-pham-cua-toi" element={<ViPhamCuaToi />} />
         <Route path="/thanh-tich-nckh" element={<ThanhTichNckh />} />
         <Route path="/ke-khai-gio-quy-doi" element={<KeKhaiGioQuyDoi />} />
+        <Route path="/ke-khai-thanh-tich" element={<KeKhaiThanhTich />} />
         <Route path="/quan-ly-nguoi-dung" element={<QLNhanVien />} />
         <Route
           path="/quan-ly-nguoi-dung/them-moi"
@@ -155,6 +159,10 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
           element={<GhiNhanViPhamNhanVien />}
         />
         <Route path="/danh-muc-loai-vi-pham" element={<QLLoaiViPham />} />
+        <Route
+          path="/danh-muc-thanh-tich"
+          element={<QLDanhMucThanhTich />}
+        />
         <Route path="/tong-hop-vi-pham" element={<QLTongHopViPham />} />
         <Route
           path="/thong-ke-vi-pham-khoa"
@@ -193,6 +201,14 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
           path="/quan-ly/ke-khai-gio-quy-doi/:id"
           element={<ChiTietDuyetKeKhai />}
         />
+        <Route
+          path="/quan-ly/ke-khai-thanh-tich"
+          element={<DuyetKeKhaiThanhTich />}
+        />
+        <Route
+          path="/quan-ly/ke-khai-thanh-tich/:id"
+          element={<ChiTietDuyetThanhTich />}
+        />
       </Route>
       <Route path="/mock-tham-dinh-nhan-vien" element={<ThamDinhNhanVienMockPage />} />
       <Route path="/mock-danh-sach-nhan-vien" element={<DanhSachNhanVienMockPage />} />
@@ -205,7 +221,6 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
       <Route path="/mock-tham-dinh-giang-vien" element={<ThamDinhGiangVienMockPage />} />
       <Route path="/mock-danh-gia-quan-ly-khoa" element={<DanhGiaQuanLyKhoaMock />} />
       <Route path="/mock-bang-xep-hang-don-vi" element={<BangXepHangDonViMock />} />
-      <Route path="/mock-ghi-nhan-thanh-tich-nv" element={<GhiNhanThanhTichNhanVienMock />} />
       <Route path="/mock-de-xuat-tang-hang" element={<DeXuatTangXepLoaiMock />} />
       <Route path="/mock-hieu-truong-duyet" element={<HieuTruongDuyetKpiMock />} />
       <Route path="/mock-thong-ke-toan-truong" element={<ThongKeToanTruongMock />} />
