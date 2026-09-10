@@ -1,5 +1,10 @@
 import React from "react";
 import SearchSelect from "../../Common/SearchSelect";
+import {
+  CHE_DO_DIEM_TRU,
+  CHE_DO_DIEM_TRU_OPTIONS,
+} from "../../../utils/viPhamNhanVienPermissions";
+import { LOAI_DOI_TUONG } from "../../../utils/phieuApi";
 
 const labelStyle = {
   display: "block",
@@ -20,6 +25,7 @@ const QL_LoaiViPhamForm = ({
   nhomList,
   donViList,
   isSaving,
+  loaiDoiTuong,
 }) => {
   if (!isOpen) return null;
 
@@ -50,6 +56,26 @@ const QL_LoaiViPhamForm = ({
   const noiDungLen = (formData.NoiDung || "").length;
   const ghiChuLen = (formData.GhiChu || "").length;
 
+  const laVienChuc = Number(loaiDoiTuong) === LOAI_DOI_TUONG.VIEN_CHUC;
+  const tenDoiTuong = laVienChuc ? "Nhân viên" : "Giảng viên";
+
+  const cheDo = Number(formData.CheDoDiemTru) || CHE_DO_DIEM_TRU.TU_DO;
+  const cheDoHint =
+    CHE_DO_DIEM_TRU_OPTIONS.find((o) => o.value === cheDo)?.hint || "";
+  // Với chế độ tối thiểu, cùng một con số vừa là mặc định vừa là mức SÀN nên
+  // nhãn phải nói đúng nghĩa, tránh admin nhập như mức trừ thông thường.
+  const nhanDiemTru =
+    cheDo === CHE_DO_DIEM_TRU.CO_DINH
+      ? "Điểm trừ cố định"
+      : cheDo === CHE_DO_DIEM_TRU.TOI_THIEU
+        ? "Điểm trừ tối thiểu (mức sàn)"
+        : "Điểm trừ mặc định";
+
+  const nhanNhom = (n) =>
+    n.TranDiemTru != null
+      ? `${n.TenNhom} — trần ${Number(n.TranDiemTru).toFixed(2)} điểm/năm`
+      : n.TenNhom;
+
   return (
     <div className="modal-overlay" style={{ zIndex: 10000 }}>
       <div
@@ -65,7 +91,8 @@ const QL_LoaiViPhamForm = ({
           }}
         >
           <h3 style={{ margin: 0, paddingRight: "20px", lineHeight: "1.4" }}>
-            {isEditing ? "Cập nhật loại vi phạm" : "Thêm loại vi phạm mới"}
+            {isEditing ? "Cập nhật loại vi phạm" : "Thêm loại vi phạm mới"} —{" "}
+            {tenDoiTuong}
           </h3>
           <button
             className="close-btn"
@@ -92,7 +119,7 @@ const QL_LoaiViPhamForm = ({
                   onChange={handleSelect("IdNhomVp")}
                   options={nhomList.map((n) => ({
                     value: n.IdNhomVp,
-                    label: n.TenNhom,
+                    label: nhanNhom(n),
                   }))}
                   placeholder="-- Chọn nhóm --"
                   required
@@ -121,7 +148,26 @@ const QL_LoaiViPhamForm = ({
             <div className="form-grid-2" style={{ marginBottom: "20px" }}>
               <div className="form-group">
                 <label style={labelStyle}>
-                  Điểm trừ mặc định <span className="text-red">*</span>
+                  Chế độ điểm trừ <span className="text-red">*</span>
+                </label>
+                <SearchSelect
+                  name="CheDoDiemTru"
+                  value={String(cheDo)}
+                  onChange={(val) =>
+                    setFormData({ ...formData, CheDoDiemTru: String(val) })
+                  }
+                  options={CHE_DO_DIEM_TRU_OPTIONS.map((o) => ({
+                    value: String(o.value),
+                    label: o.label,
+                  }))}
+                  placeholder="-- Chọn chế độ --"
+                  required
+                />
+                <div style={hintStyle}>{cheDoHint}</div>
+              </div>
+              <div className="form-group">
+                <label style={labelStyle}>
+                  {nhanDiemTru} <span className="text-red">*</span>
                 </label>
                 <input
                   type="number"
@@ -130,6 +176,8 @@ const QL_LoaiViPhamForm = ({
                   value={formData.DiemTruMacDinh ?? ""}
                   onChange={handleChange}
                   min="0"
+                  max="999.99"
+                  step="0.01"
                   required
                 />
                 <div style={hintStyle}>
@@ -139,11 +187,12 @@ const QL_LoaiViPhamForm = ({
               <div className="form-group">
                 <label style={labelStyle}>Thứ tự hiển thị</label>
                 <input
-                  type="text"
+                  type="number"
                   name="ThuTuHienThi"
                   className="form-input"
                   value={formData.ThuTuHienThi ?? ""}
                   onChange={handleChange}
+                  step="1"
                   placeholder="VD: 0"
                 />
               </div>
@@ -214,7 +263,9 @@ const QL_LoaiViPhamForm = ({
                   onChange={handleCheck}
                   style={{ width: "18px", height: "18px", cursor: "pointer" }}
                 />
-                Khoa chủ quản được ghi nhận
+                {laVienChuc
+                  ? "Khoa/Phòng chủ quản được ghi nhận"
+                  : "Khoa chủ quản được ghi nhận"}
               </label>
               <label
                 style={{

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
 import { confirmDialog } from 'primereact/confirmdialog';
 import { useAuth } from '../../context/AuthContext';
@@ -10,7 +11,9 @@ import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 import { readApiError } from '../../utils/apiError';
 import { isAdminRole, CAP_KHOA_PHONG } from '../../utils/viPhamPermissions';
+import { cheDoCuaLoai } from '../../utils/viPhamNhanVienPermissions';
 import SearchSelect from '../../components/Common/SearchSelect';
+import ObjectTabs, { OBJECT_TYPES } from '../../components/Common/ObjectTabs';
 
 const TRANG_THAI_FILTER_OPTIONS = [
     { value: '', label: '-- Tất cả --' },
@@ -18,11 +21,15 @@ const TRANG_THAI_FILTER_OPTIONS = [
     { value: 'false', label: 'Ngừng sử dụng' },
 ];
 
+/** Danh mục vi phạm chỉ tồn tại cho giảng viên (1) và viên chức / NLĐ (2). */
+const LOAI_DOI_TUONG_TABS = OBJECT_TYPES.filter((t) => t.key === '1' || t.key === '2');
+
 const initialForm = {
     IdNhomVp: '',
     MaLoaiViPham: '',
     NoiDung: '',
     DiemTruMacDinh: '1',
+    CheDoDiemTru: '0',
     HoSoKemTheo: '',
     ChoPhepKhoaChuQuan: false,
     ChoPhepMoiDonVi: false,
@@ -39,6 +46,11 @@ const QL_LoaiViPham = () => {
     const { user } = useAuth();
     const currentUser = user || {};
     const isAdmin = isAdminRole(currentUser);
+
+    // Trục đối tượng của trang (giống QL_MauDanhGia): quyết định tập nhóm được
+    // chọn và tập loại được liệt kê. Giữ trên URL để chia sẻ link đúng tab.
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentType = searchParams.get('type') || '1';
 
     const [nhomList, setNhomList] = useState([]);
     const [donViList, setDonViList] = useState([]);
@@ -64,7 +76,20 @@ const QL_LoaiViPham = () => {
         if (isAdmin) initData();
         else setIsLoading(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAdmin]);
+    }, [isAdmin, currentType]);
+
+    /**
+     * Đổi đối tượng = đổi hẳn danh mục, nên xóa luôn bộ lọc cũ. Phải reset đủ cả
+     * ba: initData() nạp lại bằng bộ lọc rỗng, giữ lại state nào là ô đó hiển thị
+     * một đằng còn danh sách lọc một nẻo.
+     */
+    const handleTypeChange = (key) => {
+        if (key === currentType) return;
+        setFilterNhom('');
+        setFilterTrangThai('');
+        setSearchQuery('');
+        setSearchParams({ type: key });
+    };
 
     const showToast = (severity, summary, detail) => {
         if (toast.current) toast.current.show({ severity, summary, detail, life: 3000 });
@@ -74,7 +99,9 @@ const QL_LoaiViPham = () => {
         setIsLoading(true);
         try {
             const [nhomRes, donViRes] = await Promise.all([
-                apiFetch('nhom-vi-pham'),
+                // Bắt buộc lọc theo đối tượng: bỏ trống là trả CẢ HAI rổ danh mục,
+                // admin sẽ chọn nhầm nhóm của đối tượng khác.
+                apiFetch(`nhom-vi-pham?loaiDoiTuong=${currentType}`),
                 apiFetch('donvi'),
             ]);
 
@@ -107,7 +134,7 @@ const QL_LoaiViPham = () => {
     const loadLoaiList = async (nhomFilter = filterNhom, trangThaiFilter = filterTrangThai) => {
         setIsLoading(true);
         try {
-            const params = new URLSearchParams();
+            const params = new URLSearchParams({ loaiDoiTuong: currentType });
             if (nhomFilter) params.set('idNhomVp', nhomFilter);
             if (trangThaiFilter) params.set('trangThai', trangThaiFilter);
             const qs = params.toString();
@@ -176,6 +203,7 @@ const QL_LoaiViPham = () => {
             MaLoaiViPham: item.MaLoaiViPham || '',
             NoiDung: item.NoiDung || '',
             DiemTruMacDinh: item.DiemTruMacDinh != null ? String(item.DiemTruMacDinh) : '0',
+            CheDoDiemTru: String(cheDoCuaLoai(item)),
             HoSoKemTheo: item.HoSoKemTheo || '',
             ChoPhepKhoaChuQuan: !!item.ChoPhepKhoaChuQuan,
             ChoPhepMoiDonVi: !!item.ChoPhepMoiDonVi,
@@ -198,6 +226,9 @@ const QL_LoaiViPham = () => {
         MaLoaiViPham: (formData.MaLoaiViPham || '').trim(),
         NoiDung: (formData.NoiDung || '').trim(),
         DiemTruMacDinh: parseFloat(formData.DiemTruMacDinh),
+        CheDoDiemTru: parseInt(formData.CheDoDiemTru, 10) || 0,
+        // KHÔNG gửi LoaiDoiTuong: để null cho máy chủ kế thừa từ nhóm cha (khuyến
+        // dùng theo spec). Tab chỉ giới hạn tập nhóm được chọn.
         HoSoKemTheo: (formData.HoSoKemTheo || '').trim() || null,
         ChoPhepKhoaChuQuan: !!formData.ChoPhepKhoaChuQuan,
         ChoPhepMoiDonVi: !!formData.ChoPhepMoiDonVi,
@@ -217,6 +248,8 @@ const QL_LoaiViPham = () => {
         if ((formData.NoiDung || '').trim().length > 500) return 'Nội dung tối đa 500 ký tự';
         const diem = parseFloat(formData.DiemTruMacDinh);
         if (isNaN(diem) || diem < 0) return 'Điểm trừ mặc định phải là số không âm';
+        // Cột decimal(5,2) nên tối đa 999.99, gửi lớn hơn sẽ vỡ ở tầng CSDL.
+        if (diem > 999.99) return 'Điểm trừ mặc định tối đa 999.99';
         if ((formData.HoSoKemTheo || '').length > 200) return 'Hồ sơ kèm theo tối đa 200 ký tự';
         if ((formData.GhiChu || '').length > 500) return 'Ghi chú tối đa 500 ký tự';
         return null;
@@ -264,6 +297,7 @@ const QL_LoaiViPham = () => {
                     MaLoaiViPham: item.MaLoaiViPham,
                     NoiDung: item.NoiDung,
                     DiemTruMacDinh: item.DiemTruMacDinh,
+                    CheDoDiemTru: item.CheDoDiemTru ?? null,
                     HoSoKemTheo: item.HoSoKemTheo || null,
                     ChoPhepKhoaChuQuan: !!item.ChoPhepKhoaChuQuan,
                     ChoPhepMoiDonVi: !!item.ChoPhepMoiDonVi,
@@ -387,6 +421,12 @@ const QL_LoaiViPham = () => {
                 </button>
             </div>
 
+            <ObjectTabs
+                currentType={currentType}
+                onChange={handleTypeChange}
+                types={LOAI_DOI_TUONG_TABS}
+            />
+
             {/* Filter Bar */}
             <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <div style={{ minWidth: '240px', flex: '2 1 240px' }}>
@@ -434,6 +474,7 @@ const QL_LoaiViPham = () => {
                 onDelete={handleDelete}
                 onEditDonVi={handleOpenDonViModal}
                 isLoading={isLoading}
+                loaiDoiTuong={Number(currentType)}
             />
 
             <QL_LoaiViPhamForm
@@ -446,6 +487,7 @@ const QL_LoaiViPham = () => {
                 nhomList={nhomList}
                 donViList={donViList}
                 isSaving={isSaving}
+                loaiDoiTuong={Number(currentType)}
             />
 
             <QL_DonViGhiNhanModal

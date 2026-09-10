@@ -8,10 +8,15 @@ export const OBJECT_TYPES = [
   { key: "4", label: "Phòng/Trung tâm", enabled: true },
 ];
 
-const ObjectTabs = ({ currentType, onChange }) => {
+/**
+ * @param {Array} types tập tab muốn hiện - mặc định cả 4 loại đối tượng.
+ *   Màn hình chỉ phục vụ một phần (VD danh mục vi phạm chỉ có 1 & 2) truyền
+ *   danh sách đã lọc để người dùng không mở được tab không có dữ liệu.
+ */
+const ObjectTabs = ({ currentType, onChange, types = OBJECT_TYPES }) => {
   return (
     <div className="object-tabs-container">
-      {OBJECT_TYPES.map((tab) => {
+      {types.map((tab) => {
         const isActive = tab.key === currentType;
         const isDisabled = !tab.enabled;
         return (

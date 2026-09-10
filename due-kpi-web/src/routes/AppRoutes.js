@@ -64,7 +64,7 @@ import DanhGiaPhongMock from "../pages/DanhGia/DanhGiaPhongMock";
 import ThamDinhGiangVienMockPage from "../pages/QuanLyChamDiem/ThamDinhGiangVienMockPage";
 import DanhGiaQuanLyKhoaMock from "../pages/DanhGia/DanhGiaQuanLyKhoaMock";
 import BangXepHangDonViMock from "../pages/QuanLyDanhGia/BangXepHangDonViMock";
-import GhiNhanViPhamNhanVienMock from "../pages/QuanLyKeHoach/GhiNhanViPhamNhanVienMock";
+import GhiNhanViPhamNhanVien from "../pages/QuanLyKeHoach/GhiNhanViPhamNhanVien";
 import GhiNhanThanhTichNhanVienMock from "../pages/QuanLyKeHoach/GhiNhanThanhTichNhanVienMock";
 
 const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
@@ -142,6 +142,15 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/truong/phieu" element={<TheoDoiPhieuTruong />} />
         <Route path="/quan-ly-gio-giang" element={<QLGioGiang />} />
         <Route path="/quan-ly-vi-pham" element={<QLViPham />} />
+        <Route
+          path="/ghi-nhan-vi-pham-nhan-vien"
+          element={<GhiNhanViPhamNhanVien />}
+        />
+        {/* Đường dẫn cũ của bản mock - giữ lại cho các link đã chia sẻ */}
+        <Route
+          path="/mock-ghi-nhan-vi-pham-nv"
+          element={<GhiNhanViPhamNhanVien />}
+        />
         <Route path="/danh-muc-loai-vi-pham" element={<QLLoaiViPham />} />
         <Route path="/tong-hop-vi-pham" element={<QLTongHopViPham />} />
         <Route
@@ -193,7 +202,6 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
       <Route path="/mock-tham-dinh-giang-vien" element={<ThamDinhGiangVienMockPage />} />
       <Route path="/mock-danh-gia-quan-ly-khoa" element={<DanhGiaQuanLyKhoaMock />} />
       <Route path="/mock-bang-xep-hang-don-vi" element={<BangXepHangDonViMock />} />
-      <Route path="/mock-ghi-nhan-vi-pham-nv" element={<GhiNhanViPhamNhanVienMock />} />
       <Route path="/mock-ghi-nhan-thanh-tich-nv" element={<GhiNhanThanhTichNhanVienMock />} />
     </Routes>
   );

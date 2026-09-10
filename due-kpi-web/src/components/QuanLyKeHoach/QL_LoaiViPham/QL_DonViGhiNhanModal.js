@@ -45,6 +45,13 @@ const QL_DonViGhiNhanModal = ({ isOpen, onClose, onSave, target, donViList, isSa
                         chỉ còn "Khoa chủ quản" / "Mọi đơn vị" quyết định quyền ghi nhận.
                     </div>
 
+                    {target.ChoPhepMoiDonVi && (
+                        <div style={{ background: '#fffbe6', border: '1px solid #fde68a', borderRadius: '6px', padding: '8px 12px', marginBottom: '15px', fontSize: '13px', color: '#92400e' }}>
+                            <i className="fa-solid fa-circle-info" style={{ marginRight: '6px' }}></i>
+                            Loại vi phạm này đang bật "Mọi đơn vị chủ trì" nên danh sách cố định không còn tác dụng.
+                        </div>
+                    )}
+
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                         <button type="button" className="btn-cancel" style={{ padding: '6px 12px', fontSize: '13px' }}
                             onClick={() => setSelectedIds(donViList.map((d) => d.IdDonVi))}>

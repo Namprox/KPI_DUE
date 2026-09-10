@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import { useAuth } from "../../context/AuthContext";
 import "../../css/Pages.css";
-import QL_ViPhamListing from "../../components/QuanLyKeHoach/QL_ViPham/QL_ViPhamListing";
-import QL_ViPhamForm from "../../components/QuanLyKeHoach/QL_ViPham/QL_ViPhamForm";
+import QL_ViPhamNhanVienListing from "../../components/QuanLyKeHoach/QL_ViPhamNhanVien/QL_ViPhamNhanVienListing";
+import QL_ViPhamNhanVienForm from "../../components/QuanLyKeHoach/QL_ViPhamNhanVien/QL_ViPhamNhanVienForm";
 import { useConfirmDeleteDialog } from "../../hooks/useConfirmDeleteDialog";
 import { apiFetch } from "../../utils/api";
 import { readApiError } from "../../utils/apiError";
-import { canAccessPath } from "../../config/menuConfig";
 import { fetchAllNhanVien } from "../../utils/nhanVienApi";
 import {
   uploadViPhamMinhChung,
@@ -20,17 +18,30 @@ import SearchSelect from "../../components/Common/SearchSelect";
 import { useViPhamMinhChungPreview } from "../../hooks/useViPhamMinhChungPreview";
 import {
   canRecordViPham,
-  buildDonViIndex,
-  buildChucDanhIndex,
-  resolveKhoaCuaNhanVien,
-  laDonViKhoa,
-  laGiangVienKhoa,
-  getNhanVienBlockReason,
-  canGhiNhanLoai,
-  getLoaiBlockReason,
   canSuaXoaViPham,
-  canXemThongKeKhoa,
+  canGhiNhanLoai,
+  buildDonViIndex,
+  resolveKhoaCuaNhanVien,
+  CAP_KHOA_PHONG,
 } from "../../utils/viPhamPermissions";
+import {
+  LOAI_DOI_TUONG_VIEN_CHUC,
+  laVienChuc,
+  getVienChucBlockReason,
+  getLoaiBlockReasonNhanVien,
+  validateDiemTru,
+  buildDiemTruPayload,
+} from "../../utils/viPhamNhanVienPermissions";
+
+/**
+ * Ghi nhận vi phạm của VIÊN CHỨC / NGƯỜI LAO ĐỘNG (LoaiDoiTuong = 2).
+ *
+ * Máy chủ dùng CHUNG bộ endpoint api/viphamgiangday với vi phạm giảng viên, nên
+ * màn hình này chỉ khác trang /quan-ly-vi-pham ở ba điểm:
+ *   - danh mục nhóm / loại lấy theo loaiDoiTuong=2;
+ *   - danh sách trả về gồm cả hai đối tượng nên phải lọc LoaiDoiTuong = 2 ở client;
+ *   - mức điểm trừ chịu ràng buộc CheDoDiemTru (tự do / cố định / tối thiểu).
+ */
 
 const initialForm = {
   IdNhanVien: "",
@@ -39,6 +50,7 @@ const initialForm = {
   IdLoaiViPham: "",
   MoTa: "",
   DiemTru: "",
+  LyDoDieuChinh: "",
   BiKyLuat: false,
   NgayViPham: "",
   // Minh chứng PDF - chỉ là trạng thái UI, không nằm trong body POST/PUT
@@ -55,36 +67,12 @@ const labelStyle = {
   marginBottom: "6px",
 };
 
-const QL_ViPham = () => {
+const GhiNhanViPhamNhanVien = () => {
   const toast = useRef(null);
-  const navigate = useNavigate();
   const { user } = useAuth();
   // useMemo để object rỗng không bị tạo mới mỗi render, tránh làm loaiOptions tính lại liên tục
   const currentUser = useMemo(() => user || {}, [user]);
   const canManage = canRecordViPham(currentUser);
-  /**
-   * TK/TKL có màn hình thống kê riêng cho đúng Khoa mình phụ trách; số liệu
-   * toàn trường nằm ở màn hình tổng hợp.
-   */
-  const tongHopNav = canXemThongKeKhoa(currentUser)
-    ? {
-      path: "/thong-ke-vi-pham-khoa",
-      label: "Thống kê vi phạm Khoa",
-      icon: "fa-chart-pie",
-    }
-    : {
-      path: "/tong-hop-vi-pham",
-      label: "Tổng hợp điểm trừ",
-      icon: "fa-square-poll-vertical",
-    };
-
-  /**
-   * Trang này mở rộng hơn hẳn hai màn hình tổng hợp: /tong-hop-vi-pham chỉ dành
-   * cho phòng giám sát giảng dạy (+ Admin), /thong-ke-vi-pham-khoa chỉ dành cho
-   * TK/TKL. Hỏi đúng bảng quyền mà RequireRole dùng để không dẫn người dùng tới
-   * màn hình bị chặn.
-   */
-  const hienNutTongHop = canAccessPath(tongHopNav.path, currentUser);
 
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -93,7 +81,6 @@ const QL_ViPham = () => {
   const [donViList, setDonViList] = useState([]);
   const [nhomList, setNhomList] = useState([]);
   const [loaiList, setLoaiList] = useState([]);
-  const [chucDanhList, setChucDanhList] = useState([]);
 
   // Bộ lọc gọi server
   const [selectedNam, setSelectedNam] = useState("");
@@ -116,14 +103,23 @@ const QL_ViPham = () => {
   const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
   const donViIndex = useMemo(() => buildDonViIndex(donViList), [donViList]);
-  const chucDanhIndex = useMemo(
-    () => buildChucDanhIndex(chucDanhList),
-    [chucDanhList],
-  );
-  const khoaList = useMemo(() => donViList.filter(laDonViKhoa), [donViList]);
 
-  /** Giảng viên đang được chọn trong form - cần cho nhánh quyền "Khoa chủ quản". */
-  const selectedLecturer = useMemo(
+  /**
+   * Đơn vị chủ quản của viên chức là Khoa HOẶC Phòng cấp 2 - khác giảng viên
+   * (chỉ Khoa), nên bộ lọc liệt kê mọi đơn vị cấp 2.
+   */
+  const donViChuQuanList = useMemo(
+    () => donViList.filter((dv) => dv?.CapDonVi === CAP_KHOA_PHONG),
+    [donViList],
+  );
+
+  /** Chỉ ngạch viên chức / NLĐ mới ghi nhận được ở màn hình này. */
+  const vienChucList = useMemo(
+    () => nhanVienList.filter(laVienChuc),
+    [nhanVienList],
+  );
+
+  const selectedNhanVien = useMemo(
     () =>
       nhanVienList.find(
         (nv) => String(nv.IdNhanVien) === String(formData.IdNhanVien),
@@ -131,54 +127,50 @@ const QL_ViPham = () => {
     [nhanVienList, formData.IdNhanVien],
   );
 
-  const lecturerKhoa = useMemo(
+  const nhanVienDonVi = useMemo(
     () =>
-      selectedLecturer
-        ? resolveKhoaCuaNhanVien(selectedLecturer.IdDonVi, donViIndex)
+      selectedNhanVien
+        ? resolveKhoaCuaNhanVien(selectedNhanVien.IdDonVi, donViIndex)
         : null,
-    [selectedLecturer, donViIndex],
+    [selectedNhanVien, donViIndex],
   );
 
   /**
-   * Đối tượng chọn được trong form = đúng tập server cho phép: giảng viên thuộc Khoa.
-   * Bản ghi cũ có thể trỏ tới người đã đổi đơn vị/chức danh - vẫn giữ lại trong
-   * danh sách khi đang sửa, nếu không select sẽ mất value và ghi đè mất dữ liệu.
+   * Bản ghi cũ có thể trỏ tới người đã đổi chức danh - vẫn giữ lại trong danh
+   * sách khi đang sửa, nếu không select sẽ mất value và ghi đè mất dữ liệu.
    */
   const nhanVienChoForm = useMemo(() => {
-    const hopLe = nhanVienList.filter((nv) =>
-      laGiangVienKhoa(nv, donViIndex, chucDanhIndex),
-    );
     if (
-      selectedLecturer &&
-      !hopLe.some(
-        (nv) => String(nv.IdNhanVien) === String(selectedLecturer.IdNhanVien),
+      selectedNhanVien &&
+      !vienChucList.some(
+        (nv) => String(nv.IdNhanVien) === String(selectedNhanVien.IdNhanVien),
       )
     ) {
-      return [selectedLecturer, ...hopLe];
+      return [selectedNhanVien, ...vienChucList];
     }
-    return hopLe;
-  }, [nhanVienList, donViIndex, chucDanhIndex, selectedLecturer]);
+    return vienChucList;
+  }, [vienChucList, selectedNhanVien]);
 
   /** Lý do đối tượng đang chọn không hợp lệ (null = hợp lệ). */
-  const lecturerBlockReason = useMemo(
-    () => getNhanVienBlockReason(selectedLecturer, donViIndex, chucDanhIndex),
-    [selectedLecturer, donViIndex, chucDanhIndex],
+  const nhanVienBlockReason = useMemo(
+    () => getVienChucBlockReason(selectedNhanVien),
+    [selectedNhanVien],
   );
 
-  /** Loại vi phạm kèm cờ quyền ghi nhận, tính client-side theo §1.4. */
+  /** Loại vi phạm kèm cờ quyền ghi nhận, tính client-side. */
   const loaiOptions = useMemo(
     () =>
       loaiList.map((l) => ({
         ...l,
-        _allowed: canGhiNhanLoai(l, currentUser, selectedLecturer, donViIndex),
-        _reason: getLoaiBlockReason(
+        _allowed: canGhiNhanLoai(l, currentUser, selectedNhanVien, donViIndex),
+        _reason: getLoaiBlockReasonNhanVien(
           l,
           currentUser,
-          selectedLecturer,
+          selectedNhanVien,
           donViIndex,
         ),
       })),
-    [loaiList, currentUser, selectedLecturer, donViIndex],
+    [loaiList, currentUser, selectedNhanVien, donViIndex],
   );
 
   const selectedLoai = useMemo(
@@ -187,6 +179,15 @@ const QL_ViPham = () => {
         (l) => String(l.IdLoaiViPham) === String(formData.IdLoaiViPham),
       ) || null,
     [loaiOptions, formData.IdLoaiViPham],
+  );
+
+  /** Nhóm của loại đang chọn - dùng để bày trần điểm trừ 70/30 trong form. */
+  const selectedNhom = useMemo(
+    () =>
+      nhomList.find(
+        (n) => String(n.IdNhomVp) === String(selectedLoai?.IdNhomVp ?? ""),
+      ) || null,
+    [nhomList, selectedLoai],
   );
 
   useEffect(() => {
@@ -205,17 +206,14 @@ const QL_ViPham = () => {
       // Nạp nhân viên song song với các lookup khác (endpoint này phân trang nên tốn nhiều vòng)
       const nhanVienPromise = fetchAllNhanVien({ trangThai: true });
 
-      const [namRes, nhomRes, loaiRes, donViRes, chucDanhRes] =
-        await Promise.all([
-          apiFetch("namdanhgia"),
-          // Danh mục nay dùng chung cho cả hai đối tượng - phải lọc
-          // loaiDoiTuong=1, nếu không màn hình sẽ bày cả nhóm/loại của viên chức
-          // và chọn vào sẽ nhận 403 NOT_GIANG_VIEN_KHOA.
-          apiFetch("nhom-vi-pham?loaiDoiTuong=1"),
-          apiFetch("loai-vi-pham?trangThai=true&loaiDoiTuong=1"),
-          apiFetch("donvi"),
-          apiFetch("chuc-danh-nghe-nghiep"),
-        ]);
+      const [namRes, nhomRes, loaiRes, donViRes] = await Promise.all([
+        apiFetch("namdanhgia"),
+        apiFetch(`nhom-vi-pham?loaiDoiTuong=${LOAI_DOI_TUONG_VIEN_CHUC}`),
+        apiFetch(
+          `loai-vi-pham?trangThai=true&loaiDoiTuong=${LOAI_DOI_TUONG_VIEN_CHUC}`,
+        ),
+        apiFetch("donvi"),
+      ]);
 
       let years = [];
       if (namRes.ok) {
@@ -247,16 +245,6 @@ const QL_ViPham = () => {
         setDonViList(result.Items || (Array.isArray(result) ? result : []));
       }
 
-      if (chucDanhRes.ok) {
-        const result = await chucDanhRes.json();
-        setChucDanhList(result.Items || (Array.isArray(result) ? result : []));
-      } else {
-        // Không chặn luồng: laGiangVien() sẽ bỏ qua bước lọc chức danh khi danh mục rỗng
-        console.warn(
-          "Không tải được danh mục chức danh - bỏ qua lọc giảng viên phía client.",
-        );
-      }
-
       const employees = await nhanVienPromise;
       setNhanVienList(employees);
 
@@ -271,7 +259,7 @@ const QL_ViPham = () => {
 
       await loadViPhamData(defaultYear, "");
     } catch (error) {
-      console.error("Lỗi khởi tạo dữ liệu vi phạm:", error);
+      console.error("Lỗi khởi tạo dữ liệu vi phạm nhân viên:", error);
       showToast("error", "Lỗi", "Không thể khởi tạo dữ liệu");
     } finally {
       setIsLoading(false);
@@ -281,9 +269,9 @@ const QL_ViPham = () => {
   /**
    * Chỉ gửi idNam + idNhanVien lên server.
    *
-   * KHÔNG gửi idDonVi: tham số này so khớp CHÍNH XÁC đơn vị chủ quản của giảng
-   * viên, nên lọc theo id của Khoa sẽ rụng hết giảng viên nằm ở Bộ môn con.
-   * Lọc theo Khoa được làm ở client bằng cách roll-up đơn vị của từng dòng.
+   * KHÔNG gửi idDonVi: tham số này so khớp CHÍNH XÁC đơn vị chủ quản của người
+   * bị ghi nhận, nên lọc theo id của Khoa sẽ rụng hết người nằm ở đơn vị con.
+   * Lọc theo đơn vị được làm ở client bằng cách roll-up đơn vị của từng dòng.
    * Phạm vi dữ liệu vẫn do token quyết định: TK/TKL/TP nhận đơn vị mình + đơn vị
    * con, HT/ADMIN nhận toàn trường.
    */
@@ -300,8 +288,18 @@ const QL_ViPham = () => {
       if (response.ok) {
         const result = await response.json();
         const list = result.Items || (Array.isArray(result) ? result : []);
-        setData(list);
-        applyFilters(list, searchQuery, filterNhom, selectedDonViFilter);
+        // Endpoint dùng chung cho cả hai đối tượng; dòng LoaiDoiTuong = null là
+        // dữ liệu cũ của giảng viên (tạo trước khi có danh mục) nên cũng bị loại.
+        const cuaVienChuc = list.filter(
+          (item) => Number(item.LoaiDoiTuong) === LOAI_DOI_TUONG_VIEN_CHUC,
+        );
+        setData(cuaVienChuc);
+        applyFilters(
+          cuaVienChuc,
+          searchQuery,
+          filterNhom,
+          selectedDonViFilter,
+        );
       } else {
         const err = await readApiError(
           response,
@@ -312,7 +310,7 @@ const QL_ViPham = () => {
         setFilteredData([]);
       }
     } catch (error) {
-      console.error("Lỗi tải danh sách vi phạm:", error);
+      console.error("Lỗi tải danh sách vi phạm nhân viên:", error);
       showToast("error", "Lỗi", "Lỗi kết nối máy chủ");
     } finally {
       setIsLoading(false);
@@ -323,24 +321,23 @@ const QL_ViPham = () => {
     rawList = data,
     search = searchQuery,
     nhomFilter = filterNhom,
-    khoaFilter = selectedDonViFilter,
+    donViFilter = selectedDonViFilter,
   ) => {
     let result = [...rawList];
 
-    // Roll-up Bộ môn → Khoa: dòng vi phạm mang đơn vị chủ quản của giảng viên,
-    // có thể là Bộ môn con nên không so trực tiếp với id của Khoa được.
-    if (khoaFilter) {
+    // Roll-up đơn vị con → Khoa/Phòng: dòng vi phạm mang đơn vị chính của người
+    // bị ghi nhận, có thể là đơn vị cấp 3 nên không so trực tiếp với id cấp 2.
+    if (donViFilter) {
       result = result.filter((item) => {
-        const khoa = resolveKhoaCuaNhanVien(item.IdDonVi, donViIndex);
-        return khoa && String(khoa.IdDonVi) === String(khoaFilter);
+        const chuQuan = resolveKhoaCuaNhanVien(item.IdDonVi, donViIndex);
+        return chuQuan && String(chuQuan.IdDonVi) === String(donViFilter);
       });
     }
 
     if (nhomFilter) {
-      const nhom = nhomList.find(
-        (n) => String(n.IdNhomVp) === String(nhomFilter),
+      result = result.filter(
+        (item) => String(item.IdNhomVp) === String(nhomFilter),
       );
-      if (nhom) result = result.filter((item) => item.TenNhom === nhom.TenNhom);
     }
 
     if (search.trim()) {
@@ -412,10 +409,11 @@ const QL_ViPham = () => {
     setFormData({
       IdNhanVien: item.IdNhanVien ?? "",
       IdNam: item.IdNam ?? "",
-      IdNhomVp: loai?.IdNhomVp ?? "",
+      IdNhomVp: loai?.IdNhomVp ?? item.IdNhomVp ?? "",
       IdLoaiViPham: item.IdLoaiViPham ?? "",
       MoTa: item.MoTa || "",
       DiemTru: item.DiemTru != null ? String(item.DiemTru) : "",
+      LyDoDieuChinh: item.LyDoDieuChinh || "",
       BiKyLuat: !!item.BiKyLuat,
       NgayViPham: formatDateForInput(item.NgayViPham),
       MinhChung: item.MinhChung || null,
@@ -449,8 +447,8 @@ const QL_ViPham = () => {
 
   const validate = () => {
     if (!formData.IdNam) return "Vui lòng chọn năm đánh giá";
-    if (!formData.IdNhanVien) return "Vui lòng chọn giảng viên";
-    if (lecturerBlockReason) return lecturerBlockReason;
+    if (!formData.IdNhanVien) return "Vui lòng chọn nhân viên";
+    if (nhanVienBlockReason) return nhanVienBlockReason;
     if (!formData.IdLoaiViPham) return "Vui lòng chọn loại vi phạm";
     if (selectedLoai && selectedLoai._allowed === false) {
       return (
@@ -459,11 +457,11 @@ const QL_ViPham = () => {
       );
     }
     if ((formData.MoTa || "").length > 500) return "Mô tả tối đa 500 ký tự";
-    if (formData.DiemTru !== "" && formData.DiemTru != null) {
-      const diem = parseFloat(formData.DiemTru);
-      if (isNaN(diem) || diem < 0 || diem > 15)
-        return "Điểm trừ phải nằm trong khoảng 0 đến 15";
-    }
+
+    // Ràng buộc mức trừ theo CheDoDiemTru của danh mục (chặn trước 400 của server)
+    const loiDiem = validateDiemTru(selectedLoai, formData);
+    if (loiDiem) return loiDiem;
+
     if (formData.MinhChungFile) {
       const loiFile = validatePdfFile(formData.MinhChungFile);
       if (loiFile) return loiFile;
@@ -520,10 +518,8 @@ const QL_ViPham = () => {
       IdNam: parseInt(formData.IdNam, 10),
       IdLoaiViPham: parseInt(formData.IdLoaiViPham, 10),
       MoTa: (formData.MoTa || "").trim() || null,
-      DiemTru:
-        formData.DiemTru !== "" && formData.DiemTru != null
-          ? parseFloat(formData.DiemTru)
-          : null,
+      // DiemTru / LyDoDieuChinh phụ thuộc CheDoDiemTru của danh mục
+      ...buildDiemTruPayload(selectedLoai, formData),
       BiKyLuat: !!formData.BiKyLuat,
       NgayViPham: formData.NgayViPham || null, // đã là 'YYYY-MM-DD', không đổi sang ISO để tránh lệch múi giờ
     };
@@ -576,7 +572,7 @@ const QL_ViPham = () => {
         // Giữ modal mở để người dùng sửa lại
       }
     } catch (error) {
-      console.error("Lỗi khi lưu vi phạm:", error);
+      console.error("Lỗi khi lưu vi phạm nhân viên:", error);
       showToast("error", "Lỗi", "Lỗi kết nối máy chủ");
     } finally {
       setIsSaving(false);
@@ -609,7 +605,7 @@ const QL_ViPham = () => {
             showToast("error", "Lỗi", err.message);
           }
         } catch (error) {
-          console.error("Lỗi khi xóa vi phạm:", error);
+          console.error("Lỗi khi xóa vi phạm nhân viên:", error);
           showToast("error", "Lỗi", "Lỗi kết nối máy chủ");
         }
       },
@@ -640,49 +636,31 @@ const QL_ViPham = () => {
               fontWeight: "700",
             }}
           >
-            Ghi nhận vi phạm giảng viên
+            Ghi nhận vi phạm nhân viên
           </h2>
           <p
             style={{ margin: "5px 0 0 0", color: "#64748b", fontSize: "14px" }}
           >
-            Ghi nhận các việc chưa tuân thủ của giảng viên thuộc Khoa để tính
-            điểm trừ KPI
+            Ghi nhận các việc chưa tuân thủ của viên chức / người lao động thuộc
+            các Phòng/Ban để tính điểm trừ KPI
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          {hienNutTongHop && (
-            <button
-              className="btn-cancel"
-              onClick={() => navigate(tongHopNav.path)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 18px",
-                fontSize: "14px",
-              }}
-            >
-              <i className={`fa-solid ${tongHopNav.icon}`}></i>{" "}
-              {tongHopNav.label}
-            </button>
-          )}
-          {canManage && (
-            <button
-              className="btn-submit"
-              onClick={handleOpenCreateModal}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 18px",
-                fontSize: "14px",
-              }}
-            >
-              <i className="fa-solid fa-plus"></i> Thêm ghi nhận
-            </button>
-          )}
-        </div>
+        {canManage && (
+          <button
+            className="btn-submit"
+            onClick={handleOpenCreateModal}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 18px",
+              fontSize: "14px",
+            }}
+          >
+            <i className="fa-solid fa-plus"></i> Thêm ghi nhận
+          </button>
+        )}
       </div>
 
       {/* Filter Bar */}
@@ -712,34 +690,36 @@ const QL_ViPham = () => {
         </div>
 
         <div style={{ minWidth: "180px", flex: "2 1 180px" }}>
-          <label style={labelStyle}>Đơn vị (Khoa)</label>
+          <label style={labelStyle}>Đơn vị chủ quản</label>
           <SearchSelect
             value={selectedDonViFilter}
             onChange={handleDonViFilterChange}
             options={[
-              { value: "", label: "-- Tất cả Khoa --" },
-              ...khoaList.map((dv) => ({
+              { value: "", label: "-- Tất cả đơn vị --" },
+              ...donViChuQuanList.map((dv) => ({
                 value: dv.IdDonVi,
                 label: `${dv.MaDonVi} - ${dv.TenDonVi}`,
               })),
             ]}
-            placeholder="-- Tất cả Khoa --"
+            placeholder="-- Tất cả đơn vị --"
+            searchable
+            searchPlaceholder="Tìm theo mã hoặc tên..."
           />
         </div>
 
         <div style={{ minWidth: "200px", flex: "2 1 200px" }}>
-          <label style={labelStyle}>Giảng viên</label>
+          <label style={labelStyle}>Nhân viên</label>
           <SearchSelect
             value={selectedNhanVienFilter}
             onChange={handleNhanVienFilterChange}
             options={[
-              { value: "", label: "-- Tất cả giảng viên --" },
-              ...nhanVienList.map((nv) => ({
+              { value: "", label: "-- Tất cả nhân viên --" },
+              ...vienChucList.map((nv) => ({
                 value: nv.IdNhanVien,
                 label: `${nv.MaNhanVien ? nv.MaNhanVien + " - " : ""}${nv.HoTen}`,
               })),
             ]}
-            placeholder="-- Tất cả giảng viên --"
+            placeholder="-- Tất cả nhân viên --"
             searchable
             searchPlaceholder="Tìm theo mã hoặc tên..."
           />
@@ -767,7 +747,7 @@ const QL_ViPham = () => {
             <input
               type="text"
               className="form-input"
-              placeholder="Mã / Tên giảng viên"
+              placeholder="Mã / Tên nhân viên"
               value={searchQuery}
               onChange={handleSearchChange}
               style={{ paddingRight: "30px" }}
@@ -786,7 +766,7 @@ const QL_ViPham = () => {
         </div>
       </div>
 
-      <QL_ViPhamListing
+      <QL_ViPhamNhanVienListing
         data={filteredData}
         onEdit={handleEdit}
         onDelete={handleDelete}
@@ -807,7 +787,7 @@ const QL_ViPham = () => {
         onDownload={() => downloadMinhChung(preview.item)}
       />
 
-      <QL_ViPhamForm
+      <QL_ViPhamNhanVienForm
         isOpen={isModalOpen}
         onClose={closeModal}
         onSubmit={handleSubmit}
@@ -820,8 +800,9 @@ const QL_ViPham = () => {
         nhomList={nhomList}
         loaiOptions={loaiOptions}
         selectedLoai={selectedLoai}
-        lecturerKhoa={lecturerKhoa}
-        lecturerBlockReason={lecturerBlockReason}
+        selectedNhom={selectedNhom}
+        nhanVienDonVi={nhanVienDonVi}
+        nhanVienBlockReason={nhanVienBlockReason}
         currentUser={currentUser}
         onDownloadMinhChung={() =>
           downloadMinhChung({ IdViPham: editId, MinhChung: formData.MinhChung })
@@ -832,4 +813,4 @@ const QL_ViPham = () => {
   );
 };
 
-export default QL_ViPham;
+export default GhiNhanViPhamNhanVien;

@@ -8,9 +8,17 @@ export const VI_PHAM_ERROR_MESSAGES = {
   FORBIDDEN_DON_VI:
     "Đơn vị của bạn không được phân quyền ghi nhận loại vi phạm này",
   NOT_GIANG_VIEN_KHOA: "Chỉ được ghi nhận vi phạm cho giảng viên thuộc Khoa",
+  NOT_VIEN_CHUC:
+    "Loại vi phạm này chỉ áp dụng cho viên chức / người lao động đang hoạt động",
+  DIEM_TRU_DUOI_TOI_THIEU:
+    "Điểm trừ thấp hơn mức tối thiểu của loại vi phạm này",
+  THIEU_LY_DO_DIEU_CHINH:
+    "Trừ cao hơn mức tối thiểu thì phải ghi căn cứ điều chỉnh",
   VI_PHAM_NOT_FOUND: "Không tìm thấy bản ghi vi phạm",
   LOAI_VI_PHAM_NOT_FOUND: "Không tìm thấy loại vi phạm",
   NHOM_VI_PHAM_NOT_FOUND: "Không tìm thấy nhóm vi phạm",
+  LOAI_DOI_TUONG_KHONG_KHOP:
+    "Loại đối tượng phải khớp với nhóm vi phạm cha đã chọn",
   NHAN_VIEN_NOT_FOUND: "Không tìm thấy nhân viên",
   NAM_NOT_FOUND: "Không tìm thấy năm đánh giá",
   LOAI_VI_PHAM_INACTIVE:

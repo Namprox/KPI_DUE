@@ -81,12 +81,6 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
       },
       {
-        name: "[Mock] Ghi nhận vi phạm nhân viên",
-        icon: "fa-solid fa-circle-exclamation",
-        path: "/mock-ghi-nhan-vi-pham-nv",
-        roles: MOI_NGUOI,
-      },
-      {
         name: "[Mock] Ghi nhận thành tích nhân viên",
         icon: "fa-solid fa-medal",
         path: "/mock-ghi-nhan-thanh-tich-nv",
@@ -315,11 +309,25 @@ export const MENU_GROUPS = [
         // "Chấm điểm KPI đơn vị" còn một mục nữa trỏ vào cùng trang qua
         // /quan-ly/vi-pham; giữ đường dẫn đó làm childPath để các link cũ
         // (ví dụ nút trong Hồ sơ KPI giảng viên) không bị RequireRole chặn.
-        name: "Ghi nhận vi phạm",
+        name: "Ghi nhận vi phạm giảng viên",
         icon: "fa-solid fa-circle-exclamation",
         path: "/quan-ly-vi-pham",
         roles: ROLE_SETS.GHI_NHAN_VI_PHAM,
         childPaths: ["/quan-ly/vi-pham"],
+      },
+      {
+        // Song sinh của mục trên cho VIÊN CHỨC / NLĐ (LoaiDoiTuong = 2): cùng bộ
+        // endpoint api/viphamgiangday, khác danh mục nhóm/loại và luật mức trừ
+        // (CheDoDiemTru). Tách màn hình vì hai đối tượng có tập người, tập loại
+        // vi phạm và cách áp trần điểm khác hẳn nhau.
+        //
+        // Giữ đường dẫn mock cũ làm childPath để các link đã chia sẻ không bị
+        // RequireRole chặn.
+        name: "Ghi nhận vi phạm nhân viên",
+        icon: "fa-solid fa-user-xmark",
+        path: "/ghi-nhan-vi-pham-nhan-vien",
+        roles: ROLE_SETS.GHI_NHAN_VI_PHAM,
+        childPaths: ["/mock-ghi-nhan-vi-pham-nv"],
       },
       {
         // Cùng luật vào trang với "Quản lý đánh giá sinh viên": chức vụ Trưởng

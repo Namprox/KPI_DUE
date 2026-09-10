@@ -1,7 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Paginator } from 'primereact/paginator';
+import { CHE_DO_DIEM_TRU, TEN_CHE_DO_DIEM_TRU, cheDoCuaLoai } from '../../../utils/viPhamNhanVienPermissions';
+import { LOAI_DOI_TUONG } from '../../../utils/phieuApi';
 
-const QL_LoaiViPhamListing = ({ data, onEdit, onDelete, onEditDonVi, isLoading }) => {
+const CHE_DO_BADGE_STYLE = {
+    [CHE_DO_DIEM_TRU.TU_DO]: { backgroundColor: '#f1f5f9', color: '#64748b', borderColor: '#e2e8f0' },
+    [CHE_DO_DIEM_TRU.CO_DINH]: { backgroundColor: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' },
+    [CHE_DO_DIEM_TRU.TOI_THIEU]: { backgroundColor: '#fff7ed', color: '#c2410c', borderColor: '#fed7aa' },
+};
+
+/** Dấu đứng trước mức trừ để đọc là "trừ đúng 1.00" hay "trừ từ 5.00 trở lên". */
+const CHE_DO_PREFIX = {
+    [CHE_DO_DIEM_TRU.CO_DINH]: '= ',
+    [CHE_DO_DIEM_TRU.TOI_THIEU]: '≥ ',
+};
+
+const QL_LoaiViPhamListing = ({ data, onEdit, onDelete, onEditDonVi, isLoading, loaiDoiTuong }) => {
+    const laVienChuc = Number(loaiDoiTuong) === LOAI_DOI_TUONG.VIEN_CHUC;
+    const nhanKhoaChuQuan = laVienChuc ? 'Khoa/Phòng chủ quản' : 'Khoa chủ quản';
     const [first, setFirst] = useState(0);
     const [isDesktop, setIsDesktop] = useState(true);
     const rows = 10;
@@ -34,10 +50,11 @@ const QL_LoaiViPhamListing = ({ data, onEdit, onDelete, onEditDonVi, isLoading }
                 </span>
             );
         } else if (dsDonVi.length > 0) {
+            // Hiện tên đầy đủ cho dễ đọc; mã đơn vị lùi xuống tooltip.
             dsDonVi.slice(0, 3).forEach((dv) => {
                 chips.push(
-                    <span key={dv.IdDonVi} className="tag-badge" title={dv.TenDonVi}>
-                        {dv.MaDonVi}
+                    <span key={dv.IdDonVi} className="tag-badge" title={dv.MaDonVi}>
+                        {dv.TenDonVi || dv.MaDonVi}
                     </span>
                 );
             });
@@ -46,7 +63,7 @@ const QL_LoaiViPhamListing = ({ data, onEdit, onDelete, onEditDonVi, isLoading }
                     <span
                         key="more"
                         className="tag-badge"
-                        title={dsDonVi.slice(3).map((d) => `${d.MaDonVi} - ${d.TenDonVi}`).join('\n')}
+                        title={dsDonVi.slice(3).map((d) => `${d.TenDonVi || ''} (${d.MaDonVi})`).join('\n')}
                     >
                         +{dsDonVi.length - 3}
                     </span>
@@ -60,9 +77,9 @@ const QL_LoaiViPhamListing = ({ data, onEdit, onDelete, onEditDonVi, isLoading }
                     key="khoa-chu-quan"
                     className="tag-badge"
                     style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' }}
-                    title="Trưởng Khoa chủ quản của giảng viên cũng được ghi nhận"
+                    title={`Trưởng ${nhanKhoaChuQuan} của người bị ghi nhận cũng được ghi nhận`}
                 >
-                    Khoa chủ quản
+                    {nhanKhoaChuQuan}
                 </span>
             );
         }
@@ -98,22 +115,36 @@ const QL_LoaiViPhamListing = ({ data, onEdit, onDelete, onEditDonVi, isLoading }
                         <thead>
                             <tr>
                                 <th width="4%" style={{ textAlign: 'center' }}>STT</th>
-                                <th width="13%">MÃ</th>
-                                <th width="15%">NHÓM</th>
-                                <th width="26%">NỘI DUNG</th>
+                                <th width="12%">MÃ</th>
+                                <th width="14%">NHÓM</th>
+                                <th width="17%">NỘI DUNG</th>
+                                <th width="8%" style={{ textAlign: 'center' }}>CHẾ ĐỘ</th>
                                 <th width="8%" style={{ textAlign: 'center' }}>ĐIỂM TRỪ</th>
-                                <th width="17%">PHẠM VI GHI NHẬN</th>
-                                <th width="6%" style={{ textAlign: 'center' }}>THỨ TỰ</th>
-                                <th width="8%" style={{ textAlign: 'center' }}>TRẠNG THÁI</th>
+                                <th width="19%">PHẠM VI GHI NHẬN</th>
+                                <th width="5%" style={{ textAlign: 'center' }}>THỨ TỰ</th>
+                                <th width="7%" style={{ textAlign: 'center' }}>TRẠNG THÁI</th>
                                 <th width="10%" style={{ textAlign: 'center' }}>THAO TÁC</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedData.map((item, index) => (
+                            {paginatedData.map((item, index) => {
+                                const cheDo = cheDoCuaLoai(item);
+                                return (
                                 <tr key={item.IdLoaiViPham}>
                                     <td style={{ textAlign: 'center', color: '#64748b' }}>{first + index + 1}</td>
                                     <td><span className="code-pill">{item.MaLoaiViPham}</span></td>
-                                    <td><span className="tag-badge">{item.TenNhom || '---'}</span></td>
+                                    <td>
+                                        <span className="tag-badge">{item.TenNhom || '---'}</span>
+                                        {item.TranDiemTru != null && (
+                                            <div
+                                                style={{ fontSize: '12px', color: '#c2410c', marginTop: '4px' }}
+                                                title="Trần điểm trừ của nhóm này trên một cá nhân trong một năm"
+                                            >
+                                                <i className="fa-solid fa-gauge-high" style={{ marginRight: '4px' }}></i>
+                                                Trần nhóm: {Number(item.TranDiemTru).toFixed(2)}
+                                            </div>
+                                        )}
+                                    </td>
                                     <td>
                                         <div style={{ fontWeight: '500', color: '#1e293b' }}>{item.NoiDung}</div>
                                         {item.HoSoKemTheo && (
@@ -127,8 +158,15 @@ const QL_LoaiViPhamListing = ({ data, onEdit, onDelete, onEditDonVi, isLoading }
                                         )}
                                     </td>
                                     <td style={{ textAlign: 'center' }}>
+                                        <span className="tag-badge" style={CHE_DO_BADGE_STYLE[cheDo]}>
+                                            {TEN_CHE_DO_DIEM_TRU[cheDo]}
+                                        </span>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
                                         <span className="rating-badge rating-low">
-                                            {item.DiemTruMacDinh != null ? Number(item.DiemTruMacDinh).toFixed(2) : '---'}
+                                            {item.DiemTruMacDinh != null
+                                                ? `${CHE_DO_PREFIX[cheDo] || ''}${Number(item.DiemTruMacDinh).toFixed(2)}`
+                                                : '---'}
                                         </span>
                                     </td>
                                     <td>{renderPhamViGhiNhan(item)}</td>
@@ -154,7 +192,8 @@ const QL_LoaiViPhamListing = ({ data, onEdit, onDelete, onEditDonVi, isLoading }
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                                );
+                            })}
                         </tbody>
                     </table>
                     {data.length > rows && (
