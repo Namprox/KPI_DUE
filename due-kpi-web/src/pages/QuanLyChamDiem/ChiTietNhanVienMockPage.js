@@ -30,8 +30,8 @@ const ChiTietNhanVienMockPage = () => {
                 </div>
             </div>
 
-            <div className="modern-table-card" style={{ padding: '15px 20px', backgroundColor: '#ecfdf5', marginBottom: '20px', border: '1px solid #a7f3d0', borderRadius: '8px' }}>
-                <p style={{ margin: 0, fontSize: '14px', color: '#065f46' }}>
+            <div className="modern-table-card alert-success-box">
+                <p className="alert-success-text">
                     <i className="fa-solid fa-circle-check" style={{ marginRight: '8px' }}></i>
                     Phiếu đánh giá này đã được sếp chốt. Dưới đây là kết quả điểm và nhận xét (Chỉ đọc)
                 </p>

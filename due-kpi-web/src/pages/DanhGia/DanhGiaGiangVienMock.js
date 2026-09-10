@@ -40,16 +40,16 @@ const DanhGiaGiangVienMock = () => {
 
             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                 <div style={{ flex: 1, background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>ĐIỂM CƠ BẢN (MAX 100)</div>
-                    <div style={{ fontSize: '24px', color: '#0f172a', fontWeight: 'bold' }}>{tongDiemA}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>ĐIỂM CƠ BẢN (MAX 100)</div>
+                    <div style={{ fontSize: '25px', color: '#0f172a', fontWeight: 'bold' }}>{tongDiemA}</div>
                 </div>
                 <div style={{ flex: 1, background: '#f0fdf4', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>ĐIỂM VƯỢT TRỘI</div>
-                    <div style={{ fontSize: '24px', color: '#166534', fontWeight: 'bold' }}>+{tongDiemB}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>ĐIỂM VƯỢT TRỘI</div>
+                    <div style={{ fontSize: '25px', color: '#166534', fontWeight: 'bold' }}>+{tongDiemB}</div>
                 </div>
                 <div style={{ flex: 2, background: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>DỰ KIẾN XẾP LOẠI</div>
-                    <div style={{ fontSize: '18px', color: xepLoai.mau, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.thongBao}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>DỰ KIẾN XẾP LOẠI</div>
+                    <div style={{ fontSize: '19px', color: xepLoai.mau, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.thongBao}</div>
                 </div>
             </div>
 

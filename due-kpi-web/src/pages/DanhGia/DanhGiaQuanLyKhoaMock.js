@@ -44,12 +44,12 @@ const DanhGiaQuanLyKhoaMock = () => {
 
             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                 <div style={{ flex: 1, background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>TỔNG ĐIỂM TÍCH LŨY</div>
-                    <div style={{ fontSize: '24px', color: '#1d4ed8', fontWeight: 'bold' }}>{tongDiem}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>TỔNG ĐIỂM TÍCH LŨY</div>
+                    <div style={{ fontSize: '25px', color: '#1d4ed8', fontWeight: 'bold' }}>{tongDiem}</div>
                 </div>
                 <div style={{ flex: 2, background: '#f0fdf4', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>DỰ KIẾN XẾP LOẠI</div>
-                    <div style={{ fontSize: '18px', color: xepLoai.color, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.text}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>DỰ KIẾN XẾP LOẠI</div>
+                    <div style={{ fontSize: '19px', color: xepLoai.color, fontWeight: 'bold', marginTop: '4px' }}>{xepLoai.text}</div>
                 </div>
             </div>
 

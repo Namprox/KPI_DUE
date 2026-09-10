@@ -20,9 +20,9 @@ const BangXepHangDonViMock = () => {
                 <span className="breadcrumb">Cấp Trường • Xét duyệt Top 20% Đơn vị Xuất sắc</span>
             </div>
 
-            <div style={{ backgroundColor: "#f0fdf4", padding: "15px", borderRadius: "8px", border: "1px solid #bbf7d0", marginBottom: "20px" }}>
-                <div style={{ fontWeight: "bold", color: "#166534", marginBottom: "5px" }}>Quy định xét Xuất sắc cho Đơn vị:</div>
-                <ul style={{ margin: 0, paddingLeft: "20px", color: "#15803d", fontSize: "14px" }}>
+            <div className="rule-box">
+                <div className="rule-title">Quy định xét Xuất sắc cho Đơn vị:</div>
+                <ul className="rule-list">
                     <li>Tổng điểm tích lũy &gt; 100 (đối với Khoa) hoặc &gt; 80 (đối với Phòng).</li>
                     <li>Đạt 100% nhân sự hoàn thành nhiệm vụ trở lên (trong đó 70% đạt mức Hoàn thành Tốt).</li>
                     <li>Nằm trong <b>Top 20%</b> đơn vị có điểm cao nhất toàn trường.</li>
