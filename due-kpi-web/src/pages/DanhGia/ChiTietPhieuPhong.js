@@ -12,7 +12,7 @@ import "../../css/QuanLyChamDiem.css";
 import "../../css/DanhGia/DanhGiaPhuLuc2.css";
 import "../../css/DanhGia/DanhGiaKpiPhong.css";
 import { useAuth } from "../../context/AuthContext";
-import { fetchTieuChiTheoMau } from "../../utils/phieuApi";
+import { fetchTieuChiTheoMau, formatDiem } from "../../utils/phieuApi";
 import {
   chotPhieuDonVi,
   duyetDvPhieuDonVi,
@@ -47,6 +47,8 @@ import {
   XepLoaiBadge,
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
 import DanhGiaPhongForm from "../../components/DanhGia/DanhGiaKpiPhong/DanhGiaPhongForm";
+import DuyetPhongForm from "../../components/DanhGia/DanhGiaKpiPhong/DuyetPhongForm";
+import SuaDiemDonViModal from "../../components/DanhGia/DanhGiaKpiPhong/SuaDiemDonViModal";
 import ChotPhieuPhongModal from "../../components/DanhGia/DanhGiaKpiPhong/ChotPhieuPhongModal";
 
 /** Hàm ghi điểm tương ứng với lớp điểm đang được sửa. */
@@ -76,6 +78,15 @@ const giaTriO = (nhap, goc) =>
  *   trạng thái 4  cấp Trường  -> (khóa)         -> Chốt                 (4→5)
  *   trạng thái 5  cấp Trường  -> (khóa)         -> Mở lại               (5→1/2/3)
  *
+ * HAI GIAO DIỆN, MỘT TRANG. Trạng thái 2 (Trưởng phòng duyệt) dựng bằng
+ * DuyetPhongForm - bố cục thẻ `cdm-*` y như màn hình thẩm định hồ sơ giảng viên
+ * (ChamDiemPhieu), vì việc cần làm ở đó là DUYỆT lại đề xuất có sẵn của thư ký.
+ * Bốn trạng thái còn lại vẫn là DanhGiaPhongForm (form kê khai `pl2-*`), nơi
+ * việc cần làm là GÕ điểm cho cả phiếu.
+ *
+ * Khác biệt thao tác kéo theo: ở trạng thái 2 mỗi cú bấm trên thẻ GHI NGAY một
+ * dòng, nên không còn bản nháp `nhapDiem`/`nhapNhanXet` lẫn nút "Lưu thay đổi".
+ *
  * KHÔNG CÓ NÚT TRẢ VỀ. Luồng đơn vị chỉ có năm hành động trên, không có thao tác
  * hủy nộp hay trả phiếu xuống cấp dưới - đường lùi duy nhất là "Mở lại" sau khi
  * phiếu đã hoàn tất. Đừng đi tìm endpoint trả về, server không có.
@@ -99,6 +110,9 @@ const ChiTietPhieuPhong = () => {
   const [nhapNhanXet, setNhapNhanXet] = useState({});
   const [idDangLuu, setIdDangLuu] = useState(null);
   const [dangLuuTatCa, setDangLuuTatCa] = useState(false);
+
+  /** Dòng đang mở hộp thoại chọn lại mức điểm (chỉ dùng ở màn hình duyệt). */
+  const [dongSuaDiem, setDongSuaDiem] = useState(null);
 
   const [moChuyenTiep, setMoChuyenTiep] = useState(false);
   const [moChot, setMoChot] = useState(false);
@@ -198,6 +212,14 @@ const ChiTietPhieuPhong = () => {
   const truongCuaCap = cap ? TRUONG_DIEM_CUA_CAP[cap] : null;
   const quyen = useMemo(() => quyenPhieuPhong(phieu, user), [phieu, user]);
 
+  /**
+   * Trạng thái 2 đổi hẳn sang bố cục duyệt (thẻ cdm-*), kể cả với người chỉ xem:
+   * nếu chỉ đổi cho riêng Trưởng phòng thì cùng một phiếu lại hiện hai kiểu giao
+   * diện tùy người đăng nhập, khó đối chiếu khi trao đổi với nhau.
+   */
+  const laBuocDuyetPhong =
+    Number(phieu?.TrangThai) === TRANG_THAI_DV.CHO_DV_DUYET;
+
   const choPhepNhap =
     (quyen.coTheNhap && cap === CAP_CHAM.NHAP) ||
     (quyen.coTheChamDuyetDv && cap === CAP_CHAM.DUYET_DV) ||
@@ -285,20 +307,37 @@ const ChiTietPhieuPhong = () => {
     });
   };
 
-  const handleLuuDong = async (ct) => {
-    if (!cap) return;
+  /**
+   * Ghi điểm MỘT dòng ở lớp điểm đang mở, rồi vá kết quả vào state tại chỗ.
+   *
+   * Dùng chung cho cả ba lối vào: nút "Lưu tiêu chí" của form kê khai, và hai
+   * nút "Duyệt giữ nguyên" / "Chỉnh sửa điểm" của màn hình duyệt. Cả ba gọi đúng
+   * một endpoint PUT chi-tiet-don-vi/{id}/{cap}, chỉ khác giá trị gửi lên.
+   *
+   * HAI CÁCH CẬP NHẬT, chọn theo màn hình đang mở:
+   *
+   *  - Form kê khai (trạng thái 1, 3): VÁ tại chỗ theo `Item` + `NewRowVersion`.
+   *    Tải lại phiếu sẽ xóa sạch bản nháp người dùng đang gõ dở ở các dòng khác.
+   *  - Màn hình duyệt (trạng thái 2): ĐỌC LẠI phiếu từ server. Ở đó không có bản
+   *    nháp nào để mất, mà phần vá tại chỗ lại phụ thuộc hoàn toàn vào việc
+   *    server có trả `Item` hay không - thiếu nó là thẻ đứng im sau khi bấm,
+   *    người duyệt chỉ thấy mỗi thông báo. Đọc lại vừa chắc vừa kéo theo cả các
+   *    trường server tự tính (DiemChinhThuc, NgayDuyetDv).
+   */
+  const ghiDiemDong = async (ct, { diem, nhanXet }, thongDiepXong) => {
+    if (!cap) return false;
     const idCt = ct.IdChiTietDv;
     setIdDangLuu(idCt);
     try {
       const { item, newRowVersion } = await HAM_GHI_DIEM[cap](idCt, {
-        diem: giaTriO(nhapDiem[idCt], ct[truongCuaCap.diem]),
-        nhanXet: giaTriO(nhapNhanXet[idCt], ct[truongCuaCap.nhanXet]),
+        diem,
+        nhanXet,
         rowVersion: phieu?.RowVersion,
       });
 
       boNhapCuaDong(idCt);
 
-      if (!newRowVersion) {
+      if (laBuocDuyetPhong || !newRowVersion || !item) {
         await taiPhieu({ imLang: true });
       } else {
         setPhieu((cur) =>
@@ -315,18 +354,60 @@ const ChiTietPhieuPhong = () => {
             : cur,
         );
       }
-      showToast(
-        "success",
-        "Đã lưu",
-        `Đã lưu điểm tiêu chí "${ct.TenTieuChi}".`,
-      );
+      showToast("success", "Đã lưu", thongDiepXong);
+      return true;
     } catch (error) {
       console.error("Lỗi lưu điểm tiêu chí Phòng:", error);
       showToast("error", "Lưu thất bại", error.message);
       if (error.isConflict) await taiPhieu({ imLang: true });
+      return false;
     } finally {
       setIdDangLuu(null);
     }
+  };
+
+  // Phiếu đã khóa (trạng thái 4, 5) thì không còn lớp điểm nào để ghi và
+  // truongCuaCap là null - chặn ngay ở đây thay vì để đọc thuộc tính trên null.
+  const handleLuuDong = (ct) => {
+    if (!truongCuaCap) return undefined;
+    return ghiDiemDong(
+      ct,
+      {
+        diem: giaTriO(nhapDiem[ct.IdChiTietDv], ct[truongCuaCap.diem]),
+        nhanXet: giaTriO(
+          nhapNhanXet[ct.IdChiTietDv],
+          ct[truongCuaCap.nhanXet],
+        ),
+      },
+      `Đã lưu điểm tiêu chí "${ct.TenTieuChi}".`,
+    );
+  };
+
+  /**
+   * "Duyệt giữ nguyên": ghi đúng con số thư ký đã đề xuất vào lớp Trưởng phòng.
+   * Không có endpoint duyệt-theo-dòng riêng cho phiếu đơn vị, nhưng ghi
+   * diem-duyet-dv = DiemNhap cho ra đúng kết quả đó.
+   *
+   * Nhận xét cũ của chính lớp này được gửi lại nguyên vẹn: server ghi đè cả hai
+   * cột, không gửi kèm là xóa mất ghi chú người duyệt đã viết trước đó.
+   */
+  const handleDuyetDong = (ct) => {
+    if (!truongCuaCap) return undefined;
+    return ghiDiemDong(
+      ct,
+      { diem: ct.DiemNhap, nhanXet: ct[truongCuaCap.nhanXet] },
+      `Đã duyệt "${ct.TenTieuChi}" giữ nguyên ${formatDiem(ct.DiemNhap)} điểm.`,
+    );
+  };
+
+  const handleSuaDiemDong = async ({ diem, nhanXet }) => {
+    const ct = dongSuaDiem;
+    setDongSuaDiem(null);
+    await ghiDiemDong(
+      ct,
+      { diem, nhanXet },
+      `Đã chấm "${ct.TenTieuChi}" ở mức ${formatDiem(diem)} điểm.`,
+    );
   };
 
   /**
@@ -521,6 +602,27 @@ const ChiTietPhieuPhong = () => {
     );
   }
 
+  /**
+   * Nút thao tác của MÀN HÌNH DUYỆT, đặt ở page-header như ChamDiemPhieu.
+   *
+   * Không dùng lại headerActions bên dưới: bộ nút đó mang các lớp .btn-nop-phieu
+   * / .btn-luu-nhap / .btn-thu-hoi, mà kích thước, padding và bo góc của chúng
+   * được khai trong selector con `.pl2-header-actions button` của
+   * DanhGiaPhuLuc2.css. Ra khỏi wrapper .pl2-header-actions thì chỉ còn màu nền,
+   * nút co lại thành một mẩu chữ dính sát viền.
+   */
+  const duyetActions = buocChuyenTiep ? (
+    <button
+      type="button"
+      className="btn-submit"
+      disabled={dangGui}
+      onClick={() => setMoChuyenTiep(true)}
+    >
+      <i className={`fa-solid ${buocChuyenTiep.icon}`}></i>{" "}
+      {buocChuyenTiep.nhanXacNhan}
+    </button>
+  ) : null;
+
   const headerActions = (
     <div
       style={{
@@ -530,7 +632,8 @@ const ChiTietPhieuPhong = () => {
         flexWrap: "wrap",
       }}
     >
-      {choPhepNhap && (
+      {/* Màn hình duyệt ghi ngay mỗi khi bấm nên không có gì để "lưu" cả lượt. */}
+      {choPhepNhap && !laBuocDuyetPhong && (
         <button
           type="button"
           className="btn-luu-nhap"
@@ -583,7 +686,11 @@ const ChiTietPhieuPhong = () => {
         </button>
       )}
 
-      {!choPhepNhap &&
+      {/* Màn hình duyệt đã có TrangThaiDonViBadge ngay trên đầu khối thông tin
+          phiếu, thêm badge này nữa là lặp - và nó mang lớp pl2-* của form kê
+          khai, lạc hẳn giữa bố cục cd-*. */}
+      {!laBuocDuyetPhong &&
+        !choPhepNhap &&
         !buocChuyenTiep &&
         !quyen.coTheChot &&
         !quyen.coTheMoLai && (
@@ -637,37 +744,76 @@ const ChiTietPhieuPhong = () => {
             </span>
           </div>
 
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
             <TrangThaiDonViBadge trangThai={phieu.TrangThai} />
             <XepLoaiBadge xepLoai={phieu.XepLoai} />
+            {duyetActions}
           </div>
         </div>
       </div>
 
-      <DanhGiaPhongForm
-        phieu={phieu}
-        chiTietList={chiTietList}
-        sections={sections}
-        tieuChiMap={tieuChiMap}
-        cap={cap}
-        nhapDiem={nhapDiem}
-        nhapNhanXet={nhapNhanXet}
-        choPhepNhap={choPhepNhap}
-        idDangLuu={idDangLuu}
-        onDiemChange={handleDiemChange}
-        onNhanXetChange={handleNhanXetChange}
-        onLuuDong={handleLuuDong}
-        oDaSua={oDaSua}
-        hanhDong={headerActions}
-        tamTinh={tamTinh}
-        cauHinhMc={cauHinhMc}
-        choPhepSuaMinhChung={choPhepSuaMinhChung}
-        onMinhChungChange={handleMinhChungChange}
-        onXemMinhChung={openPreview}
-        onTaiMinhChung={downloadMinhChung}
-        onLoiMinhChung={baoLoiMc}
-        onOkMinhChung={baoOkMc}
-      />
+      {laBuocDuyetPhong ? (
+        <DuyetPhongForm
+          phieu={phieu}
+          chiTietList={chiTietList}
+          sections={sections}
+          choPhepNhap={choPhepNhap}
+          lyDoKhoa={
+            quyen.laCapTruong
+              ? "Phiếu đang chờ Trưởng phòng duyệt; cấp Trường chấm ở bước sau."
+              : "Bạn không phải Trưởng phòng của đơn vị này nên chỉ xem được."
+          }
+          idDangLuu={idDangLuu}
+          cauHinhMc={cauHinhMc}
+          tamTinh={tamTinh}
+          onDuyetDong={handleDuyetDong}
+          onSuaDiemDong={setDongSuaDiem}
+          onXemMinhChung={openPreview}
+          onTaiMinhChung={downloadMinhChung}
+        />
+      ) : (
+        <DanhGiaPhongForm
+          phieu={phieu}
+          chiTietList={chiTietList}
+          sections={sections}
+          tieuChiMap={tieuChiMap}
+          cap={cap}
+          nhapDiem={nhapDiem}
+          nhapNhanXet={nhapNhanXet}
+          choPhepNhap={choPhepNhap}
+          idDangLuu={idDangLuu}
+          onDiemChange={handleDiemChange}
+          onNhanXetChange={handleNhanXetChange}
+          onLuuDong={handleLuuDong}
+          oDaSua={oDaSua}
+          hanhDong={headerActions}
+          tamTinh={tamTinh}
+          cauHinhMc={cauHinhMc}
+          choPhepSuaMinhChung={choPhepSuaMinhChung}
+          onMinhChungChange={handleMinhChungChange}
+          onXemMinhChung={openPreview}
+          onTaiMinhChung={downloadMinhChung}
+          onLoiMinhChung={baoLoiMc}
+          onOkMinhChung={baoOkMc}
+        />
+      )}
+
+      {dongSuaDiem && (
+        <SuaDiemDonViModal
+          chiTiet={dongSuaDiem}
+          thangDiem={tieuChiMap?.get(Number(dongSuaDiem.IdTieuChi))}
+          dangGui={idDangLuu === dongSuaDiem.IdChiTietDv}
+          onDong={() => setDongSuaDiem(null)}
+          onXacNhan={handleSuaDiemDong}
+        />
+      )}
 
       {moChuyenTiep && buocChuyenTiep && (
         <LyDoModal

@@ -18,7 +18,11 @@
  */
 
 import { normalizeRole, coQuyenTaiDonVi, ROLE } from "./roles";
-import { diemHieuLucCuaDong, TRANG_THAI_DV } from "./phieuDonViApi";
+import {
+  diemHieuLucCuaDong,
+  laDongChamTay,
+  TRANG_THAI_DV,
+} from "./phieuDonViApi";
 
 /* ------------------------------------------------------------------ */
 /* Nhận diện đơn vị Phòng / Trung tâm                                  */
@@ -350,3 +354,28 @@ export const dungSectionsPhong = (chiTietList = [], tieuChiMap) => {
  */
 export const dongThieuDiem = (chiTietList = []) =>
   chiTietList.filter((ct) => diemHieuLucCuaDong(ct) === null);
+
+/* ------------------------------------------------------------------ */
+/* Tiến độ duyệt của Trưởng phòng                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Đã duyệt bao nhiêu / tổng bao nhiêu tiêu chí, cho thanh tiến độ ở bước Trưởng
+ * phòng duyệt (trạng thái 2).
+ *
+ * MẪU SỐ LÀ TOÀN BỘ SỐ DÒNG, khác tinhTienDoCham của phiếu cá nhân vốn phải trừ
+ * dòng chấm tự động: cả sáu tiêu chí của mẫu Phòng/TT đều `loai_nguon_diem = 1`
+ * nên không có dòng nào tự động để loại. Vẫn lọc qua laDongChamTay để mẫu có đổi
+ * sau này thì con số không sai lặng lẽ.
+ *
+ * TỬ SỐ đếm dòng đã có `DiemDuyetDv`, tức đã đi qua PUT diem-duyet-dv - dù là
+ * "Duyệt giữ nguyên" hay "Chỉnh sửa điểm", hai thao tác ghi cùng một cột.
+ */
+export const tinhTienDoDuyetPhong = (chiTietList = []) => {
+  const dong = chiTietList.filter((ct) => laDongChamTay(ct));
+  return {
+    tong: dong.length,
+    xong: dong.filter((ct) => ct?.DiemDuyetDv !== null && ct?.DiemDuyetDv !== undefined)
+      .length,
+  };
+};

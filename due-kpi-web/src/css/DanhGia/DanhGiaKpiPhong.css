@@ -302,3 +302,64 @@
 .phong-dz-phu-loi i {
   margin-right: 3px;
 }
+
+/* ------------------------------------------------------------------ */
+/* Màn hình Trưởng phòng duyệt - trạng thái duyệt của TỪNG tiêu chí     */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Đi kèm .cdm-pill của QuanLyChamDiem.css (chỉ ghi đè màu). Không gộp vào file
+ * đó vì đây là khái niệm riêng của phiếu đơn vị: bên cá nhân trạng thái dòng do
+ * cột trang_thai_dong quyết và đã có TrangThaiDongBadge, còn ở đây "đã duyệt"
+ * chỉ suy ra từ việc dòng đã có diem_duyet_dv.
+ */
+.cdm-pill.phong-pill-da-duyet {
+  background: #e7f6ee;
+  color: #0f7b48;
+}
+
+.cdm-pill.phong-pill-cho-duyet {
+  background: #eef2fb;
+  color: #3455a8;
+}
+
+/*
+ * Thẻ của tiêu chí ĐÃ DUYỆT: hạ tông cả thẻ và đổi cột thao tác sang xanh, để
+ * lướt mắt xuống là thấy ngay còn dòng nào phải làm. Bên giảng viên việc này do
+ * cặp TrangThaiDongBadge + ô nhập bị khóa lo; phiếu đơn vị không khóa dòng nào
+ * nên phải nói bằng màu.
+ */
+.cdm-the.phong-the-da-duyet {
+  border-color: #d4e9dd;
+}
+
+.cdm-the.phong-the-da-duyet .cdm-ben {
+  background: #f5fbf8;
+  border-left-color: #d4e9dd;
+}
+
+.cdm-the.phong-the-da-duyet .cdm-ben-tieu-de {
+  color: #0f7b48;
+}
+
+/* Câu kết luận thay chỗ cặp nút khi dòng đã duyệt xong. */
+.phong-ket-luan {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #e7f6ee;
+  color: #0f7b48;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.phong-ket-luan i {
+  margin-top: 2px;
+  flex: none;
+}
+
+.phong-ket-luan b {
+  font-weight: 700;
+}
