@@ -33,7 +33,7 @@
     margin: 0 !important;
     padding: 4px 10px;
     border-radius: 6px;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 500;
     line-height: 1.4;
 }
@@ -46,9 +46,10 @@
     min-width: 980px;
 }
 
+/* Không đặt font-size/letter-spacing ở đây: để tiêu đề cột kế thừa
+   .custom-table thead th trong Pages.css (13px / 700 / uppercase / .07em) cho
+   giống mọi bảng khác trong hệ thống. */
 .kkt-bang thead th {
-    font-size: 12px;
-    letter-spacing: 0.05em;
     padding: 12px 14px !important;
     white-space: nowrap;
     vertical-align: middle;
@@ -88,20 +89,13 @@
     align-items: center;
     justify-content: center;
     height: 36px;
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 600;
     color: #64748b;
 }
 
-.kkt-dv-duong-dan {
-    font-size: 13px;
-    line-height: 1.45;
-    color: #94a3b8;
-    margin-bottom: 3px;
-}
-
 .kkt-dv-ten {
-    font-size: 15.5px;
+    font-size: 15px;
     font-weight: 600;
     line-height: 1.45;
     color: #0f172a;
@@ -112,7 +106,7 @@
     min-height: 36px;
     border-radius: 6px;
     border-color: #cbd5e1;
-    font-size: 13.5px;
+    font-size: 14px;
     padding: 0 10px;
     box-sizing: border-box;
 }
@@ -134,7 +128,7 @@
 }
 
 .kkt-sl-dv {
-    font-size: 12.5px;
+    font-size: 13px;
     color: #64748b;
     white-space: nowrap;
     font-weight: 500;
@@ -143,13 +137,13 @@
 .kkt-ten-cv {
     font-weight: 600;
     color: #0f172a;
-    font-size: 15.5px;
+    font-size: 15px;
     line-height: 1.5;
 }
 
 .kkt-diem-muc {
     margin-top: 6px;
-    font-size: 12.5px;
+    font-size: 13px;
     color: #6d28d9;
     background: #f5f3ff;
     border: 1px solid #ddd6fe;
@@ -195,7 +189,7 @@
 
 .kkt-hint {
     margin-top: 4px;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .kkt-so {
@@ -217,15 +211,11 @@
     box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
 }
 
-.kkt-mota-cell {
-    vertical-align: top;
-}
-
 .kkt-mota {
     width: 100%;
     height: 52px;
     min-height: 52px;
-    font-size: 13.5px;
+    font-size: 14px;
     padding: 8px 10px;
     border-radius: 6px;
     border: 1px solid #cbd5e1;
@@ -257,11 +247,11 @@
 .kkt-diem-val {
     font-weight: 700;
     color: #0f766e;
-    font-size: 14.5px;
+    font-size: 15px;
 }
 
 .kkt-diem-dv {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     color: #64748b;
     margin-left: 3px;
@@ -291,7 +281,7 @@
 
 .kkt-tfoot-label {
     text-align: right;
-    font-size: 13.5px;
+    font-size: 14px;
     color: #475569;
     font-weight: 500;
     padding-right: 16px !important;
@@ -426,7 +416,7 @@
 }
 
 .kkt-dz-chinh {
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 600;
     color: #1e40af;
 }
@@ -436,7 +426,7 @@
 }
 
 .kkt-dz-phu {
-    font-size: 11.5px;
+    font-size: 13px;
     color: #4a6d93;
 }
 
@@ -538,6 +528,27 @@
     margin-top: 6px;
 }
 
+/* Tên tệp minh chứng ở bảng XEM: cắt bằng "..." thay vì xuống 3 dòng làm vỡ
+   chiều cao hàng. Phải chặn bằng px chứ không phải %, vì bảng dùng table-layout
+   auto - gặp chuỗi white-space:nowrap nó sẽ nới cột ra cho vừa rồi sinh thanh
+   cuộn ngang, chứ không cắt. 340px vừa khít cột "Thành tích" (32% của 1150px).
+   Tên đầy đủ vẫn đọc được ở tooltip title của nút. */
+.kkt-mc-link {
+    max-width: 100%;
+}
+
+.kkt-mc-link > i {
+    flex: none;
+}
+
+.kkt-mc-link .kkt-mc-ten {
+    max-width: 340px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
 .kkt-mc-hint {
     margin-top: 6px;
     font-size: 12px;
@@ -597,11 +608,15 @@
     min-width: 0;
 }
 
+/* Hàng tệp chờ nằm ngay cạnh hàng .cd-mc-* (QuanLyChamDiem.css) nên phải bám
+   đúng cỡ của bộ đó: tên 14px/600, meta 12px. */
 .kkt-mc-cho-ten {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: #334155;
-    word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .kkt-mc-cho-meta {
@@ -623,7 +638,7 @@
     border-radius: 999px;
     background: #fffbeb;
     color: #b45309;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
 }
 
@@ -682,7 +697,7 @@
 }
 
 .kkt-dm-head-title {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 600;
     color: #2f3040;
     letter-spacing: -0.01em;
@@ -792,7 +807,7 @@
 
 .kkt-dm-nav-muc-ten {
     padding: 8px 18px 6px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -834,7 +849,7 @@
 .kkt-dm-nav-ten {
     flex: 1;
     min-width: 0;
-    font-size: 13.5px;
+    font-size: 14px;
     line-height: 1.4;
     font-weight: 500;
     color: #5b5c68;
@@ -875,7 +890,7 @@
 }
 
 .kkt-dm-pane-sub {
-    font-size: 12.5px;
+    font-size: 13px;
     color: #787985;
     line-height: 1.5;
 }
@@ -945,7 +960,7 @@
 .kkt-dm-item-meta {
     display: block;
     margin-top: 4px;
-    font-size: 11.5px;
+    font-size: 13px;
     font-weight: 500;
     line-height: 1.5;
     color: #94a3b8;
@@ -992,7 +1007,7 @@
 }
 
 .kkt-dm-foot-text {
-    font-size: 12.5px;
+    font-size: 13px;
     color: #787985;
 }
 
@@ -1084,7 +1099,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     padding: 2px 7px;
     border-radius: 999px;
@@ -1127,28 +1142,29 @@
     gap: 8px;
 }
 
-/* Con số THẬT SỰ vào KPI - phải là thứ đọc được đầu tiên trên thẻ. */
+/* Con số THẬT SỰ vào KPI - phải là thứ đọc được đầu tiên trên thẻ, nhưng vẫn
+   thấp hơn .stat-value (24px) một bậc vì thẻ stat mới là mức đọc đầu trang. */
 .kkt-tran-tinh {
-    font-size: 21px;
+    font-size: 20px;
     font-weight: 800;
     color: #0f766e;
     line-height: 1;
 }
 
 .kkt-tran-tran {
-    font-size: 12px;
+    font-size: 13px;
     color: #64748b;
     font-weight: 600;
 }
 
 .kkt-tran-phu {
-    font-size: 11.5px;
+    font-size: 13px;
     color: #94a3b8;
     line-height: 1.5;
 }
 
 .kkt-tran-canh-bao {
-    font-size: 11.5px;
+    font-size: 13px;
     line-height: 1.45;
     color: #b45309;
 }
@@ -1170,7 +1186,7 @@
 
 .kkt-tran-tong b {
     color: #0f766e;
-    font-size: 16px;
+    font-size: 15px;
 }
 
 /* ---- Banner liệt kê dòng có vấn đề ------------------------------ */
@@ -1182,7 +1198,7 @@
     border: 1px solid #fecaca;
     background: #fef2f2;
     color: #991b1b;
-    font-size: 13.5px;
+    font-size: 14px;
     line-height: 1.55;
 }
 
@@ -1210,7 +1226,7 @@
     border: 1px solid #fecaca;
     border-radius: 7px;
     padding: 7px 10px;
-    font-size: 12.5px;
+    font-size: 13px;
     color: #7f1d1d;
     cursor: pointer;
     width: 100%;
@@ -1226,12 +1242,12 @@
 
 .kkt-vande-meta {
     color: #b91c1c;
-    font-size: 11.5px;
+    font-size: 13px;
 }
 
 .kkt-vande-note {
     margin-top: 10px;
-    font-size: 12.5px;
+    font-size: 13px;
     color: #7f1d1d;
 }
 
@@ -1270,12 +1286,13 @@
     min-width: 0;
 }
 
+/* Cùng quy ước nhãn nhỏ in hoa với .nckh-moc-ten (ThanhTichNckh.css). */
 .kkt-dong2-nhan {
-    font-size: 11.5px;
+    font-size: 13px;
     font-weight: 600;
     color: #64748b;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
 }
 
 .kkt-dong2-rong {
@@ -1312,7 +1329,7 @@
 }
 
 .kkt-nhom-dem {
-    font-size: 12px;
+    font-size: 13px;
     color: #64748b;
 }
 
@@ -1328,7 +1345,7 @@
 }
 
 .kkt-nhom-khoa-note {
-    font-size: 12.5px;
+    font-size: 13px;
     color: #64748b;
     font-style: italic;
 }
@@ -1340,4 +1357,70 @@
     color: #64748b;
     padding: 2px 6px;
     font-size: 13px;
+}
+
+/* ================================================================== */
+/* ĐỒNG BỘ THANG CHỮ DÙNG CHUNG TRONG PHẠM VI MODULE                   */
+/*                                                                     */
+/* Giống cách .tq-page (TongQuanCaNhan.css) và .nckh-page              */
+/* (ThanhTichNckh.css) làm: Pages.css và QuanLyChamDiem.css còn phục vụ */
+/* màn chấm điểm và hồ sơ KPI nên KHÔNG sửa trực tiếp, chỉ đè tại đây.  */
+/* Không có khối này thì thẻ stat của module rơi về mặc định 13px/20px, */
+/* nhỏ hơn hẳn các trang cá nhân khác.                                  */
+/* ================================================================== */
+
+.kkt-page .stat-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 5px;
+}
+
+.kkt-page .stat-value {
+    font-size: 24px;
+}
+
+.kkt-page .sub-title {
+    font-size: 14px;
+    color: #475569;
+    letter-spacing: 0.02em;
+}
+
+.kkt-page .cd-label {
+    font-size: 14px;
+    color: #334155;
+}
+
+.kkt-page .cd-hint {
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* Bắt buộc: .kkt-page .cd-hint (0,2,0) thắng .cd-hint-warn (0,1,0) nên nếu
+   không lặp lại ba biến thể màu ở đây thì toàn bộ banner cảnh báo / lỗi / đã
+   chốt sẽ bị đổ về xám. */
+.kkt-page .cd-hint-warn {
+    color: #b45309;
+}
+
+.kkt-page .cd-hint-error {
+    color: #dc2626;
+}
+
+.kkt-page .cd-hint-ok {
+    color: #047857;
+}
+
+@media screen and (max-width: 576px) {
+    .kkt-page .stat-value {
+        font-size: 22px;
+    }
+
+    .kkt-title {
+        font-size: 21px;
+    }
+
+    .kkt-tran-tinh {
+        font-size: 18px;
+    }
 }

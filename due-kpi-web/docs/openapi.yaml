@@ -1157,10 +1157,21 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: Binary file (pdf, doc, docx, xls, xlsx, png, jpg, jpeg; max 10 MB)
+                  description: >-
+                    Binary file - CHI nhan PDF va tep hinh anh (pdf, png, jpg, jpeg; max 10 MB).
+                    Kiem HAI LOP: duoi file phai nam trong whitelist VA noi dung phai khop
+                    chu ky (magic bytes) cua duoi do - doi duoi se bi tu choi 400.
+                    Cac dinh dang Office (doc/docx/xls/xlsx) KHONG con duoc chap nhan; ban ghi
+                    cu da upload truoc do van tai xuong binh thuong.
                 tenHienThi:
                   type: string
                   description: Optional display name. Defaults to the file's base name.
+                rowVersion:
+                  type: string
+                  description: >-
+                    row_version cua PHIEU cha (base64, 8 byte) - TUY CHON. Khong gui thi
+                    bo qua kiem tra optimistic concurrency (tuong thich nguoc). Gui gia tri
+                    cu se nhan 409 CONCURRENCY_CONFLICT.
               required:
                 - file
       responses:
@@ -1171,7 +1182,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/MinhChungResponse"
         "400":
-          description: Bad Request (missing file, invalid extension, file too large)
+          description: >-
+            Bad Request (thieu file, sai duoi file, file qua lon, noi dung khong khop
+            chu ky dinh dang, hoac RowVersion sai dinh dang)
           content:
             application/json:
               schema:
@@ -1195,6 +1208,8 @@ paths:
             phieu - dong vua bi tra ve van ghi minh chung duoc du phieu o trang thai 2.
             Han lay theo giai doan phieu: trang thai 1 -> ngay_dong_tu_danh_gia;
             trang thai 2 -> ngay_dong_danh_gia_cap_tren.
+            Cung tra 409 voi ErrorCode = CONCURRENCY_CONFLICT khi rowVersion duoc gui
+            nhung khong con khop row_version hien tai cua phieu.
           content:
             application/json:
               schema:
@@ -1292,8 +1307,8 @@ paths:
       description: >
         Tra ve tep. Mac dinh Content-Disposition: attachment (ten file goc); truyen
         inline=1 de doi sang inline cho FE xem truoc trong iframe / tab moi.
-        Content-Type suy tu loai_file - minh chung phieu cho phep
-        pdf/doc/docx/xls/xlsx/png/jpg nen khong co dinh mot kieu; duoi la se tra
+        Content-Type suy tu loai_file - upload moi chi con pdf/png/jpg/jpeg, nhung ban ghi
+        CU van co the la doc/docx/xls/xlsx nen khong co dinh mot kieu; duoi la se tra
         application/octet-stream. Chi ap dung cho minh chung LoaiMinhChung = 1 (File);
         loai 2 (Link) / 3 (DOI) khong co tep tren dia.
         Quyen doc giong GET api/chitiet/{idChiTiet}/minh-chung: chu phieu, cap Truong
@@ -1316,8 +1331,8 @@ paths:
           description: >
             inline=1 -> Content-Disposition: inline. Chi co hieu luc voi cac kieu trinh
             duyet render an toan (application/pdf, image/png, image/jpeg); cac kieu con
-            lai (doc/docx/xls/xlsx, octet-stream) van tra attachment de tranh nguy co
-            stored XSS neu whitelist duoi file duoc mo rong. Bo qua / khac 1 -> attachment.
+            lai (doc/docx/xls/xlsx cua du lieu CU, octet-stream) van tra attachment de
+            tranh nguy co stored XSS. Bo qua / khac 1 -> attachment.
           schema:
             type: integer
             enum: [1]
@@ -1457,8 +1472,9 @@ paths:
                 $ref: "#/components/schemas/MinhChungResponse"
         "400":
           description: >
-            Khong truyen truong nao, vuot do dai (255 / 500), hoac
-            ErrorCode = MINH_CHUNG_LA_FILE (co doi DuongDan cua minh chung dang tep)
+            Khong truyen truong nao, vuot do dai (255 / 500),
+            ErrorCode = MINH_CHUNG_LA_FILE (co doi DuongDan cua minh chung dang tep),
+            hoac RowVersion sai dinh dang
           content:
             application/json:
               schema:
@@ -1481,6 +1497,8 @@ paths:
           description: >-
             Dong tieu chi khong o trang_thai_dong = 1 KE_KHAI, hoac da qua han
             (theo giai doan phieu - xem PhieuKiemTraHopLeDto.HanNop).
+            Cung tra 409 voi ErrorCode = CONCURRENCY_CONFLICT khi RowVersion duoc gui
+            nhung khong con khop row_version hien tai cua phieu.
           content:
             application/json:
               schema:
@@ -1488,7 +1506,11 @@ paths:
     delete:
       tags:
         - MinhChung
-      summary: Soft-delete an evidence record (physical file kept on disk)
+      summary: Soft-delete an evidence record (physical file is also removed)
+      description: >
+        Ban ghi duoc xoa mem (da_xoa = 1). Voi minh chung dang File (loai 1), tep vat ly
+        trong App_Data/uploads cung bi xoa - don rac best-effort, xoa tep that bai khong
+        lam hong request vi ban ghi da duoc danh dau da_xoa.
       operationId: minhChungDelete
       parameters:
         - name: idMinhChung
@@ -1496,9 +1518,24 @@ paths:
           required: true
           schema:
             type: integer
+        - name: rowVersion
+          in: query
+          required: false
+          description: >-
+            row_version cua PHIEU cha (base64, 8 byte) - TUY CHON. DELETE khong co body
+            nen gia tri di qua query string; chuoi base64 chua '+', '/', '=' nen PHAI
+            URL-encode. Khong gui thi bo qua kiem tra optimistic concurrency.
+          schema:
+            type: string
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungResponse"
+        "400":
+          description: RowVersion sai dinh dang (khong phai base64 hoac khac 8 byte)
           content:
             application/json:
               schema:
@@ -1519,6 +1556,8 @@ paths:
           description: >-
             Dong tieu chi khong o trang_thai_dong = 1 KE_KHAI, hoac da qua han
             (theo giai doan phieu - xem PhieuKiemTraHopLeDto.HanNop).
+            Cung tra 409 voi ErrorCode = CONCURRENCY_CONFLICT khi rowVersion duoc gui
+            nhung khong con khop row_version hien tai cua phieu.
           content:
             application/json:
               schema:
@@ -1535,6 +1574,8 @@ paths:
         Nguon: Web.config appSettings (allowedEvidenceExtensions, maxEvidenceFileSizeKb)
         va gioi han cot cua bang minh_chung — doc lai tu dung ham ma luong upload dung
         (MinhChungService) nen khong the lech cau hinh.
+        LUU Y: code co TRAN CUNG pdf/png/jpg/jpeg; appSettings chi THU HEP duoc danh sach
+        nay chu khong noi rong duoc, nen AllowedExtensions luon la tap con cua tran do.
         Khong truy van DB, khong phu thuoc user (chi can token hop le).
       operationId: cauHinhMinhChung
       responses:
@@ -2141,6 +2182,11 @@ paths:
                 file:
                   type: string
                   format: binary
+                  description: >-
+                    File Excel (.xls / .xlsx); toi da 100 MB (appSettings
+                    allowedImportExtensions / maxImportFileSizeKb).
+                    Kiem HAI LOP: duoi file phai la .xls/.xlsx VA noi dung phai khop chu ky
+                    (magic bytes ZIP/OLE2) - doi duoi se bi tu choi 400.
                 namHoc:
                   type: integer
                 maDonVi:
@@ -2153,7 +2199,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/PhanHoiSinhVienImportResponse"
         "400":
-          description: Thieu file/tham so, file khong doc duoc, hoac khong co dong hop le
+          description: >-
+            Thieu file/tham so, tep rong, sai dinh dang (chi nhan .xls/.xlsx), noi dung
+            khong khop chu ky, vuot 100 MB, file khong doc duoc, hoac khong co dong hop le
           content:
             application/json:
               schema:
@@ -6094,6 +6142,318 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChiTietDanhGiaDonViResponse"
+  /api/chi-tiet-don-vi/{idChiTiet}/minh-chung/file:
+    post:
+      tags:
+        - PhieuDonVi
+      summary: Upload minh chung (file) cho 1 tieu chi cua phieu don vi
+      description: >
+        Minh chung TUY CHON - khong bat buoc de nop phieu. sp_phieu_dv_submit KHONG kiem
+        bat_buoc_minh_chung, nen co hay khong co minh chung phieu van nop duoc; co
+        ChiTietDanhGiaDonViDto.BatBuocMinhChung chi de FE danh dau tieu chi nen dinh kem.
+        Quyen GHI: ADMIN, hoac TKK/TKP TAI DUNG don vi cua phieu (chuc vu va don vi phai
+        khop tren cung mot dong pham vi - giu chuc vu o don vi khac khong mang sang duoc),
+        va phieu phai o trang_thai = 1. Giong het PUT .../diem-nhap.
+        Whitelist duoi file va gioi han dung luong dung chung voi luong ca nhan - doc qua
+        GET api/cau-hinh/minh-chung.
+        KHONG nhan / KHONG doi RowVersion cua phieu: them minh chung khong sua du lieu
+        cham diem nen khong duoc lam hong thao tac cham diem dang do cua nguoi khac.
+      operationId: minhChungDonViUploadFile
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          description: id_chi_tiet_dv (chi_tiet_danh_gia_don_vi), KHONG phai id_chi_tiet cua luong ca nhan.
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: >
+                    Tep nhi phan. Duoi file va dung luong toi da theo appSettings
+                    allowedEvidenceExtensions / maxEvidenceFileSizeKb (mac dinh
+                    pdf, png, jpg, jpeg; toi da 10 MB). CHI nhan PDF va tep hinh anh.
+                    Kiem HAI LOP giong luong ca nhan: duoi file phai nam trong whitelist
+                    VA noi dung phai khop chu ky (magic bytes) cua duoi do - doi duoi se
+                    bi tu choi 400.
+                tenHienThi:
+                  type: string
+                  description: Ten hien thi (tuy chon). Bo trong -> lay ten tep khong ke duoi.
+              required:
+                - file
+      responses:
+        "201":
+          description: Created - Item la ban ghi minh chung vua tao
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "400":
+          description: >
+            Thieu tep, duoi file khong duoc phep, tep rong hoac vuot dung luong
+            (ErrorCode = VALIDATION_FAILED), hoac luu tep that bai (ErrorCode = IO_ERROR)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN - khong phai TKK/TKP cua don vi nay, cung khong phai ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "404":
+          description: ErrorCode = NOT_FOUND - khong tim thay chi tiet danh gia don vi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "409":
+          description: ErrorCode = INVALID_STATE - phieu khong con o trang_thai = 1 (da nop / da duyet / da chot)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "415":
+          description: Request khong phai multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+  /api/chi-tiet-don-vi/{idChiTiet}/minh-chung/link:
+    post:
+      tags:
+        - PhieuDonVi
+      summary: Them minh chung dang Link / DOI cho 1 tieu chi cua phieu don vi
+      description: >
+        Rang buoc quyen va trang thai giong het POST .../minh-chung/file.
+        Khong co tep tren dia - FE mo thang DuongDan.
+      operationId: minhChungDonViAddLink
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          description: id_chi_tiet_dv (chi_tiet_danh_gia_don_vi).
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MinhChungDonViAddLinkRequest"
+      responses:
+        "201":
+          description: Created - Item la ban ghi minh chung vua tao
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "400":
+          description: ErrorCode = VALIDATION_FAILED - thieu TenHienThi / DuongDan, hoac vuot do dai (255 / 500)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "404":
+          description: ErrorCode = NOT_FOUND - khong tim thay chi tiet danh gia don vi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "409":
+          description: ErrorCode = INVALID_STATE - phieu khong con o trang_thai = 1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "422":
+          description: ErrorCode = VALIDATION_FAILED - Loai khac 2 (Link) va 3 (DOI)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+  /api/chi-tiet-don-vi/{idChiTiet}/minh-chung:
+    get:
+      tags:
+        - PhieuDonVi
+      summary: Danh sach minh chung (chua xoa) cua 1 tieu chi phieu don vi
+      description: >
+        Tien cho man hinh cham diem tung dong; neu can toan bo phieu thi GET
+        api/phieu-don-vi/{id} da tra san minh chung o moi dong chi tiet.
+        Quyen DOC rong hon quyen GHI: ADMIN/HT toan he thong; TKK/TKP/TK/TKL/TP trong
+        pham vi don vi (giong GET api/phieu-don-vi/{id}). KHONG rang buoc trang thai -
+        phieu da chot van xem lai duoc minh chung.
+        Tieu chi chua co minh chung -> Items la mang rong, khong phai null.
+      operationId: minhChungDonViGetByChiTiet
+      parameters:
+        - name: idChiTiet
+          in: path
+          required: true
+          description: id_chi_tiet_dv (chi_tiet_danh_gia_don_vi).
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK - Items la danh sach minh chung, sap xep theo ngay tai len tang dan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN - don vi cua phieu nam ngoai pham vi cua nguoi goi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "404":
+          description: ErrorCode = NOT_FOUND - khong tim thay chi tiet danh gia don vi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+  /api/minh-chung-don-vi/{idMinhChung}/tai-ve:
+    get:
+      tags:
+        - PhieuDonVi
+      summary: Tai tep minh chung don vi ve (ho tro xem truoc inline)
+      description: >
+        Mac dinh Content-Disposition: attachment (ten tep goc); truyen inline=1 de doi
+        sang inline cho FE xem truoc trong iframe / tab moi.
+        Content-Type suy tu loai_file - upload moi chi con pdf/png/jpg/jpeg, nhung ban ghi
+        CU van co the la doc/docx/xls/xlsx nen khong co dinh mot kieu; duoi la se tra
+        application/octet-stream.
+        Chi ap dung cho LoaiMinhChung = 1 (File); loai 2 (Link) / 3 (DOI) khong co tep tren dia.
+        Quyen doc giong GET api/chi-tiet-don-vi/{idChiTiet}/minh-chung, khong rang buoc trang thai phieu.
+        Endpoint nam sau [TokenAuthorize], nhung filter co fallback doc cookie httpOnly
+        kpi_access_token nen the a/iframe van xac thuc duoc khi FE cung-site.
+        Response luon kem X-Content-Type-Options: nosniff.
+      operationId: minhChungDonViTaiVe
+      parameters:
+        - name: idMinhChung
+          in: path
+          required: true
+          description: id_minh_chung_dv (minh_chung_don_vi).
+          schema:
+            type: integer
+        - name: inline
+          in: query
+          required: false
+          description: >
+            inline=1 -> Content-Disposition: inline. Chi co hieu luc voi cac kieu trinh
+            duyet render an toan (application/pdf, image/png, image/jpeg); cac kieu con
+            lai van tra attachment de tranh nguy co stored XSS neu whitelist duoi file
+            duoc mo rong. Bo qua / khac 1 -> attachment.
+          schema:
+            type: integer
+            enum: [1]
+      responses:
+        "200":
+          description: Noi dung tep
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: >
+            idMinhChung <= 0 (ErrorCode = VALIDATION_FAILED), hoac
+            ErrorCode = MINH_CHUNG_KHONG_PHAI_FILE (minh chung la Link/DOI - phan hoi
+            kem Item de FE mo thang DuongDan)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "404":
+          description: >
+            ErrorCode = NOT_FOUND (khong ton tai / da xoa mem) hoac
+            FILE_NOT_FOUND (metadata con nhung tep da mat tren may chu)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+  /api/minh-chung-don-vi/{idMinhChung}:
+    delete:
+      tags:
+        - PhieuDonVi
+      summary: Xoa minh chung cua phieu don vi (xoa mem + don tep vat ly)
+      description: >
+        Xoa mem ban ghi (da_xoa = 1) roi xoa tep tren dia neu la LoaiMinhChung = 1.
+        Rang buoc giong POST: ADMIN hoac TKK/TKP tai dung don vi cua phieu, va phieu
+        phai o trang_thai = 1. Don tep la best-effort - tep xoa that bai khong lam
+        hong request vi ban ghi da duoc danh dau da_xoa.
+      operationId: minhChungDonViDelete
+      parameters:
+        - name: idMinhChung
+          in: path
+          required: true
+          description: id_minh_chung_dv (minh_chung_don_vi).
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK - Item la null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "400":
+          description: ErrorCode = VALIDATION_FAILED - idMinhChung <= 0
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "404":
+          description: ErrorCode = NOT_FOUND - khong ton tai hoac da bi xoa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
+        "409":
+          description: ErrorCode = INVALID_STATE - phieu khong con o trang_thai = 1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViResponse"
   /api/gio-giang-import:
     get:
       tags:
@@ -6194,7 +6554,11 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: File Excel (.xls / .xlsx) theo mau "Tong hop gio giang".
+                  description: >-
+                    File Excel (.xls / .xlsx) theo mau "Tong hop gio giang"; toi da 100 MB
+                    (appSettings allowedImportExtensions / maxImportFileSizeKb).
+                    Kiem HAI LOP: duoi file phai la .xls/.xlsx VA noi dung phai khop chu ky
+                    (magic bytes ZIP/OLE2) - doi duoi se bi tu choi 400.
                 kyHoc:
                   type: integer
                   description: "Ky hoc: 261/262/263 (2 so dau = nam hoc, so cuoi = ky)."
@@ -6209,7 +6573,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/GioGiangImportResponse"
         "400":
-          description: Bad Request (thieu file/kyHoc, khong doc duoc Excel, du lieu khong hop le)
+          description: >-
+            Bad Request (thieu file/kyHoc, tep rong, sai dinh dang (chi nhan .xls/.xlsx),
+            noi dung khong khop chu ky, vuot 100 MB, khong doc duoc Excel, du lieu khong hop le)
           content:
             application/json:
               schema:
@@ -12848,6 +13214,13 @@ components:
             - 2
             - 3
           description: "2 = generic URL, 3 = DOI / academic URL"
+        RowVersion:
+          type: string
+          nullable: true
+          description: >-
+            row_version cua PHIEU cha (base64, 8 byte) - TUY CHON. Khong gui thi bo qua
+            kiem tra optimistic concurrency (tuong thich nguoc voi FE cu). Gui gia tri cu
+            se nhan 409 ErrorCode = CONCURRENCY_CONFLICT.
     MinhChungResponse:
       type: object
       properties:
@@ -12858,10 +13231,12 @@ components:
         ErrorCode:
           type: string
           description: >
-            Ma loi on dinh cho FE phan nhanh. Chi xuat hien tren cac phan hoi loi cua
-            GET api/minhchung/{idMinhChung}/tai-ve (MINH_CHUNG_NOT_FOUND,
-            FORBIDDEN_CHUC_VU, MINH_CHUNG_KHONG_PHAI_FILE, FILE_NOT_FOUND);
-            bi bo qua khi serialize neu null.
+            Ma loi on dinh cho FE phan nhanh; bi bo qua khi serialize neu null.
+            GET api/minhchung/{idMinhChung}/tai-ve: MINH_CHUNG_NOT_FOUND,
+            FORBIDDEN_CHUC_VU, MINH_CHUNG_KHONG_PHAI_FILE, FILE_NOT_FOUND.
+            PUT api/minhchung/{idMinhChung}: MINH_CHUNG_LA_FILE.
+            Cac endpoint ghi (POST file / POST link / PUT / DELETE) khi gui RowVersion
+            khong con khop: CONCURRENCY_CONFLICT (409).
         Item:
           $ref: "#/components/schemas/MinhChungDto"
         Items:
@@ -12870,7 +13245,9 @@ components:
             $ref: "#/components/schemas/MinhChungDto"
     MinhChungUpdateRequest:
       type: object
-      description: Ca hai truong deu tuy chon; NULL / rong = giu nguyen gia tri cu.
+      description: >-
+        TenHienThi / DuongDan deu tuy chon; NULL / rong = giu nguyen gia tri cu
+        (phai truyen it nhat mot trong hai).
       properties:
         TenHienThi:
           type: string
@@ -12881,6 +13258,13 @@ components:
           nullable: true
           maxLength: 500
           description: Chi ap dung cho minh chung dang Link (2) / DOI (3).
+        RowVersion:
+          type: string
+          nullable: true
+          description: >-
+            row_version cua PHIEU cha (base64, 8 byte) - TUY CHON. Khong gui thi bo qua
+            kiem tra optimistic concurrency (tuong thich nguoc voi FE cu). Gui gia tri cu
+            se nhan 409 ErrorCode = CONCURRENCY_CONFLICT.
     MinhChungKhoDto:
       type: object
       description: Minh chung kem ngu canh tieu chi / phieu / nam (dung cho man hinh Kho minh chung).
@@ -13052,11 +13436,11 @@ components:
           description: Duoi file duoc phep, KHONG kem dau cham.
           items:
             type: string
-          example: ["pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg"]
+          example: ["pdf", "png", "jpg", "jpeg"]
         Accept:
           type: string
           description: Chuoi gan thang vao input[type=file] accept.
-          example: ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+          example: ".pdf,.png,.jpg,.jpeg"
         MaxFileSizeKb:
           type: integer
           description: Gioi han dung luong 1 tep (KB). Nguon appSettings maxEvidenceFileSizeKb.
@@ -16206,8 +16590,16 @@ components:
         BatBuocMinhChung:
           type: boolean
           nullable: true
+          description: >
+            Snapshot tu tieu_chi_danh_gia. CHI mang tinh hien thi - minh chung phieu don vi
+            la TUY CHON, sp_phieu_dv_submit khong chan nop khi tieu chi nay chua co minh chung.
         MinhChung:
           type: array
+          description: >
+            Minh chung (chua xoa) cua dong nay. Them / xoa qua
+            POST api/chi-tiet-don-vi/{idChiTiet}/minh-chung/file | /link va
+            DELETE api/minh-chung-don-vi/{idMinhChung}.
+            IdMinhChung o day la id_minh_chung_dv, IdChiTiet la id_chi_tiet_dv.
           items:
             $ref: "#/components/schemas/MinhChungDto"
     PhieuDanhGiaDonViDto:
@@ -16380,6 +16772,51 @@ components:
           format: byte
           nullable: true
           description: Base64 row_version moi cua PHIEU sau khi cham diem
+    MinhChungDonViAddLinkRequest:
+      type: object
+      required:
+        - TenHienThi
+        - DuongDan
+      properties:
+        TenHienThi:
+          type: string
+          maxLength: 255
+          description: Ten hien thi cua link
+        DuongDan:
+          type: string
+          maxLength: 500
+          description: URL day du hoac DOI
+        Loai:
+          type: integer
+          enum:
+            - 2
+            - 3
+          description: "2 = URL thong thuong, 3 = DOI / URL hoc thuat. Gia tri khac -> 422."
+    MinhChungDonViResponse:
+      type: object
+      description: >
+        Response cua cac endpoint minh chung phieu don vi. Tai dung MinhChungDto cua
+        luong ca nhan: id_minh_chung_dv -> IdMinhChung, id_chi_tiet_dv -> IdChiTiet
+        (hai bang co cung tap cot nen FE dung chung mot component cho ca hai luong).
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          description: >
+            Ma loi on dinh cho FE phan nhanh: VALIDATION_FAILED, FORBIDDEN, NOT_FOUND,
+            INVALID_STATE, IO_ERROR, FILE_NOT_FOUND, MINH_CHUNG_KHONG_PHAI_FILE.
+            Null khi thanh cong.
+        Item:
+          $ref: "#/components/schemas/MinhChungDto"
+        Items:
+          type: array
+          description: Chi co o GET .../minh-chung. Mang rong khi tieu chi chua co minh chung.
+          items:
+            $ref: "#/components/schemas/MinhChungDto"
     PhieuDanhGiaDonViCreateRequest:
       type: object
       required:

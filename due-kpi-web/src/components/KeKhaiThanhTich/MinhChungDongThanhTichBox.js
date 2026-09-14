@@ -217,7 +217,9 @@ const MinhChungDongThanhTichBox = ({
                 <i className="fa-solid fa-file-pdf"></i>
               </span>
               <div className="kkt-mc-cho-main">
-                <div className="kkt-mc-cho-ten">{item.file.name}</div>
+                <div className="kkt-mc-cho-ten" title={item.file.name}>
+                  {item.file.name}
+                </div>
                 <div className="kkt-mc-cho-meta">
                   {formatKb(Math.ceil(item.file.size / 1024))}
                   <span className="kkt-mc-cho-tag">

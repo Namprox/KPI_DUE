@@ -406,7 +406,7 @@ const ChiTietDuyetThanhTich = () => {
 
   if (isLoading) {
     return (
-      <div className="page-container">
+      <div className="page-container kkt-page">
         <div className="modern-table-card">
           <div className="cd-empty">
             <i className="fa-solid fa-spinner fa-spin"></i>
@@ -419,7 +419,7 @@ const ChiTietDuyetThanhTich = () => {
 
   if (loi || !banKe) {
     return (
-      <div className="page-container">
+      <div className="page-container kkt-page">
         <Toast ref={toast} position="top-right" />
         <div className="page-header">
           <button
@@ -629,7 +629,7 @@ const ChiTietDuyetThanhTich = () => {
   };
 
   return (
-    <div className="page-container">
+    <div className="page-container kkt-page">
       <Toast ref={toast} position="top-right" />
 
       <div className="page-header">

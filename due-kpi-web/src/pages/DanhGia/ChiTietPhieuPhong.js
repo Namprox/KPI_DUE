@@ -35,6 +35,12 @@ import {
   quyenPhieuPhong,
   tinhTongDiemPhongTamTinh,
 } from "../../utils/phieuPhongApi";
+import {
+  CAU_HINH_MC_MAC_DINH,
+  layCauHinhMinhChung,
+} from "../../utils/minhChungDonViApi";
+import { useMinhChungDonViPreview } from "../../hooks/useMinhChungDonViPreview";
+import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import LyDoModal from "../../components/QuanLyChamDiem/LyDoModal";
 import {
   TrangThaiDonViBadge,
@@ -102,9 +108,44 @@ const ChiTietPhieuPhong = () => {
   );
   const [dangGui, setDangGui] = useState(false);
 
+  const [cauHinhMc, setCauHinhMc] = useState(CAU_HINH_MC_MAC_DINH);
+
   const showToast = (severity, summary, detail, life = 4000) => {
     toast.current?.show({ severity, summary, detail, life });
   };
+
+  const baoLoiMc = useCallback((msg) => {
+    toast.current?.show({
+      severity: "error",
+      summary: "Minh chứng",
+      detail: msg,
+      life: 5000,
+    });
+  }, []);
+
+  const baoOkMc = useCallback((msg) => {
+    toast.current?.show({
+      severity: "success",
+      summary: "Minh chứng",
+      detail: msg,
+      life: 2500,
+    });
+  }, []);
+
+  const { preview, openPreview, closePreview, downloadMinhChung } =
+    useMinhChungDonViPreview(baoLoiMc);
+
+  // Whitelist đuôi tệp / dung lượng do server quyết; lỗi thì layCauHinhMinhChung
+  // đã tự rơi về mặc định nên không cần nhánh catch ở đây.
+  useEffect(() => {
+    let con = true;
+    layCauHinhMinhChung().then((ch) => {
+      if (con) setCauHinhMc(ch);
+    });
+    return () => {
+      con = false;
+    };
+  }, []);
 
   const taiPhieu = useCallback(
     async ({ imLang = false } = {}) => {
@@ -206,6 +247,32 @@ const ChiTietPhieuPhong = () => {
 
   const handleNhanXetChange = (idCt, val) =>
     setNhapNhanXet((prev) => ({ ...prev, [idCt]: val }));
+
+  /**
+   * Quyền thêm/gỡ minh chứng trùng đúng quyền ghi `diem-nhap`: thư ký của chính
+   * phòng đó, và phiếu còn ở trạng thái 1. Các cấp sau chỉ xem và tải về.
+   */
+  const choPhepSuaMinhChung = quyen.coTheNhap;
+
+  /**
+   * Vá danh sách minh chứng của MỘT dòng, ngay tại chỗ.
+   *
+   * ⚠️ KHÔNG đụng RowVersion và KHÔNG gọi taiPhieu(): endpoint minh chứng cố ý không
+   * đổi RowVersion của phiếu (xem docs/openapi.yaml), còn tải lại phiếu sẽ xoá sạch
+   * bản nháp điểm người dùng đang gõ dở ở các dòng khác.
+   */
+  const handleMinhChungChange = useCallback((idCt, dsMoi) => {
+    setPhieu((cur) =>
+      cur
+        ? {
+            ...cur,
+            ChiTiet: (cur.ChiTiet || []).map((dong) =>
+              dong.IdChiTietDv === idCt ? { ...dong, MinhChung: dsMoi } : dong,
+            ),
+          }
+        : cur,
+    );
+  }, []);
 
   const boNhapCuaDong = (idCt) => {
     setNhapDiem((cur) => {
@@ -593,6 +660,13 @@ const ChiTietPhieuPhong = () => {
         oDaSua={oDaSua}
         hanhDong={headerActions}
         tamTinh={tamTinh}
+        cauHinhMc={cauHinhMc}
+        choPhepSuaMinhChung={choPhepSuaMinhChung}
+        onMinhChungChange={handleMinhChungChange}
+        onXemMinhChung={openPreview}
+        onTaiMinhChung={downloadMinhChung}
+        onLoiMinhChung={baoLoiMc}
+        onOkMinhChung={baoOkMc}
       />
 
       {moChuyenTiep && buocChuyenTiep && (
@@ -674,6 +748,17 @@ const ChiTietPhieuPhong = () => {
           </div>
         </LyDoModal>
       )}
+
+      <FilePreviewModal
+        isOpen={preview.isOpen}
+        fileName={preview.mc?.TenHienThi || preview.mc?.TenFileGoc}
+        kieu={preview.kieu}
+        url={preview.url}
+        isLoading={preview.isLoading}
+        error={preview.error}
+        onClose={closePreview}
+        onDownload={() => downloadMinhChung(preview.mc)}
+      />
     </div>
   );
 };

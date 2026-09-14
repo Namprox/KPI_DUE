@@ -16,7 +16,12 @@
  * ăn 403. Server vẫn kiểm tra lại - không được coi đây là hàng rào bảo mật.
  */
 
-import { normalizeRole, ROLE } from "./roles";
+import {
+  coQuyenTaiDonVi,
+  donViTheoVaiTro,
+  normalizeRole,
+  ROLE,
+} from "./roles";
 import { buildDonViIndex } from "./viPhamPermissions";
 import { TRANG_THAI_DONG, laTieuChiChamTay } from "./phieuApi";
 
@@ -43,6 +48,42 @@ const ROLE_TRUONG_KHOA = ["TK", "TKL"];
  */
 export const laTruongKhoa = (user) =>
   ROLE_TRUONG_KHOA.includes(normalizeRole(user));
+
+/**
+ * Danh sách Phòng / Trung tâm mà tôi đang là Trưởng phòng.
+ *
+ * Dùng để dựng bộ lọc đơn vị của màn hình chốt hồ sơ nhân viên. Một người có thể
+ * là TP ở NHIỀU đơn vị (kiêm nhiệm), và mỗi đơn vị là một hàng đợi riêng biệt:
+ * khóa phiếu là `uq_phieu_unique (id_nam, id_nhan_vien, id_don_vi)` nên cùng một
+ * người có thể có hai phiếu trong cùng một năm.
+ *
+ * Trả mảng RỖNG với HT/Admin - họ có hiệu lực toàn hệ thống chứ không giữ chức
+ * vụ TP ở đâu cả. Xem donViTheoVaiTro() để biết vì sao đó là câu trả lời đúng.
+ */
+export const phongToiPhuTrach = (user) =>
+  donViTheoVaiTro([ROLE.TRUONG_PHONG], user);
+
+/**
+ * Tôi có phải Trưởng phòng CỦA ĐÚNG đơn vị chủ quản hồ sơ này không?
+ *
+ * KHÁC laTruongPhong(user) ở trên: hàm kia chỉ đọc `MaChucVu` vô hướng nên trả
+ * true cho một TP đang mở hồ sơ của Phòng KHÁC - đủ để lọc danh sách tiêu chí
+ * hiển thị, KHÔNG đủ để bật nút chốt hồ sơ. Ở đây điều kiện phải là cặp (đơn vị,
+ * chức vụ) trên CÙNG MỘT DÒNG user.DonVi[], đúng bằng luật server gác
+ * POST phieu/{id}/khoa/duyet-ho-so: "truong don vi CHU QUAN cua ho so ... trong
+ * pham vi cay don vi cua minh".
+ *
+ * CỐ Ý không đụng tới laTruongKhoa(): TK/TKL vẫn chốt hồ sơ qua màn hình
+ * /quan-ly/duyet-ho-so của họ, luật ở đó không đổi.
+ *
+ * Admin nhận false (ROLE.ADMIN không nằm trong tập truyền vào coQuyenTaiDonVi
+ * nên đường tắt của hàm đó không kích hoạt) - với Admin màn hình chốt chạy ở chế
+ * độ chỉ xem. Có chủ đích, xem ROLE_SETS.DUYET_HO_SO_NHAN_VIEN.
+ *
+ * Vẫn chỉ là lớp gợi ý UI - server kiểm tra lại và trả 403.
+ */
+export const laTruongPhongCuaPhieu = (user, phieu) =>
+  coQuyenTaiDonVi([ROLE.TRUONG_PHONG], phieu?.IdDonVi, user);
 
 /**
  * `idCha` có phải chính nó hoặc tổ tiên của `idCon` không (đi ngược IdDonViCha).

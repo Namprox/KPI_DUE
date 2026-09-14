@@ -891,6 +891,48 @@ export const nopLaiPhieu = async (idPhieu, { nhanXet, rowVersion } = {}) =>
 /* ------------------------------------------------------------------ */
 
 /**
+ * Dry-run của bước chốt: đúng những con số màn hình chốt cần, tính bằng chính
+ * công thức `sp_phieu_khoa_duyet_ho_so` sẽ dùng, KHÔNG ghi gì vào DB.
+ *
+ * VÌ SAO CẦN: ba cột `tong_diem_*` và `xep_loai_de_xuat` chỉ được UPDATE trong
+ * chính giao dịch chốt, nên GET phieu/{id} trả NULL cho cả bốn - mà đây lại đúng
+ * là màn hình đứng TRƯỚC cái nút chốt đó. Trước khi có endpoint này các màn hình
+ * chốt phải chạy lại công thức ở client (tinhTongDiemTamTinh + tinhXepLoaiGoiY);
+ * hai hàm đó vẫn giữ làm ĐƯỜNG LÙI khi gọi hỏng, nhưng số của server mới là số
+ * sẽ được lưu nên đây là nguồn ưu tiên.
+ *
+ * ⚠️ `CacMucChonDuoc` = 1..XepLoaiDeXuat, và KHÔNG BAO GIỜ chứa mức 4. Trưởng
+ * đơn vị không nâng xếp loại được ở bước này (400 CAM_NANG_XEP_LOAI) - hãy render
+ * đúng mảng này, mức nằm ngoài phải hiện "đã khóa" kèm `GiaiThichMucDeXuat`,
+ * đừng tự dựng danh sách mức từ XEP_LOAI_KHOA_CHON.
+ *
+ * Ba tham số là ba ô điều kiện người dùng đang tick; bỏ trống thì server dùng kết
+ * luận tự động / giá trị đã lưu. PHẢI gọi lại mỗi khi người dùng đổi một trong
+ * ba, nếu không con số trên màn hình sẽ lệch con số lúc chốt.
+ *
+ * Response PHẲNG (PhieuXemTruocChotResponse), KHÔNG bọc trong Item/Items.
+ *
+ * AI GỌI: giống khoaDuyetHoSo - TK/TKL/TP trong phạm vi cây đơn vị của mình,
+ * hoặc ADMIN.
+ *
+ * @param {boolean} [duNckh]      bỏ qua với viên chức (loai_doi_tuong = 2)
+ * @param {boolean} [khongViPham]
+ * @param {0|1|2}   [qd838]       server ép null khi không phải GV hoặc năm < 2025
+ */
+export const fetchXemTruocChot = async (
+  idPhieu,
+  { duNckh, khongViPham, qd838 } = {},
+) =>
+  getJson(
+    `phieu/${idPhieu}/xem-truoc-chot${buildQuery({
+      duNckh,
+      khongViPham,
+      qd838,
+    })}`,
+    "Không tính trước được kết quả chốt hồ sơ",
+  );
+
+/**
  * Trưởng khoa chốt hồ sơ cá nhân và chọn tay xếp loại (phiếu 3 → 4).
  *
  * Thay thế cả POST /truong/duyet lẫn POST /chot của luồng cũ. Server tính lại

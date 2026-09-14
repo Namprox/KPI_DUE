@@ -227,6 +227,27 @@ export const ROLE_SETS = {
    * gì ở các màn hình này. Admin nằm ngoài ràng buộc đơn vị, xem hasDonVi().
    */
   GIAM_SAT_GIANG_DAY: [ROLE.TRUONG_PHONG, ROLE.ADMIN],
+
+  /**
+   * Giai đoạn 3 trên hồ sơ KPI của NHÂN VIÊN / VIÊN CHỨC (loai_doi_tuong = 2):
+   * Trưởng phòng chốt hồ sơ của chính Phòng mình và chọn xếp loại (tối đa mức 2).
+   *
+   * CỐ Ý tách khỏi TRUONG_KHOA dù server dùng CHUNG một endpoint
+   * (POST phieu/{id}/khoa/duyet-ho-so mở cho cả TK/TKL/TP - xem openapi.yaml).
+   * Lý do tách là MÀN HÌNH chứ không phải thẩm quyền: /quan-ly/duyet-ho-so dựng
+   * cho hồ sơ giảng viên - QĐ 838, định mức giờ NCKH, hạn ngạch xuất sắc 20%,
+   * tờ trình Khoa - không thứ nào áp dụng cho phiếu ở Phòng. Nhét TP vào tập kia
+   * là mở cho họ một màn hình sai nghiệp vụ VÀ kéo theo cả /quan-ly/to-trinh.
+   *
+   * TK/TKL nằm ngoài: nhân viên văn phòng Khoa cũng là loai_doi_tuong = 2 nhưng
+   * họ đã có lối đi ở /quan-ly/duyet-ho-so, màn hình đó đã rẽ nhánh theo
+   * laVienChuc. Thêm TK vào đây chỉ đẻ ra hai lối vào cho cùng một hồ sơ.
+   *
+   * Admin có mặt để xem và hỗ trợ vận hành. Họ không giữ chức vụ TP tại đơn vị
+   * nào nên laTruongPhongCuaPhieu() trả false và panel chốt tự ẩn - với Admin
+   * trang chạy ở chế độ CHỈ XEM. Đây là lựa chọn có chủ đích, không phải sót.
+   */
+  DUYET_HO_SO_NHAN_VIEN: [ROLE.TRUONG_PHONG, ROLE.ADMIN],
 };
 
 /**
@@ -308,6 +329,46 @@ export const coQuyenTaiDonVi = (roles, idDonVi, user) => {
   const targetId = Number(idDonVi);
   return donViList.some((dv) => {
     if (Number(dv.IdDonVi) !== targetId) return false;
+    const dvRole = String(dv.MaChucVu || "")
+      .trim()
+      .toUpperCase();
+    return dvRole && roleArray.includes(dvRole);
+  });
+};
+
+/**
+ * Các đơn vị mà người dùng ĐANG GIỮ một trong các chức vụ đã cho.
+ *
+ * Anh em "liệt kê" của coQuyenTaiDonVi(): cùng một luật - chức vụ và đơn vị phải
+ * nằm TRÊN CÙNG MỘT DÒNG của user.DonVi[] - chỉ khác là trả về danh sách thay vì
+ * boolean. Màn hình nào phải hỏi "tôi phụ trách những đơn vị nào" để dựng bộ lọc
+ * thì dùng hàm này, đừng tự duyệt user.DonVi[] tại chỗ: kiêm nhiệm là ca bình
+ * thường, và mỗi nơi tự duyệt là mỗi nơi quên một nhánh.
+ *
+ * CỐ Ý KHÔNG có đường tắt cho ADMIN/HT như coQuyenTaiDonVi: hai vai trò đó có
+ * hiệu lực toàn hệ thống chứ không giữ chức vụ tại đơn vị nghiệp vụ nào, nên câu
+ * trả lời đúng cho họ là mảng RỖNG. Bên gọi tự lo lối đi riêng (ví dụ bày bộ
+ * chọn đơn vị lấy từ danh mục /donvi).
+ *
+ * @param {string[]|string} roles Tập mã chức vụ cần tìm
+ * @param {object} user
+ * @returns {{IdDonVi:number, MaDonVi?:string, TenDonVi?:string, MaChucVu:string}[]}
+ */
+export const donViTheoVaiTro = (roles, user) => {
+  if (!user) return [];
+
+  const roleArray = (Array.isArray(roles) ? roles : [roles]).map((r) =>
+    String(r).trim().toUpperCase(),
+  );
+
+  const donViList =
+    Array.isArray(user?.DonVi) && user.DonVi.length > 0
+      ? user.DonVi
+      : user?.IdDonVi
+        ? [{ IdDonVi: user.IdDonVi, MaChucVu: user.MaChucVu, LaChinh: true }]
+        : [];
+
+  return donViList.filter((dv) => {
     const dvRole = String(dv.MaChucVu || "")
       .trim()
       .toUpperCase();

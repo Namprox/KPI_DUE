@@ -48,6 +48,8 @@ import DanhSachPhieu from "../pages/QuanLyChamDiem/DanhSachPhieu";
 import ChamDiemPhieu from "../pages/QuanLyChamDiem/ChamDiemPhieu";
 import DuyetHoSoKhoa from "../pages/QuanLyChamDiem/DuyetHoSoKhoa";
 import ChotHoSoKhoa from "../pages/QuanLyChamDiem/ChotHoSoKhoa";
+import DuyetHoSoPhong from "../pages/QuanLyChamDiem/DuyetHoSoPhong";
+import ChotHoSoPhong from "../pages/QuanLyChamDiem/ChotHoSoPhong";
 import ToTrinhKhoa from "../pages/QuanLyChamDiem/ToTrinhKhoa";
 import HoSoKpiGiangVien from "../pages/QuanLyChamDiem/HoSoKpiGiangVien";
 import BaoCaoDonVi from "../pages/QuanLyChamDiem/BaoCaoDonVi";
@@ -182,6 +184,14 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/quan-ly/phieu/:id" element={<ChamDiemPhieu />} />
         <Route path="/quan-ly/duyet-ho-so" element={<DuyetHoSoKhoa />} />
         <Route path="/quan-ly/duyet-ho-so/:id" element={<ChotHoSoKhoa />} />
+        <Route
+          path="/quan-ly/ho-so-nhan-vien"
+          element={<DuyetHoSoPhong />}
+        />
+        <Route
+          path="/quan-ly/ho-so-nhan-vien/:id"
+          element={<ChotHoSoPhong />}
+        />
         <Route path="/quan-ly/to-trinh" element={<ToTrinhKhoa />} />
         <Route
           path="/quan-ly/giang-vien/:idNv"

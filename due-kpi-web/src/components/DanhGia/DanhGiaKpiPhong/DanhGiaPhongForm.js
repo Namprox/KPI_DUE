@@ -10,6 +10,7 @@ import {
   TRUONG_DIEM_CUA_CAP,
   diemDangHienThi,
 } from "../../../utils/phieuPhongApi";
+import MinhChungDonViBox from "./MinhChungDonViBox";
 
 const THU_TU_CAP = [CAP_CHAM.NHAP, CAP_CHAM.DUYET_DV, CAP_CHAM.TRUONG];
 
@@ -27,6 +28,9 @@ const THU_TU_CAP = [CAP_CHAM.NHAP, CAP_CHAM.DUYET_DV, CAP_CHAM.TRUONG];
  *    dòng hiện dải Thư ký → Trưởng phòng → Cấp Trường để cấp trên thấy cấp dưới
  *    đã cho bao nhiêu. Ở trạng thái 1 chỉ có một lớp nên dải này ẩn, và màn hình
  *    trông đúng như bên Khoa.
+ *
+ * Khối minh chứng nằm NGOÀI nhánh `truongCuaCap &&`: cấp đã hết lượt chấm (và cả
+ * phiếu đã chốt) vẫn phải xem lại được tệp đính kèm, chỉ mất quyền thêm/gỡ.
  */
 const DanhGiaPhongForm = ({
   phieu,
@@ -44,6 +48,13 @@ const DanhGiaPhongForm = ({
   oDaSua,
   hanhDong = null,
   tamTinh = null,
+  cauHinhMc,
+  choPhepSuaMinhChung = false,
+  onMinhChungChange,
+  onXemMinhChung,
+  onTaiMinhChung,
+  onLoiMinhChung,
+  onOkMinhChung,
 }) => {
   const truongCuaCap = cap ? TRUONG_DIEM_CUA_CAP[cap] : null;
 
@@ -181,6 +192,12 @@ const DanhGiaPhongForm = ({
                           )}
                         </div>
                         <div className="pl2-criteria-header-side">
+                          {ct.BatBuocMinhChung && (
+                            <span className="phong-mc-badge">
+                              <i className="fa-solid fa-paperclip"></i> Cần minh
+                              chứng
+                            </span>
+                          )}
                           {hasScore && (
                             <span className="pl2-criteria-score">
                               <i className="fa-solid fa-circle-check"></i>{" "}
@@ -376,6 +393,24 @@ const DanhGiaPhongForm = ({
                         </>
                       )}
 
+                      <div className="phong-mc-khoi">
+                        <span className="phong-mc-nhan">
+                          <i className="fa-solid fa-paperclip"></i> Minh chứng
+                        </span>
+                        <MinhChungDonViBox
+                          idChiTiet={idCt}
+                          danhSach={ct.MinhChung || []}
+                          choPhepSua={choPhepSuaMinhChung}
+                          batBuoc={!!ct.BatBuocMinhChung}
+                          cauHinh={cauHinhMc}
+                          onChange={(ds) => onMinhChungChange?.(idCt, ds)}
+                          onXem={onXemMinhChung}
+                          onTai={onTaiMinhChung}
+                          onError={onLoiMinhChung}
+                          onSuccess={onOkMinhChung}
+                        />
+                      </div>
+
                       {choPhepNhap && (
                         <div className="pl2-criteria-footer">
                           <div>
@@ -392,15 +427,7 @@ const DanhGiaPhongForm = ({
                                 ></i>{" "}
                                 Đã lưu điểm
                               </span>
-                            ) : (
-                              <span className="pl2-criteria-status-hint">
-                                <i
-                                  className="fa-regular fa-circle"
-                                  style={{ color: "#94a3b8" }}
-                                ></i>{" "}
-                                Chưa có điểm
-                              </span>
-                            )}
+                            ) : null}
                           </div>
 
                           <div>

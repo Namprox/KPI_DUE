@@ -175,7 +175,7 @@ const DuyetKeKhaiThanhTich = () => {
   };
 
   return (
-    <div className="page-container">
+    <div className="page-container kkt-page">
       <Toast ref={toast} position="top-right" />
 
       <div className="page-header">
@@ -276,7 +276,12 @@ const DuyetKeKhaiThanhTich = () => {
             <div className="stat-value" style={{ color: "#7e22ce" }}>
               {tong.dongCuaToi}
             </div>
-            <div className="stat-label">trên trang hiện tại</div>
+            {/* Dòng chú thích dưới số dùng .cd-hint chứ không phải .stat-label:
+                .stat-label là nhãn tiêu đề (đậm), dùng lại ở đây sẽ thành chữ
+                đậm ngang hàng với tiêu đề thẻ. */}
+            <div className="cd-hint" style={{ marginTop: 0 }}>
+              trên trang hiện tại
+            </div>
           </div>
         </div>
         <div className="stat-card">
@@ -286,7 +291,7 @@ const DuyetKeKhaiThanhTich = () => {
           <div>
             <div className="stat-label">Bản kê khớp bộ lọc</div>
             <div className="stat-value">{tong.soBanKe}</div>
-            <div className="stat-label">
+            <div className="cd-hint" style={{ marginTop: 0 }}>
               {tong.dongChoDuyet} dòng chưa xét (mọi đơn vị)
             </div>
           </div>

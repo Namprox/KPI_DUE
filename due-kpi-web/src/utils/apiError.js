@@ -59,6 +59,10 @@ export const PHIEU_ERROR_MESSAGES = {
   // sẽ nói sai với ít nhất một luồng.
   QUA_HAN: null,
   CHUA_CHOT_HET: "Còn tiêu chí chưa được thẩm định xong, chưa chốt được hồ sơ",
+  CAM_NANG_XEP_LOAI:
+    "Không nâng được xếp loại ở bước này - chỉ được giữ nguyên hoặc hạ so với mức hệ thống đề xuất",
+  DIEM_KHONG_DU:
+    "Tổng điểm tích lũy chưa đủ cho mức xếp loại bạn chọn (mức 2 cần từ 80 điểm, mức 3 cần trên 100 điểm)",
   VUOT_MUC_VIEN_CHUC:
     "Viên chức / người lao động chỉ được xếp tối đa mức 2 (Hoàn thành nhiệm vụ)",
   CHUA_DU_HO_SO:

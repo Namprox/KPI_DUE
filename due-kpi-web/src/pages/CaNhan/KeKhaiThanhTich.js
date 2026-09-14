@@ -807,17 +807,25 @@ const KeKhaiThanhTich = () => {
                     {ct.MoTa && <div className="kkt-mo-ta">{ct.MoTa}</div>}
                     {(ct.MinhChung || []).length > 0 && (
                       <div className="kkt-mc-list">
-                        {ct.MinhChung.map((mc) => (
-                          <button
-                            key={mc.IdMinhChungTt}
-                            type="button"
-                            className="cd-link-btn"
-                            onClick={() => openPreview(mc)}
-                          >
-                            <i className="fa-solid fa-file-pdf"></i>{" "}
-                            {mc.TenHienThi || mc.TenFileGoc}
-                          </button>
-                        ))}
+                        {ct.MinhChung.map((mc) => {
+                          const tenMc =
+                            mc.TenHienThi || mc.TenFileGoc || "Tệp minh chứng";
+                          return (
+                            <button
+                              key={mc.IdMinhChungTt}
+                              type="button"
+                              className="cd-link-btn kkt-mc-link"
+                              onClick={() => openPreview(mc)}
+                              title={`Xem trước: ${tenMc}`}
+                            >
+                              <i className="fa-solid fa-file-pdf"></i>
+                              {/* Tên tệp phải nằm trong span riêng: .cd-link-btn
+                                  là inline-flex nên text-overflow đặt thẳng lên
+                                  nút sẽ không cắt được chuỗi text trần. */}
+                              <span className="kkt-mc-ten">{tenMc}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </td>
@@ -1086,14 +1094,13 @@ const KeKhaiThanhTich = () => {
   };
 
   return (
-    <div className="page-container">
+    <div className="page-container kkt-page">
       <Toast ref={toast} position="top-right" />
 
       <div className="page-header">
         <h2 className="kkt-title">Kê khai thành tích vượt trội</h2>
         <span className="breadcrumb">
-          Sáng kiến, khen thưởng, đào tạo bồi dưỡng và phong trào của Trường -
-          bạn kê từng thành tích, đơn vị phụ trách duyệt rồi cộng vào KPI
+          Sáng kiến, khen thưởng, đào tạo bồi dưỡng và phong trào của Trường
         </span>
       </div>
 

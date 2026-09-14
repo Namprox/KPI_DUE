@@ -271,6 +271,27 @@ export const MENU_GROUPS = [
         childPaths: ["/quan-ly/duyet-ho-so/:id"],
       },
       {
+        // Giai đoạn 3 phía PHÒNG - Trưởng phòng chốt hồ sơ nhân viên / viên chức
+        // của chính Phòng mình. Song song với "Duyệt hồ sơ KPI" ở trên (của
+        // Trưởng khoa, hồ sơ giảng viên): hai tập vai trò RỜI NHAU nên một người
+        // chỉ thấy đúng một trong hai mục.
+        //
+        // Server dùng chung một endpoint cho cả hai (POST phieu/{id}/khoa/
+        // duyet-ho-so mở cho TK/TKL/TP), nên đây là tách MÀN HÌNH chứ không phải
+        // tách thẩm quyền - màn hình của Trưởng khoa đầy thứ không áp dụng cho
+        // Phòng (QĐ 838, định mức NCKH, hạn ngạch xuất sắc, tờ trình Khoa).
+        //
+        // Chấm điểm từng tiêu chí (giai đoạn 2) KHÔNG ở đây - Trưởng phòng dùng
+        // chung /quan-ly/phieu/:id với mọi trưởng đơn vị khác.
+        name: "Chốt hồ sơ nhân viên",
+        icon: "fa-solid fa-user-shield",
+        path: "/quan-ly/ho-so-nhan-vien",
+        roles: ROLE_SETS.DUYET_HO_SO_NHAN_VIEN,
+        // Màn hình chốt không có mục sidebar riêng nhưng PHẢI khai ở đây, nếu
+        // không <RequireRole> chặn khi mở bằng URL (canAccessPath fail closed).
+        childPaths: ["/quan-ly/ho-so-nhan-vien/:id"],
+      },
+      {
         // Giai đoạn 4 phía Khoa - đóng gói hạn ngạch xuất sắc rồi trình Hiệu trưởng.
         name: "Tờ trình KPI Khoa",
         icon: "fa-solid fa-file-signature",
