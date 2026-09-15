@@ -1,6 +1,13 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { formatDiem } from "../../../utils/phieuApi";
-import { laDongChamTay, LOAI_NHOM_DV } from "../../../utils/phieuDonViApi";
+import {
+  coTieuChiDiemTruTapThe,
+  laDongChamTay,
+  LOAI_NHOM_DV,
+} from "../../../utils/phieuDonViApi";
+// Thẻ diễn giải dùng chung với màn hình Thống kê vi phạm Khoa - đổi tên khi import
+// để hợp quy ước PascalCase của JSX trong thư mục này.
+import DiemTruTapTheCard from "../../QuanLyKeHoach/QL_ThongKeViPhamKhoa/QL_DiemTruTapTheCard";
 
 /**
  * Biểu mẫu nhập liệu Đánh giá KPI Đơn vị - phân cấp 2 tầng nhóm (Nhóm cha A, B -> Nhóm con I, II... -> Tiêu chí).
@@ -14,15 +21,35 @@ const DanhGiaDonViForm = ({
   nhapDiem = {},
   nhapNhanXet = {},
   choPhepNhap = false,
-  idDangLuu = null,
+  /** Đang chạy lượt lưu - khoá mọi ô nhập cho tới khi xong. */
+  dangLuu = false,
   onDiemChange,
   onNhanXetChange,
-  onLuuDong,
   oDaSua,
   hanhDong = null,
   tamTinh = null,
   tongHop = null,
+  diemTruKhoa = null,
+  loiTongHop = "",
 }) => {
+  /**
+   * Số liệu điểm trừ tập thể để diễn giải.
+   *
+   * Ưu tiên khối `TongHop` vừa nhận từ POST tong-hop-kpi; chưa có (vừa tải lại
+   * trang) thì lấy dòng đọc riêng từ GET vi-pham/diem-tru-khoa. Hai DTO trùng
+   * đúng 5 trường cần dùng vì cùng đọc `fn_diem_tru_tap_the_khoa`.
+   *
+   * Phiếu không có tiêu chí nào dùng mã đó thì đừng hiện thẻ: với phiếu Phòng/TT
+   * các con số này đều bằng 0, bày ra chỉ gây hiểu nhầm.
+   */
+  const soLieuDiemTru = !coTieuChiDiemTruTapThe(chiTietList)
+    ? null
+    : tongHop?.DiemTruTapThe != null
+      ? tongHop
+      : diemTruKhoa;
+
+  /** Diễn giải điểm trừ tập thể mặc định ẩn - bảng công thức dài, mở khi cần xem. */
+  const [moDienGiaiDiemTru, setMoDienGiaiDiemTru] = useState(false);
   // Lấy điểm hiện tại của một tiêu chí (ưu tiên số đang gõ nháp, rồi đến điểm của server)
   const getScoreOf = (ct) => {
     const idCt = ct.IdChiTietDv;
@@ -158,6 +185,14 @@ const DanhGiaDonViForm = ({
         </div>
       )}
 
+      {loiTongHop && (
+        <div className="cd-hint cd-hint-warn" style={{ marginBottom: "20px" }}>
+          <i className="fa-solid fa-triangle-exclamation"></i> Chưa tổng hợp
+          được điểm tự động ({loiTongHop}). Các tiêu chí tự động có thể đang giữ
+          điểm cũ - hãy bấm <b>Tổng hợp KPI</b> để thử lại.
+        </div>
+      )}
+
       {tongHop && (
         <div className="cd-hint cd-hint-ok" style={{ marginBottom: "20px" }}>
           <i className="fa-solid fa-circle-check"></i> Đã tổng hợp{" "}
@@ -220,7 +255,6 @@ const DanhGiaDonViForm = ({
                         const currentScore = getScoreOf(ct);
                         const hasScore = currentScore != null;
                         const daSua = oDaSua ? oDaSua(ct) : false;
-                        const dangLuu = idDangLuu === idCt;
                         const moNhap = choPhepNhap && chamTay;
 
                         const loaiThangDiem =
@@ -319,6 +353,38 @@ const DanhGiaDonViForm = ({
                                   })}
                                 </ul>
                               )}
+
+                              {/*
+                                Diễn giải điểm trừ tập thể - đặt ngay dưới đúng
+                                tiêu chí dùng mã đó, mặc định ẩn vì bảng công
+                                thức khá dài.
+                              */}
+                              {ct.CongThucSnapshot === "DIEM_TRU_TAP_THE" &&
+                                soLieuDiemTru && (
+                                  <div className="pl2-auto-dien-giai">
+                                    <button
+                                      type="button"
+                                      className="cd-link-btn"
+                                      aria-expanded={moDienGiaiDiemTru}
+                                      onClick={() =>
+                                        setMoDienGiaiDiemTru((mo) => !mo)
+                                      }
+                                    >
+                                      <i
+                                        className={`fa-solid ${moDienGiaiDiemTru ? "fa-chevron-up" : "fa-chevron-down"}`}
+                                      ></i>{" "}
+                                      {moDienGiaiDiemTru ? "Ẩn" : "Xem"} cách
+                                      tính điểm trừ tập thể
+                                    </button>
+
+                                    {moDienGiaiDiemTru && (
+                                      <DiemTruTapTheCard
+                                        data={soLieuDiemTru}
+                                        isLoading={false}
+                                      />
+                                    )}
+                                  </div>
+                                )}
                             </div>
                           );
                         }
@@ -463,8 +529,12 @@ const DanhGiaDonViForm = ({
                               }}
                             />
 
-                            {/* Thanh trạng thái & Nút lưu dòng nếu cho phép nhập */}
-                            {choPhepNhap && (
+                            {/*
+                              Thanh trạng thái của dòng. Không còn nút lưu riêng
+                              từng tiêu chí - mọi thay đổi lưu bằng nút "Lưu thay
+                              đổi" chung trên đầu biểu mẫu.
+                            */}
+                            {choPhepNhap && (daSua || hasScore) && (
                               <div className="pl2-criteria-footer">
                                 <div>
                                   {daSua ? (
@@ -472,7 +542,7 @@ const DanhGiaDonViForm = ({
                                       <i className="fa-solid fa-circle-dot"></i>{" "}
                                       Có thay đổi chưa lưu
                                     </span>
-                                  ) : hasScore ? (
+                                  ) : (
                                     <span className="pl2-criteria-status-hint">
                                       <i
                                         className="fa-solid fa-circle-check"
@@ -480,34 +550,7 @@ const DanhGiaDonViForm = ({
                                       ></i>{" "}
                                       Đã lưu điểm
                                     </span>
-                                  ) : (
-                                    <span className="pl2-criteria-status-hint">
-                                      <i
-                                        className="fa-regular fa-circle"
-                                        style={{ color: "#94a3b8" }}
-                                      ></i>{" "}
-                                      Chưa có điểm
-                                    </span>
                                   )}
-                                </div>
-
-                                <div>
-                                  <button
-                                    type="button"
-                                    className="btn-save-item"
-                                    disabled={!daSua || dangLuu}
-                                    onClick={() => onLuuDong(ct)}
-                                    title={
-                                      daSua
-                                        ? "Lưu điểm và ghi chú của tiêu chí này"
-                                        : "Chưa có thay đổi"
-                                    }
-                                  >
-                                    <i
-                                      className={`fa-solid ${dangLuu ? "fa-spinner fa-spin" : "fa-floppy-disk"}`}
-                                    ></i>
-                                    {dangLuu ? "Đang lưu..." : "Lưu tiêu chí"}
-                                  </button>
                                 </div>
                               </div>
                             )}

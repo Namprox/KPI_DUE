@@ -774,6 +774,18 @@
   color: #cbd5e1;
 }
 
+/* Khối diễn giải cách tính, đặt dưới tiêu chí tự động và mặc định thu gọn */
+.pl2-auto-dien-giai {
+  margin-top: 12px;
+}
+
+/* Thẻ dùng chung với màn hình thống kê vốn có lề dưới riêng - bỏ đi khi lồng
+   trong tiêu chí để không tạo khoảng trống thừa ở đáy. */
+.pl2-auto-dien-giai .modern-table-card {
+  margin-top: 12px;
+  margin-bottom: 0 !important;
+}
+
 .pl2-auto-thang-diem-item.selected .pl2-auto-thang-diem-icon {
   color: #1d4ed8;
 }

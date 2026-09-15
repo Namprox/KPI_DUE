@@ -107,6 +107,19 @@ export const laDongChamTay = (ct) =>
   Number(ct?.LoaiNguonDiem) !== NGUON_DIEM_DV.TU_DONG;
 
 /**
+ * Phiếu có tiêu chí chấm theo điểm trừ tập thể của Khoa hay không.
+ *
+ * `cong_thuc_snapshot` được CHỐT LÚC TẠO PHIẾU, nên đây mới là câu hỏi đúng thay
+ * vì suy từ mã đơn vị: `PhieuDanhGiaDonViDto` không trả `MaDonVi`, và một phiếu
+ * Khoa lập trước khi tiêu chí được gán mã thì cũng không có dòng này.
+ *
+ * Dùng để quyết định có hiển thị / tải số liệu diễn giải điểm trừ tập thể không.
+ */
+export const coTieuChiDiemTruTapThe = (chiTiet = []) =>
+  Array.isArray(chiTiet) &&
+  chiTiet.some((ct) => ct?.CongThucSnapshot === "DIEM_TRU_TAP_THE");
+
+/**
  * Điểm ĐANG có hiệu lực của một dòng, theo đúng thứ tự ưu tiên của ba cấp chấm:
  * điểm chính thức → điểm cấp Trường → điểm Trưởng đơn vị → điểm gốc của dòng
  * (thư ký gõ, hoặc hệ thống tổng hợp).

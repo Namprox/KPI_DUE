@@ -16,6 +16,7 @@ import {
   formatNgayGio,
 } from "../../utils/phieuApi";
 import {
+  coTieuChiDiemTruTapThe,
   diemHieuLucCuaDong,
   fetchPhieuDonViDetail,
   laDongChamTay,
@@ -25,6 +26,7 @@ import {
   trinhPhieuDonVi,
   TRANG_THAI_DV,
 } from "../../utils/phieuDonViApi";
+import { fetchDiemTruKhoa } from "../../utils/viPhamTongHopApi";
 import LyDoModal from "../../components/QuanLyChamDiem/LyDoModal";
 import {
   TrangThaiDonViBadge,
@@ -56,19 +58,23 @@ const ChiTietPhieuDonVi = () => {
   // Bản nháp cục bộ
   const [nhapDiem, setNhapDiem] = useState({});
   const [nhapNhanXet, setNhapNhanXet] = useState({});
-  const [idDangLuu, setIdDangLuu] = useState(null);
   const [dangLuuTatCa, setDangLuuTatCa] = useState(false);
 
-  const [gomDonViCon, setGomDonViCon] = useState(true);
   const [dangTongHop, setDangTongHop] = useState(false);
   const [tongHop, setTongHop] = useState(null);
+  const [loiTongHop, setLoiTongHop] = useState("");
+  // Số liệu điểm trừ tập thể đọc riêng để không mất khi tải lại trang (xem taiDiemTruKhoa)
+  const [diemTruKhoa, setDiemTruKhoa] = useState(null);
+  /** Chốt lần tổng hợp tự động: chỉ chạy một lần cho mỗi phiếu được mở. */
+  const daTuTongHop = useRef(false);
 
   const [moTrinh, setMoTrinh] = useState(false);
   const [dangTrinh, setDangTrinh] = useState(false);
 
-  const showToast = (severity, summary, detail, life = 4000) => {
+  // useCallback để dùng được trong deps của các hàm bên dưới; chỉ đụng ref nên ổn định.
+  const showToast = useCallback((severity, summary, detail, life = 4000) => {
     toast.current?.show({ severity, summary, detail, life });
-  };
+  }, []);
 
   const taiPhieu = useCallback(
     async ({ imLang = false } = {}) => {
@@ -244,6 +250,22 @@ const ChiTietPhieuDonVi = () => {
     [chiTietList],
   );
 
+  /**
+   * Dòng TỰ ĐỘNG vẫn rỗng sau khi đã tổng hợp.
+   *
+   * Không phải lỗi thao tác của thư ký mà là lỗi cấu hình: mã công thức chưa được
+   * hỗ trợ, hoặc phiếu được lập trước khi tiêu chí được gán mã (`cong_thuc_snapshot`
+   * chốt lúc tạo phiếu nên phiếu cũ không nhận mã mới). Vì vậy lời nhắc phải khác
+   * hẳn dòng chấm tay.
+   */
+  const dongTuDongThieuDiem = useMemo(
+    () =>
+      chiTietList.filter(
+        (ct) => !laDongChamTay(ct) && diemHieuLucCuaDong(ct) === null,
+      ),
+    [chiTietList],
+  );
+
   const oDaSua = useCallback(
     (ct) => {
       const idCt = ct.IdChiTietDv;
@@ -278,57 +300,6 @@ const ChiTietPhieuDonVi = () => {
       ...prev,
       [idCt]: val,
     }));
-  };
-
-  // Lưu một tiêu chí đơn lẻ
-  const handleLuuDong = async (ct) => {
-    const idCt = ct.IdChiTietDv;
-    setIdDangLuu(idCt);
-    try {
-      const { item, newRowVersion } = await nhapDiemChiTietDonVi(idCt, {
-        diem: giaTriO(nhapDiem[idCt], ct.DiemNhap),
-        nhanXet: giaTriO(nhapNhanXet[idCt], ct.NhanXetNhap),
-        rowVersion: phieu?.RowVersion,
-      });
-
-      setNhapDiem((cur) => {
-        const { [idCt]: _bo, ...conLai } = cur;
-        return conLai;
-      });
-      setNhapNhanXet((cur) => {
-        const { [idCt]: _bo, ...conLai } = cur;
-        return conLai;
-      });
-
-      if (!newRowVersion) {
-        await taiPhieu({ imLang: true });
-      } else {
-        setPhieu((cur) =>
-          cur
-            ? {
-              ...cur,
-              RowVersion: newRowVersion,
-              ChiTiet: (cur.ChiTiet || []).map((dong) =>
-                dong.IdChiTietDv === idCt && item
-                  ? { ...dong, ...item }
-                  : dong,
-              ),
-            }
-            : cur,
-        );
-      }
-      showToast(
-        "success",
-        "Đã lưu",
-        `Đã lưu điểm tiêu chí "${ct.TenTieuChi}".`,
-      );
-    } catch (error) {
-      console.error("Lỗi lưu điểm tiêu chí đơn vị:", error);
-      showToast("error", "Lưu thất bại", error.message);
-      if (error.isConflict) await taiPhieu({ imLang: true });
-    } finally {
-      setIdDangLuu(null);
-    }
   };
 
   // Lưu tất cả tiêu chí đã chỉnh sửa
@@ -384,35 +355,141 @@ const ChiTietPhieuDonVi = () => {
     }
   };
 
-  const handleTongHop = async () => {
-    setDangTongHop(true);
-    try {
-      const { item, tongHop: ketQua } = await tongHopKpiDonVi(id, {
-        baoGomDonViCon: gomDonViCon,
+  /**
+   * Chạy POST phieu-don-vi/{id}/tong-hop-kpi.
+   *
+   * `imLang` dành cho lần chạy tự động lúc mở phiếu: không báo thành công (người
+   * dùng không bấm gì thì đừng bắn toast), và lỗi chỉ hạ xuống banner cảnh báo
+   * chứ không được làm hỏng màn hình - thư ký vẫn còn nút bấm tay.
+   *
+   * @returns {object|null} phiếu mới sau khi tổng hợp, null nếu lỗi
+   */
+  const chayTongHop = useCallback(
+    async ({ imLang = false } = {}) => {
+      setDangTongHop(true);
+      try {
+        // Không gửi baoGomDonViCon: để server áp mặc định (true - gom cả cây đơn vị)
+        const { item, tongHop: ketQua } = await tongHopKpiDonVi(id);
+        setTongHop(ketQua);
+        setLoiTongHop("");
+        // Phải dùng phiếu của response: POST làm đổi RowVersion của phiếu cha,
+        // giữ state cũ là ăn 409 ở thao tác kế tiếp.
+        if (item) setPhieu(item);
+        else await taiPhieu({ imLang: true });
+        if (!imLang) {
+          showToast(
+            "success",
+            "Đã tổng hợp",
+            "Điểm của các tiêu chí tự động đã được cập nhật theo KPI thành viên.",
+          );
+        }
+        return item;
+      } catch (error) {
+        console.error("Lỗi tổng hợp KPI thành viên:", error);
+        setLoiTongHop(error.message);
+        if (!imLang) showToast("error", "Tổng hợp thất bại", error.message);
+        if (error.isConflict) await taiPhieu({ imLang: true });
+        return null;
+      } finally {
+        setDangTongHop(false);
+      }
+    },
+    [id, taiPhieu, showToast],
+  );
+
+  const handleTongHop = () => chayTongHop();
+
+  // Đổi sang phiếu khác thì cho phép tổng hợp tự động lại từ đầu
+  useEffect(() => {
+    daTuTongHop.current = false;
+    setTongHop(null);
+    setLoiTongHop("");
+    setDiemTruKhoa(null);
+  }, [id]);
+
+  /**
+   * Tổng hợp TỰ ĐỘNG ngay khi mở phiếu.
+   *
+   * VÌ SAO: trước đây điểm của dòng `LoaiNguonDiem = 2` chỉ được cập nhật khi thư
+   * ký nhớ bấm "Tổng hợp KPI". Quên bấm là phiếu lên Trưởng khoa với điểm rỗng -
+   * nặng nhất là tiêu chí DIEM_TRU_TAP_THE (mức TUÂN THỦ, thường 7,5đ): Khoa
+   * không vi phạm mà vẫn bị 0 vì chưa ai tổng hợp.
+   *
+   * Endpoint idempotent và chỉ ghi dòng tự động, không đụng `diem_nhap`, nên chạy
+   * lại vô hại. Vẫn chốt bằng ref để một lần mở phiếu chỉ POST một lần.
+   */
+  useEffect(() => {
+    if (!phieu || daTuTongHop.current) return;
+    // Đi thẳng từ phiếu này sang phiếu khác thì `id` đổi trước khi phiếu mới tải
+    // xong: chặn lại, đừng POST lên phiếu mới bằng trạng thái của phiếu cũ.
+    if (String(phieu.IdPhieuDv) !== String(id)) return;
+    // Chỉ trạng thái 1: từ trạng thái 2 phiếu đã khóa với thư ký, không tự ghi đè
+    // điểm của phiếu đang chờ duyệt.
+    if (!suaDuocPhieu(phieu)) return;
+    // Phiếu toàn tiêu chí chấm tay thì không có gì để tổng hợp
+    if (!chiTietList.some((ct) => !laDongChamTay(ct))) return;
+
+    daTuTongHop.current = true;
+    chayTongHop({ imLang: true });
+  }, [id, phieu, chiTietList, chayTongHop]);
+
+  /**
+   * Số liệu điểm trừ tập thể, đọc riêng bằng GET vi-pham/diem-tru-khoa.
+   *
+   * Khối `TongHop` chỉ có trong response của POST tong-hop-kpi nên tải lại trang
+   * là mất. Endpoint này đọc CÙNG hàm `fn_diem_tru_tap_the_khoa` (docs/schema_ghi_chu.md
+   * §3.2) nên số liệu khớp tuyệt đối, mà không phải POST ghi đè DB chỉ để xem.
+   *
+   * Chỉ gọi khi phiếu thật sự có tiêu chí dùng mã đó - `PhieuDanhGiaDonViDto`
+   * không trả `MaDonVi` nên không dùng được `laDonViPhongTrungTam`, và mã công
+   * thức trên chính phiếu là điều kiện chính xác hơn mã đơn vị.
+   */
+  useEffect(() => {
+    if (!phieu?.IdNam || !phieu?.IdDonVi) return;
+    // Phiếu cũ còn trong state khi vừa đổi id: đừng hiện số của đơn vị khác
+    if (String(phieu.IdPhieuDv) !== String(id)) return;
+    if (!coTieuChiDiemTruTapThe(chiTietList)) return;
+
+    let huy = false;
+    fetchDiemTruKhoa({ idNam: phieu.IdNam, idDonVi: phieu.IdDonVi })
+      .then((dong) => {
+        if (!huy) setDiemTruKhoa(dong);
+      })
+      .catch((error) => {
+        // Số liệu diễn giải, hỏng thì thôi - không được làm chết màn hình chấm điểm
+        console.error("Lỗi tải điểm trừ tập thể của Khoa:", error);
       });
-      setTongHop(ketQua);
-      if (item) setPhieu(item);
-      else await taiPhieu({ imLang: true });
-      showToast(
-        "success",
-        "Đã tổng hợp",
-        "Điểm của các tiêu chí tự động đã được cập nhật theo KPI thành viên.",
-      );
-    } catch (error) {
-      console.error("Lỗi tổng hợp KPI thành viên:", error);
-      showToast("error", "Tổng hợp thất bại", error.message);
-      if (error.isConflict) await taiPhieu({ imLang: true });
-    } finally {
-      setDangTongHop(false);
-    }
-  };
+    return () => {
+      huy = true;
+    };
+  }, [id, phieu?.IdPhieuDv, phieu?.IdNam, phieu?.IdDonVi, chiTietList]);
 
   const handleTrinh = async ({ lyDo }) => {
     setDangTrinh(true);
     try {
+      // Tổng hợp lại lần cuối: phiếu cá nhân của thành viên có thể đã đổi kể từ
+      // lúc mở màn hình, và sau bước này thư ký hết sửa được điểm.
+      let rowVersion = phieu?.RowVersion;
+      if (chiTietList.some((ct) => !laDongChamTay(ct))) {
+        const sauTongHop = await chayTongHop({ imLang: true });
+        if (!sauTongHop) {
+          // Thà không nộp còn hơn nộp phiếu mang điểm tự động cũ
+          setMoTrinh(false);
+          showToast(
+            "error",
+            "Chưa trình được phiếu",
+            "Không tổng hợp lại được điểm tự động nên phiếu chưa được trình. Vui lòng thử lại.",
+            6000,
+          );
+          return;
+        }
+        // POST tổng hợp vừa làm đổi RowVersion của phiếu: dùng lại giá trị cũ là 409
+        rowVersion = sauTongHop.RowVersion ?? rowVersion;
+      }
+
       const item = await trinhPhieuDonVi(id, {
         nhanXet: lyDo,
-        rowVersion: phieu?.RowVersion,
+        rowVersion,
       });
       setMoTrinh(false);
       if (item) setPhieu(item);
@@ -487,7 +564,7 @@ const ChiTietPhieuDonVi = () => {
       <button
         type="button"
         className="btn-luu-nhap"
-        disabled={soDongDaSua === 0 || dangLuuTatCa || idDangLuu !== null}
+        disabled={soDongDaSua === 0 || dangLuuTatCa}
         onClick={handleLuuTatCa}
         title="Lưu tất cả tiêu chí bạn đã sửa đổi"
       >
@@ -513,25 +590,6 @@ const ChiTietPhieuDonVi = () => {
         ></i>
         {dangTongHop ? "Đang tổng hợp..." : "Tổng hợp KPI"}
       </button>
-
-      <label
-        style={{
-          fontSize: "13px",
-          color: "#475569",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          cursor: "pointer",
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={gomDonViCon}
-          disabled={dangTongHop || dangLuuTatCa}
-          onChange={(e) => setGomDonViCon(e.target.checked)}
-        />
-        Gồm đơn vị con
-      </label>
 
       <button
         type="button"
@@ -622,14 +680,15 @@ const ChiTietPhieuDonVi = () => {
         nhapDiem={nhapDiem}
         nhapNhanXet={nhapNhanXet}
         choPhepNhap={choPhepNhap}
-        idDangLuu={idDangLuu}
+        dangLuu={dangLuuTatCa}
         onDiemChange={handleDiemChange}
         onNhanXetChange={handleNhanXetChange}
-        onLuuDong={handleLuuDong}
         oDaSua={oDaSua}
         hanhDong={headerActions}
         tamTinh={tamTinh}
         tongHop={tongHop}
+        diemTruKhoa={diemTruKhoa}
+        loiTongHop={loiTongHop}
       />
 
       {/* Modal xác nhận trình duyệt */}
@@ -654,6 +713,19 @@ const ChiTietPhieuDonVi = () => {
               <b>{dongChamTayThieuDiem.length}</b> tiêu chí chấm tay chưa có
               điểm. Nếu trình bây giờ thì Trưởng đơn vị sẽ nhận phiếu chưa đầy
               đủ điểm.
+            </div>
+          )}
+
+          {dongTuDongThieuDiem.length > 0 && (
+            <div
+              className="cd-hint cd-hint-warn"
+              style={{ marginBottom: "12px" }}
+            >
+              <i className="fa-solid fa-robot"></i> Có{" "}
+              <b>{dongTuDongThieuDiem.length}</b> tiêu chí tự động chưa có điểm
+              sau khi tổng hợp. Thường do mã công thức của tiêu chí chưa được hỗ
+              trợ, hoặc phiếu được lập trước khi tiêu chí được gán mã (khi đó
+              phải lập lại phiếu). Nên liên hệ quản trị trước khi trình.
             </div>
           )}
         </LyDoModal>
