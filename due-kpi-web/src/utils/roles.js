@@ -53,6 +53,21 @@ export const ROLE_SETS = {
   ],
 
   /**
+   * Nhóm được quản lý danh sách người dùng (/quan-ly-nguoi-dung).
+   * Gồm: Admin, BGH (HT, PHT) toàn trường, và Trưởng Khoa (TK, TKL), Trưởng Phòng (TP), Trưởng Bộ môn (TBM)
+   * trong phạm vi đơn vị mình phụ trách.
+   */
+  QUAN_LY_NGUOI_DUNG: [
+    ROLE.ADMIN,
+    ROLE.HIEU_TRUONG,
+    ROLE.PHO_HIEU_TRUONG,
+    ROLE.TRUONG_KHOA,
+    ROLE.TRUONG_KHOA_LON,
+    ROLE.TRUONG_PHONG,
+    ROLE.TRUONG_BO_MON,
+  ],
+
+  /**
    * Trưởng Khoa và Trưởng Khoa lớn - xem số liệu Khoa mình phụ trách, và là
    * nhóm DUY NHẤT được thực hiện giai đoạn 3–4 của quy trình đánh giá: chốt hồ
    * sơ cá nhân kèm chọn xếp loại, trả dòng về đơn vị thẩm định, đóng gói và

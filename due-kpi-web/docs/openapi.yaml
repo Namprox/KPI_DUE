@@ -6019,6 +6019,11 @@ paths:
       description: >-
         Tong hop diem KPI cac thanh vien thuoc don vi vao cac dong chi tiet co
         LoaiNguonDiem = 2 (tu dong). Response co them khoi TongHop.
+        Ma cong thuc: DIEM_TB_THANH_VIEN, TY_LE_XUAT_SAC, TY_LE_HOAN_THANH va
+        DIEM_TRU_TAP_THE. Rieng DIEM_TRU_TAP_THE tinh tu so vi pham cua Khoa
+        (MAX(0, DiemToiDa - DiemTruTapThe)) nen VAN chay ke ca khi chua co phieu
+        thanh vien nao duoc chot, trong khi ba ma con lai luc do ra 0.
+        Ma cong thuc la khong nhan dien: giu nguyen diem cu.
       operationId: phieuDonViTongHopKpi
       parameters:
         - name: id
@@ -12249,7 +12254,9 @@ components:
             NCKH_CHU_BIEN_THAM_KHAO, NCKH_THANH_VIEN_THAM_KHAO,
             NCKH_CHU_NHIEM_NN, NCKH_CHU_NHIEM_BO_TINH, NCKH_DE_TAI_CO_SO,
             PHSV_DIEM_TB_GTE_3, VPGD_TUAN_THU, NVK_PHAN_CONG_KHOA,
-            NCKH_GIO_TY_LE, NCKH_BBQT_DIEM_KPI.
+            NCKH_GIO_TY_LE, NCKH_BBQT_DIEM_KPI,
+            TTVT_SANG_KIEN, TTVT_KHEN_THUONG, TTVT_DAO_TAO, TTVT_PHONG_TRAO,
+            VPVC_HOAN_THANH_CV, VPVC_NOI_QUY, VPVC_CHINH_TRI.
 
             Riêng NCKH_BBQT_DIEM_KPI: điểm KHÔNG do phía KPI tính — phía NCKH đã tính
             sẵn ở nckh_kpi_bai_bao_quoc_te.diem_kpi_cuoi (FinalKpiScore), phía KPI chỉ
@@ -12276,6 +12283,18 @@ components:
             NGUYÊN VĂN từ phía NCKH, chỉ sàn ở 0 và chặn trần ở DiemToiDa. Phía KPI
             TUYỆT ĐỐI không tính lại từ Articles / TongDiemTacGia (quy đổi là nghiệp vụ
             bên NCKH). Không có dòng của năm đó, hoặc diem_kpi_cuoi null → 0.
+
+            Riêng 3 mã VPVC_* (vi phạm của viên chức / NLĐ, theo từng nhóm) cũng là điểm
+            TRỪ dần như VPGD_TUAN_THU, nhưng chỉ cộng các vi phạm THUỘC ĐÚNG MỘT NHÓM:
+            VPVC_HOAN_THANH_CV = nhóm "Hoàn thành công việc" (trần trừ 70),
+            VPVC_NOI_QUY = nhóm "Tuân thủ giờ giấc, tác phong, nội quy" (trần trừ 30),
+            VPVC_CHINH_TRI = nhóm "Chính trị, tư tưởng" (KHÔNG áp trần).
+            điểm = DiemToiDa − min(tổng diem_tru của nhóm trong năm, tran_diem_tru của nhóm),
+            sàn ở 0. Con số trừ này khớp tuyệt đối với DiemTruSauTran của
+            GET api/vi-pham/tong-hop-nhan-vien. Nhân viên KHÔNG có vi phạm nào thuộc nhóm
+            đó được trọn điểm. Nhóm ↔ mã công thức nối nhau qua nhom_vi_pham.ma_nhom
+            (seed trùng đúng mã công thức); nhóm chưa gán ma_nhom → không khớp vi phạm nào
+            → trọn điểm.
         IdThangDiemChon:
           type: integer
           nullable: true
@@ -12284,8 +12303,8 @@ components:
             preview dùng đúng quy tắc của sp_phieu_cham_tu_dong_apply nên không bao giờ lệch.
             Chỉ ánh xạ cho tiêu chí RỜI RẠC (loai_thang_diem = 1) và khớp CHÍNH XÁC
             gia_tri_diem = DiemTuDong.
-            null khi tiêu chí không rời rạc (VPGD_TUAN_THU là loại liên tục) hoặc điểm
-            không trùng mức nào. Ánh xạ KHÔNG làm thay đổi điểm số.
+            null khi tiêu chí không rời rạc (VPGD_TUAN_THU và 3 mã VPVC_* là loại liên
+            tục) hoặc điểm không trùng mức nào. Ánh xạ KHÔNG làm thay đổi điểm số.
         DieuKienDiem:
           type: string
           nullable: true
@@ -12389,8 +12408,15 @@ components:
           type: integer
           description: >
             1: Bài báo, 2: Sách, 3: Đề tài, 4: Phản hồi sinh viên,
-            5: Vi phạm giảng dạy (minh chứng TRỪ điểm của tiêu chí VPGD_TUAN_THU)
-          enum: [1, 2, 3, 4, 5]
+            5: Vi phạm giảng dạy (minh chứng TRỪ điểm của tiêu chí VPGD_TUAN_THU),
+            6: Nhiệm vụ Khoa phân công (NVK_PHAN_CONG_KHOA),
+            7: Thành tích vượt trội (4 mã TTVT_*),
+            8: Việc chưa tuân thủ của viên chức/NLĐ — minh chứng TRỪ điểm của 3 mã
+            VPVC_*, chỉ liệt kê vi phạm THUỘC ĐÚNG NHÓM của mã công thức đang xét.
+            Lưu ý với 5 và 8: danh sách rỗng KHÔNG có nghĩa là không đạt — không có
+            vi phạm nào tức là trọn điểm. Riêng 8, tổng các dòng có thể LỚN HƠN phần
+            điểm thực sự bị trừ khi tổng vượt trần trừ của nhóm (70 / 30).
+          enum: [1, 2, 3, 4, 5, 6, 7, 8]
         TenLoaiNguon:
           type: string
           example: Bài báo
@@ -14381,6 +14407,15 @@ components:
           type: integer
         TenNhom:
           type: string
+        MaNhom:
+          type: string
+          nullable: true
+          description: >
+            Ma nghiep vu on dinh cua nhom, TRUNG DUNG ma CongThucTongHop cua tieu chi
+            cham tu dong tuong ung: VPVC_HOAN_THANH_CV (tran 70), VPVC_NOI_QUY (tran 30),
+            VPVC_CHINH_TRI (khong tran). null = nhom chua gan cong thuc — toan bo 6 nhom
+            giang vien deu null, va tieu chi mang ma do se duoc cham TRON DIEM vi khong
+            khop vi pham nao.
         LoaiDoiTuong:
           type: integer
           enum: [1, 2]
@@ -16741,6 +16776,25 @@ components:
           type: integer
         DiemTrungBinh:
           type: number
+        TongDiemTruCaNhan:
+          type: number
+          description: >-
+            T - tong diem tru cua cac GV thuoc Khoa trong nam (moi GV da ap tran
+            15). Mau so cua ma cong thuc DIEM_TRU_TAP_THE.
+        SoGiangVien:
+          type: integer
+          description: N - so giang vien dang hoat dong cua Khoa.
+        SoGiangVienViPham:
+          type: integer
+          description: So giang vien co it nhat mot vi pham trong nam.
+        MauSo:
+          type: number
+          description: 0.2 * 15 * SoGiangVien. Bang 0 thi DiemTruTapThe = 0.
+        DiemTruTapThe:
+          type: number
+          description: >-
+            MIN(7.5 * TongDiemTruCaNhan / MauSo, 7.5). Cung nguon so voi
+            GET /api/vi-pham/diem-tru-khoa. Don vi khong phai Khoa: 0.
     PhieuDanhGiaDonViResponse:
       type: object
       properties:

@@ -499,7 +499,7 @@ export const MENU_GROUPS = [
         name: "Người dùng",
         icon: "fa-solid fa-users",
         path: "/quan-ly-nguoi-dung",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.QUAN_LY_NGUOI_DUNG,
         childPaths: [
           "/quan-ly-nguoi-dung/them-moi",
           "/quan-ly-nguoi-dung/chi-tiet/:id",
@@ -650,8 +650,14 @@ export const canAccessPath = (pathname, user) => {
   return canAccessRule(rule, user);
 };
 
+/**
+ * Mục menu đặt tên "[Mock] ..." là trang demo/dựng thử: vẫn vào được bằng URL
+ * trực tiếp (ROUTE_RULES không đổi) nhưng không hiện trên sidebar.
+ */
+const laMucMock = (item) => String(item?.name || "").startsWith("[Mock]");
+
 export const visibleItems = (group, user) =>
-  group.items.filter((item) => canAccessRule(item, user));
+  group.items.filter((item) => !laMucMock(item) && canAccessRule(item, user));
 
 export const visibleGroups = (user) =>
   MENU_GROUPS.map((group) => ({

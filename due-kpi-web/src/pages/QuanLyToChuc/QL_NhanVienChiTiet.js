@@ -12,12 +12,8 @@ const QL_NhanVienChiTiet = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const currentUser = user || {};
-  const roleCode = currentUser?.MaChucVu || "";
   const isAdmin = hasRole(ROLE_SETS.ADMIN, currentUser);
-  const canManage =
-    isAdmin ||
-    roleCode === "Admin" ||
-    ["HT", "PHT", "TK", "TBM"].includes(roleCode);
+  const canManage = hasRole(ROLE_SETS.QUAN_LY_NGUOI_DUNG, currentUser);
 
   const isEditing = !!id;
 

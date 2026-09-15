@@ -141,6 +141,25 @@ thu hồi = soft delete (dòng `da_xoa = 1` giữ làm lịch sử).
 
 ## 3. DỮ LIỆU NGUỒN (INPUT DATA)
 
+### 3.2.a. `nhom_vi_pham` — Nhóm nội dung, và cột `ma_nhom`
+`loai_doi_tuong` tách danh mục làm hai rổ: 6 nhóm giảng viên (`= 1`, không trần theo nhóm)
+và 3 nhóm viên chức/NLĐ (`= 2`, `tran_diem_tru` = 70 / 30 / NULL).
+
+`ma_nhom` (NVARCHAR(50), NULL, **unique index LỌC** `uq_nhom_vi_pham_ma` — filtered vì 6
+nhóm giảng viên đều phải NULL được) là mã nghiệp vụ ổn định, mirror
+`loai_vi_pham.ma_loai_vi_pham`. Nó được seed **TRÙNG ĐÚNG mã `cong_thuc_tong_hop`** của tiêu
+chí chấm tự động tương ứng (`VPVC_HOAN_THANH_CV` / `VPVC_NOI_QUY` / `VPVC_CHINH_TRI`), nên
+`fn_nckh_diem_tu_dong` chỉ cần `nvp.ma_nhom = @cong_thuc` — không có bảng ánh xạ, và thêm
+nhóm thứ 4 sau này chỉ phải seed thêm một mã.
+
+Lý do KHÔNG khoá theo `id_nhom_vp`: đó là IDENTITY, khác nhau giữa các môi trường.
+Lý do KHÔNG khoá theo `ten_nhom` / `thu_tu_hien_thi`: admin sửa được cả hai.
+
+`nhom_vi_pham` **không có SP create/update** — chỉ `sp_nhom_vi_pham_get_all`. Nhóm được quản
+lý trực tiếp trong DB, nên seed `ma_nhom` nằm ở `update_database.sql` và **có guard**: chỉ
+UPDATE khi tìm thấy đúng 1 nhóm `loai_doi_tuong = 2` khớp `tran_diem_tru`, ngược lại `PRINT`
+nhắc gán tay — không đoán, không tạo nhóm mới.
+
 ### 3.2.b. `loai_vi_pham` — Danh mục "việc chưa tuân thủ"
 15 nội dung, mặc định 1 điểm / 1 nội dung. Quyền ghi nhận của 1 loại = HỢP của 3 nguồn:
 
@@ -160,9 +179,41 @@ Lưu các vi phạm quy định giảng dạy trong năm để tính điểm tr�
   — xem view `v_giang_vien_khoa` trong procedure.sql.
 - KHÔNG bao gồm vi phạm pháp luật (xử lý qua `phieu_danh_gia.khong_vi_pham_phap_luat`).
 - Điểm trừ cá nhân = `MIN(SUM(diem_tru) trong năm, 15)`.
-- Điểm trừ tập thể của Khoa = `MIN(7.5 * T / (0.2 * 15 * N), 7.5)` — xem `sp_vi_pham_diem_tru_khoa`.
+- Điểm trừ tập thể của Khoa = `MIN(7.5 * T / (0.2 * 15 * N), 7.5)` — công thức nằm ở **inline TVF
+  `fn_diem_tru_tap_the_khoa(@id_don_vi, @id_nam)`**, là nguồn sự thật duy nhất. Hai nơi tiêu thụ:
+  `sp_vi_pham_diem_tru_khoa` (báo cáo `GET api/vi-pham/diem-tru-khoa`) và `sp_phieu_dv_tong_hop_kpi`
+  (mã công thức `DIEM_TRU_TAP_THE` chấm điểm tiêu chí KPI Khoa — xem §4.9-4.14). Sửa công thức chỉ
+  được sửa trong hàm; hai con số này lệch nhau là bảng đối chiếu trên FE vô nghĩa.
+  Hàm **luôn trả đúng 1 dòng**; đơn vị không phải Khoa (Phòng, `TNNCN`) → tất cả cột = 0.
 - Điểm tiêu chí "Tuân thủ đúng quy định về giảng dạy" (mã công thức `VPGD_TUAN_THU`,
   chấm tự động qua `fn_nckh_diem_tu_dong`) = `15 − SUM(diem_tru)` trong năm, sàn 0.
+
+**Viên chức / NLĐ — 3 tiêu chí, mỗi nhóm một tiêu chí.** Cùng bảng nguồn
+`vi_pham_giang_day` (tên bảng là di sản, nó lưu vi phạm của cả hai rổ), nhưng khác
+`VPGD_TUAN_THU` ở chỗ **lọc theo nhóm** và **áp trần của nhóm**:
+
+```
+diem = MAX(0, diem_toi_da − MIN(SUM(diem_tru) của nhóm trong năm, nhom_vi_pham.tran_diem_tru))
+```
+
+| Mã công thức | Nhóm | `tran_diem_tru` |
+|---|---|---|
+| `VPVC_HOAN_THANH_CV` | Hoàn thành công việc | 70 |
+| `VPVC_NOI_QUY` | Tuân thủ giờ giấc, tác phong, nội quy | 30 |
+| `VPVC_CHINH_TRI` | Chính trị, tư tưởng | NULL = không cắt |
+
+- **BẤT BIẾN:** phép gộp trong `fn_nckh_diem_tu_dong` phải cho ra đúng `diem_tru_sau_tran`
+  của `sp_vi_pham_tong_hop_nhan_vien`. Lệch nhau thì bảng tổng hợp trên FE không giải thích
+  được điểm trong phiếu. Mệnh đề lọc được **nhân bản** ở nhánh minh chứng `loai_nguon = 8`
+  của `fn_nckh_minh_chung_tu_dong` — sửa một bên phải sửa cả hai.
+- `INNER JOIN loai_vi_pham` loại luôn các dòng cũ `id_loai_vi_pham IS NULL` — đúng ý, chúng
+  không thuộc nhóm nào.
+- Nhóm chưa seed `ma_nhom` → không khớp dòng nào → **trọn điểm** (không phải NULL; NULL ở
+  hàm đó nghĩa là "mã chưa hỗ trợ" và làm engine giữ nguyên điểm cũ).
+- Tiêu chí phải đặt `loai_thang_diem = 2` (LIÊN TỤC), cùng lý do với `VPGD_TUAN_THU` — xem
+  mục 4.2.
+- Minh chứng `loai_nguon = 8` liệt kê tổng **THÔ**: khi tổng vượt trần 70/30 thì tổng các
+  dòng sẽ lớn hơn phần điểm thực sự bị trừ.
 
 Cột đáng chú ý:
 - `bi_ky_luat`: 1 = vi phạm này đã bị xử lý kỷ luật. HIỆN CHỈ LƯU — không ảnh hưởng
@@ -685,8 +736,8 @@ Quy tắc ánh xạ (engine và preview `sp_mau_danh_gia_diem_tu_dong` dùng chu
 - Khớp **CHÍNH XÁC** `thang_diem.gia_tri_diem = điểm vừa tính`; nhiều mức trùng giá trị thì
   lấy `MIN(thu_tu_hien_thi)` rồi `MIN(id_thang_diem)`.
 - Không khớp → NULL. Tiêu chí LIÊN TỤC (`loai_thang_diem = 2`, vd `VPGD_TUAN_THU` =
-  `15 − tổng diem_tru`) bị loại hẳn: điểm là phần còn lại sau khi trừ chứ không phải một
-  mức rời rạc, nên tuyệt đối không được kéo về mức nào.
+  `15 − tổng diem_tru`, và 3 mã `VPVC_*` của viên chức) bị loại hẳn: điểm là phần còn lại
+  sau khi trừ chứ không phải một mức rời rạc, nên tuyệt đối không được kéo về mức nào.
 - Ánh xạ **KHÔNG** làm thay đổi điểm số — chỉ là nhãn hiển thị (`dieu_kien_diem`) cho FE.
 - Engine ghi cả NULL (có chủ đích): chạy lại sau khi admin sửa `thang_diem` sẽ đồng bộ lại,
   không để sót map cũ đã sai.
@@ -765,6 +816,28 @@ Trạng thái `phieu_danh_gia_don_vi.trang_thai`:
 Ghi chú từng bảng:
 - **4.10 `chi_tiet_danh_gia_don_vi`**: `loai_nguon_diem` 1 = chấm thủ công (TKK/TKP nhập
   `diem_nhap`), 2 = tự động tổng hợp từ KPI thành viên (hệ thống điền `diem_tong_hop`).
+
+**Mã `cong_thuc_tong_hop` của phiếu đơn vị** (`loai_nguon_diem = 2`, dispatch bằng `CASE` trong
+`sp_phieu_dv_tong_hop_kpi`; mã lạ → giữ nguyên điểm cũ). `cong_thuc_snapshot` được **chốt lúc tạo
+phiếu** nên phiếu tạo trước khi gán tiêu chí sẽ không nhận mã mới — phải tạo lại phiếu.
+
+| Mã | Công thức | Nguồn |
+|---|---|---|
+| `DIEM_TB_THANH_VIEN` | `MIN(diem_toi_da, AVG(tong_diem_tich_luy))` | `phieu_danh_gia` đã chốt (`trang_thai = 5`) |
+| `TY_LE_XUAT_SAC` | `diem_toi_da * (số `xep_loai = 4` / tổng phiếu)` | nt |
+| `TY_LE_HOAN_THANH` | `diem_toi_da * (số `xep_loai IN (2,3,4)` / tổng phiếu)` | nt |
+| `DIEM_TRU_TAP_THE` | `MAX(0, diem_toi_da − diem_tru_tap_the)` | `fn_diem_tru_tap_the_khoa` (vi phạm của Khoa) |
+
+- Ba mã đầu phụ thuộc phiếu thành viên: **không có phiếu nào chốt → 0**.
+- `DIEM_TRU_TAP_THE` thì **không**: nó đọc từ số vi phạm, nên nhánh này nằm **TRƯỚC** guard
+  `@so_phieu = 0` trong `CASE`. Để sau guard thì Khoa chưa chốt phiếu nào sẽ bị ghi 0, tức là bị trừ
+  sạch `diem_toi_da` thay vì đạt đủ điểm. Đây là cái bẫy chính nếu sau này thêm mã "không phụ thuộc
+  phiếu thành viên".
+- Tiêu chí dùng `DIEM_TRU_TAP_THE` là **mức TUÂN THỦ của tập thể**, không phải điểm trừ: không vi
+  phạm → đủ `diem_toi_da` (thường đặt 7.5 = đúng bằng trần điểm trừ tập thể), sàn 0. Cùng khuôn với
+  `VPGD_TUAN_THU` / `VPVC_*` của luồng cá nhân, và tránh `diem_toi_da` âm — tiêu chí đơn vị
+  (`loai_doi_tuong = 3`) không được phép âm, còn `sp_phieu_dv_tinh_tong_diem` thì CỘNG mọi chi tiết.
+- Đặt `loai_thang_diem = 2` (liên tục): điểm là phần CÒN LẠI sau khi trừ, không phải mức rời rạc.
 - **4.11 `phe_duyet_don_vi`** (mirror `phe_duyet`): `cap_duyet` 1 = TKK/TKP nhập,
   2 = Trưởng đơn vị, 3 = Trường (HT).
 - **4.12 `lich_su_cham_diem_don_vi`** (mirror `lich_su_cham_diem`): `fk_lscddv_ct` KHÔNG
