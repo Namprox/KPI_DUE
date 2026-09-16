@@ -3,11 +3,19 @@ import { formatDiem } from "../../../utils/phieuApi";
 import {
   coTieuChiDiemTruTapThe,
   laDongChamTay,
+  laTieuChiDanhGiaSinhVien,
   LOAI_NHOM_DV,
 } from "../../../utils/phieuDonViApi";
+import { CAU_HINH_MC_MAC_DINH } from "../../../utils/minhChungDonViApi";
+import MinhChungTieuChiBox from "../TieuChi/MinhChungTieuChiBox";
+import TieuChiCardHeader from "../TieuChi/TieuChiCardHeader";
+import ONhapDiem from "../TieuChi/ONhapDiem";
+import ODienGiai from "../TieuChi/ODienGiai";
+import TieuChiMinhChung from "../TieuChi/TieuChiMinhChung";
 // Thẻ diễn giải dùng chung với màn hình Thống kê vi phạm Khoa - đổi tên khi import
 // để hợp quy ước PascalCase của JSX trong thư mục này.
 import DiemTruTapTheCard from "../../QuanLyKeHoach/QL_ThongKeViPhamKhoa/QL_DiemTruTapTheCard";
+import DiemTbSinhVienKhoaCard from "./DiemTbSinhVienKhoaCard";
 
 /**
  * Biểu mẫu nhập liệu Đánh giá KPI Đơn vị - phân cấp 2 tầng nhóm (Nhóm cha A, B -> Nhóm con I, II... -> Tiêu chí).
@@ -30,7 +38,16 @@ const DanhGiaDonViForm = ({
   tamTinh = null,
   tongHop = null,
   diemTruKhoa = null,
+  phanHoiSvKhoa = null,
+  dangTaiPhanHoiSv = false,
   loiTongHop = "",
+  cauHinhMc = CAU_HINH_MC_MAC_DINH,
+  choPhepSuaMinhChung = false,
+  onMinhChungChange,
+  onXemMinhChung,
+  onTaiMinhChung,
+  onLoiMinhChung,
+  onOkMinhChung,
 }) => {
   /**
    * Số liệu điểm trừ tập thể để diễn giải.
@@ -256,6 +273,7 @@ const DanhGiaDonViForm = ({
                         const hasScore = currentScore != null;
                         const daSua = oDaSua ? oDaSua(ct) : false;
                         const moNhap = choPhepNhap && chamTay;
+                        const isTcSinhVien = laTieuChiDanhGiaSinhVien(ct);
 
                         const loaiThangDiem =
                           tcInfo?.loaiThangDiem || ct.LoaiThangDiem || 2;
@@ -277,30 +295,24 @@ const DanhGiaDonViForm = ({
                           ? `${gIndex + 1}.${index + 1}.`
                           : `${index + 1}.`;
 
+                        const minhChungList = Array.isArray(ct.MinhChung)
+                          ? ct.MinhChung
+                          : [];
+
                         const criteriaHeader = (
-                          <div className="pl2-criteria-header">
-                            <div className="pl2-criteria-header-main">
-                              <span className="pl2-criteria-title">
-                                {prefix} {ct.TenTieuChi}
-                              </span>
-                              {ct.MoTa && (
-                                <div className="pl2-criteria-desc">
-                                  {ct.MoTa}
-                                </div>
-                              )}
-                            </div>
-                            <div className="pl2-criteria-header-side">
-                              {hasScore && (
-                                <span className="pl2-criteria-score">
-                                  <i className="fa-solid fa-circle-check"></i>{" "}
-                                  {formatDiem(currentScore)}đ
-                                </span>
-                              )}
-                              <span className="pl2-criteria-max">
-                                Tối đa: {formatDiem(ct.DiemToiDa)}đ
-                              </span>
-                            </div>
-                          </div>
+                          <TieuChiCardHeader
+                            soThuTu={prefix.replace(/\.$/, "")}
+                            tieuDe={ct.TenTieuChi}
+                            moTa={ct.MoTa}
+                            tenNhom={nhomCon.isDirect ? nhomCon.ten : null}
+                            batBuocMinhChung={!!ct.BatBuocMinhChung}
+                            soMinhChung={minhChungList.length}
+                            hienBadgeMinhChung={chamTay}
+                            diemText={
+                              hasScore ? `${formatDiem(currentScore)}đ` : null
+                            }
+                            diemToiDaText={`${formatDiem(ct.DiemToiDa)}đ`}
+                          />
                         );
 
                         // Dòng TỰ ĐỘNG tổng hợp từ KPI thành viên (LoaiNguonDiem = 2)
@@ -385,6 +397,16 @@ const DanhGiaDonViForm = ({
                                     )}
                                   </div>
                                 )}
+
+                              {/*
+                                Diễn giải điểm TB đánh giá của sinh viên (Khoa)
+                              */}
+                              {isTcSinhVien && (
+                                <DiemTbSinhVienKhoaCard
+                                  soLieuPhsv={phanHoiSvKhoa}
+                                  dangTai={dangTaiPhanHoiSv}
+                                />
+                              )}
                             </div>
                           );
                         }
@@ -397,137 +419,158 @@ const DanhGiaDonViForm = ({
                           >
                             {criteriaHeader}
 
-                            {/* Lựa chọn theo loại thang điểm */}
-                            {loaiThangDiem === 1 && mucDiem.length > 0 ? (
-                              <div className="pl2-thang-diem-list">
-                                {mucDiem.map((td) => {
-                                  const isSelected =
-                                    draftDiemVal !== "" &&
-                                    Number(draftDiemVal) ===
-                                      Number(td.GiaTriDiem);
-                                  return (
+                            {/*
+                              Diễn giải điểm TB đánh giá của sinh viên (Khoa) - dòng chấm tay
+                            */}
+                            {isTcSinhVien && (
+                              <DiemTbSinhVienKhoaCard
+                                soLieuPhsv={phanHoiSvKhoa}
+                                dangTai={dangTaiPhanHoiSv}
+                              />
+                            )}
+
+                            <div
+                              className="pl2-criteria-content pl2-criteria-content-columns"
+                            >
+                              <div className="pl2-criteria-fields">
+                                {/* Lựa chọn theo loại thang điểm */}
+                                {loaiThangDiem === 1 && mucDiem.length > 0 ? (
+                                  <div className="pl2-thang-diem-list">
+                                    {mucDiem.map((td) => {
+                                      const isSelected =
+                                        draftDiemVal !== "" &&
+                                        Number(draftDiemVal) ===
+                                          Number(td.GiaTriDiem);
+                                      return (
+                                        <label
+                                          key={td.IdThangDiem}
+                                          className={`pl2-thang-diem-item ${isSelected ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
+                                        >
+                                          <input
+                                            type="radio"
+                                            name={`thang_diem_${idCt}`}
+                                            checked={isSelected}
+                                            disabled={!moNhap || dangLuu}
+                                            onClick={() => {
+                                              if (!moNhap || dangLuu) return;
+                                              if (isSelected) {
+                                                onDiemChange(idCt, "");
+                                              } else {
+                                                onDiemChange(idCt, td.GiaTriDiem);
+                                              }
+                                            }}
+                                            onChange={() => {}}
+                                          />
+                                          <span className="pl2-radio-dot"></span>
+                                          <span className="pl2-diem-badge">
+                                            {formatDiem(td.GiaTriDiem)}đ
+                                          </span>
+                                          <span className="pl2-thang-diem-text">
+                                            {td.DieuKienDiem}
+                                          </span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                ) : loaiThangDiem === 3 ? (
+                                  <div className="pl2-thang-diem-list">
                                     <label
-                                      key={td.IdThangDiem}
-                                      className={`pl2-thang-diem-item ${isSelected ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
+                                      className={`pl2-thang-diem-item ${Number(draftDiemVal) === Number(ct.DiemToiDa) ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
                                     >
                                       <input
                                         type="radio"
-                                        name={`thang_diem_${idCt}`}
-                                        checked={isSelected}
+                                        name={`yesno_${idCt}`}
+                                        checked={
+                                          Number(draftDiemVal) ===
+                                          Number(ct.DiemToiDa)
+                                        }
                                         disabled={!moNhap || dangLuu}
-                                        onClick={() => {
+                                        onChange={() => {
                                           if (!moNhap || dangLuu) return;
-                                          if (isSelected) {
-                                            onDiemChange(idCt, "");
-                                          } else {
-                                            onDiemChange(idCt, td.GiaTriDiem);
-                                          }
+                                          onDiemChange(idCt, ct.DiemToiDa);
                                         }}
-                                        onChange={() => {}}
                                       />
+                                      <span className="pl2-radio-dot"></span>
                                       <span className="pl2-diem-badge">
-                                        {formatDiem(td.GiaTriDiem)}đ
+                                        {formatDiem(ct.DiemToiDa)}đ
                                       </span>
                                       <span className="pl2-thang-diem-text">
-                                        {td.DieuKienDiem}
+                                        Có / Đạt
                                       </span>
                                     </label>
-                                  );
-                                })}
-                              </div>
-                            ) : loaiThangDiem === 3 ? (
-                              <div className="pl2-thang-diem-list">
-                                <label
-                                  className={`pl2-thang-diem-item ${Number(draftDiemVal) === Number(ct.DiemToiDa) ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name={`yesno_${idCt}`}
-                                    checked={
-                                      Number(draftDiemVal) ===
-                                      Number(ct.DiemToiDa)
-                                    }
-                                    disabled={!moNhap || dangLuu}
-                                    onChange={() => {
+                                    <label
+                                      className={`pl2-thang-diem-item ${draftDiemVal !== "" && Number(draftDiemVal) === 0 ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name={`yesno_${idCt}`}
+                                        checked={
+                                          draftDiemVal !== "" &&
+                                          Number(draftDiemVal) === 0
+                                        }
+                                        disabled={!moNhap || dangLuu}
+                                        onChange={() => {
+                                          if (!moNhap || dangLuu) return;
+                                          onDiemChange(idCt, 0);
+                                        }}
+                                      />
+                                      <span className="pl2-radio-dot"></span>
+                                      <span className="pl2-diem-badge">0đ</span>
+                                      <span className="pl2-thang-diem-text">
+                                        Không / Chưa đạt
+                                      </span>
+                                    </label>
+                                  </div>
+                                ) : (
+                                  <ONhapDiem
+                                    giaTri={draftDiemVal}
+                                    diemToiDa={ct.DiemToiDa}
+                                    doc={!moNhap || dangLuu}
+                                    onChange={(val) => {
                                       if (!moNhap || dangLuu) return;
-                                      onDiemChange(idCt, ct.DiemToiDa);
-                                    }}
-                                  />
-                                  <span className="pl2-diem-badge">
-                                    {formatDiem(ct.DiemToiDa)}đ
-                                  </span>
-                                  <span className="pl2-thang-diem-text">
-                                    Có / Đạt
-                                  </span>
-                                </label>
-                                <label
-                                  className={`pl2-thang-diem-item ${draftDiemVal !== "" && Number(draftDiemVal) === 0 ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name={`yesno_${idCt}`}
-                                    checked={
-                                      draftDiemVal !== "" &&
-                                      Number(draftDiemVal) === 0
-                                    }
-                                    disabled={!moNhap || dangLuu}
-                                    onChange={() => {
-                                      if (!moNhap || dangLuu) return;
-                                      onDiemChange(idCt, 0);
-                                    }}
-                                  />
-                                  <span className="pl2-diem-badge">0đ</span>
-                                  <span className="pl2-thang-diem-text">
-                                    Không / Chưa đạt
-                                  </span>
-                                </label>
-                              </div>
-                            ) : (
-                              <div className="pl2-score-input-container">
-                                <span className="pl2-score-input-label">
-                                  Nhập điểm:
-                                </span>
-                                <input
-                                  type="number"
-                                  className="pl2-score-input"
-                                  placeholder={`Tối đa ${formatDiem(ct.DiemToiDa)}`}
-                                  value={draftDiemVal}
-                                  disabled={!moNhap || dangLuu}
-                                  min="0"
-                                  max={ct.DiemToiDa}
-                                  step="any"
-                                  onChange={(e) => {
-                                    if (!moNhap || dangLuu) return;
-                                    const val = e.target.value;
-                                    if (val === "") {
-                                      onDiemChange(idCt, "");
-                                    } else {
+                                      if (val === "") {
+                                        onDiemChange(idCt, "");
+                                        return;
+                                      }
                                       let num = parseFloat(val);
                                       if (isNaN(num)) num = 0;
                                       if (num < 0) num = 0;
                                       if (ct.DiemToiDa && num > ct.DiemToiDa)
                                         num = ct.DiemToiDa;
                                       onDiemChange(idCt, num);
-                                    }
+                                    }}
+                                  />
+                                )}
+
+                                {/* Ô ghi chú / diễn giải */}
+                                <ODienGiai
+                                  giaTri={draftNhanXetVal}
+                                  doc={!moNhap || dangLuu}
+                                  placeholder="Nhập diễn giải / ghi chú cho tiêu chí này (nếu có)..."
+                                  onChange={(val) => {
+                                    if (!moNhap || dangLuu) return;
+                                    onNhanXetChange(idCt, val);
                                   }}
                                 />
-                                <span className="pl2-score-input-hint">
-                                  (Điểm tối đa: {formatDiem(ct.DiemToiDa)}đ)
-                                </span>
-                              </div>
-                            )}
 
-                            {/* Ô ghi chú / diễn giải */}
-                            <textarea
-                              className="pl2-textarea"
-                              placeholder="Nhập diễn giải / ghi chú cho tiêu chí này (nếu có)..."
-                              value={draftNhanXetVal}
-                              disabled={!moNhap || dangLuu}
-                              onChange={(e) => {
-                                if (!moNhap || dangLuu) return;
-                                onNhanXetChange(idCt, e.target.value);
-                              }}
-                            />
+                              </div>
+                              <TieuChiMinhChung
+                                soMinhChung={minhChungList.length}
+                              >
+                                <MinhChungTieuChiBox
+                                  idChiTiet={idCt}
+                                  danhSach={minhChungList}
+                                  choPhepSua={choPhepSuaMinhChung}
+                                  batBuoc={!!ct.BatBuocMinhChung}
+                                  cauHinh={cauHinhMc}
+                                  onChange={(ds) => onMinhChungChange?.(idCt, ds)}
+                                  onXem={onXemMinhChung}
+                                  onTai={onTaiMinhChung}
+                                  onError={onLoiMinhChung}
+                                  onSuccess={onOkMinhChung}
+                                />
+                              </TieuChiMinhChung>
+                            </div>
 
                             {/*
                               Thanh trạng thái của dòng. Không còn nút lưu riêng

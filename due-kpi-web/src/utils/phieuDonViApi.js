@@ -120,6 +120,141 @@ export const coTieuChiDiemTruTapThe = (chiTiet = []) =>
   chiTiet.some((ct) => ct?.CongThucSnapshot === "DIEM_TRU_TAP_THE");
 
 /**
+ * Tiêu chí có phải là tiêu chí đánh giá / phản hồi sinh viên hay không.
+ *
+ * Kiểm tra cả mã công thức snapshot (tiền tố PHSV hoặc SINH_VIEN) lẫn
+ * tên tiêu chí tiếng Việt (chứa "sinh viên" và từ khóa phản hồi / đánh giá / khảo sát / điểm TB).
+ * Loại trừ các tiêu chí khác như "sinh viên tốt nghiệp đúng hạn".
+ */
+export const laTieuChiDanhGiaSinhVien = (ct) => {
+  if (!ct) return false;
+  const congThuc = (ct.CongThucSnapshot || "").toUpperCase();
+  if (congThuc.includes("PHSV") || congThuc.includes("SINH_VIEN")) return true;
+  const ten = (ct.TenTieuChi || "").toLowerCase();
+  return (
+    ten.includes("sinh viên") &&
+    (ten.includes("đánh giá") ||
+      ten.includes("phản hồi") ||
+      ten.includes("khảo sát") ||
+      ten.includes("điểm tb") ||
+      ten.includes("điểm trung bình")) &&
+    !ten.includes("tốt nghiệp")
+  );
+};
+
+/**
+ * Phiếu có tiêu chí đánh giá của sinh viên hay không.
+ */
+export const coTieuChiDanhGiaSinhVien = (chiTiet = []) =>
+  Array.isArray(chiTiet) && chiTiet.some(laTieuChiDanhGiaSinhVien);
+
+/**
+ * Tính toán số liệu thống kê điểm phản hồi sinh viên cho một Khoa / Đơn vị.
+ *
+ * @param {object} params
+ * @param {Array} params.items Danh sách DiemTbPhanHoiSinhVienDto từ GET api/diem-tb-phan-hoi-sv
+ * @param {number|string} params.idDonVi ID của đơn vị/khoa đang đánh giá
+ * @param {Array} [params.donViList] Danh mục đơn vị (để bao gồm các bộ môn trực thuộc qua IdDonViCha)
+ * @param {object} [params.dotChot] Thông tin đợt chốt từ response
+ * @returns {object} {
+ *   dotChot,
+ *   soGiangVien,
+ *   tongLuotDanhGia,
+ *   diemTrungBinhKhoa, // Trọng số theo lượt đánh giá
+ *   diemTrungBinhCong, // Trung bình cộng của các giảng viên
+ *   danhSachGv,
+ * }
+ */
+export const tinhThongKePhanHoiKhoa = ({
+  items = [],
+  idDonVi,
+  donViList = [],
+  dotChot = null,
+} = {}) => {
+  if (!idDonVi) {
+    return {
+      dotChot: null,
+      soGiangVien: 0,
+      tongLuotDanhGia: 0,
+      diemTrungBinhKhoa: null,
+      diemTrungBinhCong: null,
+      danhSachGv: [],
+    };
+  }
+
+  const idKhoa = Number(idDonVi);
+  const childIds = new Set([idKhoa]);
+  if (Array.isArray(donViList)) {
+    donViList.forEach((dv) => {
+      if (Number(dv.IdDonViCha ?? dv.id_don_vi_cha) === idKhoa) {
+        childIds.add(Number(dv.IdDonVi ?? dv.id_don_vi));
+      }
+    });
+  }
+
+  let gvKhoa = (items || []).filter((item) =>
+    childIds.has(Number(item.IdDonVi ?? item.id_don_vi)),
+  );
+
+  // Nếu không khớp dòng nào nhưng danh sách items có dữ liệu và toàn bộ cùng thuộc 1 đơn vị
+  // (trường hợp backend đã tự lọc theo quyền của TK/TKL)
+  if (gvKhoa.length === 0 && Array.isArray(items) && items.length > 0) {
+    const uniqueDonVi = new Set(
+      items.map((it) => it.IdDonVi ?? it.id_don_vi).filter(Boolean),
+    );
+    if (uniqueDonVi.size <= 1) {
+      gvKhoa = items;
+    }
+  }
+
+  const soGiangVien = gvKhoa.length;
+  let tongDiemNhanLuot = 0;
+  let tongLuot = 0;
+  let tongDiemCong = 0;
+
+  gvKhoa.forEach((gv) => {
+    const dtb = Number(gv.DiemTrungBinh ?? gv.diemTrungBinh) || 0;
+    const luot = Number(gv.SoLuotDanhGia ?? gv.soLuotDanhGia) || 0;
+    tongDiemNhanLuot += dtb * luot;
+    tongLuot += luot;
+    tongDiemCong += dtb;
+  });
+
+  // Điểm TB của Khoa: trung bình các điểm TB đã chốt của từng GV thuộc Khoa (mỗi GV đếm đúng 1 lần - xem openapi.yaml PHSV_DIEM_TB_KHOA)
+  const diemTrungBinhKhoa =
+    soGiangVien > 0 ? Number((tongDiemCong / soGiangVien).toFixed(2)) : null;
+
+  const diemTrungBinhTrongSo =
+    tongLuot > 0 ? Number((tongDiemNhanLuot / tongLuot).toFixed(2)) : null;
+
+  // Số lượng sinh viên đánh giá quy đổi (mỗi sinh viên trả lời 12 câu hỏi khảo sát)
+  const tongSoSv = Math.round(tongLuot / 12);
+
+  // Sắp xếp danh sách giảng viên theo họ tên và gắn số SV đánh giá quy đổi
+  const danhSachGv = [...gvKhoa]
+    .map((gv) => {
+      const luot = Number(gv.SoLuotDanhGia ?? gv.soLuotDanhGia) || 0;
+      return {
+        ...gv,
+        soSvDanhGia: Math.round(luot / 12),
+      };
+    })
+    .sort((a, b) =>
+      (a.HoTen || a.hoTen || "").localeCompare(b.HoTen || b.hoTen || "", "vi"),
+    );
+
+  return {
+    dotChot,
+    soGiangVien,
+    tongLuotDanhGia: tongLuot,
+    tongSoSv,
+    diemTrungBinhKhoa,
+    diemTrungBinhTrongSo,
+    danhSachGv,
+  };
+};
+
+/**
  * Điểm ĐANG có hiệu lực của một dòng, theo đúng thứ tự ưu tiên của ba cấp chấm:
  * điểm chính thức → điểm cấp Trường → điểm Trưởng đơn vị → điểm gốc của dòng
  * (thư ký gõ, hoặc hệ thống tổng hợp).

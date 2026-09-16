@@ -2348,8 +2348,10 @@ paths:
       description: >
         Moi nam chi con 1 lan chot cuoi cung -> chi can idNam. Tra ve tom tat (nguoi
         chot / ngay chot / so GV / so ma khong khop) + diem trung binh tung giang vien.
-        Quyen xem: ADMIN/TP@P_QLCL xem toan truong; TK/TKL/TP khac chi xem giang vien
-        thuoc don vi minh (+ con truc tiep).
+        Quyen xem: ADMIN/TP@P_QLCL xem toan truong; TK/TKL/TP/TKK (Thu ky Khoa) chi
+        xem giang vien thuoc don vi minh (+ con truc tiep). TKK chi DOC - quyen chot
+        van chi ADMIN / TP@P_QLCL.
+        Nguoi khong giu chuc vu nao trong so tren nhan 404 (SP khong tra result set).
       operationId: diemTbPhanHoiSvGetChiTiet
       parameters:
         - name: idNam
@@ -4995,11 +4997,15 @@ paths:
         đều tùy chọn; tham số nào bỏ trống thì không áp dụng điều kiện đó.
 
 
-        KIÊM NHIỆM ĐA ĐƠN VỊ: bộ lọc đơn vị / chức vụ chạy trên BẢNG QUAN HỆ
-        (nhan_vien_chuc_vu), nên người kiêm nhiệm **xuất hiện ở danh sách của cả 2
-        đơn vị** — vẫn đúng 1 dòng mỗi người, không nhân dòng. Hai cột id_don_vi /
-        id_chuc_vu TRẢ VỀ luôn là của ĐƠN VỊ CHÍNH, nên lọc theo Khoa K có thể trả
-        về một người hiển thị đơn vị là Phòng — đây là hành vi cố ý.
+        KIÊM NHIỆM ĐA ĐƠN VỊ: bộ lọc đơn vị / chức vụ chạy trên **ĐƠN VỊ CHÍNH**
+        (dòng nhan_vien_chuc_vu có la_chinh = 1). Người kiêm nhiệm **chỉ xuất hiện
+        ở danh sách của đơn vị chính**, không xuất hiện ở đơn vị kiêm nhiệm. Nhờ
+        vậy cột lọc và cột id_don_vi / ten_don_vi TRẢ VỀ luôn khớp nhau: lọc theo
+        Khoa K sẽ không còn trả về người hiển thị đơn vị là Phòng.
+
+
+        Cần phạm vi GỒM CẢ kiêm nhiệm (vd kiểm tra quyền) thì dùng endpoint khác —
+        danh bạ này cố ý chỉ soi đơn vị chính.
       operationId: nhanVienGetList
       parameters:
         - name: search
@@ -5013,7 +5019,10 @@ paths:
           required: false
           schema:
             type: integer
-          description: Lọc theo khóa số đơn vị (id_don_vi). Dùng được kết hợp với maDonVi.
+          description: >
+            Lọc theo khóa số đơn vị (id_don_vi), so với ĐƠN VỊ CHÍNH của nhân viên.
+            Dùng được kết hợp với maDonVi. KHÔNG bao gồm đơn vị cha; muốn lấy thêm
+            đơn vị con thì bật baoGomDonViCon.
         - name: maDonVi
           in: query
           required: false
@@ -5039,10 +5048,10 @@ paths:
           schema:
             type: integer
           description: >
-            Lọc theo chức vụ. KẾT HỢP với idDonVi/maDonVi thì hai điều kiện phải
-            khớp TRÊN CÙNG MỘT dòng quan hệ — quyền là CẶP (đơn vị, chức vụ).
-            Lọc "TP của Khoa K" sẽ KHÔNG trả về người là TP ở Phòng nhưng chỉ là
-            thành viên của Khoa K.
+            Lọc theo CHỨC VỤ CHÍNH (chức vụ trên dòng la_chinh = 1). Chức vụ kiêm
+            nhiệm KHÔNG được xét. Kết hợp với idDonVi/maDonVi thì hai điều kiện
+            đương nhiên khớp trên cùng một dòng quan hệ, vì mỗi người chỉ có đúng
+            một dòng chính.
         - name: trangThai
           in: query
           required: false
@@ -6019,10 +6028,41 @@ paths:
       description: >-
         Tong hop diem KPI cac thanh vien thuoc don vi vao cac dong chi tiet co
         LoaiNguonDiem = 2 (tu dong). Response co them khoi TongHop.
-        Ma cong thuc: DIEM_TB_THANH_VIEN, TY_LE_XUAT_SAC, TY_LE_HOAN_THANH va
-        DIEM_TRU_TAP_THE. Rieng DIEM_TRU_TAP_THE tinh tu so vi pham cua Khoa
-        (MAX(0, DiemToiDa - DiemTruTapThe)) nen VAN chay ke ca khi chua co phieu
-        thanh vien nao duoc chot, trong khi ba ma con lai luc do ra 0.
+        Ma cong thuc: DIEM_TB_THANH_VIEN, TY_LE_XUAT_SAC, TY_LE_HOAN_THANH,
+        DIEM_TRU_TAP_THE, PHSV_DIEM_TB_KHOA, NCKH_TY_LE_HOAN_THANH_KHOA,
+        NCKH_BAI_BAO_TB_KHOA va NCKH_BAI_BAO_Q1Q2_TB_KHOA.
+        Rieng DIEM_TRU_TAP_THE (tinh tu so vi pham cua Khoa: MAX(0, DiemToiDa -
+        DiemTruTapThe)), PHSV_DIEM_TB_KHOA (tinh tu diem TB phan hoi sinh vien),
+        NCKH_TY_LE_HOAN_THANH_KHOA (tinh tu gio NCKH da dong bo),
+        NCKH_BAI_BAO_TB_KHOA va NCKH_BAI_BAO_Q1Q2_TB_KHOA (tinh tu bai bao NCKH da
+        dong bo) VAN chay ke ca khi
+        chua co phieu thanh vien nao duoc chot, trong khi ba ma con lai luc do ra 0.
+        PHSV_DIEM_TB_KHOA cham theo bac thang tren DiemTbPhanHoiSv (thang Likert
+        1-5): >= 3 duoc 2.50 diem; tu 2 den duoi 3 duoc 1.50 diem; duoi 2 duoc 0.
+        Chua chot diem TB phan hoi SV (SoGvCoPhanHoi = 0) thi cham 0 - phai goi
+        POST /api/diem-tb-phan-hoi-sv/chot truoc.
+        NCKH_TY_LE_HOAN_THANH_KHOA cham theo bac thang tren TyLeHoanThanhNckh (%):
+        tren 75 duoc 20 diem; tren 65 den 75 duoc 15 diem; tren 50 den 65 duoc 10
+        diem; tu 50 tro xuong duoc 0 (dung 50% roi vao bac 0). Moc diem la hang so
+        tuyet doi, van kep tran DiemToiDa. Chua dong bo gio NCKH
+        (SoGvThuocDienNckh = 0) thi cham 0 - phai goi POST /api/nckh/gio-nckh/dong-bo
+        truoc.
+        NCKH_BAI_BAO_TB_KHOA cham TUYEN TINH tren SoBaiBaoTrenGv (so bai bao tap chi /
+        ky yeu WoS-Scopus TB tren 1 giang vien): Diem = MIN(SoBaiBaoTrenGv, 1) *
+        DiemToiDa - dat TB 1 bai/GV la tron diem tieu chi, tren nua van kep tran.
+        KHAC hai ma tren, he so BAM DiemToiDa chu khong phai hang so, nen doi trong so
+        tieu chi chi can sua DiemToiDa. Tu so dem DISTINCT theo bai nen mot bai co
+        NHIEU dong tac gia cung Khoa chi tinh MOT lan; mau so la SoGiangVien. Chua
+        dong bo bai bao (SoBaiBaoWosScopus = 0) hoac don vi khong phai Khoa
+        (SoGiangVien = 0) thi cham 0 - phai goi POST /api/nckh/dong-bo truoc.
+        NCKH_BAI_BAO_Q1Q2_TB_KHOA cham CUNG KHUON NCKH_BAI_BAO_TB_KHOA, chi khac TU SO:
+        chi dem bai co XepHangQ la Q1 hoac Q2. Diem = MIN(SoBaiQ1Q2TrenGv, 1) *
+        DiemToiDa, voi SoBaiQ1Q2TrenGv = SoBaiBaoQ1Q2 / SoGiangVien. He so cung BAM
+        DiemToiDa: dat TB 1 bai Q1/Q2 tren 1 GV la tron diem tieu chi, nen voi
+        DiemToiDa = 50 thi TB 0.3 bai/GV ra dung 15 diem. Dung CHUNG mau so SoGiangVien
+        voi hai ma tren (lay tu cung mot ham) nen SoBaiBaoQ1Q2 <= SoBaiBaoWosScopus.
+        LUU Y: bai Q1/Q2 duoc tinh o CA NCKH_BAI_BAO_TB_KHOA lan ma nay - day la CHU Y,
+        tieu chi Q1/Q2 la phan thuong THEM cho chat luong, khong phai loi dem trung.
         Ma cong thuc la khong nhan dien: giu nguyen diem cu.
       operationId: phieuDonViTongHopKpi
       parameters:
@@ -6737,7 +6777,7 @@ paths:
         nhan tham so loc (da kiem chung ?nam=2025 va ?nam=2026 tra ket qua giong het nhau),
         moi dong tu mang nam cua no o truong Year -> id_nam duoc lay tu chinh dong do
         (du lieu hien co ca cac nam 2021-2026).
-        Moi dong luu snapshot: ho ten, email, don vi, chuc danh (JobTitle), ky bao cao
+        Moi dong luu snapshot: ho ten, email, don vi, hoc vi (DegreeName), hoc ham (AcademicRank), chuc danh nghe nghiep (JobTitle), diem dat duoc (AchievedScore), ky bao cao
         (Period), gio chuan (StandardHours), ty le giam (ReductionPercentage), dinh muc
         gio NCKH (RequiredHours), gio NCKH quy doi (ConvertedHours).
         Neu API tra ve rong -> KHONG xoa du lieu cu (tranh mat du lieu khi API loi).
@@ -15104,7 +15144,21 @@ components:
         ChucDanh:
           type: string
           nullable: true
-          description: "JobTitle dang text (vd: Pho giao su)."
+          description: "JobTitle - chuc danh nghe nghiep (vd: Giang vien cao cap)."
+        HocVi:
+          type: string
+          nullable: true
+          description: "DegreeName - hoc vi (vd: Tien si)."
+        HocHam:
+          type: string
+          nullable: true
+          description: "AcademicRank - hoc ham. Chuoi rong duoc luu thanh null."
+        DiemDatDuoc:
+          type: number
+          format: double
+          nullable: true
+          description: "AchievedScore - diem API nguon tinh san, luu DECIMAL(18,4)."
+          example: 2.9167
         IdNam:
           type: integer
           description: "Nam cua dong du lieu, lay tu truong Year phia NCKH (vd: 2025)."
@@ -16795,6 +16849,96 @@ components:
           description: >-
             MIN(7.5 * TongDiemTruCaNhan / MauSo, 7.5). Cung nguon so voi
             GET /api/vi-pham/diem-tru-khoa. Don vi khong phai Khoa: 0.
+        DiemTbPhanHoiSv:
+          type: number
+          description: >-
+            Diem TB phan hoi sinh vien trung binh TOAN KHOA (thang Likert 1-5):
+            trung binh cac diem TB da chot cua TUNG giang vien thuoc Khoa, moi GV
+            dem dung 1 lan. Co so cham ma cong thuc PHSV_DIEM_TB_KHOA:
+            >= 3 -> 2.50 diem; tu 2 den duoi 3 -> 1.50 diem; duoi 2 -> 0 diem.
+            Bang 0 khi chua chot du lieu (xem SoGvCoPhanHoi) hoac don vi khong
+            phai Khoa.
+        SoGvCoPhanHoi:
+          type: integer
+          description: >-
+            So giang vien cua Khoa co diem TB phan hoi SV da chot trong nam.
+            Bang 0 nghia la CHUA CHOT diem TB (hoac don vi khong phai Khoa) - dung
+            gia tri nay de phan biet "0 diem vi diem thap" voi "0 diem vi thieu
+            du lieu".
+        SoLuotPhanHoi:
+          type: integer
+          description: >-
+            Tong so luot tra loi khao sat gop vao DiemTbPhanHoiSv (moi sinh vien
+            gop toi 12 dong / hoc phan) - KHONG phai so sinh vien.
+        TyLeHoanThanhNckh:
+          type: number
+          description: >-
+            Ty le (%) giang vien cua Khoa HOAN THANH NHIEM VU NCKH =
+            SoGvHoanThanhNckh * 100 / SoGvThuocDienNckh. Co so cham ma cong thuc
+            NCKH_TY_LE_HOAN_THANH_KHOA: tren 75 -> 20 diem; tren 65 den 75 -> 15
+            diem; tren 50 den 65 -> 10 diem; tu 50 tro xuong -> 0 diem.
+            Bang 0 khi chua dong bo gio NCKH (xem SoGvThuocDienNckh) hoac don vi
+            khong phai Khoa.
+        SoGvThuocDienNckh:
+          type: integer
+          description: >-
+            MAU SO: so giang vien cua Khoa thuoc dien tinh = toan bo GV cua Khoa
+            TRU SoGvMienNckh. Bang 0 nghia la CHUA DONG BO gio NCKH (hoac don vi
+            khong phai Khoa) - luc do TyLeHoanThanhNckh ve 0 va tieu chi cham 0.
+            FE dua vao day de phan biet "0 vi ty le thap" voi "0 vi thieu du lieu".
+        SoGvHoanThanhNckh:
+          type: integer
+          description: >-
+            TU SO: so giang vien DAT dinh muc gio NCKH (gio quy doi >= dinh muc) -
+            dung dieu kien GV duoc DIEM TOI DA cua tieu chi ca nhan NCKH_GIO_TY_LE.
+            GV khong co dong gio NCKH hoac thieu so lieu tinh la CHUA hoan thanh.
+        SoGvMienNckh:
+          type: integer
+          description: >-
+            So giang vien duoc MIEN NCKH (gio_nckh_dinh_muc <= 0 - du lieu that da
+            khai bao), bi LOAI khoi mau so nen khong keo ty le cua Khoa xuong.
+        SoBaiBaoWosScopus:
+          type: integer
+          description: >-
+            TU SO cua ma cong thuc NCKH_BAI_BAO_TB_KHOA: so BAI BAO tap chi / ky yeu
+            thuoc WoS-Scopus (danh muc SCIE / SSCI / AHCI / SCOPUS / ESCI, xuat ban
+            trong nam danh gia) cua giang vien thuoc Khoa. Dem DISTINCT theo bai nen
+            mot bai co NHIEU dong tac gia cung Khoa chi tinh MOT lan - day la so BAI
+            THAT SU cua Khoa, khac cach cham ca nhan (moi dong tac gia deu duoc ghi
+            nhan). Bang 0 khi chua goi POST /api/nckh/dong-bo cho nam do.
+        SoBaiBaoTrenGv:
+          type: number
+          description: >-
+            So bai bao WoS-Scopus TRUNG BINH tren 1 giang vien =
+            SoBaiBaoWosScopus / SoGiangVien. Co so cham ma cong thuc
+            NCKH_BAI_BAO_TB_KHOA: Diem = MIN(SoBaiBaoTrenGv, 1) * DiemToiDa, tuc TB
+            1 bai/GV la tron diem tieu chi, tren nua van kep tran DiemToiDa. MAU SO
+            la SoGiangVien o tren (cung vi tu dem voi DIEM_TRU_TAP_THE) nen khong tra
+            ve lan hai. Bang 0 khi SoGiangVien = 0 (don vi khong phai Khoa) hoac chua
+            dong bo bai bao - luc do tieu chi cham 0.
+        SoBaiBaoQ1Q2:
+          type: integer
+          description: >-
+            TU SO cua ma cong thuc NCKH_BAI_BAO_Q1Q2_TB_KHOA: phan bai co XepHangQ la
+            Q1 hoac Q2 trong SoBaiBaoWosScopus o tren, nen LUON co
+            SoBaiBaoQ1Q2 <= SoBaiBaoWosScopus. Lay tu CUNG ham voi hai field tren
+            (fn_so_bai_bao_wos_scopus_khoa) nen dung chung vi tu WoS-Scopus, chung
+            khung nam va chung mau so. Cung dem DISTINCT theo bai - mot bai Q1/Q2 co
+            NHIEU dong tac gia cung Khoa chi tinh MOT lan; chi can MOT dong tac gia
+            ghi Q1/Q2 la ca bai tinh la Q1/Q2. Bang 0 khi chua goi
+            POST /api/nckh/dong-bo cho nam do.
+        SoBaiQ1Q2TrenGv:
+          type: number
+          description: >-
+            So bai bao Q1/Q2 TRUNG BINH tren 1 giang vien =
+            SoBaiBaoQ1Q2 / SoGiangVien. Co so cham ma cong thuc
+            NCKH_BAI_BAO_Q1Q2_TB_KHOA: Diem = MIN(SoBaiQ1Q2TrenGv, 1) * DiemToiDa,
+            tuc TB 1 bai Q1/Q2 tren 1 GV la tron diem tieu chi, tren nua van kep tran.
+            He so BAM DiemToiDa nen voi DiemToiDa = 50 thi TB 0.3 bai/GV ra dung 15
+            diem. MAU SO la SoGiangVien o tren nen khong tra ve lan ba. LUU Y: bai
+            Q1/Q2 duoc tinh o CA NCKH_BAI_BAO_TB_KHOA lan ma nay - day la CHU Y. Bang
+            0 khi SoGiangVien = 0 (don vi khong phai Khoa) hoac chua dong bo bai bao -
+            luc do tieu chi cham 0.
     PhieuDanhGiaDonViResponse:
       type: object
       properties:

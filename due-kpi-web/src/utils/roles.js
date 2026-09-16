@@ -129,12 +129,12 @@ export const ROLE_SETS = {
    * Nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò (KPI Nhóm III).
    *
    * Module chỉ áp dụng cho KHOA (`ma_don_vi LIKE 'K_%'`) nên Trưởng Phòng bị
-   * loại - gọi với đơn vị khác server trả `KHONG_PHAI_KHOA`. Thư ký Khoa có mặt
-   * vì thực tế họ là người gõ dữ liệu, nhưng CHỐT KỲ là thẩm quyền của trưởng
-   * đơn vị: đừng suy quyền thao tác từ tập này, hãy đọc cờ `CanNhap` / `CanChot`
+   * loại - gọi với đơn vị khác server trả `KHONG_PHAI_KHOA`. Chỉ Trưởng Khoa /
+   * Trưởng Khoa lớn được truy cập trang quản lý này. Quyền thao tác trên từng
+   * kỳ vẫn được xác định theo cờ `CanNhap` / `CanChot`
    * do endpoint `/nhiem-vu-khoa/ky` trả về.
    */
-  NHIEM_VU_KHOA: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.THU_KY_KHOA],
+  NHIEM_VU_KHOA: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON],
 
   /**
    * Duyệt bản kê giờ quy đổi theo Phụ lục II của giảng viên.
@@ -210,13 +210,11 @@ export const ROLE_SETS = {
   /**
    * Màn hình đánh giá KPI PHÒNG / TRUNG TÂM (/danh-gia-kpi-phong).
    *
-   * Rộng hơn NHAP_PHIEU_DON_VI vì màn hình này dựng TRỌN vòng đời của phiếu, nên
-   * cả bốn vai trò trong quy trình đều có việc để làm ở đây:
-   *   TKP  nhập điểm rồi trình               (trạng thái 1)
-   *   TP   chấm đè lên điểm thư ký, duyệt    (trạng thái 2)
-   *   HT   chấm lớp cuối, duyệt, chốt, mở lại (trạng thái 3, 4, 5)
-   * Admin có mặt để xem và hỗ trợ vận hành; các thao tác mà SP chỉ chấp nhận
-   * đúng mã HT thì Admin gọi vẫn nhận 403.
+   * Trang này chỉ phục vụ hai cấp của Phòng:
+   *   TKP  nhập điểm rồi trình            (trạng thái 1)
+   *   TP   chấm đè lên điểm thư ký, duyệt (trạng thái 2)
+   * HT xem và duyệt ở màn hình cấp Trường riêng, nên không mở route này cho
+   * HT/Admin dù API phiếu có thể cho phép họ đọc dữ liệu.
    *
    * CỐ Ý không gộp vào NHAP_PHIEU_DON_VI: tập đó gác màn hình KPI Khoa, nơi mới
    * chỉ dựng phần việc cấp 1 - mở cửa cho TP/HT vào đó chỉ dẫn họ tới một trang
@@ -225,12 +223,7 @@ export const ROLE_SETS = {
    * Ai làm được gì trên MỘT phiếu cụ thể thì quyenPhieuPhong() trong
    * phieuPhongApi.js quyết; tập này chỉ mở cửa vào màn hình.
    */
-  KPI_PHONG: [
-    ROLE.THU_KY_PHONG,
-    ROLE.TRUONG_PHONG,
-    ROLE.HIEU_TRUONG,
-    ROLE.ADMIN,
-  ],
+  KPI_PHONG: [ROLE.THU_KY_PHONG, ROLE.TRUONG_PHONG],
 
   /**
    * Giám sát hoạt động giảng dạy toàn trường: quản lý phiếu khảo sát ý kiến

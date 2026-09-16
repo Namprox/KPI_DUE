@@ -10,7 +10,11 @@ import {
   TRUONG_DIEM_CUA_CAP,
   diemDangHienThi,
 } from "../../../utils/phieuPhongApi";
-import MinhChungDonViBox from "./MinhChungDonViBox";
+import MinhChungTieuChiBox from "../TieuChi/MinhChungTieuChiBox";
+import TieuChiCardHeader from "../TieuChi/TieuChiCardHeader";
+import ONhapDiem from "../TieuChi/ONhapDiem";
+import ODienGiai from "../TieuChi/ODienGiai";
+import TieuChiMinhChung from "../TieuChi/TieuChiMinhChung";
 
 const THU_TU_CAP = [CAP_CHAM.NHAP, CAP_CHAM.DUYET_DV, CAP_CHAM.TRUONG];
 
@@ -182,33 +186,17 @@ const DanhGiaPhongForm = ({
                       key={idCt}
                       className={`pl2-criteria ${hasScore ? "active" : ""} ${daSua ? "modified" : ""}`}
                     >
-                      <div className="pl2-criteria-header">
-                        <div className="pl2-criteria-header-main">
-                          <span className="pl2-criteria-title">
-                            {index + 1}. {ct.TenTieuChi}
-                          </span>
-                          {ct.MoTa && (
-                            <div className="pl2-criteria-desc">{ct.MoTa}</div>
-                          )}
-                        </div>
-                        <div className="pl2-criteria-header-side">
-                          {ct.BatBuocMinhChung && (
-                            <span className="phong-mc-badge">
-                              <i className="fa-solid fa-paperclip"></i> Cần minh
-                              chứng
-                            </span>
-                          )}
-                          {hasScore && (
-                            <span className="pl2-criteria-score">
-                              <i className="fa-solid fa-circle-check"></i>{" "}
-                              {formatDiem(currentScore)}đ
-                            </span>
-                          )}
-                          <span className="pl2-criteria-max">
-                            Tối đa: {formatDiem(ct.DiemToiDa)}đ
-                          </span>
-                        </div>
-                      </div>
+                      <TieuChiCardHeader
+                        soThuTu={String(index + 1)}
+                        tieuDe={ct.TenTieuChi}
+                        moTa={ct.MoTa}
+                        batBuocMinhChung={!!ct.BatBuocMinhChung}
+                        soMinhChung={(ct.MinhChung || []).length}
+                        diemText={
+                          hasScore ? `${formatDiem(currentScore)}đ` : null
+                        }
+                        diemToiDaText={`${formatDiem(ct.DiemToiDa)}đ`}
+                      />
 
                       {/* Từ trạng thái 2: lớp nào đang thắng thì tô đậm. */}
                       {hienLopDiem && (
@@ -259,109 +247,105 @@ const DanhGiaPhongForm = ({
                         </div>
                       )}
 
-                      {truongCuaCap && (
-                        <>
-                          {loaiThangDiem === 1 && mucDiem.length > 0 ? (
-                            <div className="pl2-thang-diem-list">
-                              {mucDiem.map((td) => {
-                                const isSelected =
-                                  draftDiemVal !== "" &&
-                                  Number(draftDiemVal) ===
-                                    Number(td.GiaTriDiem);
-                                return (
-                                  <label
-                                    key={td.IdThangDiem}
-                                    className={`pl2-thang-diem-item ${isSelected ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
-                                  >
-                                    <input
-                                      type="radio"
-                                      name={`thang_diem_${idCt}`}
-                                      checked={isSelected}
-                                      disabled={!moNhap || dangLuu}
-                                      onClick={() => {
-                                        if (!moNhap || dangLuu) return;
-                                        onDiemChange(
-                                          idCt,
-                                          isSelected ? "" : td.GiaTriDiem,
-                                        );
-                                      }}
-                                      onChange={() => {}}
-                                    />
-                                    <span className="pl2-diem-badge">
-                                      {formatDiem(td.GiaTriDiem)}đ
-                                    </span>
-                                    <span className="pl2-thang-diem-text">
-                                      {td.DieuKienDiem}
-                                    </span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          ) : loaiThangDiem === 3 ? (
-                            <div className="pl2-thang-diem-list">
-                              <label
-                                className={`pl2-thang-diem-item ${Number(draftDiemVal) === Number(ct.DiemToiDa) ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
-                              >
-                                <input
-                                  type="radio"
-                                  name={`yesno_${idCt}`}
-                                  checked={
+                      <div
+                        className={`pl2-criteria-content ${truongCuaCap ? "pl2-criteria-content-columns" : ""}`}
+                      >
+                        {truongCuaCap && (
+                          <div className="pl2-criteria-fields">
+                            {loaiThangDiem === 1 && mucDiem.length > 0 ? (
+                              <div className="pl2-thang-diem-list">
+                                {mucDiem.map((td) => {
+                                  const isSelected =
                                     draftDiemVal !== "" &&
                                     Number(draftDiemVal) ===
-                                      Number(ct.DiemToiDa)
-                                  }
-                                  disabled={!moNhap || dangLuu}
-                                  onChange={() => {
-                                    if (!moNhap || dangLuu) return;
-                                    onDiemChange(idCt, ct.DiemToiDa);
-                                  }}
-                                />
-                                <span className="pl2-diem-badge">
-                                  {formatDiem(ct.DiemToiDa)}đ
-                                </span>
-                                <span className="pl2-thang-diem-text">
-                                  Có / Đạt
-                                </span>
-                              </label>
-                              <label
-                                className={`pl2-thang-diem-item ${draftDiemVal !== "" && Number(draftDiemVal) === 0 ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
-                              >
-                                <input
-                                  type="radio"
-                                  name={`yesno_${idCt}`}
-                                  checked={
-                                    draftDiemVal !== "" &&
-                                    Number(draftDiemVal) === 0
-                                  }
-                                  disabled={!moNhap || dangLuu}
-                                  onChange={() => {
-                                    if (!moNhap || dangLuu) return;
-                                    onDiemChange(idCt, 0);
-                                  }}
-                                />
-                                <span className="pl2-diem-badge">0đ</span>
-                                <span className="pl2-thang-diem-text">
-                                  Không / Chưa đạt
-                                </span>
-                              </label>
-                            </div>
-                          ) : (
-                            <div className="pl2-score-input-container">
-                              <span className="pl2-score-input-label">
-                                Nhập điểm:
-                              </span>
-                              <input
-                                type="number"
-                                className="pl2-score-input"
-                                placeholder={`Tối đa ${formatDiem(ct.DiemToiDa)}`}
-                                value={draftDiemVal}
-                                disabled={!moNhap || dangLuu}
-                                min="0"
-                                max={ct.DiemToiDa}
-                                step="any"
-                                onChange={(e) => {
+                                      Number(td.GiaTriDiem);
+                                  return (
+                                    <label
+                                      key={td.IdThangDiem}
+                                      className={`pl2-thang-diem-item ${isSelected ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name={`thang_diem_${idCt}`}
+                                        checked={isSelected}
+                                        disabled={!moNhap || dangLuu}
+                                        onClick={() => {
+                                          if (!moNhap || dangLuu) return;
+                                          onDiemChange(
+                                            idCt,
+                                            isSelected ? "" : td.GiaTriDiem,
+                                          );
+                                        }}
+                                        onChange={() => {}}
+                                      />
+                                      <span className="pl2-radio-dot"></span>
+                                      <span className="pl2-diem-badge">
+                                        {formatDiem(td.GiaTriDiem)}đ
+                                      </span>
+                                      <span className="pl2-thang-diem-text">
+                                        {td.DieuKienDiem}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            ) : loaiThangDiem === 3 ? (
+                              <div className="pl2-thang-diem-list">
+                                <label
+                                  className={`pl2-thang-diem-item ${Number(draftDiemVal) === Number(ct.DiemToiDa) ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`yesno_${idCt}`}
+                                    checked={
+                                      draftDiemVal !== "" &&
+                                      Number(draftDiemVal) ===
+                                        Number(ct.DiemToiDa)
+                                    }
+                                    disabled={!moNhap || dangLuu}
+                                    onChange={() => {
+                                      if (!moNhap || dangLuu) return;
+                                      onDiemChange(idCt, ct.DiemToiDa);
+                                    }}
+                                  />
+                                  <span className="pl2-radio-dot"></span>
+                                  <span className="pl2-diem-badge">
+                                    {formatDiem(ct.DiemToiDa)}đ
+                                  </span>
+                                  <span className="pl2-thang-diem-text">
+                                    Có / Đạt
+                                  </span>
+                                </label>
+                                <label
+                                  className={`pl2-thang-diem-item ${draftDiemVal !== "" && Number(draftDiemVal) === 0 ? "selected" : ""} ${!moNhap ? "disabled" : ""}`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`yesno_${idCt}`}
+                                    checked={
+                                      draftDiemVal !== "" &&
+                                      Number(draftDiemVal) === 0
+                                    }
+                                    disabled={!moNhap || dangLuu}
+                                    onChange={() => {
+                                      if (!moNhap || dangLuu) return;
+                                      onDiemChange(idCt, 0);
+                                    }}
+                                  />
+                                  <span className="pl2-radio-dot"></span>
+                                  <span className="pl2-diem-badge">0đ</span>
+                                  <span className="pl2-thang-diem-text">
+                                    Không / Chưa đạt
+                                  </span>
+                                </label>
+                              </div>
+                            ) : (
+                              <ONhapDiem
+                                giaTri={draftDiemVal}
+                                diemToiDa={ct.DiemToiDa}
+                                doc={!moNhap || dangLuu}
+                                onChange={(val) => {
                                   if (!moNhap || dangLuu) return;
-                                  const val = e.target.value;
                                   if (val === "") {
                                     onDiemChange(idCt, "");
                                     return;
@@ -374,41 +358,36 @@ const DanhGiaPhongForm = ({
                                   onDiemChange(idCt, num);
                                 }}
                               />
-                              <span className="pl2-score-input-hint">
-                                (Điểm tối đa: {formatDiem(ct.DiemToiDa)}đ)
-                              </span>
-                            </div>
-                          )}
+                            )}
 
-                          <textarea
-                            className="pl2-textarea"
-                            placeholder="Nhập diễn giải / ghi chú cho tiêu chí này (nếu có)..."
-                            value={draftNhanXetVal}
-                            disabled={!moNhap || dangLuu}
-                            onChange={(e) => {
-                              if (!moNhap || dangLuu) return;
-                              onNhanXetChange(idCt, e.target.value);
-                            }}
+                            <ODienGiai
+                              giaTri={draftNhanXetVal}
+                              doc={!moNhap || dangLuu}
+                              placeholder="Nhập diễn giải / ghi chú cho tiêu chí này (nếu có)..."
+                              onChange={(val) => {
+                                if (!moNhap || dangLuu) return;
+                                onNhanXetChange(idCt, val);
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        <TieuChiMinhChung
+                          soMinhChung={(ct.MinhChung || []).length}
+                        >
+                          <MinhChungTieuChiBox
+                            idChiTiet={idCt}
+                            danhSach={ct.MinhChung || []}
+                            choPhepSua={choPhepSuaMinhChung}
+                            batBuoc={!!ct.BatBuocMinhChung}
+                            cauHinh={cauHinhMc}
+                            onChange={(ds) => onMinhChungChange?.(idCt, ds)}
+                            onXem={onXemMinhChung}
+                            onTai={onTaiMinhChung}
+                            onError={onLoiMinhChung}
+                            onSuccess={onOkMinhChung}
                           />
-                        </>
-                      )}
-
-                      <div className="phong-mc-khoi">
-                        <span className="phong-mc-nhan">
-                          <i className="fa-solid fa-paperclip"></i> Minh chứng
-                        </span>
-                        <MinhChungDonViBox
-                          idChiTiet={idCt}
-                          danhSach={ct.MinhChung || []}
-                          choPhepSua={choPhepSuaMinhChung}
-                          batBuoc={!!ct.BatBuocMinhChung}
-                          cauHinh={cauHinhMc}
-                          onChange={(ds) => onMinhChungChange?.(idCt, ds)}
-                          onXem={onXemMinhChung}
-                          onTai={onTaiMinhChung}
-                          onError={onLoiMinhChung}
-                          onSuccess={onOkMinhChung}
-                        />
+                        </TieuChiMinhChung>
                       </div>
 
                       {choPhepNhap && (

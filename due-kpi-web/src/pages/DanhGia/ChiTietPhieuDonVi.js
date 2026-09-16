@@ -10,18 +10,27 @@ import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
 import "../../css/DanhGia/DanhGiaPhuLuc2.css";
+import "../../css/DanhGia/DanhGiaKpiDonVi.css";
 import {
+  fetchDiemPhanHoiSv,
   fetchTieuChiTheoMau,
-  formatDiem,
-  formatNgayGio,
 } from "../../utils/phieuApi";
+import { fetchDonViList } from "../../utils/donViApi";
 import {
+  CAU_HINH_MC_MAC_DINH,
+  layCauHinhMinhChung,
+} from "../../utils/minhChungDonViApi";
+import { useMinhChungDonViPreview } from "../../hooks/useMinhChungDonViPreview";
+import FilePreviewModal from "../../components/Common/FilePreviewModal";
+import {
+  coTieuChiDanhGiaSinhVien,
   coTieuChiDiemTruTapThe,
   diemHieuLucCuaDong,
   fetchPhieuDonViDetail,
   laDongChamTay,
   nhapDiemChiTietDonVi,
   suaDuocPhieu,
+  tinhThongKePhanHoiKhoa,
   tongHopKpiDonVi,
   trinhPhieuDonVi,
   TRANG_THAI_DV,
@@ -65,15 +74,69 @@ const ChiTietPhieuDonVi = () => {
   const [loiTongHop, setLoiTongHop] = useState("");
   // Số liệu điểm trừ tập thể đọc riêng để không mất khi tải lại trang (xem taiDiemTruKhoa)
   const [diemTruKhoa, setDiemTruKhoa] = useState(null);
+  // Số liệu điểm đánh giá sinh viên của Khoa
+  const [phanHoiSvKhoa, setPhanHoiSvKhoa] = useState(null);
+  const [dangTaiPhanHoiSv, setDangTaiPhanHoiSv] = useState(false);
   /** Chốt lần tổng hợp tự động: chỉ chạy một lần cho mỗi phiếu được mở. */
   const daTuTongHop = useRef(false);
 
   const [moTrinh, setMoTrinh] = useState(false);
   const [dangTrinh, setDangTrinh] = useState(false);
 
+  const [cauHinhMc, setCauHinhMc] = useState(CAU_HINH_MC_MAC_DINH);
+
   // useCallback để dùng được trong deps của các hàm bên dưới; chỉ đụng ref nên ổn định.
   const showToast = useCallback((severity, summary, detail, life = 4000) => {
     toast.current?.show({ severity, summary, detail, life });
+  }, []);
+
+  const baoLoiMc = useCallback((msg) => {
+    toast.current?.show({
+      severity: "error",
+      summary: "Minh chứng",
+      detail: msg,
+      life: 5000,
+    });
+  }, []);
+
+  const baoOkMc = useCallback((msg) => {
+    toast.current?.show({
+      severity: "success",
+      summary: "Minh chứng",
+      detail: msg,
+      life: 2500,
+    });
+  }, []);
+
+  const { preview, openPreview, closePreview, downloadMinhChung } =
+    useMinhChungDonViPreview(baoLoiMc);
+
+  // Tải cấu hình dung lượng và định dạng tệp minh chứng từ server
+  useEffect(() => {
+    let con = true;
+    layCauHinhMinhChung().then((ch) => {
+      if (con) setCauHinhMc(ch);
+    });
+    return () => {
+      con = false;
+    };
+  }, []);
+
+  /**
+   * Cập nhật danh sách minh chứng của một dòng tiêu chí ngay tại chỗ.
+   * Cố tình KHÔNG đổi RowVersion và KHÔNG gọi taiPhieu() để không ghi đè dữ liệu điểm đang nhập nháp.
+   */
+  const handleMinhChungChange = useCallback((idCt, dsMoi) => {
+    setPhieu((cur) =>
+      cur
+        ? {
+            ...cur,
+            ChiTiet: (cur.ChiTiet || []).map((dong) =>
+              dong.IdChiTietDv === idCt ? { ...dong, MinhChung: dsMoi } : dong,
+            ),
+          }
+        : cur,
+    );
   }, []);
 
   const taiPhieu = useCallback(
@@ -266,6 +329,17 @@ const ChiTietPhieuDonVi = () => {
     [chiTietList],
   );
 
+  const dongThieuMinhChung = useMemo(
+    () =>
+      chiTietList.filter(
+        (ct) =>
+          laDongChamTay(ct) &&
+          ct.BatBuocMinhChung &&
+          (!Array.isArray(ct.MinhChung) || ct.MinhChung.length === 0),
+      ),
+    [chiTietList],
+  );
+
   const oDaSua = useCallback(
     (ct) => {
       const idCt = ct.IdChiTietDv;
@@ -405,6 +479,7 @@ const ChiTietPhieuDonVi = () => {
     setTongHop(null);
     setLoiTongHop("");
     setDiemTruKhoa(null);
+    setPhanHoiSvKhoa(null);
   }, [id]);
 
   /**
@@ -459,6 +534,51 @@ const ChiTietPhieuDonVi = () => {
         // Số liệu diễn giải, hỏng thì thôi - không được làm chết màn hình chấm điểm
         console.error("Lỗi tải điểm trừ tập thể của Khoa:", error);
       });
+    return () => {
+      huy = true;
+    };
+  }, [id, phieu?.IdPhieuDv, phieu?.IdNam, phieu?.IdDonVi, chiTietList]);
+
+  /**
+   * Tải số liệu điểm đánh giá của sinh viên (toàn Khoa).
+   *
+   * Endpoint `GET api/diem-tb-phan-hoi-sv?idNam={idNam}` trả về kết quả chốt
+   * điểm khảo sát sinh viên của năm học. Kết hợp với danh mục đơn vị để lọc
+   * các giảng viên thuộc Khoa (+ các bộ môn trực thuộc) và tính điểm trung bình
+   * có trọng số của Khoa theo đúng mô tả nghiệp vụ trong docs/schema_ghi_chu.md.
+   */
+  useEffect(() => {
+    if (!phieu?.IdNam || !phieu?.IdDonVi) return;
+    if (String(phieu.IdPhieuDv) !== String(id)) return;
+    if (!coTieuChiDanhGiaSinhVien(chiTietList)) return;
+
+    let huy = false;
+    setDangTaiPhanHoiSv(true);
+
+    Promise.all([
+      fetchDiemPhanHoiSv(phieu.IdNam).catch((err) => {
+        console.error("Lỗi tải điểm phản hồi sinh viên:", err);
+        return { dotChot: null, items: [] };
+      }),
+      fetchDonViList().catch(() => []),
+    ])
+      .then(([{ dotChot, items }, donViList]) => {
+        if (huy) return;
+        const thongKe = tinhThongKePhanHoiKhoa({
+          items,
+          idDonVi: phieu.IdDonVi,
+          donViList,
+          dotChot,
+        });
+        setPhanHoiSvKhoa(thongKe);
+      })
+      .catch((error) => {
+        console.error("Lỗi xử lý thống kê đánh giá sinh viên của Khoa:", error);
+      })
+      .finally(() => {
+        if (!huy) setDangTaiPhanHoiSv(false);
+      });
+
     return () => {
       huy = true;
     };
@@ -688,7 +808,16 @@ const ChiTietPhieuDonVi = () => {
         tamTinh={tamTinh}
         tongHop={tongHop}
         diemTruKhoa={diemTruKhoa}
+        phanHoiSvKhoa={phanHoiSvKhoa}
+        dangTaiPhanHoiSv={dangTaiPhanHoiSv}
         loiTongHop={loiTongHop}
+        cauHinhMc={cauHinhMc}
+        choPhepSuaMinhChung={choPhepNhap}
+        onMinhChungChange={handleMinhChungChange}
+        onXemMinhChung={openPreview}
+        onTaiMinhChung={downloadMinhChung}
+        onLoiMinhChung={baoLoiMc}
+        onOkMinhChung={baoOkMc}
       />
 
       {/* Modal xác nhận trình duyệt */}
@@ -728,8 +857,31 @@ const ChiTietPhieuDonVi = () => {
               phải lập lại phiếu). Nên liên hệ quản trị trước khi trình.
             </div>
           )}
+
+          {dongThieuMinhChung.length > 0 && (
+            <div
+              className="cd-hint cd-hint-warn"
+              style={{ marginBottom: "12px" }}
+            >
+              <i className="fa-solid fa-paperclip"></i> Có{" "}
+              <b>{dongThieuMinhChung.length}</b> tiêu chí yêu cầu minh chứng
+              nhưng chưa được đính kèm tệp.
+            </div>
+          )}
         </LyDoModal>
       )}
+
+      {/* Modal xem trước tệp minh chứng */}
+      <FilePreviewModal
+        isOpen={preview.isOpen}
+        fileName={preview.mc?.TenHienThi || preview.mc?.TenFileGoc}
+        kieu={preview.kieu}
+        url={preview.url}
+        isLoading={preview.isLoading}
+        error={preview.error}
+        onClose={closePreview}
+        onDownload={() => downloadMinhChung(preview.mc)}
+      />
     </div>
   );
 };

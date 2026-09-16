@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { formatDiem, formatNgayGio } from "../../../utils/phieuApi";
 import { diemHieuLucCuaDong } from "../../../utils/phieuDonViApi";
 import { NHAN_CAP_CHAM, CAP_CHAM } from "../../../utils/phieuPhongApi";
-import MinhChungDonViBox from "./MinhChungDonViBox";
+import MinhChungTieuChiBox from "../TieuChi/MinhChungTieuChiBox";
 
 /**
  * Một tiêu chí trên màn hình Trưởng phòng duyệt phiếu KPI Phòng / Trung tâm.
@@ -173,7 +173,7 @@ const TieuChiChamDonViCard = ({
               </div>
               {/* choPhepSua = false: quyền thêm/gỡ chỉ thuộc về thư ký ở trạng
                   thái 1, mà thẻ này chỉ dựng cho trạng thái 2. */}
-              <MinhChungDonViBox
+              <MinhChungTieuChiBox
                 idChiTiet={chiTiet.IdChiTietDv}
                 danhSach={minhChung}
                 choPhepSua={false}

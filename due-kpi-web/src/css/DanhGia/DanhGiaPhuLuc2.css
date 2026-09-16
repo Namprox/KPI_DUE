@@ -322,25 +322,53 @@
 
 .pl2-criteria {
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
   padding: 20px 22px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.25s ease;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 10px 28px -18px rgba(15, 23, 42, 0.35);
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .pl2-criteria:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 14px 32px -18px rgba(15, 23, 42, 0.45);
 }
 
+/*
+ * Header ăn ra sát hai mép thẻ bằng lề âm, để đường kẻ dưới chạy hết bề ngang
+ * mà thân thẻ không cần thêm một lớp bọc nữa.
+ */
 .pl2-criteria-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 24px;
-  width: 100%;
-  margin-bottom: 15px;
+  gap: 16px;
+  margin: -20px -22px 16px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid #eef1f7;
   flex-wrap: wrap;
+}
+
+/* Chip số thứ tự tiêu chí (1, 1.1, 2.3...) */
+.pl2-criteria-idx {
+  flex: none;
+  box-sizing: border-box;
+  min-width: 40px;
+  height: 30px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .pl2-criteria-header-main {
@@ -348,7 +376,7 @@
   min-width: 240px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pl2-criteria-header-side {
@@ -363,23 +391,45 @@
   font-size: 16px;
   color: #1e293b;
   line-height: 1.5;
+  text-wrap: pretty;
 }
 
 .pl2-criteria-desc {
-  color: #6b7280;
+  color: #64748b;
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-line;
-  padding-left: 4px;
+}
+
+/* Hàng pill phụ dưới tiêu đề: tên nhóm, cờ bắt buộc minh chứng... */
+.pl2-criteria-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.pl2-criteria-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .pl2-criteria-max {
-  background: #f1f5f9;
-  padding: 4px 12px;
+  background: #eff6ff;
+  padding: 5px 12px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: bold;
-  color: #475569;
+  font-weight: 700;
+  color: #1d4ed8;
   white-space: nowrap;
 }
 
@@ -393,7 +443,7 @@
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -403,6 +453,8 @@
   border-color: #e2e8f0;
 }
 
+/* ---- Danh sách mức điểm ------------------------------------------- */
+
 .pl2-thang-diem-list {
   display: flex;
   flex-direction: column;
@@ -411,18 +463,18 @@
 }
 
 .pl2-thang-diem-item {
+  position: relative;
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 10px 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 11px;
   background: #fff;
   cursor: pointer;
   transition:
     border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+    background 0.15s ease;
 }
 
 .pl2-thang-diem-item:hover {
@@ -431,7 +483,7 @@
 }
 
 .pl2-thang-diem-item.selected {
-  border: 1px solid #1d4ed8;
+  border-color: #1d4ed8;
   background: #eff6ff;
 }
 
@@ -450,23 +502,56 @@
   background: #eff6ff;
 }
 
+/*
+ * Radio thật vẫn nằm trong DOM, chỉ ẩn khỏi mắt: mất nó là mất luôn khả năng
+ * tab/space và mất nhãn cho trình đọc màn hình. Chấm tròn nhìn thấy được vẽ
+ * bằng .pl2-radio-dot ngay sau input để còn bắt được :focus-visible.
+ */
 .pl2-thang-diem-item input[type="radio"] {
-  margin-top: 4px;
-  accent-color: #1d4ed8;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pl2-radio-dot {
   flex-shrink: 0;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  background: #fff;
+  transition: border 0.15s ease;
+}
+
+.pl2-thang-diem-item:hover .pl2-radio-dot {
+  border-color: #93c5fd;
+}
+
+.pl2-thang-diem-item.selected .pl2-radio-dot {
+  border: 5.5px solid #1d4ed8;
+}
+
+.pl2-thang-diem-item input[type="radio"]:focus-visible ~ .pl2-radio-dot {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
 }
 
 .pl2-diem-badge {
-  min-width: 44px;
+  min-width: 52px;
   text-align: center;
   font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  background: #f3f4f6;
-  padding: 2px 8px;
+  font-weight: 700;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 4px 10px;
   border-radius: 999px;
   flex-shrink: 0;
   line-height: 20px;
+  font-variant-numeric: tabular-nums;
 }
 
 .pl2-thang-diem-item.selected .pl2-diem-badge {
@@ -476,8 +561,9 @@
 
 .pl2-thang-diem-text {
   font-size: 14px;
-  color: #334155;
-  line-height: 1.6;
+  color: #475569;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 .pl2-thang-diem-item.selected .pl2-thang-diem-text {
@@ -514,43 +600,29 @@
   border-color: #ef4444;
 }
 
+.pl2-textarea-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pl2-textarea-count {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pl2-textarea-count.qua-dai {
+  color: #b45309;
+  font-weight: 600;
+}
+
 .pl2-file-upload {
   margin-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.pl2-file-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.btn-attach-file {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #4b5563;
-  background-color: #f3f4f6;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.btn-attach-file:hover {
-  background-color: #e5e7eb;
-}
-
-.btn-attach-file:active {
-  background-color: #d1d5db;
-}
-
-.btn-attach-file i {
-  font-size: 14px;
 }
 
 .pl2-chip-list {
@@ -623,58 +695,120 @@
   border-color: #ef4444;
 }
 
-.pl2-score-input-container {
+/* ---- Ô nhập điểm cho tiêu chí thang liên tục ----------------------- */
+
+.pl2-score-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 15px;
+}
+
+.pl2-score-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 15px;
-  background: #f8fafc;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  max-width: fit-content;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.pl2-score-input-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-}
-
-.pl2-score-input-hint {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.pl2-score-input {
-  width: 120px;
-  padding: 8px 12px;
+/* Ô nhập và hậu tố "/ tối đa" nằm chung một khung viền */
+.pl2-score-box {
+  display: flex;
+  align-items: center;
+  height: 44px;
   border: 1.5px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
+  border-radius: 10px;
   background: #fff;
-  transition: all 0.2s ease;
-  text-align: center;
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.pl2-score-input:focus {
+.pl2-score-box:focus-within {
   border-color: #003399;
-  outline: none;
   box-shadow: 0 0 0 3px rgba(0, 51, 153, 0.15);
 }
 
-.pl2-score-input:disabled {
+.pl2-score-box.loi {
+  border-color: #ef4444;
+}
+
+.pl2-score-box.loi:focus-within {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.pl2-score-box.khoa {
   background: #f1f5f9;
-  color: #64748b;
   border-color: #e2e8f0;
-  cursor: not-allowed;
+}
+
+.pl2-score-input {
+  width: 110px;
+  height: 100%;
+  padding: 0 14px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  font-variant-numeric: tabular-nums;
 }
 
 .pl2-score-input::placeholder {
   font-weight: normal;
   color: #94a3b8;
+}
+
+.pl2-score-input:disabled {
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.pl2-score-suffix {
+  padding-right: 12px;
+  font-size: 14px;
+  color: #94a3b8;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pl2-score-quick {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475569;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pl2-score-quick:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.pl2-score-quick:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pl2-score-hint {
+  min-height: 18px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.pl2-score-hint.loi {
+  color: #dc2626;
+  font-weight: 500;
 }
 
 .pl2-criteria-auto {
@@ -966,7 +1100,18 @@
   }
 
   .pl2-criteria {
-    padding: 14px;
+    padding: 16px 14px;
+  }
+
+  .pl2-criteria-header {
+    gap: 12px;
+    margin: -16px -14px 14px;
+    padding: 14px 14px 12px;
+  }
+
+  .pl2-criteria-header-main {
+    min-width: 0;
+    flex-basis: 100%;
   }
 
   .pl2-criteria-title {
@@ -987,9 +1132,13 @@
     gap: 12px;
   }
 
-  .pl2-score-input-container {
-    max-width: none;
-    flex-wrap: wrap;
+  .pl2-score-box,
+  .pl2-score-quick {
+    height: 40px;
+  }
+
+  .pl2-score-input {
+    width: 88px;
   }
 }
 
@@ -1262,3 +1411,225 @@
   cursor: not-allowed;
 }
 
+/* ==========================================================================
+   MINH CHỨNG CỦA MỘT DÒNG TIÊU CHÍ - dùng chung cho cả 4 phiếu KPI
+   (giảng viên, nhân viên, khoa/đơn vị, phòng/trung tâm)
+
+   Trước đây khối này tồn tại hai bản gần như y hệt: .dv-* trong
+   DanhGiaKpiDonVi.css và .phong-* trong DanhGiaKpiPhong.css. Gộp về đây vì cả
+   ba trang phiếu đều đã import sẵn file này.
+   ========================================================================== */
+
+.pl2-mc-khoi {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.pl2-mc-nhan {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.pl2-mc-nhan i {
+  color: #2563eb;
+}
+
+.pl2-mc-list {
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.pl2-mc-trong {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 13px;
+  font-style: italic;
+  color: #94a3b8;
+}
+
+/* Nút gỡ tệp - biến thể đỏ của .cd-mc-act */
+.pl2-mc-xoa {
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
+}
+
+.pl2-mc-xoa:hover:not(:disabled) {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+}
+
+/* Huy hiệu minh chứng trên hàng pill của tiêu đề tiêu chí */
+.pl2-mc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.pl2-mc-badge.can-mc {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.pl2-mc-badge.da-co {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.pl2-mc-badge.du-mc {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+/* ---- Vùng dropzone đính kèm minh chứng ----------------------------- */
+
+.pl2-dz {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 16px 18px;
+  border: 1.5px dashed #93c5fd;
+  border-radius: 10px;
+  background: #f8fbff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.pl2-dz:hover:not(:disabled) {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
+}
+
+.pl2-dz:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.pl2-dz:disabled {
+  cursor: progress;
+  opacity: 0.8;
+}
+
+/* Thu gọn khi đã có tệp: danh sách tệp mới là thứ cần đọc, không phải ô trống */
+.pl2-dz-gon {
+  padding: 10px 14px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #bfdbfe;
+  background: #f0f7ff;
+}
+
+.pl2-dz-gon:hover:not(:disabled) {
+  background: #e2effe;
+}
+
+/* Trạng thái đang kéo tệp lên vùng */
+.pl2-dz-keo {
+  border-color: #2563eb !important;
+  background: #dbeafe !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Cảnh báo khi tiêu chí yêu cầu minh chứng nhưng chưa có */
+.pl2-dz-loi {
+  border-color: #fcd34d;
+  background: #fffdf5;
+}
+
+.pl2-dz-loi:hover:not(:disabled) {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.pl2-dz-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.pl2-dz:hover:not(:disabled) .pl2-dz-icon {
+  transform: scale(1.05);
+  color: #1d4ed8;
+}
+
+.pl2-dz-gon .pl2-dz-icon {
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+}
+
+.pl2-dz-keo .pl2-dz-icon {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
+.pl2-dz-loi .pl2-dz-icon {
+  border-color: #fde68a;
+  color: #d97706;
+}
+
+.pl2-dz-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pl2-dz-chinh {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.pl2-dz-loi .pl2-dz-chinh {
+  color: #92400e;
+}
+
+.pl2-dz-phu {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.pl2-dz-phu-loi {
+  color: #b45309;
+  font-weight: 500;
+}
+
+.pl2-dz-phu-loi i {
+  color: #d97706;
+  margin-right: 2px;
+}

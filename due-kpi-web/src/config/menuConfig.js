@@ -133,10 +133,9 @@ export const MENU_GROUPS = [
         // trên, nhưng mẫu loại 4: nhóm tiêu chí phẳng (loai_nhom = NULL), tổng
         // điểm cộng thẳng, ngưỡng xếp loại 80/60/50.
         //
-        // Tách thành mục riêng vì màn hình này dựng TRỌN vòng đời (thư ký nhập →
-        // Trưởng phòng duyệt → cấp Trường duyệt → chốt → mở lại) nên tập vai trò
-        // rộng hơn hẳn mục KPI Đơn vị. Phân quyền theo từng thao tác nằm ở
-        // quyenPhieuPhong() chứ không suy từ tập này.
+        // Tách thành mục riêng cho TKP nhập/trình và TP chấm/duyệt. HT xem và
+        // duyệt ở màn hình cấp Trường riêng, nên không được mở mục hoặc route
+        // này. Phân quyền theo từng thao tác nằm ở quyenPhieuPhong().
         name: "Đánh giá KPI Phòng",
         icon: "fa-solid fa-building-user",
         path: "/danh-gia-kpi-phong",
@@ -441,9 +440,9 @@ export const MENU_GROUPS = [
       },
       {
         // Khoa nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò cho giảng
-        // viên (KPI Nhóm III). Thư ký Khoa cũng vào được vì họ là người gõ dữ
-        // liệu; nút Chốt kỳ trên màn hình vẫn tắt theo cờ CanChot của server.
-        name: "Phân công phục vụ cộng đồng",
+        // viên (KPI Nhóm III). Chỉ TK/TKL được vào; nút Chốt kỳ trên màn hình
+        // vẫn phụ thuộc cờ CanChot của server.
+        name: "Ghi nhận phục vụ cộng đồng",
         icon: "fa-solid fa-hands-holding-circle",
         path: "/quan-ly/nhiem-vu-khoa",
         roles: ROLE_SETS.NHIEM_VU_KHOA,

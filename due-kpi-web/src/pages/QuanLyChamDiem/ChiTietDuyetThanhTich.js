@@ -509,7 +509,6 @@ const ChiTietDuyetThanhTich = () => {
                   key={mc.IdMinhChungTt}
                   mc={mc}
                   onXem={openPreview}
-                  onTai={downloadMinhChung}
                 />
               ))}
             </div>
@@ -884,27 +883,34 @@ const ChiTietDuyetThanhTich = () => {
               {mo && (
                 <div className="table-scroll">
                   <table
-                    className="custom-table kkt-bang"
-                    style={{ minWidth: "1180px" }}
+                    className="custom-table kkt-bang kkt-bang-duyet"
                   >
+                    <colgroup>
+                      <col className="kkt-col-thanh-tich" />
+                      <col className="kkt-col-quy" />
+                      <col className="kkt-col-so-luong-ke" />
+                      <col className="kkt-col-diem-ke" />
+                      <col className="kkt-col-quyet-dinh" />
+                      <col className="kkt-col-so-luong-duyet" />
+                      <col className="kkt-col-diem-duyet" />
+                      <col className="kkt-col-nhan-xet" />
+                    </colgroup>
                     <thead>
                       <tr>
-                        <th style={{ width: "30%" }}>
-                          Thành tích / minh chứng
-                        </th>
-                        <th style={{ width: "9%" }}>Quý</th>
-                        <th style={{ width: "10%", textAlign: "right" }}>
+                        <th>Thành tích / minh chứng</th>
+                        <th>Quý</th>
+                        <th style={{ textAlign: "right" }}>
                           Nhân viên kê
                         </th>
-                        <th style={{ width: "8%", textAlign: "right" }}>
+                        <th style={{ textAlign: "right" }}>
                           Điểm kê
                         </th>
-                        <th style={{ width: "15%" }}>Quyết định</th>
-                        <th style={{ width: "10%" }}>Số lượng duyệt</th>
-                        <th style={{ width: "8%", textAlign: "right" }}>
+                        <th>Quyết định</th>
+                        <th>Số lượng duyệt</th>
+                        <th style={{ textAlign: "right" }}>
                           Điểm duyệt
                         </th>
-                        <th style={{ width: "18%" }}>Nhận xét</th>
+                        <th>Nhận xét</th>
                       </tr>
                     </thead>
                     <tbody>

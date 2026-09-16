@@ -1359,6 +1359,89 @@
     font-size: 13px;
 }
 
+/* Bảng duyệt có nhiều cột điều khiển nhưng cột minh chứng lại chứa tên tệp rất
+   dài. Với table-layout:auto, chuỗi nowrap của tên tệp trở thành độ rộng tối
+   thiểu của cột và đẩy toàn bộ phần quyết định ra ngoài màn hình. Khóa layout
+   chỉ cho bảng này để mọi cột luôn giữ đúng phần không gian được phân bổ. */
+.kkt-bang-duyet {
+    width: 100%;
+    min-width: 1180px;
+    table-layout: fixed;
+}
+
+.kkt-bang-duyet .kkt-col-thanh-tich {
+    width: 38%;
+}
+
+.kkt-bang-duyet .kkt-col-quy {
+    width: 6%;
+}
+
+.kkt-bang-duyet .kkt-col-so-luong-ke {
+    width: 8%;
+}
+
+.kkt-bang-duyet .kkt-col-diem-ke {
+    width: 7%;
+}
+
+.kkt-bang-duyet .kkt-col-quyet-dinh {
+    width: 10%;
+}
+
+.kkt-bang-duyet .kkt-col-so-luong-duyet {
+    width: 10%;
+}
+
+.kkt-bang-duyet .kkt-col-diem-duyet {
+    width: 7%;
+}
+
+.kkt-bang-duyet .kkt-col-nhan-xet {
+    width: 14%;
+}
+
+.custom-table.kkt-bang-duyet th:first-child,
+.custom-table.kkt-bang-duyet td:first-child {
+    text-align: left;
+}
+
+.kkt-bang-duyet thead th {
+    white-space: normal;
+}
+
+.kkt-bang-duyet td {
+    overflow-wrap: anywhere;
+}
+
+.kkt-bang-duyet .kkt-mc-list,
+.kkt-bang-duyet .cd-mc-row,
+.kkt-bang-duyet .cd-mc-main {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.kkt-bang-duyet .cd-mc-row {
+    box-sizing: border-box;
+}
+
+.kkt-bang-duyet .cd-mc-main {
+    overflow: hidden;
+}
+
+.kkt-bang-duyet .cd-mc-name {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kkt-bang-duyet .cd-mc-meta {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
 /* ================================================================== */
 /* ĐỒNG BỘ THANG CHỮ DÙNG CHUNG TRONG PHẠM VI MODULE                   */
 /*                                                                     */

@@ -13,7 +13,7 @@ import { formatNgayGio } from "../../utils/phieuApi";
  *
  * @param {object}   mc
  * @param {Function} onXem
- * @param {Function} onTai
+ * @param {Function} [onTai] bỏ trống = ẩn nút tải (modal xem trước đã có nút tải)
  * @param {Function} [onXoa] bỏ trống = ẩn nút gỡ (chỉ đọc)
  * @param {boolean}  [dangXoa]
  */
@@ -52,14 +52,16 @@ const MinhChungThanhTichRow = ({ mc, onXem, onTai, onXoa, dangXoa = false }) => 
       >
         <i className="fa-solid fa-eye"></i> Xem
       </button>
-      <button
-        type="button"
-        className="cd-mc-act"
-        onClick={() => onTai(mc)}
-        title="Tải tệp về máy"
-      >
-        <i className="fa-solid fa-download"></i> Tải về
-      </button>
+      {onTai && (
+        <button
+          type="button"
+          className="cd-mc-act"
+          onClick={() => onTai(mc)}
+          title="Tải tệp về máy"
+        >
+          <i className="fa-solid fa-download"></i> Tải về
+        </button>
+      )}
       {onXoa && (
         <button
           type="button"

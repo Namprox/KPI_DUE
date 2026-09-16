@@ -1,0 +1,349 @@
+/* ==========================================================================
+   CSS CHO TRANG ĐÁNH GIÁ KPI ĐƠN VỊ / KHOA (ChiTietPhieuDonVi & DanhGiaDonViForm)
+   ========================================================================== */
+
+/* Khối minh chứng + dropzone của từng dòng tiêu chí đã chuyển sang
+   DanhGia/DanhGiaPhuLuc2.css dưới tên .pl2-mc-* / .pl2-dz-* để cả 4 phiếu KPI
+   dùng chung. */
+
+/* ==========================================================================
+   THẺ HIỂN THỊ ĐIỂM TRUNG BÌNH ĐÁNH GIÁ CỦA SINH VIÊN (KHOA)
+   ========================================================================== */
+
+.dv-phsv-card {
+  margin-top: 14px;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
+  transition: all 0.2s ease;
+}
+
+.dv-phsv-card:hover {
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  border-color: #93c5fd;
+}
+
+/* Header */
+.dv-phsv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dv-phsv-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dv-phsv-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  border: 1px solid #dbeafe;
+}
+
+.dv-phsv-title {
+  margin: 0 0 2px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e3a8a;
+  letter-spacing: 0.3px;
+}
+
+.dv-phsv-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.dv-phsv-dot-chot-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  color: #475569;
+}
+
+.dv-phsv-dot-chot-pill i {
+  color: #059669;
+}
+
+.dv-phsv-dot-chot-user {
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Grid Metrics */
+.dv-phsv-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.dv-phsv-metric-cell {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.dv-phsv-metric-primary {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.dv-phsv-metric-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dv-phsv-metric-primary .dv-phsv-metric-label {
+  color: #1d4ed8;
+}
+
+.dv-phsv-metric-val-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dv-phsv-metric-val {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.dv-phsv-metric-primary .dv-phsv-metric-val {
+  color: #1d4ed8;
+}
+
+.dv-phsv-metric-max {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.dv-phsv-metric-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.dv-phsv-metric-hint {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 5px;
+}
+
+/* Toggle row */
+.dv-phsv-toggle-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 6px;
+}
+
+.dv-phsv-toggle-btn {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2563eb;
+  padding: 6px 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.dv-phsv-toggle-btn i {
+  flex: 0 0 auto;
+}
+
+.dv-phsv-toggle-btn:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+/* Detail Table Wrap */
+.dv-phsv-detail-wrap {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.dv-phsv-search-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* Dùng class riêng thay vì search-wrapper của top bar. Rule dùng chung đó bị
+   ẩn trên mobile và không định vị icon tìm kiếm của thẻ này. */
+.dv-phsv-search-input-wrap {
+  position: relative;
+  flex: 1 1 280px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.dv-phsv-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  z-index: 1;
+  color: #64748b;
+  font-size: 13px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.dv-phsv-search-input {
+  padding-left: 36px;
+  font-size: 13px;
+}
+
+.dv-phsv-search-count {
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.dv-phsv-table-container {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.dv-phsv-table {
+  width: 100%;
+  min-width: 900px;
+  margin: 0;
+  table-layout: fixed;
+}
+
+.dv-phsv-col-stt {
+  width: 5%;
+}
+
+.dv-phsv-col-ma {
+  width: 9%;
+}
+
+.dv-phsv-col-ho-ten {
+  width: 27%;
+}
+
+.dv-phsv-col-don-vi {
+  width: 26%;
+}
+
+.dv-phsv-col-so-sv {
+  width: 20%;
+}
+
+.dv-phsv-col-diem {
+  width: 13%;
+}
+
+.custom-table.dv-phsv-table thead th,
+.custom-table.dv-phsv-table td {
+  font-size: 13px;
+}
+
+.dv-phsv-table th {
+  position: sticky;
+  top: 0;
+  background: #f1f5f9 !important;
+  font-weight: 700;
+  color: #334155;
+  z-index: 1;
+}
+
+.custom-table.dv-phsv-table thead th {
+  letter-spacing: normal;
+}
+
+.dv-phsv-table td {
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+}
+
+/* States: Loading & Chua chot */
+.dv-phsv-box {
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-top: 12px;
+}
+
+.dv-phsv-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.dv-phsv-chua-chot {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.dv-phsv-chua-chot-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.dv-phsv-chua-chot-header i {
+  color: #d97706;
+  font-size: 18px;
+  margin-top: 2px;
+}
+
+.dv-phsv-chua-chot-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 4px;
+}
+
+.dv-phsv-chua-chot-desc {
+  font-size: 12.5px;
+  color: #b45309;
+  line-height: 1.45;
+}

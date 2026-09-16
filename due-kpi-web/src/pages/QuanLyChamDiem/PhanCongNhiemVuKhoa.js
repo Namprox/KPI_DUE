@@ -238,7 +238,7 @@ const PhanCongNhiemVuKhoa = () => {
       <Toast ref={toast} position="top-right" />
 
       <div className="page-header">
-        <h2 className="nvk-title">Phân công phục vụ cộng đồng</h2>
+        <h2 className="nvk-title">Ghi nhận phục vụ cộng đồng</h2>
         <span className="breadcrumb">
           Khoa nhập nhiệm vụ và phân định vai trò - nguồn điểm KPI Nhóm III của
           giảng viên

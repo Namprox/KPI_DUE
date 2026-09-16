@@ -5,6 +5,11 @@ import {
 } from "../../../utils/minhChungPhieuApi";
 import { formatNgay as formatNgayChung } from "../../../utils/phieuApi";
 import LichSuChamDong from "../../QuanLyChamDiem/LichSuChamDong";
+import TieuChiCardHeader from "../TieuChi/TieuChiCardHeader";
+import ONhapDiem from "../TieuChi/ONhapDiem";
+import ODienGiai from "../TieuChi/ODienGiai";
+import TieuChiMinhChung from "../TieuChi/TieuChiMinhChung";
+import MinhChungDropzone from "../TieuChi/MinhChungDropzone";
 
 /**
  * Khác formatNgay dùng chung ở chỗ trả chuỗi RỖNG thay vì "-": dòng meta của
@@ -280,34 +285,30 @@ const DanhGiaPhuLuc2Form = ({
                           ? `${gIndex + 1}.${index + 1}.`
                           : `${index + 1}.`;
 
+                        // Số minh chứng của dòng: tệp đính kèm + đề tài NCKH đã gắn
+                        const soMinhChungDong =
+                          (formData[tc.IdTieuChi]?.DanhSachFile?.length || 0) +
+                          (formData[tc.IdTieuChi]?.DanhSachNCKH?.length || 0);
+
                         const criteriaHeader = (
-                          <div className="pl2-criteria-header">
-                            <div className="pl2-criteria-header-main">
-                              <span className="pl2-criteria-title">
-                                {prefix} {tc.TenTieuChi}
-                              </span>
-                              {tc.MoTa && (
-                                <div className="pl2-criteria-desc">
-                                  {tc.MoTa}
-                                </div>
-                              )}
-                            </div>
-                            <div className="pl2-criteria-header-side">
-                              {hasScore && (
-                                <span
-                                  className={`pl2-criteria-score ${autoInfo && currentScore === 0 ? "pl2-criteria-score-zero" : ""}`}
-                                >
-                                  <i
-                                    className={`fa-solid ${autoInfo && currentScore === 0 ? "fa-circle-minus" : "fa-circle-check"}`}
-                                  ></i>{" "}
-                                  {formatDiem(currentScore)}đ
-                                </span>
-                              )}
-                              <span className="pl2-criteria-max">
-                                Tối đa: {tc.DiemToiDa}đ
-                              </span>
-                            </div>
-                          </div>
+                          <TieuChiCardHeader
+                            soThuTu={prefix.replace(/\.$/, "")}
+                            tieuDe={tc.TenTieuChi}
+                            moTa={tc.MoTa}
+                            tenNhom={
+                              nhomCon.isDirect && tc.TenNhom !== section.tenNhom
+                                ? tc.TenNhom
+                                : null
+                            }
+                            batBuocMinhChung={!!tc.BatBuocMinhChung}
+                            soMinhChung={soMinhChungDong}
+                            hienBadgeMinhChung={!autoInfo}
+                            diemText={
+                              hasScore ? `${formatDiem(currentScore)}đ` : null
+                            }
+                            diemLaKhong={!!autoInfo && currentScore === 0}
+                            diemToiDaText={`${tc.DiemToiDa}đ`}
+                          />
                         );
 
                         // Auto-scored criterion (LoaiNguonDiem = 2): system-computed, read-only
@@ -565,294 +566,277 @@ const DanhGiaPhuLuc2Form = ({
                               />
                             )}
 
-                            {tc.LoaiThangDiem === 2 ? (
-                              <div className="pl2-score-input-container">
-                                <span className="pl2-score-input-label">
-                                  Nhập điểm:
-                                </span>
-                                <input
-                                  type="number"
-                                  className="pl2-score-input"
-                                  placeholder={`Tối đa ${tc.DiemToiDa}`}
-                                  value={
-                                    formData[tc.IdTieuChi]?.DiemTuDanhGia ?? ""
-                                  }
-                                  disabled={disabledRadio}
-                                  min="0"
-                                  max={tc.DiemToiDa}
-                                  onChange={(e) => {
-                                    if (disabledRadio) return;
-                                    const val = e.target.value;
-                                    if (val === "") {
-                                      onScoreChange(tc.IdTieuChi, null, "");
-                                    } else {
+                            <div
+                              className="pl2-criteria-content pl2-criteria-content-columns"
+                            >
+                              <div className="pl2-criteria-fields">
+                                {tc.LoaiThangDiem === 2 ? (
+                                  <ONhapDiem
+                                    giaTri={
+                                      formData[tc.IdTieuChi]?.DiemTuDanhGia ?? ""
+                                    }
+                                    diemToiDa={tc.DiemToiDa}
+                                    doc={disabledRadio}
+                                    onChange={(val) => {
+                                      if (disabledRadio) return;
+                                      if (val === "") {
+                                        onScoreChange(tc.IdTieuChi, null, "");
+                                        return;
+                                      }
+                                      // Kẹp ngay lúc gõ: phiếu cá nhân không có
+                                      // vòng duyệt nào chặn điểm vượt trần hộ.
                                       let parsed = parseFloat(val);
                                       if (isNaN(parsed)) parsed = 0;
                                       if (parsed < 0) parsed = 0;
                                       if (parsed > tc.DiemToiDa)
                                         parsed = tc.DiemToiDa;
                                       onScoreChange(tc.IdTieuChi, null, parsed);
-                                    }
-                                  }}
-                                />
-                                <span className="pl2-score-input-hint">
-                                  (Điểm tối đa: {tc.DiemToiDa}đ)
-                                </span>
-                              </div>
-                            ) : tc.LoaiThangDiem === 3 ? (
-                              <div className="pl2-thang-diem-list">
-                                <label
-                                  className={`pl2-thang-diem-item ${formData[tc.IdTieuChi]?.DiemTuDanhGia === tc.DiemToiDa ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name={`yesno_${tc.IdTieuChi}`}
-                                    checked={
-                                      formData[tc.IdTieuChi]?.DiemTuDanhGia ===
-                                      tc.DiemToiDa
-                                    }
-                                    disabled={disabledRadio}
-                                    onChange={() => {
-                                      if (disabledRadio) return;
-                                      onScoreChange(
-                                        tc.IdTieuChi,
-                                        null,
-                                        tc.DiemToiDa,
-                                      );
                                     }}
                                   />
-                                  <span className="pl2-diem-badge">
-                                    {tc.DiemToiDa}đ
-                                  </span>
-                                  <span className="pl2-thang-diem-text">
-                                    Có
-                                  </span>
-                                </label>
-                                <label
-                                  className={`pl2-thang-diem-item ${formData[tc.IdTieuChi]?.DiemTuDanhGia === 0 || formData[tc.IdTieuChi]?.DiemTuDanhGia == null ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name={`yesno_${tc.IdTieuChi}`}
-                                    checked={
-                                      formData[tc.IdTieuChi]?.DiemTuDanhGia ===
-                                        0 ||
-                                      formData[tc.IdTieuChi]?.DiemTuDanhGia ==
-                                        null
-                                    }
-                                    disabled={disabledRadio}
-                                    onChange={() => {
-                                      if (disabledRadio) return;
-                                      onScoreChange(tc.IdTieuChi, null, 0);
-                                    }}
-                                  />
-                                  <span className="pl2-diem-badge">0đ</span>
-                                  <span className="pl2-thang-diem-text">
-                                    Không
-                                  </span>
-                                </label>
-                              </div>
-                            ) : (
-                              tc.CacThangDiem?.length > 0 && (
-                                <div className="pl2-thang-diem-list">
-                                  {tc.CacThangDiem.map((td) => {
-                                    const selected =
-                                      formData[tc.IdTieuChi]
-                                        ?.IdThangDiemChon === td.IdThangDiem;
-                                    return (
-                                      <label
-                                        key={td.IdThangDiem}
-                                        className={`pl2-thang-diem-item ${selected ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
-                                      >
-                                        <input
-                                          type="radio"
-                                          checked={selected}
-                                          disabled={disabledRadio}
-                                          onClick={() => {
-                                            if (disabledRadio) return;
-                                            if (selected)
-                                              onScoreChange(
-                                                tc.IdTieuChi,
-                                                null,
-                                                0,
-                                              );
-                                            else
-                                              onScoreChange(
-                                                tc.IdTieuChi,
-                                                td.IdThangDiem,
-                                                td.GiaTriDiem,
-                                              );
-                                          }}
-                                          onChange={() => {}}
-                                        />
-                                        <span className="pl2-diem-badge">
-                                          {td.GiaTriDiem}đ
-                                        </span>
-                                        <span className="pl2-thang-diem-text">
-                                          {td.DieuKienDiem}
-                                        </span>
-                                      </label>
-                                    );
-                                  })}
-                                </div>
-                              )
-                            )}
-
-                            <textarea
-                              className="pl2-textarea"
-                              placeholder={
-                                isKhoaEvaluating
-                                  ? "Nhập nhận xét của Khoa..."
-                                  : "Nhập diễn giải (nếu có)"
-                              }
-                              value={
-                                formData[tc.IdTieuChi]?.MoTaHoanThanh || ""
-                              }
-                              onChange={(e) =>
-                                onTextChange(tc.IdTieuChi, e.target.value)
-                              }
-                              disabled={disabledText}
-                            />
-
-                            <div className="pl2-file-upload">
-                              {moNhap && !isKhoaEvaluating && (
-                                <div className="pl2-file-actions">
-                                  <button
-                                    type="button"
-                                    className="btn-attach-file"
-                                    title="Chỉ chấp nhận tệp PDF"
-                                    onClick={() =>
-                                      document
-                                        .getElementById(
-                                          `file_input_${tc.IdTieuChi}`,
-                                        )
-                                        .click()
-                                    }
-                                  >
-                                    <i className="fa-solid fa-paperclip"></i>{" "}
-                                    Đính kèm minh chứng
-                                  </button>
-                                  <input
-                                    id={`file_input_${tc.IdTieuChi}`}
-                                    type="file"
-                                    multiple
-                                    accept={ACCEPT_PDF}
-                                    style={{ display: "none" }}
-                                    onChange={(e) => {
-                                      const files = Array.from(e.target.files);
-                                      if (files.length > 0 && onFileChange)
-                                        onFileChange(tc.IdTieuChi, files);
-                                      e.target.value = null;
-                                    }}
-                                  />
-                                </div>
-                              )}
-
-                              {fileList.length > 0 && (
-                                <div className="pl2-chip-list">
-                                  {fileList.map((fileItem, fileIndex) => {
-                                    const isSavedOnServer = !(
-                                      fileItem instanceof File
-                                    );
-                                    const fileNameDisplay = isSavedOnServer
-                                      ? fileItem.originalName ||
-                                        fileItem.fileName
-                                      : fileItem.name;
-
-                                    // Chỉ tệp đã lưu và có IdMinhChung mới xem trước được:
-                                    // endpoint api/minhchung/{id}/tai-ve khóa theo id, còn tệp
-                                    // vừa chọn thì chưa lên máy chủ.
-                                    const mc = isSavedOnServer
-                                      ? chuanHoaFileMinhChung(fileItem)
-                                      : null;
-                                    const xemDuoc = !!(
-                                      mc &&
-                                      mc.IdMinhChung &&
-                                      onXemMinhChung
-                                    );
-
-                                    return (
-                                      <div
-                                        key={fileIndex}
-                                        className="pl2-chip-row"
-                                      >
-                                        {xemDuoc ? (
-                                          <button
-                                            type="button"
-                                            className="pl2-chip pl2-chip-file pl2-chip-xem"
-                                            onClick={() => onXemMinhChung(mc)}
-                                            title={`Xem trước / tải về: ${fileNameDisplay}`}
-                                          >
-                                            <i className="fa-solid fa-file-circle-check"></i>
-                                            {fileNameDisplay}
-                                            <i className="fa-solid fa-eye pl2-chip-xem-icon"></i>
-                                          </button>
-                                        ) : (
-                                          <span
-                                            className="pl2-chip pl2-chip-file"
-                                            title={
-                                              isSavedOnServer
-                                                ? `${fileNameDisplay} - bản ghi cũ không có mã minh chứng nên không xem được`
-                                                : `${fileNameDisplay} - tệp mới chọn, xem được sau khi lưu phiếu`
-                                            }
-                                          >
-                                            <i className="fa-solid fa-file-circle-check"></i>
-                                            {fileNameDisplay}
-                                          </span>
-                                        )}
-                                        {moNhap && !isKhoaEvaluating && (
-                                          <button
-                                            type="button"
-                                            className="pl2-chip-remove"
-                                            title="Xóa tệp"
-                                            onClick={() =>
-                                              onRemoveFile(
-                                                tc.IdTieuChi,
-                                                fileIndex,
-                                              )
-                                            }
-                                          >
-                                            <i className="fa-solid fa-xmark"></i>
-                                          </button>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {nckhList.length > 0 && (
-                                <div className="pl2-chip-list">
-                                  {nckhList.map((nckhItem, nckhIndex) => (
-                                    <div
-                                      key={nckhIndex}
-                                      className="pl2-chip-row"
+                                ) : tc.LoaiThangDiem === 3 ? (
+                                  <div className="pl2-thang-diem-list">
+                                    <label
+                                      className={`pl2-thang-diem-item ${formData[tc.IdTieuChi]?.DiemTuDanhGia === tc.DiemToiDa ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
                                     >
-                                      <span className="pl2-chip pl2-chip-nckh">
-                                        <i className="fa-solid fa-book-open"></i>
-                                        [{nckhItem.QRanking}] {nckhItem.MoTa}
+                                      <input
+                                        type="radio"
+                                        name={`yesno_${tc.IdTieuChi}`}
+                                        checked={
+                                          formData[tc.IdTieuChi]?.DiemTuDanhGia ===
+                                          tc.DiemToiDa
+                                        }
+                                        disabled={disabledRadio}
+                                        onChange={() => {
+                                          if (disabledRadio) return;
+                                          onScoreChange(
+                                            tc.IdTieuChi,
+                                            null,
+                                            tc.DiemToiDa,
+                                          );
+                                        }}
+                                      />
+                                      <span className="pl2-radio-dot"></span>
+                                      <span className="pl2-diem-badge">
+                                        {tc.DiemToiDa}đ
                                       </span>
-                                      {moNhap &&
-                                        !isKhoaEvaluating &&
-                                        onRemoveNckh && (
-                                          <button
-                                            type="button"
-                                            className="pl2-chip-remove"
-                                            title="Xóa"
-                                            onClick={() =>
-                                              onRemoveNckh(
-                                                tc.IdTieuChi,
-                                                nckhIndex,
-                                              )
-                                            }
+                                      <span className="pl2-thang-diem-text">
+                                        Có
+                                      </span>
+                                    </label>
+                                    <label
+                                      className={`pl2-thang-diem-item ${formData[tc.IdTieuChi]?.DiemTuDanhGia === 0 || formData[tc.IdTieuChi]?.DiemTuDanhGia == null ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name={`yesno_${tc.IdTieuChi}`}
+                                        checked={
+                                          formData[tc.IdTieuChi]?.DiemTuDanhGia ===
+                                            0 ||
+                                          formData[tc.IdTieuChi]?.DiemTuDanhGia ==
+                                            null
+                                        }
+                                        disabled={disabledRadio}
+                                        onChange={() => {
+                                          if (disabledRadio) return;
+                                          onScoreChange(tc.IdTieuChi, null, 0);
+                                        }}
+                                      />
+                                      <span className="pl2-radio-dot"></span>
+                                      <span className="pl2-diem-badge">0đ</span>
+                                      <span className="pl2-thang-diem-text">
+                                        Không
+                                      </span>
+                                    </label>
+                                  </div>
+                                ) : (
+                                  tc.CacThangDiem?.length > 0 && (
+                                    <div className="pl2-thang-diem-list">
+                                      {tc.CacThangDiem.map((td) => {
+                                        const selected =
+                                          formData[tc.IdTieuChi]
+                                            ?.IdThangDiemChon === td.IdThangDiem;
+                                        return (
+                                          <label
+                                            key={td.IdThangDiem}
+                                            className={`pl2-thang-diem-item ${selected ? "selected" : ""} ${disabledRadio ? "disabled" : ""}`}
                                           >
-                                            <i className="fa-solid fa-xmark"></i>
-                                          </button>
-                                        )}
+                                            <input
+                                              type="radio"
+                                              checked={selected}
+                                              disabled={disabledRadio}
+                                              onClick={() => {
+                                                if (disabledRadio) return;
+                                                if (selected)
+                                                  onScoreChange(
+                                                    tc.IdTieuChi,
+                                                    null,
+                                                    0,
+                                                  );
+                                                else
+                                                  onScoreChange(
+                                                    tc.IdTieuChi,
+                                                    td.IdThangDiem,
+                                                    td.GiaTriDiem,
+                                                  );
+                                              }}
+                                              onChange={() => {}}
+                                            />
+                                            <span className="pl2-radio-dot"></span>
+                                            <span className="pl2-diem-badge">
+                                              {td.GiaTriDiem}đ
+                                            </span>
+                                            <span className="pl2-thang-diem-text">
+                                              {td.DieuKienDiem}
+                                            </span>
+                                          </label>
+                                        );
+                                      })}
                                     </div>
-                                  ))}
+                                  )
+                                )}
+
+                                <ODienGiai
+                                  giaTri={
+                                    formData[tc.IdTieuChi]?.MoTaHoanThanh || ""
+                                  }
+                                  onChange={(val) =>
+                                    onTextChange(tc.IdTieuChi, val)
+                                  }
+                                  doc={disabledText}
+                                  placeholder={
+                                    isKhoaEvaluating
+                                      ? "Nhập nhận xét của Khoa..."
+                                      : "Nhập diễn giải (nếu có)"
+                                  }
+                                />
+
+                              </div>
+                              <TieuChiMinhChung
+                                soMinhChung={fileList.length + nckhList.length}
+                              >
+                                <div className="pl2-file-upload">
+                                  {fileList.length > 0 && (
+                                    <div className="pl2-chip-list">
+                                      {fileList.map((fileItem, fileIndex) => {
+                                        const isSavedOnServer = !(
+                                          fileItem instanceof File
+                                        );
+                                        const fileNameDisplay = isSavedOnServer
+                                          ? fileItem.originalName ||
+                                            fileItem.fileName
+                                          : fileItem.name;
+
+                                        // Chỉ tệp đã lưu và có IdMinhChung mới xem trước được:
+                                        // endpoint api/minhchung/{id}/tai-ve khóa theo id, còn tệp
+                                        // vừa chọn thì chưa lên máy chủ.
+                                        const mc = isSavedOnServer
+                                          ? chuanHoaFileMinhChung(fileItem)
+                                          : null;
+                                        const xemDuoc = !!(
+                                          mc &&
+                                          mc.IdMinhChung &&
+                                          onXemMinhChung
+                                        );
+
+                                        return (
+                                          <div
+                                            key={fileIndex}
+                                            className="pl2-chip-row"
+                                          >
+                                            {xemDuoc ? (
+                                              <button
+                                                type="button"
+                                                className="pl2-chip pl2-chip-file pl2-chip-xem"
+                                                onClick={() => onXemMinhChung(mc)}
+                                                title={`Xem trước / tải về: ${fileNameDisplay}`}
+                                              >
+                                                <i className="fa-solid fa-file-circle-check"></i>
+                                                {fileNameDisplay}
+                                                <i className="fa-solid fa-eye pl2-chip-xem-icon"></i>
+                                              </button>
+                                            ) : (
+                                              <span
+                                                className="pl2-chip pl2-chip-file"
+                                                title={
+                                                  isSavedOnServer
+                                                    ? `${fileNameDisplay} - bản ghi cũ không có mã minh chứng nên không xem được`
+                                                    : `${fileNameDisplay} - tệp mới chọn, xem được sau khi lưu phiếu`
+                                                }
+                                              >
+                                                <i className="fa-solid fa-file-circle-check"></i>
+                                                {fileNameDisplay}
+                                              </span>
+                                            )}
+                                            {moNhap && !isKhoaEvaluating && (
+                                              <button
+                                                type="button"
+                                                className="pl2-chip-remove"
+                                                title="Xóa tệp"
+                                                onClick={() =>
+                                                  onRemoveFile(
+                                                    tc.IdTieuChi,
+                                                    fileIndex,
+                                                  )
+                                                }
+                                              >
+                                                <i className="fa-solid fa-xmark"></i>
+                                              </button>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+
+                                  {nckhList.length > 0 && (
+                                    <div className="pl2-chip-list">
+                                      {nckhList.map((nckhItem, nckhIndex) => (
+                                        <div
+                                          key={nckhIndex}
+                                          className="pl2-chip-row"
+                                        >
+                                          <span className="pl2-chip pl2-chip-nckh">
+                                            <i className="fa-solid fa-book-open"></i>
+                                            [{nckhItem.QRanking}] {nckhItem.MoTa}
+                                          </span>
+                                          {moNhap &&
+                                            !isKhoaEvaluating &&
+                                            onRemoveNckh && (
+                                              <button
+                                                type="button"
+                                                className="pl2-chip-remove"
+                                                title="Xóa"
+                                                onClick={() =>
+                                                  onRemoveNckh(
+                                                    tc.IdTieuChi,
+                                                    nckhIndex,
+                                                  )
+                                                }
+                                              >
+                                                <i className="fa-solid fa-xmark"></i>
+                                              </button>
+                                            )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {moNhap && !isKhoaEvaluating && (
+                                    <MinhChungDropzone
+                                      coTep={
+                                        fileList.length > 0 || nckhList.length > 0
+                                      }
+                                      accept={ACCEPT_PDF}
+                                      gioiHanText="Chỉ nhận tệp PDF"
+                                      onNhanTep={(tep) => {
+                                        const ds = Array.from(tep || []);
+                                        if (ds.length > 0 && onFileChange)
+                                          onFileChange(tc.IdTieuChi, ds);
+                                      }}
+                                    />
+                                  )}
                                 </div>
-                              )}
+                              </TieuChiMinhChung>
                             </div>
                           </div>
                         );

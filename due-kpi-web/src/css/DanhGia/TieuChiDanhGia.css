@@ -1,0 +1,126 @@
+/* Thiết kế tiêu chí dùng chung cho giảng viên, nhân viên, khoa và phòng/TT.
+   Giới hạn trong thẻ để không đổi các màn quản lý hoặc kê khai thành tích. */
+.pl2-criteria.pl2-criteria {
+  --tc-accent: #4f56d3;
+  --tc-soft: #eef0fe;
+  --tc-border: #e3e7f0;
+  --tc-text: #1e2437;
+  --tc-muted: #5b6278;
+  padding: 20px 24px 22px;
+  border-color: var(--tc-border);
+  color: var(--tc-text);
+  container-type: inline-size;
+}
+
+.pl2-criteria.pl2-bi-tra-ve { border-color: #f0b4ac; }
+.pl2-criteria.modified { border-color: #d8b56d; }
+.pl2-criteria .pl2-criteria-header {
+  margin: -20px -24px 20px;
+  padding: 20px 24px 16px;
+  flex-wrap: nowrap;
+}
+.pl2-criteria .pl2-criteria-header-main { min-width: 0; flex-basis: auto; }
+.pl2-criteria .pl2-criteria-header-side { flex-wrap: wrap; justify-content: flex-end; max-width: 40%; }
+.pl2-criteria .pl2-criteria-title { color: var(--tc-text); font-size: 16px; overflow-wrap: anywhere; }
+.pl2-criteria .pl2-criteria-desc { color: var(--tc-muted); font-size: 14px; }
+.pl2-criteria .pl2-criteria-idx,
+.pl2-criteria .pl2-criteria-max { background: var(--tc-soft); color: var(--tc-accent); font-size: 14px; }
+.pl2-criteria .pl2-criteria-score { background: #e8f6ed; color: #1d7a44; border: 0; font-size: 14px; padding: 5px 12px; }
+.pl2-criteria .pl2-criteria-score-zero { background: #f1f3f9; color: var(--tc-muted); }
+.pl2-criteria .pl2-criteria-meta-pill,
+.pl2-criteria .pl2-mc-badge { font-size: 13px; font-weight: 500; white-space: normal; }
+.pl2-criteria .pl2-criteria-meta-pill { background: #f3f5fa; color: #4a5169; }
+.pl2-criteria .pl2-mc-badge.can-mc { background: #fff4e8; color: #a15c14; border: 0; }
+.pl2-criteria .pl2-mc-badge.da-co { background: var(--tc-soft); color: var(--tc-accent); border: 0; }
+.pl2-criteria .pl2-mc-badge.du-mc { background: #e8f6ed; color: #1d7a44; border: 0; }
+
+.pl2-criteria-content { display: grid; gap: 18px; }
+.pl2-criteria-content-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.pl2-criteria-fields { display: flex; flex-direction: column; min-width: 0; }
+.pl2-criteria .pl2-field-label { display: block; font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--tc-text); }
+.pl2-criteria .pl2-score-wrap { margin: 0 0 22px; gap: 10px; }
+.pl2-criteria .pl2-score-row { gap: 10px; }
+.pl2-criteria .pl2-score-box { height: 44px; border-color: var(--tc-border); }
+.pl2-criteria .pl2-score-box:focus-within { border-color: var(--tc-accent); box-shadow: 0 0 0 3px #eef0fe; }
+.pl2-criteria .pl2-score-box.loi { border-color: #c0392b; }
+.pl2-criteria .pl2-score-input { width: 100px; color: var(--tc-text); font-size: 16px; }
+.pl2-criteria .pl2-score-suffix { color: var(--tc-muted); font-size: 14px; }
+.pl2-criteria .pl2-score-quick { height: 44px; padding: 0 14px; background: #f7f8fc; color: #4a5169; border-color: var(--tc-border); font-size: 14px; }
+.pl2-criteria .pl2-score-quick:hover:not(:disabled) { background: var(--tc-soft); color: var(--tc-accent); border-color: #c9cef5; }
+.pl2-criteria .pl2-score-hint { color: var(--tc-muted); font-size: 14px; }
+.pl2-criteria .pl2-score-hint.loi { color: #c0392b; }
+.pl2-criteria .pl2-textarea-wrap { display: flex; flex-direction: column; flex: 1; gap: 8px; margin: 0; }
+.pl2-criteria .pl2-textarea { flex: 1; min-height: 104px; margin: 0; padding: 12px 14px; border: 1.5px solid var(--tc-border); border-radius: 10px; color: var(--tc-text); font-size: 14px; line-height: 1.6; }
+.pl2-criteria .pl2-textarea:focus { border-color: #a7adf0; box-shadow: 0 0 0 3px #eef0fe; }
+.pl2-criteria .pl2-textarea.error { border-color: #c0392b; }
+.pl2-criteria .pl2-textarea-count { margin: 0; color: var(--tc-muted); font-size: 13px; }
+.pl2-criteria .pl2-textarea-count.qua-dai { color: #c0392b; }
+
+.pl2-criteria .pl2-thang-diem-item,
+.pl2-criteria .pl2-auto-thang-diem-item { padding: 13px 16px; gap: 14px; border: 1.5px solid #e9ecf4; border-radius: 11px; align-items: center; }
+.pl2-criteria .pl2-thang-diem-item:hover:not(.disabled) { border-color: #a7adf0; background: #fafbfe; }
+.pl2-criteria .pl2-thang-diem-item.selected,
+.pl2-criteria .pl2-thang-diem-item.selected.disabled:hover,
+.pl2-criteria .pl2-auto-thang-diem-item.selected { border-color: var(--tc-accent); background: #f2f3ff; }
+.pl2-criteria .pl2-thang-diem-item.disabled { opacity: 0.8; }
+.pl2-criteria .pl2-radio-dot { width: 18px; height: 18px; border-color: #c3c7d8; }
+.pl2-criteria .selected .pl2-radio-dot { border: 5.5px solid var(--tc-accent); background: #fff; }
+.pl2-criteria .pl2-diem-badge { min-width: 52px; padding: 4px 10px; background: #f1f3f9; color: #4a5169; font-size: 14px; }
+.pl2-criteria .selected .pl2-diem-badge { background: var(--tc-accent); color: white; }
+.pl2-criteria .pl2-thang-diem-text { color: #4a5169; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.pl2-criteria .selected .pl2-thang-diem-text { color: var(--tc-text); }
+.pl2-criteria .pl2-auto-score-box { max-width: none; padding: 16px 18px; border: 1px solid var(--tc-border); border-radius: 12px; background: #fafbfe; }
+.pl2-criteria .pl2-auto-score-info { flex: 1; min-width: 0; }
+.pl2-criteria .pl2-auto-score-label { color: var(--tc-text); font-size: 16px; font-weight: 600; line-height: 1.5; }
+.pl2-criteria .pl2-auto-score-note { color: var(--tc-muted); font-size: 14px; line-height: 1.5; }
+.pl2-criteria .pl2-auto-icon,
+.pl2-criteria .selected .pl2-auto-thang-diem-icon { color: var(--tc-accent); }
+.pl2-criteria .pl2-auto-score-value { padding: 10px 14px; border-radius: 10px; color: var(--tc-accent); background: var(--tc-soft); }
+.pl2-criteria .pl2-auto-score-value-tru { color: #b91c1c; background: #fef2f2; }
+.pl2-criteria .pl2-auto-thang-diem-list { gap: 8px; margin-top: 14px; }
+.pl2-criteria .pl2-auto-thang-diem-icon { font-size: 18px; margin: 0; }
+.pl2-criteria .pl2-phsv-tb-box { background: #fafbfe; border-color: var(--tc-border); border-radius: 11px; }
+.pl2-criteria .pl2-phsv-tb-value { color: var(--tc-accent); }
+
+.pl2-evidence { min-width: 0; }
+.pl2-evidence-content { display: flex; flex-direction: column; gap: 10px; height: 100%; }
+.pl2-evidence-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 10px; }
+.pl2-evidence-count { color: var(--tc-muted); font-size: 13px; }
+.pl2-criteria .pl2-file-upload,
+.pl2-criteria .pl2-mc-box { display: flex; flex-direction: column; flex: 1; gap: 8px; margin: 0; min-width: 0; }
+.pl2-criteria .pl2-dz { order: -1; flex: 1; flex-direction: column; justify-content: center; gap: 7px; min-height: 160px; margin: 0; padding: 22px 16px; text-align: center; background: #fafbfe; border: 1.5px dashed #cfd5e6; border-radius: 12px; }
+.pl2-criteria .pl2-dz-gon { flex: 0 0 auto; min-height: 120px; }
+.pl2-criteria .pl2-dz-icon { width: 38px; height: 38px; border: 0; border-radius: 11px; background: var(--tc-soft); color: var(--tc-accent); font-size: 18px; }
+.pl2-criteria .pl2-dz-text { flex: 0; gap: 7px; }
+.pl2-criteria .pl2-dz-chinh { font-size: 16px; color: var(--tc-text); }
+.pl2-criteria .pl2-dz-phu { font-size: 13px; color: var(--tc-muted); }
+.pl2-criteria .pl2-dz-phu-loi { color: #a15c14; }
+.pl2-criteria .pl2-dz:hover:not(:disabled) { border-color: var(--tc-accent); background: var(--tc-soft); box-shadow: none; }
+.pl2-criteria .pl2-dz-keo { border-color: #4f56d3 !important; background: #eef0fe !important; box-shadow: 0 0 0 3px #eef0fe !important; }
+.pl2-criteria .pl2-chip-list { flex-direction: column; gap: 8px; }
+.pl2-criteria .pl2-chip-row,
+.pl2-criteria .cd-mc-row { min-width: 0; padding: 10px 12px; border: 1px solid #e9ecf4; border-radius: 10px; background: #fbfcfe; }
+.pl2-criteria .pl2-chip { flex: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; border: 0; background: transparent; }
+.pl2-criteria .pl2-chip-file { color: var(--tc-text); }
+.pl2-criteria .cd-mc-name { overflow-wrap: anywhere; }
+.pl2-criteria .pl2-criteria-footer { flex-wrap: wrap; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--tc-border); }
+.pl2-criteria .btn-save-item { border-radius: 10px; background: var(--tc-accent); padding: 0 20px; height: 42px; font-size: 14px; }
+.pl2-criteria .btn-save-item:hover:not(:disabled) { background: #3a40b0; }
+.pl2-criteria .btn-save-item:disabled { background: #c3c7d8; }
+.pl2-criteria button:focus-visible { outline: 2px solid var(--tc-accent); outline-offset: 3px; }
+
+/* Theo chiều rộng thực của thẻ, kể cả khi sidebar đang mở. */
+@container (max-width: 680px) {
+  .pl2-criteria-content-columns { grid-template-columns: minmax(0, 1fr); }
+  .pl2-criteria .pl2-criteria-header { flex-wrap: wrap; gap: 12px; }
+  .pl2-criteria .pl2-criteria-header-main { flex: 1; }
+  .pl2-criteria .pl2-criteria-header-side { width: 100%; max-width: none; justify-content: flex-start; }
+  .pl2-criteria .cd-mc-row { flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+  .pl2-criteria.pl2-criteria { padding: 16px 14px; }
+  .pl2-criteria .pl2-criteria-header { margin: -16px -14px 16px; padding: 16px 14px; }
+  .pl2-criteria .pl2-thang-diem-item,
+  .pl2-criteria .pl2-auto-thang-diem-item { padding: 11px 10px; gap: 9px; }
+  .pl2-criteria .pl2-auto-score-box { padding: 12px; gap: 10px; }
+}

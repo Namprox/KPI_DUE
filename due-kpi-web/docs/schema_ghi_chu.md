@@ -827,17 +827,134 @@ phiếu** nên phiếu tạo trước khi gán tiêu chí sẽ không nhận mã
 | `TY_LE_XUAT_SAC` | `diem_toi_da * (số `xep_loai = 4` / tổng phiếu)` | nt |
 | `TY_LE_HOAN_THANH` | `diem_toi_da * (số `xep_loai IN (2,3,4)` / tổng phiếu)` | nt |
 | `DIEM_TRU_TAP_THE` | `MAX(0, diem_toi_da − diem_tru_tap_the)` | `fn_diem_tru_tap_the_khoa` (vi phạm của Khoa) |
+| `PHSV_DIEM_TB_KHOA` | `>= 3 → 2.50` ; `[2, 3) → 1.50` ; `< 2 → 0` (kẹp trần `diem_toi_da`) | `fn_diem_tb_phan_hoi_sv_khoa` (điểm TB phản hồi SV đã chốt) |
+| `NCKH_TY_LE_HOAN_THANH_KHOA` | `> 75% → 20` ; `(65, 75] → 15` ; `(50, 65] → 10` ; `<= 50% → 0` (kẹp trần `diem_toi_da`) | `fn_ty_le_hoan_thanh_nckh_khoa` (giờ NCKH đã đồng bộ) |
+| `NCKH_BAI_BAO_TB_KHOA` | `MIN(so_bai_bao / N, 1) × diem_toi_da` (tuyến tính, kẹp trần) | `fn_so_bai_bao_wos_scopus_khoa` (bài báo WoS/Scopus đã đồng bộ) |
+| `NCKH_BAI_BAO_Q1Q2_TB_KHOA` | `MIN(so_bai_bao_q1q2 / N, 1) × diem_toi_da` (tuyến tính, kẹp trần) | `fn_so_bai_bao_wos_scopus_khoa` (**cùng hàm**, cột `so_bai_bao_q1q2`) |
 
 - Ba mã đầu phụ thuộc phiếu thành viên: **không có phiếu nào chốt → 0**.
-- `DIEM_TRU_TAP_THE` thì **không**: nó đọc từ số vi phạm, nên nhánh này nằm **TRƯỚC** guard
-  `@so_phieu = 0` trong `CASE`. Để sau guard thì Khoa chưa chốt phiếu nào sẽ bị ghi 0, tức là bị trừ
-  sạch `diem_toi_da` thay vì đạt đủ điểm. Đây là cái bẫy chính nếu sau này thêm mã "không phụ thuộc
-  phiếu thành viên".
+- `DIEM_TRU_TAP_THE`, `PHSV_DIEM_TB_KHOA`, `NCKH_TY_LE_HOAN_THANH_KHOA`, `NCKH_BAI_BAO_TB_KHOA` và
+  `NCKH_BAI_BAO_Q1Q2_TB_KHOA` thì
+  **không**: chúng đọc từ
+  số vi phạm / điểm phản hồi sinh viên / giờ NCKH / bài báo NCKH, nên các nhánh này nằm **TRƯỚC** guard
+  `@so_phieu = 0` trong `CASE`. Để sau guard thì
+  Khoa chưa chốt phiếu nào sẽ bị ghi 0, tức là bị trừ sạch `diem_toi_da` thay vì đạt đủ điểm. Đây là
+  cái bẫy chính mỗi khi thêm mã "không phụ thuộc phiếu thành viên".
 - Tiêu chí dùng `DIEM_TRU_TAP_THE` là **mức TUÂN THỦ của tập thể**, không phải điểm trừ: không vi
   phạm → đủ `diem_toi_da` (thường đặt 7.5 = đúng bằng trần điểm trừ tập thể), sàn 0. Cùng khuôn với
   `VPGD_TUAN_THU` / `VPVC_*` của luồng cá nhân, và tránh `diem_toi_da` âm — tiêu chí đơn vị
   (`loai_doi_tuong = 3`) không được phép âm, còn `sp_phieu_dv_tinh_tong_diem` thì CỘNG mọi chi tiết.
 - Đặt `loai_thang_diem = 2` (liên tục): điểm là phần CÒN LẠI sau khi trừ, không phải mức rời rạc.
+- `PHSV_DIEM_TB_KHOA` = "Điểm đánh giá phản hồi của sinh viên trung bình của Khoa". TB tính bằng
+  `AVG` các `diem_tb_phan_hoi_sinh_vien.diem_trung_binh` của **từng giảng viên** thuộc Khoa — mỗi GV
+  đếm đúng 1 lần, KHÔNG phải trung bình trên từng lượt trả lời (GV dạy 10 lớp không nặng ký gấp 10).
+  Thang Likert **1-5**, nên mốc 3 và 2 là mốc trên thang 5.
+  - Lọc Khoa qua `v_giang_vien_khoa.id_khoa`, **KHÔNG** dùng `diem_tb_phan_hoi_sinh_vien.id_don_vi`:
+    cột đó là snapshot **đơn vị chính** của GV nên có thể là Bộ môn → lọc thẳng sẽ sót người. Cùng lý
+    do với `DIEM_TRU_TAP_THE`, hàm nhận `@id_don_vi` của **chính phiếu**, không nhận tập đơn vị con.
+  - Mốc điểm là **hằng số tuyệt đối** theo văn bản quy định (khác khuôn `NCKH_GIO_TY_LE` vốn nhân tỉ
+    lệ với `diem_toi_da`) → đổi trọng số tiêu chí sau này phải sửa stored procedure. Vẫn kẹp trần
+    `diem_toi_da` vì `sp_phieu_dv_tinh_tong_diem` CỘNG mọi chi tiết. Đặt `diem_toi_da = 2.5`,
+    `loai_thang_diem = 2`.
+  - **Chưa chốt điểm TB → 0** (cùng quy ước với mã cá nhân `PHSV_DIEM_TB_GTE_3`). P.QLCL phải gọi
+    `POST api/diem-tb-phan-hoi-sv/chot` TRƯỚC khi Khoa tổng hợp KPI. Result set của
+    `sp_phieu_dv_tong_hop_kpi` trả kèm `so_gv_co_phan_hoi` để FE phân biệt "0 vì điểm thấp" với
+    "0 vì thiếu dữ liệu". Chốt lại điểm TB **không** tự sửa điểm đã ghi vào phiếu — phải tổng hợp lại.
+- `NCKH_TY_LE_HOAN_THANH_KHOA` = "Tỷ lệ GV hoàn thành nhiệm vụ NCKH" của Khoa.
+  `ty_le = D * 100 / N` với `D` = số GV hoàn thành, `N` = số GV thuộc diện tính.
+  - **"Hoàn thành" dùng ĐÚNG điều kiện GV được ĐIỂM TỐI ĐA của tiêu chí cá nhân `NCKH_GIO_TY_LE`**
+    (`gio_nckh_quy_doi >= gio_nckh_dinh_muc`, tức tỷ lệ ≥ 100% — xem 3.6.8), để tỷ lệ của Khoa luôn
+    khớp với điểm cá nhân của từng GV. Đổi định nghĩa một bên mà không đổi bên kia → hai con số lệch
+    nhau và bảng đối soát vô nghĩa.
+  - ⚠️ **BẤT BIẾN:** mệnh đề tìm dòng giờ NCKH (`TOP 1` + JOIN email LOWER+TRIM +
+    `ORDER BY ma_nguoi_dung_nckh`) trong `fn_ty_le_hoan_thanh_nckh_khoa` phải GIỐNG HỆT nhánh
+    `NCKH_GIO_TY_LE` của `fn_nckh_diem_tu_dong` và `fn_nckh_gio_chi_tiet` — ba nơi, sửa một phải sửa
+    cả ba. Dùng `OUTER APPLY` + `TOP 1` chứ **không** `INNER JOIN` thẳng: nguồn có thể có 2 mã NCKH
+    trùng email trong cùng một năm → JOIN thẳng sẽ đếm GV đó **hai lần**.
+  - **Mẫu số** = toàn bộ GV của Khoa (`v_giang_vien_khoa.id_khoa`, đã cuộn Bộ môn lên Khoa) **TRỪ**
+    GV được **miễn NCKH**. "Được miễn" = `gio_nckh_dinh_muc IS NOT NULL AND <= 0` (định mức `= 0` là
+    dữ liệu thật đã khai báo) — để trong mẫu số sẽ phạt Khoa vì một điều Khoa không kiểm soát.
+    CỐ Ý **không** dùng `ISNULL(dinh_muc, 0) <= 0` như `fn_nckh_diem_tu_dong`: bên đó gộp NULL với 0
+    vì cả hai đều ra 0 điểm, còn ở đây phải TÁCH — định mức NULL / không có dòng nào là **thiếu số
+    liệu**, GV đó vẫn nằm trong mẫu số và tính là **chưa hoàn thành**. Gộp lại sẽ cho Khoa hưởng lợi
+    từ chính lỗi thiếu dữ liệu của mình.
+  - Mốc điểm là **hằng số tuyệt đối** 20 / 15 / 10 / 0 theo văn bản (cùng khuôn `PHSV_DIEM_TB_KHOA`,
+    khác khuôn `NCKH_GIO_TY_LE` vốn nhân tỉ lệ) → đổi trọng số phải sửa stored procedure. Vẫn kẹp
+    trần `diem_toi_da`. **Đúng 50% rơi vào bậc 0đ** (bậc trên là "> 50%") — cùng quy ước với
+    `NCKH_GIO_TY_LE`. Đặt `diem_toi_da = 20`, `loai_thang_diem = 2` (liên tục).
+  - ⚠️ Tuy điểm là 4 mức rời rạc, vẫn đặt `loai_thang_diem = 2` như `PHSV_DIEM_TB_KHOA`, **KHÁC**
+    `NCKH_GIO_TY_LE` (đặt 1 + 4 mức `thang_diem`): `chi_tiet_danh_gia_don_vi` **không có cột
+    `id_thang_diem_chon`** và `sp_phieu_dv_tong_hop_kpi` **không** ánh xạ mức thang điểm. Đặt
+    `loai_thang_diem = 1` chỉ tạo ra các dòng `thang_diem` không bao giờ được chọn.
+  - **Chưa đồng bộ giờ NCKH → 0**. Phải gọi `POST api/nckh/gio-nckh/dong-bo` TRƯỚC khi Khoa tổng hợp
+    KPI. Result set trả kèm `ty_le_hoan_thanh_nckh`, `so_gv_thuoc_dien_nckh`, `so_gv_hoan_thanh_nckh`,
+    `so_gv_mien_nckh` để FE phân biệt "0 vì tỷ lệ thấp" với "0 vì thiếu dữ liệu"
+    (`so_gv_thuoc_dien_nckh = 0`). Đơn vị KHÔNG phải Khoa (Phòng, TTNCN): hàm trả `N = 0`,
+    `ty_le = NULL` → chấm 0, không chia 0, không mất dòng.
+- `NCKH_BAI_BAO_TB_KHOA` = "Số bài báo trong tạp chí/kỷ yếu WoS/Scopus TB trên 1 giáo viên" của Khoa.
+  `so_bai_tren_gv = B / N` với `B` = số bài WoS/Scopus của Khoa trong năm, `N` = tổng số GV của Khoa.
+  - ⚠️ **BẤT BIẾN:** vị từ WoS/Scopus + khung năm trong `fn_so_bai_bao_wos_scopus_khoa` phải GIỐNG HỆT
+    nhánh `NCKH_BAI_WOS_SCOPUS` của `fn_nckh_minh_chung_tu_dong` (`danh_muc_tap_chi IN (SCIE, SSCI,
+    AHCI, SCOPUS, ESCI)`, `ngay_xuat_ban` trong `[nam_danh_gia.ngay_bat_dau, ngay_ket_thuc]`) — sửa
+    một nơi phải sửa cả hai, nếu không số của Khoa sẽ lệch điểm cá nhân của từng GV và lệch cả danh
+    sách minh chứng mà API xem trước liệt kê.
+  - **Tử số khử trùng đồng tác giả — ĐÃ CHỐT:** gom `GROUP BY bb.ma_bai_bao_nguon` rồi `COUNT(*)`
+    (tương đương `COUNT(DISTINCT bb.ma_bai_bao_nguon)` — dùng `GROUP BY` để có chỗ gắn thêm cờ
+    `la_q1q2`, xem `NCKH_BAI_BAO_Q1Q2_TB_KHOA` bên dưới). PK của
+    `nckh_bai_bao` là `(ma_nguoi_dung_nckh, ma_bai_bao_nguon)` nên `ma_bai_bao_nguon` là id bài **bên
+    nguồn** — hai đồng tác giả cùng Khoa đứng tên một bài có CÙNG giá trị đó. Vậy `B` là số **bài
+    thật sự** của Khoa, không phải số lượt ghi nhận: Khoa không được lợi khi các GV nội bộ ghép tên
+    nhau. **KHÁC** cách chấm cá nhân (mọi đồng tác giả đều được ghi nhận bài đó) — chủ ý, không phải
+    bất nhất.
+  - ⚠️ **CỐ Ý KHÔNG dùng `OUTER APPLY + TOP 1`** như `fn_ty_le_hoan_thanh_nckh_khoa`. Bên đó mỗi GV
+    chỉ được lấy MỘT dòng giờ NCKH nên `TOP 1` là bắt buộc để không đếm GV hai lần. Ở đây ngược lại:
+    GV có 2 mã NCKH trùng email thì phải gộp bài của **cả hai**, và `DISTINCT ma_bai_bao_nguon` đã lo
+    phần khử trùng. Dùng `TOP 1` ở đây sẽ **LÀM MẤT** bài.
+  - **Mẫu số** = toàn bộ GV của Khoa (`v_giang_vien_khoa.id_khoa`), dùng **đúng** vị từ `dem_gv` của
+    `fn_diem_tru_tap_the_khoa` → `so_giang_vien` của hai hàm LUÔN bằng nhau. Phiếu đơn vị chỉ trả về
+    MỘT cột `so_giang_vien` cho cả hai tiêu chí đối chiếu, nên hai con số này không được phép lệch.
+  - **Hệ số BÁM `diem_toi_da`, KHÁC khuôn hằng số tuyệt đối** của `PHSV_DIEM_TB_KHOA` /
+    `NCKH_TY_LE_HOAN_THANH_KHOA`. Văn bản ghi "TB trên 1 GV × 10" mà trần tiêu chí cũng đang là 10 →
+    nghĩa thật là "TB 1 bài/GV = đạt TRỌN tiêu chí". Viết theo tỉ lệ (`MIN(TB, 1) × diem_toi_da`, cùng
+    khuôn `NCKH_GIO_TY_LE`) nên đổi trọng số tiêu chí sau này **chỉ cần sửa `diem_toi_da`**, không
+    phải sửa stored procedure. Nhánh `TB >= 1` trả THẲNG `diem_toi_da`: vừa là kẹp trần, vừa tránh
+    sai số làm tròn của phép nhân. Đặt `diem_toi_da = 10`, `loai_thang_diem = 2` (liên tục — điểm
+    biến thiên liên tục theo TB, không phải mức rời rạc).
+  - **Chưa đồng bộ bài báo → 0**. Phải gọi `POST api/nckh/dong-bo` TRƯỚC khi Khoa tổng hợp KPI.
+    Result set trả kèm `so_bai_bao_wos_scopus` và `so_bai_bao_tren_gv`; FE dùng `so_giang_vien = 0`
+    để phân biệt "0 vì ít bài" với "0 vì đơn vị không phải Khoa". Đơn vị KHÔNG phải Khoa: hàm trả
+    `N = 0`, `B = 0`, `so_bai_tren_gv = NULL` → chấm 0, không chia 0, không mất dòng.
+- `NCKH_BAI_BAO_Q1Q2_TB_KHOA` = "Số bài báo trong tạp chí/kỷ yếu WoS/Scopus **Q1/Q2** TB trên 1 giáo
+  viên" của Khoa. `so_bai_q1q2_tren_gv = B_q / N` với `B_q` = số bài Q1/Q2 của Khoa trong năm,
+  `N` = tổng số GV của Khoa. **Cùng khuôn `NCKH_BAI_BAO_TB_KHOA`, chỉ khác TỬ SỐ.**
+  - **DÙNG CHUNG hàm `fn_so_bai_bao_wos_scopus_khoa`** (hàm trả thêm 2 cột `so_bai_bao_q1q2` /
+    `so_bai_q1q2_tren_gv`), **KHÔNG** tách hàm riêng. Lý do: `B_q` là tập con của `B` nên hai tiêu
+    chí chung khối join GV/email/bài báo và **chung MẪU SỐ `N`**. Tách hàm sẽ cho phép hai mẫu số
+    lệch nhau, trong khi phiếu đơn vị chỉ trả về **MỘT** cột `so_giang_vien` cho cả ba tiêu chí đối
+    chiếu (`DIEM_TRU_TAP_THE`, `NCKH_BAI_BAO_TB_KHOA`, mã này). `sp_phieu_dv_tong_hop_kpi` cũng chỉ
+    gọi hàm **một lần** cho cả hai mã.
+  - ⚠️ **BẤT BIẾN:** vị từ Q1/Q2 `UPPER(LTRIM(RTRIM(bb.xep_hang_q))) IN (N'Q1', N'Q2')` phải GIỐNG
+    HỆT dòng lọc cuối của nhánh `NCKH_BAI_Q1Q2` trong `fn_nckh_minh_chung_tu_dong`. Q1/Q2 **chồng
+    lên** vị từ WoS/Scopus (bài Q1/Q2 vẫn phải thuộc `danh_muc_tap_chi IN (SCIE, SSCI, AHCI, SCOPUS,
+    ESCI)`) — đừng bỏ dòng `danh_muc_tap_chi` đi.
+  - **Cờ `la_q1q2` dùng `MAX(...)`:** một bài có NHIỀU dòng (1 dòng / đồng tác giả), chỉ cần **MỘT**
+    dòng ghi Q1/Q2 là cả bài tính là Q1/Q2 — cùng quy ước với luồng cá nhân (mọi đồng tác giả đều
+    được ghi nhận bài đó). Nếu nguồn ghi `xep_hang_q` không đồng nhất giữa các dòng của cùng một
+    bài thì `MAX` là lựa chọn an toàn: không **LÀM MẤT** bài vì một dòng bị bỏ trống.
+  - ⚠️ **TÍNH TRÙNG với `NCKH_BAI_BAO_TB_KHOA` là CHỦ Ý:** bài Q1/Q2 là **tập con** của bài
+    WoS/Scopus nên một bài Q1/Q2 được tính ở **CẢ HAI** tiêu chí (× 10 và × 50). Đây là chủ đích của
+    quy định — tiêu chí Q1/Q2 là phần thưởng **THÊM** cho chất lượng. **KHÔNG** được "sửa lỗi đếm
+    trùng" bằng cách trừ bài Q1/Q2 ra khỏi tiêu chí WoS/Scopus.
+  - **Hệ số BÁM `diem_toi_da`** (cùng khuôn `NCKH_BAI_BAO_TB_KHOA`, khác khuôn hằng số tuyệt đối của
+    `PHSV_DIEM_TB_KHOA` / `NCKH_TY_LE_HOAN_THANH_KHOA`). Văn bản ghi "TB trên 1 GV × 50" mà trần
+    tiêu chí cũng đang là 50 → nghĩa thật là "TB 1 bài Q1/Q2 trên 1 GV = đạt TRỌN tiêu chí". Đối
+    chiếu ví dụ trong văn bản: **TB 0.3 bài/GV → 0.3 × 50 = 15 điểm** ✔. Đổi trọng số tiêu chí sau
+    này **chỉ cần sửa `diem_toi_da`**. Nhánh `TB >= 1` trả THẲNG `diem_toi_da`: vừa là kẹp trần, vừa
+    tránh sai số làm tròn. Đặt `diem_toi_da = 50`, `loai_thang_diem = 2` (liên tục).
+  - **Chưa đồng bộ bài báo → 0**. Result set trả kèm `so_bai_bao_q1q2` và `so_bai_q1q2_tren_gv`
+    (luôn có `so_bai_bao_q1q2 <= so_bai_bao_wos_scopus`); mẫu số vẫn là `so_giang_vien` ở trên, SP
+    **không** trả lại lần ba. Đơn vị KHÔNG phải Khoa: `N = 0`, `B_q = 0`,
+    `so_bai_q1q2_tren_gv = NULL` → chấm 0, không chia 0, không mất dòng.
 - **4.11 `phe_duyet_don_vi`** (mirror `phe_duyet`): `cap_duyet` 1 = TKK/TKP nhập,
   2 = Trưởng đơn vị, 3 = Trường (HT).
 - **4.12 `lich_su_cham_diem_don_vi`** (mirror `lich_su_cham_diem`): `fk_lscddv_ct` KHÔNG
