@@ -195,6 +195,23 @@ export const ROLE_SETS = {
   ],
 
   /**
+   * Kho minh chứng của phiếu KPI đơn vị.
+   *
+   * Khớp đúng quyền ĐỌC của GET /api/minh-chung-don-vi: thư ký và trưởng đơn
+   * vị xem trong phạm vi được giao, HT/Admin xem toàn trường. Không dùng lại
+   * DANH_GIA_DON_VI vì tập đó cố ý không chứa cấp Trường.
+   */
+  KHO_MINH_CHUNG_DON_VI: [
+    ROLE.ADMIN,
+    ROLE.HIEU_TRUONG,
+    ROLE.THU_KY_KHOA,
+    ROLE.THU_KY_PHONG,
+    ROLE.TRUONG_KHOA,
+    ROLE.TRUONG_KHOA_LON,
+    ROLE.TRUONG_PHONG,
+  ],
+
+  /**
    * Màn hình NHẬP phiếu KPI đơn vị (/danh-gia-kpi-don-vi).
    *
    * Hẹp hơn DANH_GIA_DON_VI một cách CỐ Ý: màn hình hiện chỉ dựng đúng phần việc

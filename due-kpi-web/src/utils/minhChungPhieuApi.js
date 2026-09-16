@@ -54,6 +54,15 @@ export const LOAI_MINH_CHUNG = { FILE: 1, LINK: 2, DOI: 3 };
 export const laMinhChungFile = (mc) =>
   Number(mc?.LoaiMinhChung) === LOAI_MINH_CHUNG.FILE;
 
+/** Chỉ hiện tên tệp gốc khi nó thực sự khác tên hiển thị, không chỉ khác đuôi. */
+export const coTenFileGocKhac = (mc) => {
+  const tenHienThi = String(mc?.TenHienThi || "").trim().toLowerCase();
+  const tenFileGoc = String(mc?.TenFileGoc || "").trim();
+  if (!tenHienThi || !tenFileGoc) return false;
+  const tenKhongDuoi = tenFileGoc.replace(/\.[^.]+$/, "").trim().toLowerCase();
+  return tenKhongDuoi !== tenHienThi;
+};
+
 /** Đuôi tệp viết thường: ưu tiên LoaiFile do server ghi, fallback tên tệp gốc. */
 export const duoiFile = (mc) => {
   const tho = String(mc?.LoaiFile || "")

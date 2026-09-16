@@ -1,6 +1,7 @@
 import { apiFetch } from "./api";
 import { readApiError } from "./apiError";
 import {
+  coTenFileGocKhac,
   duoiFile,
   formatKb,
   iconFile,
@@ -37,7 +38,15 @@ import {
  */
 
 /** Tái dùng nguyên các helper thuần của luồng cá nhân - hai bảng cùng tập cột. */
-export { duoiFile, formatKb, iconFile, kieuXemTruoc, laMinhChungFile, LOAI_MINH_CHUNG };
+export {
+  coTenFileGocKhac,
+  duoiFile,
+  formatKb,
+  iconFile,
+  kieuXemTruoc,
+  laMinhChungFile,
+  LOAI_MINH_CHUNG,
+};
 
 /**
  * Giới hạn dùng khi CHƯA gọi được GET api/cau-hinh/minh-chung.
@@ -58,7 +67,7 @@ export const CAU_HINH_MC_MAC_DINH = {
  */
 const MC_DV_ERROR_MESSAGES = {
   INVALID_STATE: "Phiếu đã nộp nên không thêm / gỡ minh chứng được nữa",
-  FORBIDDEN: "Bạn không có quyền sửa minh chứng của phiếu này",
+  FORBIDDEN: "Bạn không có quyền truy cập minh chứng của phiếu này",
   VALIDATION_FAILED: null,
   IO_ERROR: "Máy chủ không lưu được tệp, vui lòng thử lại",
   NOT_FOUND: "Không tìm thấy tiêu chí hoặc minh chứng này",
@@ -195,6 +204,39 @@ export const xoaMinhChungDonVi = async (idMinhChung) => {
 /* ------------------------------------------------------------------ */
 /* Đọc                                                                 */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Kho minh chứng đơn vị: liệt kê theo một phiếu, hoặc theo năm + đơn vị.
+ *
+ * Server ưu tiên idPhieuDv và bỏ qua hai bộ lọc còn lại. 404 ở endpoint này
+ * chỉ có nghĩa là chưa có phiếu phù hợp, nên quy về mảng rỗng để màn hình hiện
+ * trạng thái trống; 403 vẫn được giữ thành lỗi quyền rõ ràng.
+ *
+ * @returns {Promise<Array>} MinhChungDonViKhoDto[]
+ */
+export const fetchKhoMinhChungDonVi = async ({
+  idPhieuDv,
+  idNam,
+  idDonVi,
+} = {}) => {
+  const qs = new URLSearchParams();
+  if (idPhieuDv) qs.set("idPhieuDv", String(idPhieuDv));
+  if (idNam) qs.set("idNam", String(idNam));
+  if (idDonVi) qs.set("idDonVi", String(idDonVi));
+  const query = qs.toString();
+
+  const response = await apiFetch(
+    `minh-chung-don-vi${query ? `?${query}` : ""}`,
+  );
+
+  if (response.status === 404) return [];
+  if (!response.ok) {
+    throw await taoLoi(response, "Không tải được kho minh chứng đơn vị");
+  }
+
+  const data = await response.json();
+  return data.Items || [];
+};
 
 /**
  * Danh sách minh chứng (chưa xóa) của một dòng tiêu chí.

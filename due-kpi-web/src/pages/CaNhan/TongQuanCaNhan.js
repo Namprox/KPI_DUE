@@ -636,7 +636,7 @@ const TongQuanCaNhan = () => {
               onClick={() => navigate("/kho-minh-chung")}
             >
               <i className="fa-solid fa-folder-tree"></i>
-              <span>Kho minh chứng</span>
+              <span>Kho minh chứng cá nhân</span>
             </button>
             <button
               className="cd-chip"

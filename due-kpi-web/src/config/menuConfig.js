@@ -226,10 +226,18 @@ export const MENU_GROUPS = [
       {
         // Tra cứu minh chứng của chính mình, xuyên năm. Chỉ đọc - server tự giới
         // hạn về người đăng nhập nên không cần gate theo chức vụ/chức danh.
-        name: "Kho minh chứng",
+        name: "Kho minh chứng cá nhân",
         icon: "fa-solid fa-folder-tree",
         path: "/kho-minh-chung",
         roles: MOI_NGUOI,
+      },
+      {
+        // Kho chỉ đọc dùng chung cho phiếu KPI Khoa và Phòng/Trung tâm. Server
+        // tự giới hạn dữ liệu về đơn vị của người đang đăng nhập.
+        name: "Kho minh chứng đơn vị",
+        icon: "fa-solid fa-building-circle-check",
+        path: "/kho-minh-chung-don-vi",
+        roles: ROLE_SETS.KHO_MINH_CHUNG_DON_VI,
       },
     ],
   },

@@ -11,86 +11,84 @@ import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
 import "../../css/DanhGia/KhoMinhChung.css";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
-import { TrangThaiBadge } from "../../components/QuanLyChamDiem/TrangThaiBadge";
-import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
-import { useNamDanhGia } from "../../hooks/useNamDanhGia";
-import { formatNgay } from "../../utils/phieuApi";
 import SearchSelect from "../../components/Common/SearchSelect";
+import { TrangThaiDonViBadge } from "../../components/QuanLyChamDiem/TrangThaiBadge";
+import { useMinhChungDonViPreview } from "../../hooks/useMinhChungDonViPreview";
+import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import {
   coTenFileGocKhac,
-  fetchKhoMinhChung,
+  fetchKhoMinhChungDonVi,
   formatKb,
   iconFile,
   laMinhChungFile,
-} from "../../utils/minhChungPhieuApi";
+} from "../../utils/minhChungDonViApi";
+import { formatNgay } from "../../utils/phieuApi";
 
 /**
- * Kho minh chứng cá nhân: mọi tệp/liên kết đã nộp kèm phiếu KPI, xuyên năm.
+ * Kho minh chứng của PHIẾU KPI ĐƠN VỊ (Khoa và Phòng/Trung tâm).
  *
- * Chỉ đọc - xem trước và tải về. Sửa tên / xóa minh chứng vẫn nằm ở form tự đánh
- * giá, nơi phiếu còn ở trạng thái Nhập và người dùng đang có ngữ cảnh tiêu chí.
- *
- * Bộ lọc phản chiếu đúng thứ tự ưu tiên của server: idPhieu > idNam > không có
- * tham số (mọi năm). Vì vậy khi vào từ danh sách phiếu (?idPhieu=) thì ô chọn năm
- * bị khóa - chọn năm lúc đó sẽ không có tác dụng gì, khóa lại thì thật thà hơn.
+ * Trang chỉ đọc: việc thêm/xóa vẫn nằm ở phiếu đang nhập để giữ nguyên ngữ
+ * cảnh tiêu chí và luật trạng thái. Trang không gửi idDonVi; server tự suy và
+ * giới hạn đơn vị từ người đang đăng nhập.
  */
-const KhoMinhChungCaNhan = () => {
+const KhoMinhChungDonVi = () => {
   const toast = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { namList, selectedNam, dangTaiNam } = useNamDanhGia();
+  const { namList, selectedNam, setSelectedNam, dangTaiNam } =
+    useNamDanhGia();
 
-  const idPhieu = searchParams.get("idPhieu");
-
-  const [idNam, setIdNam] = useState("");
+  const idPhieuDv = searchParams.get("idPhieuDv");
   const [rows, setRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timKiem, setTimKiem] = useState("");
-  // Chỉ tải sau khi năm mặc định đã được gieo, nếu không lượt tải đầu tiên chạy
-  // với bộ lọc rỗng rồi lập tức bị lượt thứ hai thay thế.
-  const [daSanSang, setDaSanSang] = useState(false);
 
   const showToast = (severity, summary, detail) => {
     toast.current?.show({ severity, summary, detail, life: 4000 });
   };
 
   const { preview, openPreview, closePreview, downloadMinhChung } =
-    useMinhChungPhieuPreview((message) => showToast("error", "Lỗi", message));
-
-  // Mặc định mở theo năm đang chạy; người dùng chuyển sang "tất cả" khi cần tra cứu cũ.
-  useEffect(() => {
-    if (dangTaiNam) return;
-    setIdNam(String(selectedNam || ""));
-    setDaSanSang(true);
-  }, [dangTaiNam, selectedNam]);
+    useMinhChungDonViPreview((message) =>
+      showToast("error", "Lỗi", message),
+    );
 
   const taiDanhSach = useCallback(async () => {
     setIsLoading(true);
     try {
-      const items = await fetchKhoMinhChung(
-        idPhieu ? { idPhieu } : { idNam: idNam || undefined },
+      const items = await fetchKhoMinhChungDonVi(
+        idPhieuDv
+          ? { idPhieuDv }
+          : {
+              idNam: selectedNam || undefined,
+            },
       );
       setRows(items);
     } catch (error) {
-      console.error("Lỗi tải kho minh chứng:", error);
-      showToast("error", "Lỗi", error.message);
+      console.error("Lỗi tải kho minh chứng đơn vị:", error);
+      toast.current?.show({
+        severity: "error",
+        summary: "Lỗi",
+        detail: error.message,
+        life: 4000,
+      });
       setRows([]);
     } finally {
       setIsLoading(false);
     }
-  }, [idPhieu, idNam]);
+  }, [idPhieuDv, selectedNam]);
 
   useEffect(() => {
-    if (daSanSang) taiDanhSach();
-  }, [daSanSang, taiDanhSach]);
+    if (!dangTaiNam) taiDanhSach();
+  }, [dangTaiNam, taiDanhSach]);
 
   const rowsHienThi = useMemo(() => {
     const q = timKiem.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((mc) =>
-      [mc.TenHienThi, mc.TenFileGoc, mc.TenTieuChi].some((f) =>
-        String(f || "")
-          .toLowerCase()
-          .includes(q),
+      [mc.TenHienThi, mc.TenFileGoc, mc.TenTieuChi, mc.TenDonVi].some(
+        (field) =>
+          String(field || "")
+            .toLowerCase()
+            .includes(q),
       ),
     );
   }, [rows, timKiem]);
@@ -107,7 +105,7 @@ const KhoMinhChungCaNhan = () => {
 
   const boLocPhieu = () => {
     const con = new URLSearchParams(searchParams);
-    con.delete("idPhieu");
+    con.delete("idPhieuDv");
     setSearchParams(con, { replace: true });
   };
 
@@ -124,30 +122,30 @@ const KhoMinhChungCaNhan = () => {
             fontWeight: 700,
           }}
         >
-          Kho minh chứng cá nhân
+          Kho minh chứng đơn vị
         </h2>
         <span className="breadcrumb">
-          Toàn bộ minh chứng bạn đã nộp kèm phiếu KPI, tra cứu theo phiếu hoặc
-          theo năm
+          Tra cứu minh chứng đã đính kèm trong phiếu KPI Khoa, Phòng hoặc Trung
+          tâm
         </span>
       </div>
 
       <div className="cd-toolbar">
         <div className="cd-field">
           <label className="cd-label">Năm đánh giá</label>
-          <div title={idPhieu ? "Đang lọc theo một phiếu cụ thể" : undefined}>
+          <div title={idPhieuDv ? "Đang lọc theo một phiếu cụ thể" : undefined}>
             <SearchSelect
-              value={idNam}
-              onChange={(v) => setIdNam(v)}
+              value={selectedNam}
+              onChange={(value) => setSelectedNam(value)}
               options={[
                 { value: "", label: "-- Tất cả các năm --" },
-                ...namList.map((n) => ({
-                  value: n.IdNam,
-                  label: `Năm học ${n.IdNam}`,
+                ...namList.map((nam) => ({
+                  value: nam.IdNam,
+                  label: `Năm học ${nam.IdNam}`,
                 })),
               ]}
               placeholder="-- Tất cả các năm --"
-              disabled={dangTaiNam || Boolean(idPhieu)}
+              disabled={dangTaiNam || Boolean(idPhieuDv)}
             />
           </div>
         </div>
@@ -157,13 +155,14 @@ const KhoMinhChungCaNhan = () => {
           <input
             type="text"
             className="form-input"
-            placeholder="Tên tệp, tên hiển thị, tên tiêu chí..."
+            placeholder="Tên tệp, đơn vị, tiêu chí..."
             value={timKiem}
-            onChange={(e) => setTimKiem(e.target.value)}
+            onChange={(event) => setTimKiem(event.target.value)}
           />
         </div>
 
         <button
+          type="button"
           className="btn-cancel"
           onClick={taiDanhSach}
           disabled={isLoading}
@@ -173,11 +172,11 @@ const KhoMinhChungCaNhan = () => {
         </button>
       </div>
 
-      {idPhieu && (
+      {idPhieuDv && (
         <div style={{ marginBottom: "18px" }}>
           <button type="button" className="cd-chip" onClick={boLocPhieu}>
             <i className="fa-solid fa-filter"></i>
-            <span>Đang lọc theo phiếu #{idPhieu}</span>
+            <span>Đang lọc theo phiếu đơn vị #{idPhieuDv}</span>
             <i className="fa-solid fa-xmark" style={{ marginLeft: "2px" }}></i>
           </button>
         </div>
@@ -187,7 +186,7 @@ const KhoMinhChungCaNhan = () => {
         {isLoading ? (
           <div className="cd-empty">
             <i className="fa-solid fa-spinner fa-spin"></i>
-            Đang tải kho minh chứng...
+            Đang tải kho minh chứng đơn vị...
           </div>
         ) : rowsHienThi.length === 0 ? (
           <div className="cd-empty">
@@ -198,24 +197,26 @@ const KhoMinhChungCaNhan = () => {
             <p style={{ margin: 0 }}>
               {timKiem
                 ? "Không có minh chứng nào khớp từ khóa tìm kiếm."
-                : "Minh chứng bạn tải lên trong phiếu tự đánh giá sẽ xuất hiện ở đây."}
+                : "Đơn vị chưa có phiếu phù hợp hoặc phiếu chưa đính kèm minh chứng."}
             </p>
           </div>
         ) : (
           <div className="table-scroll">
-            <table className="custom-table mc-vault-table mc-cn-table">
+            <table className="custom-table mc-vault-table mc-dv-table">
               <colgroup>
-                <col className="mc-cn-col-file" />
-                <col className="mc-cn-col-criterion" />
-                <col className="mc-cn-col-year" />
-                <col className="mc-cn-col-status" />
-                <col className="mc-cn-col-size" />
-                <col className="mc-cn-col-date" />
-                <col className="mc-cn-col-action" />
+                <col className="mc-dv-col-file" />
+                <col className="mc-dv-col-unit" />
+                <col className="mc-dv-col-criterion" />
+                <col className="mc-dv-col-year" />
+                <col className="mc-dv-col-status" />
+                <col className="mc-dv-col-size" />
+                <col className="mc-dv-col-date" />
+                <col className="mc-dv-col-action" />
               </colgroup>
               <thead>
                 <tr>
                   <th>Minh chứng</th>
+                  <th>Đơn vị</th>
                   <th>Tiêu chí</th>
                   <th style={{ textAlign: "center" }}>Năm</th>
                   <th style={{ textAlign: "center" }}>
@@ -249,7 +250,6 @@ const KhoMinhChungCaNhan = () => {
                                 {mc.TenHienThi || mc.TenFileGoc}
                               </button>
                             ) : (
-                              // Minh chứng dạng liên kết / DOI không có tệp trên máy chủ
                               <a
                                 className="cd-mc-name"
                                 href={mc.DuongDan}
@@ -268,7 +268,13 @@ const KhoMinhChungCaNhan = () => {
                           </div>
                         </div>
                       </td>
-                      <td title={mc.TenTieuChi || undefined}>
+                      <td className="mc-dv-unit-cell">
+                        {mc.TenDonVi || `Đơn vị #${mc.IdDonVi}`}
+                      </td>
+                      <td
+                        className="mc-dv-criterion-cell"
+                        title={mc.TenTieuChi || undefined}
+                      >
                         <div className="mc-vault-criterion-text">
                           {mc.TenTieuChi || `Tiêu chí #${mc.IdTieuChi}`}
                         </div>
@@ -280,7 +286,9 @@ const KhoMinhChungCaNhan = () => {
                         {mc.IdNam}
                       </td>
                       <td style={{ textAlign: "center" }}>
-                        <TrangThaiBadge trangThai={mc.TrangThaiPhieu} />
+                        <TrangThaiDonViBadge
+                          trangThai={mc.TrangThaiPhieu}
+                        />
                       </td>
                       <td className="table-num">
                         {laFile ? (
@@ -343,4 +351,4 @@ const KhoMinhChungCaNhan = () => {
   );
 };
 
-export default KhoMinhChungCaNhan;
+export default KhoMinhChungDonVi;

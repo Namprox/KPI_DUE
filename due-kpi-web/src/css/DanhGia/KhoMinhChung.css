@@ -1,0 +1,158 @@
+/* Hai bảng kho minh chứng có nhiều cột và tên tệp thường rất dài. Cố định
+   layout để nội dung cột đầu không ép các cột còn lại thành từng chữ một. */
+.mc-vault-table {
+  table-layout: fixed;
+}
+
+.mc-dv-table {
+  min-width: 1180px;
+}
+
+.mc-cn-table {
+  min-width: 1040px;
+}
+
+/* Cột của kho minh chứng đơn vị. */
+.mc-dv-table .mc-dv-col-file {
+  width: 30%;
+}
+
+.mc-dv-table .mc-dv-col-unit {
+  width: 12%;
+}
+
+.mc-dv-table .mc-dv-col-criterion {
+  width: 20%;
+}
+
+.mc-dv-table .mc-dv-col-year {
+  width: 6%;
+}
+
+.mc-dv-table .mc-dv-col-status {
+  width: 14%;
+}
+
+.mc-dv-table .mc-dv-col-size {
+  width: 7%;
+}
+
+.mc-dv-table .mc-dv-col-date {
+  width: 7%;
+}
+
+.mc-dv-table .mc-dv-col-action {
+  width: 4%;
+}
+
+/* Cột của kho minh chứng cá nhân. */
+.mc-cn-table .mc-cn-col-file {
+  width: 32%;
+}
+
+.mc-cn-table .mc-cn-col-criterion {
+  width: 25%;
+}
+
+.mc-cn-table .mc-cn-col-year {
+  width: 7%;
+}
+
+.mc-cn-table .mc-cn-col-status {
+  width: 15%;
+}
+
+.mc-cn-table .mc-cn-col-size {
+  width: 8%;
+}
+
+.mc-cn-table .mc-cn-col-date {
+  width: 8%;
+}
+
+.mc-cn-table .mc-cn-col-action {
+  width: 5%;
+}
+
+.mc-vault-table thead th {
+  padding: 12px;
+  letter-spacing: 0.045em;
+  white-space: normal;
+  word-break: normal;
+}
+
+.mc-vault-table tbody td {
+  min-width: 0;
+  padding: 14px 12px;
+  overflow: hidden;
+}
+
+.mc-vault-file-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mc-vault-file-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mc-vault-table .cd-mc-name,
+.mc-vault-table .cd-mc-meta {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mc-dv-unit-cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.mc-vault-criterion-text {
+  display: -webkit-box;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  word-break: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.mc-vault-table .cd-status-badge {
+  max-width: 100%;
+}
+
+.mc-vault-table .table-actions {
+  justify-content: center;
+}
+
+@media (max-width: 1200px) {
+  .mc-dv-table {
+    min-width: 1080px;
+  }
+
+  .mc-cn-table {
+    min-width: 980px;
+  }
+
+  .mc-dv-table .mc-dv-col-file {
+    width: 28%;
+  }
+
+  .mc-dv-table .mc-dv-col-criterion {
+    width: 22%;
+  }
+}

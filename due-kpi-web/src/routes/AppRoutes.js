@@ -34,7 +34,8 @@ import QLChucVu from "../pages/QuanLyToChuc/QL_ChucVu";
 import DanhSachThanhVien from "../pages/QuanLyToChuc/DanhSachThanhVien";
 import ThongTinCaNhan from "../pages/ThongTinCaNhan";
 import TongQuanCaNhan from "../pages/CaNhan/TongQuanCaNhan";
-import KhoMinhChung from "../pages/CaNhan/KhoMinhChung";
+import KhoMinhChungCaNhan from "../pages/CaNhan/KhoMinhChung";
+import KhoMinhChungDonVi from "../pages/DanhGia/KhoMinhChungDonVi";
 import PhanHoiSinhVienCuaToi from "../pages/CaNhan/PhanHoiSinhVienCuaToi";
 import NhiemVuKhoaCuaToi from "../pages/CaNhan/NhiemVuKhoaCuaToi";
 import ViPhamCuaToi from "../pages/CaNhan/ViPhamCuaToi";
@@ -101,7 +102,11 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/danh-gia-kpi-phong/:id" element={<ChiTietPhieuPhong />} />
         <Route path="/lich-su-danh-gia" element={<LichSuDanhGia />} />
         <Route path="/lich-su-danh-gia/:id" element={<ChiTietPhieuCuaToi />} />
-        <Route path="/kho-minh-chung" element={<KhoMinhChung />} />
+        <Route path="/kho-minh-chung" element={<KhoMinhChungCaNhan />} />
+        <Route
+          path="/kho-minh-chung-don-vi"
+          element={<KhoMinhChungDonVi />}
+        />
         <Route
           path="/phan-hoi-sinh-vien-cua-toi"
           element={<PhanHoiSinhVienCuaToi />}

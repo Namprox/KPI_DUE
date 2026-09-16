@@ -6342,7 +6342,9 @@ paths:
       summary: Danh sach minh chung (chua xoa) cua 1 tieu chi phieu don vi
       description: >
         Tien cho man hinh cham diem tung dong; neu can toan bo phieu thi GET
-        api/phieu-don-vi/{id} da tra san minh chung o moi dong chi tiet.
+        api/phieu-don-vi/{id} da tra san minh chung o moi dong chi tiet, con neu can mot
+        man hinh kho rieng (ca phieu / ca nam, kem ngu canh tieu chi) thi dung
+        GET api/minh-chung-don-vi.
         Quyen DOC rong hon quyen GHI: ADMIN/HT toan he thong; TKK/TKP/TK/TKL/TP trong
         pham vi don vi (giong GET api/phieu-don-vi/{id}). KHONG rang buoc trang thai -
         phieu da chot van xem lai duoc minh chung.
@@ -6376,6 +6378,72 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MinhChungDonViResponse"
+  /api/minh-chung-don-vi:
+    get:
+      tags:
+        - PhieuDonVi
+      summary: Kho minh chung don vi - liet ke theo ca phieu hoac theo nam / don vi
+      description: >
+        Tra ve minh chung kem NGU CANH (tieu chi, phieu, nam, don vi) de FE dung o mot man
+        hinh "Kho minh chung" rieng, thay vi phai goi GET
+        api/chi-tiet-don-vi/{idChiTiet}/minh-chung cho tung tieu chi.
+        DUNG CHUNG cho Khoa va Phong/Trung tam: ca hai deu la don_vi.cap_don_vi = 2 va
+        schema khong co cot nao tach rieng hai loai - FE loc bang idDonVi.
+        Bo loc: idPhieuDv (uu tien cao nhat) -> dung phieu do; nguoc lai ap idNam va/hoac
+        idDonVi; KHONG truyen gi -> mac dinh don vi cua nguoi dang dang nhap, xuyen nam
+        (nen HT/ADMIN khong vo tinh liet ke minh chung cua toan truong).
+        Quyen doc giong GET api/chi-tiet-don-vi/{idChiTiet}/minh-chung: ADMIN/HT toan he
+        thong; TKK/TKP/TK/TKL/TP trong pham vi don vi. KHONG rang buoc trang thai phieu.
+        Khong co phieu nao khop bo loc -> 404; co phieu nhung khong duoc doc -> 403
+        (KHONG tra ve mang rong im lang). Phieu hop le nhung chua co minh chung -> 200 voi
+        Items la mang rong.
+        Ket qua sap xep theo nam giam dan, ten don vi, roi thu tu hien thi cua tieu chi.
+      operationId: minhChungDonViGetKho
+      parameters:
+        - name: idPhieuDv
+          in: query
+          required: false
+          description: id_phieu_dv (phieu_danh_gia_don_vi). Uu tien cao nhat, bo qua idNam/idDonVi.
+          schema:
+            type: integer
+        - name: idNam
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          description: id_don_vi cua Khoa hoac Phong/Trung tam. Mac dinh = don vi cua nguoi dang dang nhap.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK - Items la danh sach minh chung kem ngu canh
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViKhoResponse"
+        "400":
+          description: idPhieuDv / idNam / idDonVi <= 0 (ErrorCode = VALIDATION_FAILED)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViKhoResponse"
+        "401":
+          description: Thieu hoac sai token
+        "403":
+          description: ErrorCode = FORBIDDEN - don vi nam ngoai pham vi cua nguoi goi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViKhoResponse"
+        "404":
+          description: ErrorCode = NOT_FOUND - khong co phieu danh gia don vi nao khop bo loc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinhChungDonViKhoResponse"
   /api/minh-chung-don-vi/{idMinhChung}/tai-ve:
     get:
       tags:
@@ -17015,6 +17083,73 @@ components:
           description: Chi co o GET .../minh-chung. Mang rong khi tieu chi chua co minh chung.
           items:
             $ref: "#/components/schemas/MinhChungDto"
+    MinhChungDonViKhoDto:
+      type: object
+      description: >
+        Minh chung don vi kem ngu canh tieu chi / phieu / nam / don vi (dung cho man hinh
+        Kho minh chung cua Khoa va Phong/Trung tam). Phan cot minh chung giong MinhChungDto:
+        id_minh_chung_dv -> IdMinhChung, id_chi_tiet_dv -> IdChiTiet.
+      properties:
+        IdMinhChung:
+          type: integer
+        IdChiTiet:
+          type: integer
+        LoaiMinhChung:
+          type: integer
+          description: "1: File, 2: Link, 3: DOI/URL hoc thuat"
+        TenHienThi:
+          type: string
+        TenFileGoc:
+          type: string
+          nullable: true
+        DuongDan:
+          type: string
+        LoaiFile:
+          type: string
+          nullable: true
+        KichThuocKb:
+          type: integer
+          nullable: true
+        NguoiTaiLen:
+          type: integer
+        NgayTaiLen:
+          type: string
+          format: date-time
+          nullable: true
+        IdPhieuDv:
+          type: integer
+        IdNam:
+          type: integer
+        IdDonVi:
+          type: integer
+        TenDonVi:
+          type: string
+          nullable: true
+        TrangThaiPhieu:
+          type: integer
+          description: Trang thai phieu don vi cha (1-5).
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+        BatBuocMinhChung:
+          type: boolean
+    MinhChungDonViKhoResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          description: VALIDATION_FAILED / FORBIDDEN / NOT_FOUND. Null khi thanh cong.
+        Items:
+          type: array
+          description: Mang rong khi don vi chua co minh chung nao (khong phai null).
+          items:
+            $ref: "#/components/schemas/MinhChungDonViKhoDto"
     PhieuDanhGiaDonViCreateRequest:
       type: object
       required:
