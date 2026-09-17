@@ -58,6 +58,7 @@ const ToTrinhKhoa = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dangXuLy, setDangXuLy] = useState(false);
   const [moTrinh, setMoTrinh] = useState(false);
+  const [goiChoDongGoiLai, setGoiChoDongGoiLai] = useState(null);
 
   const [hoSoThieu, setHoSoThieu] = useState(null);
   const [dongHang, setDongHang] = useState(null);
@@ -121,7 +122,9 @@ const ToTrinhKhoa = () => {
   const coTheDongGoi =
     trangThai === TRANG_THAI_TO_TRINH.DANG_TONG_HOP ||
     trangThai === TRANG_THAI_TO_TRINH.DA_DONG_GOI ||
-    trangThai === TRANG_THAI_TO_TRINH.HT_TRA_VE;
+    trangThai === TRANG_THAI_TO_TRINH.HT_TRA_VE ||
+    (trangThai === TRANG_THAI_TO_TRINH.HT_DA_DUYET &&
+      goi?.IdNguoiDuyet === null);
   const coTheTrinh = trangThai === TRANG_THAI_TO_TRINH.DA_DONG_GOI;
 
   const nhanSuDaDoi =
@@ -149,12 +152,17 @@ const ToTrinhKhoa = () => {
    *   `goi` trong state chưa kịp cập nhật nên nhánh "xác nhận & đóng gói lại"
    *   phải truyền thẳng bản vừa đọc lại vào, nếu không lần đóng gói thứ hai dính 409.
    */
-  const handleDongGoi = async (goiDung) => {
+  const handleDongGoi = async (goiDung, { boQuaXacNhan = false } = {}) => {
     const g = goiDung || goi;
+    if (!boQuaXacNhan && g?.NgayDongGoi != null) {
+      setGoiChoDongGoiLai(g);
+      return;
+    }
     setDangXuLy(true);
     xoaKetQuaLoi();
     try {
-      const { item } = await dongGoiToTrinh(g.IdToTrinh, {
+      const { message, soHoSoHoanTat, soHoSoChoHt } =
+        await dongGoiToTrinh(g.IdToTrinh, {
         tyLeXuatSac: TY_LE_XUAT_SAC_MAC_DINH,
         rowVersion: g.RowVersion,
       });
@@ -162,7 +170,8 @@ const ToTrinhKhoa = () => {
       showToast(
         "success",
         "Đã đóng gói tờ trình",
-        `${item?.SoDatXuatSac ?? 0}/${item?.HanNgachXuatSac ?? 0} suất xuất sắc đã được lấp đầy trên tổng ${item?.SoGiangVien ?? 0} giảng viên. Bạn có thể đóng gói lại nhiều lần trước khi trình.`,
+        message ||
+          `Đóng gói thành công. ${soHoSoHoanTat ?? 0} hồ sơ đã hoàn tất, ${soHoSoChoHt ?? 0} hồ sơ lãnh đạo chờ Hiệu trưởng duyệt.`,
         8000,
       );
     } catch (error) {
@@ -203,7 +212,12 @@ const ToTrinhKhoa = () => {
       );
     } catch (error) {
       console.error("Lỗi trình tờ trình:", error);
-      if (error.isConflict) await taiChiTiet({ imLang: true });
+      if (
+        error.isConflict ||
+        error.errorCode === "KHONG_CO_HO_SO_LANH_DAO"
+      ) {
+        await taiChiTiet({ imLang: true });
+      }
       showToast("error", "Không trình được", error.message, 7000);
     } finally {
       setDangXuLy(false);
@@ -255,7 +269,7 @@ const ToTrinhKhoa = () => {
     }
     setDangXuLy(false);
     setDongHang(null);
-    await handleDongGoi(goiMoi || goi);
+    await handleDongGoi(goiMoi || goi, { boQuaXacNhan: true });
   };
 
   const soSuatConLai = dongHang?.thongTin?.SoSuatConLai ?? 0;
@@ -277,8 +291,8 @@ const ToTrinhKhoa = () => {
           Tờ trình KPI Khoa
         </h2>
         <span className="breadcrumb">
-          Đóng gói kết quả toàn Khoa, áp hạn ngạch xuất sắc 20% rồi trình Hiệu
-          trưởng phê duyệt
+          Đóng gói kết quả toàn Khoa; hồ sơ thường hoàn tất tại đây, hồ sơ lãnh
+          đạo mới trình Hiệu trưởng phê duyệt
         </span>
       </div>
 
@@ -370,7 +384,10 @@ const ToTrinhKhoa = () => {
                   {goi.LanTrinh > 0 ? ` · Đã trình ${goi.LanTrinh} lần` : ""}
                 </div>
               </div>
-              <TrangThaiToTrinhBadge trangThai={goi.TrangThai} />
+              <TrangThaiToTrinhBadge
+                trangThai={goi.TrangThai}
+                idNguoiDuyet={goi.IdNguoiDuyet}
+              />
             </div>
 
             <div className="cd-meta-grid">
@@ -469,11 +486,10 @@ const ToTrinhKhoa = () => {
                 className="cd-hint cd-hint-warn"
                 style={{ marginBottom: "12px" }}
               >
-                <i className="fa-solid fa-hourglass-half"></i> Chờ Hiệu trưởng
-                xử lý -{" "}
+                <i className="fa-solid fa-hourglass-half"></i>{" "}
                 {trangThai === TRANG_THAI_TO_TRINH.HT_DA_DUYET
-                  ? "gói đã được duyệt và khóa số liệu."
-                  : "gói đang ở bàn Hiệu trưởng, phải được trả về trước khi đóng gói lại."}
+                  ? "Gói đã được Hiệu trưởng duyệt và khóa số liệu."
+                  : "Chờ Hiệu trưởng xử lý - gói phải được trả về trước khi đóng gói lại."}
               </div>
             )}
 
@@ -536,13 +552,15 @@ const ToTrinhKhoa = () => {
                 )}
               </button>
 
-              <button
-                className="btn-submit"
-                disabled={dangXuLy || !coTheTrinh}
-                onClick={() => setMoTrinh(true)}
-              >
-                <i className="fa-solid fa-paper-plane"></i> Trình Hiệu trưởng
-              </button>
+              {coTheTrinh && (
+                <button
+                  className="btn-submit"
+                  disabled={dangXuLy}
+                  onClick={() => setMoTrinh(true)}
+                >
+                  <i className="fa-solid fa-paper-plane"></i> Trình Hiệu trưởng
+                </button>
+              )}
             </div>
           </div>
 
@@ -638,7 +656,8 @@ const ToTrinhKhoa = () => {
                           {formatNgayGio(ls.NgayThucHien)}
                         </td>
                         <td style={{ fontSize: "13px" }}>
-                          {TEN_HANH_DONG_TO_TRINH[ls.HanhDong] ||
+                          {ls.HanhDongText ||
+                            TEN_HANH_DONG_TO_TRINH[ls.HanhDong] ||
                             `Hành động ${ls.HanhDong}`}
                           {ls.SoHoSoTraVe ? ` (${ls.SoHoSoTraVe} hồ sơ)` : ""}
                         </td>
@@ -782,7 +801,7 @@ const ToTrinhKhoa = () => {
       {moTrinh && (
         <LyDoModal
           tieuDe="Trình gói KPI lên Hiệu trưởng"
-          moTa={`Toàn bộ ${goi?.SoHoSo ?? 0} hồ sơ của ${goi?.TenDonVi} sẽ được trình lên Hiệu trưởng phê duyệt. Trong lúc chờ, gói bị khóa - muốn sửa hồ sơ phải để Hiệu trưởng trả về trước.`}
+          moTa={`${(goi?.HoSo || []).filter((h) => Number(h.TrangThai) === 4 && h.CanHtDuyet === true).length} hồ sơ lãnh đạo của ${goi?.TenDonVi} sẽ được trình lên Hiệu trưởng phê duyệt. Hồ sơ thường đã hoàn tất ở bước đóng gói.`}
           nhanLyDo="Nội dung trình"
           goiYLyDo="VD: Kính trình Hiệu trưởng phê duyệt kết quả KPI năm học 2025-2026."
           batBuocLyDo={false}
@@ -792,6 +811,54 @@ const ToTrinhKhoa = () => {
           onDong={() => setMoTrinh(false)}
           onXacNhan={({ lyDo }) => handleTrinh({ nhanXet: lyDo })}
         />
+      )}
+
+      {goiChoDongGoiLai && (
+        <div
+          className="modal-overlay"
+          onClick={dangXuLy ? undefined : () => setGoiChoDongGoiLai(null)}
+        >
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Đóng gói lại tờ trình?</h3>
+              <button
+                className="close-btn"
+                onClick={() => setGoiChoDongGoiLai(null)}
+                disabled={dangXuLy}
+              >
+                &times;
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="cd-hint cd-hint-warn" style={{ marginTop: 0 }}>
+                <i className="fa-solid fa-triangle-exclamation"></i> Đơn vị đã
+                đóng gói trước đó. Đóng gói lại sẽ tính lại hạn ngạch 20% trên số
+                hồ sơ hiện tại và có thể thay đổi xếp loại của những hồ sơ đã hoàn
+                tất. Tiếp tục?
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={() => setGoiChoDongGoiLai(null)}
+                disabled={dangXuLy}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn-submit"
+                disabled={dangXuLy}
+                onClick={() => {
+                  const g = goiChoDongGoiLai;
+                  setGoiChoDongGoiLai(null);
+                  handleDongGoi(g, { boQuaXacNhan: true });
+                }}
+              >
+                <i className="fa-solid fa-box-archive"></i> Tiếp tục đóng gói
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

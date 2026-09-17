@@ -12,8 +12,8 @@
  *   1 NHAP          GV kê khai, chưa nộp lần nào
  *   2 THAM_DINH     còn ≥1 dòng ở trạng thái 1 hoặc 2
  *   3 CHO_TK_DUYET  100% dòng đã chốt, chờ Trưởng khoa duyệt hồ sơ
- *   4 TK_DA_DUYET   TK đã chốt hồ sơ và chọn xếp loại, chờ đóng gói tờ trình
- *   5 HOAN_TAT      Hiệu trưởng đã duyệt gói KPI Khoa, chỉ đọc
+ *   4 TK_DA_DUYET   đã chốt hồ sơ, chỉ hồ sơ lãnh đạo còn chờ Hiệu trưởng
+ *   5 HOAN_TAT      đã hoàn tất ở bước đóng gói hoặc Hiệu trưởng duyệt, chỉ đọc
  *
  * Điểm mấu chốt: quyền thao tác tính theo DÒNG, không theo hồ sơ. Một dòng bị
  * trả về cho GV không kéo cả hồ sơ về trạng thái 1, và các dòng khác giữ nguyên
@@ -50,7 +50,7 @@ export const TRANG_THAI = {
 /** Nhãn + màu badge cho từng trạng thái. Dùng chung mọi bảng/màn hình. */
 export const TRANG_THAI_META = {
   1: {
-    label: "GV đang nhập",
+    label: "Nháp",
     icon: "fa-pen",
     bg: "#f1f5f9",
     color: "#475569",
@@ -71,11 +71,11 @@ export const TRANG_THAI_META = {
     border: "#bfdbfe",
   },
   4: {
-    label: "Trưởng khoa đã chốt",
-    icon: "fa-circle-check",
-    bg: "#f5f3ff",
-    color: "#6d28d9",
-    border: "#ddd6fe",
+    label: "Chờ Hiệu trưởng duyệt",
+    icon: "fa-hourglass-half",
+    bg: "#eff6ff",
+    color: "#1d4ed8",
+    border: "#bfdbfe",
   },
   5: {
     label: "Hoàn tất",
@@ -1020,7 +1020,7 @@ export const moLaiPhieu = async (
 /**
  * Phiếu cấp Trường - CHỈ ĐỂ THEO DÕI, không phải hàng đợi hành động.
  *
- * Chỉ trả phiếu ở trạng thái 4 (TK_DA_DUYET) trên toàn trường. Hiệu trưởng
+ * Chỉ trả phiếu lãnh đạo ở trạng thái 4 và CanHtDuyet = true trên toàn trường. Hiệu trưởng
  * không còn duyệt phiếu lẻ; hàng đợi hành động thật là danh sách tờ trình
  * (xem toTrinhApi.js). Trưởng khoa gọi endpoint này sẽ nhận 403 - TK dùng
  * fetchPhieuList({ trangThai: 3 }).

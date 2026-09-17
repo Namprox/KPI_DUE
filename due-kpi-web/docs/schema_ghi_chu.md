@@ -533,8 +533,8 @@ tạo phiếu ──────────────────────
 | 1 | NHAP | GV kê khai, chưa nộp lần nào | GĐ1 |
 | 2 | THAM_DINH | Còn ≥1 dòng ở trạng thái 1 hoặc 2 | GĐ1↔GĐ2 |
 | 3 | CHO_TK_DUYET | 100% dòng đã chốt, chờ Trưởng khoa | GĐ3 |
-| 4 | TK_DA_DUYET | TK đã chốt hồ sơ + chọn xếp loại, chờ đóng gói/HT | GĐ3→GĐ4 |
-| 5 | HOAN_TAT | HT đã duyệt gói KPI Khoa (read-only, trừ khi mở lại) | GĐ4 |
+| 4 | TK_DA_DUYET | TK đã chốt hồ sơ + chọn xếp loại, chờ đóng gói. Sau đóng gói **chỉ hồ sơ lãnh đạo** còn đọng ở đây, chờ HT | GĐ3→GĐ4 |
+| 5 | HOAN_TAT | Kết quả đã chốt (read-only, trừ khi mở lại) | GĐ4 |
 
 ```
 1 ──[GV nộp phiếu]────────────────────────────────► 2
@@ -542,11 +542,44 @@ tạo phiếu ──────────────────────
 3 ──[TỰ ĐỘNG: có dòng rớt về 1 hoặc 2]────────────► 2
 3 ──[TK chốt hồ sơ + chọn xếp loại 1/2/3]─────────► 4
 4 ──[TK trả 1 dòng về thẩm định]──────────────────► 2
-4 ──[HT duyệt gói KPI Khoa]───────────────────────► 5
+4 ──[TK đóng gói — hồ sơ THƯỜNG, can_ht_duyet=0]──► 5
+4 ──[HT duyệt gói — hồ sơ LÃNH ĐẠO, =1]───────────► 5
 4 ──[HT trả riêng hồ sơ này về TK]────────────────► 3
 2 ──[GV hủy nộp — chỉ khi chưa dòng nào DA_CHOT]──► 1
 5 ──[HT mở lại]───────────────────────────────────► 1/2/3
 ```
+
+#### LUỒNG DUYỆT TÁCH ĐÔI — ai mới cần Hiệu trưởng duyệt
+
+- **KPI của nhân viên / giảng viên**: Trưởng khoa (TK/TKL) hoặc Trưởng phòng (TP) duyệt là
+  xong. **Không** qua Hiệu trưởng.
+- **KPI của lãnh đạo đơn vị** (`TK`, `TKL`, `PTK`, `PTKL`, `TP`, `PTP`): mới cần HT duyệt.
+
+Cột `phieu_danh_gia.can_ht_duyet` (BIT) là **snapshot chốt một lần** tại bước TK chốt hồ sơ
+(`sp_phieu_khoa_duyet_ho_so`, GĐ3), không suy động về sau — vì nhân sự có thể đổi sau khi
+chốt, và `phieu.id_chuc_vu` resolve theo `ty_le_dinh_muc_giang` nên người vừa có dòng chức vụ
+NULL vừa có dòng PTK tại cùng đơn vị có thể snapshot nhầm NULL. Quy tắc ghi:
+
+```
+can_ht_duyet = 1  ⟺  EXISTS dòng nhan_vien_chuc_vu của (phieu.id_nhan_vien, phieu.id_don_vi)
+                      còn hiệu lực tại nam_danh_gia.ngay_ket_thuc, ma_chuc_vu ∈ tập lãnh đạo
+                  HOẶC phieu.id_chuc_vu trỏ tới một mã trong tập đó
+```
+
+> ⚠ **Mốc HOÀN TẤT của hồ sơ thường là bước ĐÓNG GÓI, không phải bước TK chốt hồ sơ.**
+> `xep_loai` cuối cùng (kể cả mức 4) chỉ tính được khi 100% hồ sơ của đơn vị đã chốt, vì hạn
+> ngạch 20% xếp hạng trên toàn Khoa. Đây là ràng buộc dữ liệu, không phải lựa chọn thiết kế:
+> không có cách nào cho một hồ sơ "xong" trước khi biết thứ hạng của nó trong Khoa.
+
+Tập mã chức vụ lãnh đạo khai báo ở **một nơi duy nhất**: `dbo.fn_chuc_vu_can_ht_duyet()`
+(inline TVF, không phải scalar UDF — SQL 2008 gọi scalar UDF theo từng dòng rất chậm). Bản
+sao chỉ-đọc phía C# ở `Helper/ChucVuLanhDao.cs`, **chỉ để hiển thị**, không phải cổng phân
+quyền. Sửa một chỗ thì sửa cả hai.
+
+> ⚠ **`PTK` / `PTKL` / `PTP` CỐ Ý KHÔNG có quyền duyệt.** Chúng nằm trong
+> `fn_chuc_vu_can_ht_duyet` nhưng **không** nằm trong nhóm `DUYET` của `fn_co_quyen_don_vi`,
+> cũng không có trong `PhieuDanhGiaService.CapKhoaMaChucVu`. Hồ sơ của cấp phó cần HT duyệt,
+> nhưng bản thân cấp phó không được chốt hồ sơ của người khác.
 
 #### Quan hệ giữa hai trục
 
@@ -612,9 +645,9 @@ tạo phiếu ──────────────────────
 | `sp_chi_tiet_khoa_tra_tham_dinh` | TK trả 1 dòng về thẩm định, dòng 3→2 (`nguon_tra_ve = 3`) | `THIEU_LY_DO`, `TO_TRINH_DA_TRINH` |
 | `sp_phieu_khoa_duyet_ho_so` | TK chốt hồ sơ, phiếu 3→4, chọn `xep_loai_khoa` | `CAM_CHON_XUAT_SAC`, `XEP_LOAI_KHONG_HOP_LE`, `VUOT_MUC_VIEN_CHUC`, `THIEU_LY_DO`, `CHUA_CHOT_HET` |
 | `sp_phieu_khoa_uu_tien_xuat_sac` | TK chỉ định ai được suất cuối khi đồng hạng | `VUOT_MUC_VIEN_CHUC`, `TO_TRINH_DA_TRINH` |
-| `sp_to_trinh_khoa_dong_goi` | **Nơi DUY NHẤT ghi `xep_loai = 4`** | `CHUA_DU_HO_SO`, `DONG_HANG`, `KHONG_CO_HO_SO`, `TY_LE_KHONG_HOP_LE` |
-| `sp_to_trinh_khoa_trinh` | Gói 2→3, `lan_trinh += 1` | `TRAN_LAN_TRINH` |
-| `sp_to_trinh_khoa_ht_duyet` | Gói 3→4, mọi phiếu 4→5 | — |
+| `sp_to_trinh_khoa_dong_goi` | **Nơi DUY NHẤT ghi `xep_loai = 4`**; đồng thời đẩy hồ sơ **thường** 4→5 và quyết định gói → 2 hay → 4 | `CHUA_DU_HO_SO`, `DONG_HANG`, `KHONG_CO_HO_SO`, `TY_LE_KHONG_HOP_LE` |
+| `sp_to_trinh_khoa_trinh` | Gói 2→3, `lan_trinh += 1` | `TRAN_LAN_TRINH`, `KHONG_CO_HO_SO_LANH_DAO` |
+| `sp_to_trinh_khoa_ht_duyet` | Gói 3→4, các phiếu **lãnh đạo** còn ở 4 → 5. **Không đổi sau luồng tách đôi**: SP đã lọc `trang_thai = 4`, mà tập đó nay chính xác là hồ sơ lãnh đạo | — |
 | `sp_to_trinh_khoa_ht_tra_lai` | Gói 3→5, các phiếu được chọn 4→3 | `DANH_SACH_RONG`, `HO_SO_KHONG_HOP_LE`, `THIEU_LY_DO` |
 | `sp_to_trinh_khoa_get_paged` / `_get_detail` | Đọc | — |
 
@@ -623,11 +656,32 @@ nằm trong cây đơn vị của họ. Nghĩa là TK duyệt hồ sơ giảng v
 viên chức Phòng mình — không ai với sang đơn vị khác. `ADMIN` đi đường tắt. `HT` **không**
 duyệt lẻ từng hồ sơ nữa, chỉ thao tác ở cấp gói.
 
-**Tờ trình được tạo tự động** bởi `sp_phieu_khoa_duyet_ho_so` khi hồ sơ đầu tiên của
-(năm, đơn vị) được chốt. Có hồ sơ mới vào gói đang ở trạng thái 2 hoặc 5 thì gói tự hạ về 1
-— hạn ngạch cũ tính trên mẫu số cũ nên không còn đúng.
+Sau khi luồng duyệt tách đôi, đọc bảng này cho **đủ hai bước**:
 
-#### Ba bất biến mà mọi SP phải giữ
+| Hồ sơ của | Bước GĐ3 (chốt hồ sơ + chọn xếp loại) | Bước GĐ4 (HOÀN TẤT) |
+|---|---|---|
+| Nhân viên / giảng viên | TK/TKL của Khoa, hoặc TP của Phòng | TK đóng gói tờ trình — **hết, không qua HT** |
+| PTK / PTKL / PTP | TK/TKL/TP của chính đơn vị đó | HT duyệt gói |
+| TK / TKL / TP | **Chính họ tự chốt** (giữ nguyên gate hiện tại) | HT duyệt gói |
+
+Việc TK/TP tự chốt hồ sơ của chính mình là **có chủ đích**: HT duyệt ở cấp gói mới là bước
+kiểm soát thật. Cấp phó (PTK/PTKL/PTP) **không** được chốt hồ sơ — kể cả của chính mình.
+
+**Tờ trình được tạo tự động** bởi `sp_phieu_khoa_duyet_ho_so` khi hồ sơ đầu tiên của
+(năm, đơn vị) được chốt. Có hồ sơ mới vào gói đang ở trạng thái 2, 5, **hoặc 4-tự-động-hoàn-tất**
+thì gói tự hạ về 1 — hạn ngạch cũ tính trên mẫu số cũ nên không còn đúng.
+
+> ⚠ **Gói ở trạng thái 4 có HAI nguồn gốc khác hẳn nhau**, phân biệt qua
+> `to_trinh_kpi_khoa.id_nguoi_duyet`:
+> - `id_nguoi_duyet IS NOT NULL` — Hiệu trưởng duyệt thật. **Khoá cứng**: hồ sơ mới chốt muộn
+>   sẽ bị `TO_TRINH_DA_TRINH`, không được âm thầm lật quyết định của HT.
+> - `id_nguoi_duyet IS NULL` — **gói tự động hoàn tất**: đơn vị không có hồ sơ lãnh đạo nào
+>   nên đóng gói xong là chốt luôn, chưa qua tay HT lần nào. Gói này vẫn mở lại được.
+>
+> `sp_phieu_khoa_duyet_ho_so` và `sp_chi_tiet_khoa_tra_tham_dinh` đều phải kiểm **cả hai** vế,
+> không được chỉ so `trang_thai = 4`.
+
+#### Bốn bất biến mà mọi SP phải giữ
 
 Kiểm được bằng query ở mục 7 của `update_database.sql`:
 
@@ -638,6 +692,10 @@ Kiểm được bằng query ở mục 7 của `update_database.sql`:
    đều xóa `diem_chinh_thuc` khi kéo dòng ra khỏi trạng thái chốt.
 3. `xep_loai = 4` ⟹ `id_to_trinh IS NOT NULL`; và phiếu ở trạng thái 4/5 phải có
    `xep_loai_khoa`. Mức 4 không có đường ghi nào khác ngoài `sp_to_trinh_khoa_dong_goi`.
+4. **(Luồng tách đôi)** Phiếu ở trạng thái 4 ⟹ `can_ht_duyet = 1`. Hồ sơ thường không bao giờ
+   đọng ở 4 sau khi đơn vị đã đóng gói — nó đi thẳng 4→5 ngay trong `sp_to_trinh_khoa_dong_goi`.
+   Bất biến này chỉ đúng **sau khi đơn vị được đóng gói lại**; hồ sơ tồn từ quy trình cũ vi
+   phạm nó một cách hợp lệ cho tới lúc đó (xem query (b) và (e) của `update_database.sql`).
 
 ### 4.0. `danh_muc_vai_tro_pvcd` — Lookup nhóm vai trò PVCĐ theo đơn vị
 Mỗi khoa có thể có bộ vai trò + điểm quy đổi riêng (`id_don_vi` NULL = áp dụng toàn trường,
@@ -701,6 +759,7 @@ Xếp loại (theo QĐ ĐHKT). `tong_diem_tich_luy = tong_diem_co_ban + tong_die
 | `xep_loai_de_xuat` | Hệ thống (`XepLoaiCalculator`) | Khi TK mở hồ sơ ở GĐ3 | 1–4, chỉ để **đối chiếu** |
 | `xep_loai_khoa` | **Trưởng khoa chọn tay** | Chốt hồ sơ cá nhân (GĐ3, 3→4) | **1/2/3 — cấm chọn 4** |
 | `xep_loai` | Hệ thống | Đóng gói tờ trình (mục 8) | `= xep_loai_khoa`, nâng lên 4 nếu trúng hạn ngạch |
+| `can_ht_duyet` | Hệ thống (`sp_phieu_khoa_duyet_ho_so`) | TK chốt hồ sơ (GĐ3, 3→4) | 0/1 — snapshot, **không** suy lại về sau |
 
 Mức 4 KHÔNG ai chọn tay được: nó phụ thuộc thứ hạng trong cả Khoa nên chỉ tính được khi
 100% hồ sơ của Khoa đã chốt. `ly_do_xep_loai` bắt buộc khi `xep_loai_khoa <> xep_loai_de_xuat`.
@@ -1151,19 +1210,38 @@ Gói hồ sơ KPI của 1 Khoa trong 1 năm. Đây là nơi **DUY NHẤT** tính
 | 1 | DANG_TONG_HOP | Chưa đủ 100% hồ sơ được Trưởng khoa chốt |
 | 2 | DA_DONG_GOI | Đã tính hạn ngạch + nâng xuất sắc; mở nút "Trình Hiệu trưởng" |
 | 3 | DA_TRINH | Chờ Hiệu trưởng duyệt |
-| 4 | HT_DA_DUYET | Chốt số liệu toàn Khoa, khóa chiến dịch, sinh báo cáo lương/thưởng |
+| 4 | HT_DA_DUYET | Chốt số liệu toàn Khoa, khóa chiến dịch, sinh báo cáo lương/thưởng. **Cũng là trạng thái của gói TỰ ĐỘNG HOÀN TẤT** — phân biệt qua `id_nguoi_duyet` (NULL = tự động) |
 | 5 | HT_TRA_VE | HT trả về ≥1 hồ sơ; TK xử lý rồi trình lại |
 
 ```
-1 ──[đóng gói: 100% hồ sơ ở trạng thái 4]──► 2
+1 ──[đóng gói, đơn vị CÓ hồ sơ lãnh đạo]────► 2
+1 ──[đóng gói, đơn vị KHÔNG có hồ sơ LĐ]────► 4   (tự động hoàn tất, id_nguoi_duyet = NULL,
+                                                   lich_su hanh_dong = 6)
 2 ──[TK trình Hiệu trưởng]──────────────────► 3   (lan_trinh += 1)
-3 ──[HT duyệt gói]──────────────────────────► 4   (mọi phiếu 4 → 5)
+3 ──[HT duyệt gói]──────────────────────────► 4   (các phiếu LÃNH ĐẠO còn ở 4 → 5)
 3 ──[HT trả về, kèm danh sách hồ sơ]────────► 5   (các phiếu được chọn 4 → 3)
 5 ──[TK xử lý xong, đóng gói lại]───────────► 2
 ```
 
+Điều kiện đóng gói là 100% hồ sơ ở trạng thái **4 hoặc 5** (không còn chỉ là 4): sau luồng
+tách đôi, hồ sơ thường đã HOÀN TẤT ở lần đóng gói trước nên đang nằm ở 5. Giữ điều kiện cũ thì
+mọi lần đóng gói **lại** đều báo `CHUA_DU_HO_SO` vĩnh viễn.
+
 Có hồ sơ rớt khỏi trạng thái 4 (TK trả dòng về thẩm định, HT trả hồ sơ về TK) thì gói
 tự động về trạng thái 1.
+
+> ⚠ **ĐÓNG GÓI LẠI CÓ THỂ HẠ XẾP LOẠI CỦA HỒ SƠ ĐÃ HOÀN TẤT.** Thêm hồ sơ mới vào đơn vị làm
+> mẫu số hạn ngạch 20% đổi ⇒ bước (6) của `sp_to_trinh_khoa_dong_goi` ghi đè `xep_loai` cho
+> **toàn bộ** phiếu của (năm, đơn vị), kể cả phiếu đang ở trạng thái 5. Một người đang Xuất sắc
+> có thể rớt về Hoàn thành tốt.
+>
+> Đây là hệ quả toán học không tránh được của việc cho hồ sơ "xong sớm ở cấp TK" trong khi hạn
+> ngạch vẫn tính trên toàn Khoa — **không phải lỗi**. SP ghi một dòng `lich_su_trang_thai_phieu`
+> (`trang_thai_truoc = trang_thai_sau = 5`, `hanh_dong = 4`) nêu rõ mức cũ → mức mới cho mỗi
+> phiếu bị đổi, để truy vết.
+>
+> Muốn chặn hẳn thì phải khoá không cho thêm hồ sơ sau khi đơn vị đã đóng gói lần đầu — là một
+> quyết định nghiệp vụ riêng, chưa làm.
 
 ### 8.2. Luật hạn ngạch top 20% — ĐÃ CHỐT VỚI NGƯỜI DÙNG
 
@@ -1207,9 +1285,13 @@ cho gói đóng mới.
 
 ### 8.5. `lich_su_to_trinh_kpi_khoa`
 
-`hanh_dong`: 1 Đóng gói · 2 Trình HT · 3 HT duyệt gói · 4 HT trả về · 5 Mở lại gói.
+`hanh_dong`: 1 Đóng gói · 2 Trình HT · 3 HT duyệt gói · 4 HT trả về · 5 Mở lại gói ·
+**6 Tự động hoàn tất** (đóng gói xong mà đơn vị không có hồ sơ lãnh đạo nào ⇒ gói đi thẳng
+sang trạng thái 4, không qua HT).
 `ly_do` bắt buộc (ở tầng API) khi `hanh_dong IN (4, 5)`. `so_ho_so_tra_ve` chỉ có nghĩa
 khi `hanh_dong = 4`.
+
+`chk_lsttkk_hd` đã được nới từ `IN (1,2,3,4,5)` lên `IN (1,2,3,4,5,6)` để nhận giá trị mới.
 
 
 ---
@@ -2012,3 +2094,93 @@ không compile được trên bản DB chưa chạy đợt "Vi phạm nhân viê
   Trần nhóm là chuyện của `nhom_tieu_chi.diem_toi_da` ở tầng phiếu, `sp_phieu_danh_gia_tinh_tong_diem`
   hiện **chỉ cộng chứ không cap** — chưa đụng tới lần này.
 - **Hạn ngạch 20% xuất sắc cho viên chức** (hiện chỉ có `to_trinh_kpi_khoa` cho giảng viên).
+
+---
+
+## 12. HỌC VỊ — CHƯA LÀM, để phát triển sau
+
+> ⚠️ **Mục này mô tả thiết kế ĐỀ XUẤT, chưa có trong database.** Đợt "Khoa Thống kê -
+> Tin học" chỉ nạp người + đơn vị + chức danh nghề nghiệp; phần học vị đã cắt khỏi
+> `update_database.sql` để làm sau. Đừng viết code dựa vào các bảng dưới đây cho tới
+> khi chúng thực sự được tạo.
+
+### 12.1. Hiện trạng: không có chỗ nào lưu học vị của nhân sự
+
+Hai thứ dễ nhầm là chỗ lưu nhưng không phải:
+
+- `nckh_gio_nckh.hoc_vi` / `hoc_ham` — chỉ là text denormalize đổ về từ API NCKH, nằm trên bảng
+  **wipe-and-reload** (`sp_nckh_gio_nckh_dong_bo` mở đầu bằng `DELETE FROM dbo.nckh_gio_nckh;`),
+  không FK tới `nhan_vien`, mất sạch sau mỗi lần đồng bộ. Không dùng làm hồ sơ nhân sự được.
+- `chuc_danh_nghe_nghiep` — đây là **ngạch/chức danh nghề nghiệp** (GV/GVC/GVCC/PGS/GS), không
+  phải học vị. GS/PGS nằm ở đây vì Bảng 1 QĐ ĐHKT xếp GVCC và PGS cùng một dòng.
+
+**Học vị (ĐH/ThS/TS) ≠ chức danh nghề nghiệp (GV/GVC/GVCC) ≠ học hàm (GS/PGS).** Một người có
+thể là Tiến sĩ nhưng vẫn giữ ngạch Giảng viên.
+
+### 12.2. Thiết kế đề xuất — sao chép pattern `chuc_danh_nghe_nghiep` + `nhan_vien_chuc_danh`
+
+```
+danh_muc_hoc_vi   (id_hoc_vi PK, ma_hoc_vi UNIQUE, ten_hoc_vi, thu_tu, trang_thai)
+                  seed: DH / Đại học / 1, THS / Thạc sĩ / 2, TS / Tiến sĩ / 3
+
+nhan_vien_hoc_vi  (id_nv_hoc_vi PK, id_nhan_vien FK, id_hoc_vi FK,
+                   tu_ngay, den_ngay, ghi_chu, ngay_tao)
+                  ix_nvhv_nv_ngay (id_nhan_vien, tu_ngay, den_ngay)
+
+nhan_vien.id_hoc_vi INT NULL FK -> danh_muc_hoc_vi    -- học vị ĐANG hiệu lực hôm nay
+                  ix_nv_hoc_vi WHERE id_hoc_vi IS NOT NULL
+```
+
+Ba quy ước nên giữ giống hệt lịch sử chức danh để khỏi phải học lại:
+
+1. **Không có cờ `IsCurrent`.** Hiện hành = `tu_ngay <= hôm nay AND (den_ngay IS NULL OR den_ngay >= hôm nay)`.
+2. `nhan_vien.id_hoc_vi` là **cache denormalize**. Mọi CUD trên `nhan_vien_hoc_vi` phải resolve
+   lại và ghi đè cột này — y như `sp_nhan_vien_chuc_danh_create` làm với `nhan_vien.id_chuc_danh`.
+3. `thu_tu` dùng để **so bậc** học vị (ThS < TS), không dùng để sắp lịch sử — lịch sử sắp theo `tu_ngay`.
+
+Khi viết CRUD, copy nguyên `sp_nhan_vien_chuc_danh_create/_update/_delete` (auto-close bản ghi
+đang mở, từ chối chồng lấn, sync cột cache).
+
+### 12.3. Hai mã chức danh mới: `CV` và `KHAC` (phần NÀY đã làm rồi)
+
+Nguồn NCKH trả về `TitleName` = "Chuyên viên" và "Khác" — không nằm trong 5 ngạch giảng dạy.
+Đợt "Khoa Thống kê - Tin học" đã seed thêm `CV` (Chuyên viên) và `KHAC` (Khác) vào
+`chuc_danh_nghe_nghiep`.
+
+⚠️ Hai mã này **cố ý nằm ngoài** bộ `ma_chuc_danh IN ('GV','GVC','GVCC','PGS','GS')` mà ~10 SP
+dùng để lọc giảng viên. Người mang `CV`/`KHAC` **không** được tính là giảng viên khi chấm KPI —
+đúng nghiệp vụ, đừng "sửa" bằng cách nhét chúng vào danh sách đó.
+
+### 12.4. Đặc thù dữ liệu nguồn NCKH (biết trước để khỏi tưởng là bug)
+
+Dữ liệu `tkth.json` dùng cờ `IsCurrent` cho **bản ghi học vị**, không cho chức danh — nên dòng
+`IsCurrent = 0` thường mang ngạch **mới hơn** dòng `IsCurrent = 1`. Mốc `18/10/2020` xuất hiện
+dày đặc là **ngày migration của hệ thống nguồn**, không phải ngày bổ nhiệm thật.
+
+`update_database.sql` đợt này đã **rút gọn 46 dòng JSON xuống 27 dòng** trong `#tkth_raw`, bỏ
+hẳn hai cột `ma_hoc_vi` / `ngay_hoc_vi`. Bốn quyết định đã bake sẵn vào dữ liệu (có chú thích
+ngay trong file):
+
+1. **UserId 4000 bị loại** — trùng người với 3987 ("Nguyễn Thị Sáng", khác email). Giữ 3987
+   → khoa còn **23 người**.
+2. **`ngay_chuc_danh = NULL`** = nguồn không có `TitleDate` (13/23 người). Trước đây mượn
+   `DegreeDate`; nay học vị đã gỡ nên phần 5 dùng biến `@ngay_chuc_danh_mac_dinh`
+   (mặc định `2020-01-01`, bằng `@tu_ngay_don_vi`). **Đây là dữ liệu test — ngày này không
+   phải ngày bổ nhiệm thật**, đừng dùng để tính thâm niên.
+3. **Đã lọc mốc ngạch trùng** trong nguồn: UserId 239 (2 dòng GVC giống hệt), 252 (2 dòng GV),
+   253 (3 dòng GVC), 4198 (2 dòng GV).
+4. **UserId 251 Châu Ngọc Tuấn** — nguồn ghi thêm ngạch "Giảng viên" không có `TitleDate`;
+   sắp theo ngày thì thành ra bị **giáng** GVC (18/10/2020) → GV, vô lý. Chốt: giữ
+   **Giảng viên chính**, bỏ dòng GV.
+
+### 12.5. Hai ca học vị còn treo — xử lý khi làm bảng học vị
+
+Quyết định nghiệp vụ đã chốt: **giữ dòng Thạc sĩ cho cả hai.**
+
+| UserId | Nguồn ghi | Vô lý ở chỗ | Xử lý khi nạp học vị |
+|---|---|---|---|
+| 238 Trần Hoàng Hiếu | TS 01/01/2016 **trước** ThS 06/07/2016 | không ai lấy TS xong mới lấy ThS | bỏ mốc TS → **Thạc sĩ** |
+| 4198 Trần Thị Thuý Trinh | `IsCurrent=1` nói TS 01/01/2023, nhưng có mốc ThS 30/05/2025 mới hơn | cờ và mốc ngày đá nhau | bỏ mốc TS → **Thạc sĩ** |
+
+Hai ca này chỉ ảnh hưởng tới học vị nên đợt này không đụng tới. Dữ liệu học vị gốc nằm ở
+`tkth.json` (đã không còn trong `update_database.sql`) — lấy lại từ đó khi cần.

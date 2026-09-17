@@ -336,7 +336,10 @@ const DuyetHoSoKhoa = () => {
 
       {goiChinh && (
         <div className="cd-goi-tom-tat">
-          <TrangThaiToTrinhBadge trangThai={goiChinh.TrangThai} />
+          <TrangThaiToTrinhBadge
+            trangThai={goiChinh.TrangThai}
+            idNguoiDuyet={goiChinh.IdNguoiDuyet}
+          />
           <span>
             Gói KPI {goiChinh.TenDonVi} - <b>{goiChinh.SoHoSoDaChot ?? 0}</b>/
             {goiChinh.SoHoSo ?? 0} hồ sơ đã chốt
@@ -369,18 +372,18 @@ const DuyetHoSoKhoa = () => {
           {dangTaiChuaCham ? "…" : demTab(TAB.CHUA_CHAM)})
         </button>
         <button
-          className={`cd-tab${laChoChot ? " cd-tab-active" : ""}`}
-          onClick={() => setTab(TAB.CHO_CHOT)}
-        >
-          <i className="fa-solid fa-user-check"></i> Chờ tôi chốt (
-          {demTab(TAB.CHO_CHOT)})
-        </button>
-        <button
           className={`cd-tab${laThamDinh ? " cd-tab-active" : ""}`}
           onClick={() => setTab(TAB.THAM_DINH)}
         >
           <i className="fa-solid fa-clipboard-check"></i> Đang thẩm định (
           {demTab(TAB.THAM_DINH)})
+        </button>
+        <button
+          className={`cd-tab${laChoChot ? " cd-tab-active" : ""}`}
+          onClick={() => setTab(TAB.CHO_CHOT)}
+        >
+          <i className="fa-solid fa-user-check"></i> Chờ tôi chốt (
+          {demTab(TAB.CHO_CHOT)})
         </button>
         <button
           className={`cd-tab${laDaChot ? " cd-tab-active" : ""}`}

@@ -44,7 +44,8 @@ const PAGE_SIZE = 20;
  * LẠI phiếu đã hoàn tất khi phát hiện sai sót.
  *
  * Hai tab lấy từ hai nguồn khác nhau vì server chia sẵn như vậy:
- *  - "Chờ đóng gói" → /phieu/truong/pending (chỉ trạng thái 4, toàn trường)
+ *  - "Hồ sơ lãnh đạo chờ duyệt" → /phieu/truong/pending
+ *    (trạng thái 4 + CanHtDuyet=true, toàn trường)
  *  - "Đã hoàn tất"  → /phieu?trangThai=5
  * Phiếu trạng thái 3 cố ý không xuất hiện ở đây: trạng thái 3 nay là việc của
  * Trưởng khoa, chưa tới lượt cấp Trường.
@@ -166,10 +167,12 @@ const TheoDoiPhieuTruong = () => {
             fontWeight: 700,
           }}
         >
-          Theo dõi phiếu toàn trường
+          {daHoanTat ? "Hồ sơ đã hoàn tất" : "Hồ sơ lãnh đạo chờ duyệt"}
         </h2>
         <span className="breadcrumb">
-          Toàn cảnh hồ sơ KPI cấp Trường - chỉ để theo dõi và tra cứu
+          {daHoanTat
+            ? "Tra cứu các hồ sơ KPI đã hoàn tất"
+            : "Chỉ gồm hồ sơ của lãnh đạo đơn vị thuộc diện Hiệu trưởng duyệt"}
         </span>
       </div>
 
@@ -220,7 +223,7 @@ const TheoDoiPhieuTruong = () => {
             options={[
               {
                 value: TRANG_THAI.TK_DA_DUYET,
-                label: "Khoa đã chốt, chờ đóng gói",
+                label: "Hồ sơ lãnh đạo chờ duyệt",
               },
               { value: TRANG_THAI.HOAN_TAT, label: "Đã hoàn tất" },
             ]}

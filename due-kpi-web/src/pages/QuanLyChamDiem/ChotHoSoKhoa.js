@@ -48,6 +48,7 @@ import {
 import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import TieuChiChamCard from "../../components/QuanLyChamDiem/TieuChiChamCard";
+import CanhBaoTieuChiChuaChot from "../../components/QuanLyChamDiem/CanhBaoTieuChiChuaChot";
 import LyDoModal from "../../components/QuanLyChamDiem/LyDoModal";
 import {
   TrangThaiBadge,
@@ -493,7 +494,7 @@ const ChotHoSoKhoa = () => {
       showToast(
         "success",
         "Đã chốt hồ sơ",
-        `Hồ sơ của ${nv.hoTen} đã được chốt. Xếp loại cuối cùng sẽ được ghi khi bạn đóng gói tờ trình KPI Khoa.`,
+        "Đã chốt hồ sơ. Kết quả sẽ hoàn tất khi Trưởng khoa đóng gói tờ trình.",
         7000,
       );
       navigate("/quan-ly/duyet-ho-so");
@@ -975,7 +976,10 @@ const ChotHoSoKhoa = () => {
                 {laVienChuc ? " · Viên chức / người lao động" : ""}
               </div>
             </div>
-            <TrangThaiBadge trangThai={phieu.TrangThai} />
+            <TrangThaiBadge
+              trangThai={phieu.TrangThai}
+              canHtDuyet={phieu.CanHtDuyet}
+            />
           </div>
 
           <div className="cd-diem-panel">
@@ -1091,19 +1095,7 @@ const ChotHoSoKhoa = () => {
         </div>
       )}
 
-      {chuaChot.length > 0 && (
-        <div className="cd-canh-bao">
-          <i className="fa-solid fa-triangle-exclamation"></i>
-          <span>
-            Còn <b>{chuaChot.length}</b> tiêu chí chưa thẩm định xong:{" "}
-            {chuaChot
-              .map((ct) => ct.TenTieuChi)
-              .filter(Boolean)
-              .join(", ")}
-            . Hồ sơ chỉ chốt được khi 100% tiêu chí đã chốt điểm.
-          </span>
-        </div>
-      )}
+      <CanhBaoTieuChiChuaChot tieuChi={chuaChot} />
 
       {thieuTieuChi?.length > 0 && (
         <div className="cd-canh-bao">

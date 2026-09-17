@@ -49,15 +49,21 @@ const Badge = ({ meta }) => {
  * phiếu: giá trị đó không nằm trong DB nên TRANG_THAI_META không có, để rơi vào
  * nhánh mặc định sẽ hiện "Không xác định" - sai hẳn nghĩa.
  */
-export const TrangThaiBadge = ({ trangThai }) => (
-  <Badge
-    meta={
-      trangThai != null && Number(trangThai) === TRANG_THAI_CHUA_LAP
+export const TrangThaiBadge = ({ trangThai, canHtDuyet }) => {
+  const meta =
+    Number(trangThai) === 4 && canHtDuyet === false
+      ? {
+          label: "Dữ liệu cũ - cần đóng gói lại",
+          icon: "fa-triangle-exclamation",
+          bg: "#fffbeb",
+          color: "#b45309",
+          border: "#fde68a",
+        }
+      : trangThai != null && Number(trangThai) === TRANG_THAI_CHUA_LAP
         ? TRANG_THAI_CHUA_LAP_META
-        : TRANG_THAI_META[trangThai]
-    }
-  />
-);
+        : TRANG_THAI_META[trangThai];
+  return <Badge meta={meta} />;
+};
 
 /**
  * Trạng thái TỪNG DÒNG tiêu chí (chi_tiet_danh_gia.trang_thai_dong).
@@ -78,10 +84,26 @@ export const TrangThaiDonViBadge = ({ trangThai }) => (
   <Badge meta={TRANG_THAI_DV_META[trangThai]} />
 );
 
-/** Trạng thái GÓI KPI Khoa (to_trinh_kpi_khoa.trang_thai). */
-export const TrangThaiToTrinhBadge = ({ trangThai }) => (
-  <Badge meta={TRANG_THAI_TO_TRINH_META[trangThai]} />
-);
+/**
+ * Trạng thái GÓI KPI Khoa (to_trinh_kpi_khoa.trang_thai).
+ *
+ * Trạng thái 4 có hai nguồn: có IdNguoiDuyet là HT duyệt thật; null là gói tự
+ * hoàn tất vì không có hồ sơ lãnh đạo. `undefined` giữ nhãn chung cho các API
+ * danh sách cũ chưa trả trường này.
+ */
+export const TrangThaiToTrinhBadge = ({ trangThai, idNguoiDuyet }) => {
+  const meta =
+    Number(trangThai) === 4 && idNguoiDuyet === null
+      ? {
+          label: "Tự động hoàn tất",
+          icon: "fa-circle-check",
+          bg: "#ecfdf5",
+          color: "#047857",
+          border: "#a7f3d0",
+        }
+      : TRANG_THAI_TO_TRINH_META[trangThai];
+  return <Badge meta={meta} />;
+};
 
 /**
  * Xếp loại CUỐI CÙNG - chỉ có giá trị sau khi tờ trình Khoa được đóng gói.

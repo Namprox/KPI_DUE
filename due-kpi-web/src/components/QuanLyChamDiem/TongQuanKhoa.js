@@ -408,7 +408,10 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
             </div>
           </div>
           {goi ? (
-            <TrangThaiToTrinhBadge trangThai={goi.TrangThai} />
+            <TrangThaiToTrinhBadge
+              trangThai={goi.TrangThai}
+              idNguoiDuyet={goi.IdNguoiDuyet}
+            />
           ) : (
             <span className="tq-placeholder">Chưa có gói</span>
           )}

@@ -34,6 +34,7 @@ import {
 import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import TieuChiChamCard from "../../components/QuanLyChamDiem/TieuChiChamCard";
+import CanhBaoTieuChiChuaChot from "../../components/QuanLyChamDiem/CanhBaoTieuChiChuaChot";
 import {
   TrangThaiBadge,
   XepLoaiBadge,
@@ -515,7 +516,7 @@ const ChotHoSoPhong = () => {
       showToast(
         "success",
         "Đã chốt hồ sơ",
-        `Hồ sơ của ${nv.hoTen} đã được chốt ở mức ${form.xepLoaiKhoa}.`,
+        "Đã chốt hồ sơ. Kết quả sẽ hoàn tất khi Trưởng khoa đóng gói tờ trình.",
         7000,
       );
       navigate(DUONG_DAN_DANH_SACH);
@@ -824,7 +825,10 @@ const ChotHoSoPhong = () => {
                 {laVienChuc ? " · Viên chức / người lao động" : ""}
               </div>
             </div>
-            <TrangThaiBadge trangThai={phieu.TrangThai} />
+            <TrangThaiBadge
+              trangThai={phieu.TrangThai}
+              canHtDuyet={phieu.CanHtDuyet}
+            />
           </div>
 
           <div className="cd-diem-panel">
@@ -942,7 +946,7 @@ const ChotHoSoPhong = () => {
             ></i>
             {phieu.TrangThai === TRANG_THAI.TK_DA_DUYET ||
             phieu.TrangThai === TRANG_THAI.HOAN_TAT
-              ? "Hồ sơ đã được chốt. Chỉ Hiệu trưởng mới mở lại được."
+              ? "Hồ sơ đã chốt, chờ đóng gói tờ trình để hoàn tất. Chỉ Hiệu trưởng mới mở lại được."
               : "Hồ sơ chưa thẩm định xong toàn bộ tiêu chí nên chưa chốt được. Bạn vẫn xem được chi tiết bên dưới."}
           </div>
         </div>
@@ -968,20 +972,10 @@ const ChotHoSoPhong = () => {
         </div>
       )}
 
-      {chuaChot.length > 0 && (
-        <div className="cd-canh-bao">
-          <i className="fa-solid fa-triangle-exclamation"></i>
-          <span>
-            Còn <b>{chuaChot.length}</b> tiêu chí chưa thẩm định xong:{" "}
-            {chuaChot
-              .map((ct) => ct.TenTieuChi)
-              .filter(Boolean)
-              .join(", ")}
-            . Hồ sơ chỉ chốt được khi 100% tiêu chí đã chốt điểm - việc thẩm định
-            làm ở màn hình chấm điểm.
-          </span>
-        </div>
-      )}
+      <CanhBaoTieuChiChuaChot
+        tieuChi={chuaChot}
+        ghiChu="Việc thẩm định thực hiện ở màn hình chấm điểm."
+      />
 
       {thieuTieuChi?.length > 0 && (
         <div className="cd-canh-bao">

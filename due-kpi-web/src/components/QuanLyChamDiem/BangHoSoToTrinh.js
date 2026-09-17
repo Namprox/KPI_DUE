@@ -39,9 +39,35 @@ const BangHoSoToTrinh = ({
   // Đếm dồn số người đủ điều kiện đã gặp để biết đặt vạch hạn ngạch ở đâu.
   let daDuyetDuDieuKien = 0;
 
+  const trangThaiHoSo = (h) => {
+    const trangThai = Number(h.TrangThai);
+    if (trangThai === 5 && h.CanHtDuyet === false) {
+      return { nhan: "Hoàn tất (TK duyệt)", mau: "#047857", icon: "fa-circle-check" };
+    }
+    if (trangThai === 5 && h.CanHtDuyet === true) {
+      return { nhan: "Hoàn tất (HT duyệt)", mau: "#047857", icon: "fa-circle-check" };
+    }
+    if (trangThai === 5) {
+      return { nhan: "Hoàn tất", mau: "#047857", icon: "fa-circle-check" };
+    }
+    if (trangThai === 4 && h.CanHtDuyet === true) {
+      return { nhan: "Chờ Hiệu trưởng", mau: "#1d4ed8", icon: "fa-hourglass-half" };
+    }
+    if (trangThai === 4 && h.CanHtDuyet === false) {
+      return {
+        nhan: "Dữ liệu cũ - cần đóng gói lại",
+        mau: "#b45309",
+        icon: "fa-triangle-exclamation",
+        title:
+          "Hồ sơ từ quy trình cũ — Trưởng khoa cần đóng gói lại tờ trình để hoàn tất.",
+      };
+    }
+    return { nhan: "Chưa chốt", mau: "#64748b", icon: "fa-clock" };
+  };
+
   return (
     <div style={{ overflowX: "auto" }}>
-      <table className="custom-table" style={{ minWidth: "1040px" }}>
+      <table className="custom-table" style={{ minWidth: "1160px" }}>
         <thead>
           <tr>
             {chonDuoc && <th style={{ width: "44px" }}></th>}
@@ -51,6 +77,7 @@ const BangHoSoToTrinh = ({
             <th style={{ width: "12%" }}>QĐ 838</th>
             <th style={{ width: "16%" }}>Mức Khoa chọn</th>
             <th style={{ width: "16%" }}>Xếp loại cuối</th>
+            <th style={{ width: "18%" }}>Trạng thái</th>
             {ghiChuCot && <th style={{ width: "14%" }}>{ghiChuCot}</th>}
           </tr>
         </thead>
@@ -63,6 +90,8 @@ const BangHoSoToTrinh = ({
             const laVachHanNgach =
               hanNgach != null && duDieuKien && daDuyetDuDieuKien === hanNgach;
             const daNangXuatSac = Number(h.XepLoai) === 4;
+            const trangThai = trangThaiHoSo(h);
+            const duocChonTraVe = Number(h.TrangThai) === 4;
 
             return (
               <tr
@@ -79,6 +108,12 @@ const BangHoSoToTrinh = ({
                     <input
                       type="checkbox"
                       checked={daChon.includes(h.IdPhieu)}
+                      disabled={!duocChonTraVe}
+                      title={
+                        duocChonTraVe
+                          ? "Chọn hồ sơ để trả về"
+                          : "Hồ sơ đã hoàn tất; muốn sửa phải dùng chức năng mở lại"
+                      }
                       onChange={() => onDoiChon(h.IdPhieu)}
                     />
                   </td>
@@ -136,6 +171,14 @@ const BangHoSoToTrinh = ({
                 </td>
                 <td>
                   <XepLoaiBadge xepLoai={h.XepLoai} />
+                </td>
+                <td>
+                  <span
+                    title={trangThai.title}
+                    style={{ color: trangThai.mau, fontSize: "12px", fontWeight: 600 }}
+                  >
+                    <i className={`fa-solid ${trangThai.icon}`}></i> {trangThai.nhan}
+                  </span>
                 </td>
                 {ghiChuCot && (
                   <td style={{ fontSize: "12px", color: "#64748b" }}>

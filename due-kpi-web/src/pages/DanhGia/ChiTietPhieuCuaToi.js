@@ -228,7 +228,10 @@ const ChiTietPhieuCuaToi = () => {
 
       <div className="cd-phieu-header">
         <div className="cd-phieu-top">
-          <TrangThaiBadge trangThai={phieu.TrangThai} />
+          <TrangThaiBadge
+            trangThai={phieu.TrangThai}
+            canHtDuyet={phieu.CanHtDuyet}
+          />
           {tienDo.tong > 0 && (
             <TienDoCham
               xong={tienDo.xong}

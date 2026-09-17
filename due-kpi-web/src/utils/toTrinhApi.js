@@ -2,14 +2,14 @@
  * Lớp gọi API + hằng số miền cho TỜ TRÌNH KPI KHOA (to_trinh_kpi_khoa).
  *
  * Đây là giai đoạn 4 của quy trình. Đơn vị thao tác ở đây là CẢ GÓI KPI của một
- * Khoa, không phải hồ sơ cá nhân: Hiệu trưởng duyệt hoặc trả lại cả gói, không
- * còn duyệt/chốt từng phiếu lẻ.
+ * Khoa, không phải hồ sơ cá nhân. Sau khi đóng gói, hồ sơ thường đã hoàn tất;
+ * Hiệu trưởng chỉ duyệt hoặc trả lại các hồ sơ lãnh đạo còn ở trạng thái 4.
  *
  * Máy trạng thái gói (`to_trinh_kpi_khoa.trang_thai`):
  *   1 DANG_TONG_HOP  chưa đủ 100% giảng viên được Trưởng khoa chốt
- *   2 DA_DONG_GOI    đã tính hạn ngạch + nâng xuất sắc, mở nút Trình Hiệu trưởng
+ *   2 DA_DONG_GOI    đã tính hạn ngạch, còn hồ sơ lãnh đạo để trình Hiệu trưởng
  *   3 DA_TRINH       chờ Hiệu trưởng duyệt
- *   4 HT_DA_DUYET    chốt số liệu toàn Khoa, khóa chiến dịch
+ *   4 HT_DA_DUYET    HT đã duyệt, hoặc tự hoàn tất nếu IdNguoiDuyet = null
  *   5 HT_TRA_VE      HT trả về ≥1 hồ sơ; TK xử lý rồi đóng gói và trình lại
  *
  * Gói được server tự tạo khi hồ sơ đầu tiên của một (năm, đơn vị) được chốt. Bất
@@ -81,6 +81,7 @@ export const HANH_DONG_TO_TRINH = {
   HT_DUYET: 3,
   HT_TRA_VE: 4,
   MO_LAI_GOI: 5,
+  TU_DONG_HOAN_TAT: 6,
 };
 
 export const TEN_HANH_DONG_TO_TRINH = {
@@ -89,6 +90,7 @@ export const TEN_HANH_DONG_TO_TRINH = {
   3: "Hiệu trưởng duyệt gói",
   4: "Hiệu trưởng trả về",
   5: "Mở lại gói",
+  6: "Tự động hoàn tất (không có hồ sơ lãnh đạo)",
 };
 
 /** Tỷ lệ xuất sắc mặc định lưu trên gói (to_trinh_kpi_khoa.ty_le_xuat_sac). */
@@ -233,7 +235,13 @@ export const dongGoiToTrinh = async (
     { TyLeXuatSac: tyLeXuatSac ?? null, RowVersion: rowVersion },
     "Đóng gói tờ trình thất bại",
   );
-  return { item: data.Item || null, hoSo: data.HoSo || [] };
+  return {
+    item: data.Item || null,
+    hoSo: data.HoSo || [],
+    message: data.Message || "",
+    soHoSoHoanTat: data.SoHoSoHoanTat ?? null,
+    soHoSoChoHt: data.SoHoSoChoHt ?? null,
+  };
 };
 
 /** Trình gói lên Hiệu trưởng (gói 2 → 3, LanTrinh += 1). */
@@ -252,11 +260,11 @@ export const trinhToTrinh = async (idToTrinh, { nhanXet, rowVersion }) => {
 /* ------------------------------------------------------------------ */
 
 /**
- * Hiệu trưởng duyệt CẢ GÓI - bước cuối cùng của toàn bộ quy trình.
+ * Hiệu trưởng duyệt các HỒ SƠ LÃNH ĐẠO còn lại trong gói.
  *
- * Gói 3 → 4 và MỌI hồ sơ trong gói 4 → 5 (HOAN_TAT), trở thành chỉ đọc. Không
- * hoàn tác được: sau bước này chỉ còn đường mở lại từng phiếu lẻ. UI phải hỏi
- * xác nhận trước khi gọi.
+ * Gói 3 → 4 và các hồ sơ còn ở trạng thái 4 → 5. Hồ sơ thường đã ở trạng thái
+ * 5 từ bước đóng gói và không bị tác động. Sau bước này muốn sửa phải mở lại
+ * từng phiếu lẻ; UI phải hỏi xác nhận trước khi gọi.
  */
 export const htDuyetToTrinh = async (idToTrinh, { nhanXet, rowVersion }) => {
   const data = await sendJson(
@@ -265,7 +273,11 @@ export const htDuyetToTrinh = async (idToTrinh, { nhanXet, rowVersion }) => {
     { NhanXet: nhanXet || null, RowVersion: rowVersion },
     "Duyệt gói KPI thất bại",
   );
-  return data.Item || null;
+  return {
+    item: data.Item || null,
+    message: data.Message || "",
+    soHoSoHoanTat: data.SoHoSoHoanTat ?? null,
+  };
 };
 
 /**

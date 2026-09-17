@@ -581,7 +581,7 @@ export const MENU_GROUPS = [
     icon: "fa-check-double",
     items: [
       {
-        name: "Duyệt tờ trình KPI",
+        name: "Duyệt hồ sơ lãnh đạo",
         icon: "fa-solid fa-stamp",
         path: "/truong/to-trinh",
         roles: ROLE_SETS.CAP_TRUONG,

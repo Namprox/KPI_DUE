@@ -72,6 +72,8 @@ export const PHIEU_ERROR_MESSAGES = {
   TY_LE_KHONG_HOP_LE:
     "Tỷ lệ xuất sắc phải nằm trong khoảng lớn hơn 0 và tối đa 1",
   TRAN_LAN_TRINH: "Gói đã đạt giới hạn số lần trình Hiệu trưởng",
+  KHONG_CO_HO_SO_LANH_DAO:
+    "Gói không còn hồ sơ nào thuộc diện Hiệu trưởng duyệt. Cần đóng gói lại.",
   DANH_SACH_RONG: "Phải chọn ít nhất một hồ sơ để trả lại",
   HO_SO_KHONG_HOP_LE:
     "Danh sách chứa hồ sơ không thuộc gói hoặc không ở trạng thái cho phép",

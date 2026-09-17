@@ -1090,8 +1090,12 @@ paths:
           xep_loai, id_to_trinh deu ve NULL) - phai chot lai sau khi tham dinh xong.
           Goi KPI Khoa cung tut ve 1 DANG_TONG_HOP.
 
-        CHAN khi goi KPI da trinh HT (trang thai 3) hoac da duyet (4): phai de HT tra
-        ho so ve truoc qua POST /api/to-trinh-khoa/{id}/ht-tra-lai.
+        CHAN khi goi KPI da trinh HT (trang thai 3) hoac da duoc HT duyet THAT
+        (trang thai 4 + id_nguoi_duyet IS NOT NULL): phai de HT tra ho so ve truoc qua
+        POST /api/to-trinh-khoa/{id}/ht-tra-lai.
+        NGOAI LE: goi o trang thai 4 ma id_nguoi_duyet IS NULL la goi TU DONG HOAN TAT
+        (don vi khong co ho so lanh dao) — chua qua tay HT lan nao nen VAN rut dong ra
+        duoc, goi se tu ha ve 1 DANG_TONG_HOP.
 
         LyDo BAT BUOC.
       operationId: chiTietKhoaTraThamDinh
@@ -2585,11 +2589,22 @@ paths:
     get:
       tags:
         - PhieuDanhGia
-      summary: List phieu at Truong level (theo doi, KHONG con nut duyet le)
+      summary: List ho so LANH DAO cho Hieu truong duyet (theo doi, KHONG con nut duyet le)
       description: >
         GIAI ĐOẠN 4 — danh sách hồ sơ cấp Trường: chỉ trả phiếu ở **trang_thai = 4
-        (TK_DA_DUYET)** trên TOÀN TRƯỜNG, không lọc theo cây đơn vị. Đó là các hồ sơ
-        Trưởng khoa đã chốt + đã chọn xếp loại, đang chờ đóng gói vào tờ trình rồi trình HT.
+        **VÀ** `can_ht_duyet = 1`** trên TOÀN TRƯỜNG, không lọc theo cây đơn vị.
+
+        ⚠️ **LUỒNG DUYỆT TÁCH ĐÔI — danh sách này nay NGẮN HƠN HẲN trước.** Chỉ còn hồ sơ
+        của **lãnh đạo đơn vị** (TK/TKL/PTK/PTKL/TP/PTP). KPI của nhân viên / giảng viên
+        thường chỉ cần Trưởng khoa (TK/TKL) hoặc Trưởng phòng (TP) duyệt là xong — chúng
+        HOÀN TẤT (trạng thái 5) ngay tại bước
+        POST /api/to-trinh-khoa/{id}/dong-goi và **không bao giờ** xuất hiện ở đây.
+
+        FE đổi tiêu đề màn hình cho khớp: *"Hồ sơ lãnh đạo chờ duyệt"* thay vì
+        *"Hồ sơ chờ Hiệu trưởng"*.
+
+        Bộ lọc `can_ht_duyet = 1` là **tường minh** để danh sách vẫn đúng với dữ liệu tồn
+        từ quy trình cũ (hồ sơ thường còn đọng ở trạng thái 4 vì đơn vị chưa đóng gói lại).
 
         Phiếu ở **trang_thai = 3 (CHO_TK_DUYET) KHÔNG còn xuất hiện ở đây**: quy trình 4
         giai đoạn đổi nghĩa trạng thái 3 từ CHO_HT_DUYET thành CHO_TK_DUYET, tức hồ sơ mới
@@ -2599,7 +2614,7 @@ paths:
         ⚠️ Đây là view **CHỈ ĐỂ THEO DÕI**, không phải hàng đợi hành động: Hiệu trưởng
         KHÔNG duyệt / trả lại / chốt từng phiếu lẻ nữa (POST /api/phieu/{id}/truong/duyet,
         /truong/tra-lai và /chot đã bị bỏ). Thao tác của HT chuyển hết sang cấp GÓI:
-        POST /api/to-trinh-khoa/{id}/ht-duyet (mọi phiếu trong gói 4 → 5) và
+        POST /api/to-trinh-khoa/{id}/ht-duyet (các phiếu LÃNH ĐẠO còn ở 4 → 5) và
         POST /api/to-trinh-khoa/{id}/ht-tra-lai (trả một DANH SÁCH hồ sơ về 3).
         Dùng GET /api/to-trinh-khoa để lấy hàng đợi hành động thật của HT.
 
@@ -3134,8 +3149,21 @@ paths:
         Server tu tinh lai 3 tong diem bang dung cong thuc cua
         sp_phieu_danh_gia_tinh_tong_diem (chong tamper), snapshot dinh muc ap dung
         + gio thuc te, roi MO GOI KPI cua (nam, don vi) neu chua co va gan
-        id_to_trinh cho ho so. Goi dang o trang thai 2 DA_DONG_GOI se bi ha ve
-        1 DANG_TONG_HOP: co ho so moi vao thi han ngach cu khong con dung.
+        id_to_trinh cho ho so. Goi dang o trang thai 2 DA_DONG_GOI, 5 HT_TRA_VE, hoac 4
+        TU DONG HOAN TAT (id_nguoi_duyet IS NULL) se bi ha ve 1 DANG_TONG_HOP: co ho so
+        moi vao thi han ngach cu khong con dung. Goi da trinh HT (3) hoac da duoc HT duyet
+        THAT (4 + id_nguoi_duyet IS NOT NULL) thi chan bang TO_TRINH_DA_TRINH — khong duoc
+        am tham lat quyet dinh cua Hieu truong.
+
+        LUONG DUYET TACH DOI — CONTRACT KHONG DOI (request / response / error code y
+        nguyen). Diem moi: buoc nay ghi them snapshot phieu_danh_gia.can_ht_duyet, quyet
+        dinh ho so se ket thuc o cap Truong khoa hay con phai qua Hieu truong. Xem
+        truong CanHtDuyet trong PhieuDanhGiaChiTietDto.
+
+        ⚠️ FE PHAI SUA THONG DIEP THANH CONG. Sau buoc nay phieu MOI o trang thai 4, CHUA
+        hoan tat. Dung noi "da gui len Hieu truong" (sai voi da so ho so) va cung dung noi
+        "da hoan tat". Thong diep dung:
+        "Da chot ho so. Ket qua se hoan tat khi Truong khoa dong goi to trinh."
       operationId: phieuDanhGiaKhoaDuyetHoSo
       parameters:
         - name: id
@@ -8489,13 +8517,24 @@ paths:
     post:
       tags:
         - ToTrinhKhoa
-      summary: Dong goi to trinh - tinh han ngach 20% va nang muc Xuat sac
+      summary: Dong goi to trinh - tinh han ngach 20%, nang muc Xuat sac, HOAN TAT ho so thuong
       description: |
         GIAI DOAN 4. DAY LA NOI DUY NHAT ghi phieu_danh_gia.xep_loai = 4.
 
+        LUONG DUYET TACH DOI — BUOC NAY NAY LA MOC HOAN TAT CUA HO SO THUONG.
+        KPI cua nhan vien / giang vien chi can Truong khoa (TK/TKL) hoac Truong phong (TP)
+        duyet la xong. Nhung xep_loai cuoi cung (ke ca muc 4) chi tinh duoc khi 100% ho so
+        cua don vi da chot, vi han ngach 20% xep hang tren TOAN KHOA — nen moc HOAN TAT cua
+        ho so thuong la buoc dong goi nay, KHONG phai buoc TK bam "Chot ho so" (3 -> 4).
+        FE KHONG duoc hien "Da hoan tat" ngay sau khi chot ho so.
+
         THUAT TOAN:
-        1. Doi 100% ho so cua (nam, don vi) o trang thai 4. Con ho so o 1/2/3 -> 409
+        1. Doi 100% ho so cua (nam, don vi) o trang thai 4 HOAC 5. Con ho so o 1/2/3 -> 409
            CHUA_DU_HO_SO kem danh sach ai con thieu trong HoSo[].
+           (Truoc day chi chap nhan trang thai 4. Nay phai chap nhan ca 5 vi ho so thuong
+           da HOAN TAT o lan dong goi truoc — giu dieu kien cu thi moi lan dong goi LAI deu
+           bao CHUA_DU_HO_SO vinh vien. FE tu dem tien do thi cung phai dem ca 4 va 5,
+           hoac dung Item.SoHoSoDaChot do backend tra.)
         2. SoGiangVien = so phieu loai_doi_tuong = 1 (VIEN CHUC KHONG VAO MAU SO).
         3. HanNgach = FLOOR(SoGiangVien x TyLeXuatSac). 27 GV x 20% = 5, khong phai 6.
         4. Du dieu kien = loai_doi_tuong 1 AND xep_loai_khoa = 3 AND muc_nckhcn_qd838 = 2.
@@ -8509,9 +8548,37 @@ paths:
         6. Ghi xep_loai = 4 cho nguoi trung suat, = xep_loai_khoa cho nhung nguoi con
            lai; HangTrongKhoa la thu hang trong TOAN BO giang vien (khong phai chi trong
            nhom du dieu kien); gan id_to_trinh cho moi phieu trong goi.
+        7. MOI — day ho so THUONG (CanHtDuyet = false) tu 4 -> 5 HOAN TAT: ghi id_nguoi_chot,
+           ngay_chot_ket_qua, snapshot diem vao lich_su_cham_diem (cap 4 Truong khoa) va
+           mot dong lich_su_trang_thai_phieu (hanh_dong 4 Chot, cap_thuc_hien 4).
+           KHONG ghi id_nguoi_dg_truong / ngay_truong_duyet — Hieu truong khong tham gia.
+           Ho so LANH DAO (CanHtDuyet = true) O LAI trang thai 4.
+        8. MOI — trang thai goi cuoi cung re nhanh theo so ho so lanh dao con lai:
+           * con > 0  -> goi = 2 (DA_DONG_GOI), lich su hanh_dong = 1. FE hien nut
+                        "Trinh Hieu truong".
+           * con = 0  -> goi = 4 (HT_DA_DUYET) TU DONG HOAN TAT, id_nguoi_duyet de NULL,
+                        lich su hanh_dong = 6. Don vi khong co ho so lanh dao nao nen
+                        khong con gi de trinh. FE PHAI AN nut "Trinh Hieu truong".
+           Doc SoHoSoChoHt trong response de re nhanh, dung doan tu Item.TrangThai.
 
-        CHAY LAI DUOC nhieu lan: goi o trang thai 2 (da dong goi) hoac 5 (HT tra ve) deu
-        dong goi lai duoc, ket qua ghi de. Goi da trinh HT (3) hoac da duyet (4) thi chan.
+        RESPONSE bo sung SoHoSoHoanTat + SoHoSoChoHt; Message da duoc backend soan san
+        (vd "Dong goi to trinh thanh cong. 28 ho so da hoan tat, 3 ho so lanh dao cho
+        Hieu truong duyet.") — nen hien thang thay vi FE tu ghep chuoi.
+        HoSo[] bo sung CanHtDuyet.
+
+        CHAY LAI DUOC nhieu lan: goi o trang thai 2 (da dong goi), 5 (HT tra ve), hoac 4
+        TU DONG HOAN TAT (id_nguoi_duyet IS NULL) deu dong goi lai duoc, ket qua ghi de.
+        Goi da trinh HT (3) hoac da duoc HT duyet THAT (4 + id_nguoi_duyet IS NOT NULL)
+        thi chan — thong diep loi khac nhau cho hai truong hop trang thai 4.
+
+        CANH BAO NGHIEP VU: dong goi LAI co the HA xep loai cua ho so DA HOAN TAT. Them ho
+        so moi vao don vi lam mau so han ngach 20% doi => buoc 6 ghi de xep_loai cho TOAN BO
+        phieu cua don vi, ke ca phieu dang o trang thai 5; mot nguoi dang Xuat sac co the
+        rot ve Hoan thanh tot. Day la he qua toan hoc khong tranh duoc cua viec cho ho so
+        xong som o cap TK trong khi han ngach van tinh tren toan Khoa — KHONG phai loi.
+        SP ghi mot dong lich_su_trang_thai_phieu (truoc = sau = 5, hanh_dong = 4) neu ro
+        muc cu -> muc moi cho moi phieu bi doi. FE nen hien dialog xac nhan khi goi da tung
+        dong goi truoc do (Item.NgayDongGoi != null).
 
         TyLeXuatSac de trong = giu ty le dang luu tren goi (mac dinh 0.2000). De o cot DB
         chu khong hardcode vi quy dinh co the doi theo nam, va can snapshot lai ty le da
@@ -8562,11 +8629,20 @@ paths:
     post:
       tags:
         - ToTrinhKhoa
-      summary: Truong khoa trinh goi len Hieu truong (goi 2 -> 3)
+      summary: Truong khoa trinh goi HO SO LANH DAO len Hieu truong (goi 2 -> 3)
       description: |
         GIAI DOAN 4. lan_trinh += 1. Sau buoc nay goi bi KHOA: khong sua xep loai, khong
         chi dinh uu tien, khong tra dong ve tham dinh duoc nua cho toi khi HT duyet hoac
         tra ve.
+
+        LUONG DUYET TACH DOI: goi luc nay CHI con ho so LANH DAO (CanHtDuyet = true) o
+        trang thai 4 — ho so thuong da HOAN TAT (trang thai 5) tu buoc dong goi.
+
+        Fail-closed MOI: goi khong con ho so nao o trang thai 4 -> 409
+        KHONG_CO_HO_SO_LANH_DAO. Ve ly thuyet dong goi da chuyen thang goi sang trang
+        thai 4 trong truong hop nay nen FE xu ly dung (an nut "Trinh Hieu truong" khi
+        SoHoSoChoHt = 0) thi khong gap loi nay — van phai bat de khong roi vao handler
+        loi chung.
       operationId: toTrinhKhoaTrinh
       parameters:
         - name: id
@@ -8596,7 +8672,8 @@ paths:
         "409":
           description: >-
             Conflict - goi khong o trang thai 2 (INVALID_STATE), dat gioi han so lan
-            trinh (TRAN_LAN_TRINH), hoac concurrency conflict.
+            trinh (TRAN_LAN_TRINH), goi khong con ho so nao thuoc dien Hieu truong duyet
+            (KHONG_CO_HO_SO_LANH_DAO — MOI), hoac concurrency conflict.
           content:
             application/json:
               schema:
@@ -8605,10 +8682,19 @@ paths:
     post:
       tags:
         - ToTrinhKhoa
-      summary: Hieu truong duyet CA GOI (goi 3 -> 4, moi ho so 4 -> 5 HOAN_TAT)
+      summary: Hieu truong duyet goi - HO SO LANH DAO 4 -> 5 HOAN_TAT (goi 3 -> 4)
       description: |
         GIAI DOAN 4. Day la buoc THAY THE POST /api/phieu/{id}/chot cu (chot le tung
-        phieu): mot lenh duyet dua TOAN BO ho so trong goi vao HOAN_TAT.
+        phieu): mot lenh duyet dua cac ho so con lai trong goi vao HOAN_TAT.
+
+        LUONG DUYET TACH DOI — CONTRACT KHONG DOI nhung Y NGHIA HEP LAI. SP loc
+        p.trang_thai = 4, ma sau khi dong goi thi tap do CHINH XAC la ho so LANH DAO
+        (TK/TKL/PTK/PTKL/TP/PTP). Ho so thuong da o trang thai 5 tu buoc dong goi va
+        KHONG bi anh huong boi lenh nay.
+
+        FE sua label: day KHONG con la "duyet toan bo KPI cua Khoa" ma la "duyet ho so
+        LANH DAO cua Khoa". Man hinh xac nhan neu hien "se hoan tat N ho so" thi N la so
+        ho so lanh dao, khong phai toan Khoa.
 
         Chi HT (ma_chuc_vu = HT) hoac ADMIN. Truong khoa KHONG tu duyet goi cua minh.
 
@@ -8665,6 +8751,15 @@ paths:
 
         IdPhieuList bat buoc co it nhat 1 phan tu; moi id phai thuoc dung goi nay va
         dang o trang thai 4.
+
+        LUONG DUYET TACH DOI — CONTRACT KHONG DOI nhung PHAM VI HEP LAI. Chi ho so o
+        trang thai 4 tra ve duoc, ma do chinh la ho so LANH DAO. Ho so thuong da HOAN TAT
+        (trang thai 5) tu buoc dong goi nen truyen id cua chung se nhan HO_SO_KHONG_HOP_LE.
+        Dung nghiep vu: ho so thuong da dong, muon dong vao phai dung
+        POST /api/phieu/{id}/mo-lai.
+
+        => FE: o man hinh HT chon ho so de tra ve, CHI cho tick nhung dong co
+        TrangThai = 4; dong trang thai 5 hien read-only.
       operationId: toTrinhKhoaHtTraLai
       parameters:
         - name: id
@@ -13895,8 +13990,13 @@ components:
           nullable: true
           readOnly: true
           description: >-
-            1 Nhap, 2 Dang tham dinh, 3 Cho Truong khoa duyet, 4 Truong khoa da chot,
+            1 Nhap, 2 Dang tham dinh, 3 Cho Truong khoa duyet, 4 CHO HIEU TRUONG DUYET,
             5 Hoan tat. Nghia cua 3 va 4 DA DOI so voi luong cu.
+            LUONG DUYET TACH DOI: text cua muc 4 doi tu "Truong khoa da chot" thanh
+            "Cho Hieu truong duyet" — sau buoc dong goi to trinh, trang thai 4 chi con
+            la tram dung cua HO SO LANH DAO (CanHtDuyet = true). Ho so thuong di thang
+            4 -> 5 ngay trong sp_to_trinh_khoa_dong_goi.
+            FE co bang map rieng thi PHAI sua muc 4; hoac dung thang TrangThaiText nay.
         IdToTrinh:
           type: integer
           nullable: true
@@ -13934,6 +14034,22 @@ components:
           type: string
           nullable: true
           description: Chi dao cua Hieu truong khi tra rieng ho so nay ve cho TK (4 -> 3)
+        CanHtDuyet:
+          type: boolean
+          description: >-
+            LUONG DUYET TACH DOI. Ho so nay co thuoc dien Hieu truong duyet khong.
+            true  = chu phieu giu chuc vu lanh dao don vi (TK/TKL/PTK/PTKL/TP/PTP):
+                    o lai trang thai 4 sau khi dong goi, cho HT duyet goi to trinh.
+            false = ho so thuong (nhan vien / giang vien): HOAN TAT ngay khi Truong khoa
+                    dong goi to trinh, KHONG qua Hieu truong.
+            Snapshot do sp_phieu_khoa_duyet_ho_so ghi MOT LAN tai buoc chot ho so (3 -> 4);
+            KHONG suy lai theo nhan su hien tai. Truoc do (TrangThai 1/2/3) luon = false va
+            CHUA co y nghia — chi dien giai khi TrangThai >= 4.
+            FE TUYET DOI KHONG tu tinh co nay tu IdChucVu hay tu chuc vu cua user dang
+            dang nhap (logic resolve chuc vu co nhieu canh sac: kiem nhiem da don vi,
+            dong chuc vu NULL). Luon doc tu API.
+            CHI co trong result set cua GET /api/phieu/{id} (MapHeaderDetail rieng) —
+            cac endpoint tra header phieu khac dung chung MapHeader nen KHONG co truong nay.
         IdNam:
           type: integer
         IdNhanVien:
@@ -17374,7 +17490,17 @@ components:
         TrangThai:
           type: integer
           enum: [1, 2, 3, 4, 5]
-          description: 1 DANG_TONG_HOP, 2 DA_DONG_GOI, 3 DA_TRINH, 4 HT_DA_DUYET, 5 HT_TRA_VE
+          description: >-
+            1 DANG_TONG_HOP, 2 DA_DONG_GOI, 3 DA_TRINH, 4 HT_DA_DUYET, 5 HT_TRA_VE.
+            LUONG DUYET TACH DOI — trang thai 4 nay co HAI NGUON GOC khac han nhau, phan
+            biet qua IdNguoiDuyet:
+            * IdNguoiDuyet co gia tri => Hieu truong duyet THAT (goi da di qua 2 -> 3 -> 4).
+            * IdNguoiDuyet = null    => GOI TU DONG HOAN TAT: don vi khong co ho so lanh
+              dao nao nen dong goi xong la chot luon, chua qua tay HT lan nao (goi di
+              thang 1 -> 4, lich su hanh_dong = 6).
+            Goi tu dong hoan tat van mo lai duoc khi co ho so moi duoc chot; goi HT duyet
+            that thi bi khoa cung.
+            FE hien "Nguoi duyet: ..." PHAI handle null (hien "—" hoac "Tu dong").
         TrangThaiText:
           type: string
           nullable: true
@@ -17481,6 +17607,17 @@ components:
         TrangThai:
           type: integer
           nullable: true
+        CanHtDuyet:
+          type: boolean
+          nullable: true
+          description: >-
+            LUONG DUYET TACH DOI. true = ho so LANH DAO (TK/TKL/PTK/PTKL/TP/PTP): o lai
+            trang thai 4 sau khi dong goi, cho Hieu truong duyet goi. false = ho so THUONG:
+            HOAN TAT (trang thai 5) ngay tai buoc dong goi, khong qua Hieu truong.
+            Chi co nghia khi TrangThai >= 4. Vang mat o result set khong tra cot nay
+            (vd nhanh loi DONG_HANG).
+            Cap (TrangThai = 4, CanHtDuyet = false) la DU LIEU TON tu quy trinh cu —
+            hop le tam thoi, TK phai dong goi lai mot lan de no hoan tat.
         TongDiemCoBan:
           type: number
           nullable: true
@@ -17562,8 +17699,11 @@ components:
           type: integer
         HanhDong:
           type: integer
-          enum: [1, 2, 3, 4, 5]
-          description: 1 Dong goi, 2 Trinh HT, 3 HT duyet, 4 HT tra ve, 5 Mo lai goi
+          enum: [1, 2, 3, 4, 5, 6]
+          description: >-
+            1 Dong goi, 2 Trinh HT, 3 HT duyet, 4 HT tra ve, 5 Mo lai goi,
+            6 TU DONG HOAN TAT (moi) — dong goi xong ma don vi khong co ho so lanh dao
+            nao nen goi di thang sang trang thai 4, khong qua Hieu truong.
         HanhDongText:
           type: string
           nullable: true
@@ -17619,7 +17759,7 @@ components:
           description: >-
             CHUA_DU_HO_SO / DONG_HANG / TO_TRINH_DA_TRINH / INVALID_STATE / FORBIDDEN /
             NOT_FOUND / TY_LE_KHONG_HOP_LE / DANH_SACH_RONG / HO_SO_KHONG_HOP_LE /
-            KHONG_CO_HO_SO / TRAN_LAN_TRINH
+            KHONG_CO_HO_SO / TRAN_LAN_TRINH / KHONG_CO_HO_SO_LANH_DAO
         Item:
           $ref: "#/components/schemas/ToTrinhKhoaDto"
         Items:
@@ -17641,6 +17781,23 @@ components:
         TongSoDong:
           type: integer
           nullable: true
+        SoHoSoHoanTat:
+          type: integer
+          nullable: true
+          description: >-
+            LUONG DUYET TACH DOI. O dong-goi: so ho so THUONG (CanHtDuyet = false) vua
+            duoc chuyen thang sang HOAN TAT (trang thai 5) — khong can Hieu truong duyet.
+            O ht-duyet: so ho so LANH DAO vua chuyen sang HOAN TAT.
+            Vang mat o cac endpoint khac.
+        SoHoSoChoHt:
+          type: integer
+          nullable: true
+          description: >-
+            CHI co o dong-goi. So ho so LANH DAO (CanHtDuyet = true) con o trang thai 4,
+            cho Truong khoa trinh Hieu truong.
+            * > 0  => Item.TrangThai = 2 (DA_DONG_GOI), FE hien nut "Trinh Hieu truong".
+            * = 0  => Item.TrangThai = 4 (goi TU DONG HOAN TAT), FE PHAI AN nut do —
+                      bam vao se nhan 409 KHONG_CO_HO_SO_LANH_DAO.
     ToTrinhKhoaDongGoiRequest:
       type: object
       required:

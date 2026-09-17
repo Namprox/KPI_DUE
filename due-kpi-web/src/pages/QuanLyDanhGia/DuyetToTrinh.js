@@ -20,12 +20,12 @@ import { TrangThaiToTrinhBadge } from "../../components/QuanLyChamDiem/TrangThai
 /**
  * Giai đoạn 4 phía Hiệu trưởng - HÀNG ĐỢI HÀNH ĐỘNG THẬT của cấp Trường.
  *
- * Hiệu trưởng không còn duyệt/chốt từng phiếu lẻ: đơn vị thao tác là cả gói KPI
- * của một Khoa. Ba endpoint duyệt phiếu lẻ của luồng cũ đã bị gỡ.
+ * Hiệu trưởng không còn duyệt/chốt từng phiếu lẻ. Gói vẫn là đơn vị thao tác,
+ * nhưng chỉ hồ sơ lãnh đạo còn ở trạng thái 4 mới được duyệt hoặc trả lại.
  *
  * Hai hành động ở đây bất đối xứng, đừng nhầm:
- *  - "Duyệt gói" áp cho TOÀN BỘ hồ sơ: gói 3 → 4 và mọi phiếu 4 → 5 HOÀN TẤT.
- *    Đây là bước cuối của cả quy trình và không hoàn tác được.
+ *  - "Duyệt hồ sơ lãnh đạo" đưa các phiếu còn ở 4 → 5 và gói 3 → 4. Hồ sơ
+ *    thường đã hoàn tất từ bước Trưởng khoa đóng gói.
  *  - "Trả lại" áp cho một DANH SÁCH hồ sơ được chọn: những phiếu đó 4 → 3, các
  *    phiếu còn lại giữ nguyên ở 4, gói chuyển sang 5 để Trưởng khoa xử lý rồi
  *    đóng gói và trình lại.
@@ -103,20 +103,24 @@ const DuyetToTrinh = () => {
   }, [taiChiTiet]);
 
   const choDuyet = goi?.TrangThai === TRANG_THAI_TO_TRINH.DA_TRINH;
+  const hoSoLanhDaoChoDuyet = (goi?.HoSo || []).filter(
+    (h) => Number(h.TrangThai) === 4 && h.CanHtDuyet === true,
+  );
 
   const handleDuyet = async ({ lyDo }) => {
     setMoDuyet(false);
     setDangXuLy(true);
     try {
-      const item = await htDuyetToTrinh(goi.IdToTrinh, {
+      const { message, soHoSoHoanTat } = await htDuyetToTrinh(goi.IdToTrinh, {
         nhanXet: lyDo,
         rowVersion: goi.RowVersion,
       });
       await Promise.all([taiChiTiet({ imLang: true }), taiDanhSach()]);
       showToast(
         "success",
-        "Đã duyệt gói KPI",
-        `Toàn bộ hồ sơ của ${goi.TenDonVi} đã chuyển sang HOÀN TẤT (${item?.SoDatXuatSac ?? 0} người đạt xuất sắc). Kết quả nay chỉ đọc.`,
+        "Đã duyệt hồ sơ lãnh đạo",
+        message ||
+          `${soHoSoHoanTat ?? hoSoLanhDaoChoDuyet.length} hồ sơ lãnh đạo của ${goi.TenDonVi} đã chuyển sang HOÀN TẤT.`,
         8000,
       );
     } catch (error) {
@@ -138,6 +142,7 @@ const DuyetToTrinh = () => {
         rowVersion: goi.RowVersion,
       });
       await Promise.all([taiChiTiet({ imLang: true }), taiDanhSach()]);
+      setChonTraVe([]);
       showToast(
         "success",
         "Đã trả lại hồ sơ",
@@ -153,12 +158,15 @@ const DuyetToTrinh = () => {
     }
   };
 
-  const doiChon = (idPhieu) =>
+  const doiChon = (idPhieu) => {
+    const hoSo = (goi?.HoSo || []).find((h) => h.IdPhieu === idPhieu);
+    if (Number(hoSo?.TrangThai) !== 4) return;
     setChonTraVe((truoc) =>
       truoc.includes(idPhieu)
         ? truoc.filter((x) => x !== idPhieu)
         : [...truoc, idPhieu],
     );
+  };
 
   return (
     <div className="page-container">
@@ -173,11 +181,10 @@ const DuyetToTrinh = () => {
             fontWeight: 700,
           }}
         >
-          Duyệt tờ trình KPI
+          Duyệt hồ sơ lãnh đạo
         </h2>
         <span className="breadcrumb">
-          Phê duyệt hoặc trả lại gói KPI của từng Khoa - duyệt gói là bước cuối
-          cùng của quy trình đánh giá
+          Phê duyệt hoặc trả lại các hồ sơ lãnh đạo trong gói KPI của từng Khoa
         </span>
       </div>
 
@@ -202,7 +209,10 @@ const DuyetToTrinh = () => {
             onChange={(v) => setLocTrangThai(Number(v))}
             options={[
               { value: TRANG_THAI_TO_TRINH.DA_TRINH, label: "Chờ tôi duyệt" },
-              { value: TRANG_THAI_TO_TRINH.HT_DA_DUYET, label: "Đã duyệt" },
+              {
+                value: TRANG_THAI_TO_TRINH.HT_DA_DUYET,
+                label: "Đã hoàn tất",
+              },
               { value: TRANG_THAI_TO_TRINH.HT_TRA_VE, label: "Đã trả về Khoa" },
               {
                 value: TRANG_THAI_TO_TRINH.DA_DONG_GOI,
@@ -288,7 +298,10 @@ const DuyetToTrinh = () => {
                     : ""}
                 </div>
               </div>
-              <TrangThaiToTrinhBadge trangThai={goi.TrangThai} />
+              <TrangThaiToTrinhBadge
+                trangThai={goi.TrangThai}
+                idNguoiDuyet={goi.IdNguoiDuyet}
+              />
             </div>
 
             <div className="cd-meta-grid">
@@ -362,7 +375,7 @@ const DuyetToTrinh = () => {
                   disabled={dangXuLy}
                   onClick={() => setMoDuyet(true)}
                 >
-                  <i className="fa-solid fa-stamp"></i> Duyệt cả gói
+                  <i className="fa-solid fa-stamp"></i> Duyệt hồ sơ lãnh đạo
                 </button>
                 <button
                   className="cd-btn-tra-ve"
@@ -373,8 +386,8 @@ const DuyetToTrinh = () => {
                   {chonTraVe.length} hồ sơ đã chọn
                 </button>
                 <span style={{ fontSize: "13px", color: "#64748b" }}>
-                  Tick vào các hồ sơ cần Khoa xem lại ở bảng bên dưới, hoặc
-                  duyệt cả gói nếu không có vấn đề gì.
+                  Chỉ hồ sơ lãnh đạo đang chờ duyệt mới chọn để trả về được. Hồ
+                  sơ thường đã hoàn tất và chỉ đọc.
                 </span>
               </div>
             </div>
@@ -420,7 +433,8 @@ const DuyetToTrinh = () => {
                           {formatNgayGio(ls.NgayThucHien)}
                         </td>
                         <td style={{ fontSize: "13px" }}>
-                          {TEN_HANH_DONG_TO_TRINH[ls.HanhDong] ||
+                          {ls.HanhDongText ||
+                            TEN_HANH_DONG_TO_TRINH[ls.HanhDong] ||
                             `Hành động ${ls.HanhDong}`}
                           {ls.SoHoSoTraVe ? ` (${ls.SoHoSoTraVe} hồ sơ)` : ""}
                         </td>
@@ -442,13 +456,13 @@ const DuyetToTrinh = () => {
 
       {moDuyet && (
         <LyDoModal
-          tieuDe="Duyệt gói KPI Khoa"
-          moTa={`Toàn bộ ${goi?.SoHoSo ?? 0} hồ sơ của ${goi?.TenDonVi} sẽ chuyển sang HOÀN TẤT và trở thành chỉ đọc.`}
-          canhBao="Đây là bước cuối cùng của quy trình đánh giá và không hoàn tác được. Sau khi duyệt, muốn sửa một hồ sơ thì phải mở lại từng phiếu riêng lẻ."
+          tieuDe="Duyệt hồ sơ lãnh đạo của Khoa"
+          moTa={`${hoSoLanhDaoChoDuyet.length} hồ sơ lãnh đạo của ${goi?.TenDonVi} sẽ chuyển sang HOÀN TẤT. Hồ sơ thường đã hoàn tất ở bước đóng gói.`}
+          canhBao="Sau khi duyệt, muốn sửa một hồ sơ lãnh đạo thì phải mở lại từng phiếu riêng lẻ."
           nhanLyDo="Nhận xét phê duyệt"
           goiYLyDo="VD: Phê duyệt kết quả KPI Khoa CNTT năm học 2025-2026."
           batBuocLyDo={false}
-          nhanXacNhan="Duyệt cả gói"
+          nhanXacNhan="Duyệt hồ sơ lãnh đạo"
           iconXacNhan="fa-stamp"
           dangGui={dangXuLy}
           onDong={() => setMoDuyet(false)}
