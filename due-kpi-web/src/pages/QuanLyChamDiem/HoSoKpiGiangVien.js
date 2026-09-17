@@ -27,6 +27,8 @@ import {
   useNhanVienIndex,
 } from "../../hooks/useNhanVienIndex";
 import SearchSelect from "../../components/Common/SearchSelect";
+import { useAuth } from "../../context/AuthContext";
+import { canAccessPath } from "../../config/menuConfig";
 
 const TABS = [
   { key: "dinhMuc", nhan: "Định mức", icon: "fa-scale-balanced" },
@@ -98,6 +100,14 @@ const HoSoKpiGiangVien = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
   const { nhanVienIndex } = useNhanVienIndex();
+  const { user } = useAuth();
+
+  /**
+   * Hồ sơ này mở cho cả TRUONG_DON_VI (gồm TP), còn màn hình ghi nhận vi phạm
+   * giảng viên thì không - hỏi đúng bảng quyền mà RequireRole dùng để không đẩy
+   * TP tới trang bị chặn.
+   */
+  const hienNutGhiNhanViPham = canAccessPath("/quan-ly/vi-pham", user);
 
   // Năm trên URL thắng mặc định: màn hình chấm điều hướng sang kèm ?idNam=
   const namTuUrl = searchParams.get("idNam");
@@ -625,14 +635,16 @@ const HoSoKpiGiangVien = () => {
                   </div>
                 </div>
               </div>
-              <button
-                className="cd-link-btn"
-                style={{ marginTop: "14px" }}
-                onClick={() => navigate("/quan-ly/vi-pham")}
-              >
-                <i className="fa-solid fa-arrow-up-right-from-square"></i> Mở
-                màn hình ghi nhận vi phạm
-              </button>
+              {hienNutGhiNhanViPham && (
+                <button
+                  className="cd-link-btn"
+                  style={{ marginTop: "14px" }}
+                  onClick={() => navigate("/quan-ly/vi-pham")}
+                >
+                  <i className="fa-solid fa-arrow-up-right-from-square"></i> Mở
+                  màn hình ghi nhận vi phạm
+                </button>
+              )}
             </>
           ) : (
             <div className="cd-hint">

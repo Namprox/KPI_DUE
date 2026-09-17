@@ -8,6 +8,8 @@ import { apiFetch } from "../../utils/api";
 import { readApiError } from "../../utils/apiError";
 import { laDonViKhoa } from "../../utils/viPhamPermissions";
 import SearchSelect from "../../components/Common/SearchSelect";
+import { useAuth } from "../../context/AuthContext";
+import { canAccessPath } from "../../config/menuConfig";
 
 const labelStyle = {
   display: "block",
@@ -20,6 +22,14 @@ const labelStyle = {
 const QL_TongHopViPham = () => {
   const toast = useRef(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  /**
+   * Màn hình này mở cho trưởng phòng giám sát giảng dạy, nhưng /quan-ly-vi-pham
+   * thì KHÔNG (xem ROLE_SETS.GHI_NHAN_VI_PHAM_GIANG_VIEN) - hỏi đúng bảng quyền
+   * mà RequireRole dùng để không dẫn họ tới một trang bị chặn.
+   */
+  const hienNutGhiNhan = canAccessPath("/quan-ly-vi-pham", user);
 
   const [namList, setNamList] = useState([]);
   const [donViList, setDonViList] = useState([]);
@@ -283,19 +293,21 @@ const QL_TongHopViPham = () => {
           </p>
         </div>
 
-        <button
-          className="btn-cancel"
-          onClick={() => navigate("/quan-ly-vi-pham")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "10px 18px",
-            fontSize: "14px",
-          }}
-        >
-          <i className="fa-solid fa-circle-exclamation"></i> Ghi nhận vi phạm
-        </button>
+        {hienNutGhiNhan && (
+          <button
+            className="btn-cancel"
+            onClick={() => navigate("/quan-ly-vi-pham")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 18px",
+              fontSize: "14px",
+            }}
+          >
+            <i className="fa-solid fa-circle-exclamation"></i> Ghi nhận vi phạm
+          </button>
+        )}
       </div>
 
       {/* Filter Bar */}

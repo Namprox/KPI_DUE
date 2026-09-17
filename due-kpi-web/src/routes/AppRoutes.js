@@ -18,6 +18,7 @@ import ChiTietPhieuDonVi from "../pages/DanhGia/ChiTietPhieuDonVi";
 import DanhGiaKpiPhong from "../pages/DanhGia/DanhGiaKpiPhong";
 import ChiTietPhieuPhong from "../pages/DanhGia/ChiTietPhieuPhong";
 import LichSuDanhGia from "../pages/DanhGia/LichSuDanhGia";
+import LichSuKpiDonVi from "../pages/DanhGia/LichSuKpiDonVi";
 import ChiTietPhieuCuaToi from "../pages/DanhGia/ChiTietPhieuCuaToi";
 import DuyetToTrinh from "../pages/QuanLyDanhGia/DuyetToTrinh";
 import TheoDoiPhieuTruong from "../pages/QuanLyDanhGia/TheoDoiPhieuTruong";
@@ -101,6 +102,10 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/danh-gia-kpi-phong" element={<DanhGiaKpiPhong />} />
         <Route path="/danh-gia-kpi-phong/:id" element={<ChiTietPhieuPhong />} />
         <Route path="/lich-su-danh-gia" element={<LichSuDanhGia />} />
+        <Route path="/lich-su-danh-gia-khoa" element={<LichSuKpiDonVi />} />
+        <Route path="/lich-su-danh-gia-khoa/:id" element={<LichSuKpiDonVi chiTiet />} />
+        <Route path="/lich-su-danh-gia-phong" element={<LichSuKpiDonVi loai="phong" />} />
+        <Route path="/lich-su-danh-gia-phong/:id" element={<LichSuKpiDonVi loai="phong" chiTiet />} />
         <Route path="/lich-su-danh-gia/:id" element={<ChiTietPhieuCuaToi />} />
         <Route path="/kho-minh-chung" element={<KhoMinhChungCaNhan />} />
         <Route

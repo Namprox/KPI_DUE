@@ -1,18 +1,21 @@
 import React, { useMemo, useState } from "react";
-import { formatDiem, LOAI_THANG_DIEM } from "../../../utils/phieuApi";
+import { formatDiem, LOAI_THANG_DIEM } from "../../utils/phieuApi";
+import { diemGocCuaDong, laDongChamTay } from "../../utils/phieuDonViApi";
 
 const bangNhau = (a, b) =>
   a != null && a !== "" && b != null && b !== "" && Number(a) === Number(b);
 
 /**
- * Chọn lại mức điểm cho MỘT tiêu chí của phiếu KPI Phòng / Trung tâm, ở bước
- * Trưởng phòng duyệt.
+ * Chọn lại mức điểm cho MỘT tiêu chí của phiếu KPI đơn vị, ở bước Trưởng đơn vị
+ * duyệt (trạng thái 2). Dùng chung cho phiếu Khoa và phiếu Phòng/Trung tâm -
+ * nhãn của cấp duyệt nhận qua prop `nhanTruong`.
  *
  * Song song với SuaDiemModal của luồng cá nhân và cố ý ĐƠN GIẢN HƠN - ba khác
  * biệt bên dưới đều bắt nguồn từ dữ liệu, đừng chép ngược logic bên kia sang:
  *
- *  - MỐC ĐỐI CHIẾU là `DiemNhap` (thư ký đơn vị đề xuất), không phải điểm giảng
- *    viên tự chấm.
+ *  - MỐC ĐỐI CHIẾU là điểm gốc của dòng - `DiemNhap` do thư ký đề xuất, hoặc
+ *    `DiemTongHop` do hệ thống tính với dòng tự động của mẫu Khoa - chứ không
+ *    phải điểm giảng viên tự chấm.
  *  - KHÔNG CÓ `IdThangDiemChon`. ChiTietDanhGiaDonViDto không lưu mức thư ký đã
  *    bấm, nên mức của thư ký chỉ dò được theo GIÁ TRỊ điểm. Mẫu có hai mức trùng
  *    điểm thì dấu "Thư ký chọn" rơi vào mức đầu tiên - chấp nhận được, vì nó chỉ
@@ -25,7 +28,19 @@ const bangNhau = (a, b) =>
  * 3 có/không → hai mức dựng tại chỗ, 2 liên tục → ô nhập số. Không tải được mẫu
  * cũng rơi về ô nhập số: thà chấm tay còn hơn chặn hẳn.
  */
-const SuaDiemDonViModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
+const SuaDiemDonViModal = ({
+  chiTiet,
+  thangDiem,
+  /** Nhãn cấp duyệt: "Trưởng đơn vị" (Khoa) hoặc "Trưởng phòng". */
+  nhanTruong = "Trưởng đơn vị",
+  dangGui,
+  onDong,
+  onXacNhan,
+}) => {
+  const tuDong = !laDongChamTay(chiTiet);
+  /** Điểm cấp dưới đề xuất - xem diemGocCuaDong. */
+  const diemGoc = diemGocCuaDong(chiTiet);
+  const nhanDiemGoc = tuDong ? "Hệ thống tổng hợp" : "Thư ký đề xuất";
   const diemToiDa = Number(chiTiet.DiemToiDa ?? thangDiem?.diemToiDa ?? 0);
   const loai =
     thangDiem?.loaiThangDiem ??
@@ -50,16 +65,14 @@ const SuaDiemDonViModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) =
   const chonTheoMuc = mucList.length > 0;
 
   const idMucThuKy =
-    mucList.find((m) => bangNhau(m.diem, chiTiet.DiemNhap))?.id ?? null;
+    mucList.find((m) => bangNhau(m.diem, diemGoc))?.id ?? null;
   const idMucDaCham =
     chiTiet.DiemDuyetDv != null
       ? (mucList.find((m) => bangNhau(m.diem, chiTiet.DiemDuyetDv))?.id ?? null)
       : null;
 
   const [idChon, setIdChon] = useState(idMucDaCham ?? idMucThuKy);
-  const [diemNhap, setDiemNhap] = useState(
-    chiTiet.DiemDuyetDv ?? chiTiet.DiemNhap ?? "",
-  );
+  const [diemNhap, setDiemNhap] = useState(chiTiet.DiemDuyetDv ?? diemGoc ?? "");
   const [nhanXet, setNhanXet] = useState(chiTiet.NhanXetDuyetDv ?? "");
   const [loi, setLoi] = useState("");
 
@@ -68,8 +81,8 @@ const SuaDiemDonViModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) =
   const lechDiemThuKy =
     diemChon !== "" &&
     diemChon != null &&
-    chiTiet.DiemNhap != null &&
-    Number(diemChon) !== Number(chiTiet.DiemNhap);
+    diemGoc != null &&
+    Number(diemChon) !== Number(diemGoc);
 
   const kiemTraDiem = () => {
     if (diemChon === "" || diemChon == null)
@@ -113,11 +126,11 @@ const SuaDiemDonViModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) =
 
           <div className="cd-sd-tom-tat">
             <div>
-              <div className="cd-meta-label">Thư ký đề xuất</div>
-              <div className="cd-sd-so">{formatDiem(chiTiet.DiemNhap)}</div>
+              <div className="cd-meta-label">{nhanDiemGoc}</div>
+              <div className="cd-sd-so">{formatDiem(diemGoc)}</div>
             </div>
             <div>
-              <div className="cd-meta-label">Trưởng phòng đã chấm</div>
+              <div className="cd-meta-label">{nhanTruong} đã chấm</div>
               <div className="cd-sd-so">
                 {chiTiet.DiemDuyetDv != null
                   ? formatDiem(chiTiet.DiemDuyetDv)
@@ -166,7 +179,8 @@ const SuaDiemDonViModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) =
                       </span>
                       {muc.id === idMucThuKy && (
                         <span className="cd-td-cua-gv">
-                          <i className="fa-solid fa-user-check"></i> Thư ký chọn
+                          <i className="fa-solid fa-user-check"></i>{" "}
+                          {tuDong ? "Mức đang có" : "Thư ký chọn"}
                         </span>
                       )}
                     </label>
@@ -215,7 +229,7 @@ const SuaDiemDonViModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) =
               rows={3}
               value={nhanXet}
               disabled={dangGui}
-              placeholder="Nhận xét của Trưởng phòng (không bắt buộc)"
+              placeholder={`Nhận xét của ${nhanTruong} (không bắt buộc)`}
               onChange={(e) => {
                 setNhanXet(e.target.value);
                 if (loi) setLoi("");
@@ -225,8 +239,9 @@ const SuaDiemDonViModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) =
             {lechDiemThuKy && (
               <div className="cd-hint cd-hint-warn">
                 <i className="fa-solid fa-circle-info"></i> Mức bạn chọn (
-                {formatDiem(diemChon)}) khác mức thư ký đề xuất (
-                {formatDiem(chiTiet.DiemNhap)}) - nên ghi lại lý do điều chỉnh.
+                {formatDiem(diemChon)}) khác mức{" "}
+                {tuDong ? "hệ thống tổng hợp" : "thư ký đề xuất"} (
+                {formatDiem(diemGoc)}) - nên ghi lại lý do điều chỉnh.
               </div>
             )}
 

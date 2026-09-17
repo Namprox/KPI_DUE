@@ -1,15 +1,13 @@
 import React from "react";
 import { formatDiem } from "../../../utils/phieuApi";
 import {
+  CAP_CHAM,
+  TRUONG_DIEM_CUA_CAP,
+  diemDangHienThi,
   diemHieuLucCuaDong,
   TRANG_THAI_DV,
 } from "../../../utils/phieuDonViApi";
-import {
-  CAP_CHAM,
-  NHAN_CAP_CHAM,
-  TRUONG_DIEM_CUA_CAP,
-  diemDangHienThi,
-} from "../../../utils/phieuPhongApi";
+import { NHAN_CAP_CHAM } from "../../../utils/phieuPhongApi";
 import MinhChungTieuChiBox from "../TieuChi/MinhChungTieuChiBox";
 import TieuChiCardHeader from "../TieuChi/TieuChiCardHeader";
 import ONhapDiem from "../TieuChi/ONhapDiem";

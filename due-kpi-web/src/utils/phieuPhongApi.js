@@ -17,11 +17,13 @@
  * trong DTO phiếu nên phải suy từ mã đơn vị - xem laDonViPhongTrungTam().
  */
 
-import { normalizeRole, coQuyenTaiDonVi, ROLE } from "./roles";
+import { ROLE } from "./roles";
 import {
+  CAP_CHAM,
+  diemDangHienThi,
   diemHieuLucCuaDong,
-  laDongChamTay,
-  TRANG_THAI_DV,
+  quyenPhieuDonVi,
+  tinhTienDoDuyetDonVi,
 } from "./phieuDonViApi";
 
 /* ------------------------------------------------------------------ */
@@ -138,106 +140,35 @@ export const tinhTongDiemPhongTamTinh = (chiTiet = [], nhapDiem, cap) => {
   };
 };
 
-/**
- * Điểm ĐANG hiển thị của một dòng: bản nháp người dùng gõ ở lớp hiện tại nếu có,
- * ngược lại là điểm hiệu lực do server trả.
- *
- * @returns {number|null} null khi dòng chưa có điểm nào - khác hẳn 0 điểm.
- */
-export const diemDangHienThi = (ct, nhapDiem, cap) => {
-  if (cap && nhapDiem) {
-    const nhap = nhapDiem[ct?.IdChiTietDv];
-    if (nhap !== undefined) {
-      if (nhap === "" || nhap === null) return null;
-      const so = Number(nhap);
-      return Number.isFinite(so) ? so : null;
-    }
-  }
-  return diemHieuLucCuaDong(ct);
-};
-
 /* ------------------------------------------------------------------ */
 /* Cấp chấm & quyền thao tác                                           */
 /* ------------------------------------------------------------------ */
 
-/** Ba lớp điểm, khớp tên endpoint cấp dòng của chi-tiet-don-vi. */
-export const CAP_CHAM = {
-  NHAP: "diem-nhap",
-  DUYET_DV: "diem-duyet-dv",
-  TRUONG: "diem-truong",
-};
-
-/** Nhãn cột cho dải ba lớp điểm hiển thị trên mỗi dòng tiêu chí. */
+/**
+ * Nhãn cột cho dải ba lớp điểm hiển thị trên mỗi dòng tiêu chí.
+ *
+ * Phần DUY NHẤT của bộ "cấp chấm" còn riêng cho Phòng/TT: ba hằng số kia
+ * (CAP_CHAM, TRUONG_DIEM_CUA_CAP, capChamTheoTrangThai) là tên endpoint và tên
+ * cột, giống hệt bên Khoa nên đã nằm ở phieuDonViApi.js.
+ */
 export const NHAN_CAP_CHAM = {
   [CAP_CHAM.NHAP]: "Thư ký",
   [CAP_CHAM.DUYET_DV]: "Trưởng phòng",
   [CAP_CHAM.TRUONG]: "Cấp Trường",
 };
 
-/** Trường DTO chứa điểm / nhận xét của từng lớp. */
-export const TRUONG_DIEM_CUA_CAP = {
-  [CAP_CHAM.NHAP]: { diem: "DiemNhap", nhanXet: "NhanXetNhap" },
-  [CAP_CHAM.DUYET_DV]: { diem: "DiemDuyetDv", nhanXet: "NhanXetDuyetDv" },
-  [CAP_CHAM.TRUONG]: { diem: "DiemTruong", nhanXet: "NhanXetTruong" },
-};
-
 /**
- * Lớp điểm nào đang được sửa ở trạng thái hiện tại của phiếu.
+ * Người dùng được làm gì trên phiếu Phòng/TT này.
  *
- * Server chốt chặn bằng chính ràng buộc này: gọi diem-duyet-dv khi phiếu còn ở
- * trạng thái 1 sẽ nhận 409 chứ không phải 400.
- *
- * @returns {string|null} null khi phiếu đã khóa (trạng thái 4, 5)
- */
-export const capChamTheoTrangThai = (trangThai) => {
-  switch (Number(trangThai)) {
-    case TRANG_THAI_DV.NHAP:
-      return CAP_CHAM.NHAP;
-    case TRANG_THAI_DV.CHO_DV_DUYET:
-      return CAP_CHAM.DUYET_DV;
-    case TRANG_THAI_DV.DV_DA_DUYET:
-      return CAP_CHAM.TRUONG;
-    default:
-      return null;
-  }
-};
-
-/**
- * Người dùng được làm gì trên phiếu này, theo (trạng thái phiếu × chức vụ).
- *
- * CHỈ để ẩn/hiện nút - server vẫn là chốt chặn cuối cùng và có thể từ chối
- * những gì hàm này cho qua (ví dụ TP của phòng khác, hoặc Admin gọi thao tác mà
- * SP chỉ chấp nhận đúng mã HT).
- *
- * Trưởng phòng phải đúng phòng của phiếu nên xét qua coQuyenTaiDonVi (đối chiếu
- * cặp đơn vị + chức vụ TRÊN CÙNG MỘT DÒNG của user.DonVi[]); cấp Trường không
- * ràng buộc đơn vị nên chỉ xét chức vụ chính.
+ * Luật nằm ở quyenPhieuDonVi() dùng chung; ở đây chỉ khai hai chức vụ của Phòng.
+ * Giữ thêm bí danh `laTruongPhong` cho đúng ngôn ngữ của màn hình Phòng.
  */
 export const quyenPhieuPhong = (phieu, user) => {
-  const trangThai = Number(phieu?.TrangThai);
-  const chucVu = normalizeRole(user);
-
-  const laThuKy = coQuyenTaiDonVi([ROLE.THU_KY_PHONG], phieu?.IdDonVi, user);
-  const laTruongPhong = coQuyenTaiDonVi(
-    [ROLE.TRUONG_PHONG],
-    phieu?.IdDonVi,
-    user,
-  );
-  const laCapTruong = chucVu === ROLE.HIEU_TRUONG || chucVu === ROLE.ADMIN;
-
-  return {
-    laThuKy,
-    laTruongPhong,
-    laCapTruong,
-    coTheNhap: laThuKy && trangThai === TRANG_THAI_DV.NHAP,
-    coTheTrinh: laThuKy && trangThai === TRANG_THAI_DV.NHAP,
-    coTheChamDuyetDv: laTruongPhong && trangThai === TRANG_THAI_DV.CHO_DV_DUYET,
-    coTheDuyetDv: laTruongPhong && trangThai === TRANG_THAI_DV.CHO_DV_DUYET,
-    coTheChamTruong: laCapTruong && trangThai === TRANG_THAI_DV.DV_DA_DUYET,
-    coTheDuyetTruong: laCapTruong && trangThai === TRANG_THAI_DV.DV_DA_DUYET,
-    coTheChot: laCapTruong && trangThai === TRANG_THAI_DV.TRUONG_DA_DUYET,
-    coTheMoLai: laCapTruong && trangThai === TRANG_THAI_DV.HOAN_TAT,
-  };
+  const quyen = quyenPhieuDonVi(phieu, user, {
+    vaiTroThuKy: [ROLE.THU_KY_PHONG],
+    vaiTroTruongDv: [ROLE.TRUONG_PHONG],
+  });
+  return { ...quyen, laTruongPhong: quyen.laTruongDonVi };
 };
 
 /** Người dùng có phần việc đang chờ trên phiếu này không (đổi icon ở bảng danh sách). */
@@ -360,22 +291,9 @@ export const dongThieuDiem = (chiTietList = []) =>
 /* ------------------------------------------------------------------ */
 
 /**
- * Đã duyệt bao nhiêu / tổng bao nhiêu tiêu chí, cho thanh tiến độ ở bước Trưởng
- * phòng duyệt (trạng thái 2).
+ * Tiến độ duyệt của Trưởng phòng - dùng nguyên hàm chung.
  *
- * MẪU SỐ LÀ TOÀN BỘ SỐ DÒNG, khác tinhTienDoCham của phiếu cá nhân vốn phải trừ
- * dòng chấm tự động: cả sáu tiêu chí của mẫu Phòng/TT đều `loai_nguon_diem = 1`
- * nên không có dòng nào tự động để loại. Vẫn lọc qua laDongChamTay để mẫu có đổi
- * sau này thì con số không sai lặng lẽ.
- *
- * TỬ SỐ đếm dòng đã có `DiemDuyetDv`, tức đã đi qua PUT diem-duyet-dv - dù là
- * "Duyệt giữ nguyên" hay "Chỉnh sửa điểm", hai thao tác ghi cùng một cột.
+ * Mẫu số của hàm chung chỉ đếm dòng chấm tay; cả sáu tiêu chí của mẫu Phòng/TT
+ * đều `loai_nguon_diem = 1` nên ở đây mẫu số luôn là toàn bộ phiếu.
  */
-export const tinhTienDoDuyetPhong = (chiTietList = []) => {
-  const dong = chiTietList.filter((ct) => laDongChamTay(ct));
-  return {
-    tong: dong.length,
-    xong: dong.filter((ct) => ct?.DiemDuyetDv !== null && ct?.DiemDuyetDv !== undefined)
-      .length,
-  };
-};
+export const tinhTienDoDuyetPhong = tinhTienDoDuyetDonVi;

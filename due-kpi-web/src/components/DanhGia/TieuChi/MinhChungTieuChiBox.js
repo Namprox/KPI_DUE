@@ -10,6 +10,7 @@ import {
   xoaMinhChungDonVi,
 } from "../../../utils/minhChungDonViApi";
 import MinhChungDropzone from "./MinhChungDropzone";
+import "../../../css/DanhGia/MinhChungTieuChiBox.css";
 
 /**
  * Minh chứng của MỘT dòng tiêu chí trong phiếu KPI Đơn vị/Khoa và Phòng/Trung tâm.

@@ -1,0 +1,37 @@
+.kpi-dv-history .page-header h2 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.kpi-dv-history-status {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.kpi-dv-history-status > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.kpi-dv-history-status button { cursor: pointer; }
+.kpi-dv-history-muted { color: #94a3b8; font-style: italic; }
+
+.kpi-dv-history-pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 13px;
+  color: #64748b;
+  background: #fff;
+}
+
+.kpi-dv-history-page-actions { display: flex; gap: 8px; }
+.kpi-dv-history-page-actions .btn-cancel { padding: 8px 14px; }

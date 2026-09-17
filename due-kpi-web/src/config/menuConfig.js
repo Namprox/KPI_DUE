@@ -16,10 +16,181 @@ export const PUBLIC_ROUTES = [
 
 export const MENU_GROUPS = [
   {
+    /*
+      Nhóm này gom MỌI thứ người dùng tự làm trên phiếu KPI, nên thứ tự mục là
+      thứ tự công việc chứ không phải thứ tự trang được dựng:
+
+        1. Phiếu của CHÍNH MÌNH  - hai mẫu theo ngạch, rồi lịch sử của chúng
+        2. Phiếu của ĐƠN VỊ      - Khoa rồi Phòng/TT, mỗi màn hình kèm lịch sử
+        3. Số liệu đầu vào       - mục phải TỰ KÊ trước, mục chỉ TRA CỨU sau
+        4. Hai kho minh chứng    - khép lại nhóm
+
+      Mỗi màn hình phải đứng NGAY TRÊN lịch sử của nó: ba mục "Lịch sử ..." tên
+      gần giống nhau, tách ra là người dùng phải đọc kỹ mới biết mục nào của
+      phiếu nào. Thêm mục mới thì chèn vào đúng tầng, đừng nối vào cuối mảng.
+    */
     key: "evaluation",
     label: "Đánh giá KPI",
     icon: "fa-check-double",
     items: [
+      {
+        // Phiếu tự đánh giá theo ngạch giảng viên - không xét chức vụ.
+        name: "Đánh giá KPI Giảng viên",
+        icon: "fa-solid fa-file-pen",
+        path: "/danh-gia-phu-luc-2",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
+        // Phiếu tự đánh giá theo ngạch viên chức / người lao động.
+        name: "Đánh giá KPI Nhân viên",
+        icon: "fa-solid fa-file-pen",
+        path: "/danh-gia-kpi-nhan-vien",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.NHAN_VIEN,
+      },
+      {
+        // Lịch sử của HAI mẫu phiếu cá nhân ngay trên - bản chỉ đọc của màn
+        // hình chấm điểm, mở từ nút trong bảng. Cùng quyền với trang cha vì
+        // server đã giới hạn phiếu về đúng người đăng nhập.
+        name: "Lịch sử đánh giá",
+        icon: "fa-solid fa-clock-rotate-left",
+        path: "/lich-su-danh-gia",
+        childPaths: ["/lich-su-danh-gia/:id"],
+        roles: MOI_NGUOI,
+      },
+      {
+        // Phiếu KPI của cả ĐƠN VỊ (Khoa/Phòng), chạy trên bộ API riêng
+        // /api/phieu-don-vi với máy trạng thái riêng - không liên quan tới ba
+        // mục phiếu cá nhân ở tầng trên.
+        //
+        // Gate theo KPI_KHOA (TKK nhập, TK/TKL duyệt) - song sinh của KPI_PHONG
+        // bên dưới. HT nằm ngoài vì màn hình cấp Trường chưa dựng. Không xét
+        // chức danh - đây là việc theo chức vụ.
+        name: "Đánh giá KPI Khoa",
+        icon: "fa-solid fa-building-columns",
+        path: "/danh-gia-kpi-don-vi",
+        roles: ROLE_SETS.KPI_KHOA,
+        childPaths: ["/danh-gia-kpi-don-vi/:id"],
+      },
+      {
+        name: "Lịch sử đánh giá KPI Khoa",
+        icon: "fa-solid fa-clock-rotate-left",
+        path: "/lich-su-danh-gia-khoa",
+        roles: ROLE_SETS.KPI_KHOA,
+        childPaths: ["/lich-su-danh-gia-khoa/:id"],
+      },
+      {
+        // Phiếu KPI của PHÒNG / TRUNG TÂM - cùng bộ API /api/phieu-don-vi với
+        // hai mục Khoa ở trên, nhưng mẫu loại 4: nhóm tiêu chí phẳng
+        // (loai_nhom = NULL), tổng điểm cộng thẳng, ngưỡng xếp loại 80/60/50.
+        //
+        // Tách thành mục riêng cho TKP nhập/trình và TP chấm/duyệt. HT xem và
+        // duyệt ở màn hình cấp Trường riêng, nên không được mở mục hoặc route
+        // này. Phân quyền theo từng thao tác nằm ở quyenPhieuPhong().
+        name: "Đánh giá KPI Phòng/Trung tâm",
+        icon: "fa-solid fa-building-user",
+        path: "/danh-gia-kpi-phong",
+        roles: ROLE_SETS.KPI_PHONG,
+        childPaths: ["/danh-gia-kpi-phong/:id"],
+      },
+      {
+        name: "Lịch sử đánh giá KPI Phòng/Trung tâm",
+        icon: "fa-solid fa-clock-rotate-left",
+        path: "/lich-su-danh-gia-phong",
+        roles: ROLE_SETS.KPI_PHONG,
+        childPaths: ["/lich-su-danh-gia-phong/:id"],
+      },
+      {
+        // Kê khai giờ quy đổi theo PHỤ LỤC II - "quy đổi các hoạt động chuyên
+        // môn ra giờ chuẩn giảng dạy". Giảng viên TỰ kê số lượng từng đầu việc,
+        // TK/TKL duyệt từng dòng. Server suy người dùng TỪ TOKEN nên đây chỉ là
+        // lối vào; gate theo NGẠCH vì chỉ giảng viên mới có định mức giờ chuẩn.
+        name: "Kê khai giờ quy đổi",
+        icon: "fa-solid fa-stopwatch",
+        path: "/ke-khai-gio-quy-doi",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
+        // Song sinh của mục trên cho VIÊN CHỨC / NLĐ: kê khai THÀNH TÍCH VƯỢT
+        // TRỘI (Nhóm II - sáng kiến, khen thưởng, đào tạo, phong trào). Nhân
+        // viên TỰ kê từng thành tích, đơn vị phụ trách duyệt từng dòng.
+        //
+        // Server suy người dùng TỪ TOKEN nên đây chỉ là lối vào.
+        //
+        // ⚠️ `chucDanh` bên dưới KHÔNG phải luật quyết định: đường dẫn này nằm
+        // trong DUONG_DAN_NGACH_NHAN_VIEN nên canAccessRule() xử lý riêng, cho
+        // qua cả người thuộc đơn vị ngoài Khoa dù chức danh trống hoặc lệch
+        // ngạch. Giữ lại trường này cho khớp cách khai của "Đánh giá KPI Nhân
+        // viên"; sửa luật thì sửa ở canAccessRule.
+        name: "Kê khai thành tích",
+        icon: "fa-solid fa-medal",
+        path: "/ke-khai-thanh-tich",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.NHAN_VIEN,
+      },
+      {
+        // Công trình NCKH đồng bộ từ hệ thống nghiên cứu khoa học của trường -
+        // nguồn của các tiêu chí NCKH chấm tự động. Endpoint /api/nckh/* nhận
+        // id_nhan_vien qua query (không suy từ token) nhưng màn hình chỉ truyền
+        // id của chính người đăng nhập; gate theo NGẠCH vì chỉ giảng viên mới có
+        // tiêu chí NCKH trong phiếu.
+        name: "Thành tích NCKH",
+        icon: "fa-solid fa-flask",
+        path: "/thanh-tich-nckh",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
+        // Kết quả khảo sát ý kiến sinh viên của chính mình. Gate theo NGẠCH chứ
+        // không theo chức vụ: dữ liệu khảo sát chỉ phát sinh cho người đứng lớp,
+        // và server đã tự giới hạn theo mã cán bộ nên đây chỉ là lối vào.
+        name: "Phản hồi sinh viên",
+        icon: "fa-solid fa-star-half-stroke",
+        path: "/phan-hoi-sinh-vien-cua-toi",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
+        // KPI Nhóm III: phục vụ cộng đồng và các nhiệm vụ khác, theo phân công
+        // của Khoa. Server suy người dùng TỪ TOKEN nên đây chỉ là lối vào; gate
+        // theo NGẠCH giống "Phản hồi sinh viên" vì chỉ giảng viên của Khoa mới
+        // phát sinh dữ liệu này.
+        name: "Phục vụ cộng đồng",
+        icon: "fa-solid fa-hands-holding-circle",
+        path: "/nhiem-vu-khoa-cua-toi",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
+        // Vi phạm giảng dạy do đơn vị ghi nhận cho chính mình (điểm trừ KPI).
+        // Server tự giới hạn GET /viphamgiangday về người đăng nhập, nên đây chỉ
+        // là lối vào; gate theo NGẠCH vì chỉ giảng viên thuộc Khoa mới bị ghi nhận.
+        name: "Vi phạm của tôi",
+        icon: "fa-solid fa-triangle-exclamation",
+        path: "/vi-pham-cua-toi",
+        roles: MOI_NGUOI,
+        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+      },
+      {
+        // Tra cứu minh chứng của chính mình, xuyên năm. Chỉ đọc - server tự giới
+        // hạn về người đăng nhập nên không cần gate theo chức vụ/chức danh.
+        name: "Kho minh chứng cá nhân",
+        icon: "fa-solid fa-folder-tree",
+        path: "/kho-minh-chung",
+        roles: MOI_NGUOI,
+      },
+      {
+        // Kho chỉ đọc dùng chung cho phiếu KPI Khoa và Phòng/Trung tâm. Server
+        // tự giới hạn dữ liệu về đơn vị của người đang đăng nhập.
+        name: "Kho minh chứng đơn vị",
+        icon: "fa-solid fa-building-circle-check",
+        path: "/kho-minh-chung-don-vi",
+        roles: ROLE_SETS.KHO_MINH_CHUNG_DON_VI,
+      },
+      // Các trang [Mock] là bản dựng thử, laMucMock() lọc khỏi sidebar nên xếp
+      // cuối mảng để phần trên đọc đúng theo thứ tự hiện trên menu.
       {
         name: "[Mock] Thẩm định NV",
         icon: "fa-solid fa-eye",
@@ -97,147 +268,6 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-chart-pie",
         path: "/mock-thong-ke-toan-truong",
         roles: MOI_NGUOI,
-      },
-      {
-        // Phiếu tự đánh giá theo ngạch giảng viên - không xét chức vụ.
-        name: "Đánh giá KPI Giảng viên",
-        icon: "fa-solid fa-file-pen",
-        path: "/danh-gia-phu-luc-2",
-        roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
-      },
-      {
-        // Phiếu tự đánh giá theo ngạch viên chức / người lao động.
-        name: "Đánh giá KPI Nhân viên",
-        icon: "fa-solid fa-file-pen",
-        path: "/danh-gia-kpi-nhan-vien",
-        roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.NHAN_VIEN,
-      },
-      {
-        // Phiếu KPI của cả ĐƠN VỊ (Khoa/Phòng), chạy trên bộ API riêng
-        // /api/phieu-don-vi với máy trạng thái riêng - không liên quan tới phiếu
-        // KPI cá nhân ở hai mục trên.
-        //
-        // Gate theo NHAP_PHIEU_DON_VI (chỉ TKK) chứ không phải DANH_GIA_DON_VI:
-        // màn hình mới dựng phần việc nhập của thư ký, chưa có màn hình cho cấp
-        // duyệt. Không xét chức danh - đây là việc theo chức vụ.
-        name: "Đánh giá KPI Đơn vị",
-        icon: "fa-solid fa-building-columns",
-        path: "/danh-gia-kpi-don-vi",
-        roles: ROLE_SETS.NHAP_PHIEU_DON_VI,
-        childPaths: ["/danh-gia-kpi-don-vi/:id"],
-      },
-      {
-        // Phiếu KPI của PHÒNG / TRUNG TÂM - cùng bộ API /api/phieu-don-vi với mục
-        // trên, nhưng mẫu loại 4: nhóm tiêu chí phẳng (loai_nhom = NULL), tổng
-        // điểm cộng thẳng, ngưỡng xếp loại 80/60/50.
-        //
-        // Tách thành mục riêng cho TKP nhập/trình và TP chấm/duyệt. HT xem và
-        // duyệt ở màn hình cấp Trường riêng, nên không được mở mục hoặc route
-        // này. Phân quyền theo từng thao tác nằm ở quyenPhieuPhong().
-        name: "Đánh giá KPI Phòng",
-        icon: "fa-solid fa-building-user",
-        path: "/danh-gia-kpi-phong",
-        roles: ROLE_SETS.KPI_PHONG,
-        childPaths: ["/danh-gia-kpi-phong/:id"],
-      },
-      {
-        name: "Lịch sử đánh giá",
-        icon: "fa-solid fa-clock-rotate-left",
-        path: "/lich-su-danh-gia",
-        // Bản chỉ đọc của màn hình chấm điểm, mở từ nút trong bảng. Cùng quyền
-        // với trang cha vì server đã giới hạn phiếu về đúng người đăng nhập.
-        childPaths: ["/lich-su-danh-gia/:id"],
-        roles: MOI_NGUOI,
-      },
-      {
-        // Kết quả khảo sát ý kiến sinh viên của chính mình. Gate theo NGẠCH chứ
-        // không theo chức vụ: dữ liệu khảo sát chỉ phát sinh cho người đứng lớp,
-        // và server đã tự giới hạn theo mã cán bộ nên đây chỉ là lối vào.
-        name: "Phản hồi sinh viên",
-        icon: "fa-solid fa-star-half-stroke",
-        path: "/phan-hoi-sinh-vien-cua-toi",
-        roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
-      },
-      {
-        // KPI Nhóm III: phục vụ cộng đồng và các nhiệm vụ khác, theo phân công
-        // của Khoa. Server suy người dùng TỪ TOKEN nên đây chỉ là lối vào; gate
-        // theo NGẠCH giống "Phản hồi sinh viên" vì chỉ giảng viên của Khoa mới
-        // phát sinh dữ liệu này.
-        name: "Phục vụ cộng đồng",
-        icon: "fa-solid fa-hands-holding-circle",
-        path: "/nhiem-vu-khoa-cua-toi",
-        roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
-      },
-      {
-        // Kê khai giờ quy đổi theo PHỤ LỤC II - "quy đổi các hoạt động chuyên
-        // môn ra giờ chuẩn giảng dạy". Giảng viên TỰ kê số lượng từng đầu việc,
-        // TK/TKL duyệt từng dòng. Server suy người dùng TỪ TOKEN nên đây chỉ là
-        // lối vào; gate theo NGẠCH vì chỉ giảng viên mới có định mức giờ chuẩn.
-        name: "Kê khai giờ quy đổi",
-        icon: "fa-solid fa-stopwatch",
-        path: "/ke-khai-gio-quy-doi",
-        roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
-      },
-      {
-        // Song sinh của mục trên cho VIÊN CHỨC / NLĐ: kê khai THÀNH TÍCH VƯỢT
-        // TRỘI (Nhóm II - sáng kiến, khen thưởng, đào tạo, phong trào). Nhân
-        // viên TỰ kê từng thành tích, đơn vị phụ trách duyệt từng dòng.
-        //
-        // Server suy người dùng TỪ TOKEN nên đây chỉ là lối vào.
-        //
-        // ⚠️ `chucDanh` bên dưới KHÔNG phải luật quyết định: đường dẫn này nằm
-        // trong DUONG_DAN_NGACH_NHAN_VIEN nên canAccessRule() xử lý riêng, cho
-        // qua cả người thuộc đơn vị ngoài Khoa dù chức danh trống hoặc lệch
-        // ngạch. Giữ lại trường này cho khớp cách khai của "Đánh giá KPI Nhân
-        // viên"; sửa luật thì sửa ở canAccessRule.
-        name: "Kê khai thành tích",
-        icon: "fa-solid fa-medal",
-        path: "/ke-khai-thanh-tich",
-        roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.NHAN_VIEN,
-      },
-      {
-        // Công trình NCKH đồng bộ từ hệ thống nghiên cứu khoa học của trường -
-        // nguồn của các tiêu chí NCKH chấm tự động. Endpoint /api/nckh/* nhận
-        // id_nhan_vien qua query (không suy từ token) nhưng màn hình chỉ truyền
-        // id của chính người đăng nhập; gate theo NGẠCH vì chỉ giảng viên mới có
-        // tiêu chí NCKH trong phiếu.
-        name: "Thành tích NCKH",
-        icon: "fa-solid fa-flask",
-        path: "/thanh-tich-nckh",
-        roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
-      },
-      {
-        // Vi phạm giảng dạy do đơn vị ghi nhận cho chính mình (điểm trừ KPI).
-        // Server tự giới hạn GET /viphamgiangday về người đăng nhập, nên đây chỉ
-        // là lối vào; gate theo NGẠCH vì chỉ giảng viên thuộc Khoa mới bị ghi nhận.
-        name: "Vi phạm của tôi",
-        icon: "fa-solid fa-triangle-exclamation",
-        path: "/vi-pham-cua-toi",
-        roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
-      },
-      {
-        // Tra cứu minh chứng của chính mình, xuyên năm. Chỉ đọc - server tự giới
-        // hạn về người đăng nhập nên không cần gate theo chức vụ/chức danh.
-        name: "Kho minh chứng cá nhân",
-        icon: "fa-solid fa-folder-tree",
-        path: "/kho-minh-chung",
-        roles: MOI_NGUOI,
-      },
-      {
-        // Kho chỉ đọc dùng chung cho phiếu KPI Khoa và Phòng/Trung tâm. Server
-        // tự giới hạn dữ liệu về đơn vị của người đang đăng nhập.
-        name: "Kho minh chứng đơn vị",
-        icon: "fa-solid fa-building-circle-check",
-        path: "/kho-minh-chung-don-vi",
-        roles: ROLE_SETS.KHO_MINH_CHUNG_DON_VI,
       },
     ],
   },
@@ -333,6 +363,28 @@ export const MENU_GROUPS = [
         childPaths: ["/quan-ly/ke-khai-thanh-tich/:id"],
       },
       {
+        // Song sinh của "Ghi nhận vi phạm giảng viên" (nhóm Thiết lập đánh giá
+        // KPI) cho VIÊN CHỨC / NLĐ (LoaiDoiTuong = 2): cùng bộ endpoint
+        // api/viphamgiangday, khác danh mục nhóm/loại và luật mức trừ
+        // (CheDoDiemTru). Tách màn hình vì hai đối tượng có tập người, tập loại
+        // vi phạm và cách áp trần điểm khác hẳn nhau.
+        //
+        // Ở NHÓM NÀY chứ không nằm cạnh mục song sinh: sau khi Trưởng Phòng bị
+        // loại khỏi màn hình vi phạm giảng viên, đây là mục DUY NHẤT của nhóm
+        // Thiết lập đánh giá KPI mà một TP thường thấy - để lại bên đó thì họ
+        // nhận nguyên một nhóm sidebar chỉ có một dòng. Việc này cũng đúng chỗ
+        // hơn về nghiệp vụ: ghi nhận vi phạm nhân viên là thao tác chấm điểm
+        // trên người của đơn vị mình, không phải thiết lập danh mục dùng chung.
+        //
+        // Giữ đường dẫn mock cũ làm childPath để các link đã chia sẻ không bị
+        // RequireRole chặn.
+        name: "Ghi nhận vi phạm nhân viên",
+        icon: "fa-solid fa-user-xmark",
+        path: "/ghi-nhan-vi-pham-nhan-vien",
+        roles: ROLE_SETS.GHI_NHAN_VI_PHAM_NHAN_VIEN,
+        childPaths: ["/mock-ghi-nhan-vi-pham-nv"],
+      },
+      {
         name: "Báo cáo đơn vị",
         icon: "fa-solid fa-chart-line",
         path: "/quan-ly/bao-cao",
@@ -394,25 +446,14 @@ export const MENU_GROUPS = [
         // "Chấm điểm KPI đơn vị" còn một mục nữa trỏ vào cùng trang qua
         // /quan-ly/vi-pham; giữ đường dẫn đó làm childPath để các link cũ
         // (ví dụ nút trong Hồ sơ KPI giảng viên) không bị RequireRole chặn.
+        //
+        // KHÔNG mở cho Trưởng Phòng: đối tượng bị ghi nhận bắt buộc là giảng
+        // viên thuộc Khoa - xem ROLE_SETS.GHI_NHAN_VI_PHAM_GIANG_VIEN.
         name: "Ghi nhận vi phạm giảng viên",
         icon: "fa-solid fa-circle-exclamation",
         path: "/quan-ly-vi-pham",
-        roles: ROLE_SETS.GHI_NHAN_VI_PHAM,
+        roles: ROLE_SETS.GHI_NHAN_VI_PHAM_GIANG_VIEN,
         childPaths: ["/quan-ly/vi-pham"],
-      },
-      {
-        // Song sinh của mục trên cho VIÊN CHỨC / NLĐ (LoaiDoiTuong = 2): cùng bộ
-        // endpoint api/viphamgiangday, khác danh mục nhóm/loại và luật mức trừ
-        // (CheDoDiemTru). Tách màn hình vì hai đối tượng có tập người, tập loại
-        // vi phạm và cách áp trần điểm khác hẳn nhau.
-        //
-        // Giữ đường dẫn mock cũ làm childPath để các link đã chia sẻ không bị
-        // RequireRole chặn.
-        name: "Ghi nhận vi phạm nhân viên",
-        icon: "fa-solid fa-user-xmark",
-        path: "/ghi-nhan-vi-pham-nhan-vien",
-        roles: ROLE_SETS.GHI_NHAN_VI_PHAM,
-        childPaths: ["/mock-ghi-nhan-vi-pham-nv"],
       },
       {
         // Cùng luật vào trang với "Quản lý đánh giá sinh viên": chức vụ Trưởng
@@ -469,23 +510,26 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
       },
       {
+        // Cả nhóm "Quản lý tiêu chí" gác bằng QUAN_LY_TIEU_CHI (chỉ Admin/HT)
+        // chứ không phải QUAN_TRI: đây là thước đo dùng chung toàn trường, xem
+        // lý do ở ROLE_SETS.QUAN_LY_TIEU_CHI.
         name: "Nhóm tiêu chí",
         icon: "fa-solid fa-layer-group",
         path: "/nhom-tieu-chi",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.QUAN_LY_TIEU_CHI,
       },
       {
         name: "Tiêu chí đánh giá",
         icon: "fa-solid fa-list-ol",
         path: "/tieu-chi-danh-gia",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.QUAN_LY_TIEU_CHI,
         childPaths: ["/:tieuChiId/thang-diem"],
       },
       {
         name: "Mẫu phiếu đánh giá",
         icon: "fa-solid fa-file-invoice",
         path: "/mau-danh-gia",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.QUAN_LY_TIEU_CHI,
         childPaths: ["/mau-danh-gia/:idMau/phan-quyen"],
       },
     ],
@@ -496,10 +540,13 @@ export const MENU_GROUPS = [
     icon: "fa-users-gear",
     items: [
       {
+        // Nhóm "Cơ cấu tổ chức" gác bằng CO_CAU_TO_CHUC (chỉ Admin/HT) chứ
+        // không phải QUAN_TRI - xem lý do ở ROLE_SETS.CO_CAU_TO_CHUC. Riêng mục
+        // "Người dùng" bên dưới giữ tập rộng hơn theo phạm vi đơn vị.
         name: "Cơ cấu đơn vị",
         icon: "fa-solid fa-sitemap",
         path: "/quan-ly-don-vi",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.CO_CAU_TO_CHUC,
         childPaths: ["/quan-ly-don-vi/:maDonVi/danh-sach-thanh-vien"],
       },
       {
@@ -516,13 +563,13 @@ export const MENU_GROUPS = [
         name: "Chức danh nghề nghiệp",
         icon: "fa-solid fa-chalkboard-user",
         path: "/quan-ly-chuc-danh",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.CO_CAU_TO_CHUC,
       },
       {
         name: "Quản lý chức vụ",
         icon: "fa-solid fa-briefcase",
         path: "/quan-ly-chuc-vu",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.CO_CAU_TO_CHUC,
       },
     ],
   },

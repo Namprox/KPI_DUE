@@ -1,0 +1,42 @@
+/* Giới hạn phần hiển thị; tên đầy đủ vẫn nằm trong title và dữ liệu tải về. */
+.pl2-mc-box,
+.pl2-mc-box .pl2-mc-list {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pl2-mc-box .cd-mc-row {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.pl2-mc-box .cd-mc-main {
+  flex: 1 1 0%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pl2-mc-box .cd-mc-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  width: 100%;
+  max-width: 100%;
+  line-height: 1.45;
+  text-align: left;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  white-space: normal;
+  text-overflow: ellipsis;
+}
+
+.pl2-mc-box .cd-mc-meta {
+  overflow-wrap: anywhere;
+}
+
+.pl2-mc-box .cd-mc-act {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

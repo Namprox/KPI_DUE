@@ -27,13 +27,15 @@
  * có thao tác hủy nộp hay trả phiếu về cấp dưới: đường lùi duy nhất là /mo-lai sau
  * khi phiếu đã hoàn tất, đừng đi tìm endpoint trả về vì không có.
  *
- * Endpoint dùng CHUNG cho Khoa (mẫu loại 3) và Phòng/Trung tâm (mẫu loại 4); phần
- * nghiệp vụ riêng của Phòng/TT (ngưỡng xếp loại, cách cộng tổng, cây nhóm một
- * tầng) nằm ở phieuPhongApi.js.
+ * Endpoint, máy trạng thái và bảng quyền thao tác dùng CHUNG cho Khoa (mẫu loại
+ * 3) và Phòng/Trung tâm (mẫu loại 4). Phần nghiệp vụ RIÊNG của từng loại nằm ở
+ * hai file cạnh bên: phieuKhoaApi.js (chức vụ hai cấp dưới, nhãn cấp chấm) và
+ * phieuPhongApi.js (ngưỡng xếp loại, cách cộng tổng, cây nhóm một tầng).
  */
 
 import { apiFetch } from "./api";
 import { readApiError } from "./apiError";
+import { coQuyenTaiDonVi, normalizeRole, ROLE } from "./roles";
 
 /* ------------------------------------------------------------------ */
 /* Trạng thái phiếu                                                    */
@@ -88,10 +90,6 @@ export const TRANG_THAI_DV_META = {
 export const tenTrangThaiDonVi = (trangThai) =>
   TRANG_THAI_DV_META[trangThai]?.label ||
   `Không xác định (${trangThai ?? "-"})`;
-
-/** Chỉ trạng thái 1 mới còn sửa được điểm - trình xong là khóa với thư ký. */
-export const suaDuocPhieu = (phieu) =>
-  Number(phieu?.TrangThai) === TRANG_THAI_DV.NHAP;
 
 /* ------------------------------------------------------------------ */
 /* Nguồn điểm của từng dòng                                            */
@@ -271,6 +269,151 @@ export const diemHieuLucCuaDong = (ct) => {
 };
 
 /* ------------------------------------------------------------------ */
+/* Cấp chấm & quyền thao tác                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Ba lớp điểm, khớp tên endpoint cấp dòng của chi-tiet-don-vi.
+ *
+ * DÙNG CHUNG cho cả phiếu Khoa (mẫu loại 3) và Phòng/TT (mẫu loại 4): máy trạng
+ * thái, tên cột và tên endpoint của hai loại phiếu giống hệt nhau, chỉ NHÃN của
+ * cấp giữa là khác (Trưởng Khoa / Trưởng phòng) nên nhãn được khai riêng ở
+ * phieuKhoaApi.js và phieuPhongApi.js.
+ */
+export const CAP_CHAM = {
+  NHAP: "diem-nhap",
+  DUYET_DV: "diem-duyet-dv",
+  TRUONG: "diem-truong",
+};
+
+/** Trường DTO chứa điểm / nhận xét của từng lớp. */
+export const TRUONG_DIEM_CUA_CAP = {
+  [CAP_CHAM.NHAP]: { diem: "DiemNhap", nhanXet: "NhanXetNhap" },
+  [CAP_CHAM.DUYET_DV]: { diem: "DiemDuyetDv", nhanXet: "NhanXetDuyetDv" },
+  [CAP_CHAM.TRUONG]: { diem: "DiemTruong", nhanXet: "NhanXetTruong" },
+};
+
+/**
+ * Lớp điểm nào đang được sửa ở trạng thái hiện tại của phiếu.
+ *
+ * Server chốt chặn bằng chính ràng buộc này: gọi diem-duyet-dv khi phiếu còn ở
+ * trạng thái 1 sẽ nhận 409 chứ không phải 400.
+ *
+ * @returns {string|null} null khi phiếu đã khóa (trạng thái 4, 5)
+ */
+export const capChamTheoTrangThai = (trangThai) => {
+  switch (Number(trangThai)) {
+    case TRANG_THAI_DV.NHAP:
+      return CAP_CHAM.NHAP;
+    case TRANG_THAI_DV.CHO_DV_DUYET:
+      return CAP_CHAM.DUYET_DV;
+    case TRANG_THAI_DV.DV_DA_DUYET:
+      return CAP_CHAM.TRUONG;
+    default:
+      return null;
+  }
+};
+
+/**
+ * Điểm GỐC của một dòng - con số mà cấp dưới đề xuất lên: thư ký gõ tay
+ * (`DiemNhap`) với dòng chấm tay, hệ thống tổng hợp (`DiemTongHop`) với dòng tự
+ * động.
+ *
+ * Tách riêng vì màn hình duyệt luôn phải bày "cấp dưới đề xuất bao nhiêu" cạnh
+ * "tôi chấm bao nhiêu", mà hai loại dòng lấy con số đó ở hai cột khác nhau.
+ */
+export const diemGocCuaDong = (ct) =>
+  laDongChamTay(ct) ? ct?.DiemNhap : ct?.DiemTongHop;
+
+/**
+ * Điểm ĐANG hiển thị của một dòng: bản nháp người dùng gõ ở lớp hiện tại nếu có,
+ * ngược lại là điểm hiệu lực do server trả.
+ *
+ * @returns {number|null} null khi dòng chưa có điểm nào - khác hẳn 0 điểm.
+ */
+export const diemDangHienThi = (ct, nhapDiem, cap) => {
+  if (cap && nhapDiem) {
+    const nhap = nhapDiem[ct?.IdChiTietDv];
+    if (nhap !== undefined) {
+      if (nhap === "" || nhap === null) return null;
+      const so = Number(nhap);
+      return Number.isFinite(so) ? so : null;
+    }
+  }
+  return diemHieuLucCuaDong(ct);
+};
+
+/**
+ * Người dùng được làm gì trên phiếu này, theo (trạng thái phiếu × chức vụ).
+ *
+ * KHUNG CHUNG của cả hai loại phiếu đơn vị; bên gọi truyền vào tập chức vụ của
+ * ĐÚNG loại mình - xem quyenPhieuKhoa() và quyenPhieuPhong(). Máy trạng thái,
+ * endpoint và thẩm quyền từng bước giống hệt nhau giữa Khoa và Phòng/TT, chỉ
+ * khác mã chức vụ của hai cấp dưới, nên khai hai lần là mở đường cho hai màn
+ * hình lệch nhau khi quy trình đổi.
+ *
+ * CHỈ để ẩn/hiện nút - server vẫn là chốt chặn cuối cùng và có thể từ chối
+ * những gì hàm này cho qua (ví dụ Admin gọi thao tác mà SP chỉ chấp nhận đúng
+ * mã HT).
+ *
+ * Thư ký và trưởng đơn vị phải đúng đơn vị của phiếu nên xét qua
+ * coQuyenTaiDonVi (đối chiếu cặp đơn vị + chức vụ TRÊN CÙNG MỘT DÒNG của
+ * user.DonVi[]); cấp Trường không ràng buộc đơn vị nên chỉ xét chức vụ chính.
+ *
+ * @param {string[]} vaiTroThuKy chức vụ nhập phiếu ở cấp 1 (TKK hoặc TKP)
+ * @param {string[]} vaiTroTruongDv chức vụ duyệt ở cấp 2 (TK/TKL hoặc TP)
+ */
+export const quyenPhieuDonVi = (
+  phieu,
+  user,
+  { vaiTroThuKy = [], vaiTroTruongDv = [] } = {},
+) => {
+  const trangThai = Number(phieu?.TrangThai);
+  const chucVu = normalizeRole(user);
+
+  const laThuKy = coQuyenTaiDonVi(vaiTroThuKy, phieu?.IdDonVi, user);
+  const laTruongDonVi = coQuyenTaiDonVi(vaiTroTruongDv, phieu?.IdDonVi, user);
+  const laCapTruong = chucVu === ROLE.HIEU_TRUONG || chucVu === ROLE.ADMIN;
+
+  return {
+    laThuKy,
+    laTruongDonVi,
+    laCapTruong,
+    coTheNhap: laThuKy && trangThai === TRANG_THAI_DV.NHAP,
+    coTheTrinh: laThuKy && trangThai === TRANG_THAI_DV.NHAP,
+    coTheChamDuyetDv:
+      laTruongDonVi && trangThai === TRANG_THAI_DV.CHO_DV_DUYET,
+    coTheDuyetDv: laTruongDonVi && trangThai === TRANG_THAI_DV.CHO_DV_DUYET,
+    coTheChamTruong: laCapTruong && trangThai === TRANG_THAI_DV.DV_DA_DUYET,
+    coTheDuyetTruong: laCapTruong && trangThai === TRANG_THAI_DV.DV_DA_DUYET,
+    coTheChot: laCapTruong && trangThai === TRANG_THAI_DV.TRUONG_DA_DUYET,
+    coTheMoLai: laCapTruong && trangThai === TRANG_THAI_DV.HOAN_TAT,
+  };
+};
+
+/**
+ * Đã duyệt bao nhiêu / tổng bao nhiêu tiêu chí, cho thanh tiến độ ở bước Trưởng
+ * đơn vị duyệt (trạng thái 2).
+ *
+ * MẪU SỐ CHỈ ĐẾM DÒNG CHẤM TAY: dòng `loai_nguon_diem = 2` do hệ thống tổng hợp
+ * từ KPI thành viên, không có đề xuất nào của thư ký để duyệt lại - bắt trưởng
+ * đơn vị bấm qua chúng chỉ làm loãng phần việc thật. Mẫu Phòng/TT không có dòng
+ * tự động nào nên con số ở đó là toàn bộ phiếu.
+ *
+ * TỬ SỐ đếm dòng đã có `DiemDuyetDv`, tức đã đi qua PUT diem-duyet-dv - dù là
+ * "Duyệt giữ nguyên" hay "Chỉnh sửa điểm", hai thao tác ghi cùng một cột.
+ */
+export const tinhTienDoDuyetDonVi = (chiTietList = []) => {
+  const dong = chiTietList.filter((ct) => laDongChamTay(ct));
+  return {
+    tong: dong.length,
+    xong: dong.filter(
+      (ct) => ct?.DiemDuyetDv !== null && ct?.DiemDuyetDv !== undefined,
+    ).length,
+  };
+};
+
+/* ------------------------------------------------------------------ */
 /* Tổng điểm TẠM TÍNH ở client                                         */
 /* ------------------------------------------------------------------ */
 
@@ -290,8 +433,13 @@ export const LOAI_NHOM_DV = {
  *
  * Khác phiếu cá nhân ở một điểm: ChiTietDanhGiaDonViDto có sẵn `LoaiNhom` nên
  * không phải tra lại bảng tiêu chí của mẫu để tách cơ bản / vượt trội.
+ *
+ * @param {object} [nhapDiem] bản nháp đang gõ, khóa theo IdChiTietDv - có thì
+ *   ưu tiên hơn số của server để tổng nhảy theo thời gian thực
+ * @param {string} [cap] lớp điểm đang được sửa (xem capChamTheoTrangThai); bản
+ *   nháp chỉ được áp vào lớp này
  */
-export const tinhTongDiemDonViTamTinh = (chiTiet = []) => {
+export const tinhTongDiemDonViTamTinh = (chiTiet = [], nhapDiem, cap) => {
   if (!Array.isArray(chiTiet) || chiTiet.length === 0) return null;
 
   let coBan = 0;
@@ -300,7 +448,7 @@ export const tinhTongDiemDonViTamTinh = (chiTiet = []) => {
   let soDongChuaCoDiem = 0;
 
   chiTiet.forEach((ct) => {
-    const diem = diemHieuLucCuaDong(ct);
+    const diem = diemDangHienThi(ct, nhapDiem, cap);
     if (diem === null) {
       soDongChuaCoDiem += 1;
       return;

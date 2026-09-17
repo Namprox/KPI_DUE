@@ -4,8 +4,10 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useImperativeHandle,
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import LichSuPhieuDonViHeader from "../../components/DanhGia/LichSuPhieuDonViHeader";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
@@ -23,13 +25,14 @@ import {
   nhapDiemDuyetDvChiTietDonVi,
   nhapDiemTruongChiTietDonVi,
   trinhPhieuDonVi,
+  CAP_CHAM,
+  TRUONG_DIEM_CUA_CAP,
+  capChamTheoTrangThai,
   TRANG_THAI_DV,
   tenTrangThaiDonVi,
 } from "../../utils/phieuDonViApi";
 import {
-  CAP_CHAM,
-  TRUONG_DIEM_CUA_CAP,
-  capChamTheoTrangThai,
+  NHAN_CAP_CHAM,
   dongThieuDiem as locDongThieuDiem,
   dungSectionsPhong,
   quyenPhieuPhong,
@@ -48,7 +51,7 @@ import {
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
 import DanhGiaPhongForm from "../../components/DanhGia/DanhGiaKpiPhong/DanhGiaPhongForm";
 import DuyetPhongForm from "../../components/DanhGia/DanhGiaKpiPhong/DuyetPhongForm";
-import SuaDiemDonViModal from "../../components/DanhGia/DanhGiaKpiPhong/SuaDiemDonViModal";
+import SuaDiemDonViModal from "../../components/DanhGia/SuaDiemDonViModal";
 import ChotPhieuPhongModal from "../../components/DanhGia/DanhGiaKpiPhong/ChotPhieuPhongModal";
 
 /** Hàm ghi điểm tương ứng với lớp điểm đang được sửa. */
@@ -95,8 +98,9 @@ const giaTriO = (nhap, goc) =>
  * `loai_nguon_diem = 1` (chấm tay), không dòng nào tổng hợp từ KPI cá nhân - gọi
  * endpoint đó cũng không đổi gì.
  */
-const ChiTietPhieuPhong = () => {
-  const { id } = useParams();
+const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = false, backTo = "/danh-gia-kpi-phong" }) => {
+  const { id: routeId } = useParams();
+  const id = idPhieu ?? routeId;
   const navigate = useNavigate();
   const toast = useRef(null);
   const { user } = useAuth();
@@ -210,7 +214,10 @@ const ChiTietPhieuPhong = () => {
   const chiTietList = useMemo(() => phieu?.ChiTiet || [], [phieu]);
   const cap = useMemo(() => capChamTheoTrangThai(phieu?.TrangThai), [phieu]);
   const truongCuaCap = cap ? TRUONG_DIEM_CUA_CAP[cap] : null;
-  const quyen = useMemo(() => quyenPhieuPhong(phieu, user), [phieu, user]);
+  const quyenGoc = useMemo(() => quyenPhieuPhong(phieu, user), [phieu, user]);
+  const quyen = useMemo(() => readOnly
+    ? Object.fromEntries(Object.entries(quyenGoc).map(([k, v]) => [k, k.startsWith("coThe") ? false : v]))
+    : quyenGoc, [quyenGoc, readOnly]);
 
   /**
    * Trạng thái 2 đổi hẳn sang bố cục duyệt (thẻ cdm-*), kể cả với người chỉ xem:
@@ -325,7 +332,7 @@ const ChiTietPhieuPhong = () => {
    *    trường server tự tính (DiemChinhThuc, NgayDuyetDv).
    */
   const ghiDiemDong = async (ct, { diem, nhanXet }, thongDiepXong) => {
-    if (!cap) return false;
+    if (!cap || !choPhepNhap) return false;
     const idCt = ct.IdChiTietDv;
     setIdDangLuu(idCt);
     try {
@@ -415,9 +422,9 @@ const ChiTietPhieuPhong = () => {
    * một giá trị mới, bắn song song sẽ ăn 409 ngay từ dòng thứ hai.
    */
   const handleLuuTatCa = async () => {
-    if (!cap) return;
+    if (!cap || !choPhepNhap) return false;
     const danhSachSua = chiTietList.filter((ct) => oDaSua(ct));
-    if (danhSachSua.length === 0) return;
+    if (danhSachSua.length === 0) return true;
 
     setDangLuuTatCa(true);
     let rowVersionHienTai = phieu?.RowVersion;
@@ -442,6 +449,7 @@ const ChiTietPhieuPhong = () => {
         "Đã lưu tất cả",
         `Đã lưu ${daLuu} tiêu chí có thay đổi.`,
       );
+      return true;
     } catch (error) {
       console.error("Lỗi lưu danh sách tiêu chí Phòng:", error);
       showToast(
@@ -450,10 +458,17 @@ const ChiTietPhieuPhong = () => {
         `${error.message} (Đã lưu ${daLuu}/${danhSachSua.length} tiêu chí)`,
       );
       await taiPhieu({ imLang: true });
+      return false;
     } finally {
       setDangLuuTatCa(false);
     }
   };
+
+  useImperativeHandle(editorRef, () => ({
+    dirty: soDongDaSua > 0 || !!dongSuaDiem,
+    busy: dangLuuTatCa || dangGui || idDangLuu !== null,
+    save: async () => !dongSuaDiem && handleLuuTatCa(),
+  }));
 
   /** Ba bước chuyển trạng thái tiến lên đều cùng một khuôn: nhận xét + RowVersion. */
   const buocChuyenTiep = useMemo(() => {
@@ -512,6 +527,7 @@ const ChiTietPhieuPhong = () => {
   };
 
   const handleChot = async ({ xepLoai, ghiChuXepLoai, nhanXet }) => {
+    if (!quyen.coTheChot) return;
     setDangGui(true);
     try {
       const item = await chotPhieuDonVi(id, {
@@ -534,6 +550,7 @@ const ChiTietPhieuPhong = () => {
   };
 
   const handleMoLai = async ({ lyDo, nhanXet }) => {
+    if (!quyen.coTheMoLai) return;
     setDangGui(true);
     try {
       const item = await moLaiPhieuDonVi(id, {
@@ -591,7 +608,7 @@ const ChiTietPhieuPhong = () => {
             <button
               className="btn-cancel"
               style={{ margin: "0 auto" }}
-              onClick={() => navigate("/danh-gia-kpi-phong")}
+              onClick={() => navigate(backTo)}
             >
               <i className="fa-solid fa-arrow-left"></i> Về danh sách phiếu
               Phòng/TT
@@ -703,18 +720,19 @@ const ChiTietPhieuPhong = () => {
   );
 
   return (
-    <div className="page-container">
+    <div className={embedded ? "" : "page-container"}>
       <Toast ref={toast} position="top-right" />
 
+      {readOnly && <LichSuPhieuDonViHeader phieu={phieu} loai="phong" coTheDanhGia={quyenGoc.coTheNhap || quyenGoc.coTheDuyetDv} />}
+
       <div className="page-header">
-        <button
+        {!embedded && <button
           className="cd-link-btn"
           style={{ marginBottom: "8px" }}
-          onClick={() => navigate("/danh-gia-kpi-phong")}
+          onClick={() => navigate(backTo)}
         >
-          <i className="fa-solid fa-arrow-left"></i> Danh sách phiếu KPI
-          Phòng/TT
-        </button>
+          <i className="fa-solid fa-arrow-left"></i> {readOnly ? "Lịch sử đánh giá KPI Phòng/Trung tâm" : "Đánh giá KPI Phòng/Trung tâm"}
+        </button>}
 
         <div
           style={{
@@ -761,12 +779,13 @@ const ChiTietPhieuPhong = () => {
 
       {laBuocDuyetPhong ? (
         <DuyetPhongForm
+          readOnly={readOnly}
           phieu={phieu}
           chiTietList={chiTietList}
           sections={sections}
           choPhepNhap={choPhepNhap}
           lyDoKhoa={
-            quyen.laCapTruong
+            readOnly ? "Bạn đang xem lịch sử đánh giá (chỉ đọc)." : quyen.laCapTruong
               ? "Phiếu đang chờ Trưởng phòng duyệt; cấp Trường chấm ở bước sau."
               : "Bạn không phải Trưởng phòng của đơn vị này nên chỉ xem được."
           }
@@ -809,6 +828,7 @@ const ChiTietPhieuPhong = () => {
         <SuaDiemDonViModal
           chiTiet={dongSuaDiem}
           thangDiem={tieuChiMap?.get(Number(dongSuaDiem.IdTieuChi))}
+          nhanTruong={NHAN_CAP_CHAM[CAP_CHAM.DUYET_DV]}
           dangGui={idDangLuu === dongSuaDiem.IdChiTietDv}
           onDong={() => setDongSuaDiem(null)}
           onXacNhan={handleSuaDiemDong}

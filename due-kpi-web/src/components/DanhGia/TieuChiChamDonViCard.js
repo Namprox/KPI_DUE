@@ -1,11 +1,19 @@
 import React, { useState } from "react";
-import { formatDiem, formatNgayGio } from "../../../utils/phieuApi";
-import { diemHieuLucCuaDong } from "../../../utils/phieuDonViApi";
-import { NHAN_CAP_CHAM, CAP_CHAM } from "../../../utils/phieuPhongApi";
-import MinhChungTieuChiBox from "../TieuChi/MinhChungTieuChiBox";
+import { formatDiem, formatNgayGio } from "../../utils/phieuApi";
+import {
+  CAP_CHAM,
+  diemGocCuaDong,
+  diemHieuLucCuaDong,
+  laDongChamTay,
+} from "../../utils/phieuDonViApi";
+import MinhChungTieuChiBox from "./TieuChi/MinhChungTieuChiBox";
 
 /**
- * Một tiêu chí trên màn hình Trưởng phòng duyệt phiếu KPI Phòng / Trung tâm.
+ * Một tiêu chí trên màn hình TRƯỞNG ĐƠN VỊ DUYỆT phiếu KPI đơn vị (trạng thái 2).
+ *
+ * Dùng chung cho cả hai loại phiếu đơn vị - Khoa (mẫu loại 3) và Phòng/Trung tâm
+ * (mẫu loại 4): DTO, ba lớp điểm và hai thao tác duyệt giống hệt nhau, chỉ NHÃN
+ * của cấp duyệt là khác nên nhận qua prop `nhanCap`.
  *
  * Bản song song của TieuChiChamCard (luồng cá nhân) và dùng LẠI NGUYÊN bộ lớp
  * `cdm-*` / `cd-mc-*` của QuanLyChamDiem.css để hai màn hình nhìn như một. Sở dĩ
@@ -30,12 +38,19 @@ import MinhChungTieuChiBox from "../TieuChi/MinhChungTieuChiBox";
  *
  * Hai thao tác còn lại đều ghi qua CÙNG một endpoint
  * PUT api/chi-tiet-don-vi/{id}/diem-duyet-dv, chỉ khác giá trị `Diem`:
- *   - "Duyệt giữ nguyên" gửi đúng DiemNhap của thư ký
+ *   - "Duyệt giữ nguyên" gửi đúng điểm gốc cấp dưới đề xuất
  *   - "Chỉnh sửa điểm"  mở SuaDiemDonViModal để chọn lại mức
+ *
+ * DÒNG TỰ ĐỘNG (`loai_nguon_diem = 2`, chỉ mẫu Khoa mới có) không có nút "Duyệt
+ * giữ nguyên": điểm do hệ thống tổng hợp từ KPI thành viên, không phải đề xuất
+ * của ai để duyệt lại, và nó đã là điểm hiệu lực sẵn rồi. Vẫn giữ "Chỉnh sửa
+ * điểm" làm đòn bẩy cho trưởng đơn vị khi con số tổng hợp sai.
  */
 const TieuChiChamDonViCard = ({
   chiTiet,
   stt,
+  /** Nhãn của ba lớp điểm - NHAN_CAP_CHAM_KHOA hoặc NHAN_CAP_CHAM (Phòng). */
+  nhanCap,
   choPhepNhap = false,
   lyDoKhoa = "",
   dangLuu = false,
@@ -52,6 +67,9 @@ const TieuChiChamDonViCard = ({
   const moRong = !daThuGon;
 
   const diemHieuLuc = diemHieuLucCuaDong(chiTiet);
+  const tuDong = !laDongChamTay(chiTiet);
+  /** Con số cấp dưới đề xuất: thư ký gõ với dòng chấm tay, hệ thống tổng hợp với dòng tự động. */
+  const diemGoc = diemGocCuaDong(chiTiet);
   const daDuyet =
     chiTiet.DiemDuyetDv !== null && chiTiet.DiemDuyetDv !== undefined;
 
@@ -59,14 +77,14 @@ const TieuChiChamDonViCard = ({
   // là thứ phân biệt hai kết cục, chứ không phải riêng con số cuối cùng.
   const lechThuKy =
     daDuyet &&
-    chiTiet.DiemNhap != null &&
-    Number(chiTiet.DiemDuyetDv) !== Number(chiTiet.DiemNhap);
+    diemGoc != null &&
+    Number(chiTiet.DiemDuyetDv) !== Number(diemGoc);
 
   // Ba lớp điểm bày theo đúng thứ tự chấm. Lớp đang thắng được tô như điểm đã
   // chốt để người duyệt thấy ngay con số nào sẽ vào tổng.
   const oDiem = [
-    { cap: CAP_CHAM.NHAP, giaTri: chiTiet.DiemNhap },
-    { cap: CAP_CHAM.DUYET_DV, giaTri: chiTiet.DiemDuyetDv },
+    { cap: CAP_CHAM.NHAP, nhan: tuDong ? "Hệ thống tính" : nhanCap[CAP_CHAM.NHAP], giaTri: diemGoc },
+    { cap: CAP_CHAM.DUYET_DV, nhan: nhanCap[CAP_CHAM.DUYET_DV], giaTri: chiTiet.DiemDuyetDv },
   ];
 
   const laHieuLuc = (giaTri) =>
@@ -75,7 +93,7 @@ const TieuChiChamDonViCard = ({
   return (
     <div
       id={`tieu-chi-dv-${chiTiet.IdChiTietDv}`}
-      className={`cdm-the${daDuyet ? " phong-the-da-duyet" : ""}`}
+      className={`cdm-the${daDuyet || tuDong ? " phong-the-da-duyet" : ""}`}
     >
       <div className="cdm-main">
         <div className="cdm-dau">
@@ -83,9 +101,9 @@ const TieuChiChamDonViCard = ({
             {stt}. {chiTiet.TenTieuChi || `Tiêu chí #${chiTiet.IdTieuChi}`}
           </p>
           <div className="cdm-diem-nhom">
-            {oDiem.map(({ cap, giaTri }) => (
+            {oDiem.map(({ cap, nhan, giaTri }) => (
               <div className="cdm-diem-o" key={cap}>
-                <div className="cdm-diem-nhan">{NHAN_CAP_CHAM[cap]}</div>
+                <div className="cdm-diem-nhan">{nhan}</div>
                 <div
                   className={`cdm-diem-gt${
                     giaTri == null
@@ -114,21 +132,30 @@ const TieuChiChamDonViCard = ({
           {/* Thay cho TrangThaiDongBadge của luồng cá nhân: phiếu đơn vị không
               có cột trang_thai_dong, "đã duyệt" chỉ suy ra từ việc dòng đã có
               điểm ở lớp Trưởng phòng. */}
-          <span
-            className={`cdm-pill ${
-              daDuyet ? "phong-pill-da-duyet" : "phong-pill-cho-duyet"
-            }`}
-          >
-            <i
-              className={`fa-solid ${daDuyet ? "fa-circle-check" : "fa-hourglass-half"}`}
-            ></i>{" "}
-            {daDuyet ? "Đã duyệt" : "Chờ duyệt"}
-          </span>
+          {tuDong ? (
+            <span className="cdm-pill">
+              <i className="fa-solid fa-robot"></i> Hệ thống tự tổng hợp
+            </span>
+          ) : (
+            <span
+              className={`cdm-pill ${
+                daDuyet ? "phong-pill-da-duyet" : "phong-pill-cho-duyet"
+              }`}
+            >
+              <i
+                className={`fa-solid ${daDuyet ? "fa-circle-check" : "fa-hourglass-half"}`}
+              ></i>{" "}
+              {daDuyet ? "Đã duyệt" : "Chờ duyệt"}
+            </span>
+          )}
           <span className="cdm-pill">
             Tối đa {formatDiem(chiTiet.DiemToiDa)}
           </span>
           <span className="cdm-pill">
-            <i className="fa-solid fa-pen-to-square"></i> Chấm thủ công
+            <i
+              className={`fa-solid ${tuDong ? "fa-gauge-high" : "fa-pen-to-square"}`}
+            ></i>{" "}
+            {tuDong ? "Tổng hợp từ KPI thành viên" : "Chấm thủ công"}
           </span>
           {/* Nhắc nhở thôi: sp_phieu_dv_submit không kiểm cờ này nên tiêu chí
               trống minh chứng vẫn duyệt được. */}
@@ -144,7 +171,7 @@ const TieuChiChamDonViCard = ({
 
         {chiTiet.NhanXetNhap && (
           <div className="cdm-hop">
-            <div className="cdm-hop-tieu-de">Thư ký đơn vị đề xuất</div>
+            <div className="cdm-hop-tieu-de">Thư ký đơn vị diễn giải</div>
             <p className="cd-tdg-nhan-xet">
               <i className="fa-solid fa-quote-left"></i>
               {chiTiet.NhanXetNhap}
@@ -191,18 +218,26 @@ const TieuChiChamDonViCard = ({
         <div className="cdm-ben-tieu-de">
           {daDuyet
             ? "Đã duyệt"
-            : choPhepNhap
-              ? "Duyệt tiêu chí"
-              : "Điểm Trưởng phòng (chỉ đọc)"}
+            : tuDong
+              ? "Điểm tự động"
+              : choPhepNhap
+                ? "Duyệt tiêu chí"
+                : `Điểm ${nhanCap[CAP_CHAM.DUYET_DV]} (chỉ đọc)`}
         </div>
 
         <div className="cdm-ben-diem">
-          <span className="cdm-ben-diem-nhan">Điểm Trưởng phòng</span>
+          <span className="cdm-ben-diem-nhan">
+            {tuDong && !daDuyet
+              ? "Điểm tổng hợp"
+              : `Điểm ${nhanCap[CAP_CHAM.DUYET_DV]}`}
+          </span>
           <span className="cdm-ben-diem-gt">
             {chiTiet.DiemDuyetDv != null ? (
               <b className="cdm-ben-diem-so">
                 {formatDiem(chiTiet.DiemDuyetDv)}
               </b>
+            ) : tuDong ? (
+              <b className="cdm-ben-diem-so">{formatDiem(diemGoc)}</b>
             ) : (
               <span className="cdm-pill">Chưa chấm</span>
             )}
@@ -225,12 +260,15 @@ const TieuChiChamDonViCard = ({
             <span>
               {lechThuKy ? (
                 <>
-                  Đã điều chỉnh mức thư ký đề xuất từ{" "}
-                  <b>{formatDiem(chiTiet.DiemNhap)}</b> thành{" "}
+                  Đã điều chỉnh mức {tuDong ? "hệ thống tổng hợp" : "thư ký đề xuất"} từ{" "}
+                  <b>{formatDiem(diemGoc)}</b> thành{" "}
                   <b>{formatDiem(chiTiet.DiemDuyetDv)}</b>.
                 </>
               ) : (
-                <>Đã duyệt, giữ nguyên mức thư ký đề xuất.</>
+                <>
+                  Đã duyệt, giữ nguyên mức{" "}
+                  {tuDong ? "hệ thống tổng hợp" : "thư ký đề xuất"}.
+                </>
               )}
             </span>
           </div>
@@ -238,24 +276,34 @@ const TieuChiChamDonViCard = ({
 
         {/* Duyệt xong là CHỐT: dòng đã có DiemDuyetDv không còn nút nào, chỉ
             còn câu kết luận ở trên. */}
+        {tuDong && !daDuyet && (
+          <div className="cdm-ghi-chu">
+            <i className="fa-solid fa-robot"></i> Hệ thống tính từ KPI của thành
+            viên đơn vị - đã tính vào tổng, không cần duyệt.
+          </div>
+        )}
+
         {choPhepNhap && !daDuyet && (
           <>
             {/* Giữ nguyên mức thư ký là lối đi thường gặp nhất - để trước để
-                người duyệt khỏi phải mở hộp thoại chọn lại đúng mức đó. */}
-            <button
-              type="button"
-              className="cdm-btn cdm-btn-chinh"
-              disabled={dangLuu || chiTiet.DiemNhap == null}
-              onClick={() => onDuyet(chiTiet)}
-              title={
-                chiTiet.DiemNhap == null
-                  ? "Thư ký chưa nhập điểm cho tiêu chí này"
-                  : "Ghi nhận đúng mức điểm thư ký đơn vị đã đề xuất"
-              }
-            >
-              <i className="fa-solid fa-check"></i> Duyệt giữ nguyên{" "}
-              {formatDiem(chiTiet.DiemNhap)}
-            </button>
+                người duyệt khỏi phải mở hộp thoại chọn lại đúng mức đó. Dòng tự
+                động không có bước này, xem khối chú thích ở đầu file. */}
+            {!tuDong && (
+              <button
+                type="button"
+                className="cdm-btn cdm-btn-chinh"
+                disabled={dangLuu || diemGoc == null}
+                onClick={() => onDuyet(chiTiet)}
+                title={
+                  diemGoc == null
+                    ? "Thư ký chưa nhập điểm cho tiêu chí này"
+                    : "Ghi nhận đúng mức điểm thư ký đơn vị đã đề xuất"
+                }
+              >
+                <i className="fa-solid fa-check"></i> Duyệt giữ nguyên{" "}
+                {formatDiem(diemGoc)}
+              </button>
+            )}
             <button
               type="button"
               className="cdm-btn cdm-btn-phu"

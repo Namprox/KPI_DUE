@@ -53,6 +53,43 @@ export const ROLE_SETS = {
   ],
 
   /**
+   * Bộ khung tiêu chí dùng chung toàn trường: nhóm tiêu chí, tiêu chí, thang
+   * điểm và mẫu phiếu đánh giá (nhóm menu "Quản lý tiêu chí").
+   *
+   * HẸP HƠN QUAN_TRI một cách có chủ đích. Sửa một tiêu chí hay một mẫu phiếu
+   * là đổi thước đo của MỌI đơn vị trong năm đánh giá đó, nên không phải việc
+   * của cấp đơn vị: TK và TBM trước đây thấy nhóm này chỉ vì dùng chung
+   * QUAN_TRI với các danh mục cấp Khoa. PHT cũng bị loại - duyệt kết quả là
+   * việc của họ, dựng thước đo thì không.
+   *
+   * TRÙNG thành viên với NAM_DANH_GIA và CAP_TRUONG nhưng CỐ Ý tách riêng, theo
+   * đúng quy ước của file này: ba tập trả lời ba câu hỏi khác nhau (dựng bộ
+   * tiêu chí / mở đóng năm đánh giá / duyệt gói KPI), đổi một tập không được
+   * lặng lẽ kéo theo hai tập kia.
+   */
+  QUAN_LY_TIEU_CHI: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
+
+  /**
+   * Danh mục nền của toàn trường: cây đơn vị, chức danh nghề nghiệp, chức vụ
+   * (nhóm menu "Cơ cấu tổ chức", TRỪ mục "Người dùng").
+   *
+   * HẸP HƠN QUAN_TRI một cách có chủ đích, cùng lý do với QUAN_LY_TIEU_CHI:
+   * ba danh mục này là dữ liệu gốc mà mọi phân quyền khác dựa vào - đổi
+   * `cap_don_vi` hay `id_don_vi_cha` của một đơn vị là đổi luôn kết quả roll-up
+   * Khoa chủ quản ở module vi phạm, đổi mã chức danh là đổi tập đối tượng của
+   * từng loại phiếu KPI. Cấp đơn vị không sửa dữ liệu của cấp trên và của đơn
+   * vị bạn.
+   *
+   * CỐ Ý không dùng chung với QUAN_LY_TIEU_CHI dù hiện TRÙNG thành viên: một
+   * bên là thước đo đánh giá, một bên là cơ cấu tổ chức - hai trục nghiệp vụ
+   * khác nhau, mở thêm vai trò cho bên này không được kéo theo bên kia.
+   *
+   * Mục "Người dùng" nằm NGOÀI tập này: TK/TKL/TP/TBM vẫn quản lý người dùng
+   * trong phạm vi đơn vị mình - xem QUAN_LY_NGUOI_DUNG.
+   */
+  CO_CAU_TO_CHUC: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
+
+  /**
    * Nhóm được quản lý danh sách người dùng (/quan-ly-nguoi-dung).
    * Gồm: Admin, BGH (HT, PHT) toàn trường, và Trưởng Khoa (TK, TKL), Trưởng Phòng (TP), Trưởng Bộ môn (TBM)
    * trong phạm vi đơn vị mình phụ trách.
@@ -108,14 +145,46 @@ export const ROLE_SETS = {
   TRUONG_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG],
 
   /**
-   * Ghi nhận vi phạm giảng dạy - hợp của QUAN_TRI và TRUONG_DON_VI.
+   * Ghi nhận vi phạm của GIẢNG VIÊN (LoaiDoiTuong = 1).
    *
-   * Màn hình này trước đây có hai lối vào ở hai nhóm menu khác nhau (nhóm
-   * quản trị dữ liệu và nhóm chấm điểm của trưởng đơn vị); nay gộp làm một mục
-   * duy nhất nên tập vai trò cũng phải gộp theo. Ai ghi nhận được loại vi phạm
-   * NÀO và cho đơn vị nào thì server quyết - xem thêm viPhamPermissions.js.
+   * Trưởng Phòng CỐ Ý nằm ngoài, khác hẳn GHI_NHAN_VI_PHAM_NHAN_VIEN bên dưới:
+   * đối tượng bị ghi nhận ở đây bắt buộc là giảng viên THUỘC KHOA (server chặn
+   * bằng view v_giang_vien_khoa, sai tập trả 403 NOT_GIANG_VIEN_KHOA), nên
+   * trưởng phòng ban không có người nào của mình để ghi nhận. Trước đây tập này
+   * dùng CHUNG với màn hình vi phạm nhân viên và có TP; tách ra vì hai màn hình
+   * có tập đối tượng khác hẳn nhau.
+   *
+   * ĐÁNH ĐỔI đã biết: phòng chuyên trách được gán trong
+   * `loai_vi_pham.DonViGhiNhan[]` (điển hình là phòng giám sát giảng dạy,
+   * DON_VI_SETS.GIAM_SAT_GIANG_DAY) cũng mất lối vào màn hình, dù server vẫn
+   * cho họ ghi. Muốn mở lại cho riêng phòng đó thì thêm ROLE.TRUONG_PHONG vào
+   * đây KÈM `donVi: DON_VI_SETS.GIAM_SAT_GIANG_DAY` ở mục menu - đừng thêm mỗi
+   * vai trò, vì `hasDonVi` là AND với `hasRole` nên sẽ khóa luôn TK/TKL.
+   *
+   * Ai ghi nhận được loại vi phạm NÀO và cho đơn vị nào thì server quyết - xem
+   * thêm viPhamPermissions.js.
    */
-  GHI_NHAN_VI_PHAM: [
+  GHI_NHAN_VI_PHAM_GIANG_VIEN: [
+    ROLE.ADMIN,
+    ROLE.HIEU_TRUONG,
+    ROLE.PHO_HIEU_TRUONG,
+    ROLE.TRUONG_KHOA,
+    ROLE.TRUONG_KHOA_LON,
+    ROLE.TRUONG_BO_MON,
+  ],
+
+  /**
+   * Ghi nhận vi phạm của VIÊN CHỨC / NLĐ (LoaiDoiTuong = 2) - giữ nguyên tập
+   * vai trò cũ, gồm cả Trưởng Phòng.
+   *
+   * Ở đây TP là người dùng CHÍNH chứ không phải ngoại lệ: nhân viên văn phòng
+   * thuộc Phòng của họ nằm đúng trong tập đối tượng hợp lệ của server.
+   *
+   * CỐ Ý tách khỏi GHI_NHAN_VI_PHAM_GIANG_VIEN dù hiện chỉ chênh nhau một vai
+   * trò: hai màn hình khác tập đối tượng, đổi một bên không được kéo theo bên
+   * kia.
+   */
+  GHI_NHAN_VI_PHAM_NHAN_VIEN: [
     ROLE.ADMIN,
     ROLE.HIEU_TRUONG,
     ROLE.PHO_HIEU_TRUONG,
@@ -183,23 +252,11 @@ export const ROLE_SETS = {
   ],
 
   /**
-   * Người chấm KPI cho cả đơn vị: thư ký Khoa/Phòng là người nhập, trưởng
-   * Khoa / Khoa lớn / Phòng là người chịu trách nhiệm ký.
-   */
-  DANH_GIA_DON_VI: [
-    ROLE.THU_KY_KHOA,
-    ROLE.THU_KY_PHONG,
-    ROLE.TRUONG_KHOA,
-    ROLE.TRUONG_KHOA_LON,
-    ROLE.TRUONG_PHONG,
-  ],
-
-  /**
    * Kho minh chứng của phiếu KPI đơn vị.
    *
    * Khớp đúng quyền ĐỌC của GET /api/minh-chung-don-vi: thư ký và trưởng đơn
-   * vị xem trong phạm vi được giao, HT/Admin xem toàn trường. Không dùng lại
-   * DANH_GIA_DON_VI vì tập đó cố ý không chứa cấp Trường.
+   * vị xem trong phạm vi được giao, HT/Admin xem toàn trường. Rộng hơn hợp của
+   * KPI_KHOA và KPI_PHONG vì hai tập đó cố ý không chứa cấp Trường.
    */
   KHO_MINH_CHUNG_DON_VI: [
     ROLE.ADMIN,
@@ -212,17 +269,23 @@ export const ROLE_SETS = {
   ],
 
   /**
-   * Màn hình NHẬP phiếu KPI đơn vị (/danh-gia-kpi-don-vi).
+   * Màn hình đánh giá KPI KHOA (/danh-gia-kpi-don-vi).
    *
-   * Hẹp hơn DANH_GIA_DON_VI một cách CỐ Ý: màn hình hiện chỉ dựng đúng phần việc
-   * cấp 1 của quy trình - lập phiếu, gõ điểm tiêu chí chấm tay, tổng hợp KPI
-   * thành viên, trình lên Trưởng đơn vị. Các bước duyệt (Trưởng đơn vị → Hiệu
-   * trưởng → chốt) đã có endpoint nhưng chưa có màn hình, nên mở cửa cho TK/TKL/
-   * TP/TKP vào đây chỉ dẫn họ tới một trang không làm được việc của họ.
+   * Trang này phục vụ hai cấp dưới của Khoa:
+   *   TKK      nhập điểm, tổng hợp KPI thành viên rồi trình  (trạng thái 1)
+   *   TK/TKL   chấm đè lên điểm thư ký, duyệt cả phiếu       (trạng thái 2)
+   * HT duyệt và chốt ở cấp Trường - hai bước đó đã có endpoint nhưng CHƯA có
+   * màn hình, nên không mở route này cho HT/Admin: vào chỉ để xem một phiếu
+   * không thao tác được.
    *
-   * Mở rộng tập này khi (và chỉ khi) màn hình cấp duyệt được dựng.
+   * Song sinh của KPI_PHONG, chỉ khác mã chức vụ của hai cấp. Đừng gộp làm một
+   * tập: mỗi tập gác một màn hình riêng, và hai màn hình có thể mở cho cấp
+   * Trường vào những thời điểm khác nhau.
+   *
+   * Ai làm được gì trên MỘT phiếu cụ thể thì quyenPhieuKhoa() trong
+   * phieuKhoaApi.js quyết; tập này chỉ mở cửa vào màn hình.
    */
-  NHAP_PHIEU_DON_VI: [ROLE.THU_KY_KHOA],
+  KPI_KHOA: [ROLE.THU_KY_KHOA, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON],
 
   /**
    * Màn hình đánh giá KPI PHÒNG / TRUNG TÂM (/danh-gia-kpi-phong).
@@ -233,9 +296,8 @@ export const ROLE_SETS = {
    * HT xem và duyệt ở màn hình cấp Trường riêng, nên không mở route này cho
    * HT/Admin dù API phiếu có thể cho phép họ đọc dữ liệu.
    *
-   * CỐ Ý không gộp vào NHAP_PHIEU_DON_VI: tập đó gác màn hình KPI Khoa, nơi mới
-   * chỉ dựng phần việc cấp 1 - mở cửa cho TP/HT vào đó chỉ dẫn họ tới một trang
-   * không làm được việc của họ.
+   * CỐ Ý không gộp vào KPI_KHOA: tập đó gác màn hình KPI Khoa và đi theo mã
+   * chức vụ của Khoa (TKK/TK/TKL) - xem ghi chú ở đó.
    *
    * Ai làm được gì trên MỘT phiếu cụ thể thì quyenPhieuPhong() trong
    * phieuPhongApi.js quyết; tập này chỉ mở cửa vào màn hình.

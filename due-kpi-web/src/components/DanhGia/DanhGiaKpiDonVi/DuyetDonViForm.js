@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { formatDiem, formatNgayGio } from "../../../utils/phieuApi";
-import { NHAN_CAP_CHAM, tinhTienDoDuyetPhong } from "../../../utils/phieuPhongApi";
+import {
+  laDongChamTay,
+  tinhTienDoDuyetDonVi,
+  LOAI_NHOM_DV,
+} from "../../../utils/phieuDonViApi";
+import { NHAN_CAP_CHAM_KHOA } from "../../../utils/phieuKhoaApi";
 import TienDoCham from "../../QuanLyChamDiem/TienDoCham";
 import {
   TrangThaiDonViBadge,
@@ -9,9 +14,10 @@ import {
 import TieuChiChamDonViCard from "../TieuChiChamDonViCard";
 
 const TAB = {
-  TAT_CA: "tatCa",
   CHO_DUYET: "choDuyet",
   DA_DUYET: "daDuyet",
+  TU_DONG: "tuDong",
+  TAT_CA: "tatCa",
 };
 
 /**
@@ -19,27 +25,39 @@ const TAB = {
  * PUT diem-duyet-dv - dù bằng "Duyệt giữ nguyên" hay "Chỉnh sửa điểm", hai thao
  * tác ghi cùng một cột.
  *
- * Phiếu đơn vị KHÔNG có trạng thái từng dòng (chi_tiet_don_vi không có cột
- * trang_thai_dong như bên cá nhân), nên sự có mặt của điểm là dấu hiệu duy nhất
- * phân biệt được. Hệ quả: đã duyệt rồi vẫn chấm lại được, dòng chỉ đổi mục chứ
- * không bị khóa.
+ * Phiếu đơn vị KHÔNG có trạng thái từng dòng (chi_tiet_danh_gia_don_vi không có
+ * cột trang_thai_dong như bên cá nhân), nên sự có mặt của điểm là dấu hiệu duy
+ * nhất phân biệt được. Hệ quả: đã duyệt rồi vẫn chấm lại được, dòng chỉ đổi mục
+ * chứ không bị khóa.
  */
 const daDuyetDong = (ct) =>
   ct?.DiemDuyetDv !== null && ct?.DiemDuyetDv !== undefined;
 
 /**
- * Thân trang cho bước TRƯỞNG PHÒNG DUYỆT phiếu KPI Phòng / Trung tâm
- * (trạng thái 2), dựng theo đúng bố cục màn hình thẩm định hồ sơ giảng viên
- * (ChamDiemPhieu): khối `cd-phieu-header` ở trên, rồi danh sách thẻ `cdm-the`.
+ * Thân trang cho bước TRƯỞNG ĐƠN VỊ DUYỆT phiếu KPI Khoa (trạng thái 2), dựng
+ * theo đúng bố cục màn hình thẩm định hồ sơ giảng viên (ChamDiemPhieu): khối
+ * `cd-phieu-header` ở trên, rồi danh sách thẻ `cdm-the`.
  *
- * Chỉ phục vụ trạng thái 2. Bốn trạng thái còn lại vẫn do DanhGiaPhongForm
- * (form kê khai pl2-*) đảm nhiệm, vì ở đó việc cần làm là GÕ điểm cho cả phiếu
- * chứ không phải duyệt lại từng đề xuất có sẵn.
+ * Song sinh của DuyetPhongForm và cố ý TÁCH RIÊNG chứ không nhận thêm props:
+ * mẫu Khoa gom tiêu chí theo HAI TẦNG (Nhóm A cơ bản / B vượt trội → nhóm con →
+ * tiêu chí) trong khi mẫu Phòng/TT khai `loai_nhom = NULL` nên chỉ có một tầng.
+ * Dựng chung một component thì mỗi lần sửa bố cục một bên phải nhớ cả bên kia.
+ * Phần thẻ tiêu chí thì dùng CHUNG (TieuChiChamDonViCard) vì DTO giống hệt nhau.
+ *
+ * Chỉ phục vụ trạng thái 2. Bốn trạng thái còn lại vẫn do DanhGiaDonViForm (form
+ * kê khai `pl2-*`) đảm nhiệm, vì ở đó việc cần làm là GÕ điểm cho cả phiếu chứ
+ * không phải duyệt lại từng đề xuất có sẵn.
+ *
+ * MỘT TAB RIÊNG CHO DÒNG TỰ ĐỘNG: mẫu Khoa có tiêu chí `loai_nguon_diem = 2` do
+ * hệ thống tổng hợp từ KPI thành viên. Chúng không nằm trong hàng đợi duyệt (xem
+ * tinhTienDoDuyetDonVi) nhưng vẫn phải xem được - dồn chung vào "Chờ duyệt" thì
+ * trưởng đơn vị không bao giờ bấm hết được, giấu đi thì mất một phần điểm của
+ * phiếu khỏi màn hình.
  *
  * Tổng điểm ở đây luôn là TẠM TÍNH: ba cột `tong_diem_*` chỉ được server ghi ở
  * bước chốt (trạng thái 4→5), nên phiếu đang duyệt luôn trả null.
  */
-const DuyetPhongForm = ({
+const DuyetDonViForm = ({
   phieu,
   chiTietList = [],
   sections = [],
@@ -54,15 +72,19 @@ const DuyetPhongForm = ({
   onXemMinhChung,
   onTaiMinhChung,
 }) => {
-  const tienDo = tinhTienDoDuyetPhong(chiTietList);
+  const tienDo = tinhTienDoDuyetDonVi(chiTietList);
   const [tab, setTab] = useState(readOnly ? TAB.TAT_CA : TAB.CHO_DUYET);
 
-  const demChoDuyet = chiTietList.filter((ct) => !daDuyetDong(ct)).length;
-  const demDaDuyet = chiTietList.length - demChoDuyet;
+  const chamTay = chiTietList.filter((ct) => laDongChamTay(ct));
+  const demTuDong = chiTietList.length - chamTay.length;
+  const demChoDuyet = chamTay.filter((ct) => !daDuyetDong(ct)).length;
+  const demDaDuyet = chamTay.length - demChoDuyet;
 
   const hopTab = (ct) => {
-    if (tab === TAB.CHO_DUYET) return !daDuyetDong(ct);
-    if (tab === TAB.DA_DUYET) return daDuyetDong(ct);
+    const tuDong = !laDongChamTay(ct);
+    if (tab === TAB.CHO_DUYET) return !tuDong && !daDuyetDong(ct);
+    if (tab === TAB.DA_DUYET) return !tuDong && daDuyetDong(ct);
+    if (tab === TAB.TU_DONG) return tuDong;
     return true;
   };
 
@@ -73,13 +95,18 @@ const DuyetPhongForm = ({
   chiTietList.forEach((ct, i) => sttTheoDong.set(ct.IdChiTietDv, i + 1));
 
   // Mục nào lọc xong không còn dòng thì bỏ hẳn tiêu đề, thay vì để lại một đầu
-  // mục trống không có gì bên dưới.
+  // mục trống không có gì bên dưới - áp cho cả hai tầng nhóm.
   const sectionsHienThi = sections
     .map((section) => ({
       ...section,
-      dong: (section.dong || []).filter(hopTab),
+      nhomConList: (section.nhomConList || [])
+        .map((nhomCon) => ({
+          ...nhomCon,
+          dong: (nhomCon.dong || []).filter(hopTab),
+        }))
+        .filter((nhomCon) => nhomCon.dong.length > 0),
     }))
-    .filter((section) => section.dong.length > 0);
+    .filter((section) => section.nhomConList.length > 0);
 
   const cacTab = [
     {
@@ -95,6 +122,16 @@ const DuyetPhongForm = ({
       icon: "fa-circle-check",
       dem: demDaDuyet,
     },
+    ...(demTuDong > 0
+      ? [
+          {
+            khoa: TAB.TU_DONG,
+            nhan: "Hệ thống tự chấm",
+            icon: "fa-robot",
+            dem: demTuDong,
+          },
+        ]
+      : []),
     {
       khoa: TAB.TAT_CA,
       nhan: "Tất cả",
@@ -132,6 +169,11 @@ const DuyetPhongForm = ({
               xong={tienDo.xong}
               tong={tienDo.tong}
               nhan="Tiến độ duyệt"
+              ghiChu={
+                demTuDong > 0
+                  ? `Không tính ${demTuDong} tiêu chí hệ thống tự chấm`
+                  : undefined
+              }
             />
           </div>
         </div>
@@ -141,6 +183,14 @@ const DuyetPhongForm = ({
             <div className="cd-meta-label">Tổng điểm tạm tính</div>
             <div className="cd-meta-value">
               {tamTinh ? `${formatDiem(tamTinh.tichLuy)} điểm` : "-"}
+            </div>
+          </div>
+          <div>
+            <div className="cd-meta-label">Điểm cơ bản / vượt trội</div>
+            <div className="cd-meta-value">
+              {tamTinh
+                ? `${formatDiem(tamTinh.coBan)} / ${formatDiem(tamTinh.vuotTroi)}`
+                : "-"}
             </div>
           </div>
           <div>
@@ -166,6 +216,16 @@ const DuyetPhongForm = ({
           vào phiếu khi cấp Trường chốt. Số “tạm tính” do trình duyệt cộng từ
           điểm đang có hiệu lực của từng tiêu chí.
         </div>
+
+        {/* Luồng đơn vị không có thao tác trả phiếu về cho thư ký - nói thẳng ra
+            đây để trưởng đơn vị khỏi đi tìm một cái nút không tồn tại. */}
+        {choPhepNhap && (
+          <div className="cd-hint cd-hint-warn">
+            <i className="fa-solid fa-triangle-exclamation"></i> Không có thao
+            tác trả phiếu về cho thư ký. Điểm nào chưa đúng thì bạn chấm lại ngay
+            tại tiêu chí đó - điểm của bạn thắng điểm thư ký khi tính tổng.
+          </div>
+        )}
 
         {phieu.LyDoMoLai && (
           <div className="cd-box" style={{ marginTop: "16px" }}>
@@ -229,28 +289,45 @@ const DuyetPhongForm = ({
         </div>
       ) : (
         sectionsHienThi.map((section, sIndex) => (
-          <div key={section.khoa || sIndex} style={{ marginBottom: "18px" }}>
-            <p
-              className="sub-title"
-              style={{ fontSize: "14px", marginBottom: "10px" }}
-            >
-              {section.ten}
+          <div key={section.loaiNhom || sIndex} style={{ marginBottom: "18px" }}>
+            <p className="sub-title" style={{ marginBottom: "10px" }}>
+              <i
+                className={`fa-solid ${
+                  Number(section.loaiNhom) === LOAI_NHOM_DV.VUOT_TROI
+                    ? "fa-award"
+                    : "fa-list-check"
+                }`}
+              ></i>{" "}
+              {section.tenNhom}
             </p>
-            {section.dong.map((ct) => (
-              <TieuChiChamDonViCard
-                key={ct.IdChiTietDv}
-                chiTiet={ct}
-                stt={sttTheoDong.get(ct.IdChiTietDv)}
-                nhanCap={NHAN_CAP_CHAM}
-                choPhepNhap={choPhepNhap}
-                lyDoKhoa={lyDoKhoa}
-                dangLuu={idDangLuu === ct.IdChiTietDv}
-                cauHinhMc={cauHinhMc}
-                onDuyet={onDuyetDong}
-                onSuaDiem={onSuaDiemDong}
-                onXemMinhChung={onXemMinhChung}
-                onTaiMinhChung={onTaiMinhChung}
-              />
+
+            {section.nhomConList.map((nhomCon, gIndex) => (
+              <div key={nhomCon.ten || gIndex}>
+                {!nhomCon.isDirect && (
+                  <p
+                    className="sub-title"
+                    style={{ fontSize: "14px", marginBottom: "10px" }}
+                  >
+                    {nhomCon.ten}
+                  </p>
+                )}
+                {nhomCon.dong.map((ct) => (
+                  <TieuChiChamDonViCard
+                    key={ct.IdChiTietDv}
+                    chiTiet={ct}
+                    stt={sttTheoDong.get(ct.IdChiTietDv)}
+                    nhanCap={NHAN_CAP_CHAM_KHOA}
+                    choPhepNhap={choPhepNhap}
+                    lyDoKhoa={lyDoKhoa}
+                    dangLuu={idDangLuu === ct.IdChiTietDv}
+                    cauHinhMc={cauHinhMc}
+                    onDuyet={onDuyetDong}
+                    onSuaDiem={onSuaDiemDong}
+                    onXemMinhChung={onXemMinhChung}
+                    onTaiMinhChung={onTaiMinhChung}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         ))
@@ -259,4 +336,4 @@ const DuyetPhongForm = ({
   );
 };
 
-export default DuyetPhongForm;
+export default DuyetDonViForm;
