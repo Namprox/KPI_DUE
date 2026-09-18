@@ -12,15 +12,11 @@ import "../../css/QuanLyChamDiem.css";
 import "../../css/KeKhaiGioQuyDoi.css";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import MinhChungKeKhaiRow from "../../components/KeKhaiGioQuyDoi/MinhChungKeKhaiRow";
-import TraLaiKeKhaiModal from "../../components/KeKhaiGioQuyDoi/TraLaiKeKhaiModal";
 import { useMinhChungKeKhaiPreview } from "../../hooks/useMinhChungKeKhaiPreview";
 import { formatNgayGio } from "../../utils/phieuApi";
 import { tenKyHoc } from "../../utils/phanHoiSinhVienApi";
 import {
   choPhepDuyet,
-  chotBanKe,
-  conDongChuaXet,
-  daChot,
   duyetChiTiet,
   formatGio,
   layBanKeTheoId,
@@ -32,17 +28,16 @@ import {
   TRANG_THAI_KE_KHAI,
   TRANG_THAI_KE_KHAI_META,
   tinhGio,
-  traLaiBanKe,
 } from "../../utils/keKhaiGioQuyDoiApi";
 
 /**
  * Quyết định của người duyệt cho một dòng, ở dạng state cục bộ.
- * `quyetDinh = ""` nghĩa là chưa xét - khác hẳn "đã từ chối".
+ * `quyetDinh = ""` nghĩa là chưa xét - khác hẳn "đã trả về".
  */
 const tuChiTiet = (ct) => {
   const tt = Number(ct.TrangThaiDong);
   const daXet =
-    tt === TRANG_THAI_DONG_KK.DA_DUYET || tt === TRANG_THAI_DONG_KK.TU_CHOI;
+    tt === TRANG_THAI_DONG_KK.DA_CHOT || tt === TRANG_THAI_DONG_KK.TRA_VE;
   return {
     quyetDinh: daXet ? String(tt) : "",
     soLuongDuyet:
@@ -78,7 +73,7 @@ const BadgeMeta = ({ meta }) => {
  * Duyệt một bản kê giờ quy đổi - màn hình thao tác của TK/TKL/TP (HT/Admin xem
  * toàn trường).
  *
- * Đơn vị nghiệp vụ là TỪNG DÒNG: mỗi đầu việc được duyệt hoặc từ chối riêng, và
+ * Đơn vị nghiệp vụ là TỪNG DÒNG: mỗi đầu việc được chốt hoặc trả về riêng, và
  * người duyệt **được sửa số lượng** trước khi chốt (ví dụ giảng viên kê 12 bài
  * nhưng minh chứng chỉ có 10).
  *
@@ -87,11 +82,9 @@ const BadgeMeta = ({ meta }) => {
  *  - **Giờ duyệt tính lại từ SNAPSHOT của dòng**, không đọc lại danh mục. Cột
  *    "Giờ duyệt dự kiến" ở đây dùng đúng `HeSo`/`SoLuongMau` server đã ghi vào
  *    dòng, nên khớp với con số server sẽ tính.
- *  - **Dòng bị từ chối cho giờ duyệt = 0** nhưng vẫn giữ số lượng để đối chiếu.
- *  - **Chốt bị chặn khi còn dòng chưa xét** (422 CON_DONG_CHUA_XET) - nút Chốt
- *    tắt sẵn thay vì để bấm rồi báo lỗi.
- *  - **Chốt là ĐIỂM CUỐI**: chưa có endpoint mở lại, chốt nhầm phải sửa tay dưới
- *    DB. Vì vậy có bước xác nhận riêng và nêu rõ điều đó.
+ *  - **Dòng trả về cho giờ duyệt = 0** nhưng vẫn giữ số lượng để đối chiếu.
+ *  - Không còn chốt/trả cả bản kê. Mỗi lần lưu quyết định có hiệu lực ngay trên
+ *    đúng các dòng thay đổi; dòng đã chốt vẫn có thể mở lại bằng cách trả về.
  *
  * Chỉ gửi lên những dòng CÓ THAY ĐỔI so với dữ liệu server, để nhật ký không đầy
  * những bản ghi "duyệt lại y nguyên" mỗi lần bấm Lưu.
@@ -107,8 +100,6 @@ const ChiTietDuyetKeKhai = () => {
   const [goc, setGoc] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [dangLuu, setDangLuu] = useState(false);
-  const [dangChot, setDangChot] = useState(false);
-  const [moTraLai, setMoTraLai] = useState(false);
   const [hienLichSu, setHienLichSu] = useState(false);
   const [loi, setLoi] = useState("");
 
@@ -166,9 +157,7 @@ const ChiTietDuyetKeKhai = () => {
 
   const chiTiet = useMemo(() => banKe?.ChiTiet || [], [banKe]);
 
-  const duyetDuoc =
-    choPhepDuyet(banKe) &&
-    Number(banKe?.TrangThai) === TRANG_THAI_KE_KHAI.CHO_DUYET;
+  const duyetDuoc = choPhepDuyet(banKe);
 
   const capNhat = (idChiTiet, thayDoi) =>
     setQuyetDinh((truoc) => ({
@@ -180,6 +169,7 @@ const ChiTietDuyetKeKhai = () => {
   const dongThayDoi = useMemo(
     () =>
       chiTiet.filter((ct) => {
+        if (ct.ChoPhepXet !== true) return false;
         const hienTai = quyetDinh[ct.IdChiTiet];
         if (!hienTai || !hienTai.quyetDinh) return false;
         return chuKyQuyetDinh(hienTai) !== chuKyQuyetDinh(goc[ct.IdChiTiet]);
@@ -188,11 +178,7 @@ const ChiTietDuyetKeKhai = () => {
   );
 
   const soChuaXet = chiTiet.filter(
-    (ct) => !quyetDinh[ct.IdChiTiet]?.quyetDinh,
-  ).length;
-
-  const soDaXetTrenServer = chiTiet.filter(
-    (ct) => Number(ct.TrangThaiDong) !== TRANG_THAI_DONG_KK.CHO_DUYET,
+    (ct) => Number(ct.TrangThaiDong) === TRANG_THAI_DONG_KK.CHO_DUYET,
   ).length;
 
   /** Tổng giờ duyệt dự kiến theo quyết định đang chọn (chưa lưu). */
@@ -200,7 +186,7 @@ const ChiTietDuyetKeKhai = () => {
     () =>
       chiTiet.reduce((tong, ct) => {
         const qd = quyetDinh[ct.IdChiTiet];
-        if (qd?.quyetDinh !== String(QUYET_DINH.DUYET)) return tong;
+        if (qd?.quyetDinh !== String(QUYET_DINH.CHOT)) return tong;
         const gio = tinhGio(qd.soLuongDuyet, ct.HeSo, ct.SoLuongMau);
         return tong + (gio || 0);
       }, 0),
@@ -211,10 +197,14 @@ const ChiTietDuyetKeKhai = () => {
     setQuyetDinh((truoc) => {
       const sau = { ...truoc };
       chiTiet.forEach((ct) => {
-        if (sau[ct.IdChiTiet]?.quyetDinh) return;
+        if (
+          ct.ChoPhepXet !== true ||
+          Number(ct.TrangThaiDong) !== TRANG_THAI_DONG_KK.CHO_DUYET
+        )
+          return;
         sau[ct.IdChiTiet] = {
           ...sau[ct.IdChiTiet],
-          quyetDinh: String(QUYET_DINH.DUYET),
+          quyetDinh: String(QUYET_DINH.CHOT),
         };
       });
       return sau;
@@ -240,6 +230,22 @@ const ChiTietDuyetKeKhai = () => {
       return;
     }
 
+    const thieuLyDo = dongThayDoi.filter((ct) => {
+      const qd = quyetDinh[ct.IdChiTiet];
+      return (
+        qd.quyetDinh === String(QUYET_DINH.TRA_VE) &&
+        !qd.nhanXet?.trim()
+      );
+    }).length;
+    if (thieuLyDo > 0) {
+      showToast(
+        "warn",
+        "Chưa lưu được",
+        `Có ${thieuLyDo} dòng trả về chưa ghi lý do`,
+      );
+      return;
+    }
+
     setDangLuu(true);
     try {
       const item = await duyetChiTiet(
@@ -257,59 +263,12 @@ const ChiTietDuyetKeKhai = () => {
       );
       apDungBanKe(item);
       setLichSu(await layLichSuBanKe(id).catch(() => lichSu));
-      baoOk(`Đã lưu quyết định cho ${dongThayDoi.length} dòng`);
+      baoOk(`Đã cập nhật kết quả xét cho ${dongThayDoi.length} dòng`);
     } catch (error) {
       console.error("Lỗi lưu kết quả duyệt:", error);
       baoLoi(error.message);
     }
     setDangLuu(false);
-  };
-
-  const chot = async () => {
-    if (dongThayDoi.length > 0) {
-      showToast(
-        "warn",
-        "Còn quyết định chưa lưu",
-        "Hãy bấm Lưu quyết định trước khi chốt bản kê.",
-      );
-      return;
-    }
-    if (
-      !window.confirm(
-        "Chốt bản kê này? Trạng thái ĐÃ CHỐT là điểm cuối - hệ thống chưa có chức năng mở lại, chốt nhầm phải nhờ quản trị sửa dưới cơ sở dữ liệu.",
-      )
-    ) {
-      return;
-    }
-
-    setDangChot(true);
-    try {
-      const item = await chotBanKe(banKe.IdKeKhai, {
-        rowVersion: banKe.RowVersion,
-      });
-      apDungBanKe(item);
-      setLichSu(await layLichSuBanKe(id).catch(() => lichSu));
-      baoOk("Đã chốt bản kê");
-    } catch (error) {
-      console.error("Lỗi chốt bản kê:", error);
-      baoLoi(error.message);
-    }
-    setDangChot(false);
-  };
-
-  const traLai = async (lyDo) => {
-    setDangChot(true);
-    try {
-      const item = await traLaiBanKe(banKe.IdKeKhai, lyDo, banKe.RowVersion);
-      apDungBanKe(item);
-      setLichSu(await layLichSuBanKe(id).catch(() => lichSu));
-      setMoTraLai(false);
-      baoOk("Đã trả bản kê về cho giảng viên");
-    } catch (error) {
-      console.error("Lỗi trả lại bản kê:", error);
-      baoLoi(error.message);
-    }
-    setDangChot(false);
   };
 
   if (isLoading) {
@@ -412,7 +371,7 @@ const ChiTietDuyetKeKhai = () => {
             <div className="stat-value">{soChuaXet}</div>
             {soChuaXet > 0 && (
               <div className="cd-hint" style={{ marginTop: 0 }}>
-                còn dòng chưa xét thì chưa chốt được
+                có thể chốt hoặc trả về ngay từng dòng
               </div>
             )}
           </div>
@@ -427,36 +386,32 @@ const ChiTietDuyetKeKhai = () => {
             <div style={{ marginTop: "6px" }}>
               <BadgeMeta meta={TRANG_THAI_KE_KHAI_META[banKe.TrangThai]} />
             </div>
-            {banKe.NgayNop && (
-              <div className="cd-hint" style={{ marginTop: "4px" }}>
-                Nộp {formatNgayGio(banKe.NgayNop)}
-              </div>
-            )}
+            <div className="cd-hint" style={{ marginTop: "4px" }}>
+              Nhãn tự tính từ trạng thái từng dòng
+            </div>
           </div>
         </div>
       </div>
 
-      {daChot(banKe) && (
+      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.TAT_CA_DA_CHOT && (
         <div className="cd-hint cd-hint-ok kkq-banner">
-          <i className="fa-solid fa-lock"></i> Bản kê đã chốt
-          {banKe.TenNguoiDuyet ? ` bởi ${banKe.TenNguoiDuyet}` : ""}
-          {banKe.NgayDuyet ? ` ngày ${formatNgayGio(banKe.NgayDuyet)}` : ""} -
-          chỉ đọc. Hệ thống chưa có chức năng mở lại bản kê đã chốt.
+          <i className="fa-solid fa-circle-check"></i> Mọi dòng hiện có đã chốt.
+          Bạn vẫn có thể xét lại và trả về đúng dòng cần mở; không cần can thiệp
+          cơ sở dữ liệu.
         </div>
       )}
 
-      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.TRA_LAI && (
+      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.CON_TRA_VE && (
         <div className="cd-hint cd-hint-warn kkq-banner">
-          <i className="fa-solid fa-rotate-left"></i> Bản kê đã được trả về cho
-          giảng viên sửa. Lý do: <b>{banKe.NhanXetDuyet || "không ghi"}</b>. Chờ
-          giảng viên nộp lại rồi duyệt tiếp.
+          <i className="fa-solid fa-rotate-left"></i> Bản kê còn dòng đã trả về.
+          Lý do nằm trên từng dòng; giảng viên sửa và lưu dòng nào thì dòng đó tự
+          quay lại chờ duyệt.
         </div>
       )}
 
-      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.NHAP && (
+      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.KHONG_CO_DONG && (
         <div className="cd-hint kkq-banner">
-          <i className="fa-solid fa-pen"></i> Giảng viên đang kê khai, chưa nộp
-          nên chưa duyệt được. Bảng dưới là số liệu tạm thời.
+          <i className="fa-solid fa-pen"></i> Bản kê chưa có dòng nào.
         </div>
       )}
 
@@ -465,52 +420,23 @@ const ChiTietDuyetKeKhai = () => {
           <button
             className="btn-cancel"
             onClick={duyetTatCaConLai}
-            disabled={soChuaXet === 0 || dangLuu || dangChot}
-            title="Đặt quyết định 'Duyệt' cho mọi dòng chưa xét, giữ nguyên số lượng giảng viên kê"
+            disabled={soChuaXet === 0 || dangLuu}
+            title="Đặt quyết định 'Chốt' cho mọi dòng đang chờ, giữ nguyên số lượng giảng viên kê"
           >
-            <i className="fa-solid fa-check-double"></i> Duyệt tất cả dòng chưa
+            <i className="fa-solid fa-check-double"></i> Chốt tất cả dòng chưa
             xét ({soChuaXet})
           </button>
 
           <button
             className="btn-submit"
             onClick={luuQuyetDinh}
-            disabled={dongThayDoi.length === 0 || dangLuu || dangChot}
+            disabled={dongThayDoi.length === 0 || dangLuu}
           >
             <i
               className={`fa-solid ${dangLuu ? "fa-spinner fa-spin" : "fa-floppy-disk"}`}
             ></i>{" "}
-            Lưu quyết định
+            Lưu kết quả xét
             {dongThayDoi.length > 0 ? ` (${dongThayDoi.length})` : ""}
-          </button>
-
-          <button
-            className="btn-submit kkq-btn-chot"
-            onClick={chot}
-            disabled={
-              dangLuu ||
-              dangChot ||
-              conDongChuaXet(banKe) ||
-              dongThayDoi.length > 0
-            }
-            title={
-              conDongChuaXet(banKe)
-                ? `Còn ${banKe.SoDongChoDuyet} dòng chưa duyệt hoặc chưa từ chối`
-                : "Chốt bản kê - không mở lại được"
-            }
-          >
-            <i
-              className={`fa-solid ${dangChot ? "fa-spinner fa-spin" : "fa-lock"}`}
-            ></i>{" "}
-            Chốt bản kê
-          </button>
-
-          <button
-            className="cd-btn-tra-ve"
-            onClick={() => setMoTraLai(true)}
-            disabled={dangLuu || dangChot}
-          >
-            <i className="fa-solid fa-rotate-left"></i> Trả lại cho giảng viên
           </button>
         </div>
       )}
@@ -552,18 +478,19 @@ const ChiTietDuyetKeKhai = () => {
               <tbody>
                 {chiTiet.map((ct) => {
                   const qd = quyetDinh[ct.IdChiTiet] || {};
-                  const laDuyet = qd.quyetDinh === String(QUYET_DINH.DUYET);
-                  const laTuChoi = qd.quyetDinh === String(QUYET_DINH.TU_CHOI);
-                  const gioDuKien = laDuyet
+                  const xetDuoc = duyetDuoc && ct.ChoPhepXet === true;
+                  const laChot = qd.quyetDinh === String(QUYET_DINH.CHOT);
+                  const laTraVe = qd.quyetDinh === String(QUYET_DINH.TRA_VE);
+                  const gioDuKien = laChot
                     ? tinhGio(qd.soLuongDuyet, ct.HeSo, ct.SoLuongMau)
-                    : laTuChoi
+                    : laTraVe
                       ? 0
                       : null;
 
                   return (
                     <tr
                       key={ct.IdChiTiet}
-                      className={laTuChoi ? "kkq-row-tu-choi" : undefined}
+                      className={laTraVe ? "kkq-row-tra-ve" : undefined}
                     >
                       <td>
                         <div className="kkq-ten-cv">{ct.TenCongViec}</div>
@@ -608,39 +535,39 @@ const ChiTietDuyetKeKhai = () => {
                       </td>
 
                       <td>
-                        {duyetDuoc ? (
+                        {xetDuoc ? (
                           <div className="kkq-qd-nhom">
                             <label
-                              className={`kkq-qd-nut${laDuyet ? " kkq-qd-duyet" : ""}`}
+                              className={`kkq-qd-nut${laChot ? " kkq-qd-duyet" : ""}`}
                             >
                               <input
                                 type="radio"
                                 name={`qd-${ct.IdChiTiet}`}
-                                checked={laDuyet}
+                                checked={laChot}
                                 onChange={() =>
                                   capNhat(ct.IdChiTiet, {
-                                    quyetDinh: String(QUYET_DINH.DUYET),
+                                    quyetDinh: String(QUYET_DINH.CHOT),
                                   })
                                 }
-                                disabled={dangLuu || dangChot}
+                                disabled={dangLuu}
                               />
-                              <i className="fa-solid fa-check"></i> Duyệt
+                              <i className="fa-solid fa-lock"></i> Chốt
                             </label>
                             <label
-                              className={`kkq-qd-nut${laTuChoi ? " kkq-qd-tu-choi" : ""}`}
+                              className={`kkq-qd-nut${laTraVe ? " kkq-qd-tra-ve" : ""}`}
                             >
                               <input
                                 type="radio"
                                 name={`qd-${ct.IdChiTiet}`}
-                                checked={laTuChoi}
+                                checked={laTraVe}
                                 onChange={() =>
                                   capNhat(ct.IdChiTiet, {
-                                    quyetDinh: String(QUYET_DINH.TU_CHOI),
+                                    quyetDinh: String(QUYET_DINH.TRA_VE),
                                   })
                                 }
-                                disabled={dangLuu || dangChot}
+                                disabled={dangLuu}
                               />
-                              <i className="fa-solid fa-xmark"></i> Từ chối
+                              <i className="fa-solid fa-rotate-left"></i> Trả về
                             </label>
                           </div>
                         ) : (
@@ -651,7 +578,7 @@ const ChiTietDuyetKeKhai = () => {
                       </td>
 
                       <td>
-                        {duyetDuoc ? (
+                        {xetDuoc ? (
                           <input
                             type="number"
                             className="form-input cd-diem-input kkq-so"
@@ -662,7 +589,7 @@ const ChiTietDuyetKeKhai = () => {
                                 soLuongDuyet: e.target.value,
                               })
                             }
-                            disabled={laTuChoi || dangLuu || dangChot}
+                            disabled={laTraVe || dangLuu}
                             title="Bỏ trống = giữ nguyên số lượng giảng viên đã kê"
                           />
                         ) : ct.SoLuongDuyet == null ? (
@@ -681,7 +608,7 @@ const ChiTietDuyetKeKhai = () => {
                       </td>
 
                       <td>
-                        {duyetDuoc ? (
+                        {xetDuoc ? (
                           <textarea
                             className="form-input cd-textarea kkq-mota"
                             rows={2}
@@ -691,11 +618,11 @@ const ChiTietDuyetKeKhai = () => {
                               capNhat(ct.IdChiTiet, { nhanXet: e.target.value })
                             }
                             placeholder={
-                              laTuChoi
-                                ? "Nêu rõ vì sao từ chối"
+                              laTraVe
+                                ? "Bắt buộc: nêu rõ lý do trả về"
                                 : "Ghi chú (tuỳ chọn)"
                             }
-                            disabled={dangLuu || dangChot}
+                            disabled={dangLuu}
                           />
                         ) : ct.NhanXetDuyet ? (
                           <div className="kkq-nhan-xet">{ct.NhanXetDuyet}</div>
@@ -792,14 +719,6 @@ const ChiTietDuyetKeKhai = () => {
           )}
         </div>
       )}
-
-      <TraLaiKeKhaiModal
-        isOpen={moTraLai}
-        soDongDaXet={soDaXetTrenServer}
-        dangGui={dangChot}
-        onClose={() => setMoTraLai(false)}
-        onSubmit={traLai}
-      />
 
       <FilePreviewModal
         isOpen={preview.isOpen}

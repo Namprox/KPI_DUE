@@ -1299,23 +1299,40 @@ khi `hanh_dong = 4`.
 ## 9. KÊ KHAI GIỜ QUY ĐỔI THEO PHỤ LỤC II
 
 "Quy đổi các hoạt động chuyên môn ra giờ chuẩn giảng dạy". Giảng viên **tự kê khai** số
-lượng từng đầu việc; Trưởng khoa/Trưởng khoa liên/Trưởng phòng **duyệt hoặc từ chối từng
-dòng** và **được sửa số lượng** trước khi chốt.
+lượng từng đầu việc; Trưởng khoa/Trưởng khoa liên/Trưởng phòng **chốt hoặc trả về từng
+dòng** và **được sửa số lượng** khi chốt.
+
+> **Đổi thiết kế (đợt "duyệt theo dòng"):** vòng đời chuyển từ BẢN KÊ xuống TỪNG DÒNG.
+> Không còn bước "nộp": giảng viên kê tới đâu người duyệt thấy tới đó. Bốn SP
+> `sp_ke_khai_gio_quy_doi_nop` / `_huy_nop` / `_chot` / `_tra_lai` **đã bị gỡ** cùng các
+> endpoint tương ứng. Lý do và chi tiết migration: `App_Data/update_database.sql`.
 
 ### 9.0. Vì sao có module này — và phạm vi CHƯA làm
 
 "Thời gian thực hiện" của giảng viên trong năm có **hai** nguồn:
 
-1. **Tiết giảng dạy quy đổi theo từng loại** — dữ liệu do hệ thống ngoài gọi về. **CHƯA làm.**
+1. **Tiết giảng dạy quy đổi theo từng loại** — **ĐÃ LÀM**, xem mục 13
+   (`gio_giang_tkb`, nhập từ file Excel thời khoá biểu). Lúc viết mục 9 này nguồn (1)
+   chưa có nên bên dưới còn ghi "chưa làm"; nay đã có.
 2. **Hoạt động chuyên môn theo PHỤ LỤC II** — chính là module này.
 
-Vì nguồn (1) chưa có, module này **CỐ Ý không ghi vào `gio_thuc_hien_gv`** và **không sửa
-`sp_phieu_tong_hop_tu_dong`**. Nó chỉ lưu và phát API đọc. Điểm nối cho bước sau là
+Module này **CỐ Ý không ghi vào `gio_thuc_hien_gv`** và **không sửa
+`sp_phieu_tong_hop_tu_dong`** — quyết định vẫn giữ nguyên sau khi có nguồn (1), vì ghi tự
+động sẽ đè số liệu nhập tay. Nó chỉ lưu và phát API đọc. Điểm nối là
 `sp_ke_khai_gio_quy_doi_tong_hop` (`GET api/ke-khai-gio-quy-doi/tong-hop`) — trả tổng giờ
-đã duyệt / GV / năm, tách sẵn theo hai mục cấp 1 (Sau đại học / Đại học).
+đã chốt / GV / năm, tách sẵn theo hai mục cấp 1 (Sau đại học / Đại học).
 
-Đây **không phải** `gio_giang_import` (3.5): bảng đó là staging phẳng khớp theo `ho_ten`,
-không có `id_nhan_vien`, không có `id_nam`, không có trạng thái duyệt.
+**Điều kiện cộng giờ**: cả `sp_ke_khai_gio_quy_doi_tong_hop` lẫn `sp_gio_giang_tkb_tong_hop`
+cộng theo **`chi_tiet.trang_thai_dong = 2`** (dòng đã chốt), **KHÔNG** đòi cả bản kê ở một
+trạng thái nào. Trước đợt đổi thiết kế chúng đòi `k.trang_thai = 3`, nên một bản kê đã có
+dòng được duyệt nhưng chưa chốt cả bản thì bị tính 0 giờ.
+
+Nơi **cộng hai nguồn** lại là `sp_gio_giang_tkb_tong_hop`
+(`GET api/gio-giang-tkb/tong-hop`): giờ TKB + giờ kê khai đã duyệt = **tổng giờ giảng
+trong năm**.
+
+Khác với cách nhập staging phẳng trước đây (chỉ khớp theo `ho_ten`, không có `id_nam`,
+không có trạng thái duyệt), nhóm bảng này có đủ cả ba.
 
 ### 9.1. `danh_muc_cong_viec_quy_doi` — cây, độ sâu KHÔNG đều
 
@@ -1363,28 +1380,51 @@ nguyên hệ số cũ.
 cho các học viên / học phần / kỳ học khác nhau.
 
 `ky_hoc` (261/262/263) nằm ở **dòng**, không ở header: header theo `id_nam` để cộng cả năm,
-còn `ky_hoc` chỉ để đối chiếu với `gio_giang_import`. Có thể NULL.
+còn `ky_hoc` chỉ để người dùng đối chiếu công việc thuộc kỳ nào. Có thể NULL.
 
-### 9.3. Vòng đời và ai được làm gì
+### 9.3. Vòng đời nằm ở DÒNG, không ở bản kê
 
-`ke_khai_gio_quy_doi.trang_thai`:
+`chi_tiet.trang_thai_dong` là state machine thật của module:
 
 ```
-1 NHAP ──nộp──> 2 CHO_DUYET ──chốt──> 3 DA_DUYET
-  ^               │
-  └──huỷ nộp──────┘
-                  └──trả lại──> 4 TRA_LAI ──nộp lại──> 2
+        ┌──────────── GV sửa dòng ────────────┐
+        v                                     │
+1 CHO_DUYET ──chốt──> 2 DA_CHOT ──mở lại──> 3 TRA_VE
+                          ^  (người duyệt)       │
+                          └──── chốt ────────────┘
 ```
 
-`chi_tiet.trang_thai_dong`: 1 Chờ duyệt · 2 Đã duyệt · 3 Từ chối.
+- **1 Chờ duyệt** — GV sửa/xoá được; người duyệt phải xét.
+- **2 Đã chốt** — khoá với GV (`DONG_DA_CHOT` nếu cố sửa; vắng mặt trong form cũng KHÔNG bị
+  xoá). Người có `can_duyet` vẫn xét lại được → nhật ký `hanh_dong = 10`.
+- **3 Trả về** — bắt buộc kèm lý do (`THIEU_LY_DO` nếu thiếu). `gio_duyet = 0` nhưng **vẫn
+  giữ** `so_luong`/`so_luong_duyet` để đối chiếu. GV sửa dòng → **tự quay về 1**, đồng thời
+  xoá `so_luong_duyet`/`gio_duyet`/`nhan_xet_duyet`.
+  Reset chỉ xảy ra khi dòng **thật sự đổi** (`id_cong_viec`/`so_luong`/`ky_hoc`/`mo_ta`) —
+  lưu cả form không được làm mất nhận xét trên dòng GV chưa đụng tới.
 
-- `tong_gio_ke_khai` = SUM `gio_ke_khai` các dòng còn sống.
-- `tong_gio_duyet` = SUM `gio_duyet` **chỉ các dòng `trang_thai_dong = 2`**. Dòng bị từ chối
-  cho `gio_duyet = 0` nhưng **vẫn giữ** `so_luong` và `so_luong_duyet` để đối chiếu.
-- **Chốt bị chặn** khi còn dòng `trang_thai_dong = 1` → `CON_DONG_CHUA_XET`.
-- **Huỷ nộp bị chặn** khi người duyệt đã xét bất kỳ dòng nào → `DA_XET`.
-- **Trả lại** bắt buộc có lý do, và reset toàn bộ `trang_thai_dong` về 1 + xoá
-  `so_luong_duyet`/`gio_duyet` để giảng viên nộp lại từ đầu.
+`ke_khai_gio_quy_doi.trang_thai` giờ là **nhãn DẪN XUẤT**, tính lại bởi
+`sp_ke_khai_gio_quy_doi_rollup` sau mỗi lần lưu/xét — không phải khoá, không ai set tay:
+
+| Giá trị | Khi nào |
+|---|---|
+| 4 TRA_LAI | còn dòng trạng thái 3 (ưu tiên cao nhất — GV còn việc phải sửa) |
+| 2 CHO_DUYET | còn dòng trạng thái 1 |
+| 3 DA_DUYET | có dòng và **tất cả** đã chốt |
+| 1 NHAP | không còn dòng sống nào |
+
+`rollup` cũng là nơi duy nhất tính `tong_gio_ke_khai` (SUM các dòng còn sống) và
+`tong_gio_duyet` (SUM `gio_duyet` **chỉ các dòng trạng thái 2**).
+
+**Lazy-create**: `sp_ke_khai_gio_quy_doi_get` **KHÔNG** tạo bản kê nữa — chưa có thì phát
+header ảo `id_ke_khai = 0`. Header chỉ sinh ra trong `sp_ke_khai_gio_quy_doi_luu_chi_tiet`,
+khi có dòng đầu tiên. Trước đây SP `_get` INSERT ngay khi ĐỌC, mà gate của nó là `can_xem`
+chứ không phải `can_sua`, nên **Trưởng khoa mở bản kê của một GV cũng sinh ra bản kê rỗng
+cho người đó**.
+
+Các cột header thành vết tích, giữ lại nhưng không còn nghĩa nghiệp vụ: `ngay_nop` (không ai
+ghi nữa), `nhan_xet_duyet` (lý do trả về nằm ở từng dòng), `row_version`.
+`id_nguoi_duyet`/`ngay_duyet` = người và thời điểm xét **gần nhất**, chỉ để hiển thị.
 
 ### 9.4. Phân quyền — `fn_ke_khai_gio_quy_doi_quyen`
 
@@ -1408,26 +1448,43 @@ Nguồn duy nhất, fail-closed (chức vụ không rõ ⇒ 0 hết):
 Người dùng đã chốt bỏ, ghi lại để đợt sau đừng "sửa nhầm" thành có:
 
 - **Không** khoá theo hạn tự đánh giá (`nam_danh_gia.ngay_dong_tu_danh_gia` / `gia_han_danh_gia`).
-- **Không** bắt buộc minh chứng — `minh_chung_ke_khai_gio_quy_doi` là tuỳ chọn.
+- **Không** bắt buộc minh chứng — `minh_chung_ke_khai_gio_quy_doi` là tuỳ chọn. Gate thêm/gỡ
+  minh chứng theo **dòng** (`trang_thai_dong = 2` thì khoá), không theo trạng thái header.
 - **Không** có trần tổng giờ quy đổi (khác nhiệm vụ Khoa, vốn có trần 20 điểm).
+- **Không** có điểm khoá cuối năm: bản kê không bao giờ bị khoá cứng cả năm. Đây chính là
+  lỗi của thiết kế cũ — chốt sớm ở kỳ 261 là GV mất quyền kê khai cho phần còn lại của năm,
+  kể cả ADMIN cũng không mở lại được.
+- **Không** migrate dữ liệu dòng cũ: `trang_thai_dong = 3` trước đây nghĩa là "Từ chối", từ
+  nay đọc là "Trả về". Cùng hệ quả `gio_duyet = 0`, khác ở chỗ GV sửa được. CHECK
+  `chk_ctkkgqd_tt_dong` giữ nguyên `(1,2,3)`.
 
 ### 9.6. Hợp đồng result set + xung đột phiên bản
 
 Mọi SP của module theo hợp đồng của `nhiem_vu_khoa`: `RS1 = success / message / error_code`,
 `RS2..` chỉ phát khi `success = 1`.
 
-Module này **CỐ Ý không dùng `RAISERROR`** (khác luồng phiếu): xung đột phiên bản trả về
-như một `error_code = 'CONCURRENCY_CONFLICT'` ở RS1, để tầng DAL chỉ phải đọc một định dạng.
-Bảo vệ vẫn đủ hai lớp: so `@row_version` trước, và guard mất-cập-nhật
-`UPDATE ... WHERE trang_thai = <kỳ vọng>` + `@@ROWCOUNT = 0`.
+Module này **CỐ Ý không dùng `RAISERROR`** (khác luồng phiếu): mọi lỗi về như một
+`error_code` ở RS1, để tầng DAL chỉ phải đọc một định dạng. Mã lỗi riêng của đợt duyệt theo
+dòng: **`DONG_DA_CHOT`** (sửa/gỡ minh chứng của dòng đã chốt) và **`THIEU_LY_DO`** (trả về
+mà không ghi lý do).
+
+Kiểm tra `@row_version` không còn: 4 SP dùng nó đã bị gỡ. Chống ghi đè giờ dựa vào chính
+trạng thái dòng — hai người cùng đụng một dòng thì người sau nhận `DONG_DA_CHOT` hoặc thấy
+dòng đã quay về `1` sau khi GV sửa.
 
 Mọi SP thao tác bản kê kết thúc bằng `sp_ke_khai_gio_quy_doi_result_sets` (header / dòng /
-minh chứng) nên mọi endpoint trả về **cùng một hình dạng dữ liệu**.
+minh chứng) nên mọi endpoint trả về **cùng một hình dạng dữ liệu** — kể cả khi bản kê chưa
+tồn tại, lúc đó RS header là bản ảo `id_ke_khai = 0` và hai RS còn lại rỗng.
+RS dòng có sẵn `cho_phep_sua` / `cho_phep_xet` để FE không phải tự suy theo trạng thái.
 
 ### 9.7. `lich_su_ke_khai_gio_quy_doi`
 
-`hanh_dong`: 1 Tạo dòng · 2 Sửa dòng · 3 Xoá dòng · 4 Nộp · 5 Duyệt dòng · 6 Từ chối dòng ·
-7 Chốt bản kê · 8 Trả lại · 9 Huỷ nộp.
+`hanh_dong`: 1 Tạo dòng · 2 Sửa dòng · 3 Xoá dòng · **5 Chốt dòng** · **6 Trả về dòng** ·
+**10 Mở lại dòng đã chốt**.
+
+4 (Nộp) · 7 (Chốt bản kê) · 8 (Trả lại) · 9 (Huỷ nộp) **không còn được sinh ra** nhưng vẫn
+nằm trong `chk_lskkgqd_hd`: các dòng lịch sử CŨ mang những giá trị đó, bỏ khỏi CHECK là
+không ALTER được bảng.
 
 Bước xoá dòng dùng `OUTPUT INSERTED.* INTO @dong_xoa` để chỉ ghi nhật ký các dòng **vừa**
 bị gỡ ở lần lưu này, không dính các dòng đã gỡ từ trước.
@@ -1966,8 +2023,12 @@ một dòng riêng, không nhân hệ số. Server **ép** `so_luong = 1`, khôn
 
 ### 11.2 – 11.3. `ke_khai_thanh_tich_vuot_troi`, `chi_tiet_ke_khai_thanh_tich`
 
-Vòng đời và `row_version` **y hệt** `ke_khai_gio_quy_doi` (9.2): 1 NHAP → 2 CHO_DUYET →
-3 DA_DUYET, TK/TP trả về 4 TRA_LAI. Một bản / người / năm.
+Vòng đời và `row_version` giữ mô hình **NỘP CẢ BẢN KÊ**: 1 NHAP → 2 CHO_DUYET → 3 DA_DUYET,
+TK/TP trả về 4 TRA_LAI. Một bản / người / năm.
+
+> **Lưu ý**: mục 9 (kê khai giờ quy đổi) vốn dùng chung mô hình này nhưng **đã chuyển sang
+> duyệt theo TỪNG DÒNG** (xem 9.3) — module thành tích vượt trội **chưa** đổi theo. Hai
+> module giờ khác nhau về vòng đời, đừng đọc chéo sang nhau nữa.
 
 Ba điểm khác:
 
@@ -2184,3 +2245,213 @@ Quyết định nghiệp vụ đã chốt: **giữ dòng Thạc sĩ cho cả hai
 
 Hai ca này chỉ ảnh hưởng tới học vị nên đợt này không đụng tới. Dữ liệu học vị gốc nằm ở
 `tkth.json` (đã không còn trong `update_database.sql`) — lấy lại từ đó khi cần.
+
+## 13. GIỜ GIẢNG THEO THỜI KHOÁ BIỂU (`gio_giang_tkb`)
+
+### 13.0. Vì sao có module này
+
+Mục 9.0 ghi "Thời gian thực hiện" của giảng viên có **hai** nguồn, và nguồn (1) — *tiết
+giảng dạy quy đổi* — **CHƯA làm**. Module này **chính là nguồn (1)**, lấy từ file Excel
+thời khoá biểu thay vì chờ hệ thống ngoài gọi sang.
+
+Kết quả cuối cùng nằm ở `sp_gio_giang_tkb_tong_hop` (`GET api/gio-giang-tkb/tong-hop`):
+
+```
+TỔNG GIỜ GIẢNG trong năm = giờ theo TKB + giờ kê khai Phụ lục II đã duyệt
+```
+
+Bảng này khoá theo **năm đánh giá**, tự lọc theo kỳ học, và có đường nối về nhân viên —
+khác hẳn cách nhập staging phẳng theo **kỳ học** trước đây, vốn chỉ nhận các cột tổng giờ
+đã tính sẵn ở nơi khác nên không kiểm chứng được.
+
+### 13.1. Phạm vi CỐ Ý chưa làm — đã chốt với người dùng
+
+- **KHÔNG** thêm mã chấm điểm tự động vào `fn_nckh_diem_tu_dong`. Module chỉ lưu và phát
+  API đọc, giống hệt cách module kê khai Phụ lục II dừng lại.
+- **KHÔNG** ghi vào `gio_thuc_hien_gv`. Cùng lý do đã ghi ở 3.6.8 và 9.0: ghi tự động sẽ
+  đè số liệu nhập tay mà `sp_dinh_muc_lay_context_ap_dung` và phiếu đánh giá đang đọc.
+- Ánh xạ họ tên → nhân viên: **tự động** khi tên khớp duy nhất một nhân viên, còn lại làm
+  tay. Xem 13.6.
+
+### 13.2. Dòng nào thuộc năm nào — chỉ nhìn cột `KY_HOC`
+
+`ky_hoc` mã hoá `nam_hoc * 10 + {1,2,3}`, trong đó `nam_hoc` là **năm KẾT THÚC** của năm học
+đó. Vì năm học lệch pha nửa năm so với năm dương lịch, một **năm đánh giá N** cắt qua đúng
+**ba** kỳ:
+
+| Kỳ | Công thức | Với `idNam = 2026` | Rơi vào |
+|---|---|---|---|
+| Kỳ 2 của năm học trước | `(N−2000)*10 + 2` | 262 | nửa đầu 2026 |
+| Kỳ hè của năm học trước | `(N−2000)*10 + 3` | 263 | giữa 2026 |
+| Kỳ 1 của năm học mới | `(N−1999)*10 + 1` | 271 | nửa cuối 2026 |
+
+Kỳ khác (261 = nửa cuối **2025**, 272 = nửa đầu **2027**, …) thuộc năm dương lịch khác nên
+bị **bỏ qua im lặng**, không báo lỗi — bản xuất TKB thường gồm nhiều kỳ và việc lọc là việc
+của API, không phải của người nhập. Số dòng bỏ qua trả về ở `SoDongBoQua` để đối chiếu.
+
+Toàn bộ file không có dòng nào thuộc ba kỳ trên → **400**, thông báo nêu đúng ba kỳ mong đợi
+(gần như luôn là chọn nhầm `idNam` hoặc nhầm file).
+
+### 13.3. Số tiết lấy THẲNG cột `SoTiet` — và vì sao bỏ cách tính cũ
+
+`so_tiet_trong_nam` = **nguyên văn cột `SoTiet`** của file. Không đọc lịch học, không quy ra
+ngày, không trừ tuần nghỉ.
+
+Bản đầu tiên làm ngược lại: đọc các ô `Thu2..chuNhat` dạng `"7,8,9 T(2-17)"`, quy mỗi lượt
+dạy `(một đoạn, một tuần)` ra **một ngày cụ thể** bằng mốc `ngayBatDauKy1 + soTuanNamTruoc`,
+trừ các tuần nghỉ khai báo qua `tuanNghiKy1` / `tuanNghiNamCu` / `tuanNghiNamMoi`, rồi cắt
+theo `nam_danh_gia.ngay_bat_dau .. ngay_ket_thuc` — một đoạn vắt qua giao thừa bị cắt đôi.
+
+Chính xác hơn về lý thuyết, nhưng **5 tham số cấu hình đều sai được mà không có dấu hiệu
+nào**: lệch mốc vài ngày, nhầm 52/53 tuần, hay quên khai báo đợt Tết đều cho ra một con số
+trông vẫn hợp lý. Người dùng đã chốt bỏ: cột `SoTiet` là con số họ nhìn thấy và cộng tay
+được trên Excel, nên số của hệ thống và số của họ **luôn khớp tuyệt đối**.
+
+Hệ quả kéo theo, ghi lại để không ai đi lại đường cũ:
+
+- `Helper/ThoiKhoaBieuParser.cs` và các cột `Thu2..chuNhat` **không còn được đọc**.
+- `gio_giang_tkb_lan_import` không còn cột tham số nào: quy tắc suy ra hoàn toàn từ `id_nam`,
+  nên lưu `id_nam` là đủ để tái lập y hệt một lần tính.
+- Endpoint import chỉ còn **hai** field: `file` và `idNam`.
+- `SoTiet` trống hoặc ≤ 0 → dòng vẫn được nhận nhưng đóng góp **0 giờ**, kèm cảnh báo
+  `SO_TIET_TRONG`. Không chặn: thiếu dữ liệu ở một lớp không nên huỷ cả lần import.
+
+### 13.4. Quy đổi tiết → giờ chuẩn theo sĩ số
+
+| `SLSV_DangKyHoc` | Hệ số |
+|---|---|
+| ≤ 40 | 1,0 |
+| 41 – 50 | 1,1 |
+| 51 – 60 | 1,2 |
+| 61 – 70 | 1,3 |
+| 71 – 80 | 1,4 |
+| ≥ 81 | 1,5 |
+
+Hệ số áp **theo tiết**, không theo lớp: lớp 90 SV dạy 45 tiết = 45 × 1,5 = 67,5 giờ chuẩn.
+Sĩ số ≤ 0 (ô trống / thiếu dữ liệu) áp bậc thấp nhất 1,0.
+
+`gio_chuan_trong_nam = ROUND(so_tiet_trong_nam × he_so, 2)`, làm tròn `AwayFromZero` để
+không lệch với cách người dùng cộng tay trên Excel. Làm tròn **từng lớp** rồi mới cộng, đúng
+thứ tự mà bảng chi tiết hiển thị — nhờ vậy tổng ở dòng header luôn bằng tổng các dòng chi
+tiết mà người dùng nhìn thấy.
+
+⚠️ **BẤT BIẾN — toàn bộ quy tắc ở tầng C#.** `BLL/GioGiangTkbService` lọc kỳ học,
+`Helper/GioChuanQuyDoi` quy đổi tiết → giờ. SQL **chỉ nhận** các con số đã chốt qua TVP
+`dbo.GioGiangTkbRow`. Tuyệt đối không tính lại ở SQL — nhân bản logic sẽ lệch.
+
+### 13.5. Hai cột số — vì sao chỉ cần hai
+
+| Cột | Ý nghĩa |
+|---|---|
+| `so_tiet_trong_nam` | tổng cột `SoTiet` của các lớp thuộc 3 kỳ của năm |
+| `gio_chuan_trong_nam` | tổng `SoTiet × hệ số` của từng lớp |
+
+Bản trước có **bốn** cột (`so_tiet_excel`, `so_tiet_tkb`, `so_tiet_nghi`,
+`so_tiet_trong_nam`) để lọc dần từng bước và đối chiếu tay. Khi số tiết lấy thẳng từ file thì
+cả bốn luôn bằng nhau (hoặc bằng 0), nên ba cột đầu đã bị **bỏ hẳn** khỏi bảng, khỏi TVP và
+khỏi DTO — xem `App_Data/update_database.sql`.
+
+Dòng trùng `(họ tên, kỳ học, mã lớp tín chỉ)` được **giữ nguyên cả hai** — đồng giảng là có
+thật, khử trùng sẽ làm mất giờ — kèm cảnh báo `TRUNG_LOP`. Vì vậy TVP `GioGiangTkbRow` **cố ý
+không có PRIMARY KEY**.
+
+### 13.6. Ánh xạ họ tên → nhân viên (`gio_giang_tkb_anh_xa`)
+
+File TKB **chỉ có** `HoLot` + `Ten` — không mã giảng viên, không email. Khoá gộp là
+`ho_ten_chuan` (bỏ dấu + gộp khoảng trắng + viết hoa, do `Helper/ChuanHoaTen` sinh ra).
+
+**Quyết định đã chốt: hệ thống TỰ ánh xạ khi tên khớp duy nhất.** Import xong, mọi
+`ho_ten_chuan` khớp **đúng một** nhân viên đang hoạt động được gắn ngay. Trùng tên (≥ 2
+người) hoặc không khớp ai thì để trống — người dùng xử lý tay.
+
+Đây là **đảo lại** quyết định ban đầu ("cố ý không tự ánh xạ") vì với file cả trường thì việc
+bấm xác nhận từng người là hàng trăm lượt. Lý do cũ — *khớp tên là phỏng đoán, ghi nhầm sẽ
+cộng giờ của người này cho người khác* — vẫn đúng, nên **ranh giới được giữ nguyên**: chỉ
+diện khớp duy nhất mới bị đoán; trường hợp mơ hồ vẫn không.
+
+#### Ràng buộc cứng: CHỈ THÊM, KHÔNG BAO GIỜ GHI ĐÈ
+
+Cả hai đường ghi tự động (`sp_gio_giang_tkb_dong_bo` lúc import và
+`sp_gio_giang_tkb_anh_xa_tu_dong` khi quét lại) đều dùng **một câu `INSERT ... WHERE NOT
+EXISTS`** — chỉ thêm dòng còn thiếu.
+
+Lý do: bảng này **không có** cột phân biệt "máy gắn" với "người gắn" (đã chốt là không thêm
+`tu_dong`). Nếu đổi thành `MERGE` / `UPDATE`, một lần import lại sẽ kéo ánh xạ tay về người
+khớp tên — xoá công sửa của người dùng mà không có cách nào biết. Hệ quả tốt kèm theo: chạy
+bao nhiêu lần cũng vô hại, lần thứ hai trả về 0.
+
+#### `fn_gio_giang_tkb_khop_ten` — một định nghĩa cho phép khớp
+
+Bốn nơi cần biết "tên này khớp ai": hai đường ghi ở trên, `sp_gio_giang_tkb_list` và
+`sp_gio_giang_tkb_chi_tiet`. Trước đây mỗi nơi tự viết lại; nay tất cả gọi chung hàm này,
+trả `(ho_ten_chuan, id_nhan_vien, so_nguoi_khop)`.
+
+Nó là **multi-statement TVF** chứ không phải inline, có lý do: bên trong vật hoá tên so sánh
+của nhân viên vào một table variable **một lần** rồi mới join. Để `fn_gio_giang_tkb_ten_so_sanh`
+vào thẳng mệnh đề `JOIN` thì số lần gọi hàm là `N * M` thay vì `M`.
+
+`nhan_vien` là **1 dòng / người** (PK `id_nhan_vien`, `uq_ma_nhan_vien`; kiêm nhiệm nằm ở
+`nhan_vien_chuc_vu`) — nên `so_nguoi_khop > 1` đúng nghĩa là **hai người khác nhau trùng
+tên**, không phải một người bị đếm hai lần.
+
+`SoNguoiKhopTen` được trả ra API: với dòng chưa ánh xạ, `0` = không có ai tên này trong hệ
+thống (sai chính tả / chưa có hồ sơ), `≥ 2` = trùng tên, cần người chọn.
+
+Hệ quả: `GoiYIdNhanVien` nay **gần như luôn null** — tên khớp duy nhất thì đã được gắn rồi.
+Cột vẫn giữ (không phá hợp đồng API) và còn giá trị trong khoảng giữa hai lần quét, ví dụ
+vừa thêm nhân viên mới mà chưa gọi `POST api/gio-giang-tkb/anh-xa/tu-dong`.
+
+Ba tính chất làm nên giá trị của bảng này:
+
+1. **Không gắn `id_nam`** → ánh xạ làm một lần dùng cho mọi năm.
+2. **Không bị xoá khi import lại** → công sức ánh xạ tay không mất.
+3. **Join lúc ĐỌC** (không lưu `id_nhan_vien` trên `gio_giang_tkb`) → sửa ánh xạ có hiệu lực
+   **ngay**, không phải import lại file.
+
+Một nhân viên có thể nhận **nhiều** tên (file ghi tên không nhất quán giữa các kỳ), nên
+**không** đặt UNIQUE trên `id_nhan_vien`, và `sp_gio_giang_tkb_tong_hop` phải `SUM` chứ
+không lấy một dòng.
+
+Hàm `fn_gio_giang_tkb_ten_so_sanh` chỉ làm **hai** việc: gộp khoảng trắng và đổi `Đ`/`đ`
+(U+0110 / U+0111) thành `D`/`d`. Phần bỏ dấu thanh giao cho `COLLATE Latin1_General_CI_AI`
+tại chỗ gọi — nếu không sẽ phải viết ~90 lệnh `REPLACE`. Riêng `Đ` là **chữ cái riêng** trong
+tiếng Việt nên collation AI *không* gộp nó về `D`; bỏ bước này thì mọi họ "Đặng", "Đỗ" đều
+không khớp được.
+
+⚠️ Từ khi phép khớp này **ghi thẳng** vào `gio_giang_tkb_anh_xa` (chứ không chỉ sinh gợi ý
+như trước), sai sót của hàm không còn "tốn một lần bấm" nữa mà thành **dữ liệu sai**: giờ của
+người này cộng cho người khác. Sửa hàm phải cân nhắc theo chuẩn đó — nới lỏng phép khớp để
+"khớp được nhiều hơn" là đúng cách tạo ra ánh xạ nhầm.
+
+### 13.7. Import lại = ghi đè sạch, có chốt chặn
+
+`sp_gio_giang_tkb_dong_bo` xoá toàn bộ `gio_giang_tkb` + `gio_giang_tkb_chi_tiet` của
+`@id_nam` rồi chèn lại, trong **một** transaction (khuôn của `sp_nckh_gio_nckh_dong_bo`).
+
+**GUARD: TVP rỗng → KHÔNG xoá gì.** Nếu không, một file lỗi sẽ xoá sạch dữ liệu cũ.
+
+Quyền: **ADMIN / HT** — import ghi đè cả năm nên không mở cho cấp Khoa. Ánh xạ thì mở tới
+TK / TKL / TP, kể cả `sp_gio_giang_tkb_anh_xa_tu_dong`: thủ tục đó chỉ **thêm** ánh xạ, không
+phá dữ liệu nào, nên không cần siết bằng cổng của import.
+
+### 13.8. Tổng hợp — hợp hai nguồn, không phải giao
+
+`sp_gio_giang_tkb_tong_hop` lấy tập giảng viên là **HỢP** của:
+
+- người có dòng TKB **đã ánh xạ**, và
+- người có `ke_khai_gio_quy_doi` **đã chốt** (`trang_thai = 3`).
+
+Người chỉ có một nguồn vẫn xuất hiện, nguồn còn lại bằng 0. Dùng `INNER JOIN` ở đây sẽ làm
+biến mất người chưa kê khai — đúng nhóm mà bảng này cần nhìn thấy nhất.
+
+Dòng TKB **chưa ánh xạ** không vào được bảng tổng hợp (không biết là ai). Số lượng những
+dòng đó trả về ở `SoDongChuaAnhXa` — còn lớn hơn 0 nghĩa là **tổng hợp chưa đầy đủ**, FE
+phải cảnh báo trước khi ai đó dùng số liệu.
+
+⚠️ **BẤT BIẾN:** mệnh đề lọc "bản kê đã chốt + dòng đã duyệt" và phép tách SĐH / ĐH được
+**nhân bản** từ `sp_ke_khai_gio_quy_doi_tong_hop`. Sửa một bên phải sửa cả bên kia, nếu
+không hai endpoint trả hai con số khác nhau cho cùng một giảng viên.
+
+Cổng quyền **sao y** SP gốc: ADMIN/HT toàn trường; TK/TKL/TP theo đơn vị mình giữ chức vụ
+(+ cây con). Dùng `EXISTS` trên tập `DISTINCT` chứ **không** `JOIN`, để người kiêm nhiệm
+nhiều đơn vị không bị nhân dòng.

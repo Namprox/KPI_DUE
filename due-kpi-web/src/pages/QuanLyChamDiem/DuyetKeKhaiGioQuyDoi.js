@@ -12,7 +12,6 @@ import "../../css/QuanLyChamDiem.css";
 import "../../css/KeKhaiGioQuyDoi.css";
 import SearchSelect from "../../components/Common/SearchSelect";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
-import { formatNgay } from "../../utils/phieuApi";
 import {
   formatGio,
   layDanhSachChoDuyet,
@@ -23,10 +22,14 @@ import {
 const PAGE_SIZE = 20;
 
 const LOC_TRANG_THAI = [
-  { value: String(TRANG_THAI_KE_KHAI.CHO_DUYET), label: "Chờ duyệt" },
-  { value: String(TRANG_THAI_KE_KHAI.DA_DUYET), label: "Đã chốt" },
-  { value: String(TRANG_THAI_KE_KHAI.TRA_LAI), label: "Đã trả lại" },
-  { value: String(TRANG_THAI_KE_KHAI.NHAP), label: "Giảng viên đang kê" },
+  { value: "all", label: "Tất cả bản kê" },
+  { value: "pending", label: "Còn dòng chờ xét" },
+  { value: String(TRANG_THAI_KE_KHAI.CON_TRA_VE), label: "Có dòng trả về" },
+  {
+    value: String(TRANG_THAI_KE_KHAI.TAT_CA_DA_CHOT),
+    label: "Tất cả dòng đã chốt",
+  },
+  { value: String(TRANG_THAI_KE_KHAI.KHONG_CO_DONG), label: "Chưa có dòng" },
 ];
 
 const BadgeTrangThai = ({ trangThai }) => {
@@ -50,8 +53,8 @@ const BadgeTrangThai = ({ trangThai }) => {
  * Hàng đợi duyệt bản kê giờ quy đổi - phía TRƯỞNG ĐƠN VỊ (TK/TKL/TP, và HT/Admin
  * xem toàn trường).
  *
- * Trang này chỉ là LỐI VÀO: mọi thao tác duyệt / từ chối / sửa số lượng / chốt /
- * trả lại đều nằm ở màn hình chi tiết, vì đơn vị nghiệp vụ là TỪNG DÒNG kê khai
+ * Trang này chỉ là LỐI VÀO: mọi thao tác chốt / trả về / sửa số lượng đều nằm ở
+ * màn hình chi tiết, vì đơn vị nghiệp vụ là TỪNG DÒNG kê khai
  * chứ không phải cả bản kê.
  *
  * Phạm vi do SERVER quyết (đơn vị mình + đơn vị con; ADMIN/HT toàn trường) - FE
@@ -59,8 +62,8 @@ const BadgeTrangThai = ({ trangThai }) => {
  * trưởng khoa chỉ có một phạm vi, thêm ô chọn chỉ tạo cảm giác chọn được nhiều
  * hơn thực tế.
  *
- * Cột "Chờ duyệt" là `SoDongChoDuyet` - khác 0 nghĩa là CHƯA chốt được bản kê
- * (server trả 422 CON_DONG_CHUA_XET), nên đây là con số cần nhìn trước tiên.
+ * Cột "Chờ xét" là `SoDongChoDuyet`. Bộ lọc mặc định hiển thị tất cả bản kê;
+ * người dùng có thể chuyển sang hàng đợi còn dòng chờ xét khi cần xử lý.
  */
 const DuyetKeKhaiGioQuyDoi = () => {
   const toast = useRef(null);
@@ -69,9 +72,7 @@ const DuyetKeKhaiGioQuyDoi = () => {
 
   const [rows, setRows] = useState([]);
   const [phanTrang, setPhanTrang] = useState(null);
-  const [trangThai, setTrangThai] = useState(
-    String(TRANG_THAI_KE_KHAI.CHO_DUYET),
-  );
+  const [trangThai, setTrangThai] = useState("all");
   const [oTuKhoa, setOTuKhoa] = useState("");
   const [tuKhoa, setTuKhoa] = useState("");
   const [page, setPage] = useState(1);
@@ -90,7 +91,11 @@ const DuyetKeKhaiGioQuyDoi = () => {
     try {
       const { items, phanTrang: pt } = await layDanhSachChoDuyet({
         idNam: selectedNam,
-        trangThai,
+        trangThai:
+          trangThai === "pending" || trangThai === "all"
+            ? undefined
+            : trangThai,
+        chiConChoDuyet: trangThai === "pending" ? 1 : 0,
         tuKhoa,
         page,
         pageSize: PAGE_SIZE,
@@ -141,7 +146,7 @@ const DuyetKeKhaiGioQuyDoi = () => {
         <h2 className="kkq-title">Duyệt kê khai giờ quy đổi</h2>
         <span className="breadcrumb">
           Bản kê giờ quy đổi theo Phụ lục II của giảng viên trong phạm vi đơn vị
-          bạn phụ trách - duyệt hoặc từ chối từng dòng rồi chốt
+          bạn phụ trách - chốt hoặc trả về từng dòng, không có bước chốt cả bản kê
         </span>
       </div>
 
@@ -259,18 +264,16 @@ const DuyetKeKhaiGioQuyDoi = () => {
               Không có bản kê nào
             </h3>
             <p style={{ margin: 0 }}>
-              Chưa có giảng viên nào nộp bản kê ở trạng thái này, hoặc bạn đã xử
-              lý hết.
+              Không có bản kê khớp bộ lọc, hoặc bạn đã xử lý hết các dòng chờ xét.
             </p>
           </div>
         ) : (
           <div className="table-scroll">
-            <table className="custom-table" style={{ minWidth: "1040px" }}>
+            <table className="custom-table" style={{ minWidth: "960px" }}>
               <thead>
                 <tr>
                   <th style={{ width: "24%" }}>Giảng viên</th>
                   <th style={{ width: "16%" }}>Đơn vị</th>
-                  <th style={{ width: "10%", textAlign: "right" }}>Ngày nộp</th>
                   <th style={{ width: "10%", textAlign: "center" }}>Số dòng</th>
                   <th style={{ width: "10%", textAlign: "right" }}>Giờ kê</th>
                   <th style={{ width: "10%", textAlign: "right" }}>
@@ -298,19 +301,12 @@ const DuyetKeKhaiGioQuyDoi = () => {
                           <span className="table-empty-mark">-</span>
                         )}
                       </td>
-                      <td className="table-num">
-                        {r.NgayNop ? (
-                          formatNgay(r.NgayNop)
-                        ) : (
-                          <span className="table-empty-mark">-</span>
-                        )}
-                      </td>
                       <td style={{ textAlign: "center" }}>
                         <span className="tag-badge">{r.SoDong ?? 0}</span>
                         {cho > 0 && (
                           <span
                             className="tag-badge kkq-tag-cho"
-                            title="Số dòng bạn chưa duyệt hoặc chưa từ chối"
+                            title="Số dòng đang chờ bạn chốt hoặc trả về"
                           >
                             {cho} chờ xét
                           </span>
@@ -336,9 +332,7 @@ const DuyetKeKhaiGioQuyDoi = () => {
                           }
                         >
                           <i className="fa-solid fa-pen-to-square"></i>{" "}
-                          {Number(r.TrangThai) === TRANG_THAI_KE_KHAI.CHO_DUYET
-                            ? "Duyệt"
-                            : "Xem"}
+                          {cho > 0 ? "Xét dòng" : "Xem lại"}
                         </button>
                       </td>
                     </tr>

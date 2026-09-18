@@ -140,6 +140,13 @@ export const ROLE_SETS = {
   NAM_DANH_GIA: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
 
   /**
+   * Upload thời khóa biểu là thao tác ghi đè dữ liệu nguồn toàn trường của một
+   * năm đánh giá. Khớp đúng quyền API /gio-giang-tkb/import: chỉ Admin và Hiệu
+   * trưởng được vào màn hình quản lý này.
+   */
+  GIO_GIANG_TKB: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
+
+  /**
    * Trưởng đơn vị - nhóm được chấm điểm cấp Khoa cho phiếu KPI cá nhân.
    * Gồm cả Trưởng Phòng: phòng ban ngoài Khoa vẫn được giao chấm một số tiêu
    * chí qua bảng `tieu_chi_don_vi_cham` (ví dụ P.QLCL chấm tiêu chí phản hồi SV).

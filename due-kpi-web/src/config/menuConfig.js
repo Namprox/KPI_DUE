@@ -416,10 +416,10 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.QUAN_TRI,
       },
       {
-        name: "Quản lý giờ giảng",
-        icon: "fa-solid fa-scale-balanced",
+        name: "Giờ giảng từ thời khóa biểu",
+        icon: "fa-solid fa-calendar-week",
         path: "/quan-ly-gio-giang",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.GIO_GIANG_TKB,
       },
       {
         name: "Danh mục loại vi phạm",

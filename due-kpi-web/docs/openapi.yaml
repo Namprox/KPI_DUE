@@ -6595,96 +6595,56 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MinhChungDonViResponse"
-  /api/gio-giang-import:
-    get:
-      tags:
-        - GioGiangImport
-      summary: Get all (loc theo ky hoc)
-      description: >-
-        Danh sach ban ghi gio giang import. Truyen query kyHoc (261/262/263)
-        de loc theo ky hoc; bo trong = tat ca cac ky.
-      operationId: gioGiangImportGetAll
-      parameters:
-        - name: kyHoc
-          in: query
-          required: false
-          description: "Ky hoc: 261 = nam hoc 2025-2026 ky 1; 262 = ky 2; 263 = ky he. Bo trong = tat ca."
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
+  /api/gio-giang-tkb/import:
     post:
       tags:
-        - GioGiangImport
-      summary: Create (tao tay 1 ban ghi)
-      description: Nguoi import (id_nguoi_import) lay tu token, khong nhan tu body.
-      operationId: gioGiangImportCreate
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GioGiangImportCreateRequest"
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
-        "400":
-          description: Bad Request (ho ten trong, ky hoc khong hop le, ...)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
-  /api/gio-giang-import/export:
-    get:
-      tags:
-        - GioGiangImport
-      summary: Export gio giang ra file Excel
+        - GioGiangTkb
+      summary: Import file Excel thoi khoa bieu va tinh gio giang trong nam
       description: >-
-        Xuat danh sach gio giang import ra file .xlsx (mot sheet, co dong tieu de).
-        Truyen query kyHoc (261/262/263) de loc theo ky hoc; bo trong = tat ca cac ky.
-        Tra ve file dinh kem; neu kyHoc khong hop le tra JSON loi (GioGiangImportResponse).
-      operationId: gioGiangImportExport
-      parameters:
-        - name: kyHoc
-          in: query
-          required: false
-          description: "Ky hoc: 261 = nam hoc 2025-2026 ky 1; 262 = ky 2; 263 = ky he. Bo trong = tat ca."
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK — file Excel dinh kem (DL_GioGiang_{kyHoc}.xlsx; khong loc ky = DL_GioGiang_TatCa.xlsx).
-          content:
-            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-              schema:
-                type: string
-                format: binary
-        "400":
-          description: Bad Request (ky hoc khong hop le)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
-  /api/gio-giang-import/import:
-    post:
-      tags:
-        - GioGiangImport
-      summary: Import gio giang tu file Excel
-      description: >-
-        Upload file Excel "Tong hop gio giang" va field kyHoc (261/262/263).
-        Server tu dong dinh dong tieu de, ghep Ho lot + Ten, doc cac cot gio,
-        gan ky_hoc va nguoi import (tu token). Chay all-or-nothing: 1 dong loi
-        thi rollback toan bo.
-      operationId: gioGiangImportImport
+        Doc file Excel thoi khoa bieu giang vien, lay cac dong thuoc NAM DANH GIA dang
+        tinh, quy doi tiet sang gio chuan theo si so lop, gop theo giang vien.
+
+
+        DONG NAO THUOC NAM NAO - chi dua vao cot KY_HOC, khong tinh ngay thang. ky_hoc
+        ma hoa nam_hoc * 10 + {1,2,3} voi nam_hoc la nam KET THUC cua nam hoc do. Nam
+        danh gia N nhan dung BA ky:
+        (N-2000)*10+2 (ky 2 nam hoc truoc),
+        (N-2000)*10+3 (ky he nam hoc truoc),
+        (N-1999)*10+1 (ky 1 nam hoc moi).
+        Vi du idNam = 2026 -> nhan 262, 263 va 271.
+
+
+        Dong co ky khac (261, 272...) thuoc nam duong lich khac nen bi BO QUA im lang,
+        KHONG bao loi - so luong tra ve o SoDongBoQua. Nho vay co the day thang file
+        xuat ra nhieu ky ma khong phai loc truoc.
+
+
+        SO TIET lay THANG cot SoTiet cua file, khong tinh lai tu cac cot lich hoc
+        (Thu2..chuNhat) - cac cot do khong con duoc doc nua.
+
+
+        He so quy doi theo si so: toi da 40 SV = 1,0 gio chuan / tiet; 41-50 = 1,1;
+        51-60 = 1,2; 61-70 = 1,3; 71-80 = 1,4; tu 81 tro len = 1,5.
+        GioChuanTrongNam = SoTiet * he so, lam tron 2 chu so (AwayFromZero).
+
+
+        ANH XA TU DONG: sau khi ghi xong, he thong TU GAN nhung ho ten khop DUY NHAT
+        mot nhan vien dang hoat dong (so luong tra ve o SoDongTuDongAnhXa). Trung ten
+        (>= 2 nguoi) hoac khong khop ai thi de trong - dem vao SoDongChuaAnhXa, phai
+        anh xa tay qua POST /api/gio-giang-tkb/anh-xa.
+
+
+        Viec tu gan CHI THEM anh xa con thieu, KHONG BAO GIO ghi de dong da co: neu
+        ban da sua tay mot anh xa, import lai se KHONG keo no ve nguoi khop ten.
+
+
+        GHI DE toan bo du lieu TKB cua nam do. Anh xa ho ten -> nhan vien (bang
+        gio_giang_tkb_anh_xa) KHONG bi xoa, nen cong anh xa tay van con nguyen.
+        Chay all-or-nothing: bat ky loi du lieu nao cung huy ca lan import.
+
+
+        Quyen: ADMIN / HT.
+      operationId: gioGiangTkbImport
       requestBody:
         required: true
         content:
@@ -6696,53 +6656,139 @@ paths:
                   type: string
                   format: binary
                   description: >-
-                    File Excel (.xls / .xlsx) theo mau "Tong hop gio giang"; toi da 100 MB
+                    File Excel (.xls / .xlsx) thoi khoa bieu; toi da 100 MB
                     (appSettings allowedImportExtensions / maxImportFileSizeKb).
-                    Kiem HAI LOP: duoi file phai la .xls/.xlsx VA noi dung phai khop chu ky
-                    (magic bytes ZIP/OLE2) - doi duoi se bi tu choi 400.
-                kyHoc:
+                    Kiem HAI LOP: duoi file phai la .xls/.xlsx VA noi dung phai khop
+                    chu ky (magic bytes ZIP/OLE2) - doi duoi se bi tu choi 400.
+                    Cot bat buoc: KY_HOC, Ten, SLSV_DangKyHoc, SoTiet.
+                    Cot tuy chon: HoLot, MA_LOP_TIN_CHI, MA_HOC_PHAN, TEN_HOC_PHAN,
+                    TenKhoa. Cot tim theo TEN TIEU DE, khong theo vi tri.
+                    Cac cot lich hoc (Thu2..chuNhat) KHONG con duoc doc.
+                idNam:
                   type: integer
-                  description: "Ky hoc: 261/262/263 (2 so dau = nam hoc, so cuoi = ky)."
+                  description: >-
+                    Nam danh gia can tinh, vd 2026. Quyet dinh 3 ky hoc duoc nhan -
+                    xem mo ta endpoint.
               required:
                 - file
-                - kyHoc
+                - idNam
       responses:
         "200":
-          description: OK — tra ImportedCount = so dong da luu.
+          description: >-
+            OK - tra ImportedCount (so dong chi tiet da luu), SoGiangVien, SoDongBoQua
+            (dong thuoc ky cua nam khac), SoDongTuDongAnhXa / SoDongChuaAnhXa va danh
+            sach CanhBao (TRUNG_LOP / SO_TIET_TRONG).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
+                $ref: "#/components/schemas/GioGiangTkbResponse"
         "400":
           description: >-
-            Bad Request (thieu file/kyHoc, tep rong, sai dinh dang (chi nhan .xls/.xlsx),
-            noi dung khong khop chu ky, vuot 100 MB, khong doc duoc Excel, du lieu khong hop le)
+            Bad Request - thieu/sai idNam, tep rong hoac sai dinh dang, thieu cot bat
+            buoc, dong thieu ho ten giang vien, hoac file khong co dong nao thuoc 3 ky
+            cua nam dang import.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
-        "409":
-          description: Conflict — import that bai o mot dong (da rollback)
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "403":
+          description: FORBIDDEN - chi ADMIN / HT duoc import
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "404":
+          description: NOT_FOUND - khong co nam danh gia
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
         "415":
           description: Unsupported Media Type (khong phai multipart/form-data)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
-  /api/gio-giang-import/{id}:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+  /api/gio-giang-tkb:
     get:
       tags:
-        - GioGiangImport
-      summary: Get by id
-      operationId: gioGiangImportGetById
+        - GioGiangTkb
+      summary: Danh sach gio giang TKB theo nam (kem trang thai anh xa)
+      description: >-
+        Mot dong / giang vien. Cot IdNhanVien khac null = da anh xa; null = CHUA anh xa
+        (dong do khong vao duoc bang tong hop).
+
+
+        GoiYIdNhanVien la GOI Y do server tinh khi ten khop DUY NHAT mot nhan vien dang
+        hoat dong - he thong KHONG tu ghi anh xa, nguoi dung phai xac nhan qua
+        POST /api/gio-giang-tkb/anh-xa. Trung ten hoac khong khop ai -> khong goi y.
+
+
+        SoDongChuaAnhXa tinh tren TOAN BO nam, khong chiu anh huong cua bo loc.
+      operationId: gioGiangTkbList
       parameters:
-        - name: id
-          in: path
+        - name: idNam
+          in: query
           required: true
+          schema:
+            type: integer
+        - name: keyword
+          in: query
+          required: false
+          description: Loc theo ho ten hoac ten khoa.
+          schema:
+            type: string
+        - name: chuaAnhXa
+          in: query
+          required: false
+          description: "true = chi dong chua anh xa; false = chi dong da anh xa; bo trong = tat ca."
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "400":
+          description: INVALID - idNam khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+  /api/gio-giang-tkb/tong-hop:
+    get:
+      tags:
+        - GioGiangTkb
+      summary: TONG GIO GIANG trong nam = gio TKB + gio ke khai da duyet
+      description: >-
+        KET QUA CUOI CUNG cua module. Moi dong: GioTkb (tu thoi khoa bieu) +
+        GioKeKhaiDuyet (Phu luc II, CHI ban ke da chot trang_thai = 3 va dong duoc duyet
+        TrangThaiDong = 2, tach san GioSauDaiHoc / GioDaiHoc) = TongGio.
+
+
+        TAP GIANG VIEN la HOP cua hai nguon: nguoi co dong TKB DA ANH XA, va nguoi co
+        ban ke khai da chot. Nguoi chi co mot nguon van xuat hien, nguon con lai bang 0.
+
+
+        Dong TKB CHUA anh xa khong vao duoc day (khong biet la ai); so luong nhung dong
+        do tra ve o SoDongChuaAnhXa - con lon hon 0 nghia la bang tong hop CHUA DAY DU.
+
+
+        Quyen: ADMIN / HT xem toan truong; TK / TKL / TP xem don vi minh giu chuc vu
+        (+ cay don vi cap duoi).
+      operationId: gioGiangTkbTongHop
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          description: Bo loc hien thi (don vi do hoac mot cap con), khong phai phan quyen.
           schema:
             type: integer
       responses:
@@ -6751,52 +6797,151 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
-        "404":
-          description: Not Found
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "403":
+          description: FORBIDDEN
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
-    put:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "404":
+          description: NOT_FOUND - khong co nam danh gia
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+  /api/gio-giang-tkb/anh-xa/tu-dong:
+    post:
       tags:
-        - GioGiangImport
-      summary: Update (khong doi nguoi import)
-      operationId: gioGiangImportUpdate
+        - GioGiangTkb
+      summary: Quet lai anh xa tu dong tren du lieu da import
+      description: >-
+        Gan nhan vien cho cac ho ten khop DUY NHAT mot nhan vien dang hoat dong, tren
+        du lieu DA CO cua nam - khong phai import lai file. Can khi nhan vien moi duoc
+        them vao he thong sau lan import gan nhat.
+
+
+        Import da tu chay viec nay roi; endpoint chi de quet BO SUNG.
+
+
+        CHI THEM anh xa con thieu, KHONG BAO GIO ghi de dong da co - anh xa tay van
+        nguyen ven. Vi vay chay bao nhieu lan cung vo hai: lan thu hai tra ve
+        SoDongTuDongAnhXa = 0.
+
+
+        Trung ten (>= 2 nguoi) hoac khong khop ai -> van de trong, dem vao
+        SoDongChuaAnhXa; dung GET /api/gio-giang-tkb de xem SoNguoiKhopTen cua tung dong.
+
+
+        Quyen: ADMIN / HT / TK / TKL / TP.
+      operationId: gioGiangTkbAnhXaTuDong
       parameters:
-        - name: id
-          in: path
+        - name: idNam
+          in: query
           required: true
+          description: "Nam danh gia can quet, vd 2026."
           schema:
             type: integer
+      responses:
+        "200":
+          description: >-
+            OK - tra SoDongTuDongAnhXa (so vua gan) va SoDongChuaAnhXa (so con lai phai
+            anh xa tay).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "400":
+          description: INVALID - thieu hoac sai idNam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "404":
+          description: NOT_FOUND - khong co nam danh gia
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+  /api/gio-giang-tkb/anh-xa:
+    post:
+      tags:
+        - GioGiangTkb
+      summary: Gan / go anh xa ho ten trong file TKB ve mot nhan vien
+      description: >-
+        Dung cho cac dong ma anh xa TU DONG khong xu ly duoc: trung ten (SoNguoiKhopTen
+        >= 2) hoac khong khop ai (= 0). Cung dung de SUA mot anh xa tu dong bi sai -
+        import lai se KHONG keo no ve nhu cu.
+
+
+        Anh xa KHONG gan voi nam va KHONG bi xoa khi import lai -> chi can lam mot lan
+        cho moi giang vien. Vi duoc join LUC DOC, sua anh xa co hieu luc NGAY, khong
+        phai import lai.
+
+
+        IdNhanVien = null -> GO anh xa cua ho ten do.
+        HoTenChuan duoc chuan hoa lai o server (bo dau, gop khoang trang, viet hoa) nen
+        co the gui ten con dau lay tu man hinh.
+
+
+        Quyen: ADMIN / HT / TK / TKL / TP.
+      operationId: gioGiangTkbAnhXa
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GioGiangImportUpdateRequest"
+              $ref: "#/components/schemas/GioGiangTkbAnhXaRequest"
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
-        "404":
-          description: Not Found
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "400":
+          description: INVALID - thieu ho ten hoac id nhan vien khong hop le
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
-    delete:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "404":
+          description: NOT_FOUND - khong tim thay nhan vien
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+  /api/gio-giang-tkb/{id}/chi-tiet:
+    get:
       tags:
-        - GioGiangImport
-      summary: Xóa cứng ban ghi (bang phu, khong co FK phu thuoc)
-      operationId: gioGiangImportDelete
+        - GioGiangTkb
+      summary: Boc tach gio giang cua mot giang vien theo tung lop tin chi
+      description: >-
+        Dung de doi chieu tay: cong GioChuanTrongNam cua tat ca dong trong ChiTiet phai
+        bang dung GioChuanTrongNam o Item, va cong SoTietTrongNam phai bang SoTietTrongNam
+        o Item.
+
+
+        SoTietTrongNam cua moi dong la NGUYEN VAN cot SoTiet cua file cho lop do, nen doi
+        chieu thang voi Excel duoc - khong co buoc tinh trung gian nao.
+      operationId: gioGiangTkbChiTiet
       parameters:
         - name: id
           in: path
           required: true
+          description: IdGioGiangTkb (lay tu danh sach).
           schema:
             type: integer
       responses:
@@ -6805,13 +6950,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
+                $ref: "#/components/schemas/GioGiangTkbResponse"
         "404":
-          description: Not Found
+          description: NOT_FOUND
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GioGiangImportResponse"
+                $ref: "#/components/schemas/GioGiangTkbResponse"
   /api/nckh/dong-bo:
     post:
       tags:
@@ -8992,13 +9137,20 @@ paths:
     get:
       tags:
         - KeKhaiGioQuyDoi
-      summary: Ban ke khai cua giang vien trong mot nam (tu tao ban NHAP neu chua co)
+      summary: Ban ke khai cua giang vien trong mot nam
       description: >
-        Vong doi: 1 NHAP -> 2 CHO_DUYET -> 3 DA_DUYET; TK/TKL co the tra ve 4 TRA_LAI
-        de giang vien sua roi nop lai.
-        Server tra san cac co ChoPhepSua / ChoPhepNop / ChoPhepDuyet nen FE khong phai
-        tu suy tu trang thai + vai tro.
-        LUU Y: trang thai 3 hien la DIEM CUOI - chua co endpoint mo lai.
+        VONG DOI NAM O TUNG DONG, khong o ban ke. Khong co buoc "nop": giang vien ke
+        toi dau nguoi duyet thay toi do, va ke them duoc BAT KY LUC NAO trong nam.
+        TrangThai cua header chi la NHAN dan xuat tu cac dong:
+        4 con dong bi tra ve | 2 con dong cho duyet | 3 moi dong da chot | 1 chua co dong.
+
+        LAZY-CREATE: endpoint nay KHONG tao ban ke. Chua co thi tra ve header AO voi
+        IdKeKhai = 0, ChiTiet rong, RowVersion null - hinh dang du lieu van y het.
+        Ban ke chi sinh ra khi PUT /api/ke-khai-gio-quy-doi/chi-tiet luu dong dau tien.
+        FE phai chap nhan IdKeKhai = 0 nghia la "chua co gi", khong phai loi.
+
+        Quyen: server tra san ChoPhepSua / ChoPhepDuyet o header (quyen thuan) va
+        ChoPhepSua / ChoPhepXet o TUNG DONG (da xet ca trang thai dong).
       operationId: keKhaiGioQuyDoiCuaToi
       parameters:
         - name: idNam
@@ -9014,7 +9166,9 @@ paths:
             type: integer
       responses:
         "200":
-          description: OK - header + ChiTiet[] + minh chung da gom san vao tung dong
+          description: >-
+            OK - header + ChiTiet[] + minh chung da gom san vao tung dong.
+            IdKeKhai = 0 khi giang vien chua luu dong nao.
           content:
             application/json:
               schema:
@@ -9045,9 +9199,23 @@ paths:
       summary: Luu TOAN BO cac dong cua ban ke (mot form, mot lan luu)
       description: >
         Gui len TOAN BO danh sach dong; server tu tinh diff them / sua / go.
-        Dong dang co trong DB ma KHONG xuat hien trong danh sach nay se bi soft delete.
-        Danh sach rong = go het dong (van luu duoc; chi chan khi NOP).
-        Chi CHINH CHU sua duoc, va chi khi ban ke o trang thai 1 hoac 4.
+        Chi CHINH CHU sua duoc, nhung KHONG con phu thuoc trang thai ban ke - dieu
+        kien nam o TUNG DONG:
+
+        * Dong CHO DUYET (1) va TRA VE (3): sua / go binh thuong. Dong dang bi tra ve
+          ma GV sua thi TU DONG quay ve CHO DUYET, dong thoi xoa SoLuongDuyet /
+          GioDuyet / NhanXetDuyet. Chi reset khi dong THAT SU doi (IdCongViec, SoLuong,
+          KyHoc hoac MoTa) - luu ca form khong lam mat nhan xet tren dong chua dung toi.
+        * Dong DA CHOT (2): KHOA. Gui len de sua -> 409 DONG_DA_CHOT. Vang mat trong
+          danh sach thi VAN GIU NGUYEN, khong bi go. Muon sua phai nho nguoi duyet mo
+          lai qua POST /{id}/duyet-chi-tiet.
+
+        Nho vay giang vien VAN KE THEM DUOC sau khi da chot het - day la kich ban ma
+        thiet ke cu (chot ca ban ke = khoa cung ca nam) lam hong.
+
+        LAZY-CREATE: day la noi DUY NHAT tao header. Chua co ban ke thi request dau
+        tien tao luon, khong con loi "ban ke chua duoc mo".
+        Danh sach rong = go het dong con sua duoc.
         Client KHONG gui so gio: server lay he so tu danh muc roi tinh
         ROUND(SoLuong * HeSo / SoLuongMau, 2). Snapshot he so chi duoc lam moi khi
         IdCongViec cua dong DOI - giu nguyen dau viec thi giu nguyen he so cu.
@@ -9080,13 +9248,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
         "404":
-          description: NOT_FOUND - chua co nam danh gia / ban ke chua duoc mo
+          description: NOT_FOUND - khong co nam danh gia
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
         "409":
-          description: DA_NOP (dang cho duyet) hoac DA_DUYET (da chot)
+          description: >-
+            DONG_DA_CHOT - co dong gui len dang o TrangThaiDong = 2. Khong dong nao
+            duoc ghi (kiem toan bo truoc khi ghi, khong ghi mot phan).
           content:
             application/json:
               schema:
@@ -9098,10 +9268,11 @@ paths:
         - KeKhaiGioQuyDoi
       summary: Tai len minh chung PDF cho MOT dong ke khai (tuy chon)
       description: >
-        Minh chung KHONG bat buoc de nop - day la cach giang vien chung minh so luong
-        da ke. Chi nhan PDF, kiem 2 lop (duoi file + chu ky PDF o dau tep). File luu
+        Minh chung KHONG bat buoc - day la cach giang vien chung minh so luong da ke.
+        Chi nhan PDF, kiem 2 lop (duoi file + chu ky PDF o dau tep). File luu
         ngoai webroot (App_Data/uploads/ke-khai-gio-quy-doi), ten ngau nhien.
-        Chi CHINH CHU, va chi khi ban ke con sua duoc (trang thai 1 hoac 4).
+        Chi CHINH CHU, va chi khi DONG con sua duoc (TrangThaiDong 1 hoac 3) -
+        gate theo dong, KHONG theo trang thai ban ke.
       operationId: keKhaiGioQuyDoiUploadMinhChung
       parameters:
         - name: idChiTiet
@@ -9149,7 +9320,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
         "409":
-          description: DA_NOP / DA_DUYET - ban ke khong con sua duoc
+          description: DONG_DA_CHOT - dong da duoc chot, khong them minh chung duoc
           content:
             application/json:
               schema:
@@ -9208,7 +9379,9 @@ paths:
       tags:
         - KeKhaiGioQuyDoi
       summary: Go minh chung (soft) + don file vat ly
-      description: "Chi CHINH CHU, va chi khi ban ke con sua duoc (trang thai 1 hoac 4)."
+      description: >-
+        Chi CHINH CHU, va chi khi DONG con sua duoc (TrangThaiDong 1 hoac 3) -
+        gate theo dong, KHONG theo trang thai ban ke.
       operationId: keKhaiGioQuyDoiXoaMinhChung
       parameters:
         - name: idMinhChung
@@ -9236,109 +9409,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
         "409":
-          description: DA_NOP / DA_DUYET
+          description: DONG_DA_CHOT - dong da duoc chot, khong go minh chung duoc
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
 
-  /api/ke-khai-gio-quy-doi/nop:
-    post:
-      tags:
-        - KeKhaiGioQuyDoi
-      summary: Nop ban ke (1 hoac 4 -> 2)
-      description: >
-        Reset moi dong ve TrangThaiDong = 1 va xoa ket qua duyet cu (truong hop nop lai
-        sau khi bi tra ve). Chan khi ban ke chua co dong nao.
-        Nen gui RowVersion lay tu lan doc gan nhat de chan ghi de.
-      operationId: keKhaiGioQuyDoiNop
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NopKeKhaiRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiItemResponse"
-        "403":
-          description: FORBIDDEN - chi chinh chu duoc nop
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "404":
-          description: NOT_FOUND - ban ke chua duoc mo
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "409":
-          description: DA_NOP / DA_DUYET / CONCURRENCY_CONFLICT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "422":
-          description: KHONG_CO_DONG - ban ke chua co dong nao de nop
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-
-  /api/ke-khai-gio-quy-doi/huy-nop:
-    post:
-      tags:
-        - KeKhaiGioQuyDoi
-      summary: Huy nop (2 -> 1)
-      description: >
-        Chi CHINH CHU, va CHI KHI nguoi duyet chua dong vao dong nao. Neu da co dong
-        duoc duyet / tu choi thi tra 409 DA_XET - luc do phai nho nguoi duyet tra lai.
-      operationId: keKhaiGioQuyDoiHuyNop
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NopKeKhaiRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiItemResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "404":
-          description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "409":
-          description: CHUA_NOP / DA_XET / CONCURRENCY_CONFLICT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
+  # GO BO: POST /api/ke-khai-gio-quy-doi/nop, /huy-nop, /{id}/chot, /{id}/tra-lai.
+  # Vong doi da chuyen xuong TUNG DONG nen khong con buoc nop / chot ca ban ke.
+  # Thay bang POST /api/ke-khai-gio-quy-doi/{id}/duyet-chi-tiet.
 
   /api/ke-khai-gio-quy-doi/cho-duyet:
     get:
       tags:
         - KeKhaiGioQuyDoi
-      summary: Danh sach ban ke trong pham vi duyet (mac dinh dang CHO_DUYET)
+      summary: Danh sach ban ke con DONG cho xet, trong pham vi duyet
       description: >
         Chi ADMIN / HT / TK / TKL / TP. Pham vi cua truong don vi = don vi minh +
         don vi con; ADMIN va HT thay toan truong.
+
+        KHONG loc theo trang thai header nua (truoc day mac dinh trangThai = 2 "da nop").
+        Mac dinh chiConChoDuyet = 1: lay moi ban ke CON DONG CHO DUYET, ke ca ban ke
+        giang vien vua go xong mot dong - khong phai cho buoc nop.
+        Ban ke RONG (SoDong = 0) luon bi loai.
+        Sap xep theo DONG cho duyet CU NHAT truoc (NgayNop khong con duoc ghi).
         Phan trang bang ROW_NUMBER (SQL Server 2008 khong co OFFSET/FETCH).
       operationId: keKhaiGioQuyDoiChoDuyet
       parameters:
@@ -9356,7 +9450,9 @@ paths:
         - name: trangThai
           in: query
           required: false
-          description: "Mac dinh 2 (cho duyet). 1 Nhap | 2 Cho duyet | 3 Da duyet | 4 Tra lai."
+          description: >-
+            Loc them theo NHAN dan xuat cua header. Bo trong (mac dinh) = moi trang thai.
+            1 Chua co dong | 2 Con dong cho duyet | 3 Moi dong da chot | 4 Con dong bi tra ve.
           schema:
             type: integer
         - name: tuKhoa
@@ -9365,6 +9461,15 @@ paths:
           description: "Tim theo ho ten hoac ma nhan vien"
           schema:
             type: string
+        - name: chiConChoDuyet
+          in: query
+          required: false
+          description: >-
+            1 (mac dinh) = chi ban ke con dong cho xet - day la hang doi viec cua nguoi duyet.
+            0 = lay ca nhung ban ke da xet het, de xem lai hoac mo lai dong da chot.
+          schema:
+            type: integer
+            default: 1
         - name: page
           in: query
           required: false
@@ -9402,14 +9507,20 @@ paths:
     get:
       tags:
         - KeKhaiGioQuyDoi
-      summary: Tong gio quy doi DA DUYET / giang vien / nam
+      summary: Tong gio quy doi DA CHOT / giang vien / nam
       description: >
-        CHI tinh ban ke da chot (trang thai 3) va dong duoc duyet (TrangThaiDong = 2).
-        Tach san theo hai muc cap 1 cua PHU LUC II: GioSauDaiHoc va GioDaiHoc.
+        CONG THEO TUNG DONG DA CHOT (TrangThaiDong = 2), KHONG doi ca ban ke o trang
+        thai nao. Tach san theo hai muc cap 1 cua PHU LUC II: GioSauDaiHoc va GioDaiHoc.
 
-        DAY LA ENDPOINT MA BUOC CONG VOI GIO GIANG DAY (du lieu goi tu he thong ngoai)
-        SE DOC. Module nay CO Y khong ghi vao gio_thuc_hien_gv va khong sua
-        sp_phieu_tong_hop_tu_dong - phan do lam sau.
+        DOI HANH VI: truoc day endpoint nay con doi ban ke phai o trang thai 3, nen mot
+        ban ke da co dong duoc duyet nhung chua chot ca ban thi bi tinh 0 gio. Nay giang
+        vien con dong cho xet van duoc cong phan da chot. Sau khi chay migration, so
+        tong hop cua don vi co the TANG so voi truoc - do la so dung.
+
+        BUOC CONG VOI GIO GIANG DAY DA CO: GET /api/gio-giang-tkb/tong-hop doc chinh
+        nhung dong nay (cung dieu kien TrangThaiDong = 2) va cong them gio theo thoi
+        khoa bieu ra TONG GIO GIANG trong nam. Ca hai module deu CO Y khong ghi vao
+        gio_thuc_hien_gv va khong sua sp_phieu_tong_hop_tu_dong.
       operationId: keKhaiGioQuyDoiTongHop
       parameters:
         - name: idNam
@@ -9446,13 +9557,23 @@ paths:
     post:
       tags:
         - KeKhaiGioQuyDoi
-      summary: Duyet / tu choi TUNG DONG, kem quyen sua so luong
+      summary: Chot / tra ve / mo lai TUNG DONG, kem quyen sua so luong
       description: >
-        Nguoi duyet duoc dat lai SoLuongDuyet (bo trong = giu nguyen so giang vien da ke).
-        Dong bi tu choi cho GioDuyet = 0 nhung VAN GIU lai SoLuong va SoLuongDuyet de doi chieu.
-        Gio duyet tinh lai tu SNAPSHOT cua dong, KHONG doc lai danh muc.
-        TongGioDuyet chi cong cac dong TrangThaiDong = 2.
-        Ban ke phai dang o trang thai 2.
+        Day la endpoint xet duy nhat cua module - thay cho ca /chot va /tra-lai cu.
+        KHONG con dieu kien ve trang thai ban ke: giang vien ke toi dau xet toi do.
+
+        * QuyetDinh = 2 (CHOT): dong khoa voi giang vien, GioDuyet tinh lai tu SNAPSHOT
+          cua dong (KHONG doc lai danh muc) theo SoLuongDuyet.
+        * QuyetDinh = 3 (TRA VE): BAT BUOC co NhanXet lam ly do, thieu thi 400
+          THIEU_LY_DO va khong dong nao bi doi. GioDuyet = 0 nhung VAN GIU lai SoLuong
+          va SoLuongDuyet de doi chieu. Giang vien sua dong do thi no tu quay ve cho duyet.
+        * MO LAI dong da chot: goi chinh endpoint nay tren dong dang o TrangThaiDong = 2
+          (chot nham thi sua duoc, khong phai dong vao DB). Moi lan mo lai deu ghi nhat
+          ky HanhDong = 10.
+
+        SoLuongDuyet bo trong = giu nguyen so giang vien da ke.
+        TongGioDuyet chi cong cac dong TrangThaiDong = 2; TrangThai header duoc tinh lai
+        sau moi lan xet.
       operationId: keKhaiGioQuyDoiDuyetChiTiet
       parameters:
         - name: id
@@ -9474,7 +9595,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/KeKhaiGioQuyDoiItemResponse"
         "400":
-          description: INVALID - danh sach rong, QuyetDinh khac 2/3, so luong am, dong khong thuoc ban ke
+          description: >-
+            INVALID (danh sach rong, QuyetDinh khac 2/3, so luong am, dong khong thuoc
+            ban ke) hoac THIEU_LY_DO (QuyetDinh = 3 ma NhanXet rong)
           content:
             application/json:
               schema:
@@ -9487,121 +9610,6 @@ paths:
                 $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
         "404":
           description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "409":
-          description: CHUA_NOP / DA_DUYET - ban ke khong o trang thai 2
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-
-  /api/ke-khai-gio-quy-doi/{id}/chot:
-    post:
-      tags:
-        - KeKhaiGioQuyDoi
-      summary: Chot ban ke (2 -> 3)
-      description: >
-        Chan khi CON dong chua xet (TrangThaiDong = 1) -> 422 CON_DONG_CHUA_XET.
-        Guard mat-cap-nhat: UPDATE ... WHERE trang_thai = 2 kem kiem tra so dong bi anh huong.
-
-        LUU Y: trang thai 3 hien la DIEM CUOI - CHUA co endpoint mo lai. Chot nham thi
-        phai sua tay duoi DB.
-      operationId: keKhaiGioQuyDoiChot
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ChotKeKhaiRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiItemResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "404":
-          description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "409":
-          description: DA_DUYET / CHUA_NOP / CONCURRENCY_CONFLICT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "422":
-          description: CON_DONG_CHUA_XET - con dong chua duyet hoac chua tu choi
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-
-  /api/ke-khai-gio-quy-doi/{id}/tra-lai:
-    post:
-      tags:
-        - KeKhaiGioQuyDoi
-      summary: Tra ban ke ve cho giang vien sua (2 -> 4)
-      description: >
-        LyDo BAT BUOC. Reset toan bo TrangThaiDong ve 1 va xoa SoLuongDuyet / GioDuyet
-        de giang vien nop lai tu dau. LyDo duoc luu vao NhanXetDuyet cua header.
-      operationId: keKhaiGioQuyDoiTraLai
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TraLaiKeKhaiRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiItemResponse"
-        "400":
-          description: INVALID - thieu ly do tra lai
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "404":
-          description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiGioQuyDoiResponse"
-        "409":
-          description: DA_DUYET / CHUA_NOP / CONCURRENCY_CONFLICT
           content:
             application/json:
               schema:
@@ -14925,131 +14933,259 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ChucDanhNgheNghiepDto"
-    GioGiangImportCreateRequest:
+    GioGiangTkbDto:
       type: object
-      required:
-        - HoTen
-        - KyHoc
+      description: Tong hop gio giang theo TKB cua mot giang vien trong mot nam.
       properties:
-        HoTen:
-          type: string
-          maxLength: 150
-        ChucDanh:
-          type: string
-          maxLength: 100
-        TenKhoa:
-          type: string
-          maxLength: 200
-          description: Ten khoa (tuy chon) — luu de kiem chung nguon du lieu import.
-        TongGioGiangDay:
-          type: number
-          format: double
-        TongGioCvk:
-          type: number
-          format: double
-        TongGioQuiDoi:
-          type: number
-          format: double
-        DinhMucGioChuan:
-          type: number
-          format: double
-        TongGioThucLinh:
-          type: number
-          format: double
-        KyHoc:
+        IdGioGiangTkb:
           type: integer
-          description: "261/262/263 (2 so dau = nam hoc, so cuoi = ky: 1/2/he)."
-    GioGiangImportUpdateRequest:
-      type: object
-      required:
-        - HoTen
-        - KyHoc
-      properties:
-        HoTen:
-          type: string
-          maxLength: 150
-        ChucDanh:
-          type: string
-          maxLength: 100
-        TenKhoa:
-          type: string
-          maxLength: 200
-          description: Ten khoa (tuy chon) — luu de kiem chung nguon du lieu import.
-        TongGioGiangDay:
-          type: number
-          format: double
-        TongGioCvk:
-          type: number
-          format: double
-        TongGioQuiDoi:
-          type: number
-          format: double
-        DinhMucGioChuan:
-          type: number
-          format: double
-        TongGioThucLinh:
-          type: number
-          format: double
-        KyHoc:
-          type: integer
-    GioGiangImportDto:
-      type: object
-      properties:
-        IdGioGiangImport:
+        IdNam:
           type: integer
         HoTen:
           type: string
-        ChucDanh:
+          description: Nguyen van tu file (HoLot + Ten).
+        HoTenChuan:
           type: string
-          nullable: true
+          description: Da bo dau, gop khoang trang, viet hoa. Dung lam khoa anh xa.
         TenKhoa:
           type: string
           nullable: true
-        TongGioGiangDay:
-          type: number
-          format: double
-        TongGioCvk:
-          type: number
-          format: double
-        TongGioQuiDoi:
-          type: number
-          format: double
-        DinhMucGioChuan:
-          type: number
-          format: double
-        TongGioThucLinh:
-          type: number
-          format: double
-        KyHoc:
+        SoLop:
           type: integer
+        SoTietTrongNam:
+          type: integer
+          description: Tong cot SoTiet cua cac lop thuoc nam nay (3 ky - xem endpoint import).
+        GioChuanTrongNam:
+          type: number
+          format: double
+          description: Tong cua (SoTiet * he so si so) tung lop, moi lop lam tron 2 chu so.
+        IdNhanVien:
+          type: integer
+          nullable: true
+          description: Null = CHUA anh xa -> dong nay khong vao duoc bang tong hop.
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTenNhanVien:
+          type: string
+          nullable: true
+        TenDonVi:
+          type: string
+          nullable: true
+        SoNguoiKhopTen:
+          type: integer
+          description: >-
+            So nhan vien DANG HOAT DONG co ho ten trung voi dong nay.
+            1 = da duoc anh xa tu dong luc import (IdNhanVien co gia tri);
+            0 = khong ai ten nay trong he thong (sai chinh ta / chua co ho so);
+            >= 2 = TRUNG TEN, he thong khong doan - phai co nguoi chon.
+            Voi dong chua anh xa, con so nay cho biet vi sao.
+        GoiYIdNhanVien:
+          type: integer
+          nullable: true
+          description: >-
+            Goi y khi ten khop DUY NHAT mot nhan vien dang hoat dong. Tu khi co anh xa
+            tu dong, cot nay GAN NHU LUON NULL (ten khop duy nhat thi da duoc gan roi);
+            no chi con gia tri trong khoang giua hai lan quet - vd vua them nhan vien
+            moi ma chua goi POST /api/gio-giang-tkb/anh-xa/tu-dong.
+        GoiYMaNhanVien:
+          type: string
+          nullable: true
+        GoiYTenDonVi:
+          type: string
+          nullable: true
         NgayImport:
           type: string
           format: date-time
           nullable: true
-        IdNguoiImport:
+    GioGiangTkbChiTietDto:
+      type: object
+      description: Mot lop tin chi trong bang gio giang TKB cua giang vien.
+      properties:
+        IdChiTiet:
           type: integer
-          nullable: true
-          description: id_nhan_vien nguoi thuc hien import (tu token); NULL neu tai khoan khong gan nhan vien.
-        NguoiImportHoTen:
+        IdGioGiangTkb:
+          type: integer
+        KyHoc:
+          type: integer
+          description: >-
+            2 so dau = nam hoc (nam KET THUC), so cuoi = ky. Voi idNam = 2026 chi co
+            262, 263 va 271.
+        MaLopTinChi:
           type: string
           nullable: true
-    GioGiangImportResponse:
+        MaHocPhan:
+          type: string
+          nullable: true
+        TenHocPhan:
+          type: string
+          nullable: true
+        TenKhoa:
+          type: string
+          nullable: true
+        SlSvDangKyHoc:
+          type: integer
+        HeSo:
+          type: number
+          format: double
+          description: "He so quy doi theo si so: 1,0 / 1,1 / 1,2 / 1,3 / 1,4 / 1,5."
+        SoTietTrongNam:
+          type: integer
+          description: Nguyen van cot SoTiet cua file cho lop nay.
+        GioChuanTrongNam:
+          type: number
+          format: double
+          description: SoTietTrongNam * HeSo, lam tron 2 chu so (AwayFromZero).
+    GioGiangTkbTongHopDto:
+      type: object
+      description: TONG GIO GIANG trong nam = gio TKB + gio ke khai Phu luc II da duyet.
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        IdDonVi:
+          type: integer
+          nullable: true
+        MaDonVi:
+          type: string
+          nullable: true
+        TenDonVi:
+          type: string
+          nullable: true
+        IdNam:
+          type: integer
+        GioTkb:
+          type: number
+          format: double
+          description: Tong gio chuan tu thoi khoa bieu (0 neu nguoi nay khong co dong TKB).
+        SoLopTkb:
+          type: integer
+        SoTietTrongNam:
+          type: integer
+        GioKeKhaiDuyet:
+          type: number
+          format: double
+          description: GioSauDaiHoc + GioDaiHoc (0 neu chua co ban ke khai da chot).
+        GioSauDaiHoc:
+          type: number
+          format: double
+        GioDaiHoc:
+          type: number
+          format: double
+        TongGio:
+          type: number
+          format: double
+          description: GioTkb + GioKeKhaiDuyet.
+    GioGiangTkbCanhBaoDto:
+      type: object
+      description: >-
+        Canh bao phat hien khi doc file TKB. KHONG chan import (du lieu van tinh duoc)
+        nhung deu la dau hieu file hoac tham so co van de.
+      properties:
+        Loai:
+          type: string
+          enum:
+            - TRUNG_LOP
+            - SO_TIET_TRONG
+          description: >-
+            TRUNG_LOP = trung (ho ten, ky hoc, ma lop) - van giu CA HAI dong vi dong
+            giang la co that;
+            SO_TIET_TRONG = cot SoTiet trong hoac khong duong - lop do duoc tinh 0 gio.
+        SoDongExcel:
+          type: integer
+          description: So dong tren file Excel (dem tu 1, tinh ca dong tieu de).
+        HoTen:
+          type: string
+          nullable: true
+        KyHoc:
+          type: integer
+        MaLopTinChi:
+          type: string
+          nullable: true
+        ThongDiep:
+          type: string
+    GioGiangTkbAnhXaRequest:
+      type: object
+      properties:
+        HoTenChuan:
+          type: string
+          maxLength: 150
+          description: Ho ten trong file TKB. Server tu chuan hoa lai (co the gui ten con dau).
+        IdNhanVien:
+          type: integer
+          nullable: true
+          description: Null = GO anh xa cua ho ten nay.
+      required:
+        - HoTenChuan
+    GioGiangTkbResponse:
       type: object
       properties:
         Success:
           type: boolean
         Message:
           type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          description: FORBIDDEN / NOT_FOUND / INVALID.
         Item:
-          $ref: "#/components/schemas/GioGiangImportDto"
+          $ref: "#/components/schemas/GioGiangTkbDto"
         Items:
           type: array
           items:
-            $ref: "#/components/schemas/GioGiangImportDto"
+            $ref: "#/components/schemas/GioGiangTkbDto"
+        ChiTiet:
+          type: array
+          items:
+            $ref: "#/components/schemas/GioGiangTkbChiTietDto"
+        TongHop:
+          type: array
+          items:
+            $ref: "#/components/schemas/GioGiangTkbTongHopDto"
+        SoDongDoc:
+          type: integer
+          nullable: true
+          description: So dong du lieu doc duoc tu file Excel (chi o endpoint import).
         ImportedCount:
           type: integer
           nullable: true
-          description: So dong da luu (chi co o endpoint import).
+          description: So dong chi tiet da luu (chi o endpoint import).
+        SoGiangVien:
+          type: integer
+          nullable: true
+          description: So giang vien sau khi gop theo ho ten chuan (chi o endpoint import).
+        SoDongBoQua:
+          type: integer
+          nullable: true
+          description: >-
+            So dong bi BO QUA vi ky hoc khong thuoc nam dang import (vd ky 261 khi
+            idNam = 2026). KHONG phai loi - file xuat ra thuong chua nhieu ky.
+        SoDongTrung:
+          type: integer
+          nullable: true
+        SoDongTuDongAnhXa:
+          type: integer
+          nullable: true
+          description: >-
+            So giang vien duoc gan TU DONG vao nhan vien trong lan chay nay (ten khop
+            duy nhat mot nguoi). Chi o endpoint import va anh-xa/tu-dong.
+        CanhBao:
+          type: array
+          description: Toi da 20 canh bao dau; bo dem day du nam o cac cot SoDong*.
+          items:
+            $ref: "#/components/schemas/GioGiangTkbCanhBaoDto"
+        SoDongChuaAnhXa:
+          type: integer
+          nullable: true
+          description: >-
+            So giang vien trong nam CHUA anh xa ve nhan vien (trung ten hoac khong khop
+            ai). Con > 0 nghia la bang tong hop chua day du - phai canh bao truoc khi
+            dung so lieu.
     NckhSyncResult:
       type: object
       properties:
@@ -17999,10 +18135,11 @@ components:
       type: object
       description: >-
         Ban ke khai gio quy doi cua mot giang vien trong mot nam (1 ban / GV / nam).
-        Vong doi: 1 NHAP -> 2 CHO_DUYET -> 3 DA_DUYET; co the bi tra ve 4 TRA_LAI.
+        VONG DOI NAM O TUNG DONG (xem ChiTietKeKhaiDto.TrangThaiDong), khong o header.
       properties:
         IdKeKhai:
           type: integer
+          description: "0 = ban ke CHUA TON TAI (chua luu dong nao). Khong phai loi."
         IdNhanVien:
           type: integer
         MaNhanVien:
@@ -18024,7 +18161,11 @@ components:
           type: integer
         TrangThai:
           type: integer
-          description: "1 Nhap | 2 Cho duyet | 3 Da duyet | 4 Tra lai"
+          description: >-
+            NHAN DAN XUAT tu cac dong, KHONG phai khoa nghiep vu - server tinh lai sau
+            moi lan luu / xet, khong ai set tay:
+            4 con dong bi tra ve (uu tien cao nhat) | 2 con dong cho duyet |
+            3 co dong va TAT CA da chot | 1 khong con dong song nao.
         TongGioKeKhai:
           type: number
           format: double
@@ -18032,14 +18173,18 @@ components:
         TongGioDuyet:
           type: number
           format: double
-          description: "SUM GioDuyet, CHI cong cac dong TrangThaiDong = 2."
+          description: "SUM GioDuyet, CHI cong cac dong TrangThaiDong = 2 (da chot)."
         NgayNop:
           type: string
           format: date-time
           nullable: true
+          description: >-
+            VET TICH cua luong "nop ca ban ke" da go - luon null voi du lieu moi.
+            Giu lai de khong pha du lieu cu.
         IdNguoiDuyet:
           type: integer
           nullable: true
+          description: "Nguoi xet GAN NHAT, chi de hien thi."
         TenNguoiDuyet:
           type: string
           nullable: true
@@ -18047,10 +18192,13 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: "Thoi diem xet GAN NHAT, chi de hien thi."
         NhanXetDuyet:
           type: string
           nullable: true
-          description: "Ly do tra lai, hoac ghi chu khi chot."
+          description: >-
+            VET TICH cua luong cu. Ly do tra ve nay nam o TUNG DONG
+            (ChiTietKeKhaiDto.NhanXetDuyet).
         NgayTao:
           type: string
           format: date-time
@@ -18063,24 +18211,26 @@ components:
           type: string
           format: byte
           nullable: true
-          description: "Gui lai khi nop / huy nop / chot / tra lai de chan ghi de."
+          description: >-
+            VET TICH: khong con endpoint nao nhan RowVersion (4 SP dung no da bi go).
+            Null khi ban ke chua ton tai.
         ChoPhepSua:
           type: boolean
-          description: "Server tinh san tu quyen + trang thai; FE khong phai tu suy."
-        ChoPhepNop:
-          type: boolean
+          description: >-
+            QUYEN THUAN cua nguoi goi (chinh chu). Dieu kien theo tung dong nam o
+            ChiTietKeKhaiDto.ChoPhepSua - dung co nay de an/hien nut "Them dong".
         ChoPhepDuyet:
           type: boolean
         CanSua:
           type: boolean
-          description: "Quyen thuan tuy (chinh chu), chua xet trang thai."
+          description: "Quyen thuan tuy (chinh chu)."
         CanDuyet:
           type: boolean
         SoDong:
           type: integer
         SoDongChoDuyet:
           type: integer
-          description: "So dong con TrangThaiDong = 1. Khac 0 thi CHOT bi chan."
+          description: "So dong con TrangThaiDong = 1 - viec nguoi duyet con phai xet."
         ChiTiet:
           type: array
           items:
@@ -18122,7 +18272,7 @@ components:
         KyHoc:
           type: integer
           nullable: true
-          description: "261 / 262 / 263 - de doi chieu gio_giang_import. Null = khong gan ky."
+          description: "261 / 262 / 263 - ky hoc cua cong viec ke khai. Null = khong gan ky."
         SoLuong:
           type: number
           format: double
@@ -18140,10 +18290,16 @@ components:
           type: number
           format: double
           nullable: true
-          description: "0 khi dong bi tu choi."
+          description: "0 khi dong bi tra ve."
         TrangThaiDong:
           type: integer
-          description: "1 Cho duyet | 2 Da duyet | 3 Tu choi"
+          description: >-
+            State machine THAT SU cua module:
+            1 CHO DUYET (giang vien sua / go duoc, nguoi duyet phai xet) |
+            2 DA CHOT (khoa voi giang vien; nguoi duyet van mo lai duoc) |
+            3 TRA VE (kem ly do o NhanXetDuyet; giang vien sua thi tu quay ve 1).
+            LUU Y: gia tri 3 truoc day mang nghia "Tu choi", nay doc la "Tra ve" -
+            cung cho GioDuyet = 0, khac o cho giang vien sua duoc.
         MoTa:
           type: string
           nullable: true
@@ -18151,6 +18307,8 @@ components:
         NhanXetDuyet:
           type: string
           nullable: true
+          description: >-
+            Ly do nguoi duyet tra ve dong nay. Bi xoa khi giang vien sua dong.
         NgayTao:
           type: string
           format: date-time
@@ -18161,6 +18319,16 @@ components:
           nullable: true
         SoMinhChung:
           type: integer
+        ChoPhepSua:
+          type: boolean
+          description: >-
+            Nguoi goi sua duoc dong nay: la chinh chu VA TrangThaiDong thuoc (1, 3).
+            False tren dong da chot - FE khoa o nhap va an nut xoa.
+        ChoPhepXet:
+          type: boolean
+          description: >-
+            Nguoi goi chot / tra ve / mo lai duoc dong nay (co quyen duyet). True ke ca
+            khi dong da chot, vi mo lai la hop le.
         MinhChung:
           type: array
           items:
@@ -18217,6 +18385,7 @@ components:
           type: integer
         TrangThai:
           type: integer
+          description: "Nhan dan xuat - xem KeKhaiGioQuyDoiDto.TrangThai."
         TongGioKeKhai:
           type: number
           format: double
@@ -18227,10 +18396,12 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: "Vet tich cua luong nop da go - luon null voi du lieu moi."
         SoDong:
           type: integer
         SoDongChoDuyet:
           type: integer
+          description: "So dong nguoi duyet con phai xet. Danh sach sap theo dong cho cu nhat."
 
     KeKhaiPhanTrangDto:
       type: object
@@ -18247,8 +18418,9 @@ components:
     KeKhaiGioQuyDoiTongHopDto:
       type: object
       description: >-
-        Tong gio quy doi DA DUYET cua mot giang vien trong nam, tach theo hai muc
+        Tong gio quy doi DA CHOT cua mot giang vien trong nam, tach theo hai muc
         cap 1 cua PHU LUC II. Day la du lieu ma buoc cong voi gio giang day se doc.
+        Chi nhung giang vien co it nhat MOT DONG da chot moi xuat hien.
       properties:
         IdKeKhai:
           type: integer
@@ -18273,7 +18445,9 @@ components:
           type: integer
         TrangThai:
           type: integer
-          description: "Luon = 3 (chi tong hop ban da chot)."
+          description: >-
+            Nhan dan xuat cua ban ke - KHONG con luon = 3. Ban ke vua co dong da chot
+            vua con dong cho xet se ra 2 hoac 4 nhung van duoc tong hop.
         TongGioDuyet:
           type: number
           format: double
@@ -18281,6 +18455,7 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: "Thoi diem xet gan nhat."
         GioSauDaiHoc:
           type: number
           format: double
@@ -18306,8 +18481,10 @@ components:
         HanhDong:
           type: integer
           description: >-
-            1 Tao dong | 2 Sua dong | 3 Xoa dong | 4 Nop | 5 Duyet dong |
-            6 Tu choi dong | 7 Chot ban ke | 8 Tra lai | 9 Huy nop
+            Dang sinh ra: 1 Tao dong | 2 Sua dong | 3 Xoa dong | 5 Chot dong |
+            6 Tra ve dong | 10 Mo lai dong da chot.
+            Chi con trong du lieu CU (luong nop ca ban ke da go): 4 Nop |
+            7 Chot ban ke | 8 Tra lai | 9 Huy nop.
         SoLuongTruoc:
           type: number
           format: double
@@ -18347,7 +18524,9 @@ components:
         IdChiTiet:
           type: integer
           nullable: true
-          description: "Null = dong moi. Co gia tri = sua dong da co (phai thuoc dung ban ke nay)."
+          description: >-
+            Null = dong moi. Co gia tri = sua dong da co (phai thuoc dung ban ke nay
+            va TrangThaiDong phai la 1 hoac 3; dong da chot -> 409 DONG_DA_CHOT).
         IdCongViec:
           type: integer
           description: "Phai tro toi mot dau viec LaLa = true va dang hoat dong."
@@ -18367,8 +18546,10 @@ components:
     LuuChiTietKeKhaiRequest:
       type: object
       description: >-
-        Luu TOAN BO cac dong trong mot request. Dong dang co trong DB ma khong xuat
-        hien trong ChiTiet se bi go. Danh sach rong = go het dong.
+        Luu TOAN BO cac dong trong mot request. Dong CON SUA DUOC (TrangThaiDong 1 hoac 3)
+        ma khong xuat hien trong ChiTiet se bi go; dong DA CHOT thi khong, no duoc giu
+        nguyen du vang mat. Danh sach rong = go het dong con sua duoc.
+        Tao ban ke neu chua co (lazy-create).
       required:
         - IdNam
       properties:
@@ -18379,19 +18560,8 @@ components:
           items:
             $ref: "#/components/schemas/ChiTietKeKhaiItemRequest"
 
-    NopKeKhaiRequest:
-      type: object
-      description: "Dung chung cho nop va huy-nop."
-      required:
-        - IdNam
-      properties:
-        IdNam:
-          type: integer
-        RowVersion:
-          type: string
-          format: byte
-          nullable: true
-          description: "Bo trong = bo qua kiem tra phien ban (khong khuyen khich)."
+    # GO BO: NopKeKhaiRequest, ChotKeKhaiRequest, TraLaiKeKhaiRequest - cac endpoint
+    # dung chung da bi go khi vong doi chuyen xuong tung dong.
 
     DuyetChiTietItemRequest:
       type: object
@@ -18402,9 +18572,12 @@ components:
       properties:
         IdChiTiet:
           type: integer
+          description: >-
+            Dong can xet. Duoc phep tro toi dong DANG O TrangThaiDong = 2 - do la
+            thao tac MO LAI dong da chot.
         QuyetDinh:
           type: integer
-          description: "2 = duyet, 3 = tu choi. Gia tri khac -> 400 INVALID."
+          description: "2 = chot, 3 = tra ve. Gia tri khac -> 400 INVALID."
         SoLuongDuyet:
           type: number
           format: double
@@ -18414,10 +18587,13 @@ components:
           type: string
           maxLength: 1000
           nullable: true
+          description: >-
+            BAT BUOC khi QuyetDinh = 3 (ly do tra ve) - thieu thi 400 THIEU_LY_DO va
+            KHONG dong nao bi doi. Tuy chon khi QuyetDinh = 2.
 
     DuyetChiTietKeKhaiRequest:
       type: object
-      description: "Duyet / tu choi nhieu dong trong mot lan bam. BAT BUOC co it nhat 1 phan tu."
+      description: "Chot / tra ve nhieu dong trong mot lan bam. BAT BUOC co it nhat 1 phan tu."
       required:
         - QuyetDinh
       properties:
@@ -18426,32 +18602,6 @@ components:
           minItems: 1
           items:
             $ref: "#/components/schemas/DuyetChiTietItemRequest"
-
-    ChotKeKhaiRequest:
-      type: object
-      properties:
-        GhiChu:
-          type: string
-          maxLength: 1000
-          nullable: true
-        RowVersion:
-          type: string
-          format: byte
-          nullable: true
-
-    TraLaiKeKhaiRequest:
-      type: object
-      required:
-        - LyDo
-      properties:
-        LyDo:
-          type: string
-          maxLength: 1000
-          description: "BAT BUOC. Duoc luu vao NhanXetDuyet cua header."
-        RowVersion:
-          type: string
-          format: byte
-          nullable: true
 
     KeKhaiGioQuyDoiResponse:
       type: object

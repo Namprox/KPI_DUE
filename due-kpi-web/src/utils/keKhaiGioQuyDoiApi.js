@@ -2,8 +2,8 @@
  * Kê khai giờ quy đổi theo PHỤ LỤC II - "Quy đổi các hoạt động chuyên môn ra giờ
  * chuẩn giảng dạy". Lớp truy cập API của cả module.
  *
- * Nghiệp vụ: **giảng viên tự kê khai số lượng từng đầu việc**; TK/TKL/TP duyệt
- * hoặc từ chối TỪNG DÒNG và được sửa số lượng trước khi chốt. Khác hẳn nhiệm vụ
+ * Nghiệp vụ: **giảng viên tự kê khai số lượng từng đầu việc**; TK/TKL/TP chốt
+ * hoặc trả về TỪNG DÒNG và được sửa số lượng khi chốt. Khác hẳn nhiệm vụ
  * Khoa (nơi Khoa nhập, giảng viên chỉ phản hồi).
  *
  * Mọi request đi qua apiFetch nên đã có sẵn `credentials: 'include'` và vòng
@@ -19,12 +19,14 @@
  *     con số DỰ KIẾN lúc gõ; sau khi lưu luôn lấy lại từ response.
  *  3. Lưu chi tiết là MỘT form MỘT lần lưu: gửi TOÀN BỘ danh sách dòng, server tự
  *     tính diff thêm/sửa/gỡ. Dòng không xuất hiện trong danh sách sẽ bị soft
- *     delete. Danh sách rỗng = gỡ hết dòng (vẫn lưu được, chỉ chặn khi NỘP).
+ *     delete. Dòng đã chốt vắng mặt vẫn được server giữ nguyên; danh sách rỗng
+ *     chỉ gỡ hết những dòng còn sửa được.
  *  4. Hệ số / tên đầu việc / đơn vị tính trên từng dòng là SNAPSHOT lúc nhập -
  *     Admin sửa danh mục về sau KHÔNG làm đổi số liệu đã lưu. Snapshot chỉ làm
  *     mới khi `IdCongViec` của dòng đổi.
- *  5. Server trả sẵn các cờ `ChoPhepSua` / `ChoPhepNop` / `ChoPhepDuyet` - dùng
- *     cờ, đừng tự suy từ trạng thái + chức vụ ở FE (fail-closed khi thiếu cờ).
+ *  5. Không còn bước nộp/chốt cả bản kê. Server trả quyền ở header và đặc biệt
+ *     là `ChoPhepSua` / `ChoPhepXet` trên TỪNG DÒNG - dùng đúng các cờ này,
+ *     đừng tự suy từ trạng thái + chức vụ ở FE (fail-closed khi thiếu cờ).
  *
  * Nguồn chuẩn: docs/openapi.yaml (tag KeKhaiGioQuyDoi, CongViecQuyDoi),
  * docs/schema_ghi_chu.md mục 9.
@@ -37,61 +39,54 @@ import { apiFetch } from "./api";
 /* ------------------------------------------------------------------ */
 
 /**
- * Vòng đời bản kê (`ke_khai_gio_quy_doi.trang_thai`).
- *
- *   1 NHAP ──nộp──> 2 CHO_DUYET ──chốt──> 3 DA_DUYET
- *     ^               │
- *     └──huỷ nộp──────┘
- *                     └──trả lại──> 4 TRA_LAI ──nộp lại──> 2
- *
- * ⚠️ Trạng thái 3 hiện là ĐIỂM CUỐI - chưa có endpoint mở lại. Chốt nhầm phải
- * sửa tay dưới DB, nên màn hình duyệt phải hỏi xác nhận trước khi chốt.
+ * Nhãn DẪN XUẤT của header. Đây không còn là state machine hay khoá nghiệp vụ;
+ * server tính lại từ trạng thái các dòng sau mỗi lần lưu/xét.
  */
 export const TRANG_THAI_KE_KHAI = {
-  NHAP: 1,
-  CHO_DUYET: 2,
-  DA_DUYET: 3,
-  TRA_LAI: 4,
+  KHONG_CO_DONG: 1,
+  CON_CHO_DUYET: 2,
+  TAT_CA_DA_CHOT: 3,
+  CON_TRA_VE: 4,
 };
 
 /** Trạng thái TỪNG DÒNG (`chi_tiet_ke_khai_gio_quy_doi.trang_thai_dong`). */
 export const TRANG_THAI_DONG_KK = {
   CHO_DUYET: 1,
-  DA_DUYET: 2,
-  TU_CHOI: 3,
+  DA_CHOT: 2,
+  TRA_VE: 3,
 };
 
 /** Quyết định gửi lên endpoint duyệt-chi-tiet. Giá trị khác 2/3 ⇒ 400 INVALID. */
 export const QUYET_DINH = {
-  DUYET: TRANG_THAI_DONG_KK.DA_DUYET,
-  TU_CHOI: TRANG_THAI_DONG_KK.TU_CHOI,
+  CHOT: TRANG_THAI_DONG_KK.DA_CHOT,
+  TRA_VE: TRANG_THAI_DONG_KK.TRA_VE,
 };
 
 /** Nhãn + màu badge của bản kê. Dùng chung cả màn hình giảng viên lẫn màn duyệt. */
 export const TRANG_THAI_KE_KHAI_META = {
   1: {
-    label: "Đang kê khai",
+    label: "Chưa có dòng",
     icon: "fa-pen",
     bg: "#f1f5f9",
     color: "#475569",
     border: "#e2e8f0",
   },
   2: {
-    label: "Chờ duyệt",
+    label: "Còn dòng chờ duyệt",
     icon: "fa-hourglass-half",
     bg: "#fffbeb",
     color: "#b45309",
     border: "#fde68a",
   },
   3: {
-    label: "Đã chốt",
+    label: "Tất cả đã chốt",
     icon: "fa-lock",
     bg: "#ecfdf5",
     color: "#047857",
     border: "#a7f3d0",
   },
   4: {
-    label: "Bị trả lại",
+    label: "Có dòng trả về",
     icon: "fa-rotate-left",
     bg: "#fef2f2",
     color: "#b91c1c",
@@ -108,14 +103,14 @@ export const TRANG_THAI_DONG_KK_META = {
     border: "#fde68a",
   },
   2: {
-    label: "Đã duyệt",
+    label: "Đã chốt",
     icon: "fa-circle-check",
     bg: "#ecfdf5",
     color: "#047857",
     border: "#a7f3d0",
   },
   3: {
-    label: "Từ chối",
+    label: "Trả về",
     icon: "fa-circle-xmark",
     bg: "#fef2f2",
     color: "#b91c1c",
@@ -133,11 +128,12 @@ export const HANH_DONG_KK = {
   SUA_DONG: 2,
   XOA_DONG: 3,
   NOP: 4,
-  DUYET_DONG: 5,
-  TU_CHOI_DONG: 6,
+  CHOT_DONG: 5,
+  TRA_VE_DONG: 6,
   CHOT: 7,
   TRA_LAI: 8,
   HUY_NOP: 9,
+  MO_LAI_DONG: 10,
 };
 
 export const TEN_HANH_DONG_KK = {
@@ -145,11 +141,12 @@ export const TEN_HANH_DONG_KK = {
   [HANH_DONG_KK.SUA_DONG]: "Sửa dòng",
   [HANH_DONG_KK.XOA_DONG]: "Gỡ dòng",
   [HANH_DONG_KK.NOP]: "Nộp bản kê",
-  [HANH_DONG_KK.DUYET_DONG]: "Duyệt dòng",
-  [HANH_DONG_KK.TU_CHOI_DONG]: "Từ chối dòng",
+  [HANH_DONG_KK.CHOT_DONG]: "Chốt dòng",
+  [HANH_DONG_KK.TRA_VE_DONG]: "Trả về dòng",
   [HANH_DONG_KK.CHOT]: "Chốt bản kê",
   [HANH_DONG_KK.TRA_LAI]: "Trả lại",
   [HANH_DONG_KK.HUY_NOP]: "Huỷ nộp",
+  [HANH_DONG_KK.MO_LAI_DONG]: "Mở lại dòng đã chốt",
 };
 
 /**
@@ -181,19 +178,12 @@ export const KKGQD_ERROR_MESSAGES = {
   FILE_NOT_FOUND: "Tệp minh chứng không còn trên máy chủ",
   CONG_VIEC_KHONG_HOP_LE:
     "Có dòng trỏ tới đầu việc không kê khai được (nút gộp hoặc đã ngừng sử dụng). Toàn bộ lần lưu đã bị huỷ.",
-  DA_NOP: "Bản kê đang chờ duyệt nên không sửa được. Hãy huỷ nộp trước.",
-  DA_DUYET: "Bản kê đã chốt nên không thay đổi được nữa",
-  CHUA_NOP: "Bản kê chưa được nộp",
-  DA_XET:
-    "Người duyệt đã xét ít nhất một dòng nên không huỷ nộp được - hãy nhờ người duyệt trả lại bản kê.",
+  DONG_DA_CHOT:
+    "Dòng này đã được chốt. Hãy nhờ người duyệt mở lại trước khi sửa.",
+  THIEU_LY_DO: "Phải ghi rõ lý do khi trả dòng về cho giảng viên.",
   DANG_SU_DUNG: "Đầu việc đang được kê khai nên không đổi được",
   CO_CON_HOAT_DONG: "Còn đầu việc con đang hoạt động",
   DUPLICATE_MA: "Mã đầu việc đã tồn tại",
-  CONCURRENCY_CONFLICT:
-    "Bản kê vừa được người khác thay đổi. Hãy làm mới trang rồi thao tác lại.",
-  CON_DONG_CHUA_XET:
-    "Vẫn còn dòng chưa duyệt hoặc chưa từ chối nên chưa chốt được bản kê",
-  KHONG_CO_DONG: "Bản kê chưa có dòng nào để nộp",
   IO_ERROR: "Lỗi đọc/ghi tệp trên máy chủ",
   DB_ERROR: "Lỗi hệ thống khi truy cập dữ liệu, vui lòng thử lại",
   SQL_ERROR: "Lỗi hệ thống khi truy cập dữ liệu, vui lòng thử lại",
@@ -302,8 +292,8 @@ export const layCayCongViec = ({ chiLa, chiHoatDong } = {}) =>
 /* ------------------------------------------------------------------ */
 
 /**
- * Bản kê của một năm - server TỰ TẠO bản NHAP nếu chưa có, nên màn hình không
- * cần nút "mở bản kê".
+ * Bản kê của một năm. Endpoint đọc không ghi dữ liệu: nếu chưa có, server trả
+ * header ảo `IdKeKhai = 0`; header thật chỉ được tạo khi lưu dòng đầu tiên.
  *
  * @param {number|string} idNam
  * @param {number|string} [idNhanVien] xem bản kê của người khác (cần quyền duyệt)
@@ -326,8 +316,8 @@ export const layBanKeTheoId = (idKeKhai) =>
 /**
  * Lưu TOÀN BỘ các dòng trong một request.
  *
- * Dòng đang có trong DB mà KHÔNG nằm trong `chiTiet` sẽ bị gỡ - đây là cách duy
- * nhất để xoá một dòng, không có endpoint xoá lẻ. Mảng rỗng = gỡ hết.
+ * Dòng còn sửa được mà KHÔNG nằm trong `chiTiet` sẽ bị gỡ. Dòng đã chốt vắng mặt
+ * vẫn được giữ nguyên. Không có endpoint xoá lẻ; mảng rỗng = gỡ hết dòng còn sửa.
  *
  * KHÔNG gửi số giờ: server tự tính từ hệ số của danh mục.
  *
@@ -340,32 +330,6 @@ export const luuChiTiet = (idNam, chiTiet) =>
     "ke-khai-gio-quy-doi/chi-tiet",
     jsonBody({ IdNam: Number(idNam), ChiTiet: chiTiet }, "PUT"),
     "Lưu bản kê thất bại",
-  );
-
-/**
- * Nộp bản kê (1 hoặc 4 → 2).
- *
- * Reset mọi dòng về "Chờ duyệt" và xoá kết quả duyệt cũ (trường hợp nộp lại sau
- * khi bị trả về). `rowVersion` nên lấy từ lần đọc gần nhất để chặn ghi đè.
- */
-export const nopBanKe = (idNam, rowVersion) =>
-  layItem(
-    "ke-khai-gio-quy-doi/nop",
-    jsonBody({ IdNam: Number(idNam), RowVersion: rowVersion ?? null }),
-    "Nộp bản kê thất bại",
-  );
-
-/**
- * Huỷ nộp (2 → 1).
- *
- * CHỈ được khi người duyệt chưa đụng vào dòng nào; đã có dòng được duyệt / từ
- * chối thì server trả 409 DA_XET và phải nhờ người duyệt trả lại.
- */
-export const huyNopBanKe = (idNam, rowVersion) =>
-  layItem(
-    "ke-khai-gio-quy-doi/huy-nop",
-    jsonBody({ IdNam: Number(idNam), RowVersion: rowVersion ?? null }),
-    "Huỷ nộp thất bại",
   );
 
 /* ------------------------------------------------------------------ */
@@ -385,6 +349,7 @@ export const layDanhSachChoDuyet = async ({
   idDonVi,
   trangThai,
   tuKhoa,
+  chiConChoDuyet,
   page,
   pageSize,
 } = {}) => {
@@ -394,6 +359,7 @@ export const layDanhSachChoDuyet = async ({
       idDonVi,
       trangThai,
       tuKhoa,
+      chiConChoDuyet,
       page,
       pageSize,
     })}`,
@@ -407,9 +373,9 @@ export const layDanhSachChoDuyet = async ({
 };
 
 /**
- * Duyệt / từ chối NHIỀU DÒNG trong một lần bấm.
+ * Chốt / trả về / mở lại NHIỀU DÒNG trong một lần bấm.
  *
- * `SoLuongDuyet` bỏ trống = giữ nguyên số giảng viên đã kê. Dòng bị từ chối cho
+ * `SoLuongDuyet` bỏ trống = giữ nguyên số giảng viên đã kê. Dòng bị trả về cho
  * `GioDuyet = 0` nhưng VẪN GIỮ số lượng để đối chiếu. Giờ duyệt được tính lại từ
  * SNAPSHOT của dòng, không đọc lại danh mục.
  *
@@ -424,33 +390,6 @@ export const duyetChiTiet = (idKeKhai, quyetDinh) =>
     "Lưu kết quả duyệt thất bại",
   );
 
-/**
- * Chốt bản kê (2 → 3).
- *
- * ⚠️ ĐIỂM CUỐI - chưa có endpoint mở lại, chốt nhầm phải sửa tay dưới DB. Bị
- * chặn khi còn dòng chưa xét (422 CON_DONG_CHUA_XET).
- */
-export const chotBanKe = (idKeKhai, { ghiChu, rowVersion } = {}) =>
-  layItem(
-    `ke-khai-gio-quy-doi/${idKeKhai}/chot`,
-    jsonBody({ GhiChu: ghiChu || null, RowVersion: rowVersion ?? null }),
-    "Chốt bản kê thất bại",
-  );
-
-/**
- * Trả bản kê về cho giảng viên sửa (2 → 4).
- *
- * Lý do BẮT BUỘC và được lưu vào `NhanXetDuyet` của header. Toàn bộ trạng thái
- * dòng bị reset về "Chờ duyệt", `SoLuongDuyet`/`GioDuyet` bị xoá - người duyệt
- * sẽ phải xét lại từ đầu sau khi giảng viên nộp lại.
- */
-export const traLaiBanKe = (idKeKhai, lyDo, rowVersion) =>
-  layItem(
-    `ke-khai-gio-quy-doi/${idKeKhai}/tra-lai`,
-    jsonBody({ LyDo: lyDo, RowVersion: rowVersion ?? null }),
-    "Trả lại bản kê thất bại",
-  );
-
 /** Nhật ký của một bản kê, mới nhất trước. Quyền đọc = quyền xem bản kê. */
 export const layLichSuBanKe = (idKeKhai) =>
   layItems(
@@ -463,7 +402,8 @@ export const layLichSuBanKe = (idKeKhai) =>
  * Tổng giờ quy đổi ĐÃ DUYỆT / giảng viên / năm, tách theo hai mục cấp 1 của
  * PHỤ LỤC II (Sau đại học / Đại học).
  *
- * CHỈ tính bản kê đã chốt và dòng đã duyệt. Đây là điểm nối cho bước cộng với
+ * CHỈ tính từng dòng đã chốt, không đòi header ở một trạng thái cụ thể. Đây là
+ * điểm nối cho bước cộng với
  * giờ giảng dạy (dữ liệu do hệ thống ngoài gọi về) - module CỐ Ý không ghi vào
  * `gio_thuc_hien_gv`.
  */
@@ -508,7 +448,7 @@ export const validatePdf = (file) => {
 };
 
 /**
- * Đính kèm PDF cho MỘT dòng kê khai. Minh chứng KHÔNG bắt buộc để nộp.
+ * Đính kèm PDF cho MỘT dòng kê khai. Minh chứng là tuỳ chọn.
  *
  * Dòng phải đã tồn tại dưới DB (có `IdChiTiet`), nên màn hình phải lưu bản kê
  * trước rồi mới đính kèm được cho dòng vừa thêm.
@@ -647,31 +587,18 @@ export const nhanHeSo = (cv) => {
     : `${formatGio(heSo, 3)}/${donVi.trim() || "đơn vị"}`;
 };
 
-/** Bản kê còn sửa được không. Dùng cờ server, fail-closed khi thiếu. */
+/** Chính chủ có quyền kê thêm/lưu không. Dùng cờ server, fail-closed khi thiếu. */
 export const choPhepSua = (banKe) => banKe?.ChoPhepSua === true;
 
-/** Được nộp / nộp lại không. */
-export const choPhepNop = (banKe) => banKe?.ChoPhepNop === true;
-
-/** Được duyệt / chốt / trả lại không. */
+/** Có quyền xét dòng không. Điều kiện trạng thái cụ thể nằm ở `dong.ChoPhepXet`. */
 export const choPhepDuyet = (banKe) => banKe?.ChoPhepDuyet === true;
 
-/**
- * Huỷ nộp chỉ CÓ NGHĨA khi bản kê đang chờ duyệt và người xem là chính chủ.
- * Server còn chặn thêm điều kiện "chưa ai xét dòng nào" (409 DA_XET) - điều kiện
- * đó FE không suy được nên vẫn để người dùng bấm rồi đọc lỗi.
- */
-export const choPhepHuyNop = (banKe) =>
-  banKe?.CanSua === true &&
-  Number(banKe?.TrangThai) === TRANG_THAI_KE_KHAI.CHO_DUYET;
+/** Quyền sửa của chính dòng; dòng mới ở client luôn sửa được. */
+export const choPhepSuaDong = (dong) =>
+  dong?.idChiTiet == null || dong?.ChoPhepSua === true || dong?.choPhepSua === true;
 
-/** Bản kê đã chốt ⇒ read-only tuyệt đối với mọi vai trò. */
-export const daChot = (banKe) =>
-  Number(banKe?.TrangThai) === TRANG_THAI_KE_KHAI.DA_DUYET;
+/** Quyền chốt/trả/mở lại của chính dòng. */
+export const choPhepXetDong = (dong) => dong?.ChoPhepXet === true;
 
-/** Bị trả lại ⇒ hiện banner lý do (`NhanXetDuyet`) cho giảng viên sửa. */
-export const biTraLai = (banKe) =>
-  Number(banKe?.TrangThai) === TRANG_THAI_KE_KHAI.TRA_LAI;
-
-/** Còn dòng chưa xét ⇒ nút Chốt phải tắt (server trả 422 CON_DONG_CHUA_XET). */
+/** Còn dòng chưa xét trong header dẫn xuất. */
 export const conDongChuaXet = (banKe) => Number(banKe?.SoDongChoDuyet) > 0;

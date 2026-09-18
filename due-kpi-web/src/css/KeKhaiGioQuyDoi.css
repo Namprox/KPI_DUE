@@ -358,14 +358,6 @@
     border-color: #fde68a;
 }
 
-.kkq-btn-nop {
-    background: #047857;
-}
-
-.kkq-btn-nop:hover:not(:disabled) {
-    background: #065f46;
-}
-
 .kkq-btn-them {
     background: #b45309;
 }
@@ -374,15 +366,7 @@
     background: #92400e;
 }
 
-.kkq-btn-chot {
-    background: #6d28d9;
-}
-
-.kkq-btn-chot:hover:not(:disabled) {
-    background: #5b21b6;
-}
-
-.kkq-row-tu-choi > td {
+.kkq-row-tra-ve > td {
     background: #fef7f7;
 }
 
@@ -426,7 +410,7 @@
     color: #047857;
 }
 
-.kkq-qd-tu-choi {
+.kkq-qd-tra-ve {
     border-color: #fecaca;
     background: #fef2f2;
     color: #b91c1c;

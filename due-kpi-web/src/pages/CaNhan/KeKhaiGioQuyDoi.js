@@ -15,24 +15,19 @@ import MinhChungDongBox from "../../components/KeKhaiGioQuyDoi/MinhChungDongBox"
 import DanhMucCongViecModal from "../../components/KeKhaiGioQuyDoi/DanhMucCongViecModal";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import { useMinhChungKeKhaiPreview } from "../../hooks/useMinhChungKeKhaiPreview";
-import { formatNgayGio, kyHocCuaNam } from "../../utils/phieuApi";
+import { kyHocCuaNam } from "../../utils/phieuApi";
 import { tenKyHoc } from "../../utils/phanHoiSinhVienApi";
 import {
-  biTraLai,
-  choPhepHuyNop,
-  choPhepNop,
   choPhepSua,
-  daChot,
   formatGio,
-  huyNopBanKe,
   layBanKeCuaToi,
   layCayCongViec,
   luuChiTiet,
   nhanHeSo,
-  nopBanKe,
   themMinhChung,
   TRANG_THAI_DONG_KK,
   TRANG_THAI_DONG_KK_META,
+  TRANG_THAI_KE_KHAI,
   TRANG_THAI_KE_KHAI_META,
   tinhGio,
 } from "../../utils/keKhaiGioQuyDoiApi";
@@ -47,6 +42,8 @@ const dongMoi = () => ({
   moTa: "",
   minhChung: [],
   mcCho: [],
+  choPhepSua: true,
+  trangThaiDong: TRANG_THAI_DONG_KK.CHO_DUYET,
 });
 
 /** Dòng từ server → dòng của form. Giữ `IdChiTiet` để server nhận ra là sửa. */
@@ -59,6 +56,16 @@ const tuChiTiet = (ct) => ({
   moTa: ct.MoTa ?? "",
   minhChung: ct.MinhChung || [],
   mcCho: [],
+  choPhepSua: ct.ChoPhepSua === true,
+  trangThaiDong: Number(ct.TrangThaiDong),
+  soLuongDuyet: ct.SoLuongDuyet,
+  gioDuyet: ct.GioDuyet,
+  nhanXetDuyet: ct.NhanXetDuyet ?? "",
+  tenCongViec: ct.TenCongViec,
+  donViTinh: ct.DonViTinh,
+  heSo: ct.HeSo,
+  soLuongMau: ct.SoLuongMau,
+  ghiChuQuyDoi: ct.GhiChuQuyDoi,
 });
 
 /**
@@ -89,7 +96,7 @@ const chuKy = (rows) =>
       String(r.soLuong).trim(),
       r.moTa,
       // Tệp đang chờ cũng là thay đổi chưa lưu: quên nó thì nút Lưu tắt và
-      // người dùng nộp bản kê thiếu minh chứng mà không hay biết.
+      // người dùng lưu bản kê thiếu minh chứng mà không hay biết.
       (r.mcCho || []).map((m) => m.key).join(","),
     ]),
   );
@@ -125,9 +132,9 @@ const BadgeTrangThai = ({ meta, ghiChu }) => {
  *    chính thức luôn là `GioKeKhai` server trả về sau khi lưu.
  *  - **Một form, một lần lưu.** Gỡ dòng ở đây chỉ là bỏ dòng khỏi bảng; nó chỉ
  *    thực sự mất khi bấm Lưu (server tự tính diff theo danh sách gửi lên).
- *  - **Nộp là mốc khoá ghi.** Sau khi nộp không sửa được nữa; huỷ nộp chỉ còn
- *    hiệu lực khi người duyệt chưa xét dòng nào, ngoài ra phải nhờ trả lại.
- *  - **Minh chứng là tuỳ chọn** - bản kê không có tệp nào vẫn nộp được. Dòng
+ *  - **Không có bước nộp.** Lưu xong là người duyệt thấy ngay. Dòng đã chốt bị
+ *    khoá riêng; giảng viên vẫn kê thêm và sửa các dòng chờ duyệt/trả về.
+ *  - **Minh chứng là tuỳ chọn**. Dòng
  *    chưa lưu vẫn chọn được tệp: chúng nằm ở hàng chờ và tự tải lên ngay sau
  *    khi lưu, vì endpoint upload cần IdChiTiet do server cấp.
  *
@@ -136,8 +143,8 @@ const BadgeTrangThai = ({ meta, ghiChu }) => {
  * người dùng dò lại đầu việc trong ô chọn phẳng, trong khi mọi dòng đều buộc
  * phải trỏ tới một đầu việc mới lưu được.
  *
- * Quyền thao tác lấy từ cờ `ChoPhepSua` / `ChoPhepNop` do server tính sẵn, KHÔNG
- * tự suy từ trạng thái ở FE.
+ * Quyền thao tác lấy từ cờ header và `ChoPhepSua` trên từng dòng do server tính
+ * sẵn, KHÔNG tự suy từ trạng thái ở FE.
  */
 const KeKhaiGioQuyDoi = () => {
   const toast = useRef(null);
@@ -149,7 +156,6 @@ const KeKhaiGioQuyDoi = () => {
   const [goc, setGoc] = useState("[]");
   const [isLoading, setIsLoading] = useState(true);
   const [dangLuu, setDangLuu] = useState(false);
-  const [dangNop, setDangNop] = useState(false);
   const [loi, setLoi] = useState("");
   const [moDanhMuc, setMoDanhMuc] = useState(false);
 
@@ -320,8 +326,8 @@ const KeKhaiGioQuyDoi = () => {
   };
 
   /**
-   * Lưu bảng rồi tải nốt tệp đang chờ. Trả về bản kê mới nhất (null nếu hỏng)
-   * để "Nộp" dùng ngay được `RowVersion` mà không phải đợi state cập nhật.
+   * Lưu bảng rồi tải nốt tệp đang chờ. Lưu là đủ để dòng xuất hiện trong hàng
+   * đợi của người duyệt; module không còn bước nộp riêng.
    */
   const thucHienLuu = async () => {
     const loiForm = kiemTraTruocKhiLuu();
@@ -388,71 +394,25 @@ const KeKhaiGioQuyDoi = () => {
 
   const luu = () => thucHienLuu();
 
-  const nop = async () => {
-    const loiNhac = coThayDoi
-      ? "Bản kê còn thay đổi chưa lưu - hệ thống sẽ lưu (kèm tệp minh chứng đang chờ) rồi nộp luôn.\n\n"
-      : "";
-    if (
-      !window.confirm(
-        loiNhac +
-          "Nộp bản kê cho Trưởng đơn vị duyệt? Sau khi nộp bạn sẽ không sửa được nữa.",
-      )
-    ) {
-      return;
-    }
-
-    // Nộp là mốc khoá ghi nên phải nộp đúng bản vừa lưu: lấy `RowVersion` từ
-    // kết quả trả về, state `banKe` lúc này vẫn còn là bản cũ.
-    let hienTai = banKe;
-    if (coThayDoi) {
-      hienTai = await thucHienLuu();
-      if (!hienTai) return;
-    }
-
-    setDangNop(true);
-    try {
-      const item = await nopBanKe(selectedNam, hienTai?.RowVersion);
-      apDungBanKe(item);
-      baoOk("Đã nộp bản kê, đang chờ Trưởng đơn vị duyệt");
-    } catch (error) {
-      console.error("Lỗi nộp bản kê giờ quy đổi:", error);
-      baoLoi(error.message);
-    }
-    setDangNop(false);
-  };
-
-  const huyNop = async () => {
-    if (!window.confirm("Huỷ nộp để sửa lại bản kê?")) return;
-
-    setDangNop(true);
-    try {
-      const item = await huyNopBanKe(selectedNam, banKe?.RowVersion);
-      apDungBanKe(item);
-      baoOk("Đã huỷ nộp, bạn có thể sửa tiếp");
-    } catch (error) {
-      console.error("Lỗi huỷ nộp bản kê giờ quy đổi:", error);
-      baoLoi(error.message);
-    }
-    setDangNop(false);
-  };
-
   /** Tổng giờ dự kiến của bảng đang gõ - khác `TongGioKeKhai` khi chưa lưu. */
   const tongDuKien = useMemo(
     () =>
       rows.reduce((tong, r) => {
         const cv = congViecById.get(String(r.idCongViec));
-        const gio = cv
-          ? tinhGio(r.soLuong, cv.HeSoQuyDoi, cv.SoLuongMau)
+        const heSo = r.idChiTiet ? r.heSo : cv?.HeSoQuyDoi;
+        const soLuongMau = r.idChiTiet ? r.soLuongMau : cv?.SoLuongMau;
+        const gio = heSo != null
+          ? tinhGio(r.soLuong, heSo, soLuongMau)
           : null;
         return tong + (gio || 0);
       }, 0),
     [rows, congViecById],
   );
 
-  const soDongTuChoi = useMemo(
+  const soDongTraVe = useMemo(
     () =>
       (banKe?.ChiTiet || []).filter(
-        (ct) => Number(ct.TrangThaiDong) === TRANG_THAI_DONG_KK.TU_CHOI,
+        (ct) => Number(ct.TrangThaiDong) === TRANG_THAI_DONG_KK.TRA_VE,
       ).length,
     [banKe],
   );
@@ -479,12 +439,26 @@ const KeKhaiGioQuyDoi = () => {
           <tbody>
             {rows.map((r, i) => {
               const cv = congViecById.get(String(r.idCongViec));
+              const dongSuaDuoc = r.choPhepSua === true;
+              const cvHienThi = r.idChiTiet
+                ? {
+                    TenCongViec: r.tenCongViec,
+                    DonViTinh: r.donViTinh,
+                    HeSo: r.heSo,
+                    SoLuongMau: r.soLuongMau,
+                    GhiChuQuyDoi: r.ghiChuQuyDoi,
+                  }
+                : cv;
               // Ô trống phải hiện "-": Number("") = 0 nên tính thẳng sẽ ra "0 giờ",
               // đọc như thể đã quy đổi xong trong khi người dùng chưa nhập gì.
               const coSoLuong = String(r.soLuong).trim() !== "";
               const gio =
-                cv && coSoLuong
-                  ? tinhGio(r.soLuong, cv.HeSoQuyDoi, cv.SoLuongMau)
+                cvHienThi && coSoLuong
+                  ? tinhGio(
+                      r.soLuong,
+                      cvHienThi.HeSoQuyDoi ?? cvHienThi.HeSo,
+                      cvHienThi.SoLuongMau,
+                    )
                   : null;
               const soSai = coSoLuong && !(Number(r.soLuong) > 0);
               const duongDan = duongDanCha(cv);
@@ -495,16 +469,24 @@ const KeKhaiGioQuyDoi = () => {
                     <div className="kkq-stt-box">{i + 1}</div>
                   </td>
                   <td>
-                    {cv ? (
+                    {cvHienThi ? (
                       <>
-                        {duongDan && (
+                        {!r.idChiTiet && duongDan && (
                           <div className="kkq-dv-duong-dan">{duongDan}</div>
                         )}
-                        <div className="kkq-dv-ten">{cv.TenCongViec}</div>
+                        <div className="kkq-dv-ten">
+                          {cvHienThi.TenCongViec}
+                        </div>
                         <div className="kkq-heso">
                           <i className="fa-solid fa-calculator"></i>{" "}
-                          {nhanHeSo(cv)}
+                          {nhanHeSo(cvHienThi)}
                         </div>
+                        {r.idChiTiet && !cv && (
+                          <div className="cd-hint kkq-hint">
+                            Đầu việc không còn trong danh mục hiện hành; dòng đã
+                            lưu vẫn giữ nguyên snapshot.
+                          </div>
+                        )}
                       </>
                     ) : (
                       <div className="cd-hint cd-hint-error kkq-hint">
@@ -521,7 +503,7 @@ const KeKhaiGioQuyDoi = () => {
                       options={optionKyHoc}
                       placeholder="Cả năm"
                       clearable
-                      disabled={dangLuu}
+                      disabled={dangLuu || !dongSuaDuoc}
                       portal
                     />
                   </td>
@@ -536,10 +518,12 @@ const KeKhaiGioQuyDoi = () => {
                           capNhatDong(r.key, { soLuong: e.target.value })
                         }
                         placeholder="0"
-                        disabled={dangLuu}
+                        disabled={dangLuu || !dongSuaDuoc}
                       />
-                      {cv?.DonViTinh && (
-                        <span className="kkq-sl-dv">{cv.DonViTinh}</span>
+                      {cvHienThi?.DonViTinh && (
+                        <span className="kkq-sl-dv">
+                          {cvHienThi.DonViTinh}
+                        </span>
                       )}
                     </div>
                     {soSai && (
@@ -570,13 +554,31 @@ const KeKhaiGioQuyDoi = () => {
                         capNhatDong(r.key, { moTa: e.target.value })
                       }
                       placeholder="Tên học viên / lớp / học phần... (tuỳ chọn)"
-                      disabled={dangLuu}
+                      disabled={dangLuu || !dongSuaDuoc}
                     />
+                    {r.idChiTiet && (
+                      <div style={{ margin: "6px 0" }}>
+                        <BadgeTrangThai
+                          meta={TRANG_THAI_DONG_KK_META[r.trangThaiDong]}
+                        />
+                        {r.nhanXetDuyet && (
+                          <div className="kkq-nhan-xet">
+                            <i className="fa-solid fa-comment-dots"></i>{" "}
+                            {r.nhanXetDuyet}
+                          </div>
+                        )}
+                        {r.trangThaiDong === TRANG_THAI_DONG_KK.TRA_VE && (
+                          <div className="cd-hint cd-hint-warn kkq-hint">
+                            Sửa dòng rồi bấm Lưu để tự chuyển lại sang chờ duyệt.
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <MinhChungDongBox
                       idChiTiet={r.idChiTiet}
                       danhSach={r.minhChung}
                       mcCho={r.mcCho}
-                      choPhepSua={suaDuoc}
+                      choPhepSua={dongSuaDuoc}
                       onChange={(ds) => capNhatDong(r.key, { minhChung: ds })}
                       onChangeCho={(ds) => capNhatDong(r.key, { mcCho: ds })}
                       onXem={openPreview}
@@ -587,15 +589,22 @@ const KeKhaiGioQuyDoi = () => {
                   </td>
                   <td className="kkq-act-cell">
                     <div className="kkq-act-box">
-                      <button
-                        type="button"
-                        className="action-btn delete-btn"
-                        onClick={() => goDong(r.key)}
-                        disabled={dangLuu}
-                        title="Gỡ dòng này (chỉ mất hẳn sau khi bấm Lưu)"
-                      >
-                        <i className="fa-solid fa-trash"></i>
-                      </button>
+                      {dongSuaDuoc ? (
+                        <button
+                          type="button"
+                          className="action-btn delete-btn"
+                          onClick={() => goDong(r.key)}
+                          disabled={dangLuu}
+                          title="Gỡ dòng này (chỉ mất hẳn sau khi bấm Lưu)"
+                        >
+                          <i className="fa-solid fa-trash"></i>
+                        </button>
+                      ) : (
+                        <i
+                          className="fa-solid fa-lock"
+                          title="Dòng đã chốt; cần người duyệt mở lại trước khi sửa"
+                        ></i>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -828,9 +837,9 @@ const KeKhaiGioQuyDoi = () => {
             <div>
               <div className="stat-label">Số dòng kê khai</div>
               <div className="stat-value">{banKe.SoDong ?? rows.length}</div>
-              {soDongTuChoi > 0 && (
+              {soDongTraVe > 0 && (
                 <div className="cd-hint" style={{ marginTop: 0 }}>
-                  {soDongTuChoi} dòng bị từ chối
+                  {soDongTraVe} dòng được trả về để sửa
                 </div>
               )}
             </div>
@@ -845,51 +854,38 @@ const KeKhaiGioQuyDoi = () => {
               <div style={{ marginTop: "6px" }}>
                 <BadgeTrangThai meta={metaTrangThai} />
               </div>
-              {banKe.NgayNop && (
-                <div className="cd-hint" style={{ marginTop: "4px" }}>
-                  Nộp {formatNgayGio(banKe.NgayNop)}
-                </div>
-              )}
+              <div className="cd-hint" style={{ marginTop: "4px" }}>
+                Nhãn tự tính từ trạng thái từng dòng
+              </div>
             </div>
           </div>
         </div>
 
-        {biTraLai(banKe) && (
+        {soDongTraVe > 0 && (
           <div className="cd-hint cd-hint-error kkq-banner">
             <i className="fa-solid fa-rotate-left"></i>{" "}
-            <b>Bản kê bị trả lại để sửa.</b>{" "}
-            {banKe.NhanXetDuyet || "Người duyệt không ghi lý do."}
-            {banKe.TenNguoiDuyet ? ` - ${banKe.TenNguoiDuyet}` : ""}
-            {banKe.NgayDuyet ? `, ${formatNgayGio(banKe.NgayDuyet)}` : ""}
-            <div style={{ marginTop: "6px" }}>
-              Toàn bộ kết quả duyệt trước đó đã bị xoá - sửa xong hãy bấm Lưu
-              rồi Nộp lại.
-            </div>
+            <b>{soDongTraVe} dòng được trả về để sửa.</b> Xem lý do ngay tại
+            từng dòng; sửa xong chỉ cần bấm Lưu, không có bước nộp lại.
           </div>
         )}
 
-        {daChot(banKe) && (
+        {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.TAT_CA_DA_CHOT && (
           <div className="cd-hint cd-hint-ok kkq-banner">
-            <i className="fa-solid fa-lock"></i> Bản kê đã được chốt
-            {banKe.TenNguoiDuyet ? ` bởi ${banKe.TenNguoiDuyet}` : ""}
-            {banKe.NgayDuyet ? ` ngày ${formatNgayGio(banKe.NgayDuyet)}` : ""}.
-            Đây là số liệu cuối cùng của năm - muốn thay đổi phải liên hệ đơn vị
-            quản lý.
-            {banKe.NhanXetDuyet ? ` Ghi chú: ${banKe.NhanXetDuyet}` : ""}
+            <i className="fa-solid fa-circle-check"></i> Mọi dòng hiện có đã
+            được chốt. Bạn vẫn có thể kê thêm đầu việc mới trong năm; muốn sửa
+            dòng đã chốt, hãy nhờ người duyệt mở lại đúng dòng đó.
           </div>
         )}
 
-        {!suaDuoc && !daChot(banKe) && !biTraLai(banKe) && (
-          <div className="cd-hint cd-hint-warn kkq-banner">
-            <i className="fa-solid fa-hourglass-half"></i> Bản kê đang chờ
-            Trưởng đơn vị duyệt nên tạm khoá sửa. Nếu cần chỉnh, hãy bấm{" "}
-            <b>Huỷ nộp</b> - chỉ được khi người duyệt chưa xét dòng nào.
-          </div>
-        )}
+        <div className="cd-hint kkq-banner">
+          <i className="fa-solid fa-circle-info"></i> Dòng mới hoặc dòng đang
+          chờ duyệt có thể sửa ngay. Dòng đã chốt được khoá riêng, không khoá cả
+          bản kê.
+        </div>
 
         <div className="kkq-bang-header">
           <p className="sub-title" style={{ margin: 0 }}>
-            {suaDuoc ? "BẢNG KÊ KHAI CỦA BẠN" : "KẾT QUẢ DUYỆT TỪNG DÒNG"}
+            {suaDuoc ? "BẢNG KÊ KHAI CỦA BẠN" : "KẾT QUẢ XÉT TỪNG DÒNG"}
           </p>
           {coThayDoi && suaDuoc && (
             <div className="cd-hint cd-hint-warn kkq-unsaved-badge">
@@ -944,14 +940,14 @@ const KeKhaiGioQuyDoi = () => {
               value: n.IdNam,
               label: `Năm học ${n.IdNam}`,
             }))}
-            disabled={dangTaiNam || dangLuu || dangNop}
+            disabled={dangTaiNam || dangLuu}
           />
         </div>
 
         <button
           className="btn-cancel"
           onClick={taiDuLieu}
-          disabled={isLoading || dangTaiNam || dangLuu || dangNop}
+          disabled={isLoading || dangTaiNam || dangLuu}
         >
           <i className={`fa-solid fa-rotate${isLoading ? " fa-spin" : ""}`}></i>{" "}
           Làm mới
@@ -960,7 +956,7 @@ const KeKhaiGioQuyDoi = () => {
         <button
           className="btn-submit kkq-btn-them"
           onClick={() => setMoDanhMuc(true)}
-          disabled={danhMuc.length === 0}
+          disabled={!suaDuoc || danhMuc.length === 0}
         >
           <i className="fa-solid fa-book-open"></i> Kê khai giờ quy đổi
         </button>
@@ -969,7 +965,7 @@ const KeKhaiGioQuyDoi = () => {
           <button
             className="btn-submit"
             onClick={luu}
-            disabled={dangLuu || dangNop || !coThayDoi}
+            disabled={dangLuu || !coThayDoi}
             title={coThayDoi ? undefined : "Không có thay đổi nào cần lưu"}
           >
             <i
@@ -979,34 +975,6 @@ const KeKhaiGioQuyDoi = () => {
           </button>
         )}
 
-        {choPhepNop(banKe) && (
-          <button
-            className="btn-submit kkq-btn-nop"
-            onClick={nop}
-            disabled={dangLuu || dangNop || rows.length === 0}
-            title={
-              rows.length === 0 ? "Bản kê chưa có dòng nào để nộp" : undefined
-            }
-          >
-            <i
-              className={`fa-solid ${dangNop ? "fa-spinner fa-spin" : "fa-paper-plane"}`}
-            ></i>{" "}
-            Nộp bản kê
-          </button>
-        )}
-
-        {choPhepHuyNop(banKe) && (
-          <button
-            className="btn-cancel"
-            onClick={huyNop}
-            disabled={dangLuu || dangNop}
-          >
-            <i
-              className={`fa-solid ${dangNop ? "fa-spinner fa-spin" : "fa-rotate-left"}`}
-            ></i>{" "}
-            Huỷ nộp
-          </button>
-        )}
       </div>
 
       {renderNoiDung()}
