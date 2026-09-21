@@ -1,7 +1,11 @@
+import { canAccessPath } from "../../config/menuConfig";
+import { useAuth } from "../../context/AuthContext";
+import { coQuyenTaiDonVi, ROLE_SETS } from "../../utils/roles";
+import { nhomDongHang, daChonDuSuatMoiNhom } from "../../utils/hanNgachXuatSac";
+import HanNgachTheoNhom from "../../components/QuanLyChamDiem/HanNgachTheoNhom";
 import React, {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -20,7 +24,6 @@ import {
   fetchToTrinhDetail,
   fetchToTrinhList,
   TEN_HANH_DONG_TO_TRINH,
-  tinhHanNgach,
   TRANG_THAI_TO_TRINH,
   trinhToTrinh,
   TY_LE_XUAT_SAC_MAC_DINH,
@@ -49,6 +52,7 @@ import { TrangThaiToTrinhBadge } from "../../components/QuanLyChamDiem/TrangThai
  */
 const ToTrinhKhoa = () => {
   const toast = useRef(null);
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
 
@@ -119,27 +123,14 @@ const ToTrinhKhoa = () => {
   }, [taiChiTiet]);
 
   const trangThai = goi?.TrangThai;
-  const coTheDongGoi =
+  const coQuyenDongGoi = coQuyenTaiDonVi(ROLE_SETS.TO_TRINH_DON_VI, goi?.IdDonVi, user);
+  const coTheDongGoi = coQuyenDongGoi && (
     trangThai === TRANG_THAI_TO_TRINH.DANG_TONG_HOP ||
     trangThai === TRANG_THAI_TO_TRINH.DA_DONG_GOI ||
     trangThai === TRANG_THAI_TO_TRINH.HT_TRA_VE ||
     (trangThai === TRANG_THAI_TO_TRINH.HT_DA_DUYET &&
-      goi?.IdNguoiDuyet === null);
-  const coTheTrinh = trangThai === TRANG_THAI_TO_TRINH.DA_DONG_GOI;
-
-  const nhanSuDaDoi =
-    goi?.SoGiangVienHienTai != null &&
-    goi?.SoGiangVien != null &&
-    Number(goi.SoGiangVienHienTai) !== Number(goi.SoGiangVien);
-
-  const hanNgachDuKien = useMemo(
-    () =>
-      tinhHanNgach(
-        goi?.SoGiangVienHienTai ?? goi?.SoGiangVien,
-        TY_LE_XUAT_SAC_MAC_DINH,
-      ),
-    [goi],
-  );
+      goi?.IdNguoiDuyet == null));
+  const coTheTrinh = coQuyenDongGoi && trangThai === TRANG_THAI_TO_TRINH.DA_DONG_GOI;
 
   const xoaKetQuaLoi = () => {
     setHoSoThieu(null);
@@ -154,6 +145,7 @@ const ToTrinhKhoa = () => {
    */
   const handleDongGoi = async (goiDung, { boQuaXacNhan = false } = {}) => {
     const g = goiDung || goi;
+    if (!coQuyenTaiDonVi(ROLE_SETS.TO_TRINH_DON_VI, g?.IdDonVi, user)) return;
     if (!boQuaXacNhan && g?.NgayDongGoi != null) {
       setGoiChoDongGoiLai(g);
       return;
@@ -163,7 +155,7 @@ const ToTrinhKhoa = () => {
     try {
       const { message, soHoSoHoanTat, soHoSoChoHt } =
         await dongGoiToTrinh(g.IdToTrinh, {
-        tyLeXuatSac: TY_LE_XUAT_SAC_MAC_DINH,
+        tyLeXuatSac: null,
         rowVersion: g.RowVersion,
       });
       await Promise.all([taiChiTiet({ imLang: true }), taiDanhSach()]);
@@ -179,11 +171,11 @@ const ToTrinhKhoa = () => {
       if (error.errorCode === "CHUA_DU_HO_SO") {
         setHoSoThieu(error.hoSo || []);
       } else if (error.errorCode === "DONG_HANG") {
-        setDongHang({ thongTin: error.dongHang, hoSo: error.hoSo || [] });
+        setDongHang({ nhom: nhomDongHang(error), hoSo: error.hoSo || [] });
         // Người server đã ghi nhận ưu tiên từ trước vẫn nên được tick sẵn.
         setUuTienChon(
           (error.hoSo || [])
-            .filter((h) => h.UuTienXuatSac)
+            .filter((h) => h.UuTienXuatSac && h.DuDieuKienXuatSac === true)
             .map((h) => h.IdPhieu),
         );
       } else if (error.isConflict) {
@@ -238,6 +230,7 @@ const ToTrinhKhoa = () => {
    */
   const luuUuTien = async () => {
     for (const h of dongHang?.hoSo || []) {
+      if (!coQuyenTaiDonVi(ROLE_SETS.TO_TRINH_DON_VI, h.IdDonVi ?? goi.IdDonVi, user)) throw new Error("Bạn không có quyền chỉ định ưu tiên tại đơn vị này.");
       const muonUuTien = uuTienChon.includes(h.IdPhieu);
       if (!!h.UuTienXuatSac === muonUuTien) continue;
       // ToTrinhKhoaPhieuDto không luôn mang RowVersion của phiếu - đọc lại cho chắc.
@@ -255,6 +248,7 @@ const ToTrinhKhoa = () => {
    * dở việc. Một nút đi hết đường.
    */
   const handleXacNhanDongHang = async () => {
+    if (!khopSoSuat || !coQuyenDongGoi) return;
     setDangXuLy(true);
     let goiMoi = null;
     try {
@@ -272,8 +266,8 @@ const ToTrinhKhoa = () => {
     await handleDongGoi(goiMoi || goi, { boQuaXacNhan: true });
   };
 
-  const soSuatConLai = dongHang?.thongTin?.SoSuatConLai ?? 0;
-  const khopSoSuat = uuTienChon.length === soSuatConLai;
+  const soSuatConLai = (dongHang?.nhom || []).reduce((sum, n) => sum + Number(n.SoSuatConLai || 0), 0);
+  const khopSoSuat = daChonDuSuatMoiNhom(dongHang?.nhom || [], uuTienChon);
 
   return (
     <div className="page-container">
@@ -288,10 +282,10 @@ const ToTrinhKhoa = () => {
             fontWeight: 700,
           }}
         >
-          Tờ trình KPI Khoa
+          Tờ trình KPI đơn vị
         </h2>
         <span className="breadcrumb">
-          Đóng gói kết quả toàn Khoa; hồ sơ thường hoàn tất tại đây, hồ sơ lãnh
+          Đóng gói kết quả toàn đơn vị; hồ sơ thường hoàn tất tại đây, hồ sơ lãnh
           đạo mới trình Hiệu trưởng phê duyệt
         </span>
       </div>
@@ -399,7 +393,7 @@ const ToTrinhKhoa = () => {
               </div>
               <div>
                 <div className="cd-meta-label">
-                  Giảng viên (mẫu số hạn ngạch)
+                  Số giảng viên
                 </div>
                 <div className="cd-meta-value">{goi.SoGiangVien ?? "-"}</div>
               </div>
@@ -419,7 +413,7 @@ const ToTrinhKhoa = () => {
               </div>
               <div>
                 <div className="cd-meta-label">Đã đạt xuất sắc</div>
-                <div className="cd-meta-value">{goi.SoDatXuatSac ?? "-"}</div>
+                <div className="cd-meta-value">{goi.SoDatXuatSac ?? "-"} / {goi.HanNgachXuatSac ?? "-"} suất</div>
               </div>
               <div>
                 <div className="cd-meta-label">Đóng gói lúc</div>
@@ -429,17 +423,7 @@ const ToTrinhKhoa = () => {
               </div>
             </div>
 
-            {nhanSuDaDoi && (
-              <div className="cd-canh-bao" style={{ marginTop: "16px" }}>
-                <i className="fa-solid fa-triangle-exclamation"></i>
-                <span>
-                  Số giảng viên của Khoa đã đổi sau lần đóng gói gần nhất: lúc
-                  đóng gói là <b>{goi.SoGiangVien}</b>, hiện tại là{" "}
-                  <b>{goi.SoGiangVienHienTai}</b>. Hạn ngạch đang hiển thị tính
-                  trên mẫu số cũ - nên đóng gói lại.
-                </span>
-              </div>
-            )}
+            <HanNgachTheoNhom goi={goi} />
 
             {goi.LyDoTraVe && (
               <div className="cd-yeu-cau-bo-sung" style={{ marginTop: "16px" }}>
@@ -525,11 +509,8 @@ const ToTrinhKhoa = () => {
                   flex: "1 1 260px",
                 }}
               >
-                Với {goi.SoGiangVienHienTai ?? goi.SoGiangVien ?? 0} giảng viên,
-                hạn ngạch dự kiến là <b>{hanNgachDuKien} suất</b> (làm tròn
-                xuống). Mẫu số là TỔNG số giảng viên của Khoa, không phải số
-                người đạt "Hoàn thành tốt"; viên chức / người lao động không
-                tính vào mẫu số.
+                Hạn ngạch được backend tính riêng theo từng nhóm. Xếp Top trước,
+                xét điều kiện sau; suất bỏ trống không dồn xuống người kế tiếp.
               </div>
 
               <button
@@ -573,14 +554,14 @@ const ToTrinhKhoa = () => {
                 <i className="fa-solid fa-circle-exclamation"></i>
                 <span>
                   Còn <b>{hoSoThieu.length}</b> hồ sơ chưa được chốt nên chưa
-                  đóng gói được. Gói chỉ đóng khi 100% giảng viên của Khoa đã có
+                  đóng gói được. Gói chỉ đóng khi toàn bộ hồ sơ của đơn vị đã có
                   kết luận.
                 </span>
               </div>
               <table className="custom-table" style={{ marginTop: "12px" }}>
                 <thead>
                   <tr>
-                    <th>Giảng viên</th>
+                    <th>Họ tên</th>
                     <th style={{ width: "20%" }}>Trạng thái hồ sơ</th>
                     <th style={{ width: "16%", textAlign: "center" }}>
                       Thao tác
@@ -606,7 +587,9 @@ const ToTrinhKhoa = () => {
                           className="btn-cancel"
                           style={{ padding: "8px 14px" }}
                           onClick={() =>
-                            navigate(`/quan-ly/duyet-ho-so/${h.IdPhieu}`)
+                            navigate(canAccessPath("/quan-ly/duyet-ho-so", user)
+                              ? `/quan-ly/duyet-ho-so/${h.IdPhieu}`
+                              : `/quan-ly/ho-so-nhan-vien/${h.IdPhieu}`)
                           }
                         >
                           <i className="fa-solid fa-arrow-right"></i> Mở hồ sơ
@@ -626,7 +609,7 @@ const ToTrinhKhoa = () => {
           <div className="modern-table-card">
             <BangHoSoToTrinh
               hoSo={goi.HoSo || []}
-              hanNgach={goi.HanNgachXuatSac ?? null}
+              goi={goi}
               ghiChuCot="Ghi chú"
             />
           </div>
@@ -701,59 +684,25 @@ const ToTrinhKhoa = () => {
             </div>
 
             <div className="modal-body">
-              <div className="cd-canh-bao" style={{ marginTop: 0 }}>
-                <i className="fa-solid fa-scale-balanced"></i>
-                <span>
-                  Còn <b>{soSuatConLai}</b> suất xuất sắc,{" "}
-                  <b>
-                    {dongHang.thongTin?.SoNguoiDongHang ?? dongHang.hoSo.length}
-                  </b>{" "}
-                  người cùng {formatDiem(dongHang.thongTin?.DiemRanhGioi)} điểm.
-                  Hệ thống cố ý KHÔNG tự phân xử - đây là quyết định nhân sự,
-                  bạn phải chỉ định.
-                </span>
-              </div>
-
-              <table className="custom-table" style={{ marginTop: "12px" }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: "44px" }}></th>
-                    <th>Giảng viên</th>
-                    <th style={{ width: "26%", textAlign: "right" }}>
-                      Tổng tích lũy
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dongHang.hoSo.map((h) => (
-                    <tr key={h.IdPhieu}>
-                      <td style={{ textAlign: "center" }}>
-                        <input
-                          type="checkbox"
-                          checked={uuTienChon.includes(h.IdPhieu)}
-                          disabled={dangXuLy}
-                          onChange={() => doiChonUuTien(h.IdPhieu)}
-                        />
-                      </td>
-                      <td>
-                        <b style={{ color: "#0f172a" }}>{h.HoTen}</b>{" "}
-                        {h.MaNhanVien && (
-                          <span className="code-pill">{h.MaNhanVien}</span>
-                        )}
-                      </td>
-                      <td
-                        style={{
-                          textAlign: "right",
-                          fontWeight: 700,
-                          color: "#1d4ed8",
-                        }}
-                      >
-                        {formatDiem(h.TongDiemTichLuy)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {dongHang.nhom.map((n) => {
+                const daChon = n.HoSo.filter((h) => uuTienChon.includes(h.IdPhieu)).length;
+                return <section key={n.Nhom} style={{ marginBottom: 16 }}>
+                  <h4>{n.TenNhom} · Đã chọn {daChon}/{n.SoSuatConLai} suất</h4>
+                  <p>Mẫu số: {n.SoMauSo ?? "—"} · {n.SoDongHangDuDk ?? "—"} người đồng hạng đủ điều kiện · Điểm ranh giới: {formatDiem(n.DiemRanhGioi)}</p>
+                  <table className="custom-table">
+                    <thead><tr><th>Chỉ định</th><th>Họ tên</th><th>Tổng tích lũy</th><th>Điều kiện</th></tr></thead>
+                    <tbody>{n.HoSo.map((h) => <tr key={h.IdPhieu}>
+                      <td><input type="checkbox" aria-label={`Ưu tiên ${h.HoTen}`}
+                        checked={uuTienChon.includes(h.IdPhieu)}
+                        disabled={dangXuLy || !coQuyenDongGoi || h.DuDieuKienXuatSac !== true}
+                        onChange={() => doiChonUuTien(h.IdPhieu)} /></td>
+                      <td>{h.HoTen} {h.MaNhanVien && <span className="code-pill">{h.MaNhanVien}</span>}</td>
+                      <td>{formatDiem(h.TongDiemTichLuy)}</td>
+                      <td>{h.DuDieuKienXuatSac === true ? "Đủ điều kiện" : "Chưa đủ điều kiện xuất sắc"}</td>
+                    </tr>)}</tbody>
+                  </table>
+                </section>;
+              })}
             </div>
 
             <div className="modal-footer">
@@ -768,7 +717,7 @@ const ToTrinhKhoa = () => {
                 }}
               >
                 Đã chọn {uuTienChon.length}/{soSuatConLai} suất
-                {!khopSoSuat && " - phải chọn đúng số suất còn lại"}
+                {!khopSoSuat && " - phải chọn đúng số suất của từng nhóm"}
               </span>
               <button
                 className="btn-cancel"
@@ -779,7 +728,7 @@ const ToTrinhKhoa = () => {
               </button>
               <button
                 className="btn-submit"
-                disabled={dangXuLy || !khopSoSuat}
+                disabled={dangXuLy || !khopSoSuat || !coQuyenDongGoi}
                 onClick={handleXacNhanDongHang}
               >
                 {dangXuLy ? (
@@ -832,8 +781,8 @@ const ToTrinhKhoa = () => {
             <div className="modal-body">
               <div className="cd-hint cd-hint-warn" style={{ marginTop: 0 }}>
                 <i className="fa-solid fa-triangle-exclamation"></i> Đơn vị đã
-                đóng gói trước đó. Đóng gói lại sẽ tính lại hạn ngạch 20% trên số
-                hồ sơ hiện tại và có thể thay đổi xếp loại của những hồ sơ đã hoàn
+                đóng gói trước đó. Đóng gói lại sẽ tính lại hạn ngạch 20% theo từng
+                nhóm hiện tại và có thể thay đổi xếp loại của những hồ sơ đã hoàn
                 tất. Tiếp tục?
               </div>
             </div>

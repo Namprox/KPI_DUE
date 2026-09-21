@@ -7,23 +7,18 @@ import React, {
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Toast } from "primereact/toast";
-import { useAuth } from "../../context/AuthContext";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
 import "../../css/KeKhaiThanhTich.css";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import MinhChungThanhTichRow from "../../components/KeKhaiThanhTich/MinhChungThanhTichRow";
-import TraLaiThanhTichModal from "../../components/KeKhaiThanhTich/TraLaiThanhTichModal";
 import TongHopLoaiPanel from "../../components/KeKhaiThanhTich/TongHopLoaiPanel";
 import DongCoVanDeBanner from "../../components/KeKhaiThanhTich/DongCoVanDeBanner";
 import { useMinhChungThanhTichPreview } from "../../hooks/useMinhChungThanhTichPreview";
 import { formatNgayGio } from "../../utils/phieuApi";
-import { ROLE_SETS, coQuyenTaiDonVi } from "../../utils/roles";
 import {
   choPhepDuyet,
-  chotBanKe,
-  conDongChuaXet,
-  daChot,
+  choPhepXetDong,
   duyetChiTiet,
   formatDiem,
   layBanKeTheoId,
@@ -37,17 +32,16 @@ import {
   TRANG_THAI_DONG_TT_META,
   TRANG_THAI_KE_KHAI,
   TRANG_THAI_KE_KHAI_META,
-  traLaiBanKe,
 } from "../../utils/keKhaiThanhTichApi";
 
 /**
  * Quyết định của người duyệt cho một dòng, ở dạng state cục bộ.
- * `quyetDinh = ""` nghĩa là chưa xét - khác hẳn "đã từ chối".
+ * `quyetDinh = ""` nghĩa là chưa xét - khác hẳn "đã trả về".
  */
 const tuChiTiet = (ct) => {
   const tt = Number(ct.TrangThaiDong);
   const daXet =
-    tt === TRANG_THAI_DONG_TT.DA_DUYET || tt === TRANG_THAI_DONG_TT.TU_CHOI;
+    tt === TRANG_THAI_DONG_TT.DA_CHOT || tt === TRANG_THAI_DONG_TT.TRA_VE;
   return {
     quyetDinh: daXet ? String(tt) : "",
     soLuongDuyet:
@@ -84,37 +78,38 @@ const BadgeMeta = ({ meta }) => {
  *
  * Đây là màn hình khác template giờ quy đổi NHIỀU NHẤT, vì một điểm nghiệp vụ:
  *
- *   ⚠️ **Quyền duyệt gác theo TỪNG DÒNG.** Mỗi mức thành tích có `IdDonViDuyet`
- *   riêng, nên một bản kê có thể do nhiều đơn vị cùng duyệt (P.TCHC xét khen
+ *   ⚠️ **Quyền xét gác theo TỪNG DÒNG.** Mỗi mức thành tích có `IdDonViDuyet`
+ *   riêng, nên một bản kê có thể do nhiều đơn vị cùng xét (P.TCHC xét khen
  *   thưởng, Trưởng Khoa xét sáng kiến...). Gửi lẫn MỘT dòng của đơn vị khác lên
  *   `duyet-chi-tiet` là CẢ REQUEST bị từ chối 403 FORBIDDEN_DONG và KHÔNG ghi
  *   gì cả.
  *
- * Vì DTO không có cờ `CanDuyetDong` từng dòng, FE không thể biết chắc mình duyệt
- * được dòng nào. Nên thiết kế chống lỗi theo hai lớp:
+ * Thiết kế chống lỗi theo hai lớp:
  *
  *  1. **Cấu trúc**: bảng gom dòng theo ĐƠN VỊ DUYỆT, và nút "Lưu quyết định" là
  *     của TỪNG NHÓM. Nhờ vậy payload luôn thuộc đúng một đơn vị - giao diện
- *     không dựng nổi một request lẫn đơn vị. Cố ý BỎ HẲN nút "duyệt tất cả"
- *     toàn bản kê của template gốc: trên bản kê nhiều đơn vị, nó là 403 chắc
- *     chắn.
+ *     không dựng nổi một request lẫn đơn vị. Cố ý KHÔNG có nút "xét tất cả"
+ *     toàn bản kê: trên bản kê nhiều đơn vị, nó là 403 chắc chắn.
  *  2. **Phục hồi**: nếu vẫn dính 403, `error.dongCoVanDe` cho biết dòng nào của
  *     đơn vị nào; banner nói rõ server chưa ghi gì nên thử lại là an toàn.
  *
- * Đoán mềm bằng `coQuyenTaiDonVi` chỉ để THU GỌN nhóm không phải việc của mình,
- * không bao giờ dùng làm cổng duy nhất: nhóm `IdDonViDuyet = null` ("đơn vị quản
- * lý trực tiếp") không phân giải được ở client nên luôn để mở.
+ * Quyền lấy THẲNG từ cờ `ChoPhepXet` server trả trên từng dòng - không suy từ
+ * vai trò, chức vụ hay trạng thái header nữa. Nhóm nào không có dòng nào xét
+ * được thì thu gọn sẵn, nhưng vẫn mở ra xem được: đây là hiển thị, không phải
+ * phân quyền.
  *
- * Ba quy ước còn lại giống module giờ quy đổi:
+ * Ba quy ước còn lại:
+ *  - Không còn chốt / trả lại cấp BẢN KÊ. Vòng đời nằm trọn ở `duyet-chi-tiet`,
+ *    và dòng ĐÃ CHỐT vẫn xét lại được qua chính endpoint đó (mở lại - nhật ký
+ *    ghi HanhDong = 10). Nhân viên cũng không phải nộp lại gì.
  *  - Điểm duyệt tính lại từ SNAPSHOT `DiemMuc` của dòng, không đọc lại danh mục.
- *  - Dòng bị từ chối cho điểm duyệt = 0 nhưng vẫn giữ số lượng để đối chiếu.
- *  - Chốt bị chặn khi CÒN BẤT KỲ dòng nào chưa xét, kể cả dòng của đơn vị khác.
+ *  - Dòng bị trả về cho điểm duyệt = 0 nhưng vẫn giữ số lượng để đối chiếu, và
+ *    BẮT BUỘC kèm lý do (server trả 400 THIEU_LY_DO nếu thiếu).
  */
 const ChiTietDuyetThanhTich = () => {
   const { id } = useParams();
   const toast = useRef(null);
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [banKe, setBanKe] = useState(null);
   const [lichSu, setLichSu] = useState([]);
@@ -122,8 +117,6 @@ const ChiTietDuyetThanhTich = () => {
   const [goc, setGoc] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [dangLuuNhom, setDangLuuNhom] = useState(null);
-  const [dangChot, setDangChot] = useState(false);
-  const [moTraLai, setMoTraLai] = useState(false);
   const [hienLichSu, setHienLichSu] = useState(false);
   const [nhomMo, setNhomMo] = useState({});
   const [dongBiTuChoi, setDongBiTuChoi] = useState([]);
@@ -184,9 +177,8 @@ const ChiTietDuyetThanhTich = () => {
 
   const chiTiet = useMemo(() => banKe?.ChiTiet || [], [banKe]);
 
-  const duyetDuoc =
-    choPhepDuyet(banKe) &&
-    Number(banKe?.TrangThai) === TRANG_THAI_KE_KHAI.CHO_DUYET;
+  /** Mở được màn hình thao tác không (xét được ÍT NHẤT MỘT dòng). */
+  const duyetDuoc = choPhepDuyet(banKe);
 
   const capNhat = (idChiTiet, thayDoi) =>
     setQuyetDinh((truoc) => ({
@@ -195,12 +187,12 @@ const ChiTietDuyetThanhTich = () => {
     }));
 
   /**
-   * Gom dòng theo đơn vị phụ trách - đây là trục tổ chức của cả màn hình.
+   * Gom dòng theo đơn vị phụ trách - đây là trục tổ chức của cả màn hình, và là
+   * thứ giữ cho payload không bao giờ lẫn phạm vi.
    *
    * Khoá nhóm là `IdDonViDuyet` (null thành chuỗi "null" để Map không nuốt mất).
-   * `coQuyenTaiDonVi` chỉ là ĐOÁN MỀM để thu gọn nhóm không phải việc của mình;
-   * nhóm null luôn coi là "có thể của mình" vì client không phân giải được "đơn
-   * vị quản lý trực tiếp" là đơn vị nào.
+   * `coTheDuyet` đọc thẳng từ cờ `ChoPhepXet` của các dòng trong nhóm, không
+   * đoán theo vai trò: nhóm nào không có dòng nào xét được thì chỉ để xem.
    */
   const nhomTheoDonVi = useMemo(() => {
     const map = new Map();
@@ -219,20 +211,15 @@ const ChiTietDuyetThanhTich = () => {
 
     return Array.from(map.values()).map((n) => ({
       ...n,
-      coTheDuyet:
-        n.idDonVi == null ||
-        coQuyenTaiDonVi(
-          ROLE_SETS.DUYET_KE_KHAI_THANH_TICH,
-          n.idDonVi,
-          user,
-        ),
+      coTheDuyet: n.dong.some(choPhepXetDong),
     }));
-  }, [chiTiet, user]);
+  }, [chiTiet]);
 
   /** Dòng có thay đổi so với server, trong phạm vi một nhóm. */
   const dongThayDoiCuaNhom = useCallback(
     (nhom) =>
       nhom.dong.filter((ct) => {
+        if (!choPhepXetDong(ct)) return false;
         const hienTai = quyetDinh[ct.IdChiTiet];
         if (!hienTai || !hienTai.quyetDinh) return false;
         return chuKyQuyetDinh(hienTai) !== chuKyQuyetDinh(goc[ct.IdChiTiet]);
@@ -246,12 +233,9 @@ const ChiTietDuyetThanhTich = () => {
     [nhomTheoDonVi, dongThayDoiCuaNhom],
   );
 
+  /** Dòng chưa xét trên SERVER - đây là khối lượng việc thật, không phải state. */
   const soChuaXet = chiTiet.filter(
-    (ct) => !quyetDinh[ct.IdChiTiet]?.quyetDinh,
-  ).length;
-
-  const soDaXetTrenServer = chiTiet.filter(
-    (ct) => Number(ct.TrangThaiDong) !== TRANG_THAI_DONG_TT.CHO_DUYET,
+    (ct) => Number(ct.TrangThaiDong) === TRANG_THAI_DONG_TT.CHO_DUYET,
   ).length;
 
   /** Tổng điểm duyệt dự kiến theo quyết định đang chọn (chưa lưu). */
@@ -259,7 +243,7 @@ const ChiTietDuyetThanhTich = () => {
     () =>
       chiTiet.reduce((tong, ct) => {
         const qd = quyetDinh[ct.IdChiTiet];
-        if (qd?.quyetDinh !== String(QUYET_DINH.DUYET)) return tong;
+        if (qd?.quyetDinh !== String(QUYET_DINH.CHOT)) return tong;
         const diem = tinhDiem(qd.soLuongDuyet, ct.DiemMuc);
         return tong + (diem || 0);
       }, 0),
@@ -271,15 +255,16 @@ const ChiTietDuyetThanhTich = () => {
     [dongBiTuChoi],
   );
 
-  /** Đặt "Duyệt" cho mọi dòng chưa xét TRONG MỘT NHÓM. */
-  const duyetCaNhom = (nhom) => {
+  /** Đặt "Chốt" cho mọi dòng CHƯA XÉT và xét được TRONG MỘT NHÓM. */
+  const chotCaNhom = (nhom) => {
     setQuyetDinh((truoc) => {
       const sau = { ...truoc };
       nhom.dong.forEach((ct) => {
-        if (sau[ct.IdChiTiet]?.quyetDinh) return;
+        if (!choPhepXetDong(ct)) return;
+        if (Number(ct.TrangThaiDong) !== TRANG_THAI_DONG_TT.CHO_DUYET) return;
         sau[ct.IdChiTiet] = {
           ...sau[ct.IdChiTiet],
-          quyetDinh: String(QUYET_DINH.DUYET),
+          quyetDinh: String(QUYET_DINH.CHOT),
         };
       });
       return sau;
@@ -290,8 +275,8 @@ const ChiTietDuyetThanhTich = () => {
    * Lưu quyết định của ĐÚNG MỘT nhóm.
    *
    * Đây là lý do màn hình gom nhóm: payload chỉ chứa dòng của một đơn vị nên
-   * không thể dính FORBIDDEN_DONG vì lẫn đơn vị. Nếu vẫn dính (người dùng giữ
-   * vai trò ở đơn vị khác với suy đoán của FE), banner sẽ chỉ đúng dòng nào.
+   * không thể dính FORBIDDEN_DONG vì lẫn đơn vị. Nếu vẫn dính (cờ `ChoPhepXet`
+   * đã cũ so với phân quyền hiện tại), banner sẽ chỉ đúng dòng nào.
    */
   const luuNhom = async (nhom) => {
     const thayDoi = dongThayDoiCuaNhom(nhom);
@@ -309,6 +294,21 @@ const ChiTietDuyetThanhTich = () => {
         "warn",
         "Chưa lưu được",
         `Có ${soAm} dòng đặt số lượng duyệt âm`,
+      );
+      return;
+    }
+
+    // Chặn sớm THIEU_LY_DO: server từ chối CẢ nhóm nếu một dòng trả về thiếu
+    // lý do, mà lý do lại là toàn bộ thông tin nhân viên nhận được để sửa.
+    const thieuLyDo = thayDoi.filter((ct) => {
+      const qd = quyetDinh[ct.IdChiTiet];
+      return qd.quyetDinh === String(QUYET_DINH.TRA_VE) && !qd.nhanXet?.trim();
+    }).length;
+    if (thieuLyDo > 0) {
+      showToast(
+        "warn",
+        "Chưa lưu được",
+        `Có ${thieuLyDo} dòng trả về chưa ghi lý do`,
       );
       return;
     }
@@ -345,62 +345,8 @@ const ChiTietDuyetThanhTich = () => {
     setDangLuuNhom(null);
   };
 
-  const chot = async () => {
-    if (tongThayDoi > 0) {
-      showToast(
-        "warn",
-        "Còn quyết định chưa lưu",
-        "Hãy lưu quyết định của từng nhóm trước khi chốt bản kê.",
-      );
-      return;
-    }
-    if (
-      !window.confirm(
-        "Chốt bản kê này? Trạng thái ĐÃ CHỐT là điểm cuối - hệ thống chưa có chức năng mở lại, chốt nhầm phải nhờ quản trị sửa dưới cơ sở dữ liệu.",
-      )
-    ) {
-      return;
-    }
-
-    setDangChot(true);
-    try {
-      const item = await chotBanKe(banKe.IdKeKhai, {
-        rowVersion: banKe.RowVersion,
-      });
-      apDungBanKe(item);
-      setLichSu(await layLichSuBanKe(id).catch(() => lichSu));
-      baoOk("Đã chốt bản kê");
-      // Điểm chỉ chảy vào phiếu KPI sau khi tổng hợp lại - màn hình này không
-      // biết IdPhieu nên không tự gọi được, phải nhắc người duyệt.
-      showToast(
-        "info",
-        "Còn một bước nữa",
-        "Điểm thành tích chỉ vào phiếu KPI sau khi chạy lại 'Tổng hợp tự động' trên màn hình phiếu của nhân viên này.",
-      );
-    } catch (error) {
-      console.error("Lỗi chốt bản kê:", error);
-      baoLoi(error.message);
-    }
-    setDangChot(false);
-  };
-
-  const traLai = async (lyDo) => {
-    setDangChot(true);
-    try {
-      const item = await traLaiBanKe(banKe.IdKeKhai, lyDo, banKe.RowVersion);
-      apDungBanKe(item);
-      setLichSu(await layLichSuBanKe(id).catch(() => lichSu));
-      setMoTraLai(false);
-      baoOk("Đã trả bản kê về cho nhân viên");
-    } catch (error) {
-      console.error("Lỗi trả lại bản kê:", error);
-      baoLoi(error.message);
-    }
-    setDangChot(false);
-  };
-
-  const cuonToiDong = (idChiTiet) => {
-    const el = document.getElementById(`kkt-dong-${idChiTiet}`);
+  const cuonToiDong = (d) => {
+    const el = document.getElementById(`kkt-dong-${d?.IdChiTiet}`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
@@ -445,18 +391,21 @@ const ChiTietDuyetThanhTich = () => {
   /** Một dòng trong bảng của nhóm. */
   const renderDong = (ct) => {
     const qd = quyetDinh[ct.IdChiTiet] || {};
-    const laDuyet = qd.quyetDinh === String(QUYET_DINH.DUYET);
-    const laTuChoi = qd.quyetDinh === String(QUYET_DINH.TU_CHOI);
-    const diemDuKien = laDuyet
+    const xetDuoc = choPhepXetDong(ct);
+    const laChot = qd.quyetDinh === String(QUYET_DINH.CHOT);
+    const laTraVe = qd.quyetDinh === String(QUYET_DINH.TRA_VE);
+    const diemDuKien = laChot
       ? tinhDiem(qd.soLuongDuyet, ct.DiemMuc)
-      : laTuChoi
+      : laTraVe
         ? 0
         : null;
     const biChiMat = idBiTuChoi.has(Number(ct.IdChiTiet));
     const khoaSoLuong = ct.ChoPhepSoLuong === false;
+    const daChotTrenServer =
+      Number(ct.TrangThaiDong) === TRANG_THAI_DONG_TT.DA_CHOT;
 
     const classDong = [
-      laTuChoi ? "kkt-row-tu-choi" : "",
+      laTraVe ? "kkt-row-tra-ve" : "",
       biChiMat ? "kkt-row-loi" : "",
     ]
       .filter(Boolean)
@@ -490,7 +439,9 @@ const ChiTietDuyetThanhTich = () => {
           {(ct.MinhChung || []).length === 0 ? (
             <div
               className={
-                ct.YeuCauMinhChung ? "cd-hint cd-hint-error kkt-hint" : "kkt-trong"
+                ct.YeuCauMinhChung
+                  ? "cd-hint cd-hint-error kkt-hint"
+                  : "kkt-trong"
               }
             >
               {ct.YeuCauMinhChung ? (
@@ -522,46 +473,56 @@ const ChiTietDuyetThanhTich = () => {
         <td className="table-num kkt-diem">{formatDiem(ct.DiemKeKhai)}</td>
 
         <td>
-          {duyetDuoc ? (
-            <div className="kkt-qd-nhom">
-              <label className={`kkt-qd-nut${laDuyet ? " kkt-qd-duyet" : ""}`}>
-                <input
-                  type="radio"
-                  name={`qd-${ct.IdChiTiet}`}
-                  checked={laDuyet}
-                  onChange={() =>
-                    capNhat(ct.IdChiTiet, {
-                      quyetDinh: String(QUYET_DINH.DUYET),
-                    })
-                  }
-                  disabled={!!dangLuuNhom || dangChot}
-                />
-                <i className="fa-solid fa-check"></i> Duyệt
-              </label>
-              <label
-                className={`kkt-qd-nut${laTuChoi ? " kkt-qd-tu-choi" : ""}`}
-              >
-                <input
-                  type="radio"
-                  name={`qd-${ct.IdChiTiet}`}
-                  checked={laTuChoi}
-                  onChange={() =>
-                    capNhat(ct.IdChiTiet, {
-                      quyetDinh: String(QUYET_DINH.TU_CHOI),
-                    })
-                  }
-                  disabled={!!dangLuuNhom || dangChot}
-                />
-                <i className="fa-solid fa-xmark"></i> Từ chối
-              </label>
-            </div>
+          {xetDuoc ? (
+            <>
+              <div className="kkt-qd-nhom">
+                <label className={`kkt-qd-nut${laChot ? " kkt-qd-chot" : ""}`}>
+                  <input
+                    type="radio"
+                    name={`qd-${ct.IdChiTiet}`}
+                    checked={laChot}
+                    onChange={() =>
+                      capNhat(ct.IdChiTiet, {
+                        quyetDinh: String(QUYET_DINH.CHOT),
+                      })
+                    }
+                    disabled={!!dangLuuNhom}
+                  />
+                  <i className="fa-solid fa-lock"></i> Chốt
+                </label>
+                <label
+                  className={`kkt-qd-nut${laTraVe ? " kkt-qd-tra-ve" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name={`qd-${ct.IdChiTiet}`}
+                    checked={laTraVe}
+                    onChange={() =>
+                      capNhat(ct.IdChiTiet, {
+                        quyetDinh: String(QUYET_DINH.TRA_VE),
+                      })
+                    }
+                    disabled={!!dangLuuNhom}
+                  />
+                  <i className="fa-solid fa-rotate-left"></i> Trả về
+                </label>
+              </div>
+              {/* Dòng đã chốt vẫn xét lại được - đây chính là "mở lại", không
+                  cần can thiệp cơ sở dữ liệu như thiết kế cũ. */}
+              {daChotTrenServer && (
+                <div className="cd-hint kkt-hint">
+                  Dòng đã chốt - chọn <b>Trả về</b> kèm lý do để mở lại cho nhân
+                  viên sửa.
+                </div>
+              )}
+            </>
           ) : (
             <BadgeMeta meta={TRANG_THAI_DONG_TT_META[ct.TrangThaiDong]} />
           )}
         </td>
 
         <td>
-          {duyetDuoc ? (
+          {xetDuoc ? (
             <input
               type="number"
               className="form-input cd-diem-input kkt-so"
@@ -570,7 +531,7 @@ const ChiTietDuyetThanhTich = () => {
               onChange={(e) =>
                 capNhat(ct.IdChiTiet, { soLuongDuyet: e.target.value })
               }
-              disabled={laTuChoi || !!dangLuuNhom || dangChot || khoaSoLuong}
+              disabled={laTraVe || !!dangLuuNhom || khoaSoLuong}
               title={
                 khoaSoLuong
                   ? "Mức này luôn tính 1 đơn vị cho mỗi dòng"
@@ -593,17 +554,19 @@ const ChiTietDuyetThanhTich = () => {
         </td>
 
         <td>
-          {duyetDuoc ? (
+          {xetDuoc ? (
             <textarea
               className="form-input cd-textarea kkt-mota"
               rows={2}
               maxLength={1000}
               value={qd.nhanXet ?? ""}
-              onChange={(e) => capNhat(ct.IdChiTiet, { nhanXet: e.target.value })}
-              placeholder={
-                laTuChoi ? "Nêu rõ vì sao từ chối" : "Ghi chú (tuỳ chọn)"
+              onChange={(e) =>
+                capNhat(ct.IdChiTiet, { nhanXet: e.target.value })
               }
-              disabled={!!dangLuuNhom || dangChot}
+              placeholder={
+                laTraVe ? "Bắt buộc: nêu rõ lý do trả về" : "Ghi chú (tuỳ chọn)"
+              }
+              disabled={!!dangLuuNhom}
             />
           ) : (
             <>
@@ -667,7 +630,7 @@ const ChiTietDuyetThanhTich = () => {
             <i className="fa-solid fa-circle-check"></i>
           </div>
           <div>
-            <div className="stat-label">Điểm duyệt đã lưu</div>
+            <div className="stat-label">Điểm đã chốt</div>
             <div className="stat-value" style={{ color: "#047857" }}>
               {formatDiem(banKe.TongDiemDuyet)}
             </div>
@@ -704,17 +667,15 @@ const ChiTietDuyetThanhTich = () => {
             <div style={{ marginTop: "6px" }}>
               <BadgeMeta meta={TRANG_THAI_KE_KHAI_META[banKe.TrangThai]} />
             </div>
-            {banKe.NgayNop && (
-              <div className="cd-hint" style={{ marginTop: "4px" }}>
-                Nộp {formatNgayGio(banKe.NgayNop)}
-              </div>
-            )}
+            <div className="cd-hint" style={{ marginTop: "4px" }}>
+              Nhãn tự tính từ trạng thái từng dòng
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Người duyệt phải thấy trần: duyệt thêm một dòng sáng kiến thứ tư có
-          thể không cộng thêm điểm nào vào KPI. */}
+      {/* Người duyệt phải thấy trần: chốt thêm một dòng sáng kiến thứ tư có thể
+          không cộng thêm điểm nào vào KPI. */}
       <TongHopLoaiPanel tongHop={banKe.TongHopTheoLoai} />
 
       <DongCoVanDeBanner
@@ -724,27 +685,25 @@ const ChiTietDuyetThanhTich = () => {
         onDong={() => setDongBiTuChoi([])}
       />
 
-      {daChot(banKe) && (
+      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.TAT_CA_DA_CHOT && (
         <div className="cd-hint cd-hint-ok kkt-banner">
-          <i className="fa-solid fa-lock"></i> Bản kê đã chốt
-          {banKe.TenNguoiDuyet ? ` bởi ${banKe.TenNguoiDuyet}` : ""}
-          {banKe.NgayDuyet ? ` ngày ${formatNgayGio(banKe.NgayDuyet)}` : ""} -
-          chỉ đọc. Hệ thống chưa có chức năng mở lại bản kê đã chốt.
+          <i className="fa-solid fa-circle-check"></i> Mọi dòng hiện có đã chốt.
+          Nhân viên vẫn kê thêm được thành tích khác trong năm, và bạn vẫn mở
+          lại được đúng dòng cần sửa - không phải can thiệp cơ sở dữ liệu.
         </div>
       )}
 
-      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.TRA_LAI && (
+      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.CON_TRA_VE && (
         <div className="cd-hint cd-hint-warn kkt-banner">
-          <i className="fa-solid fa-rotate-left"></i> Bản kê đã được trả về cho
-          nhân viên sửa. Lý do: <b>{banKe.NhanXetDuyet || "không ghi"}</b>. Chờ
-          nhân viên nộp lại rồi duyệt tiếp.
+          <i className="fa-solid fa-rotate-left"></i> Bản kê còn dòng đã trả về.
+          Lý do nằm trên từng dòng; nhân viên sửa và lưu dòng nào thì dòng đó tự
+          quay lại chờ duyệt.
         </div>
       )}
 
-      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.NHAP && (
+      {Number(banKe.TrangThai) === TRANG_THAI_KE_KHAI.KHONG_CO_DONG && (
         <div className="cd-hint kkt-banner">
-          <i className="fa-solid fa-pen"></i> Nhân viên đang kê khai, chưa nộp
-          nên chưa duyệt được. Bảng dưới là số liệu tạm thời.
+          <i className="fa-solid fa-pen"></i> Bản kê chưa có dòng nào.
         </div>
       )}
 
@@ -752,46 +711,9 @@ const ChiTietDuyetThanhTich = () => {
         <div className="cd-hint kkt-banner">
           <i className="fa-solid fa-circle-info"></i> Bản kê này do{" "}
           <b>{nhomTheoDonVi.length} đơn vị</b> cùng thẩm định - mỗi mức thành
-          tích có đơn vị phụ trách riêng. Bạn chỉ lưu được quyết định cho nhóm
-          thuộc quyền của mình, và <b>Chốt</b> chỉ mở khi mọi đơn vị đã xét xong
-          phần của họ.
-        </div>
-      )}
-
-      {duyetDuoc && (
-        <div className="cd-toolbar kkt-thanh-duyet">
-          {/* KHÔNG có nút "duyệt tất cả" toàn bản kê: trên bản kê nhiều đơn vị
-              nó là 403 FORBIDDEN_DONG chắc chắn. Duyệt hàng loạt nằm ở từng
-              nhóm bên dưới. */}
-          <button
-            className="btn-submit kkt-btn-chot"
-            onClick={chot}
-            disabled={dangChot || conDongChuaXet(banKe) || tongThayDoi > 0}
-            title={
-              conDongChuaXet(banKe)
-                ? `Còn ${banKe.SoDongChoDuyet} dòng chưa duyệt hoặc chưa từ chối${
-                    nhomTheoDonVi.length > 1
-                      ? " - có thể là dòng của đơn vị khác, bạn không xét thay được"
-                      : ""
-                  }`
-                : tongThayDoi > 0
-                  ? "Hãy lưu quyết định của từng nhóm trước khi chốt"
-                  : "Chốt bản kê - không mở lại được"
-            }
-          >
-            <i
-              className={`fa-solid ${dangChot ? "fa-spinner fa-spin" : "fa-lock"}`}
-            ></i>{" "}
-            Chốt bản kê
-          </button>
-
-          <button
-            className="cd-btn-tra-ve"
-            onClick={() => setMoTraLai(true)}
-            disabled={!!dangLuuNhom || dangChot}
-          >
-            <i className="fa-solid fa-rotate-left"></i> Trả lại cho nhân viên
-          </button>
+          tích có đơn vị phụ trách riêng. Bạn chỉ lưu được quyết định cho những
+          dòng thuộc quyền của mình, và mỗi nhóm được gửi lên thành một lần lưu
+          riêng.
         </div>
       )}
 
@@ -812,10 +734,12 @@ const ChiTietDuyetThanhTich = () => {
         nhomTheoDonVi.map((nhom) => {
           const thayDoi = dongThayDoiCuaNhom(nhom);
           const chuaXet = nhom.dong.filter(
-            (ct) => !quyetDinh[ct.IdChiTiet]?.quyetDinh,
+            (ct) =>
+              Number(ct.TrangThaiDong) === TRANG_THAI_DONG_TT.CHO_DUYET &&
+              choPhepXetDong(ct),
           ).length;
-          // Nhóm nghi ngờ không phải việc của mình thì thu gọn sẵn, nhưng vẫn
-          // mở ra xem được - đoán mềm không được phép giấu dữ liệu.
+          // Nhóm không phải việc của mình thì thu gọn sẵn, nhưng vẫn mở ra xem
+          // được - thu gọn là hiển thị, không được phép giấu dữ liệu.
           const mo = nhomMo[nhom.khoa] ?? nhom.coTheDuyet;
           const dangLuu = dangLuuNhom === nhom.khoa;
 
@@ -842,32 +766,30 @@ const ChiTietDuyetThanhTich = () => {
                 </div>
                 <div className="kkt-nhom-dem">
                   {nhom.dong.length} dòng
-                  {chuaXet > 0 ? ` · ${chuaXet} chưa xét` : " · đã xét xong"}
+                  {chuaXet > 0 ? ` · ${chuaXet} chờ bạn xét` : " · đã xét xong"}
                 </div>
                 {!nhom.coTheDuyet && (
                   <div className="kkt-nhom-khoa-note">
-                    Nhóm này do {nhom.ten} duyệt — bạn xem được nhưng không lưu
+                    Nhóm này do {nhom.ten} xét — bạn xem được nhưng không lưu
                     quyết định được.
                   </div>
                 )}
 
-                {duyetDuoc && (
+                {nhom.coTheDuyet && (
                   <div className="kkt-nhom-act">
                     <button
                       className="btn-cancel"
-                      onClick={() => duyetCaNhom(nhom)}
-                      disabled={chuaXet === 0 || !!dangLuuNhom || dangChot}
-                      title="Đặt quyết định 'Duyệt' cho mọi dòng chưa xét của nhóm này, giữ nguyên số lượng nhân viên kê"
+                      onClick={() => chotCaNhom(nhom)}
+                      disabled={chuaXet === 0 || !!dangLuuNhom}
+                      title="Đặt quyết định 'Chốt' cho mọi dòng đang chờ của nhóm này, giữ nguyên số lượng nhân viên kê"
                     >
-                      <i className="fa-solid fa-check-double"></i> Duyệt{" "}
-                      {chuaXet} dòng còn lại
+                      <i className="fa-solid fa-check-double"></i> Chốt{" "}
+                      {chuaXet} dòng chờ xét
                     </button>
                     <button
                       className="btn-submit"
                       onClick={() => luuNhom(nhom)}
-                      disabled={
-                        thayDoi.length === 0 || !!dangLuuNhom || dangChot
-                      }
+                      disabled={thayDoi.length === 0 || !!dangLuuNhom}
                       title="Chỉ gửi dòng của nhóm này - đó là cách chắc chắn không bị máy chủ từ chối vì lẫn đơn vị"
                     >
                       <i
@@ -882,9 +804,7 @@ const ChiTietDuyetThanhTich = () => {
 
               {mo && (
                 <div className="table-scroll">
-                  <table
-                    className="custom-table kkt-bang kkt-bang-duyet"
-                  >
+                  <table className="custom-table kkt-bang kkt-bang-duyet">
                     <colgroup>
                       <col className="kkt-col-thanh-tich" />
                       <col className="kkt-col-quy" />
@@ -899,29 +819,29 @@ const ChiTietDuyetThanhTich = () => {
                       <tr>
                         <th>Thành tích / minh chứng</th>
                         <th>Quý</th>
-                        <th style={{ textAlign: "right" }}>
-                          Nhân viên kê
-                        </th>
-                        <th style={{ textAlign: "right" }}>
-                          Điểm kê
-                        </th>
+                        <th style={{ textAlign: "right" }}>Nhân viên kê</th>
+                        <th style={{ textAlign: "right" }}>Điểm kê</th>
                         <th>Quyết định</th>
-                        <th>Số lượng duyệt</th>
-                        <th style={{ textAlign: "right" }}>
-                          Điểm duyệt
-                        </th>
+                        <th>Số lượng chốt</th>
+                        <th style={{ textAlign: "right" }}>Điểm chốt</th>
                         <th>Nhận xét</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {nhom.dong.map((ct) => renderDong(ct))}
-                    </tbody>
+                    <tbody>{nhom.dong.map((ct) => renderDong(ct))}</tbody>
                   </table>
                 </div>
               )}
             </div>
           );
         })
+      )}
+
+      {tongThayDoi > 0 && (
+        <div className="cd-hint cd-hint-warn kkt-banner">
+          <i className="fa-solid fa-circle-exclamation"></i> Còn{" "}
+          <b>{tongThayDoi}</b> dòng có quyết định chưa lưu - rời trang bây giờ
+          sẽ mất.
+        </div>
       )}
 
       <div className="kkt-ls-head">
@@ -983,14 +903,6 @@ const ChiTietDuyetThanhTich = () => {
           )}
         </div>
       )}
-
-      <TraLaiThanhTichModal
-        isOpen={moTraLai}
-        soDongDaXet={soDaXetTrenServer}
-        dangGui={dangChot}
-        onClose={() => setMoTraLai(false)}
-        onSubmit={traLai}
-      />
 
       <FilePreviewModal
         isOpen={preview.isOpen}

@@ -1,3 +1,4 @@
+import HanNgachTheoNhom from "../../components/QuanLyChamDiem/HanNgachTheoNhom";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
@@ -310,7 +311,7 @@ const DuyetToTrinh = () => {
                 <div className="cd-meta-value">{goi.SoHoSo ?? 0}</div>
               </div>
               <div>
-                <div className="cd-meta-label">Giảng viên (mẫu số)</div>
+                <div className="cd-meta-label">Số giảng viên</div>
                 <div className="cd-meta-value">{goi.SoGiangVien ?? "-"}</div>
               </div>
               <div>
@@ -329,7 +330,7 @@ const DuyetToTrinh = () => {
               </div>
               <div>
                 <div className="cd-meta-label">Đã đạt xuất sắc</div>
-                <div className="cd-meta-value">{goi.SoDatXuatSac ?? "-"}</div>
+                <div className="cd-meta-value">{goi.SoDatXuatSac ?? "-"} / {goi.HanNgachXuatSac ?? "-"} suất</div>
               </div>
               <div>
                 <div className="cd-meta-label">Khoa trình lúc</div>
@@ -338,6 +339,8 @@ const DuyetToTrinh = () => {
                 </div>
               </div>
             </div>
+
+            <HanNgachTheoNhom goi={goi} />
 
             {/* Dữ liệu trước khi có hạn ngạch có thể vượt trần - là sự thật lịch
                 sử, không phải lỗi dữ liệu. Chú thích để người duyệt khỏi hoang mang. */}
@@ -400,7 +403,7 @@ const DuyetToTrinh = () => {
           <div className="modern-table-card">
             <BangHoSoToTrinh
               hoSo={goi.HoSo || []}
-              hanNgach={goi.HanNgachXuatSac ?? null}
+              goi={goi}
               chonDuoc={choDuyet}
               daChon={chonTraVe}
               onDoiChon={doiChon}

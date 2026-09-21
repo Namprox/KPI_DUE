@@ -12,7 +12,6 @@ import "../../css/QuanLyChamDiem.css";
 import "../../css/KeKhaiThanhTich.css";
 import SearchSelect from "../../components/Common/SearchSelect";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
-import { formatNgay } from "../../utils/phieuApi";
 import { fetchDonViList } from "../../utils/donViApi";
 import { CAP_KHOA_PHONG } from "../../utils/viPhamPermissions";
 import {
@@ -25,11 +24,27 @@ import {
 
 const PAGE_SIZE = 20;
 
+/**
+ * Chế độ xem của hàng đợi.
+ *
+ * "pending" KHÔNG phải một trạng thái bản kê mà là bộ lọc `chiConChoDuyet=1`:
+ * chỉ bản kê còn dòng CHÍNH BẠN phải xét. Đó mới là phần việc; các lựa chọn còn
+ * lại lọc theo NHÃN dẫn xuất của bản kê và gửi `chiConChoDuyet=0` để lấy hết.
+ */
+const CHE_DO_CHO_XET = "pending";
+
 const LOC_TRANG_THAI = [
-  { value: String(TRANG_THAI_KE_KHAI.CHO_DUYET), label: "Chờ duyệt" },
-  { value: String(TRANG_THAI_KE_KHAI.DA_DUYET), label: "Đã chốt" },
-  { value: String(TRANG_THAI_KE_KHAI.TRA_LAI), label: "Đã trả lại" },
-  { value: String(TRANG_THAI_KE_KHAI.NHAP), label: "Nhân viên đang kê" },
+  { value: CHE_DO_CHO_XET, label: "Còn dòng chờ bạn xét" },
+  { value: "all", label: "Tất cả bản kê" },
+  { value: String(TRANG_THAI_KE_KHAI.CON_TRA_VE), label: "Có dòng trả về" },
+  {
+    value: String(TRANG_THAI_KE_KHAI.TAT_CA_DA_CHOT),
+    label: "Tất cả dòng đã chốt",
+  },
+  {
+    value: String(TRANG_THAI_KE_KHAI.CON_CHO_DUYET),
+    label: "Còn dòng chờ duyệt",
+  },
 ];
 
 const LOC_LOAI = [
@@ -60,8 +75,8 @@ const BadgeTrangThai = ({ trangThai }) => {
 /**
  * Hàng đợi duyệt bản kê THÀNH TÍCH VƯỢT TRỘI.
  *
- * Trang này chỉ là LỐI VÀO: mọi thao tác duyệt / từ chối / chốt / trả lại nằm ở
- * màn hình chi tiết, vì đơn vị nghiệp vụ là TỪNG DÒNG kê khai.
+ * Trang này chỉ là LỐI VÀO: mọi thao tác chốt / trả về / mở lại nằm ở màn hình
+ * chi tiết, vì đơn vị nghiệp vụ là TỪNG DÒNG kê khai - không còn chốt cả bản kê.
  *
  * Khác hẳn hàng đợi giờ quy đổi ở phạm vi: ở đó phạm vi là "đơn vị mình + đơn vị
  * con", còn ở đây một bản kê lọt vào danh sách khi người gọi duyệt được ÍT NHẤT
@@ -76,6 +91,10 @@ const BadgeTrangThai = ({ trangThai }) => {
  * dòng chưa xét của cả bản kê, gồm cả phần của đơn vị khác). Nhầm hai con số này
  * là hứa với người dùng một khối lượng việc không phải của họ.
  *
+ * KHÔNG còn bước "nộp" nên cũng không còn cột "Ngày nộp": nhân viên kê tới đâu
+ * người duyệt thấy tới đó, và `NgayNop` chỉ còn là dấu vết của dữ liệu cũ.
+ * Mặc định màn hình mở ở chế độ "còn dòng chờ bạn xét" (`chiConChoDuyet=1`).
+ *
  * Bộ lọc đơn vị ở đây CHỈ để thu hẹp hiển thị, không phải phân quyền - server đã
  * quyết phạm vi. Cố ý dựng nó (khác màn hình giờ quy đổi) vì người của phòng
  * chuyên trách có thể phải lọc giữa hàng trăm nhân viên toàn trường.
@@ -88,9 +107,7 @@ const DuyetKeKhaiThanhTich = () => {
   const [rows, setRows] = useState([]);
   const [phanTrang, setPhanTrang] = useState(null);
   const [donViList, setDonViList] = useState([]);
-  const [trangThai, setTrangThai] = useState(
-    String(TRANG_THAI_KE_KHAI.CHO_DUYET),
-  );
+  const [trangThai, setTrangThai] = useState(CHE_DO_CHO_XET);
   const [loai, setLoai] = useState("");
   const [idDonVi, setIdDonVi] = useState("");
   const [oTuKhoa, setOTuKhoa] = useState("");
@@ -123,11 +140,14 @@ const DuyetKeKhaiThanhTich = () => {
     setIsLoading(true);
     setLoi("");
     try {
+      const chiConChoXet = trangThai === CHE_DO_CHO_XET;
       const { items, phanTrang: pt } = await layDanhSachChoDuyet({
         idNam: selectedNam,
         loai: loai || undefined,
         idDonVi: idDonVi || undefined,
-        trangThai,
+        // Hai lựa chọn đầu không phải nhãn trạng thái nên không gửi trangThai.
+        trangThai: chiConChoXet || trangThai === "all" ? undefined : trangThai,
+        chiConChoDuyet: chiConChoXet ? 1 : 0,
         tuKhoa,
         page,
         pageSize: PAGE_SIZE,
@@ -155,10 +175,7 @@ const DuyetKeKhaiThanhTich = () => {
   const tong = useMemo(
     () => ({
       soBanKe: phanTrang?.TongSo ?? rows.length,
-      dongCuaToi: rows.reduce(
-        (s, r) => s + (r.SoDongChoDuyetCuaToi || 0),
-        0,
-      ),
+      dongCuaToi: rows.reduce((s, r) => s + (r.SoDongChoDuyetCuaToi || 0), 0),
       dongChoDuyet: rows.reduce((s, r) => s + (r.SoDongChoDuyet || 0), 0),
       diemKeKhai: rows.reduce((s, r) => s + (Number(r.TongDiemKeKhai) || 0), 0),
       diemDuyet: rows.reduce((s, r) => s + (Number(r.TongDiemDuyet) || 0), 0),
@@ -181,8 +198,9 @@ const DuyetKeKhaiThanhTich = () => {
       <div className="page-header">
         <h2 className="kkt-title">Duyệt kê khai thành tích</h2>
         <span className="breadcrumb">
-          Bản kê thành tích vượt trội (Nhóm II) của viên chức / người lao động mà
-          bạn có quyền thẩm định - duyệt hoặc từ chối từng dòng rồi chốt
+          Bản kê thành tích vượt trội (Nhóm II) của viên chức / người lao động
+          mà bạn có quyền thẩm định - chốt hoặc trả về từng dòng, không có bước
+          chốt cả bản kê
         </span>
       </div>
 
@@ -310,7 +328,7 @@ const DuyetKeKhaiThanhTich = () => {
             <i className="fa-solid fa-circle-check"></i>
           </div>
           <div>
-            <div className="stat-label">Điểm đã duyệt</div>
+            <div className="stat-label">Điểm đã chốt</div>
             <div className="stat-value" style={{ color: "#047857" }}>
               {formatDiem(tong.diemDuyet)}
             </div>
@@ -339,8 +357,8 @@ const DuyetKeKhaiThanhTich = () => {
               Không có bản kê nào
             </h3>
             <p style={{ margin: 0 }}>
-              Chưa có nhân viên nào nộp bản kê ở trạng thái này, hoặc bạn đã xử
-              lý hết phần việc của mình.
+              Không có bản kê nào khớp bộ lọc này, hoặc bạn đã xử lý hết phần
+              việc của mình.
             </p>
           </div>
         ) : (
@@ -348,13 +366,12 @@ const DuyetKeKhaiThanhTich = () => {
             <table className="custom-table" style={{ minWidth: "1080px" }}>
               <thead>
                 <tr>
-                  <th style={{ width: "24%" }}>Nhân viên</th>
-                  <th style={{ width: "16%" }}>Đơn vị</th>
-                  <th style={{ width: "10%", textAlign: "right" }}>Ngày nộp</th>
-                  <th style={{ width: "14%", textAlign: "center" }}>Số dòng</th>
+                  <th style={{ width: "26%" }}>Nhân viên</th>
+                  <th style={{ width: "18%" }}>Đơn vị</th>
+                  <th style={{ width: "16%", textAlign: "center" }}>Số dòng</th>
                   <th style={{ width: "10%", textAlign: "right" }}>Điểm kê</th>
                   <th style={{ width: "10%", textAlign: "right" }}>
-                    Điểm duyệt
+                    Điểm chốt
                   </th>
                   <th style={{ width: "12%" }}>Trạng thái</th>
                   <th style={{ width: "8%", textAlign: "right" }}>Thao tác</th>
@@ -376,13 +393,6 @@ const DuyetKeKhaiThanhTich = () => {
                       </td>
                       <td>
                         {r.TenDonVi || (
-                          <span className="table-empty-mark">-</span>
-                        )}
-                      </td>
-                      <td className="table-num">
-                        {r.NgayNop ? (
-                          formatNgay(r.NgayNop)
-                        ) : (
                           <span className="table-empty-mark">-</span>
                         )}
                       </td>
@@ -423,7 +433,7 @@ const DuyetKeKhaiThanhTich = () => {
                       <td style={{ textAlign: "right" }}>
                         <button
                           className="table-btn-primary"
-                          title="Mở bản kê để duyệt từng dòng"
+                          title="Mở bản kê để xét từng dòng"
                           onClick={() =>
                             navigate(
                               `/quan-ly/ke-khai-thanh-tich/${r.IdKeKhai}`,
@@ -431,7 +441,7 @@ const DuyetKeKhaiThanhTich = () => {
                           }
                         >
                           <i className="fa-solid fa-pen-to-square"></i>{" "}
-                          {cuaToi > 0 ? "Duyệt" : "Xem"}
+                          {cuaToi > 0 ? "Xét" : "Xem"}
                         </button>
                       </td>
                     </tr>

@@ -316,7 +316,7 @@ export const MENU_GROUPS = [
         // Server dùng chung một endpoint cho cả hai (POST phieu/{id}/khoa/
         // duyet-ho-so mở cho TK/TKL/TP), nên đây là tách MÀN HÌNH chứ không phải
         // tách thẩm quyền - màn hình của Trưởng khoa đầy thứ không áp dụng cho
-        // Phòng (QĐ 838, định mức NCKH, hạn ngạch xuất sắc, tờ trình Khoa).
+        // Phòng (QĐ 838, định mức NCKH).
         //
         // Chấm điểm từng tiêu chí (giai đoạn 2) KHÔNG ở đây - Trưởng phòng dùng
         // chung /quan-ly/phieu/:id với mọi trưởng đơn vị khác.
@@ -330,10 +330,10 @@ export const MENU_GROUPS = [
       },
       {
         // Giai đoạn 4 phía Khoa - đóng gói hạn ngạch xuất sắc rồi trình Hiệu trưởng.
-        name: "Tờ trình KPI Khoa",
+        name: "Tờ trình KPI đơn vị",
         icon: "fa-solid fa-file-signature",
         path: "/quan-ly/to-trinh",
-        roles: ROLE_SETS.TRUONG_KHOA,
+        roles: ROLE_SETS.TO_TRINH_DON_VI,
       },
       {
         // Duyệt bản kê giờ quy đổi (Phụ lục II) của giảng viên trong phạm vi

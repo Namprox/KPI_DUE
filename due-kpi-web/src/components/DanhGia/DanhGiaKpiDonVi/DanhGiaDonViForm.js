@@ -303,7 +303,7 @@ const DanhGiaDonViForm = ({
                           <TieuChiCardHeader
                             soThuTu={prefix.replace(/\.$/, "")}
                             tieuDe={ct.TenTieuChi}
-                            moTa={ct.MoTa}
+                            moTa={tcInfo?.moTa ?? ct.MoTa}
                             tenNhom={nhomCon.isDirect ? nhomCon.ten : null}
                             batBuocMinhChung={!!ct.BatBuocMinhChung}
                             soMinhChung={minhChungList.length}

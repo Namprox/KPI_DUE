@@ -446,14 +446,6 @@
     border-color: #fde68a;
 }
 
-.kkt-btn-nop {
-    background: #047857;
-}
-
-.kkt-btn-nop:hover:not(:disabled) {
-    background: #065f46;
-}
-
 .kkt-btn-them {
     background: #b45309;
 }
@@ -462,20 +454,14 @@
     background: #92400e;
 }
 
-.kkt-btn-chot {
-    background: #6d28d9;
-}
-
-.kkt-btn-chot:hover:not(:disabled) {
-    background: #5b21b6;
-}
-
-.kkt-row-tu-choi > td {
+/* Dòng đang được chọn "Trả về": nền hồng nhạt để thấy ngay trước khi lưu. */
+.kkt-row-tra-ve > td {
     background: #fef7f7;
 }
 
-.kkt-thanh-duyet {
-    margin-bottom: 0;
+/* Dòng đã chốt: khoá RIÊNG nó, nền xám nhạt để tách khỏi các dòng còn sửa được. */
+.kkt-row-khoa > td {
+    background: #f8fafc;
 }
 
 .kkt-qd-nhom {
@@ -508,13 +494,13 @@
     cursor: pointer;
 }
 
-.kkt-qd-duyet {
+.kkt-qd-chot {
     border-color: #a7f3d0;
     background: #ecfdf5;
     color: #047857;
 }
 
-.kkt-qd-tu-choi {
+.kkt-qd-tra-ve {
     border-color: #fecaca;
     background: #fef2f2;
     color: #b91c1c;
@@ -566,17 +552,6 @@
     font-size: 13px;
 }
 
-.kkt-mc-act {
-    display: flex;
-    gap: 6px;
-}
-
-.kkt-mc-act .btn-submit,
-.kkt-mc-act .btn-cancel {
-    padding: 6px 12px;
-    font-size: 13px;
-}
-
 /* Tệp đang chờ: viền trái vàng để phân biệt ngay với tệp đã lên máy chủ. */
 .kkt-mc-cho {
     display: flex;
@@ -611,12 +586,25 @@
 /* Hàng tệp chờ nằm ngay cạnh hàng .cd-mc-* (QuanLyChamDiem.css) nên phải bám
    đúng cỡ của bộ đó: tên 14px/600, meta 12px. */
 .kkt-mc-cho-ten {
+    display: block;
+    max-width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
     font-size: 14px;
     font-weight: 600;
     color: #334155;
+    text-align: left;
+    cursor: pointer;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.kkt-mc-cho-ten:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
 }
 
 .kkt-mc-cho-meta {
@@ -657,9 +645,13 @@
     cursor: pointer;
 }
 
-.kkt-mc-cho-go:hover {
+.kkt-mc-cho-go:hover:not(:disabled) {
     background: #fef2f2;
     color: #b91c1c;
+}
+
+.kkt-mc-cho-go:disabled {
+    cursor: not-allowed;
 }
 
 .kkt-mc-xoa {

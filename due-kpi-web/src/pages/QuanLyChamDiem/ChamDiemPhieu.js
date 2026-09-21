@@ -463,6 +463,7 @@ const ChamDiemPhieu = () => {
         key={ct.IdChiTiet}
         chiTiet={ct}
         stt={sttTheoChiTiet.get(ct.IdChiTiet)}
+        moTa={tieuChiMauMap.get(Number(ct.IdTieuChi))?.moTa ?? ct.MoTa}
         lichSu={lichSuTheoChiTiet.get(Number(ct.IdChiTiet)) || []}
         dangTaiLichSu={dangTaiLichSu}
         vaiTro={vaiTro}

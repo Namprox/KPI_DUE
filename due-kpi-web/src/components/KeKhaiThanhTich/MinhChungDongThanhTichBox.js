@@ -4,11 +4,10 @@ import {
   formatKb,
   GIOI_HAN_MINH_CHUNG,
   themMinhChung,
+  themMinhChungTam,
   validatePdf,
   xoaMinhChung,
 } from "../../utils/keKhaiThanhTichApi";
-
-let seqCho = 0;
 
 const GIOI_HAN_TEXT = `Chỉ nhận PDF · tối đa ${formatKb(
   GIOI_HAN_MINH_CHUNG.MaxFileSizeKb,
@@ -21,26 +20,35 @@ const GIOI_HAN_TEXT = `Chỉ nhận PDF · tối đa ${formatKb(
  * lượt. Khi đã có tệp, dropzone tự thu về dạng thanh gọn để danh sách tệp - thứ
  * người dùng thực sự cần đọc - không bị đẩy xuống dưới một khối trống to.
  *
- * Khác bản của giờ quy đổi ở đúng một điểm: minh chứng có thể BẮT BUỘC. Mức có
- * `YeuCauMinhChung` mà chưa có tệp nào sẽ chặn nộp cả bản kê (422
- * THIEU_MINH_CHUNG), nên ô trống phải cảnh báo đỏ chứ không im lặng. Cảnh báo
- * nằm NGAY TRONG dropzone: nó vừa là lý do vừa là chỗ để sửa, tách thành một
- * dòng chữ đỏ riêng chỉ làm khối này dài thêm mà không chỉ ra cần bấm vào đâu.
+ * Khác bản của giờ quy đổi ở hai điểm, cả hai đều do minh chứng ở đây có thể
+ * BẮT BUỘC:
  *
- * ⚠️ Điều kiện cảnh báo phải xét CẢ hàng chờ: tệp vừa chọn cho một dòng chưa lưu
- * nằm ở `mcCho` và chưa lên server, nhưng người dùng đã làm đúng phần việc của
- * mình rồi - báo đỏ lúc đó là báo sai.
+ *  1. Mức có `YeuCauMinhChung` mà chưa có tệp nào sẽ chặn LƯU cả bản kê (422
+ *     THIEU_MINH_CHUNG), nên ô trống phải cảnh báo đỏ chứ không im lặng. Cảnh
+ *     báo nằm NGAY TRONG dropzone: nó vừa là lý do vừa là chỗ để sửa.
+ *  2. Dòng CHƯA tồn tại không thể đợi "lưu xong rồi tải tệp lên" - server kiểm
+ *     minh chứng ngay trong chính request lưu. Vì vậy tệp của dòng mới đi thẳng
+ *     vào KHO TẠM (`themMinhChungTam`) ngay khi chọn; trang cha giữ
+ *     `IdMinhChungTt` và gửi kèm `IdMinhChung[]` của dòng khi lưu.
  *
+ * Tệp tạm là tệp THẬT trên máy chủ, không phải hàng đợi trong bộ nhớ: bỏ nó ra
+ * khỏi dòng phải gọi API xoá, không chỉ là gỡ khỏi state.
+ *
+ * @param {number|null} idChiTiet null = dòng chưa lưu ⇒ đi kho tạm
+ * @param {number|string} idNam năm của bản kê, chủ sở hữu của tệp tạm
+ * @param {object[]} danhSach minh chứng đã gắn vào dòng
+ * @param {object[]} mcTam minh chứng đang nằm ở kho tạm, chờ lần lưu tới
  * @param {boolean} [yeuCauMinhChung] mức này bắt buộc có minh chứng
  */
 const MinhChungDongThanhTichBox = ({
   idChiTiet,
+  idNam,
   danhSach = [],
-  mcCho = [],
+  mcTam = [],
   choPhepSua,
   yeuCauMinhChung = false,
   onChange,
-  onChangeCho,
+  onChangeTam,
   onXem,
   onTai,
   onError,
@@ -56,7 +64,7 @@ const MinhChungDongThanhTichBox = ({
   const demKeo = useRef(0);
 
   const dangTai = tienDo != null;
-  const coTep = danhSach.length > 0 || mcCho.length > 0;
+  const coTep = danhSach.length > 0 || mcTam.length > 0;
   const thieu = yeuCauMinhChung && !coTep;
 
   /**
@@ -80,41 +88,36 @@ const MinhChungDongThanhTichBox = ({
     if (loi.length > 0) onError?.(loi.join(" · "));
     if (hopLe.length === 0) return;
 
-    // Dòng chưa có IdChiTiet: xếp vào hàng chờ FE, trang cha tải lên sau khi Lưu
-    if (!idChiTiet) {
-      onChangeCho?.([
-        ...mcCho,
-        ...hopLe.map((f) => ({
-          key: `cho-${++seqCho}`,
-          file: f,
-          tenHienThi: f.name,
-        })),
-      ]);
-      onSuccess?.(
-        hopLe.length === 1
-          ? "Đã đính kèm tệp - bấm Lưu để tải lên máy chủ"
-          : `Đã đính kèm ${hopLe.length} tệp - bấm Lưu để tải lên máy chủ`,
-      );
-      return;
-    }
-
-    // Dòng đã có IdChiTiet: tải lên máy chủ ngay, TUẦN TỰ. Chạy song song thì
-    // mỗi lần onChange đều dựng từ `danhSach` cũ và đè mất kết quả của nhau.
+    // Tải lên TUẦN TỰ. Chạy song song thì mỗi lần onChange đều dựng từ danh
+    // sách cũ và đè mất kết quả của nhau.
     setTienDo({ xong: 0, tong: hopLe.length });
-    let ds = danhSach;
+    let dsGan = danhSach;
+    let dsTam = mcTam;
     try {
       for (const f of hopLe) {
-        const moi = await themMinhChung(idChiTiet, f, "");
-        if (moi) {
-          ds = [...ds, moi];
-          onChange?.(ds);
+        if (idChiTiet) {
+          const moi = await themMinhChung(idChiTiet, f, "");
+          if (moi) {
+            dsGan = [...dsGan, moi];
+            onChange?.(dsGan);
+          }
+        } else {
+          const moi = await themMinhChungTam(idNam, f, "");
+          if (moi) {
+            dsTam = [...dsTam, moi];
+            onChangeTam?.(dsTam);
+          }
         }
         setTienDo((t) => (t ? { ...t, xong: t.xong + 1 } : t));
       }
       onSuccess?.(
-        hopLe.length === 1
-          ? "Đã tải lên minh chứng"
-          : `Đã tải lên ${hopLe.length} minh chứng`,
+        idChiTiet
+          ? hopLe.length === 1
+            ? "Đã tải lên minh chứng"
+            : `Đã tải lên ${hopLe.length} minh chứng`
+          : hopLe.length === 1
+            ? "Đã tải tệp lên máy chủ - bấm Lưu để gắn vào dòng"
+            : `Đã tải ${hopLe.length} tệp lên máy chủ - bấm Lưu để gắn vào dòng`,
       );
     } catch (error) {
       console.error("Lỗi tải lên minh chứng kê khai thành tích:", error);
@@ -139,6 +142,24 @@ const MinhChungDongThanhTichBox = ({
       onSuccess?.("Đã gỡ minh chứng");
     } catch (error) {
       console.error("Lỗi gỡ minh chứng kê khai thành tích:", error);
+      onError?.(error.message);
+    } finally {
+      setDangXoaId(null);
+    }
+  };
+
+  /**
+   * Bỏ một tệp tạm. Tệp đã nằm trên máy chủ nên phải gọi API xoá - server có dọn
+   * tệp mồ côi sau 7 ngày, nhưng để người dùng nhìn thấy tệp "đã bỏ" vẫn còn
+   * chiếm chỗ suốt một tuần thì không chấp nhận được.
+   */
+  const boTepTam = async (mc) => {
+    setDangXoaId(mc.IdMinhChungTt);
+    try {
+      await xoaMinhChung(mc.IdMinhChungTt);
+      onChangeTam?.(mcTam.filter((x) => x.IdMinhChungTt !== mc.IdMinhChungTt));
+    } catch (error) {
+      console.error("Lỗi bỏ minh chứng tạm:", error);
       onError?.(error.message);
     } finally {
       setDangXoaId(null);
@@ -209,21 +230,27 @@ const MinhChungDongThanhTichBox = ({
         </div>
       )}
 
-      {mcCho.length > 0 && (
+      {mcTam.length > 0 && (
         <div className="kkt-mc-list">
-          {mcCho.map((item) => (
-            <div className="kkt-mc-cho" key={item.key}>
+          {mcTam.map((mc) => (
+            <div className="kkt-mc-cho" key={mc.IdMinhChungTt}>
               <span className="kkt-mc-cho-icon">
                 <i className="fa-solid fa-file-pdf"></i>
               </span>
               <div className="kkt-mc-cho-main">
-                <div className="kkt-mc-cho-ten" title={item.file.name}>
-                  {item.file.name}
-                </div>
+                <button
+                  type="button"
+                  className="kkt-mc-cho-ten"
+                  onClick={() => onXem?.(mc)}
+                  title={`Xem trước: ${mc.TenHienThi || mc.TenFileGoc}`}
+                >
+                  {mc.TenHienThi || mc.TenFileGoc}
+                </button>
                 <div className="kkt-mc-cho-meta">
-                  {formatKb(Math.ceil(item.file.size / 1024))}
+                  {formatKb(mc.KichThuocKb)}
                   <span className="kkt-mc-cho-tag">
-                    <i className="fa-regular fa-clock"></i> chờ bấm Lưu
+                    <i className="fa-regular fa-clock"></i> gắn vào dòng khi bấm
+                    Lưu
                   </span>
                 </div>
               </div>
@@ -231,12 +258,17 @@ const MinhChungDongThanhTichBox = ({
                 <button
                   type="button"
                   className="kkt-mc-cho-go"
-                  onClick={() =>
-                    onChangeCho?.(mcCho.filter((x) => x.key !== item.key))
-                  }
-                  title="Bỏ tệp khỏi hàng chờ"
+                  onClick={() => boTepTam(mc)}
+                  disabled={dangXoaId === mc.IdMinhChungTt}
+                  title="Bỏ tệp này"
                 >
-                  <i className="fa-solid fa-xmark"></i>
+                  <i
+                    className={`fa-solid ${
+                      dangXoaId === mc.IdMinhChungTt
+                        ? "fa-spinner fa-spin"
+                        : "fa-xmark"
+                    }`}
+                  ></i>
                 </button>
               )}
             </div>
@@ -280,7 +312,7 @@ const MinhChungDongThanhTichBox = ({
               {thieu ? (
                 <>
                   <i className="fa-solid fa-triangle-exclamation"></i> Bắt buộc
-                  có minh chứng — chưa đính kèm thì không nộp được bản kê
+                  có minh chứng — chưa đính kèm thì không lưu được dòng này
                 </>
               ) : (
                 GIOI_HAN_TEXT

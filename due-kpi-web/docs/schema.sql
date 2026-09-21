@@ -2021,9 +2021,25 @@ GO
 
 -- =============================================================================
 -- 11. KÊ KHAI THÀNH TÍCH VƯỢT TRỘI (KPI Nhóm II — viên chức / NLĐ)
---     Viên chức tự kê khai thành tích theo QUÝ; cấp duyệt xét từng dòng và được
---     sửa số lượng trước khi chốt. Mirror cấu trúc của mục 9 (kê khai giờ quy đổi):
---     danh mục cây → bản kê 1/người/năm → dòng kê khai → minh chứng → nhật ký.
+--     Viên chức tự kê khai thành tích theo QUÝ; đơn vị phụ trách CHỐT hoặc
+--     TRẢ VỀ TỪNG DÒNG và được sửa số lượng khi chốt. Mirror cấu trúc của mục 9
+--     (kê khai giờ quy đổi): danh mục cây → bản kê 1/người/năm → dòng kê khai →
+--     minh chứng → nhật ký.
+--
+--     VÒNG ĐỜI NẰM Ở TỪNG DÒNG, KHÔNG Ở BẢN KÊ: không có bước "nộp" — viên chức
+--     kê tới đâu đơn vị phụ trách thấy tới đó, và kê thêm được bất kỳ lúc nào
+--     trong năm. ke_khai_thanh_tich_vuot_troi.trang_thai chỉ còn là NHÃN dẫn
+--     xuất từ các dòng (xem sp_ke_khai_thanh_tich_rollup).
+--
+--     ĐIỀU KIỆN CỘNG ĐIỂM: sp_ke_khai_thanh_tich_tong_hop và nhánh TTVT_* của
+--     fn_nckh_diem_tu_dong cộng theo chi_tiet.trang_thai_dong = 2 (dòng đã chốt),
+--     KHÔNG đòi cả bản kê ở trạng thái nào. Điểm chảy vào phiếu KPI ngay khi
+--     dòng được chốt.
+--
+--     MINH CHỨNG LÀ BẮT BUỘC với mục có yeu_cau_minh_chung = 1, và bị chặn NGAY
+--     KHI LƯU (sp_ke_khai_thanh_tich_luu_chi_tiet) chứ không dồn tới cuối. Vì
+--     dòng chưa tồn tại thì chưa có id_chi_tiet để gắn file, minh chứng có thêm
+--     một KHO TẠM — xem mục 11.4.
 --
 --     GHI CHÚ: khối DDL này được DỰNG LẠI TỪ DATABASE THỰC TẾ (sys.columns,
 --     sys.foreign_keys, sys.check_constraints, sys.indexes). Trước đó nó chỉ tồn
@@ -2063,18 +2079,29 @@ CREATE TABLE danh_muc_thanh_tich_vuot_troi (
 GO
 
 -- 11.2. Bản kê khai: 1 bản / viên chức / năm.
---       row_version phục vụ khoá lạc quan khi hai người cùng mở một bản kê.
+--       LAZY-CREATE: bản kê CHỈ được tạo ở sp_ke_khai_thanh_tich_luu_chi_tiet, khi
+--       viên chức lưu dòng đầu tiên. sp_..._get CỐ Ý không tạo — trước đây nó INSERT
+--       ngay khi ĐỌC, mà gate là can_xem chứ không phải can_sua, nên trưởng đơn vị
+--       mở bản kê của một nhân viên cũng sinh ra bản kê rỗng cho người đó.
 CREATE TABLE ke_khai_thanh_tich_vuot_troi (
     id_ke_khai        INT            IDENTITY(1,1) PRIMARY KEY,
     id_nhan_vien      INT            NOT NULL,
     id_nam            INT            NOT NULL,
     trang_thai        TINYINT        NOT NULL DEFAULT 1,
-        -- 1: NHAP  2: CHO_DUYET  3: DA_DUYET  4: TRA_LAI
-    tong_diem_ke_khai DECIMAL(9,2)   NOT NULL DEFAULT 0,
-    tong_diem_duyet   DECIMAL(9,2)   NOT NULL DEFAULT 0,
+        -- NHÃN DẪN XUẤT từ các dòng, KHÔNG phải khoá nghiệp vụ. Tính lại bởi
+        -- sp_ke_khai_thanh_tich_rollup sau mỗi lần lưu / xét; không ai set tay:
+        -- 4: TRA_LAI    — còn dòng bị trả về (ưu tiên cao nhất: NV còn việc phải sửa)
+        -- 2: CHO_DUYET  — còn dòng chờ duyệt (đơn vị phụ trách còn phải xét)
+        -- 3: DA_DUYET   — có dòng và TẤT CẢ đã chốt
+        -- 1: NHAP       — không còn dòng sống nào
+    tong_diem_ke_khai DECIMAL(9,2)   NOT NULL DEFAULT 0,  -- SUM(diem_ke_khai) các dòng còn sống
+    tong_diem_duyet   DECIMAL(9,2)   NOT NULL DEFAULT 0,  -- SUM(diem_duyet) các dòng ĐÃ CHỐT
+    -- ngay_nop / nhan_xet_duyet / row_version: VẾT TÍCH của luồng "nộp cả bản kê" đã
+    -- gỡ. Giữ lại để không phá dữ liệu cũ; không SP nào ghi vào chúng nữa.
+    -- Lý do trả về nay nằm ở TỪNG DÒNG (chi_tiet...nhan_xet_duyet).
     ngay_nop          DATETIME       NULL,
-    id_nguoi_duyet    INT            NULL,
-    ngay_duyet        DATETIME       NULL,
+    id_nguoi_duyet    INT            NULL,                -- người xét GẦN NHẤT, chỉ để hiển thị
+    ngay_duyet        DATETIME       NULL,                -- thời điểm xét GẦN NHẤT
     nhan_xet_duyet    NVARCHAR(1000) NULL,
     ngay_tao          DATETIME       NOT NULL DEFAULT GETDATE(),
     ngay_cap_nhat     DATETIME       NULL,
@@ -2087,9 +2114,10 @@ CREATE TABLE ke_khai_thanh_tich_vuot_troi (
 );
 GO
 
--- 11.3. Dòng kê khai. Kê theo QUÝ (1..4) — khác mục 9.3 kê theo kỳ học.
+-- 11.3. Dòng kê khai. ĐÂY là nơi giữ vòng đời thật của module (xem trang_thai_dong).
+--       Kê theo QUÝ (1..4) — khác mục 9.3 kê theo kỳ học.
 --       Các cột *_snapshot chốt giá trị của danh mục LÚC KÊ: sửa danh mục về sau
---       không làm đổi điểm của bản kê đã nộp.
+--       không làm đổi điểm của bản kê đã lưu.
 CREATE TABLE chi_tiet_ke_khai_thanh_tich (
     id_chi_tiet              INT            IDENTITY(1,1) PRIMARY KEY,
     id_ke_khai               INT            NOT NULL,
@@ -2105,10 +2133,21 @@ CREATE TABLE chi_tiet_ke_khai_thanh_tich (
     diem_snapshot            DECIMAL(5,2)   NOT NULL,
     diem_ke_khai             DECIMAL(9,2)   NOT NULL DEFAULT 0, -- server tính
     so_luong_duyet           DECIMAL(9,2)   NULL,               -- NULL = giữ nguyên số đã kê
-    diem_duyet               DECIMAL(9,2)   NULL,
-    trang_thai_dong          TINYINT        NOT NULL DEFAULT 1, -- 1 CHO_DUYET 2 DA_DUYET 3 TU_CHOI
+    diem_duyet               DECIMAL(9,2)   NULL,               -- 0 khi dòng bị trả về
+    trang_thai_dong          TINYINT        NOT NULL DEFAULT 1,
+        -- State machine THẬT SỰ của module:
+        --   1: CHO_DUYET — NV sửa / gỡ được; đơn vị phụ trách phải xét.
+        --   2: DA_CHOT   — khoá với NV (sửa -> DONG_DA_CHOT; vắng mặt trong form
+        --                  cũng KHÔNG bị gỡ, và không thêm/gỡ minh chứng được).
+        --                  Người có can_duyet vẫn xét lại được -> nhật ký hanh_dong = 10.
+        --   3: TRA_VE    — bắt buộc kèm lý do ở nhan_xet_duyet. NV sửa dòng thì nó
+        --                  TỰ quay về 1, đồng thời xoá so_luong_duyet / diem_duyet /
+        --                  nhan_xet_duyet / id_nguoi_duyet_dong / ngay_duyet_dong.
+        --                  Chỉ reset khi dòng THẬT SỰ đổi.
+        -- LƯU Ý: giá trị 3 trước đây mang nghĩa "Từ chối", nay đọc là "Trả về" —
+        -- cùng cho diem_duyet = 0, khác ở chỗ NV sửa được. KHÔNG migrate dữ liệu cũ.
     mo_ta                    NVARCHAR(1000) NULL,
-    nhan_xet_duyet           NVARCHAR(1000) NULL,
+    nhan_xet_duyet           NVARCHAR(1000) NULL,               -- lý do trả về dòng này
     id_nguoi_duyet_dong      INT            NULL,
     ngay_duyet_dong          DATETIME       NULL,
     ngay_tao                 DATETIME       NOT NULL DEFAULT GETDATE(),
@@ -2127,9 +2166,23 @@ CREATE TABLE chi_tiet_ke_khai_thanh_tich (
 GO
 
 -- 11.4. Minh chứng PDF gắn vào DÒNG kê khai (mirror mục 9.4). Chỉ nhận .pdf.
+--       Thêm / gỡ được khi DÒNG còn sửa được (trang_thai_dong 1 hoặc 3); dòng đã
+--       chốt thì khoá. Gate theo DÒNG, không theo trạng thái bản kê.
+--
+--       KHO TẠM (khác mục 9.4): minh chứng là BẮT BUỘC với mục có
+--       yeu_cau_minh_chung = 1 và bị chặn ngay khi LƯU, nhưng dòng chưa tồn tại
+--       thì chưa có id_chi_tiet để gắn file vào. Vì vậy một bản ghi có HAI dạng:
+--         • đã gắn : id_chi_tiet NOT NULL, id_nam NULL
+--         • kho tạm: id_chi_tiet NULL,     id_nam NOT NULL — chủ sở hữu là cặp
+--                    (nguoi_tai_len, id_nam); sp_..._luu_chi_tiet gắn nó vào dòng
+--                    vừa tạo rồi xoá id_nam.
+--       CỐ Ý dùng id_nam chứ không phải id_ke_khai: lazy-create nghĩa là bản kê có
+--       thể chưa tồn tại lúc tải file lên.
+--       File tạm không bao giờ được gắn sẽ bị sp_..._don_tam dọn sau 7 ngày.
 CREATE TABLE minh_chung_ke_khai_thanh_tich (
     id_minh_chung_tt INT           IDENTITY(1,1) PRIMARY KEY,
-    id_chi_tiet      INT           NOT NULL,
+    id_chi_tiet      INT           NULL,      -- NULL = đang ở kho tạm
+    id_nam           INT           NULL,      -- chỉ có giá trị khi đang ở kho tạm
     ten_hien_thi     NVARCHAR(255) NOT NULL,
     ten_file_goc     NVARCHAR(255) NOT NULL,
     duong_dan        NVARCHAR(500) NOT NULL,   -- path tương đối dưới App_Data (luôn .pdf)
@@ -2140,19 +2193,32 @@ CREATE TABLE minh_chung_ke_khai_thanh_tich (
     da_xoa           BIT           NOT NULL DEFAULT 0,
     ngay_xoa         DATETIME      NULL,
     CONSTRAINT fk_mcttvt_chi_tiet FOREIGN KEY (id_chi_tiet)   REFERENCES chi_tiet_ke_khai_thanh_tich(id_chi_tiet),
+    CONSTRAINT fk_mcttvt_nam      FOREIGN KEY (id_nam)        REFERENCES nam_danh_gia(id_nam),
     CONSTRAINT fk_mcttvt_nguoi    FOREIGN KEY (nguoi_tai_len) REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT chk_mcttvt_kb      CHECK (kich_thuoc_kb IS NULL OR kich_thuoc_kb > 0),
-    CONSTRAINT chk_mcttvt_pdf     CHECK (duong_dan LIKE N'%.pdf')
+    CONSTRAINT chk_mcttvt_pdf     CHECK (duong_dan LIKE N'%.pdf'),
+    -- Đúng MỘT chủ sở hữu: hoặc đã gắn vào dòng, hoặc đang nằm ở kho tạm.
+    CONSTRAINT chk_mcttvt_chu     CHECK (
+        (id_chi_tiet IS NOT NULL AND id_nam IS NULL)
+     OR (id_chi_tiet IS NULL     AND id_nam IS NOT NULL)
+    )
 );
 GO
 
--- 11.5. Nhật ký: mọi thay đổi dòng và mọi chuyển trạng thái của bản kê (mirror 9.5).
---       id_chi_tiet NULL = hành động ở cấp BẢN KÊ (nộp, duyệt, trả lại…).
+-- 11.5. Nhật ký: mọi thay đổi dòng và mọi lần xét dòng (mirror 9.5).
 CREATE TABLE lich_su_ke_khai_thanh_tich (
     id                 BIGINT         IDENTITY(1,1) PRIMARY KEY,
     id_ke_khai         INT            NOT NULL,
     id_chi_tiet        INT            NULL,
-    hanh_dong          TINYINT        NOT NULL,   -- 1..9
+    hanh_dong          TINYINT        NOT NULL,
+        -- Đang sinh ra:
+        --   1: Tạo dòng   2: Sửa dòng   3: Xoá dòng
+        --   5: Chốt dòng  6: Trả về dòng
+        --  10: Mở lại dòng đã chốt (người duyệt xét lại dòng đang ở trạng thái 2)
+        -- CHỈ còn trong dữ liệu CŨ — luồng "nộp cả bản kê" đã gỡ:
+        --   4: Nộp        7: Chốt bản kê   8: Trả lại   9: Huỷ nộp
+        -- Giữ 4/7/8/9 trong chk_lsttvt_hd: các dòng lịch sử cũ mang những giá trị
+        -- đó, bỏ khỏi CHECK là không ALTER được bảng.
     so_luong_truoc     DECIMAL(9,2)   NULL,
     so_luong_sau       DECIMAL(9,2)   NULL,
     diem_truoc         DECIMAL(9,2)   NULL,
@@ -2163,11 +2229,11 @@ CREATE TABLE lich_su_ke_khai_thanh_tich (
     CONSTRAINT fk_lsttvt_ke_khai  FOREIGN KEY (id_ke_khai)         REFERENCES ke_khai_thanh_tich_vuot_troi(id_ke_khai),
     CONSTRAINT fk_lsttvt_chi_tiet FOREIGN KEY (id_chi_tiet)        REFERENCES chi_tiet_ke_khai_thanh_tich(id_chi_tiet),
     CONSTRAINT fk_lsttvt_nguoi    FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
-    CONSTRAINT chk_lsttvt_hd      CHECK (hanh_dong IN (1, 2, 3, 4, 5, 6, 7, 8, 9))
+    CONSTRAINT chk_lsttvt_hd      CHECK (hanh_dong IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
 );
 GO
 
--- 11.6. TVP: một form kê khai gửi lên trong 1 request; một lần duyệt gửi lên
+-- 11.6. TVP: một form kê khai gửi lên trong 1 request; một lần xét gửi lên
 --       nhiều quyết định dòng (mirror mục 9.6).
 CREATE TYPE dbo.ChiTietKeKhaiThanhTichRow AS TABLE (
     thu_tu         INT            NOT NULL PRIMARY KEY,  -- chỉ để làm PK cho TVP, không lưu
@@ -2185,9 +2251,19 @@ GO
 
 CREATE TYPE dbo.DuyetChiTietThanhTichRow AS TABLE (
     id_chi_tiet    INT            NOT NULL PRIMARY KEY,
-    quyet_dinh     TINYINT        NOT NULL,            -- 2: Duyệt, 3: Từ chối
+    quyet_dinh     TINYINT        NOT NULL,            -- 2: Chốt, 3: Trả về
     so_luong_duyet DECIMAL(9,2)   NULL,                -- NULL = giữ nguyên số đã kê
-    nhan_xet       NVARCHAR(1000) NULL
+    nhan_xet       NVARCHAR(1000) NULL                 -- BẮT BUỘC khi quyet_dinh = 3
+);
+GO
+
+-- Gắn minh chứng ở kho tạm vào dòng khi lưu. Khoá theo thu_tu của dòng TRONG
+-- FORM chứ không phải id_chi_tiet, vì dòng mới chưa có id lúc client gửi lên.
+-- Một thu_tu gắn được nhiều file; một file chỉ gắn cho đúng một dòng.
+CREATE TYPE dbo.GanMinhChungThanhTichRow AS TABLE (
+    thu_tu           INT NOT NULL,
+    id_minh_chung_tt INT NOT NULL,
+    PRIMARY KEY (thu_tu, id_minh_chung_tt)
 );
 GO
 
@@ -2198,6 +2274,8 @@ CREATE INDEX ix_kkttvt_nam_tt    ON ke_khai_thanh_tich_vuot_troi(id_nam, trang_t
 CREATE INDEX ix_ctttvt_ke_khai   ON chi_tiet_ke_khai_thanh_tich(id_ke_khai, da_xoa);
 CREATE INDEX ix_ctttvt_muc_tt    ON chi_tiet_ke_khai_thanh_tich(id_muc, trang_thai_dong);
 CREATE INDEX ix_mcttvt_chi_tiet  ON minh_chung_ke_khai_thanh_tich(id_chi_tiet, da_xoa);
+-- Dọn file tạm mồ côi: lọc theo (người tải lên, năm) trong các bản ghi chưa gắn.
+CREATE INDEX ix_mcttvt_tam       ON minh_chung_ke_khai_thanh_tich(nguoi_tai_len, id_nam, da_xoa);
 CREATE INDEX ix_lsttvt_ke_khai   ON lich_su_ke_khai_thanh_tich(id_ke_khai, ngay_thuc_hien DESC);
 GO
 

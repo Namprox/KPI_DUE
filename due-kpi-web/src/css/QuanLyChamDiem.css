@@ -1169,6 +1169,18 @@ button.cd-chip:hover {
   color: #1f2333;
 }
 
+.cdm-tieu-chi {
+  min-width: 0;
+}
+
+.cdm-mo-ta-tieu-chi {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
 .cdm-diem-nhom {
   display: flex;
   gap: 28px;

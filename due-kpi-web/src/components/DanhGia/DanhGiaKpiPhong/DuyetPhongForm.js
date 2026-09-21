@@ -43,6 +43,7 @@ const DuyetPhongForm = ({
   phieu,
   chiTietList = [],
   sections = [],
+  tieuChiMap = new Map(),
   choPhepNhap = false,
   readOnly = false,
   lyDoKhoa = "",
@@ -241,6 +242,7 @@ const DuyetPhongForm = ({
                 key={ct.IdChiTietDv}
                 chiTiet={ct}
                 stt={sttTheoDong.get(ct.IdChiTietDv)}
+                moTa={tieuChiMap?.get(Number(ct.IdTieuChi))?.moTa ?? ct.MoTa}
                 nhanCap={NHAN_CAP_CHAM}
                 choPhepNhap={choPhepNhap}
                 lyDoKhoa={lyDoKhoa}

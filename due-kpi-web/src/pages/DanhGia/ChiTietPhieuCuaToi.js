@@ -320,6 +320,7 @@ const ChiTietPhieuCuaToi = () => {
             key={ct.IdChiTiet}
             chiTiet={ct}
             stt={index + 1}
+            moTa={tieuChiMauMap.get(Number(ct.IdTieuChi))?.moTa ?? ct.MoTa}
             lichSu={lichSuTheoChiTiet.get(Number(ct.IdChiTiet)) || []}
             dangTaiLichSu={dangTaiLichSu}
             choPhepNhap={false}

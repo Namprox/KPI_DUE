@@ -49,6 +49,7 @@ import MinhChungTieuChiBox from "./TieuChi/MinhChungTieuChiBox";
 const TieuChiChamDonViCard = ({
   chiTiet,
   stt,
+  moTa,
   /** Nhãn của ba lớp điểm - NHAN_CAP_CHAM_KHOA hoặc NHAN_CAP_CHAM (Phòng). */
   nhanCap,
   choPhepNhap = false,
@@ -97,9 +98,12 @@ const TieuChiChamDonViCard = ({
     >
       <div className="cdm-main">
         <div className="cdm-dau">
-          <p className="cdm-ten">
-            {stt}. {chiTiet.TenTieuChi || `Tiêu chí #${chiTiet.IdTieuChi}`}
-          </p>
+          <div className="cdm-tieu-chi">
+            <p className="cdm-ten">
+              {stt}. {chiTiet.TenTieuChi || `Tiêu chí #${chiTiet.IdTieuChi}`}
+            </p>
+            {moTa ? <div className="cdm-mo-ta-tieu-chi">{moTa}</div> : null}
+          </div>
           <div className="cdm-diem-nhom">
             {oDiem.map(({ cap, nhan, giaTri }) => (
               <div className="cdm-diem-o" key={cap}>

@@ -7,9 +7,11 @@ import { tenQuy } from "../../utils/keKhaiThanhTichApi";
  * Hai tình huống dùng chung component nhưng KHÔNG dùng chung cách render, vì hợp
  * đồng phát ra hai tập trường khác nhau:
  *
- *   mode="thieu-minh-chung"  (422 lúc NỘP)
- *     có: IdChiTiet, TenThanhTich, TenMuc, LoaiThanhTich, Quy
+ *   mode="thieu-minh-chung"  (422 lúc LƯU)
+ *     có: IdChiTiet, ThuTu, TenThanhTich, TenMuc, LoaiThanhTich, Quy
  *     thiếu: TenDonVi
+ *     ⚠️ Dòng MỚI chưa lưu được nên `IdChiTiet = 0`; khi đó `ThuTu` (vị trí
+ *     zero-based trong danh sách vừa gửi) là cách DUY NHẤT trỏ đúng dòng.
  *
  *   mode="forbidden-dong"    (403 lúc DUYỆT)
  *     có: IdChiTiet, TenThanhTich, TenDonVi
@@ -21,7 +23,7 @@ import { tenQuy } from "../../utils/keKhaiThanhTichApi";
  *
  * @param {"thieu-minh-chung"|"forbidden-dong"} mode
  * @param {object[]} dong
- * @param {(idChiTiet:number)=>void} [onChonDong] bấm vào một dòng để cuộn tới nó
+ * @param {(dong:object)=>void} [onChonDong] bấm vào một dòng để cuộn tới nó
  * @param {()=>void} [onDong] đóng banner
  */
 const DongCoVanDeBanner = ({ mode, dong = [], onChonDong, onDong }) => {
@@ -53,17 +55,17 @@ const DongCoVanDeBanner = ({ mode, dong = [], onChonDong, onDong }) => {
 
       <div>
         {laThieuMc
-          ? "Bản kê chưa được nộp — hãy đính kèm PDF cho các dòng dưới đây rồi bấm Nộp lại."
+          ? "Toàn bộ lần lưu đã bị huỷ — hãy đính kèm PDF cho các dòng dưới đây rồi bấm Lưu lại."
           : "Toàn bộ lần lưu đã bị huỷ, chưa có dòng nào được ghi. Hãy bỏ chọn các dòng dưới đây rồi lưu lại phần thuộc đơn vị bạn."}
       </div>
 
       <div className="kkt-vande-list">
         {dong.map((d) => (
           <button
-            key={d.IdChiTiet}
+            key={`${d.IdChiTiet ?? 0}-${d.ThuTu ?? ""}`}
             type="button"
             className="kkt-vande-item"
-            onClick={onChonDong ? () => onChonDong(d.IdChiTiet) : undefined}
+            onClick={onChonDong ? () => onChonDong(d) : undefined}
             disabled={!onChonDong}
             title={onChonDong ? "Cuộn tới dòng này" : undefined}
           >

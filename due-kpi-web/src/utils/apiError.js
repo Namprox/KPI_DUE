@@ -61,16 +61,12 @@ export const PHIEU_ERROR_MESSAGES = {
   CHUA_CHOT_HET: "Còn tiêu chí chưa được thẩm định xong, chưa chốt được hồ sơ",
   CAM_NANG_XEP_LOAI:
     "Không nâng được xếp loại ở bước này - chỉ được giữ nguyên hoặc hạ so với mức hệ thống đề xuất",
-  DIEM_KHONG_DU:
-    "Tổng điểm tích lũy chưa đủ cho mức xếp loại bạn chọn (mức 2 cần từ 80 điểm, mức 3 cần trên 100 điểm)",
-  VUOT_MUC_VIEN_CHUC:
-    "Viên chức / người lao động chỉ được xếp tối đa mức 2 (Hoàn thành nhiệm vụ)",
+  DIEM_KHONG_DU: null,
   CHUA_DU_HO_SO:
     "Còn hồ sơ chưa được Trưởng khoa chốt, chưa đóng gói tờ trình được",
-  DONG_HANG:
-    "Có nhiều hồ sơ đồng điểm tranh suất xuất sắc cuối cùng - cần chỉ định người được suất",
+  DONG_HANG: null,
   TY_LE_KHONG_HOP_LE:
-    "Tỷ lệ xuất sắc phải nằm trong khoảng lớn hơn 0 và tối đa 1",
+    "Tỷ lệ xuất sắc phải bằng 20% (0.2000)",
   TRAN_LAN_TRINH: "Gói đã đạt giới hạn số lần trình Hiệu trưởng",
   KHONG_CO_HO_SO_LANH_DAO:
     "Gói không còn hồ sơ nào thuộc diện Hiệu trưởng duyệt. Cần đóng gói lại.",
@@ -114,6 +110,7 @@ export const readApiError = async (
     // Payload phụ đi kèm lỗi - bên gọi cần để dựng UI, không chỉ để báo đỏ.
     hoSo: body?.HoSo || null,
     dongHang: body?.DongHang || null,
+    dongHangNhom: body?.DongHangNhom || [],
     missingItems: body?.missingItems || null,
   };
 };

@@ -9870,14 +9870,17 @@ paths:
     get:
       tags:
         - KeKhaiThanhTich
-      summary: Ban ke khai thanh tich vuot troi cua mot nam (tu tao ban NHAP neu chua co)
+      summary: Ban ke khai thanh tich vuot troi cua mot nam
       description: >
-        Vong doi: 1 NHAP -> 2 CHO_DUYET -> 3 DA_DUYET; don vi phu trach co the tra ve
-        4 TRA_LAI de nhan vien sua roi nop lai.
-        Server tra san ChoPhepSua / ChoPhepNop / ChoPhepDuyet nen FE khong phai tu suy.
+        VONG DOI NAM O TUNG DONG, khong o ban ke - KHONG co buoc "nop".
+        TrangThai cua ban ke chi la NHAN dan xuat tu cac dong: 4 con dong bi tra ve,
+        2 con dong cho duyet, 3 moi dong da chot, 1 chua co dong nao.
+        LAZY-CREATE: chua ke gi thi tra header RONG voi IdKeKhai = 0 - KHONG tao ban ke
+        trong DB. Ban ke chi sinh ra khi PUT chi-tiet luu dong dau tien.
+        Server tra san ChoPhepSua / ChoPhepDuyet o header, va ChoPhepSua / ChoPhepXet o
+        TUNG DONG, nen FE khong phai tu suy tu trang thai.
         TongHopTheoLoai LUON co du 4 dong, mang TranDiem, DiemDuocTinh va canh bao
         VUOT_TRAN / KHEN_THUONG_TRUNG_NOI_DUNG.
-        SoDongThieuMinhChung > 0 nghia la chua nop duoc.
       operationId: keKhaiThanhTichCuaToi
       parameters:
         - name: idNam
@@ -9923,12 +9926,20 @@ paths:
         - KeKhaiThanhTich
       summary: Luu TOAN BO cac dong cua ban ke (mot form, mot lan luu)
       description: >
-        Dong dang co trong DB ma khong xuat hien trong danh sach se bi go (soft delete).
+        Dong dang co trong DB ma khong xuat hien trong danh sach se bi go (soft delete) -
+        NHUNG chi voi dong con sua duoc; dong DA CHOT khong bi go va gui len de sua se bi
+        tu choi voi DONG_DA_CHOT.
+        Day cung la noi TAO ban ke neu chua co (lazy-create).
         Client KHONG gui diem - server tinh DiemKeKhai = SoLuong * DiemQuyDoi cua muc,
         va ep SoLuong ve 1 voi muc co ChoPhepSoLuong = false.
+        Dong dang bi TRA VE ma bi sua se TU quay ve cho duyet, xoa sach ket qua xet cu -
+        chi khi dong that su doi, luu lai y nguyen thi giu nguyen ly do tra ve.
+        MINH CHUNG BAT BUOC bi chan NGAY O DAY: dong thuoc muc co YeuCauMinhChung = true
+        ma chua co file nao (da gan tu truoc HOAC gan trong chinh request nay qua
+        ChiTiet[].IdMinhChung) -> ca request bi tu choi voi THIEU_MINH_CHUNG, kem
+        DongCoVanDe[] co ThuTu de tro dung dong trong form.
         KHONG chan khi vuot tran hay trung noi dung khen thuong: van luu, phan vuot chi
         khong duoc tinh - xem TongHopTheoLoai[].CanhBao.
-        Chi chay duoc khi ban ke o trang thai 1 NHAP hoac 4 TRA_LAI.
       operationId: keKhaiThanhTichLuuChiTiet
       requestBody:
         required: true
@@ -9956,7 +9967,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/KeKhaiThanhTichResponse"
         "409":
-          description: DA_NOP / DA_DUYET - ban ke khong con sua duoc
+          description: DONG_DA_CHOT - co dong da duoc chot, khong sua duoc nua
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
+        "422":
+          description: THIEU_MINH_CHUNG - xem DongCoVanDe[] (moi dong co ThuTu)
           content:
             application/json:
               schema:
@@ -9970,8 +9987,9 @@ paths:
       description: >
         Chi nhan PDF, kiem hai lop (duoi file + chu ky '%PDF-').
         File luu ngoai webroot tai App_Data/uploads/ke-khai-thanh-tich, ten ngau nhien.
-        Chi chinh chu, va chi khi ban ke o trang thai 1 NHAP hoac 4 TRA_LAI.
-        Muc co YeuCauMinhChung = true BAT BUOC co file thi moi nop duoc ban ke.
+        Chi chinh chu, va chi khi DONG con sua duoc (gate theo DONG, khong theo trang
+        thai ban ke): dong da chot -> DONG_DA_CHOT.
+        DUNG CHO DONG DA CO. Dong CHUA TON TAI thi dung POST minh-chung-tam.
       operationId: keKhaiThanhTichUploadMinhChung
       parameters:
         - name: idChiTiet
@@ -10018,7 +10036,74 @@ paths:
               schema:
                 $ref: "#/components/schemas/KeKhaiThanhTichResponse"
         "409":
-          description: DA_NOP / DA_DUYET
+          description: DONG_DA_CHOT - dong da duoc chot, khong them minh chung duoc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
+        "415":
+          description: INVALID - khong phai multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
+
+  /api/ke-khai-thanh-tich/minh-chung-tam:
+    post:
+      tags:
+        - KeKhaiThanhTich
+      summary: Tai file PDF minh chung len KHO TAM, chua gan vao dong nao (multipart)
+      description: >
+        DUNG CHO DONG CHUA TON TAI. Minh chung la BAT BUOC voi muc co
+        YeuCauMinhChung = true va bi chan ngay o buoc LUU, nhung dong chua ton tai thi
+        chua co idChiTiet de gan file vao - day la duong pha vong khoa do.
+        Luong: POST endpoint nay -> lay IdMinhChungTt trong response -> gui kem trong
+        ChiTiet[i].IdMinhChung khi PUT chi-tiet. Server gan file vao dong vua tao
+        trong cung transaction.
+        File tam khong bao gio duoc gan se bi don sau 7 ngay.
+        Cung mot bo kiem tra nhu upload theo dong (PDF hai lop, gioi han dung luong).
+      operationId: keKhaiThanhTichUploadMinhChungTam
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          description: "Chu so huu cua file tam la cap (nguoi tai len, idNam)."
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                tenHienThi:
+                  type: string
+                  description: "Bo trong = lay ten file goc (bo duoi)."
+      responses:
+        "201":
+          description: Created - Item la MinhChungThanhTichDto voi IdChiTiet = null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
+        "400":
+          description: INVALID - khong phai PDF, tep rong, vuot gioi han, thieu idNam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
+        "403":
+          description: FORBIDDEN - khong co quyen tai minh chung len
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
+        "404":
+          description: NOT_FOUND - khong tim thay nam danh gia
           content:
             application/json:
               schema:
@@ -10109,95 +10194,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/KeKhaiThanhTichResponse"
 
-  /api/ke-khai-thanh-tich/nop:
-    post:
-      tags:
-        - KeKhaiThanhTich
-      summary: Nop ban ke khai (1 NHAP | 4 TRA_LAI -> 2 CHO_DUYET)
-      description: >
-        Reset moi dong ve cho duyet va xoa ket qua duyet cu (truong hop nop lai).
-        Bi chan khi ban ke rong (KHONG_CO_DONG) hoac con dong thuoc muc bat buoc minh
-        chung ma chua co file (THIEU_MINH_CHUNG) - khi do response mang DongCoVanDe[]
-        liet ke dung cac dong con thieu.
-        RowVersion chan viec ghi de khi nguoi khac vua doi ban ke.
-      operationId: keKhaiThanhTichNop
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NopKeKhaiThanhTichRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichItemResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "404":
-          description: NOT_FOUND - ban ke chua duoc mo
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "409":
-          description: DA_NOP / DA_DUYET / CONCURRENCY_CONFLICT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "422":
-          description: KHONG_CO_DONG / THIEU_MINH_CHUNG - xem DongCoVanDe[]
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-
-  /api/ke-khai-thanh-tich/huy-nop:
-    post:
-      tags:
-        - KeKhaiThanhTich
-      summary: Huy nop (2 CHO_DUYET -> 1 NHAP)
-      description: "Chi chinh chu, va chi khi CHUA co nguoi duyet dong nao (DA_XET neu da co)."
-      operationId: keKhaiThanhTichHuyNop
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NopKeKhaiThanhTichRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichItemResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "404":
-          description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "409":
-          description: CHUA_NOP / DA_XET / CONCURRENCY_CONFLICT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-
   /api/ke-khai-thanh-tich/cho-duyet:
     get:
       tags:
@@ -10209,6 +10205,9 @@ paths:
         vu duyet (vd P.TCHC thay dong khen thuong cua MOI nhan vien toan truong);
         (b) dong khong chi dinh don vi phu trach -> roi ve truong don vi quan ly truc tiep.
         SoDongChoDuyetCuaToi cho biet phan viec cua rieng nguoi goi.
+        KHONG con buoc "nop" nen KHONG loc theo trang thai ban ke nua: nhan vien ke toi
+        dau nguoi duyet thay toi do. Ban ke RONG bi loai han khoi danh sach.
+        Sap xep theo dong CHO DUYET cu nhat - ai cho lau nhat len truoc.
       operationId: keKhaiThanhTichChoDuyet
       parameters:
         - name: idNam
@@ -10233,11 +10232,19 @@ paths:
         - name: trangThai
           in: query
           required: false
-          description: "Mac dinh 2 (cho duyet). Bo trong = moi trang thai."
+          description: "Loc theo NHAN dan xuat cua ban ke. Bo trong (mac dinh) = moi trang thai."
           schema:
             type: integer
             minimum: 1
             maximum: 4
+        - name: chiConChoDuyet
+          in: query
+          required: false
+          description: "1 (mac dinh) = chi ban ke con dong PHAI XET cua chinh nguoi goi. 0 = lay het."
+          schema:
+            type: integer
+            default: 1
+            enum: [0, 1]
         - name: tuKhoa
           in: query
           required: false
@@ -10326,11 +10333,16 @@ paths:
     post:
       tags:
         - KeKhaiThanhTich
-      summary: Duyet / tu choi TUNG DONG (duoc sua so luong)
+      summary: Chot / tra ve TUNG DONG (duoc sua so luong)
       description: >
-        QuyetDinh 2 = duyet, 3 = tu choi. SoLuongDuyet null = giu nguyen so nhan vien da ke.
-        Dong bi tu choi cho DiemDuyet = 0 nhung van giu so lieu da ke de doi chieu.
+        DAY LA NOI DUY NHAT dieu khien vong doi - khong con chot / tra lai o cap ban ke.
+        QuyetDinh 2 = chot (khoa voi nhan vien), 3 = tra ve (nhan vien sua duoc, va
+        BAT BUOC kem NhanXet - thieu thi 400 THIEU_LY_DO).
+        SoLuongDuyet null = giu nguyen so nhan vien da ke.
+        Dong bi tra ve cho DiemDuyet = 0 nhung van giu so lieu da ke de doi chieu.
         Diem duyet tinh lai tu SNAPSHOT cua dong, KHONG doc lai danh muc.
+        Dong dang o trang thai 2 van xet lai duoc (mo lai) -> nhat ky HanhDong = 10.
+        KHONG con gate theo trang thai ban ke: nhan vien khong phai "nop" truoc.
         GATE CAP DONG: moi dong doi chieu rieng IdDonViDuyet cua muc no tro toi. Gui lan
         sang dong cua don vi khac -> CA request bi tu choi (403 FORBIDDEN_DONG, khong ghi
         mot phan) va response mang DongCoVanDe[] chi ro dong nao thuoc don vi nao.
@@ -10355,7 +10367,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/KeKhaiThanhTichItemResponse"
         "400":
-          description: INVALID
+          description: INVALID / THIEU_LY_DO - tra ve ma khong ghi ly do
           content:
             application/json:
               schema:
@@ -10372,119 +10384,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "409":
-          description: CHUA_NOP / DA_DUYET
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-
-  /api/ke-khai-thanh-tich/{id}/chot:
-    post:
-      tags:
-        - KeKhaiThanhTich
-      summary: Chot ban ke (2 CHO_DUYET -> 3 DA_DUYET)
-      description: >
-        Chan neu con dong chua xet (CON_DONG_CHUA_XET) - dieu kien nay bat buoc moi don
-        vi phu trach phai xet xong phan cua minh truoc, nen nguoi bam chot chi la nguoi
-        ket thuc, khong the vuot mat ai.
-        LUU Y: sau khi chot phai chay lai POST api/phieu/{id}/tong-hop-tu-dong de diem
-        moi chay vao phieu KPI.
-      operationId: keKhaiThanhTichChot
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ChotKeKhaiThanhTichRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichItemResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "404":
-          description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "409":
-          description: CHUA_NOP / DA_DUYET / CONCURRENCY_CONFLICT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "422":
-          description: CON_DONG_CHUA_XET
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-
-  /api/ke-khai-thanh-tich/{id}/tra-lai:
-    post:
-      tags:
-        - KeKhaiThanhTich
-      summary: Tra ban ke ve cho nhan vien sua (2 CHO_DUYET -> 4 TRA_LAI)
-      description: "Bat buoc co ly do. Xoa het ket qua duyet tam de nhan vien nop lai tu dau."
-      operationId: keKhaiThanhTichTraLai
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TraLaiKeKhaiThanhTichRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichItemResponse"
-        "400":
-          description: INVALID - thieu ly do
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "404":
-          description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
-        "409":
-          description: CHUA_NOP / DA_DUYET / CONCURRENCY_CONFLICT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KeKhaiThanhTichResponse"
 
   /api/ke-khai-thanh-tich/{id}/lich-su:
     get:
@@ -10492,8 +10391,10 @@ paths:
         - KeKhaiThanhTich
       summary: Nhat ky cua mot ban ke
       description: >
-        HanhDong: 1 Tao dong, 2 Sua dong, 3 Xoa dong, 4 Nop, 5 Duyet dong,
-        6 Tu choi dong, 7 Chot ban ke, 8 Tra lai, 9 Huy nop.
+        HanhDong dang sinh ra: 1 Tao dong, 2 Sua dong, 3 Xoa dong, 5 Chot dong,
+        6 Tra ve dong, 10 Mo lai dong da chot.
+        Chi con trong du lieu CU (luong "nop" da go): 4 Nop, 7 Chot ban ke, 8 Tra lai,
+        9 Huy nop.
       operationId: keKhaiThanhTichLichSu
       parameters:
         - name: id
@@ -18880,6 +18781,8 @@ components:
           type: integer
         IdChiTiet:
           type: integer
+          nullable: true
+          description: "Null = file dang o KHO TAM, chua gan vao dong nao."
         TenHienThi:
           type: string
         TenFileGoc:
@@ -18959,13 +18862,22 @@ components:
           nullable: true
         TrangThaiDong:
           type: integer
-          description: "1 Cho duyet, 2 Da duyet, 3 Tu choi."
+          description: >
+            1 Cho duyet, 2 Da chot (khoa voi nhan vien), 3 Tra ve (sua duoc, sua xong
+            tu quay ve 1).
         MoTa:
           type: string
           nullable: true
         NhanXetDuyet:
           type: string
           nullable: true
+          description: "Ly do nguoi duyet tra ve dong nay."
+        ChoPhepSua:
+          type: boolean
+          description: "Nguoi goi sua duoc dong nay (chinh chu + dong chua chot)."
+        ChoPhepXet:
+          type: boolean
+          description: "Nguoi goi xet duoc dong nay (chot / tra ve / mo lai)."
         IdNguoiDuyetDong:
           type: integer
           nullable: true
@@ -19093,8 +19005,7 @@ components:
           nullable: true
         ChoPhepSua:
           type: boolean
-        ChoPhepNop:
-          type: boolean
+          description: "Quyen sua cua nguoi goi. Dieu kien tung dong o ChiTiet[].ChoPhepSua."
         ChoPhepDuyet:
           type: boolean
         CanSua:
@@ -19249,11 +19160,18 @@ components:
     DongKeKhaiCoVanDeDto:
       type: object
       description: >
-        Mot dong gay loi. Phat kem THIEU_MINH_CHUNG (khi nop) va FORBIDDEN_DONG
+        Mot dong gay loi. Phat kem THIEU_MINH_CHUNG (khi luu) va FORBIDDEN_DONG
         (khi duyet nham dong cua don vi khac) de FE chi thang vao dong can xu ly.
       properties:
         IdChiTiet:
           type: integer
+          description: "0 voi dong MOI chua luu duoc - khi do doi chieu bang ThuTu."
+        ThuTu:
+          type: integer
+          nullable: true
+          description: >
+            Chi co o loi THIEU_MINH_CHUNG: vi tri cua dong trong form vua gui len.
+            Dong moi chua co IdChiTiet nen day la cach duy nhat de tro dung dong.
         TenThanhTich:
           type: string
         TenMuc:
@@ -19311,6 +19229,16 @@ components:
         MoTa:
           type: string
           nullable: true
+        IdMinhChung:
+          type: array
+          nullable: true
+          description: >
+            Id cac minh chung dang o KHO TAM can gan vao dong nay (lay tu
+            POST /api/ke-khai-thanh-tich/minh-chung-tam).
+            Muc co YeuCauMinhChung = true ma dong CHUA co minh chung nao thi BAT BUOC
+            phai co truong nay, khong thi ca request bi tu choi voi THIEU_MINH_CHUNG.
+          items:
+            type: integer
 
     LuuChiTietKeKhaiThanhTichRequest:
       type: object
@@ -19321,22 +19249,11 @@ components:
           type: integer
         ChiTiet:
           type: array
-          description: "Rong = go het cac dong (van luu duoc; chi chan khi NOP)."
+          description: >
+            Rong = go het cac dong con sua duoc. Dong DA CHOT khong bi go, va gui len
+            de sua se bi tu choi voi DONG_DA_CHOT.
           items:
             $ref: "#/components/schemas/ChiTietKeKhaiThanhTichItemRequest"
-
-    NopKeKhaiThanhTichRequest:
-      type: object
-      required:
-        - IdNam
-      properties:
-        IdNam:
-          type: integer
-        RowVersion:
-          type: string
-          format: byte
-          nullable: true
-          description: "Null = bo qua kiem tra phien ban (khong khuyen khich)."
 
     DuyetChiTietThanhTichItemRequest:
       type: object
@@ -19348,7 +19265,7 @@ components:
           type: integer
         QuyetDinh:
           type: integer
-          description: "2 = duyet, 3 = tu choi."
+          description: "2 = chot, 3 = tra ve (bat buoc kem NhanXet)."
         SoLuongDuyet:
           type: number
           nullable: true
@@ -19356,6 +19273,7 @@ components:
         NhanXet:
           type: string
           nullable: true
+          description: "Ly do - BAT BUOC khi QuyetDinh = 3, thieu thi 400 THIEU_LY_DO."
 
     DuyetChiTietThanhTichRequest:
       type: object
@@ -19366,29 +19284,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DuyetChiTietThanhTichItemRequest"
-
-    ChotKeKhaiThanhTichRequest:
-      type: object
-      properties:
-        GhiChu:
-          type: string
-          nullable: true
-        RowVersion:
-          type: string
-          format: byte
-          nullable: true
-
-    TraLaiKeKhaiThanhTichRequest:
-      type: object
-      required:
-        - LyDo
-      properties:
-        LyDo:
-          type: string
-        RowVersion:
-          type: string
-          format: byte
-          nullable: true
 
     KeKhaiThanhTichResponse:
       type: object

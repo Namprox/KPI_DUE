@@ -40,6 +40,8 @@ export const ROLE = {
 export const MOI_NGUOI = "*";
 
 export const ROLE_SETS = {
+  /** Đóng gói và chỉ định ưu tiên tại đúng đơn vị; không gồm cấp phó. */
+  TO_TRINH_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG, ROLE.ADMIN],
   /** Chỉ quản trị viên hệ thống. */
   ADMIN: [ROLE.ADMIN],
 
@@ -236,9 +238,9 @@ export const ROLE_SETS = {
   /**
    * Duyệt bản kê THÀNH TÍCH VƯỢT TRỘI (Nhóm II) của viên chức / NLĐ.
    *
-   * Hợp của "trưởng đơn vị quản lý trực tiếp" và "trưởng phòng chuyên trách"
-   * (P.TCHC duyệt khen thưởng, P.KHHTQT duyệt sáng kiến), cộng HT/Admin xem
-   * toàn trường.
+   * Dành cho trưởng phòng chuyên trách (P.TCHC duyệt khen thưởng,
+   * P.KHHTQT duyệt sáng kiến), cộng HT/Admin xem toàn trường. TK/TKL không
+   * tham gia luồng duyệt này.
    *
    * CỐ Ý tách khỏi DUYET_KE_KHAI_GIO dù hiện TRÙNG thành viên, vì luật đằng sau
    * khác hẳn: giờ quy đổi gác theo phạm vi "đơn vị mình + đơn vị con", còn ở đây
@@ -254,8 +256,6 @@ export const ROLE_SETS = {
    * gửi lẫn dòng của đơn vị khác sẽ nhận 403 FORBIDDEN_DONG cho cả request.
    */
   DUYET_KE_KHAI_THANH_TICH: [
-    ROLE.TRUONG_KHOA,
-    ROLE.TRUONG_KHOA_LON,
     ROLE.TRUONG_PHONG,
     ROLE.HIEU_TRUONG,
     ROLE.ADMIN,
@@ -327,14 +327,13 @@ export const ROLE_SETS = {
 
   /**
    * Giai đoạn 3 trên hồ sơ KPI của NHÂN VIÊN / VIÊN CHỨC (loai_doi_tuong = 2):
-   * Trưởng phòng chốt hồ sơ của chính Phòng mình và chọn xếp loại (tối đa mức 2).
+   * Trưởng phòng chốt hồ sơ của chính Phòng mình và chọn xếp loại theo mức hệ thống đề xuất.
    *
    * CỐ Ý tách khỏi TRUONG_KHOA dù server dùng CHUNG một endpoint
    * (POST phieu/{id}/khoa/duyet-ho-so mở cho cả TK/TKL/TP - xem openapi.yaml).
    * Lý do tách là MÀN HÌNH chứ không phải thẩm quyền: /quan-ly/duyet-ho-so dựng
-   * cho hồ sơ giảng viên - QĐ 838, định mức giờ NCKH, hạn ngạch xuất sắc 20%,
-   * tờ trình Khoa - không thứ nào áp dụng cho phiếu ở Phòng. Nhét TP vào tập kia
-   * là mở cho họ một màn hình sai nghiệp vụ VÀ kéo theo cả /quan-ly/to-trinh.
+   * cho hồ sơ giảng viên với QĐ 838 và định mức giờ NCKH. Tờ trình dùng
+   * quyền TO_TRINH_DON_VI riêng, bao gồm Trưởng phòng.
    *
    * TK/TKL nằm ngoài: nhân viên văn phòng Khoa cũng là loai_doi_tuong = 2 nhưng
    * họ đã có lối đi ở /quan-ly/duyet-ho-so, màn hình đó đã rẽ nhánh theo

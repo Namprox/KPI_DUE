@@ -176,7 +176,7 @@ export const TEN_MUC_QD838 = {
 /** QĐ 838 chỉ áp dụng từ năm học 2025-2026 trở đi. */
 export const NAM_AP_DUNG_QD838 = 2025;
 
-/** loai_doi_tuong - viên chức/NLĐ bị kẹp trần mức 2 và không tranh hạn ngạch. */
+/** Loại đối tượng quyết định ngưỡng điểm và điều kiện NCKH. */
 export const LOAI_DOI_TUONG = {
   GIANG_VIEN: 1,
   VIEN_CHUC: 2,
@@ -300,7 +300,7 @@ export const tinhTongDiemTamTinh = (chiTiet, nhomTheoTieuChi) => {
  *
  * @param {boolean} canQd838 hồ sơ có bị ràng buộc QĐ 838 không (giảng viên,
  *   năm học >= 2025-2026). false thì bỏ qua điều kiện này.
- * @param {number} tranMuc kẹp trần kết quả - viên chức/NLĐ chỉ tới mức 2.
+ * @param {number} tranMuc mức cao nhất chọn tay (3); mức 4 do đóng gói ghi.
  */
 export const tinhXepLoaiGoiY = ({
   tichLuy,
@@ -309,15 +309,17 @@ export const tinhXepLoaiGoiY = ({
   duDinhMucGioNckh = true,
   khongViPhamPhapLuat = true,
   tranMuc = 3,
+  loaiDoiTuong = LOAI_DOI_TUONG.GIANG_VIEN,
 }) => {
   if (tichLuy == null) return null;
   // Hai điều kiện cứng phủ quyết cả điểm số: thiếu một cái là rơi thẳng mức 1.
-  if (!duDinhMucGioNckh || !khongViPhamPhapLuat) return 1;
+  const vienChuc = Number(loaiDoiTuong) === LOAI_DOI_TUONG.VIEN_CHUC;
+  if ((!vienChuc && !duDinhMucGioNckh) || !khongViPhamPhapLuat) return 1;
   if (Number(tichLuy) < NGUONG_XEP_LOAI.HOAN_THANH) return 1;
 
-  const datQd838 = !canQd838 || Number(mucNckhcnQd838) >= MUC_QD838.HT_TOT;
-  const muc =
-    Number(tichLuy) > NGUONG_XEP_LOAI.HOAN_THANH_TOT && datQd838 ? 3 : 2;
+  const datQd838 = vienChuc || !canQd838 || Number(mucNckhcnQd838) >= MUC_QD838.HT_TOT;
+  const duDiemMuc3 = vienChuc ? Number(tichLuy) >= 101 : Number(tichLuy) > NGUONG_XEP_LOAI.HOAN_THANH_TOT;
+  const muc = duDiemMuc3 && datQd838 ? 3 : 2;
   return Math.min(muc, tranMuc);
 };
 
@@ -979,7 +981,7 @@ export const khoaDuyetHoSo = async (
 /**
  * Đánh dấu hồ sơ được suất xuất sắc cuối cùng - gỡ bế tắc DONG_HANG khi đóng gói.
  *
- * Số hồ sơ được đánh dấu phải BẰNG ĐÚNG số suất còn lại (`DongHang.SoSuatConLai`);
+ * Số hồ sơ được đánh dấu phải BẰNG ĐÚNG số suất còn lại (`DongHangNhom[].SoSuatConLai` của từng nhóm);
  * thừa hay thiếu thì đóng gói vẫn báo DONG_HANG. Trả về ToTrinhKhoaResponse nên
  * đọc `HoSo[]` chứ không phải `Item`.
  */
@@ -1093,6 +1095,10 @@ export const fetchTieuChiTheoMau = async (idMau) => {
         loaiNhom: Number(loaiNhom) || null,
         loaiThangDiem: Number(tc.LoaiThangDiem) || 1,
         diemToiDa: tc.DiemToiDa,
+        // Mô tả thuộc tiêu chí trong chi tiết mẫu, không nằm trong DTO chi tiết
+        // phiếu. Giữ thêm fallback lồng để tương thích nếu API bọc thông tin
+        // tiêu chí trong thuộc tính `TieuChi`.
+        moTa: tc.MoTa ?? tc.TieuChi?.MoTa ?? null,
         mucDiem: [...(tc.ThangDiem || [])].sort(
           (a, b) => (a.ThuTuHienThi ?? 0) - (b.ThuTuHienThi ?? 0),
         ),

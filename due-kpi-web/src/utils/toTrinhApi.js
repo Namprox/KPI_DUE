@@ -96,31 +96,6 @@ export const TEN_HANH_DONG_TO_TRINH = {
 /** Tỷ lệ xuất sắc mặc định lưu trên gói (to_trinh_kpi_khoa.ty_le_xuat_sac). */
 export const TY_LE_XUAT_SAC_MAC_DINH = 0.2;
 
-/**
- * Số suất xuất sắc của một Khoa.
- *
- * Mẫu số là TỔNG SỐ giảng viên của Khoa (loai_doi_tuong = 1), KHÔNG phải số
- * người đạt "Hoàn thành tốt": Khoa 30 giảng viên có 6 suất kể cả khi chỉ 10
- * người ở mức 3. Làm tròn XUỐNG - 27 giảng viên ra 5 suất, không phải 6.
- */
-export const tinhHanNgach = (soGiangVien, tyLe = TY_LE_XUAT_SAC_MAC_DINH) => {
-  const n = Number(soGiangVien);
-  const t = Number(tyLe);
-  if (!Number.isFinite(n) || !Number.isFinite(t)) return 0;
-  return Math.floor(n * t);
-};
-
-/**
- * Hồ sơ này có đang tranh suất xuất sắc không.
- *
- * Server đã trả sẵn cờ `DuDieuKienXuatSac`; hàm này chỉ để tính lại tại chỗ khi
- * dữ liệu đến từ nguồn không có cờ đó (ví dụ danh sách kèm theo lỗi DONG_HANG).
- */
-export const duDieuKienXuatSac = (hoSo) =>
-  Number(hoSo?.LoaiDoiTuong) === 1 &&
-  Number(hoSo?.XepLoaiKhoa) === 3 &&
-  Number(hoSo?.MucNckhcnQd838) === 2;
-
 /* ------------------------------------------------------------------ */
 /* Hạ tầng gọi API                                                     */
 /* ------------------------------------------------------------------ */
@@ -140,6 +115,7 @@ const buildApiError = async (response, fallback) => {
   // CHUA_DU_HO_SO và DONG_HANG đều trả kèm danh sách hồ sơ để dựng UI xử lý.
   error.hoSo = info.hoSo;
   error.dongHang = info.dongHang;
+  error.dongHangNhom = info.dongHangNhom;
   return error;
 };
 
@@ -193,10 +169,7 @@ export const fetchToTrinhList = async ({
 /**
  * Chi tiết một gói: header + HoSo[] + LichSu[].
  *
- * `SoGiangVien` là mẫu số đã SNAPSHOT lúc đóng gói; `SoGiangVienHienTai` (chỉ có
- * ở endpoint này) là số đếm tại thời điểm gọi. Hai giá trị lệch nhau nghĩa là
- * nhân sự Khoa đã thay đổi sau khi đóng gói - UI phải cảnh báo, hạn ngạch đang
- * hiển thị không còn đúng.
+ * Nhom[] chứa hai vế snapshot và hiện tại. SoGiangVien chỉ là đầu người.
  */
 export const fetchToTrinhDetail = async (idToTrinh) => {
   const data = await getJson(
@@ -217,7 +190,7 @@ export const fetchToTrinhDetail = async (idToTrinh) => {
  * tổng điểm tích lũy rồi nâng những người trúng suất lên mức xuất sắc. Đóng gói
  * lại được nhiều lần trước khi trình.
  *
- * `tyLeXuatSac` để trống = giữ tỷ lệ đang lưu trên gói (mặc định 0.2).
+ * `tyLeXuatSac` để trống = tỷ lệ cố định 0.2.
  *
  * Hai nhánh lỗi 409 mà UI BẮT BUỘC xử lý riêng thay vì chỉ báo đỏ:
  *  - CHUA_DU_HO_SO - `error.hoSo` liệt kê người chưa được Trưởng khoa chốt.
@@ -238,6 +211,7 @@ export const dongGoiToTrinh = async (
   return {
     item: data.Item || null,
     hoSo: data.HoSo || [],
+    nhom: data.Nhom || [],
     message: data.Message || "",
     soHoSoHoanTat: data.SoHoSoHoanTat ?? null,
     soHoSoChoHt: data.SoHoSoChoHt ?? null,

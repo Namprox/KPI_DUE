@@ -986,6 +986,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
           phieu={phieu}
           chiTietList={chiTietList}
           sections={sections}
+          tieuChiMap={tieuChiMap}
           choPhepNhap={choPhepDuyet}
           lyDoKhoa={
             readOnly

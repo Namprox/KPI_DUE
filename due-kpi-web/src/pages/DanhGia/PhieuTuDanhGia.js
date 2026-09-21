@@ -38,6 +38,7 @@ const flattenTemplate = (itemDetail) => {
         nhomCha.TieuChi.forEach((tc) => {
           flatCriteria.push({
             ...tc,
+            MoTa: tc.MoTa ?? tc.TieuChi?.MoTa ?? null,
             TenNhom: nhomCha.TenNhom,
             TenNhomCha: nhomCha.TenNhom,
             IdNhomCha: nhomCha.IdNhom,
@@ -52,6 +53,7 @@ const flattenTemplate = (itemDetail) => {
             nhomCon.TieuChi.forEach((tc) => {
               flatCriteria.push({
                 ...tc,
+                MoTa: tc.MoTa ?? tc.TieuChi?.MoTa ?? null,
                 TenNhom: nhomCon.TenNhom || nhomCha.TenNhom,
                 TenNhomCha: nhomCha.TenNhom,
                 IdNhomCha: nhomCha.IdNhom,

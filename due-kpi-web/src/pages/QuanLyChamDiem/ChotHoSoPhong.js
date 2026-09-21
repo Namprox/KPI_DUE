@@ -41,8 +41,6 @@ import {
   XepLoaiKhoaBadge,
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
 
-/** Trần xếp loại cứng của viên chức / NLĐ - server chặn bằng 409 VUOT_MUC_VIEN_CHUC. */
-const TRAN_MUC_VIEN_CHUC = 2;
 
 /** Chờ người dùng ngừng bấm trước khi hỏi lại server (ms). */
 const TRE_XEM_TRUOC = 350;
@@ -55,11 +53,10 @@ const DUONG_DAN_DANH_SACH = "/quan-ly/ho-so-nhan-vien";
  *
  * Song song với ChotHoSoKhoa.js (cùng endpoint POST phieu/{id}/khoa/duyet-ho-so,
  * server mở cho cả TK/TKL/TP) nhưng là màn hình RIÊNG, và các nhánh giảng viên bị
- * CẮT HẲN chứ không rẽ theo cờ lúc chạy. Bốn thứ không tồn tại ở đây:
+ * CẮT HẲN chứ không rẽ theo cờ lúc chạy. Hai điều kiện không áp dụng ở đây:
  *   - QĐ 838: server ép null với viên chức, `BatBuocQd838` luôn false.
  *   - Định mức giờ NCKH: viên chức không có, không gọi fetchDinhMucApDung.
- *   - Mức 3 và mức 4: trần cứng là mức 2 (Hoàn thành nhiệm vụ).
- *   - Hạn ngạch xuất sắc 20%: viên chức KHÔNG vào mẫu số của Khoa, không tranh suất.
+ * Viên chức đạt mức 3 từ 101 điểm; mức 4 được xét khi đóng gói theo nhóm.
  *
  * NGUỒN SỐ LIỆU: GET phieu/{id}/xem-truoc-chot, không phải phép tính ở client.
  * Ba cột tong_diem_* và xep_loai_de_xuat chỉ được server ghi TRONG giao dịch chốt
@@ -271,7 +268,7 @@ const ChotHoSoPhong = () => {
         canQd838: false,
         duDinhMucGioNckh: true,
         khongViPhamPhapLuat: form.khongViPhamPhapLuat,
-        tranMuc: TRAN_MUC_VIEN_CHUC,
+        loaiDoiTuong: LOAI_DOI_TUONG.VIEN_CHUC,
       }),
     [tamTinh, form.khongViPhamPhapLuat],
   );
@@ -298,25 +295,16 @@ const ChotHoSoPhong = () => {
     (!dungDuongLui && preview.XepLoaiDeXuatText) ||
     (mucDoiChieu != null ? XEP_LOAI_META[mucDoiChieu]?.label : null);
 
-  /**
-   * Tập mức được phép chọn.
-   *
-   * Nguồn chuẩn là CacMucChonDuoc (= 1..XepLoaiDeXuat, không bao giờ có mức 4).
-   * Kẹp thêm trần 2 là BẢO HIỂM: spec không hứa XepLoaiDeXuat đã áp trần viên
-   * chức ngay trong xem-truoc-chot (trần chắc chắn có trong sp_phieu_khoa_duyet_
-   * ho_so). Render mức 3 rồi ăn 409 VUOT_MUC_VIEN_CHUC là lỗi giao diện, không
-   * phải lỗi thao tác. Nếu server cũng kẹp thì filter này thành no-op vô hại.
-   */
+  // Dựng mức chọn từ preview; mức 4 chỉ do đóng gói ghi.
   const mucChonDuoc = useMemo(() => {
-    const tran = laVienChuc ? TRAN_MUC_VIEN_CHUC : 3;
     const nguon =
-      !dungDuongLui && preview.CacMucChonDuoc?.length
+      !dungDuongLui && Array.isArray(preview.CacMucChonDuoc)
         ? preview.CacMucChonDuoc
         : mucGoiYCuc != null
-          ? [1, 2].filter((m) => m <= mucGoiYCuc)
-          : [1, 2];
-    return nguon.map(Number).filter((m) => m >= 1 && m <= tran);
-  }, [dungDuongLui, preview, mucGoiYCuc, laVienChuc]);
+          ? [1, 2, 3].filter((m) => m <= mucGoiYCuc)
+          : [1, 2, 3];
+    return nguon.map(Number).filter((m) => m >= 1 && m <= 3);
+  }, [dungDuongLui, preview, mucGoiYCuc]);
 
   const coQuyenChot =
     laTruongPhongCuaPhieu(user, phieu) &&
@@ -348,7 +336,7 @@ const ChotHoSoPhong = () => {
       xepLoaiKhoa:
         phieu.XepLoaiKhoa ??
         (phieu.XepLoaiDeXuat != null
-          ? Math.min(Number(phieu.XepLoaiDeXuat), TRAN_MUC_VIEN_CHUC)
+          ? Number(phieu.XepLoaiDeXuat)
           : null),
       lyDoXepLoai: phieu.LyDoXepLoai || "",
       khongViPhamPhapLuat: phieu.KhongViPhamPhapLuat ?? true,
@@ -362,7 +350,7 @@ const ChotHoSoPhong = () => {
   // nếu không form sẽ giữ một mức đã bị khóa ngay bên cạnh.
   const mucToiDaChon = mucChonDuoc.length
     ? Math.max(...mucChonDuoc)
-    : TRAN_MUC_VIEN_CHUC;
+    : 3;
   useEffect(() => {
     if (form.xepLoaiKhoa != null && Number(form.xepLoaiKhoa) > mucToiDaChon) {
       setForm((truoc) => ({ ...truoc, xepLoaiKhoa: mucToiDaChon }));
@@ -448,20 +436,6 @@ const ChotHoSoPhong = () => {
     if (ma === "CAM_NANG_XEP_LOAI" || ma === "DIEM_KHONG_DU") {
       setLoiForm({ xepLoaiKhoa: thongDiep });
       setLanTaiLai((n) => n + 1);
-      return;
-    }
-
-    // Mã này lẽ ra không bao giờ tới được đây: nó chỉ phát sinh khi form bày một
-    // mức > 2 cho viên chức, tức là lớp kẹp trần ở mucChonDuoc đã hỏng.
-    if (ma === "VUOT_MUC_VIEN_CHUC") {
-      console.error(
-        "[ChotHoSoPhong] Form đang render sai mức xếp loại:",
-        ma,
-        { mucChonDuoc, preview },
-      );
-      setLoiForm({
-        chung: `${thongDiep} Đây là lỗi hiển thị của hệ thống - vui lòng tải lại trang và báo quản trị.`,
-      });
       return;
     }
 
@@ -633,7 +607,7 @@ const ChotHoSoPhong = () => {
           )}
           {/* CacMucChonDuoc đã cắt sẵn các mức không đạt, nên thay vì bày nút
               "đã khóa" ta giải thích bằng chính câu của server. */}
-          {mucToiDaChon < TRAN_MUC_VIEN_CHUC && (
+          {mucToiDaChon < 3 && (
             <div className="cd-khoa-vi-sao">
               <div className="cd-khoa-vi-sao-nhan">
                 <i className="fa-solid fa-lock"></i> Vì sao chỉ còn mức{" "}
@@ -650,29 +624,12 @@ const ChotHoSoPhong = () => {
           <details className="cd-chot-luu-y">
             <summary>
               <i className="fa-solid fa-chevron-right"></i>
-              Vì sao không có mức 3 và mức 4?
+              Mức 3 và mức 4 được xét thế nào?
             </summary>
             <div className="cd-chot-luu-y-than">
-              <p>
-                Hồ sơ ở Phòng / Trung tâm mang loại đối tượng{" "}
-                <b>viên chức / người lao động</b> - điều này suy từ ĐƠN VỊ của
-                phiếu chứ không từ chức danh, nên kể cả một PGS kiêm nhiệm làm
-                Trưởng phòng thì phiếu Phòng của họ vẫn là loại này.
-              </p>
-              <ul>
-                <li>
-                  Trần xếp loại là <b>mức 2 - Hoàn thành nhiệm vụ</b>. Server
-                  chặn cứng bằng 409 VUOT_MUC_VIEN_CHUC.
-                </li>
-                <li>
-                  Viên chức không vào mẫu số hạn ngạch xuất sắc 20% của Khoa nên
-                  không tranh suất mức 4.
-                </li>
-              </ul>
-              <p>
-                Ngoài ra bước này KHÔNG nâng xếp loại được, chỉ giữ nguyên hoặc
-                hạ so với mức hệ thống đề xuất.
-              </p>
+              <p>Viên chức / NLĐ đạt mức 3 khi tổng tích lũy từ 101 điểm và không vi phạm pháp luật.</p>
+              <p>Mức 4 được xét ở bước đóng gói: phải ở mức 3 và nằm trong Top của nhóm. Trưởng phòng thuộc nhóm cán bộ quản lý. Suất bỏ trống không dồn xuống người kế tiếp.</p>
+              <p>Bước này chỉ được giữ nguyên hoặc hạ so với mức hệ thống đề xuất.</p>
             </div>
           </details>
         </div>
@@ -1008,6 +965,7 @@ const ChotHoSoPhong = () => {
           key={ct.IdChiTiet}
           chiTiet={ct}
           stt={index + 1}
+          moTa={tieuChiMauMap.get(Number(ct.IdTieuChi))?.moTa ?? ct.MoTa}
           lichSu={lichSuTheoChiTiet.get(Number(ct.IdChiTiet)) || []}
           dangTaiLichSu={dangTaiLichSu}
           // Tên CHẾ ĐỘ HIỂN THỊ của thẻ (ẩn dải nút thẩm định), không phải khẳng

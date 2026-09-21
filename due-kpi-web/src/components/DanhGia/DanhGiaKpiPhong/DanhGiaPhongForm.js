@@ -187,7 +187,7 @@ const DanhGiaPhongForm = ({
                       <TieuChiCardHeader
                         soThuTu={String(index + 1)}
                         tieuDe={ct.TenTieuChi}
-                        moTa={ct.MoTa}
+                        moTa={tcInfo?.moTa ?? ct.MoTa}
                         batBuocMinhChung={!!ct.BatBuocMinhChung}
                         soMinhChung={(ct.MinhChung || []).length}
                         diemText={

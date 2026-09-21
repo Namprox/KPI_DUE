@@ -61,6 +61,7 @@ const DuyetDonViForm = ({
   phieu,
   chiTietList = [],
   sections = [],
+  tieuChiMap = new Map(),
   choPhepNhap = false,
   readOnly = false,
   lyDoKhoa = "",
@@ -316,6 +317,7 @@ const DuyetDonViForm = ({
                     key={ct.IdChiTietDv}
                     chiTiet={ct}
                     stt={sttTheoDong.get(ct.IdChiTietDv)}
+                    moTa={tieuChiMap?.get(Number(ct.IdTieuChi))?.moTa ?? ct.MoTa}
                     nhanCap={NHAN_CAP_CHAM_KHOA}
                     choPhepNhap={choPhepNhap}
                     lyDoKhoa={lyDoKhoa}

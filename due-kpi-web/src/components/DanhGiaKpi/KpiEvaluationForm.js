@@ -32,6 +32,7 @@ const KpiEvaluationForm = () => {
                                         nhomCha.TieuChi.forEach(tc => {
                                             flatCriteria.push({
                                                 ...tc,
+                                                MoTa: tc.MoTa ?? tc.TieuChi?.MoTa ?? null,
                                                 TenNhom: nhomCha.TenNhom,
                                                 CacThangDiem: tc.ThangDiem || []
                                             });
@@ -43,6 +44,7 @@ const KpiEvaluationForm = () => {
                                                 nhomCon.TieuChi.forEach(tc => {
                                                     flatCriteria.push({
                                                         ...tc,
+                                                        MoTa: tc.MoTa ?? tc.TieuChi?.MoTa ?? null,
                                                         TenNhom: nhomCon.TenNhom || nhomCha.TenNhom,
                                                         CacThangDiem: tc.ThangDiem || []
                                                     });
@@ -92,6 +94,11 @@ const KpiEvaluationForm = () => {
                                 <td style={{ fontWeight: 'bold', color: '#003399' }}>{index + 1}</td>
                                 <td>
                                     {item.TenTieuChi}
+                                    {item.MoTa && (
+                                        <div style={{ marginTop: '5px', color: '#64748b', fontSize: '13px', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                                            {item.MoTa}
+                                        </div>
+                                    )}
                                     {item.BatBuocMinhChung && (
                                         <span style={{ color: 'red', fontSize: '12px', marginLeft: '5px' }}>(*Bắt buộc minh chứng)</span>
                                     )}

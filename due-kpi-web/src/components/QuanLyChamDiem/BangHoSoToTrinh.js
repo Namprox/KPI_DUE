@@ -1,4 +1,5 @@
 import React from "react";
+import { laGoiLegacy, nhomHanNgachHienThi, TEN_NHOM_XEP_HANG } from "../../utils/hanNgachXuatSac";
 import {
   formatDiem,
   LOAI_DOI_TUONG,
@@ -14,14 +15,13 @@ import { XepLoaiBadge, XepLoaiKhoaBadge } from "./TrangThaiBadge";
  * đúng ở những người được hạn ngạch nâng lên mức 4, và đó là thông tin người
  * duyệt cần thấy ngay.
  *
- * `hanNgach` dùng để kẻ vạch ranh giới suất xuất sắc. Vạch được đặt sau người
- * thứ `hanNgach` TRONG SỐ NHỮNG NGƯỜI ĐỦ ĐIỀU KIỆN TRANH SUẤT, không phải sau
- * dòng thứ `hanNgach` của bảng - người điểm cao nhưng không đạt QĐ 838 bị bỏ
- * qua và suất dồn xuống người kế tiếp.
+ * Hạng và ranh giới Top thuộc từng nhóm; dữ liệu legacy giữ hạng cũ.
  */
 const BangHoSoToTrinh = ({
   hoSo = [],
   hanNgach = null,
+  goi,
+  hangTheoNhom = false,
   chonDuoc = false,
   daChon = [],
   onDoiChon,
@@ -36,8 +36,23 @@ const BangHoSoToTrinh = ({
     );
   }
 
-  // Đếm dồn số người đủ điều kiện đã gặp để biết đặt vạch hạn ngạch ở đâu.
-  let daDuyetDuDieuKien = 0;
+  if (goi && !laGoiLegacy(goi)) {
+    const nhom = nhomHanNgachHienThi(goi);
+    const cotNhom = goi.NgayDongGoi == null ? "NhomHienTai" : "NhomXepHang";
+    const ids = [...new Set(hoSo.map((h) => h[cotNhom] == null ? "unknown" : Number(h[cotNhom])))];
+    return ids.sort((a, b) => a - b).map((id) => {
+      const n = nhom.find((x) => Number(x.Nhom) === id);
+      return <section key={id}>
+        <h4 style={{ padding: "12px 20px", margin: 0 }}>{n?.TenNhom || TEN_NHOM_XEP_HANG[id] || "Chưa có thông tin nhóm"}</h4>
+        <BangHoSoToTrinh
+          hoSo={hoSo.filter((h) => (h[cotNhom] == null ? "unknown" : Number(h[cotNhom])) === id)
+            .sort((a, b) => (a.HangTrongKhoa ?? Infinity) - (b.HangTrongKhoa ?? Infinity))}
+          hanNgach={n?.HanNgach ?? null} hangTheoNhom
+          chonDuoc={chonDuoc} daChon={daChon} onDoiChon={onDoiChon} ghiChuCot={ghiChuCot}
+        />
+      </section>;
+    });
+  }
 
   const trangThaiHoSo = (h) => {
     const trangThai = Number(h.TrangThai);
@@ -71,8 +86,8 @@ const BangHoSoToTrinh = ({
         <thead>
           <tr>
             {chonDuoc && <th style={{ width: "44px" }}></th>}
-            <th style={{ width: "8%", textAlign: "center" }}>Hạng</th>
-            <th style={{ width: "26%" }}>Giảng viên</th>
+            <th style={{ width: "8%", textAlign: "center" }}>{hangTheoNhom ? "Hạng trong nhóm" : "Hạng (quy tắc cũ)"}</th>
+            <th style={{ width: "26%" }}>Họ tên</th>
             <th style={{ width: "12%", textAlign: "right" }}>Tổng tích lũy</th>
             <th style={{ width: "12%" }}>QĐ 838</th>
             <th style={{ width: "16%" }}>Mức Khoa chọn</th>
@@ -85,10 +100,7 @@ const BangHoSoToTrinh = ({
           {hoSo.map((h) => {
             const vienChuc =
               Number(h.LoaiDoiTuong) === LOAI_DOI_TUONG.VIEN_CHUC;
-            const duDieuKien = h.DuDieuKienXuatSac === true;
-            if (duDieuKien) daDuyetDuDieuKien += 1;
-            const laVachHanNgach =
-              hanNgach != null && duDieuKien && daDuyetDuDieuKien === hanNgach;
+            const laVachHanNgach = hangTheoNhom && Number(hanNgach) > 0 && Number(h.HangTrongKhoa) === Number(hanNgach);
             const daNangXuatSac = Number(h.XepLoai) === 4;
             const trangThai = trangThaiHoSo(h);
             const duocChonTraVe = Number(h.TrangThai) === 4;
@@ -137,7 +149,7 @@ const BangHoSoToTrinh = ({
                   {vienChuc && (
                     <span
                       className="tag-badge"
-                      title="Viên chức / người lao động: không tính vào mẫu số hạn ngạch và không tranh suất"
+                      title="Viên chức / người lao động"
                     >
                       Viên chức / NLĐ
                     </span>
@@ -191,12 +203,9 @@ const BangHoSoToTrinh = ({
         </tbody>
       </table>
 
-      {hanNgach != null && (
+      {hangTheoNhom && hanNgach != null && (
         <div className="cd-hint" style={{ padding: "10px 20px" }}>
-          <i className="fa-solid fa-circle-info"></i> Đường kẻ đậm là ranh giới{" "}
-          <b>{hanNgach}</b> suất xuất sắc. Chỉ người vừa được Khoa xếp mức 3 vừa
-          đạt QĐ 838 mức 2 mới tranh suất; ai không đạt sẽ bị bỏ qua và suất dồn
-          cho người kế tiếp.
+          Top {hanNgach} của nhóm được xét điều kiện xuất sắc. Suất bỏ trống không dồn xuống người kế tiếp.
         </div>
       )}
     </div>

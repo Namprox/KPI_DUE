@@ -16,6 +16,7 @@ import {
   fetchGioNckhThucTe,
   fetchLichSuChamDiemPhieu,
   fetchPhieuDetail,
+  fetchXemTruocChot,
   fetchTieuChiDonViCham,
   fetchTieuChiTheoMau,
   formatDiem,
@@ -62,14 +63,14 @@ import {
  * Bốn điều phải nắm trước khi sửa trang này:
  *
  * 1. Trưởng khoa chỉ chọn được mức 1/2/3. Mức 4 (Hoàn thành xuất sắc) phụ thuộc
- *    thứ hạng trong cả Khoa nên chỉ bước đóng gói tờ trình mới nâng lên được -
+ *    thứ hạng trong nhóm nên chỉ bước đóng gói tờ trình mới nâng lên được -
  *    gửi XepLoaiKhoa = 4 sẽ bị server trả 400. Mức 4 KHÔNG được render ở bất kỳ
  *    đâu trong form; thay bằng dòng chú thích dưới nhóm nút.
  *
  * 2. `xep_loai_de_xuat` được server tính NGAY TRONG lời gọi chốt, từ chính ba ô
  *    Trưởng khoa vừa tick, rồi mới ghi xuống DB. Trước lần chốt đầu tiên,
- *    GET phieu/{id} trả XepLoaiDeXuat = null và không có endpoint dry-run nào để
- *    hỏi trước. Hệ quả cho giao diện:
+ *    GET phieu/{id} trả XepLoaiDeXuat = null; xem-truoc-chot trả mức đề xuất
+ *    và các mức được chọn. Hệ quả cho giao diện:
  *      - ô "Lý do xếp loại" LUÔN hiện, không ẩn/hiện theo điều kiện;
  *      - mức gợi ý tính ở client chỉ để tham khảo (nhãn "tạm tính");
  *      - nếu vẫn dính 400 THIEU_LY_DO thì GIỮ NGUYÊN form, hiện lỗi inline ngay
@@ -89,6 +90,7 @@ const ChotHoSoKhoa = () => {
   const { nhanVienIndex } = useNhanVienIndex();
 
   const [phieu, setPhieu] = useState(null);
+  const [duLieuXemTruoc, setXemTruocChot] = useState(null);
   const [donViList, setDonViList] = useState([]);
   const [phanQuyenRows, setPhanQuyenRows] = useState([]);
   // Map IdTieuChi -> { loaiNhom } của mẫu: nguồn DUY NHẤT để biết tiêu chí thuộc
@@ -210,7 +212,30 @@ const ChotHoSoKhoa = () => {
     };
   }, [phieu?.IdMau]);
 
-  const laVienChuc = Number(phieu?.LoaiDoiTuong) === LOAI_DOI_TUONG.VIEN_CHUC;
+  const khoaXemTruoc = JSON.stringify([id, phieu?.RowVersion, form.duDinhMucGioNckh, form.khongViPhamPhapLuat, form.mucNckhcnQd838]);
+  const xemTruocChot = duLieuXemTruoc?.khoa === khoaXemTruoc ? duLieuXemTruoc.data : null;
+  const loaiTuPreview = duLieuXemTruoc?.id === id ? duLieuXemTruoc.data?.LoaiDoiTuong : null;
+  const laVienChuc = Number(loaiTuPreview ?? phieu?.LoaiDoiTuong) === LOAI_DOI_TUONG.VIEN_CHUC;
+
+  useEffect(() => {
+    if (!phieu || String(phieu.IdPhieu) !== String(id)) return undefined;
+    let huy = false;
+    const timer = setTimeout(async () => {
+      try {
+        const data = await fetchXemTruocChot(id, {
+          duNckh: laVienChuc ? undefined : form.duDinhMucGioNckh,
+          khongViPham: form.khongViPhamPhapLuat,
+          qd838: laVienChuc ? undefined : form.mucNckhcnQd838,
+        });
+        if (!huy) setXemTruocChot({ id, khoa: khoaXemTruoc, data });
+      } catch (error) {
+        if (!huy) setXemTruocChot(null);
+        console.error("Lỗi xem trước kết quả chốt:", error);
+      }
+    }, 350);
+    return () => { huy = true; clearTimeout(timer); };
+  }, [id, phieu, khoaXemTruoc, laVienChuc, form.duDinhMucGioNckh, form.khongViPhamPhapLuat, form.mucNckhcnQd838]);
+
 
   // Ô tick "Đủ định mức giờ NCKH" là một phán quyết, không phải một con số tự
   // động - nhưng người phán quyết cần thấy giờ thực tế / định mức trước khi tick.
@@ -290,7 +315,7 @@ const ChotHoSoKhoa = () => {
     () => tinhTongDiemTamTinh(chiTietList, tieuChiMauMap),
     [chiTietList, tieuChiMauMap],
   );
-  const tichLuyHienCo = phieu?.TongDiemTichLuy ?? tamTinh?.tichLuy ?? null;
+  const tichLuyHienCo = xemTruocChot?.TongDiemTichLuy ?? phieu?.TongDiemTichLuy ?? tamTinh?.tichLuy ?? null;
 
   // Mức gợi ý bám theo form: đổi mức QĐ 838 hay bỏ tick điều kiện là nó đổi ngay,
   // giống hệt cách server sẽ tính lại lúc nhận request chốt.
@@ -302,7 +327,7 @@ const ChotHoSoKhoa = () => {
         canQd838,
         duDinhMucGioNckh: form.duDinhMucGioNckh,
         khongViPhamPhapLuat: form.khongViPhamPhapLuat,
-        tranMuc: laVienChuc ? 2 : 3,
+        loaiDoiTuong: laVienChuc ? LOAI_DOI_TUONG.VIEN_CHUC : LOAI_DOI_TUONG.GIANG_VIEN,
       }),
     [
       tichLuyHienCo,
@@ -315,7 +340,7 @@ const ChotHoSoKhoa = () => {
   );
 
   // Mức đem ra đối chiếu: ưu tiên con số server đã ghi, chưa có thì dùng gợi ý.
-  const mucDoiChieu = phieu?.XepLoaiDeXuat ?? mucGoiY;
+  const mucDoiChieu = xemTruocChot?.XepLoaiDeXuat ?? phieu?.XepLoaiDeXuat ?? mucGoiY;
   const lechDeXuat =
     form.xepLoaiKhoa != null &&
     mucDoiChieu != null &&
@@ -324,9 +349,8 @@ const ChotHoSoKhoa = () => {
   const coQuyenChot =
     laTruongKhoa(user) && phieu?.TrangThai === TRANG_THAI.CHO_TK_DUYET;
 
-  // Viên chức / người lao động bị kẹp trần mức 2 (VUOT_MUC_VIEN_CHUC ở server).
-  const mucChonDuoc = laVienChuc
-    ? XEP_LOAI_KHOA_CHON.filter((m) => m <= 2)
+  const mucChonDuoc = Array.isArray(xemTruocChot?.CacMucChonDuoc)
+    ? xemTruocChot.CacMucChonDuoc.map(Number).filter((m) => m >= 1 && m <= 3)
     : XEP_LOAI_KHOA_CHON;
 
   /**
@@ -337,20 +361,22 @@ const ChotHoSoKhoa = () => {
    * và server sẽ tính lại rồi từ chối. Chiều ngược lại vẫn mở - Trưởng khoa luôn
    * được xếp THẤP hơn mức điểm cho phép, chỉ cần ghi lý do.
    */
-  const mucToiDaChon = mucGoiY ?? (laVienChuc ? 2 : 3);
+  const mucToiDaChon = xemTruocChot?.XepLoaiDeXuat ?? mucGoiY ?? 3;
 
   const lyDoKhoaMuc = () => {
-    if (!form.duDinhMucGioNckh)
+    if (xemTruocChot?.GiaiThichMucDeXuat) return xemTruocChot.GiaiThichMucDeXuat;
+    if (!laVienChuc && !form.duDinhMucGioNckh)
       return "Chưa đủ định mức giờ NCKH nên hồ sơ chỉ ở mức 1.";
     if (!form.khongViPhamPhapLuat)
       return "Có vi phạm pháp luật nên hồ sơ chỉ ở mức 1.";
     if (Number(tichLuyHienCo) < NGUONG_XEP_LOAI.HOAN_THANH)
       return `Tổng tích lũy ${formatDiem(tichLuyHienCo)} chưa đạt ${NGUONG_XEP_LOAI.HOAN_THANH} điểm nên hồ sơ chỉ ở mức 1.`;
+    if (laVienChuc) return `Tổng tích lũy ${formatDiem(tichLuyHienCo)} chưa đạt 101 điểm nên chưa lên được mức 3.`;
     if (Number(tichLuyHienCo) <= NGUONG_XEP_LOAI.HOAN_THANH_TOT)
       return `Tổng tích lũy ${formatDiem(tichLuyHienCo)} chưa vượt ${NGUONG_XEP_LOAI.HOAN_THANH_TOT} điểm nên chưa lên được mức 3.`;
     return "Chưa đạt QĐ 838 nên chưa lên được mức 3.";
   };
-  const coMucBiKhoa = mucChonDuoc.some((m) => m > mucToiDaChon);
+  const coMucBiKhoa = XEP_LOAI_KHOA_CHON.some((m) => m > mucToiDaChon);
 
   // Bỏ tick một điều kiện hay hạ mức QĐ 838 có thể kéo trần xuống dưới mức đang
   // chọn - hạ theo ngay, nếu không form sẽ giữ một mức đã bị khóa ngay bên cạnh.
@@ -364,9 +390,8 @@ const ChotHoSoKhoa = () => {
   // Chọn mức 2 ở đây là tự loại người này khỏi cuộc đua - hệ quả nhân sự mà
   // người bấm phải thấy trước khi bấm, không phải sau.
   const duTranhXuatSac =
-    !laVienChuc &&
     Number(form.xepLoaiKhoa) === 3 &&
-    Number(form.mucNckhcnQd838) === MUC_QD838.HT_XUAT_SAC;
+    (laVienChuc || Number(form.mucNckhcnQd838) === MUC_QD838.HT_XUAT_SAC);
   const truotVanTranhXuatSac =
     !laVienChuc && form.xepLoaiKhoa != null && Number(form.xepLoaiKhoa) < 3;
 
@@ -453,10 +478,7 @@ const ChotHoSoKhoa = () => {
       return;
     }
 
-    // Hai mã này lẽ ra không bao giờ tới được đây: chúng chỉ phát sinh khi form
-    // render sai theo LoaiDoiTuong (bày mức 3 cho viên chức) hoặc bày mức 4.
-    // Thấy chúng nghĩa là giao diện hỏng, không phải người dùng thao tác sai.
-    if (ma === "VUOT_MUC_VIEN_CHUC" || ma === "CAM_CHON_XUAT_SAC") {
+    if (ma === "CAM_CHON_XUAT_SAC") {
       console.error("Form chốt hồ sơ đang render sai mức xếp loại:", ma, phieu);
       setLoiForm({
         chung: `${thongDiep} Đây là lỗi hiển thị của hệ thống - vui lòng tải lại trang và báo quản trị.`,
@@ -591,7 +613,9 @@ const ChotHoSoKhoa = () => {
   // Ba cột tong_diem_* được server ghi trong cùng một transaction lúc chốt, nên
   // chỉ cần tích lũy có giá trị là cả ba đều là số đã lưu.
   const daCoDiemServer = phieu.TongDiemTichLuy != null;
-  const diem = daCoDiemServer
+  const diem = xemTruocChot
+    ? { coBan: xemTruocChot.TongDiemCoBan, vuotTroi: xemTruocChot.TongDiemVuotTroi, tichLuy: xemTruocChot.TongDiemTichLuy }
+    : daCoDiemServer
     ? {
         coBan: phieu.TongDiemCoBan,
         vuotTroi: phieu.TongDiemVuotTroi,
@@ -602,10 +626,10 @@ const ChotHoSoKhoa = () => {
         vuotTroi: tamTinh?.vuotTroi ?? null,
         tichLuy: tamTinh?.tichLuy ?? null,
       };
-  const diemLaTamTinh = !daCoDiemServer && tamTinh != null;
+  const diemLaTamTinh = !xemTruocChot && !daCoDiemServer && tamTinh != null;
 
   // Mức thấp nhất đang bị khóa - hộp giải thích phải gọi đúng số đó, không nói chung chung.
-  const mucKhoaDauTien = mucChonDuoc.find((m) => m > mucToiDaChon);
+  const mucKhoaDauTien = XEP_LOAI_KHOA_CHON.find((m) => m > mucToiDaChon);
   // Cột QĐ 838 chỉ tồn tại với giảng viên từ năm áp dụng trở đi nên số thứ tự
   // của cột xếp loại phải trượt theo.
   const sttXepLoai = canQd838 ? 3 : 2;
@@ -620,7 +644,7 @@ const ChotHoSoKhoa = () => {
    * một năm không thu thập chỉ tiêu đó là đổ lỗi sai chỗ.
    */
   const trangThaiXuatSac = (() => {
-    if (laVienChuc || form.xepLoaiKhoa == null) return null;
+    if (form.xepLoaiKhoa == null) return null;
     if (duTranhXuatSac) {
       return {
         kieu: "cd-hint-ok",
@@ -632,7 +656,7 @@ const ChotHoSoKhoa = () => {
       return {
         kieu: "cd-hint-warn",
         icon: "fa-circle-info",
-        text: `Chọn mức ${form.xepLoaiKhoa} là người này không còn tranh suất xuất sắc - chỉ hồ sơ mức 3 kèm QĐ 838 mức 2 mới vào cuộc.`,
+        text: `Chọn mức ${form.xepLoaiKhoa} là người này không còn tranh suất xuất sắc - cần mức 3 và nằm trong Top của nhóm để được xét.`,
       };
     }
     if (canQd838) {
@@ -787,17 +811,6 @@ const ChotHoSoKhoa = () => {
                 bị khóa
               </div>
               <p>{lyDoKhoaMuc()}</p>
-              {/* Ngoại lệ này là một ĐƯỜNG KHÁC để lên mức, không phải lý do bị
-                  khóa - gộp chung một đoạn với câu trên thì không ai đọc ra. */}
-              <div className="cd-khoa-ngoai-le">
-                <b>Ngoại lệ</b>
-                <span>
-                  Đơn vị hoàn thành nhiều nhiệm vụ trọng tâm và được xếp loại
-                  hoàn thành xuất sắc nhiệm vụ (A+) định kỳ hoặc cuối năm thì
-                  được đề xuất tăng tối đa 01 chỉ tiêu xếp loại (B lên A, hoặc A
-                  lên A+), kèm giải trình riêng cho đề xuất tăng thêm đó.
-                </span>
-              </div>
             </div>
           )}
           {trangThaiXuatSac && (
@@ -812,21 +825,8 @@ const ChotHoSoKhoa = () => {
               Mức 4 (Hoàn thành xuất sắc) được xét thế nào?
             </summary>
             <div className="cd-chot-luu-y-than">
-              <p>
-                Không chọn thủ công được. Bước đóng gói tờ trình Khoa mới nâng,
-                và chỉ nâng cho giảng viên đủ cả ba điều kiện:
-              </p>
-              <ul>
-                <li>Được Khoa xếp mức 3 - Hoàn thành tốt nhiệm vụ</li>
-                <li>Hoàn thành xuất sắc nhiệm vụ theo QĐ 838 (mức 2)</li>
-                <li>Lọt hạn ngạch 20% của Khoa</li>
-              </ul>
-              {laVienChuc && (
-                <p>
-                  Hồ sơ này là viên chức / người lao động nên trần là mức 2 và
-                  không vào mẫu số hạn ngạch.
-                </p>
-              )}
+              <p>Mức 4 chỉ được xét khi đóng gói. Hệ thống xếp Top riêng từng nhóm trước, rồi kiểm tra điều kiện mức 3; giảng viên cần thêm QĐ 838 mức 2.</p>
+              <p>Suất của người trong Top chưa đủ điều kiện bị bỏ trống, không dồn xuống người kế tiếp.</p>
             </div>
           </details>
         </div>
@@ -1128,6 +1128,7 @@ const ChotHoSoKhoa = () => {
           key={ct.IdChiTiet}
           chiTiet={ct}
           stt={index + 1}
+          moTa={tieuChiMauMap.get(Number(ct.IdTieuChi))?.moTa ?? ct.MoTa}
           lichSu={lichSuTheoChiTiet.get(Number(ct.IdChiTiet)) || []}
           dangTaiLichSu={dangTaiLichSu}
           vaiTro="truongKhoa"

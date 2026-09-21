@@ -1,3 +1,5 @@
+import HanNgachTheoNhom from "./HanNgachTheoNhom";
+import { nhomHanNgachHienThi } from "../../utils/hanNgachXuatSac";
 import React, {
   useCallback,
   useEffect,
@@ -18,7 +20,6 @@ import {
 import {
   fetchToTrinhDetail,
   fetchToTrinhList,
-  tinhHanNgach,
   TRANG_THAI_TO_TRINH,
   TY_LE_XUAT_SAC_MAC_DINH,
 } from "../../utils/toTrinhApi";
@@ -255,20 +256,6 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
    */
   const daTinhHanNgach = goi?.NgayDongGoi != null;
 
-  /**
-   * Mẫu số hạn ngạch - đếm PHIẾU, không đếm đầu người.
-   *
-   * `so_giang_vien = COUNT(phiếu trong gói WHERE loai_doi_tuong = 1)`, xem
-   * docs/schema_ghi_chu.md §8.2 và chú thích cột trong docs/schema.sql. Giảng viên
-   * chưa lập phiếu KHÔNG có dòng nào trong `phieu_danh_gia` nên không lọt vào mẫu
-   * số, và hạn ngạch của Khoa bị hụt theo.
-   *
-   * Tính lại tại chỗ từ HoSo[] thay vì đọc `SoGiangVienHienTai`: HoSo[] lấy theo
-   * (id_nam, id_don_vi) và gồm cả hồ sơ chưa chốt nên chạy đúng công thức trên,
-   * trong khi mô tả của SoGiangVienHienTai ("số GV hiện tại của đơn vị") không nói
-   * rõ nó đếm phiếu hay đếm nhân sự. `SoGiangVien` đã snapshot vẫn được ưu tiên
-   * sau khi đóng gói vì đó mới là con số server thực sự dùng để chia suất.
-   */
   const soGvCoPhieu = useMemo(
     () =>
       (goi?.HoSo || []).filter(
@@ -277,7 +264,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
     [goi],
   );
 
-  /** Giảng viên chưa lập phiếu - nhóm bị mẫu số bỏ sót. Viên chức/NLĐ không tính. */
+  /** Số giảng viên chưa lập phiếu chỉ phục vụ thống kê đầu người. */
   const soGvChuaLapPhieu = useMemo(
     () =>
       chuaLapPhieu.filter(
@@ -286,14 +273,14 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
     [chuaLapPhieu],
   );
 
-  const mauSoHienTai = daTinhHanNgach
+  const soGvHienThi = daTinhHanNgach
     ? (goi?.SoGiangVien ?? soGvCoPhieu)
     : soGvCoPhieu;
   const soGvToanKhoa = soGvCoPhieu + soGvChuaLapPhieu;
-  const hanNgachHienTai = useMemo(
-    () => tinhHanNgach(mauSoHienTai),
-    [mauSoHienTai],
-  );
+  const nhomHanNgach = nhomHanNgachHienThi(goi);
+  const hanNgachHienTai = nhomHanNgach.length
+    ? nhomHanNgach.reduce((sum, n) => sum + Number(n.HanNgach || 0), 0)
+    : "—";
 
   if (dangTai) {
     return (
@@ -423,7 +410,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
               <div>
                 <div className="cd-meta-label">Giảng viên đã có phiếu</div>
                 <div className="cd-meta-value">
-                  {mauSoHienTai}
+                  {soGvHienThi}
                   {soGvChuaLapPhieu > 0 && (
                     <span className="tqk-mau-so-phu">
                       {" "}
@@ -460,6 +447,8 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
                 </div>
               </div>
             </div>
+
+            <HanNgachTheoNhom goi={goi} />
 
             {goi.LyDoTraVe && (
               <div className="cd-canh-bao tqk-canh-bao">

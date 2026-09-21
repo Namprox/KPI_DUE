@@ -2023,22 +2023,89 @@ một dòng riêng, không nhân hệ số. Server **ép** `so_luong = 1`, khôn
 
 ### 11.2 – 11.3. `ke_khai_thanh_tich_vuot_troi`, `chi_tiet_ke_khai_thanh_tich`
 
-Vòng đời và `row_version` giữ mô hình **NỘP CẢ BẢN KÊ**: 1 NHAP → 2 CHO_DUYET → 3 DA_DUYET,
-TK/TP trả về 4 TRA_LAI. Một bản / người / năm.
+**VÒNG ĐỜI NẰM Ở TỪNG DÒNG, KHÔNG Ở BẢN KÊ.** Module này trước đây dùng mô hình *"nộp cả
+bản kê"* (1 NHAP → 2 CHO_DUYET → 3 DA_DUYET, trả về 4 TRA_LAI) và **đã chuyển** sang xét
+từng dòng, giống hệt đợt đã làm cho mục 9. Hai module lại đọc chéo được sang nhau.
 
-> **Lưu ý**: mục 9 (kê khai giờ quy đổi) vốn dùng chung mô hình này nhưng **đã chuyển sang
-> duyệt theo TỪNG DÒNG** (xem 9.3) — module thành tích vượt trội **chưa** đổi theo. Hai
-> module giờ khác nhau về vòng đời, đừng đọc chéo sang nhau nữa.
+Lý do đổi — đúng hai lỗi mà mục 9 từng mắc, cộng một lỗi riêng:
 
-Ba điểm khác:
+1. **Chốt xong là khoá cứng CẢ NĂM.** Trạng thái 3 là trạng thái cuối một chiều, mà header
+   là 1 bản / người / **năm**. Chốt sớm ở quý 1 là nhân viên mất quyền kê khai cho toàn bộ
+   phần còn lại của năm.
+2. **Bản kê RỖNG vẫn được sinh ra.** `sp_ke_khai_thanh_tich_get` INSERT header ngay khi
+   ĐỌC, mà gate là `can_xem` chứ không phải `can_sua` — trưởng đơn vị mở bản kê của một
+   nhân viên là hệ thống tạo luôn bản kê rỗng cho người đó.
+3. **Thiếu minh chứng chỉ lộ ra ở phút chót** — xem điểm 2 bên dưới.
+
+Vòng đời thật nay nằm ở `chi_tiet.trang_thai_dong`:
+
+| | Ý nghĩa |
+|---|---|
+| **1 CHO_DUYET** | Nhân viên sửa / gỡ được; đơn vị phụ trách phải xét. |
+| **2 DA_CHOT** | Khoá với nhân viên: sửa → `DONG_DA_CHOT`, và **vắng mặt trong form cũng KHÔNG bị gỡ**. Người có `can_duyet` vẫn mở lại được → nhật ký `hanh_dong = 10`. |
+| **3 TRA_VE** | Bắt buộc kèm lý do (`THIEU_LY_DO` nếu thiếu). Nhân viên sửa dòng thì nó **tự** quay về 1 và xoá sạch kết quả xét cũ — nhưng **chỉ khi dòng thật sự đổi**, mở form rồi bấm lưu mà không sửa gì thì không được âm thầm nuốt lý do trả về. |
+
+Giá trị 3 trước đây đọc là *"Từ chối"*, nay đọc là *"Trả về"* — cùng cho `diem_duyet = 0`,
+khác ở chỗ nhân viên sửa được. **KHÔNG migrate dữ liệu cũ.**
+
+`ke_khai_thanh_tich_vuot_troi.trang_thai` tụt xuống thành **NHÃN DẪN XUẤT**, tính lại bởi
+`sp_ke_khai_thanh_tich_rollup` sau mỗi lần lưu / xét, theo thứ tự ưu tiên `4 → 2 → 3 → 1`
+(còn dòng trả về → còn dòng chờ duyệt → có dòng và tất cả đã chốt → không còn dòng nào).
+Không ai set tay. `ngay_nop`, `nhan_xet_duyet`, `row_version` ở header thành **vết tích**:
+giữ cột để không phá dữ liệu cũ, không SP nào ghi vào chúng nữa.
+
+**LAZY-CREATE**: header chỉ được tạo trong `sp_ke_khai_thanh_tich_luu_chi_tiet` (dưới
+`UPDLOCK, HOLDLOCK`), khi thật sự có dòng đầu tiên. `_get` phát header **ẢO** `id_ke_khai = 0`
+với đủ 4 result set đúng hình dạng, nên tầng DAL không phải xử lý nhánh riêng.
+
+Bốn SP `_nop`, `_huy_nop`, `_chot`, `_tra_lai` đã bị **gỡ hẳn**, cùng các route và action
+tương ứng.
+
+Ba điểm khác so với mục 9:
 
 1. **Cột `quy` (1..4) trên từng DÒNG.** Header vẫn khoá theo **năm**; `quy` là quý phát sinh
    thành tích. Đây là chỗ duy nhất trong toàn hệ thống hiện có khái niệm quý — thêm sẵn để
    sau này gộp được *"Tổng điểm tích lũy hàng quý"* mà không phải đổi cấu trúc. Phiếu đánh
    giá theo quý vẫn **CHƯA làm**.
 2. **Minh chứng là BẮT BUỘC** với mức có `yeu_cau_minh_chung = 1` (toàn bộ 13 mức seed đều
-   bắt buộc) — chặn ở `sp_ke_khai_thanh_tich_nop`, không chặn bằng CHECK (dòng vừa tạo chưa
-   kịp có file thì vẫn phải lưu được). SP trả **danh sách dòng còn thiếu** ở result set thứ 2.
+   bắt buộc), và nay bị chặn **NGAY KHI LƯU** (`sp_ke_khai_thanh_tich_luu_chi_tiet`) chứ
+   không dồn tới bước nộp — nhân viên biết mình thiếu file ngay lúc kê, không phải sau khi
+   kê xong cả năm. Cả request bị từ chối với `THIEU_MINH_CHUNG` kèm **danh sách dòng còn
+   thiếu** ở result set thứ 2.
+
+   Việc này đẻ ra một vòng khoá: không lưu được dòng vì thiếu minh chứng, mà không gắn được
+   minh chứng vì chưa có `id_chi_tiet`. Phá vòng bằng **KHO TẠM** trong chính bảng
+   `minh_chung_ke_khai_thanh_tich` — một bản ghi có hai dạng:
+
+   | | `id_chi_tiet` | `id_nam` |
+   |---|---|---|
+   | đã gắn | NOT NULL | NULL |
+   | kho tạm | NULL | NOT NULL |
+
+   `chk_mcttvt_chu` giữ bất biến "đúng một chủ sở hữu". Chủ của file tạm là cặp
+   (`nguoi_tai_len`, `id_nam`) — **cố ý dùng `id_nam` chứ không phải `id_ke_khai`**, vì
+   lazy-create nghĩa là bản kê có thể chưa tồn tại lúc tải file lên.
+
+   Luồng: `POST .../minh-chung-tam?idNam=` → lấy `IdMinhChungTt` → gửi kèm trong
+   `ChiTiet[i].IdMinhChung` khi lưu → SP gắn file vào dòng vừa tạo **trong cùng transaction**
+   rồi xoá `id_nam`. Vì dòng mới chưa có id, TVP `GanMinhChungThanhTichRow` khoá theo
+   **`thu_tu`** (vị trí của dòng trong form); `sp_..._luu_chi_tiet` dùng `MERGE` thay
+   `INSERT...SELECT` vì chỉ `MERGE` mới `OUTPUT` được cột của nguồn để lấy cặp
+   (`thu_tu` → `id_chi_tiet` vừa sinh).
+
+   File tạm không bao giờ được gắn sẽ bị `sp_..._don_tam` dọn sau 7 ngày; SP này được gọi
+   ngay đầu `MinhChungThanhTichService.AddTam` nên mỗi người tự dọn rác của mình, không cần
+   job nền.
+
+   ⚠️ **File đã gắn vẫn NẰM NGUYÊN ở thư mục `uploads/ke-khai-thanh-tich/tam/{idNhanVien}/`** —
+   khi gắn, chỉ `id_chi_tiet` trong DB đổi, file vật lý không bị di chuyển. Cố ý: `File.Move`
+   sau khi SP đã commit sẽ đẻ ra trạng thái hỏng "DB bảo đã gắn nhưng file không còn ở đường
+   dẫn cũ". `sp_..._don_tam` chỉ quét bản ghi `id_chi_tiet IS NULL` nên **không** đụng tới file
+   đã gắn. Hệ quả cần nhớ: **đừng xoá tay cả thư mục `tam/`** — trong đó có cả minh chứng
+   đang được dùng thật.
+
+   Gate thêm / gỡ minh chứng cũng chuyển từ **trạng thái bản kê** sang **trạng thái DÒNG**:
+   dòng đã chốt thì khoá (`DONG_DA_CHOT`), các dòng khác của cùng bản kê vẫn thao tác được.
 3. **`id_nguoi_duyet_dong` / `ngay_duyet_dong` trên từng dòng** — vì một bản kê trộn 4 loại
    có thể do **nhiều người khác nhau** duyệt, không như mục 9 chỉ có một người duyệt.
 
@@ -2076,8 +2143,10 @@ vị phụ trách khác nhau.
   không GROUP BY nên luôn đúng 1 dòng). Tham số `@id_don_vi_duyet`: `NULL` → phạm vi duyệt là
   đơn vị của nhân viên; `NOT NULL` → đúng đơn vị đó.
 - **`sp_ke_khai_thanh_tich_quyen_ban_ke`** — "người này duyệt được **ít nhất một dòng** của
-  bản kê này không?". Dùng cho các **gate cấp bản kê** (mở màn hình duyệt, chốt, trả lại).
-  Bản kê rỗng → lấy quyền mặc định theo đơn vị nhân viên, để màn hình vẫn mở được.
+  bản kê này không?". Dùng cho các **gate cấp bản kê** (mở màn hình duyệt, đọc nhật ký, đọc
+  minh chứng). Bản kê rỗng → lấy quyền mặc định theo đơn vị nhân viên, để màn hình vẫn mở
+  được. Từ đợt lazy-create, bản kê có thể **chưa tồn tại**, nên SP nhận thêm `@id_nhan_vien`
+  để vẫn tra được quyền mặc định khi `@id_ke_khai` còn NULL.
 - **Gate cấp DÒNG** nằm trong `sp_ke_khai_thanh_tich_duyet_chi_tiet`: từng dòng đối chiếu
   riêng `id_don_vi_duyet` của mức nó trỏ tới. Gửi lấn sang dòng của đơn vị khác → **cả
   request bị từ chối** (`FORBIDDEN_DONG`, không ghi một phần) kèm danh sách dòng vi phạm.
@@ -2087,9 +2156,10 @@ trưởng đơn vị của nhân viên). Nên `sp_ke_khai_thanh_tich_get_by_id`,
 `sp_minh_chung_ke_khai_thanh_tich_get_by_id` đều mở cửa theo `can_xem OR can_duyet` — không
 đọc được minh chứng thì không thẩm định được.
 
-Ai được **chốt**: bất kỳ người duyệt nào của bản kê. Điều kiện *"không còn dòng nào
-`trang_thai_dong = 1`"* đã buộc mọi đơn vị phụ trách xét xong phần của mình trước, nên người
-bấm chốt chỉ là người kết thúc, không thể vượt mặt ai.
+Không còn thao tác "chốt cả bản kê", nên cũng không còn câu hỏi *ai được chốt*: mỗi đơn vị
+phụ trách chốt đúng phần dòng của mình, và bản kê tự mang nhãn `3 DA_DUYET` khi mọi dòng đã
+chốt. Đây chính là chỗ mô hình mới gọn hơn mô hình cũ — trước đây phải có một người "bấm nút
+kết thúc" sau khi tất cả đã xét xong.
 
 ### 11.6. Điểm đi vào phiếu đánh giá
 
@@ -2108,8 +2178,12 @@ dụng), cộng `SUM(diem_duyet)` của các dòng **`trang_thai_dong = 2`**, ca
 trách thẩm định mới vào KPI. Chưa duyệt ⇒ **0 điểm**; duyệt xong phải chạy lại
 `POST api/phieu/{id}/tong-hop-tu-dong` — cùng quy ước với `NVK_PHAN_CONG_KHOA` (7.x).
 
-**Cố ý KHÔNG lọc theo `ke_khai_thanh_tich_vuot_troi.trang_thai`**: dòng đã được duyệt thì đã
-có giá trị, không bắt nhân viên chờ cả bản kê chốt xong.
+**Cố ý KHÔNG lọc theo `ke_khai_thanh_tich_vuot_troi.trang_thai`**: dòng đã được chốt thì đã
+có giá trị, không bắt nhân viên chờ cả bản kê chốt xong. Điều này **đã đúng từ trước** và
+không phải sửa gì ở đợt chuyển sang xét từng dòng — nhưng nay nó còn là hệ quả bắt buộc:
+`trang_thai` của header chỉ còn là nhãn dẫn xuất, lọc theo nó là vô nghĩa. Hệ quả nghiệp vụ
+cần nói rõ với người dùng cuối: **điểm chảy vào phiếu KPI ngay khi dòng được chốt**, không
+chờ chốt cả bản kê nữa.
 
 `@co_tieu_chi_ttvt` cần thiết vì viên chức phòng ban **không có mặt trong 4 nguồn cũ** (NCKH /
 phản hồi SV / vi phạm giảng dạy / bài báo quốc tế) — không mở rộng tập thì họ biến mất khỏi
@@ -2128,9 +2202,18 @@ Giống mục 9: `RS1 = success / message / error_code`, `RS2..` chỉ phát khi
 thao tác bản kê đều kết thúc bằng **4 result set** do `sp_ke_khai_thanh_tich_result_sets` phát:
 header / dòng / minh chứng / **tổng hợp theo loại**.
 
-**Ngoại lệ:** hai mã lỗi `THIEU_MINH_CHUNG` (khi nộp) và `FORBIDDEN_DONG` (khi duyệt) phát
+**Ngoại lệ:** hai mã lỗi `THIEU_MINH_CHUNG` (khi lưu) và `FORBIDDEN_DONG` (khi duyệt) phát
 **thêm một result set** liệt kê các dòng gây lỗi — `KeKhaiThanhTichDal.ReadDongCoVanDe` đọc
 tiếp khi gặp đúng hai mã này, các mã khác `NextResult()` trả false nên vô hại.
+
+Từ khi gate minh chứng chuyển vào bước LƯU, result set của `THIEU_MINH_CHUNG` mang thêm cột
+**`thu_tu`**: dòng bị chặn thường là dòng MỚI, chưa có `id_chi_tiet` (phát ra 0), nên đó là
+cách duy nhất để FE trỏ đúng dòng trong form vừa gửi lên. Đánh số `thu_tu` phải khớp tuyệt
+đối giữa `BuildChiTietRecords` và `BuildGanMinhChungRecords` — cả hai cùng bỏ qua phần tử
+`null`, lệch một nhịp là minh chứng gắn nhầm dòng.
+
+Header còn hai cờ mới ở **từng dòng**: `cho_phep_sua` (chính chủ + dòng chưa chốt) và
+`cho_phep_xet` (người gọi xét được dòng này), để FE không phải tự suy từ trạng thái.
 
 ### 11.8. Mục II.4 — phần TRỪ điểm
 

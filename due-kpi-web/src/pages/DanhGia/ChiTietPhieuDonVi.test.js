@@ -14,6 +14,7 @@ const phieu = (trangThai) => ({
   IdPhieuDv: 7,
   IdDonVi: 10,
   IdNam: 2026,
+  IdMau: 99,
   TenDonVi: "Khoa A",
   TrangThai: trangThai,
   RowVersion: "AAAA",
@@ -47,13 +48,44 @@ const phieu = (trangThai) => ({
 const truongKhoa = { DonVi: [{ IdDonVi: 10, MaChucVu: "TK" }] };
 const thuKyKhoa = { DonVi: [{ IdDonVi: 10, MaChucVu: "TKK" }] };
 
+const chiTietMau = {
+  Nhom: [
+    {
+      TenNhom: "Nhóm 1",
+      LoaiNhom: 1,
+      TieuChi: [
+        {
+          IdTieuChi: 1,
+          MoTa: "Mô tả tiêu chí tự động",
+          LoaiThangDiem: 2,
+          ThangDiem: [],
+        },
+        {
+          IdTieuChi: 2,
+          MoTa: "Mô tả tiêu chí thủ công",
+          LoaiThangDiem: 2,
+          ThangDiem: [],
+        },
+      ],
+    },
+  ],
+};
+
 /** Mọi GET trả về `item`; các lệnh ghi trả rỗng để trang tự đọc lại phiếu. */
 const mockApi = (item) =>
   apiFetch.mockImplementation(async (url, options) => ({
     ok: true,
     json: async () =>
       !options?.method || options.method === "GET"
-        ? { Item: url === "phieu-don-vi/7" ? item : {}, Items: [] }
+        ? {
+            Item:
+              url === "phieu-don-vi/7"
+                ? item
+                : url === "maudanhgia/99/chi-tiet"
+                  ? chiTietMau
+                  : {},
+            Items: [],
+          }
         : {},
   }));
 
@@ -82,6 +114,7 @@ test("Trưởng Khoa duyệt từng tiêu chí ở trạng thái 2, dòng tự �
   // Chỉ dòng chấm tay mới có nút duyệt; dòng tự động không đề xuất gì để duyệt.
   expect(screen.getAllByRole("button", { name: /Duyệt giữ nguyên/ })).toHaveLength(1);
   expect(screen.getByText("Điểm thủ công", { exact: false })).toBeTruthy();
+  expect(screen.getByText("Mô tả tiêu chí thủ công")).toBeTruthy();
 
   fireEvent.click(nutDuyet);
   await waitFor(() => expect(ghiVao("chi-tiet-don-vi/2/diem-duyet-dv")).toBeTruthy());

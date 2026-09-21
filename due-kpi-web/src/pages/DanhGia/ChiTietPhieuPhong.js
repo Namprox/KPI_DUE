@@ -783,6 +783,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
           phieu={phieu}
           chiTietList={chiTietList}
           sections={sections}
+          tieuChiMap={tieuChiMap}
           choPhepNhap={choPhepNhap}
           lyDoKhoa={
             readOnly ? "Bạn đang xem lịch sử đánh giá (chỉ đọc)." : quyen.laCapTruong
