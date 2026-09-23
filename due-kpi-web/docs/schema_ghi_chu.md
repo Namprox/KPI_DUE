@@ -6,6 +6,13 @@
 
 ---
 
+> **Trạng thái đồng bộ `schema.sql`** (cập nhật ở đợt "Đánh giá KPI viên chức theo quý"):
+> `App_Data/schema.sql` đã được đối chiếu với DB thật bằng `sys.tables` / `sys.columns` /
+> `sys.objects` / `sys.indexes` và **khớp 100%**: 72/72 bảng, toàn bộ cột, toàn bộ constraint
+> đặt tên tay, 90/90 index. Các nhãn "PHÂN KỲ khỏi `schema.sql`" của những đợt trước đã được
+> gỡ. Khi thêm đối tượng mới, hãy cập nhật `schema.sql` trong cùng đợt để trạng thái này
+> không bị mất.
+
 ## 1. BẢNG THAM CHIẾU
 
 ### 1.3. `chuc_danh_nghe_nghiep` — Chức danh nghề nghiệp
@@ -49,10 +56,19 @@ rải rác — view tồn tại để gom hợp đồng đó về một chỗ.
 | `loai_doi_tuong = 2`, trần > 0 | `-diem_toi_da` | `diem_toi_da` |
 | `loai_doi_tuong = 2`, trần < 0 | `diem_toi_da` | `0` |
 
-Công thức này **lặp lại y hệt ở 4 nơi**, lệch một nơi là sinh lỗi 400 giả hoặc lọt
+Công thức này **lặp lại y hệt ở 6 nơi**, lệch một nơi là sinh lỗi 400 giả hoặc lọt
 điểm rác: `sp_chi_tiet_danh_gia_update_tu_danh_gia`,
 `sp_chi_tiet_danh_gia_update_diem_khoa` (error_code `DIEM_VUOT_TOI_DA` /
-`DIEM_DUOI_SAN`), và sàn trong `sp_thang_diem_create` / `_update`.
+`DIEM_DUOI_SAN`), sàn trong `sp_thang_diem_create` / `_update`,
+`fn_phieu_chi_tiet_vuot_troi_quy`, và nhánh `VPVC_*` của `fn_nckh_diem_tu_dong`.
+
+Nơi thứ sáu chỉ dùng **nửa bảng** (vì `loai_doi_tuong` của cả ba tiêu chí `VPVC_*`
+đều `= 2`) nhưng dùng đúng chỗ hiểm nhất: rẽ theo **dấu của `diem_toi_da`** để phân biệt
+tiêu chí *có điểm rồi trừ dần* (70 / 30) với tiêu chí *chỉ trừ điểm* (`-100`). Xem mục 3.2.
+
+Bốn nơi đầu kẹp **một dòng chấm**; nơi thứ năm kẹp **tổng của một tiêu chí qua các
+quý** (mục 4.1). Bản thứ năm là bắt buộc chứ không phải trùng lặp thừa: tiêu chí chỉ
+trừ điểm `-100` mà cộng dồn 4 quý sẽ ra `-400` nếu không có sàn.
 
 ⚠️ **`CHECK (diem_* >= 0)` trên `chi_tiet_danh_gia` và `thang_diem` ĐÃ BỊ GỠ.**
 Lý do: `CHECK` là ràng buộc cấp bảng, không đọc được `loai_doi_tuong` nằm ở bảng
@@ -193,19 +209,42 @@ Lưu các vi phạm quy định giảng dạy trong năm để tính điểm tr�
 `VPGD_TUAN_THU` ở chỗ **lọc theo nhóm** và **áp trần của nhóm**:
 
 ```
-diem = MAX(0, diem_toi_da − MIN(SUM(diem_tru) của nhóm trong năm, nhom_vi_pham.tran_diem_tru))
+T = MIN( SUM(diem_tru) của nhóm TRONG PHẠM VI @quy , nhom_vi_pham.tran_diem_tru )
+
+diem_toi_da ≥ 0  →  diem = MAX(0, diem_toi_da − T)     ← tiêu chí CÓ ĐIỂM rồi trừ dần
+diem_toi_da < 0  →  diem = MAX(diem_toi_da, −T)        ← tiêu chí CHỈ TRỪ ĐIỂM
 ```
 
-| Mã công thức | Nhóm | `tran_diem_tru` |
-|---|---|---|
-| `VPVC_HOAN_THANH_CV` | Hoàn thành công việc | 70 |
-| `VPVC_NOI_QUY` | Tuân thủ giờ giấc, tác phong, nội quy | 30 |
-| `VPVC_CHINH_TRI` | Chính trị, tư tưởng | NULL = không cắt |
+`@quy` là tham số thứ sáu của `fn_nckh_diem_tu_dong`: `0` = trọn năm (phiếu năm, và mọi mã
+công thức khác), `1..4` = đúng quý đó (phiếu quý). Trần của nhóm áp **sau** phép SUM, nên
+một nhánh code phục vụ đúng cả hai cấp — cấp năm cắt ở 70/30 trên **tổng cả năm**, chứ
+không phải tổng của bốn lần đã cắt rồi.
+
+| Mã công thức | Nhóm | `diem_toi_da` | `tran_diem_tru` | Khoảng điểm |
+|---|---|---|---|---|
+| `VPVC_HOAN_THANH_CV` | Hoàn thành công việc | **70** | 70 | `[0, 70]` |
+| `VPVC_NOI_QUY` | Giờ giấc, tác phong, nội quy | **30** | 30 | `[0, 30]` |
+| `VPVC_CHINH_TRI` | Chính trị, tư tưởng | **−100** | NULL = không cắt | `[−100, 0]` |
+
+> ⚠️ **Hai dạng tiêu chí, không dùng chung một biểu thức được.** `VPVC_CHINH_TRI` khai
+> `diem_toi_da = -100` — nó **chỉ trừ điểm**, không phải "có 100 điểm rồi trừ dần". Áp công
+> thức dạng dương lên nó cho ra `-100 − 25 = -125 < 0` → sàn 0, tức là **mọi vi phạm chính
+> trị đều bị nuốt** trong khi phiếu vẫn chốt bình thường. Đây chính là bảng KHOẢNG ĐIỂM HỢP
+> LỆ ở mục 2.4 (cặp `loai_doi_tuong = 2`), nay là bản sao thứ sáu của nó.
+>
+> Với nhóm này, sàn `-100` đóng vai trò của trần nhóm (nên `tran_diem_tru` để NULL là đúng),
+> và vì thế `diem_tru_sau_tran` của `sp_vi_pham_tong_hop_nhan_vien` **có thể lớn hơn** phần
+> điểm thực sự bị trừ khi tổng vi phạm vượt 100 — cùng kiểu chênh với ghi chú về trần 70/30
+> ở danh sách minh chứng.
 
 - **BẤT BIẾN:** phép gộp trong `fn_nckh_diem_tu_dong` phải cho ra đúng `diem_tru_sau_tran`
-  của `sp_vi_pham_tong_hop_nhan_vien`. Lệch nhau thì bảng tổng hợp trên FE không giải thích
+  của `sp_vi_pham_tong_hop_nhan_vien` — ở **cả hai phạm vi** (`@quy = 0` đối chiếu phiếu năm,
+  `@quy = q` đối chiếu phiếu quý q). Lệch nhau thì bảng tổng hợp trên FE không giải thích
   được điểm trong phiếu. Mệnh đề lọc được **nhân bản** ở nhánh minh chứng `loai_nguon = 8`
-  của `fn_nckh_minh_chung_tu_dong` — sửa một bên phải sửa cả hai.
+  của `fn_nckh_minh_chung_tu_dong` — sửa một bên phải sửa cả ba.
+- **Cạm bẫy T-SQL:** SQL Server **không** cho bỏ qua tham số có DEFAULT khi gọi UDF. Thêm
+  tham số vào `fn_nckh_diem_tu_dong` / `fn_nckh_minh_chung_tu_dong` bắt buộc rà **hết** call
+  site; thiếu một chỗ là lỗi lúc **chạy**, không lộ ra lúc deploy.
 - `INNER JOIN loai_vi_pham` loại luôn các dòng cũ `id_loai_vi_pham IS NULL` — đúng ý, chúng
   không thuộc nhóm nào.
 - Nhóm chưa seed `ma_nhom` → không khớp dòng nào → **trọn điểm** (không phải NULL; NULL ở
@@ -216,6 +255,14 @@ diem = MAX(0, diem_toi_da − MIN(SUM(diem_tru) của nhóm trong năm, nhom_vi_
   dòng sẽ lớn hơn phần điểm thực sự bị trừ.
 
 Cột đáng chú ý:
+- **`quy` (TINYINT NOT NULL, 1-4)**: quý chịu điểm trừ này — chiều thời gian mà bảng này
+  trước đây không hề có (chỉ `id_nam` + `ngay_vi_pham` NULL-able). Nó quyết định **phiếu quý
+  nào** bị trừ, nên sai quý = trừ nhầm kỳ. `sp_..._create` suy từ `ngay_vi_pham` khi không
+  được truyền; `sp_..._update` để `NULL` nghĩa là **giữ nguyên** (suy lại sẽ khiến một lần
+  sửa mô tả vô tình chuyển điểm trừ sang quý khác). **NOT NULL có chủ đích**: dòng `quy`
+  NULL sẽ rơi khỏi mọi phiếu quý nhưng vẫn vào tổng năm — lệch giữa hai cấp mà không ai
+  phát hiện. Index `ix_vi_pham_nv_nam_quy(id_nhan_vien, id_nam, quy)` phục vụ nhánh `VPVC_*`
+  (hàm chạy 3 lần / phiếu, mỗi nhóm một lần).
 - `bi_ky_luat`: 1 = vi phạm này đã bị xử lý kỷ luật. HIỆN CHỈ LƯU — không ảnh hưởng
   điểm tiêu chí lẫn xếp loại (thay cho cột `la_nghiem_trong` cũ đã bỏ). DB đã migrate:
   cột này nằm CUỐI bảng do được DROP + ADD, không ở vị trí khai báo trong schema.sql.
@@ -643,8 +690,13 @@ quyền. Sửa một chỗ thì sửa cả hai.
 | SP | Vai trò | `error_code` riêng |
 |---|---|---|
 | `sp_chi_tiet_khoa_tra_tham_dinh` | TK trả 1 dòng về thẩm định, dòng 3→2 (`nguon_tra_ve = 3`) | `THIEU_LY_DO`, `TO_TRINH_DA_TRINH` |
-| `sp_phieu_khoa_duyet_ho_so` | TK chốt hồ sơ, phiếu 3→4, chọn `xep_loai_khoa` | `CAM_CHON_XUAT_SAC`, `XEP_LOAI_KHONG_HOP_LE`, `VUOT_MUC_VIEN_CHUC`, `THIEU_LY_DO`, `CHUA_CHOT_HET` |
-| `sp_phieu_khoa_uu_tien_xuat_sac` | TK chỉ định ai được suất cuối khi đồng hạng | `VUOT_MUC_VIEN_CHUC`, `TO_TRINH_DA_TRINH` |
+| `sp_phieu_khoa_duyet_ho_so` | TK chốt hồ sơ, phiếu 3→4, chọn `xep_loai_khoa` | `CAM_CHON_XUAT_SAC`, `XEP_LOAI_KHONG_HOP_LE`, `DIEM_KHONG_DU`, `THIEU_LY_DO`, `CHUA_CHOT_HET` |
+| `sp_phieu_khoa_uu_tien_xuat_sac` | TK/TKL/TP chỉ định ai được suất cuối khi đồng hạng | `TO_TRINH_DA_TRINH`, `FORBIDDEN`, `FORBIDDEN_DON_VI` |
+
+> `VUOT_MUC_VIEN_CHUC` **đã bị gỡ bỏ khỏi cả hai SP** (đợt tách 3 nhóm): viên chức / NLĐ nay
+> lên được mức 3/4 và có tham gia hạn ngạch. Ngưỡng điểm của họ do `DIEM_KHONG_DU` cưỡng chế
+> — nhánh riêng cho `loai_doi_tuong = 2` (`>= 101`, khác nhánh giảng viên là `> 100`).
+> `TY_LE_KHONG_HOP_LE` nay có nghĩa "tỷ lệ khác 0.2000" (trước là "ngoài khoảng (0, 1]").
 | `sp_to_trinh_khoa_dong_goi` | **Nơi DUY NHẤT ghi `xep_loai = 4`**; đồng thời đẩy hồ sơ **thường** 4→5 và quyết định gói → 2 hay → 4 | `CHUA_DU_HO_SO`, `DONG_HANG`, `KHONG_CO_HO_SO`, `TY_LE_KHONG_HOP_LE` |
 | `sp_to_trinh_khoa_trinh` | Gói 2→3, `lan_trinh += 1` | `TRAN_LAN_TRINH`, `KHONG_CO_HO_SO_LANH_DAO` |
 | `sp_to_trinh_khoa_ht_duyet` | Gói 3→4, các phiếu **lãnh đạo** còn ở 4 → 5. **Không đổi sau luồng tách đôi**: SP đã lọc `trang_thai = 4`, mà tập đó nay chính xác là hồ sơ lãnh đạo | — |
@@ -706,32 +758,271 @@ default). `id_nam` NULL = áp dụng mọi năm. App resolve theo thứ tự:
 Snapshot toàn bộ định mức ÁP DỤNG (sau khi đã áp dụng các ngoại lệ) tại thời điểm chốt phiếu.
 Đảm bảo có thể truy vết kết luận xếp loại về sau ngay cả khi quy định / cấu hình thay đổi.
 
-**Khoá duy nhất — đổi ở Đợt 3 (kiêm nhiệm đa đơn vị):**
-`uq_phieu_unique` từ `UNIQUE (id_nam, id_nhan_vien)` → `UNIQUE (id_nam, id_nhan_vien, id_don_vi)`.
+**Khoá duy nhất — đổi ở Đợt 3 (kiêm nhiệm đa đơn vị), rồi đổi tiếp ở đợt "Đánh giá theo quý":**
+`UNIQUE (id_nam, id_nhan_vien)` → `UNIQUE (id_nam, id_nhan_vien, id_don_vi)`
+→ `UNIQUE (id_nam, id_nhan_vien, id_don_vi, quy)`.
 Người kiêm nhiệm 2 đơn vị nộp **2 phiếu / năm**, mỗi phiếu rơi vào tờ trình + hạn ngạch 20%
 của đúng đơn vị đó (mỗi đơn vị xếp loại riêng). Người không kiêm nhiệm vẫn đúng 1 phiếu.
 Khoá **không** lọc `da_xoa` — phiếu soft-delete vẫn chiếm chỗ, y như trước Đợt 3.
+`quy` đặt **cuối** khoá để mọi truy vấn seek theo `(id_nam, id_nhan_vien, id_don_vi)` vẫn dùng
+được index này.
 
+#### `quy` — phiếu NĂM và phiếu QUÝ dùng chung một bảng
+
+`phieu_danh_gia.quy TINYINT NOT NULL DEFAULT 0`, `CHECK (quy BETWEEN 0 AND 4)`:
+
+| `quy` | Nghĩa |
+|---|---|
+| **0** | Phiếu **NĂM**. Mọi phiếu có trước đợt này, và **toàn bộ** phiếu giảng viên. |
+| **1..4** | Phiếu **QUÝ**, chỉ viên chức / NLĐ. Xem mục 14 trong `procedure.sql`. |
+
+**Mọi SP cấp NĂM đều phải lọc `quy = 0`.** Ba chỗ mà thiếu bộ lọc sẽ hỏng nặng nhất:
+
+1. `sp_to_trinh_khoa_dong_goi` — phiếu quý lọt vào bảng xếp hạng ⇒ `so_mau_so` phình ⇒
+   **con số hạn ngạch 20% đổi**. Đây là quyết định nhân sự, không phải chuyện hiển thị.
+2. `sp_phieu_cham_tu_dong_apply` / `sp_phieu_tong_hop_tu_dong` — bộ chọn "mỗi năm một phiếu
+   nhận điểm tự động" sắp theo `id_phieu ASC`; phiếu Q1 có id nhỏ nhất nên **giành mất suất**
+   của phiếu năm. Hỏng âm thầm, không báo lỗi.
+3. `sp_tham_dinh_get_pending` — dòng phiếu quý nằm ở `trang_thai_dong = 2` chờ TP; không lọc
+   thì chúng tràn vào hàng đợi của chuyên viên thẩm định.
+
+**Bốn bất biến ở tầng DB là lưới an toàn** cho trường hợp sót một SP — sót `quy = 0` ở một
+đường GHI thì va vào CHECK và báo lỗi ầm ĩ, thay vì âm thầm làm sai một quyết định nhân sự:
+
+| Constraint | Nội dung |
+|---|---|
+| `chk_pdg_quy_loai_doi_tuong` | `quy = 0 OR loai_doi_tuong = 2` — phiếu quý chỉ cho viên chức |
+| `chk_pdg_quy_trang_thai` | `quy = 0 OR trang_thai IN (1,2,5)` — không có trạng thái 3, 4 |
+| `chk_pdg_quy_khong_xep_loai` | `quy = 0 OR (xep_loai / xep_loai_khoa / xep_loai_de_xuat / id_to_trinh / nhom_xep_hang / hang_trong_khoa đều NULL, `uu_tien_xuat_sac` = 0, `can_ht_duyet` = 0)` |
+| `chk_pdg_quy_nguon_diem` | `quy = 0 OR nguon_diem_co_ban = 1` |
+
+`chk_pdg_quy_khong_xep_loai` khiến `sp_to_trinh_khoa_ht_duyet` / `_ht_tra_lai` (khoá trên
+`id_to_trinh`) **về mặt cấu trúc** không thể chạm vào phiếu quý.
+
+#### `nguon_diem_co_ban` — công tắc chuyển mạch của điểm CƠ BẢN
+
+| Giá trị | Hai vế điểm lấy từ đâu |
+|---|---|
+| **1** | Cả hai vế lấy từ dòng của **chính phiếu này**: nhóm A → cơ bản, nhóm B → vượt trội. Hành vi cũ: giảng viên, mọi phiếu cũ, và **cả phiếu quý**. |
+| **2** | Phiếu này **chỉ có đúng 3 dòng `VPVC_*`**, ngoài ra là bản ghi tổng hợp. Cơ bản = **TRUNG BÌNH** các quý đã chốt (đã loại `VPVC_*`) **+ 3 dòng `VPVC_*` chấm trọn năm**; vượt trội = **CỘNG DỒN** các quý, từng tiêu chí kẹp ở khoảng hợp lệ của nó. Chỉ viên chức / NLĐ, và chỉ khi `nam_danh_gia.ap_dung_phieu_quy = 1`. |
+
+Mặc định 1 nên **mọi phiếu cũ chạy y hệt** — delta hành vi bằng 0.
+
+Nhánh `nguon_diem_co_ban = 2` tồn tại ở **đúng hai chỗ** và phải giống hệt nhau:
+`sp_phieu_danh_gia_tinh_tong_diem` (màn xem trước) và khối chống tamper trong
+`sp_phieu_khoa_duyet_ho_so` (ghi thật). Lệch một chữ số giữa hai bên là **lỗi nghiêm trọng**
+— cùng lý lẽ với hằng số hạn ngạch ở `XepLoaiCalculator.cs:52-59`. Cả hai nhánh đều gọi chung
+`fn_phieu_so_quy_da_chot` / `fn_phieu_diem_co_ban_tb_quy` / `fn_phieu_diem_vpvc_nam` /
+`fn_phieu_diem_vuot_troi_tong_quy`, nên phần trùng lặp chỉ là ống dẫn. Chỗ gọi thứ ba là
+`sp_phieu_nam_tong_hop_tu_quy` (roll-up).
+
+##### Ngoại lệ `VPVC_*` — vì sao phiếu năm KHÔNG còn 0 dòng
+
+Ba tiêu chí chấm tự động `VPVC_HOAN_THANH_CV` / `VPVC_CHINH_TRI` / `VPVC_NOI_QUY` **không
+được lấy trung bình 4 quý**. Trung bình chỉ trừ ~1/4 số vi phạm cả năm: người vi phạm 12
+điểm trong năm chỉ bị trừ 3 — sai nghiệp vụ. Vì vậy:
+
+- Phiếu **quý** seed 3 dòng đó và chấm theo **vi phạm của quý đó** (`vi_pham_giang_day.quy`).
+- Phiếu **năm** seed lại 3 dòng đó và chấm **trọn năm** (`sp_phieu_cham_tu_dong_apply` với
+  `quy = 0`) — trừ **đủ** mọi vi phạm tương ứng trong năm.
+- `fn_phieu_diem_co_ban_tb_quy` **loại** các dòng `VPVC_*` ra khỏi phép trung bình, nên
+  không đếm đôi. Vì thế vế cơ bản cuối năm có **hai số hạng**, không phải một.
+
+Trần điểm trừ của nhóm (`nhom_vi_pham.tran_diem_tru` = 70 / 30 / NULL) áp ở **cả hai cấp**:
+mỗi quý cắt tổng của quý đó, phiếu năm cắt **tổng cả năm**. Trần nằm **sau** phép SUM trong
+`fn_nckh_diem_tu_dong` nên một nhánh code phục vụ đúng cả hai cấp.
+
+Guard `PHIEU_NAM_CON_DONG_CHI_TIET` (hai chỗ: `sp_phieu_khoa_duyet_ho_so` và
+`sp_phieu_nam_tong_hop_tu_quy`) vì vậy chặn theo dòng **KHÁC `VPVC_*`**, chứ không còn chặn
+"còn bất kỳ dòng nào". Phiếu cũ vẫn còn dòng nhóm B vẫn bị chặn như trước — điểm của chúng
+không được tính nữa, và bỏ qua im lặng là người đó mất điểm mà không ai biết.
+
+**Phiếu năm (gần như) 0 dòng vẫn chạy hết luồng năm.** `sp_phieu_submit` gọi
+`sp_phieu_dong_bo_trang_thai_dong`; hàm này đếm 0 dòng chưa chốt nên đẩy thẳng phiếu
+**2 → 3 (CHO_TK_DUYET)** trong cùng transaction — đúng nhánh vốn dành cho mẫu toàn tiêu
+chí tự động. Hai hệ quả phải nhớ:
+
+- `sp_phieu_nam_tong_hop_tu_quy` phải cho cả trạng thái **3**, không chỉ 1–2, nếu không
+  ai nộp trước khi tổng hợp sẽ bị khoá cứng.
+- `sp_phieu_truong_mo_lai` hạ `@trang_thai_moi = 2` xuống 1 với phiếu 0 dòng: không có
+  thao tác cấp dòng nào để kích hoạt bất biến 2 → 3 nên mở lại về 2 là kẹt vĩnh viễn.
+
+Khối chống tamper **không bị gỡ**, chỉ **đổi nguồn**: vẫn recompute từ DB, không tin con số
+BLL gửi lên. Nó thêm một cửa chặn mới: `CHUA_TONG_HOP_QUY` khi chưa quý nào chốt.
+
+Sáu cột phục vụ roll-up: `diem_co_ban_tb_quy`, `so_quy_da_chot`, `danh_sach_quy_da_chot`
+(ví dụ `'1,2,4'` — `so_quy_da_chot = 3` một mình không audit được là những quý nào),
+`ngay_tong_hop_quy`, `id_nguoi_tong_hop_quy`, cộng `nguon_diem_co_ban`.
+
+#### State machine RÚT GỌN của phiếu quý
+
+Dùng lại cột `trang_thai` nhưng **chỉ ba giá trị**, và **đọc giá trị 2 khác hẳn** luồng năm:
+
+| | Luồng NĂM | Luồng QUÝ |
+|---|---|---|
+| 1 | Nháp | Nhân viên đang tự chấm |
+| 2 | Đang thẩm định | **Đã nộp, chờ Trưởng phòng duyệt** |
+| 3 | Chờ Trưởng khoa duyệt | **KHÔNG DÙNG** |
+| 4 | Chờ Hiệu trưởng duyệt | **KHÔNG DÙNG** |
+| 5 | Hoàn tất | TP đã chốt điểm. `xep_loai` **NULL vĩnh viễn** |
+
+    1 --[nhân viên nộp]-------------> 2
+    2 --[TP trả về, LÝ DO bắt buộc]-> 1   (dòng về 1, nguon_tra_ve = 2)
+    2 --[nhân viên huỷ nộp]---------> 1   (chặn nếu TP đã chấm dòng nào)
+    2 --[TP duyệt và chốt điểm]-----> 5   (terminal — chưa có nghiệp vụ mở lại)
+
+Cổng quyền duyệt: **TP / TK / TKL** (+ ADMIN) **tại đúng đơn vị của phiếu**. TK/TKL nằm trong
+danh sách vì viên chức văn phòng Khoa có cấp trên là Trưởng khoa chứ không phải Trưởng phòng —
+để "chỉ TP" thì nhóm người đó không bao giờ duyệt được phiếu quý.
+
+`Helper/TrangThaiPhieu.MapText` **giữ nguyên** (mọi response luồng năm gọi nó qua
+`PhieuDanhGiaChiTietDto.TrangThaiText`); luồng quý dùng hàm riêng `MapTextQuy`.
+
+#### Công thức cuối năm — HAI VẾ, HAI PHÉP KHÁC NHAU
+
+Mỗi quý chấm **cả nhóm A lẫn nhóm B** và cho ra đủ ba con số của riêng quý đó. Cuối năm
+hai vế được gộp lại theo hai phép **khác nhau**, dùng nhầm là sai nghiệp vụ:
+
+    diem_co_ban_tb_quy  = SUM(nhóm A của các quý trang_thai = 5, KHÔNG tính dòng VPVC_*)
+                          / COUNT(các quý đó)
+
+    diem_vpvc_nam       = Σ 3 dòng VPVC_* trên chính phiếu năm, chấm TRỌN NĂM
+                          (mỗi dòng = MAX(0, diem_toi_da − MIN(Σ vi phạm cả năm, trần nhóm)))
+
+    tong_diem_co_ban    = diem_co_ban_tb_quy + diem_vpvc_nam        ← HAI số hạng
+
+    tong_diem_vuot_troi = MIN( tran_nhom_B ,
+                               Σ theo từng tiêu chí nhóm B:
+                                   kẹp( Σ điểm của tiêu chí đó qua các quý đã chốt ) )
+                          khoảng kẹp theo bảng ở mục 2.4;
+                          tran_nhom_B = fn_phieu_tran_nhom_vuot_troi (NULL = không cắt)
+
+    tong_diem_tich_luy  = tong_diem_co_ban + tong_diem_vuot_troi
+
+Cột audit `diem_co_ban_tb_quy` lưu **riêng** số hạng thứ nhất, không pha lẫn phần VPVC —
+để còn đối chiếu được phép trung bình. `sp_phieu_nam_tong_hop_tu_quy` trả cả ba con số
+(`diem_co_ban_tb_quy`, `diem_vpvc_nam`, `tong_diem_co_ban`) để FE giải trình được vì sao vế
+cơ bản khác phép trung bình.
+
+Cơ bản lấy **trung bình** để làm nhiều quý không làm điểm phình ra. Vượt trội **cộng dồn**
+vì thành tích cả năm phải được cộng đủ — nhưng kẹp theo từng tiêu chí để một thành tích
+khai lặp ở nhiều quý không vượt trần của tiêu chí đó.
+
+**Hệ quả phải nhớ:** `tong_diem_vuot_troi` cuối năm **không** bằng tổng bốn con số
+`tong_diem_vuot_troi` của các quý — khi trần cắn thì nó nhỏ hơn. Đừng đem cộng bốn quý rồi
+đối khớp. `fn_phieu_chi_tiet_vuot_troi_quy` trả bảng phân rã theo từng tiêu chí
+(`tong_cac_quy`, `diem_sau_kep`, `bi_kep`) để giải trình đúng chỗ nào bị cắt.
+
+Vế vượt trội có **hai phép cắt nối tiếp**: (1) từng tiêu chí, (2) cả nhóm — xem mục "Trần 50
+của cả nhóm". Bảng phân rã trên chỉ giải trình được phép (1); phép (2) đi kèm hai cột riêng
+`tran_nhom_vuot_troi` và `tong_vuot_troi_truoc_tran_nhom` trên RS1 của
+`sp_phieu_nam_tong_hop_tu_quy` và RS3 của `sp_phieu_quy_tong_hop_nhan_vien`.
+
+Phép kẹp là **hai phía**, không phải chỉ chặn trên: tiêu chí chỉ trừ điểm có
+`diem_toi_da = -100` mà cộng dồn 4 quý sẽ ra `-400` nếu thiếu sàn.
+
+Quyết định nghiệp vụ: người vào làm giữa năm / nghỉ thai sản không bị phạt vì những quý
+không tồn tại. **0 quý đã chốt → không ghi gì**, trả `KHONG_CO_QUY_DA_CHOT`; không ngầm coi
+là 0 điểm, không ngầm chia 4. Hệ quả xuôi dòng là cố ý: `sp_phieu_khoa_duyet_ho_so` chặn tiếp
+bằng `CHUA_TONG_HOP_QUY`, nên người chưa chốt quý nào **không xếp loại được** — đúng như mong
+đợi. 1–3 quý vẫn thành công, kèm `canh_bao = 1` để FE hiện "chỉ tổng hợp từ N quý".
+
+#### Tiêu chí chấm TỰ ĐỘNG: `VPVC_*` đã mở cổng, `TTVT_*` vẫn đóng
+
+Cổng `loai_nguon_diem = 2` được mở **hẹp**, chỉ đúng 3 mã `VPVC_*` — ba mã đó đã có chiều
+quý thật sự (`vi_pham_giang_day.quy`) và `fn_nckh_diem_tu_dong` đã nhận `@quy`, nên vi phạm
+của quý 1 không thể rơi vào phiếu quý 2.
+
+`TTVT_*` **vẫn đóng**: `fn_nckh_diem_tu_dong` (nhánh `TTVT_*`) gom
+`chi_tiet_ke_khai_thanh_tich` theo `(id_nhan_vien, id_nam)` chứ **không theo quý**, nên mở
+trước là đếm một thành tích bốn lần. Nguy hiểm hơn: phép kẹp trần sẽ **che lấp** lỗi đó
+(4 lần vượt trần bị cắt về đúng trần, nhìn rất hợp lý) nên nó không lộ ra. Cột `quy` đã có
+sẵn ở `chi_tiet_ke_khai_thanh_tich` — đợt bật cổng phải nối nó vào cùng commit.
+
+> ⚠️ **Tripwire cũ từng mù.** `so_tieu_chi_tu_dong_bo_sot` trước đây lọc `ntc.loai_nhom = 2`,
+> trong khi 3 tiêu chí `VPVC_*` nằm ở **nhóm A**. Nghĩa là chúng bị bỏ rơi suốt mà tripwire
+> vẫn báo "0 tiêu chí bỏ sót" — đúng kịch bản mất điểm trong im lặng mà nó sinh ra để chặn.
+> Nay bộ lọc `loai_nhom` đã bỏ, và loại trừ chính 3 mã `VPVC_*` (đã được seed) — còn lại
+> đúng những mã thật sự chưa có chỗ đứng.
+
+`sp_phieu_nam_tong_hop_tu_quy` đếm và trả `so_tieu_chi_tu_dong_bo_sot` /
+`canh_bao_tieu_chi_tu_dong` để không ai mất điểm trong im lặng.
+
+> ⚠️ **Cạm bẫy ở `sp_phieu_quy_tp_duyet`.** Bước chốt điểm chạy
+> `diem_chinh_thuc = COALESCE(diem_khoa, diem_tu_danh_gia, 0)`. Dòng `VPVC_*` có **cả hai**
+> đều NULL, nên nếu không loại `loai_nguon_diem = 2` ra khỏi `UPDATE` đó thì điểm tự động
+> vừa chấm bị **ghi đè thành 0** ngay tại bước chốt — phiếu vẫn chốt thành công, chỉ có điểm
+> là mất. TP cũng **không được chấm tay** dòng tự động (`DONG_CHAM_TU_DONG`).
+
+**Ba thời điểm engine chạy:** nhân viên nộp phiếu quý (`sp_phieu_quy_nop`), TP chốt phiếu quý
+(`sp_phieu_quy_tp_duyet`, để bắt vi phạm ghi nhận sau lúc nộp), và roll-up cuối năm
+(`sp_phieu_nam_tong_hop_tu_quy`, chấm 3 dòng của phiếu năm với `quy = 0`). Cả ba đều
+idempotent. Suất "phiếu nhận điểm tự động" (chống cộng trùng khi kiêm nhiệm đa đơn vị) nay
+khoá theo `(id_nam, id_nhan_vien, quy)` thay vì `(id_nam, id_nhan_vien)` + chặn cứng
+`quy = 0` — mỗi quý là một phạm vi tính điểm độc lập.
+
+**Thứ tự bắt buộc:** chốt các quý → `POST api/phieu/{id}/tong-hop-tu-quy` → TK chốt hồ sơ →
+đóng gói tờ trình.
+
+#### `nam_danh_gia.ap_dung_phieu_quy` — công tắc theo năm
+
+`BIT NOT NULL DEFAULT 0`. Năm đang chạy dở giữ nguyên hành vi cũ. Chỉ khi ADMIN bật:
+`sp_phieu_quy_create` mới cho tạo phiếu quý, và `sp_phieu_danh_gia_create` mới đặt
+`nguon_diem_co_ban = 2` cho viên chức.
+
+#### LỖI TIỀM ẨN ĐÃ SỬA: `chk_lscd_diem`
+
+`schema.sql:1163` khai `lich_su_cham_diem CHECK (diem IS NULL OR diem >= 0)`, trong khi tiêu chí
+viên chức **được âm điểm** (mục 2.4, ví dụ mục III "Chấp hành quy định" khai `diem_toi_da = -100`)
+và `sp_chi_tiet_danh_gia_update_tu_danh_gia` ghi **thẳng** `@diem` vào bảng này.
+
+> ⚠️ CHECK này **vẫn còn trong DB thật** tới tận đợt "Đánh giá theo quý" — bước 1.6 của
+> `update_database.sql` báo `[OK] Go chk_lscd_diem` chứ không phải `[SKIP]`. Nghĩa là đây
+> **không** phải trôi lệch tài liệu mà là một **lỗi tiềm ẩn có thật**: bất kỳ ai chấm điểm âm
+> cho một tiêu chí viên chức đều làm `sp_chi_tiet_danh_gia_update_tu_danh_gia` chết ở
+> constraint. Nó chưa nổ chỉ vì nhánh chấm điểm âm chưa từng được dùng thật.
+
+Đợt này bắt buộc phải gỡ vì phiếu quý gồm **toàn bộ** dòng nhóm A của viên chức — đúng chỗ
+điểm âm sống. `update_database.sql` mục 1.6 gỡ **có kiểm tra trước**, nên chạy lại vẫn an toàn.
 **`loai_doi_tuong` suy theo ĐƠN VỊ CỦA PHIẾU, không phải theo chức danh của người:**
 
-| Đơn vị của phiếu | `id_chuc_danh` | `loai_doi_tuong` | Mẫu dùng |
+| Đơn vị của phiếu | Chức danh (`nhan_vien.id_chuc_danh`) | `loai_doi_tuong` | Mẫu dùng |
 |---|---|---|---|
-| Khoa (`ma_don_vi LIKE 'K_%'`) | có | **1** | Giảng viên |
-| Khoa | NULL | **2** | Viên chức / NLĐ — nhân viên văn phòng Khoa |
+| Khoa (`ma_don_vi LIKE 'K_%'`) | ngạch giảng dạy: `TROGIANG, TAPSU, GV, GVC, GVCC, PGS, GS` | **1** | Giảng viên |
+| Khoa | NULL, hoặc `CV, NV, NCV, KHAC` | **2** | Viên chức / NLĐ — nhân viên văn phòng Khoa |
 | Phòng / Trung tâm / Trường | bất kỳ | **2** | Viên chức / NLĐ |
+
+Luật này khai báo **một nơi duy nhất**: inline TVF `dbo.fn_loai_doi_tuong_ca_nhan(@id_nhan_vien,
+@id_don_vi)`, dùng bởi `sp_phieu_danh_gia_create`, `sp_phieu_quy_create` (chặn tạo phiếu quý
+cho người loại 1) và `sp_auth_get_user_by_id` RS2 → `GET api/auth/me` trả
+`DonVi[].LoaiDoiTuong`. FE bật menu đánh giá theo trường đó, không tự suy từ chức danh.
+
+> ⚠ Trước đợt này SP chỉ kiểm `id_chuc_danh IS NOT NULL`, nên chuyên viên (`CV`) ở Khoa bị
+> tạo phiếu năm theo **mẫu giảng viên** trong khi phiếu quý lại theo mẫu viên chức.
+> `update_database.sql` của đợt này có truy vấn liệt kê các phiếu lệch loại còn sót.
+>
+> ⚠ `v_giang_vien_khoa` / `v_vien_chuc_don_vi` (module vi phạm) chỉ coi **5 ngạch**
+> `GV, GVC, GVCC, PGS, GS` là giảng viên — chưa gồm `TROGIANG, TAPSU`. Hiện chưa có nhân viên
+> nào mang 2 chức danh này nên chưa gây lệch; khi có thì phải đồng bộ hai view đó.
 
 Đây là hiện thực của quyết định "KPI Phòng khác KPI Khoa": một PGS làm Trưởng phòng chấm
 theo **mẫu viên chức** trên phiếu Phòng và theo **mẫu giảng viên** trên phiếu Khoa.
 `id_chuc_vu` snapshot cũng lấy **tại đơn vị của phiếu** — người là TP của Phòng nhưng chỉ
 giảng dạy ở Khoa thì phiếu Khoa mang `id_chuc_vu` NULL.
 
-> ⚠ **HỆ QUẢ ĐÃ BIẾT VÀ CỐ Ý GIỮ.** Phiếu ở Phòng mang `loai_doi_tuong = 2` nên dính luật
-> **"viên chức / NLĐ tối đa mức 2 (Hoàn thành nhiệm vụ)"** đang cưỡng chế trong
-> `sp_phieu_khoa_chot_ho_so` (`VUOT_MUC_VIEN_CHUC`) và `sp_phieu_khoa_danh_dau_uu_tien`.
-> Tức **Trưởng phòng không thể đạt Xuất sắc trên phiếu Phòng** — nhưng **vẫn đạt Xuất sắc
-> được trên phiếu Khoa** của chính họ. Đây là luật sẵn có áp cho mọi nhân sự Phòng, không
-> phải hiệu ứng phụ của Đợt 3. Muốn mở ngoại lệ cho cấp lãnh đạo Phòng thì phải sửa 2 SP
-> trên, đừng sửa `loai_doi_tuong`.
+> ⚠ **HỆ QUẢ CŨ ĐÃ ĐƯỢC GỠ BỎ.** Trước đợt tách 3 nhóm, phiếu ở Phòng mang
+> `loai_doi_tuong = 2` nên dính luật *"viên chức / NLĐ tối đa mức 2"* (`VUOT_MUC_VIEN_CHUC`)
+> ⇒ **Trưởng phòng không thể đạt Xuất sắc trên phiếu Phòng**. Luật đó **KHÔNG CÒN**:
+> `VUOT_MUC_VIEN_CHUC` đã bị gỡ khỏi cả `sp_phieu_khoa_duyet_ho_so` lẫn
+> `sp_phieu_khoa_uu_tien_xuat_sac`.
+>
+> Nay viên chức / NLĐ lên được mức 3 (từ 101 điểm) và mức 4 (trong Top hạn ngạch của nhóm
+> mình). Trưởng phòng thuộc **nhóm 3 Cán bộ quản lý** của chính Phòng đó, tranh hạn ngạch
+> với PTP — xem §8.2.
+>
+> `loai_doi_tuong` vẫn suy theo đơn vị của phiếu như cũ; nó nay quyết định **luật xếp loại
+> cá nhân** (ngưỡng điểm, có cần QĐ 838 không), KHÔNG còn quyết định việc có tranh hạn ngạch
+> hay không.
 
 **Điểm tự động: mỗi năm chỉ MỘT phiếu được chấm.** Mọi nguồn tự động (NCKH, phản hồi SV,
 vi phạm giảng dạy, nhiệm vụ Khoa) khoá theo `(id_nhan_vien, id_nam)` — **không** theo đơn vị
@@ -745,12 +1036,34 @@ toàn bộ điểm NCKH nằm ở phiếu Khoa (đơn vị kiêm nhiệm).
 
 Xếp loại (theo QĐ ĐHKT). `tong_diem_tich_luy = tong_diem_co_ban + tong_diem_vuot_troi`.
 
+**GIẢNG VIÊN (`loai_doi_tuong = 1`)** — `XepLoaiCalculator.TinhXepLoai`:
+
 | `xep_loai` | Mức | Điều kiện |
 |---|---|---|
 | 1 | Không hoàn thành nhiệm vụ | `tong_diem_tich_luy < 80`, HOẶC `du_dinh_muc_gio_nckh = 0`, HOẶC `khong_vi_pham_phap_luat = 0` (bị xử lý kỷ luật trong năm) |
 | 2 | Hoàn thành nhiệm vụ | `80 <= tong_diem_tich_luy <= 100` + đủ định mức giờ NCKH (QĐ 3237 + QĐ 1356) + không vi phạm pháp luật |
 | 3 | Hoàn thành tốt nhiệm vụ | Thỏa (2) + `tong_diem_tich_luy > 100` + `muc_nckhcn_qd838 >= 1` (đạt mức HT Tốt KHCN — QĐ 838) |
-| 4 | Hoàn thành xuất sắc nhiệm vụ | Thỏa (3) + `muc_nckhcn_qd838 = 2` + **nằm trong hạn ngạch top 20% của Khoa** (xem mục 8) |
+| 4 | Hoàn thành xuất sắc nhiệm vụ | Thỏa (3) + `muc_nckhcn_qd838 = 2` + **nằm trong Top hạn ngạch 20% của nhóm mình** (xem mục 8) |
+
+**VIÊN CHỨC / NLĐ (`loai_doi_tuong = 2`)** — `XepLoaiCalculator.TinhXepLoaiVienChuc`.
+Họ không có định mức giảng dạy / giờ NCKH / QĐ 838 nên **không** phụ thuộc
+`du_dinh_muc_gio_nckh`:
+
+| `xep_loai` | Mức | Điều kiện |
+|---|---|---|
+| 1 | Không hoàn thành nhiệm vụ | `tong_diem_tich_luy < 80` HOẶC `khong_vi_pham_phap_luat = 0` |
+| 2 | Hoàn thành nhiệm vụ | `80 <= tong_diem_tich_luy <= 100` + không vi phạm pháp luật |
+| 3 | Hoàn thành tốt nhiệm vụ | `tong_diem_tich_luy >= 101` + không vi phạm pháp luật |
+| 4 | Hoàn thành xuất sắc nhiệm vụ | Thỏa (3) + **nằm trong Top hạn ngạch 20% của nhóm mình** |
+
+> ⚠ **NGƯỠNG MỨC 3 LỆCH CÓ CHỦ Ý: giảng viên `> 100`, viên chức `>= 101`.**
+> Điểm lẻ là **có thật** — `chi_tiet_danh_gia.diem_*` là `DECIMAL(5,2)` và
+> `tieu_chi_danh_gia.loai_thang_diem` hỗ trợ `2 = Liên tục` / `4 = Công thức`, không có bước
+> làm tròn nào trong hệ thống. Nên ở dải **100.01–100.99**: giảng viên lên mức 3, viên chức
+> không. `sp_phieu_khoa_duyet_ho_so` tách `DIEM_KHONG_DU` thành 2 nhánh đúng theo lệch này.
+> Đừng "sửa cho nhất quán".
+
+Cán bộ quản lý (nhóm 3) dùng đúng bảng của **loại đối tượng mình mang**, không có bảng riêng.
 
 **AI GHI CỘT NÀO — đọc kỹ, đây là chỗ dễ nhầm nhất:**
 
@@ -758,11 +1071,19 @@ Xếp loại (theo QĐ ĐHKT). `tong_diem_tich_luy = tong_diem_co_ban + tong_die
 |---|---|---|---|
 | `xep_loai_de_xuat` | Hệ thống (`XepLoaiCalculator`) | Khi TK mở hồ sơ ở GĐ3 | 1–4, chỉ để **đối chiếu** |
 | `xep_loai_khoa` | **Trưởng khoa chọn tay** | Chốt hồ sơ cá nhân (GĐ3, 3→4) | **1/2/3 — cấm chọn 4** |
-| `xep_loai` | Hệ thống | Đóng gói tờ trình (mục 8) | `= xep_loai_khoa`, nâng lên 4 nếu trúng hạn ngạch |
+| `xep_loai` | Hệ thống | Đóng gói tờ trình (mục 8) | `= xep_loai_khoa`, nâng lên 4 nếu trúng Top hạn ngạch |
 | `can_ht_duyet` | Hệ thống (`sp_phieu_khoa_duyet_ho_so`) | TK chốt hồ sơ (GĐ3, 3→4) | 0/1 — snapshot, **không** suy lại về sau |
+| `hang_trong_khoa` | Hệ thống | Đóng gói tờ trình | Thứ hạng **trong nhóm**, trên toàn bộ quần thể nhóm |
+| `nhom_xep_hang` | Hệ thống | Đóng gói tờ trình | 1/2/3 — snapshot, **không** suy lại về sau |
 
-Mức 4 KHÔNG ai chọn tay được: nó phụ thuộc thứ hạng trong cả Khoa nên chỉ tính được khi
-100% hồ sơ của Khoa đã chốt. `ly_do_xep_loai` bắt buộc khi `xep_loai_khoa <> xep_loai_de_xuat`.
+Mức 4 KHÔNG ai chọn tay được: nó phụ thuộc thứ hạng trong nhóm của cả đơn vị nên chỉ tính
+được khi 100% hồ sơ của đơn vị đã chốt. `ly_do_xep_loai` bắt buộc khi
+`xep_loai_khoa <> xep_loai_de_xuat`.
+
+`nhom_xep_hang` phải snapshot vì nhóm phụ thuộc bộ chức vụ **tại thời điểm đóng gói**, vốn
+đổi về sau khi có bổ nhiệm / miễn nhiệm — cùng lý do `can_ht_duyet` phải snapshot.
+`Helper/ChucVuLanhDao.XacDinhNhom()` chỉ dùng để **hiển thị / xem trước**, không thay được
+cột snapshot này.
 
 ### 4.2. `chi_tiet_danh_gia` — Chi tiết đánh giá (Detail – 1 dòng = 1 tiêu chí)
 Mỗi cấp có cột điểm + nhận xét + người chấm + ngày chấm RIÊNG. Khi GV/đơn vị sửa, giá trị cũ
@@ -1236,45 +1557,115 @@ tự động về trạng thái 1.
 > có thể rớt về Hoàn thành tốt.
 >
 > Đây là hệ quả toán học không tránh được của việc cho hồ sơ "xong sớm ở cấp TK" trong khi hạn
-> ngạch vẫn tính trên toàn Khoa — **không phải lỗi**. SP ghi một dòng `lich_su_trang_thai_phieu`
-> (`trang_thai_truoc = trang_thai_sau = 5`, `hanh_dong = 4`) nêu rõ mức cũ → mức mới cho mỗi
-> phiếu bị đổi, để truy vết.
+> ngạch vẫn tính trên toàn đơn vị — **không phải lỗi**. SP ghi một dòng `lich_su_trang_thai_phieu`
+> (`trang_thai_truoc = trang_thai_sau = 5`, `hanh_dong = 4`) nêu rõ mức cũ → mức mới, kèm **tên
+> nhóm và mẫu số** đã dùng, cho mỗi phiếu bị đổi, để truy vết.
+>
+> **Từ đợt tách 3 nhóm, biên độ hạ mức còn rộng hơn**, vì hai lý do mới:
+> - Luật **bỏ-lấp-suất** (§8.2 điểm 4) có thể làm GIẢM số người đạt mức 4 ngay cả khi thành phần
+>   nhóm không đổi — chỉ cần người đứng đầu Top đổi.
+> - Một người **đổi nhóm** (ví dụ được bổ nhiệm PTK giữa chừng) làm đổi mẫu số của **HAI** nhóm
+>   cùng lúc: nhóm cũ mất một người, nhóm quản lý thêm một người.
 >
 > Muốn chặn hẳn thì phải khoá không cho thêm hồ sơ sau khi đơn vị đã đóng gói lần đầu — là một
 > quyết định nghiệp vụ riêng, chưa làm.
 
 ### 8.2. Luật hạn ngạch top 20% — ĐÃ CHỐT VỚI NGƯỜI DÙNG
 
-Phạm vi xếp hạng là **TỪNG KHOA**, không phải toàn trường.
+Phạm vi xếp hạng là **TỪNG ĐƠN VỊ** (Khoa / Phòng / Trung tâm), không phải toàn trường.
+
+Mỗi đơn vị xếp hạng **BA BẢNG ĐỘC LẬP, LOẠI TRỪ NHAU**, khóa theo `fn_chuc_vu_can_ht_duyet()`:
+
+| Nhóm | Thành viên | **Mẫu số hạn ngạch** | Điều kiện lên mức 4 |
+|---|---|---|---|
+| 1 Giảng viên thường | `loai_doi_tuong = 1`, chức vụ ∉ bộ 6 mã | **số người `xep_loai_khoa = 3`** | trong Top **và** `muc_nckhcn_qd838 = 2` |
+| 2 Viên chức / NLĐ | `loai_doi_tuong = 2`, chức vụ ∉ bộ 6 mã | **TỔNG đầu người của nhóm** | trong Top **và** `xep_loai_khoa = 3` |
+| 3 Cán bộ quản lý | chức vụ ∈ `{TK,TKL,PTK,PTKL,TP,PTP}` | **TỔNG số quản lý của đơn vị** | trong Top **và** mức 3 theo loại đối tượng của mình |
 
 ```
-so_giang_vien      = COUNT(phiếu trong gói WHERE loai_doi_tuong = 1)
-han_ngach_xuat_sac = FLOOR(so_giang_vien * ty_le_xuat_sac)        -- ty_le mặc định 0.2000
+so_mau_so = 0  ->  han_ngach = 0
+so_mau_so > 0  ->  han_ngach = MAX(1, FLOOR(so_mau_so * ty_le_xuat_sac))
 ```
 
-Bốn điểm dễ hiểu sai, đọc kỹ:
+`id_chuc_vu` NULL ⇒ rơi vào nhóm 1 hoặc 2 theo `loai_doi_tuong`. Vì `id_chuc_vu` snapshot
+**tại đơn vị của phiếu**, phiếu Khoa chỉ mang TK/TKL/PTK/PTKL và phiếu Phòng chỉ mang
+TP/PTP ⇒ nhóm 3 của mỗi đơn vị luôn đồng nhất thang điểm, không so điểm chéo hai mẫu phiếu.
+Hạn ngạch nhóm 3 tính **riêng trong từng đơn vị**, KHÔNG gộp toàn trường.
 
-1. **Mẫu số là TỔNG SỐ giảng viên của Khoa**, KHÔNG phải số người "Hoàn thành tốt".
-   Khoa có 30 GV, 10 người mức 3 ⇒ hạn ngạch = `FLOOR(30 × 0.2)` = **6**, không phải 2.
-2. **Làm tròn XUỐNG** (`FLOOR`). 27 GV ⇒ 5 suất, không phải 6.
-3. **Viên chức/NLĐ (`loai_doi_tuong = 2`) KHÔNG tính vào mẫu số** và không tranh hạn ngạch.
-   Họ giữ luật riêng, tối đa mức 2 (`TinhXepLoaiVienChuc`).
-4. **Suất được LẤP ĐẦY, không bỏ trống.** Duyệt từ điểm cao xuống, chỉ lấy người vừa
-   `xep_loai_khoa = 3` vừa `muc_nckhcn_qd838 = 2`. Người điểm cao nhưng không đạt QĐ 838
-   bị **BỎ QUA** và suất dồn cho người kế tiếp — không bị mất suất.
+Năm điểm dễ hiểu sai, đọc kỹ:
 
-Thứ tự xếp hạng: `ORDER BY tong_diem_tich_luy DESC, uu_tien_xuat_sac DESC`.
-(SQL Server 2008: dùng `ROW_NUMBER() OVER (...)`, **không** có `OFFSET/FETCH`.)
+1. **MẪU SỐ BẤT ĐỐI XỨNG GIỮA CÁC NHÓM — cố ý, đừng "sửa cho nhất quán".** Nhóm 1 lấy *số
+   người mức 3*; nhóm 2 và 3 lấy *tổng đầu người*. Đây là quyết định nghiệp vụ.
+   Khoa có 30 GV mà chỉ 10 người mức 3 ⇒ hạn ngạch nhóm 1 = `FLOOR(10 × 0.2)` = **2**.
+   Phòng có 8 viên chức mà chỉ 2 người mức 3 ⇒ hạn ngạch nhóm 2 = `FLOOR(8 × 0.2)` = **1**.
+2. **Làm tròn XUỐNG, NHƯNG tối thiểu 1 suất** nếu mẫu số > 0. Mẫu số 27 ⇒ 5; mẫu số 3 ⇒
+   `FLOOR(0.6) = 0` ⇒ nâng lên **1**. Đây là ngoại lệ nghiệp vụ đã xác nhận: nhóm 1–4
+   người sẽ vượt tỷ lệ 20% trên thực tế (nhóm 3 người ⇒ 1 suất = 33%). Chấp nhận.
+3. **Viên chức/NLĐ CÓ tranh hạn ngạch** và lên được mức 3 (từ 101 điểm) lẫn mức 4 — ở bảng
+   riêng của mình. Trần mức 2 cũ (`VUOT_MUC_VIEN_CHUC`) đã bị gỡ bỏ.
+4. ⚠ **XÁC ĐỊNH TOP TRƯỚC, XÉT ĐIỀU KIỆN SAU — SUẤT BỎ TRỐNG, KHÔNG DỒN XUỐNG.**
+   Xếp hạng trên **TOÀN BỘ** quần thể của nhóm → cắt Top đúng bằng hạn ngạch → *rồi mới*
+   lọc điều kiện mức 4. Người trong Top mà thiếu điều kiện thì **giữ mức 3 và suất đó bỏ
+   trống**; người đứng dưới Top **KHÔNG** được nâng lên thay.
 
-### 8.3. Đồng hạng ở ranh giới — CHẶN, không tự quyết
+   > Ví dụ chuẩn: hạn ngạch 2 · hạng 1 không đạt QĐ 838 mức 2 · hạng 2 đạt · hạng 3 đạt
+   > ⇒ **chỉ hạng 2 lên mức 4**. Hạng 3 không nhận suất của hạng 1.
 
-Nếu số người **bằng điểm nhau** đang tranh số suất cuối còn lại nhiều hơn số suất, và chưa
-ai được đánh dấu `uu_tien_xuat_sac`, thì `sp_to_trinh_khoa_dong_goi` phải **DỪNG** với
-`error_code = 'DONG_HANG'` kèm danh sách người đồng hạng. Trưởng khoa vào chỉ định
-(`PUT api/phieu/{id}/uu-tien-xuat-sac`) rồi đóng gói lại.
+   ⇒ **`so_dat` ĐƯỢC PHÉP nhỏ hơn `han_ngach`.**
+
+   Tuyệt đối KHÔNG lọc `du_dieu_kien_muc4 = 1` trước khi cắt Top — đó chính là cơ chế dồn
+   suất mà luật này loại bỏ.
+5. **Điều kiện mức 4 xét theo LOẠI ĐỐI TƯỢNG của chính người đó, không theo nhóm.** Cán bộ
+   quản lý là giảng viên vẫn phải đạt QĐ 838 mức 2; là viên chức thì không (họ không có
+   QĐ 838).
+
+Thứ tự xếp hạng: `ORDER BY tong_diem_tich_luy DESC, uu_tien_xuat_sac DESC, id_phieu ASC`,
+`PARTITION BY nhom`. (SQL Server 2008: dùng `ROW_NUMBER() OVER (...)`, **không** có
+`OFFSET/FETCH`.)
+
+`hang_trong_khoa` nay là **thứ hạng TRONG NHÓM** (trên toàn bộ quần thể nhóm, không chỉ
+người đủ điều kiện) và **không bao giờ NULL** — khác hẳn trước đây.
+
+**Tỷ lệ khóa cứng ở 0.2000.** Tham số `@ty_le_xuat_sac` giữ trong chữ ký SP để không phá
+contract API, nhưng `NULL` = `0.2000` và giá trị khác trả `TY_LE_KHONG_HOP_LE` (chặn ở cả
+BLL lẫn SP). Cột `ty_le_xuat_sac` và cơ chế snapshot **giữ nguyên**: quy định có thể đổi
+theo năm và tờ trình cũ phải tra cứu lại được tỷ lệ đã dùng.
+
+### 8.3. Đồng hạng ở ranh giới — CHẶN CÓ ĐIỀU KIỆN, không tự quyết
+
+Đồng hạng xét tại ranh giới Top của **TOÀN BỘ** quần thể nhóm, và có thể nổ ở **tối đa 3
+nhóm cùng lúc**. `sp_to_trinh_khoa_dong_goi` xét hết cả 3 nhóm rồi báo lỗi **MỘT LẦN** —
+fail-fast nhóm đầu sẽ bắt trưởng đơn vị đóng gói lại 3 lần mới biết hết.
+
+Gọi `so_bang_ddk` = số người đồng hạng tại ranh giới **có `du_dieu_kien_muc4 = 1`**:
+
+| Điều kiện | Xử lý |
+|---|---|
+| `so_bang <= suat_con_lai` | Cắt gọn đẹp, lấy hết. Không chặn |
+| `so_bang_ddk <= suat_con_lai` | Mọi người đủ điều kiện chắc chắn có suất bất kể chia thế nào ⇒ kết quả duy nhất. **Không chặn**; lấp Top ưu tiên người đủ điều kiện, rồi `id_phieu ASC` |
+| `so_uu_tien_ddk = suat_con_lai` | Trưởng đơn vị đã chỉ định đúng số người còn thiếu. Không chặn |
+| còn lại | **DỪNG** với `error_code = 'DONG_HANG'` |
+
+> Vì sao phải lọc: từ khi cắt Top trên toàn bộ quần thể (thay vì trên tập đã đủ điều kiện),
+> đồng hạng ở ranh giới trở nên phổ biến hơn hẳn — kể cả giữa những người mức 1/2 chẳng liên
+> quan tới mức 4. Chặn hết sẽ khiến đóng gói gần như không thực hiện được. Tinh thần cũ giữ
+> nguyên: hệ thống **không bao giờ tự tie-break khi kết quả thực sự phụ thuộc vào lựa chọn**.
+
+`uu_tien` chỉ tính trong số người **đủ điều kiện**: chỉ định một người không thể lên mức 4
+là vô nghĩa, và để nguyên thì trưởng đơn vị có thể vô tình khóa suất của người đủ điều kiện.
 
 Cố ý KHÔNG tự tie-break bằng `id_nhan_vien` hay `tong_diem_vuot_troi`: đây là quyết định
-nhân sự, hệ thống không được âm thầm chọn thay người.
+nhân sự. Trưởng đơn vị chỉ định qua `PUT api/phieu/{id}/uu-tien-xuat-sac` rồi đóng gói lại.
+
+**Chỉ TK/TKL/TP (và ADMIN) chỉ định được.** PTK/PTKL/PTP nằm trong `fn_chuc_vu_can_ht_duyet()`
+(hồ sơ của họ cần HT duyệt) nhưng **không** có quyền chốt hồ sơ người khác — xem ghi chú ở
+đầu `procedure.sql` và gate của `sp_phieu_khoa_uu_tien_xuat_sac`.
+
+Hình dạng result set của nhánh `DONG_HANG`:
+- **RS1** — scalar mô tả nhóm bị chặn có số hiệu **nhỏ nhất**, kèm `so_nhom_dong_hang`.
+  Cột `so_giang_vien` là **alias deprecated** của `so_mau_so` (giữ cho FE đang chạy).
+- **RS2** — người đồng hạng của **tất cả** nhóm bị chặn, kèm `nhom` và cờ `du_dieu_kien_muc4`.
+- **RS3** — 1 dòng / nhóm bị chặn với đầy đủ counter.
 
 ### 8.4. Dữ liệu di trú từ quy trình cũ
 
@@ -1282,6 +1673,17 @@ Tờ trình sinh tự động cho các `(năm, đơn vị)` đã có hồ sơ HO
 **`so_dat_xuat_sac` của dữ liệu cũ CÓ THỂ LỚN HƠN `han_ngach_xuat_sac`** — quy trình cũ
 không có hạn ngạch nào. Đây là sự thật lịch sử, không phải lỗi dữ liệu; hạn ngạch chỉ áp
 cho gói đóng mới.
+
+**Gói cũ KHÔNG có dòng nào trong `to_trinh_kpi_khoa_nhom`** (đợt tách 3 nhóm cố ý không
+backfill). FE gặp danh sách nhóm rỗng thì fallback về các cột phẳng trên bảng cha;
+`to_trinh_kpi_khoa.so_nguoi_muc3` NULL chính là dấu hiệu nhận biết "gói legacy". Đây cũng là
+lý do `chk_ttkkn_so_dat CHECK (so_dat <= han_ngach)` an toàn: dữ liệu vi phạm bất biến
+không bao giờ vào được bảng con.
+
+⚠ **`phieu_danh_gia.nhom_xep_hang` trên dòng cũ là TÁI DỰNG, không phải snapshot.** Script
+di trú suy nó từ bộ chức vụ **hiện tại**, trong khi `hang_trong_khoa` nằm cạnh vẫn mang
+nghĩa CŨ (thứ hạng trong toàn bộ giảng viên, theo mẫu số cũ). Hai cột này **lệch nhau về
+bản chất** trên dữ liệu legacy — đừng đọc ra "người này xếp thứ N trong nhóm X" từ gói cũ.
 
 ### 8.5. `lich_su_to_trinh_kpi_khoa`
 
@@ -1292,6 +1694,44 @@ sang trạng thái 4, không qua HT).
 khi `hanh_dong = 4`.
 
 `chk_lsttkk_hd` đã được nới từ `IN (1,2,3,4,5)` lên `IN (1,2,3,4,5,6)` để nhận giá trị mới.
+
+### 8.6. `to_trinh_kpi_khoa_nhom` — hạn ngạch theo nhóm
+
+Bảng cha chỉ có **một** bộ cột hạn ngạch nhưng luật mới cần **ba**. Dùng bảng con thay vì
+nới rộng bảng cha thêm 9+ cột: `GROUP BY` chỉ sinh dòng cho nhóm **thực sự tồn tại**, nên
+Phòng ra `{2,3}` và Khoa không có quản lý ra `{1,2}` — không có dòng rỗng giả.
+
+| Cột | Nghĩa |
+|---|---|
+| `id_to_trinh` | FK → `to_trinh_kpi_khoa`, **ON DELETE CASCADE** |
+| `nhom` | 1 Giảng viên · 2 Viên chức/NLĐ · 3 Cán bộ quản lý |
+| `so_nguoi` | Tổng đầu người trong nhóm |
+| `so_nguoi_muc3` | Số người `xep_loai_khoa = 3` |
+| **`so_mau_so`** | **Mẫu số thực dùng** — nhóm 1 = `so_nguoi_muc3`; nhóm 2/3 = `so_nguoi` |
+| `so_du_dieu_kien` | Số người đủ điều kiện mức 4 trong **toàn** nhóm (không chỉ trong Top) |
+| `han_ngach` | `MAX(1, FLOOR(so_mau_so × ty_le))`, hoặc 0 khi `so_mau_so = 0` |
+| `so_dat` | Thực tế đạt mức 4 — **có thể < `han_ngach`** |
+
+FE **phải** đọc `so_mau_so`, KHÔNG được tự suy mẫu số từ `so_nguoi_muc3` hay `so_nguoi`
+(mẫu số bất đối xứng giữa các nhóm — xem §8.2 điểm 1).
+
+`chk_ttkkn_so_dat CHECK (so_dat <= han_ngach)` — dưới luật "cắt Top rồi lọc xuống" đây là
+bất biến đúng theo cấu trúc, khác hẳn luật cũ (lấp đầy suất). An toàn vì bảng này không
+backfill dữ liệu di trú (§8.4).
+
+**Ba thay đổi của đợt này** — trước đây phân kỳ khỏi `schema.sql`, **nay đã được đồng bộ
+vào file đó**:
+
+| Đối tượng | Kiểu |
+|---|---|
+| `to_trinh_kpi_khoa_nhom` | bảng mới (mục 8.1b trong `schema.sql`) |
+| `to_trinh_kpi_khoa.so_nguoi_muc3 INT NULL` | cột thêm qua `ALTER` + `chk_ttkk_so_muc3` |
+| `phieu_danh_gia.nhom_xep_hang TINYINT NULL` | cột thêm qua `ALTER` + `chk_pdg_nhom_xep_hang` |
+
+`to_trinh_kpi_khoa.so_giang_vien` **giữ nguyên nhưng ĐỔI Ý NGHĨA**: từ nay chỉ là headcount
+hiển thị (`COUNT(loai_doi_tuong = 1)`), **không còn là mẫu số**. `so_nguoi_muc3` trên bảng
+cha chỉ là số liệu tổng hợp tham khảo; `han_ngach_xuat_sac` / `so_dat_xuat_sac` là roll-up
+`SUM` của ba nhóm.
 
 
 ---
@@ -1841,12 +2281,13 @@ thread `currentUserDonVi` **giữ nguyên** đúng như kế hoạch.
 | `uq_phieu_unique` → `(id_nam, id_nhan_vien, id_don_vi)` | Xong |
 | `sp_phieu_danh_gia_create` + `@id_don_vi INT = NULL` | Xong |
 | Guard chống cộng trùng điểm tự động (2 SP) | Xong |
-| `sp_to_trinh_khoa_dong_goi` | **Không sửa** — đã xác nhận bằng test |
+| `sp_to_trinh_khoa_dong_goi` | Không sửa **ở Đợt 3**. Sau đó đã viết lại toàn bộ ở đợt tách 3 nhóm — xem §8.2 |
 | C#: `PhieuDanhGiaCreateRequest.IdDonVi` + DAL + BLL | Xong |
 
-Chi tiết ngữ nghĩa (khoá duy nhất, cách suy `loai_doi_tuong`, luật viên chức tối đa mức 2,
+Chi tiết ngữ nghĩa (khoá duy nhất, cách suy `loai_doi_tuong`, luật xếp loại viên chức,
 quy tắc chọn phiếu nhận điểm tự động) nằm ở **mục 4.1** — chỗ đó là nguồn duy nhất, đừng
-chép lại ở đây.
+chép lại ở đây. Lưu ý luật "viên chức tối đa mức 2" mô tả ở Đợt 3 **đã hết hiệu lực**:
+xem §4.1 và §8.2 cho luật hiện hành.
 
 **`sp_phieu_danh_gia_create` — 2 điểm dễ vấp:**
 
@@ -2064,9 +2505,10 @@ tương ứng.
 Ba điểm khác so với mục 9:
 
 1. **Cột `quy` (1..4) trên từng DÒNG.** Header vẫn khoá theo **năm**; `quy` là quý phát sinh
-   thành tích. Đây là chỗ duy nhất trong toàn hệ thống hiện có khái niệm quý — thêm sẵn để
-   sau này gộp được *"Tổng điểm tích lũy hàng quý"* mà không phải đổi cấu trúc. Phiếu đánh
-   giá theo quý vẫn **CHƯA làm**.
+   thành tích. Phiếu đánh giá theo quý nay **ĐÃ có** (mục 4.1) — nhưng cột này **vẫn chưa
+   được nối vào chấm điểm**: `fn_nckh_diem_tu_dong` (nhánh `TTVT_*`) còn gom theo
+   `(id_nhan_vien, id_nam)` và bỏ qua `quy`. Đợt bật chấm tự động nhóm B theo quý phải nối
+   nó vào cùng commit, nếu không một thành tích bị đếm bốn lần. Xem mục 11.9.
 2. **Minh chứng là BẮT BUỘC** với mức có `yeu_cau_minh_chung = 1` (toàn bộ 13 mức seed đều
    bắt buộc), và nay bị chặn **NGAY KHI LƯU** (`sp_ke_khai_thanh_tich_luu_chi_tiet`) chứ
    không dồn tới bước nộp — nhân viên biết mình thiếu file ngay lúc kê, không phải sau khi
@@ -2130,8 +2572,18 @@ thêm một result set **tổng hợp theo loại** kèm `ma_canh_bao = 'VUOT_TR
 **Khen thưởng trùng nội dung được KHỬ TRÙNG lúc chấm, không bị chặn lúc lưu.** Quy định ghi
 *"một nội dung được khen nhiều cấp thì chỉ tính cấp cao nhất"* — người đó **thật sự** được
 khen ở cả hai cấp, cả hai đều là dữ liệu đúng. Nhánh `TTVT_KHEN_THUONG` gom theo
-`LOWER(LTRIM(RTRIM(ten_thanh_tich)))` rồi lấy `MAX(diem_duyet)` trên từng nhóm. Cảnh báo
-`KHEN_THUONG_TRUNG_NOI_DUNG` chỉ để thông báo, không phải lỗi.
+`LOWER(LTRIM(RTRIM(ten_thanh_tich)))` rồi lấy dòng có `diem_duyet` cao nhất trên từng nhóm.
+Cảnh báo `KHEN_THUONG_TRUNG_NOI_DUNG` chỉ để thông báo, không phải lỗi.
+
+⚠️ **Khử trùng ở phạm vi CẢ NĂM, cộng ở phạm vi QUÝ.** Từ đợt "TTVT_* chấm theo quý", nhánh
+này chọn **dòng thắng** (`diem_duyet` lớn nhất; hoà → `id_chi_tiet` nhỏ nhất) rồi mới lọc
+`ct.quy` — điểm rơi vào quý của chính dòng thắng. **Không** được hạ phép khử trùng xuống
+phạm vi quý: cùng một nội dung được khen ở hai quý khác nhau sẽ cộng **hai lần**, và trần 15
+của tiêu chí sẽ che lấp lỗi đó.
+
+**BẤT BIẾN:** vị từ chọn dòng thắng phải giống **từng chữ** với biểu thức `la_dong_bi_khu`
+trong `fn_nckh_minh_chung_tu_dong` — lệch nhau thì FE hiển thị một dòng **khác** dòng đã tạo
+ra điểm.
 
 ### 11.5. Phân quyền — hai tầng
 
@@ -2231,13 +2683,67 @@ không compile được trên bản DB chưa chạy đợt "Vi phạm nhân viê
 
 ### 11.9. Ngoài phạm vi
 
-- **Phiếu đánh giá theo quý.** Hướng dẫn chấm điểm yêu cầu *"Tổng điểm tích lũy cuối năm =
-  TB nhiệm vụ cơ bản 4 quý + điểm vượt trội"*. Lần này **chỉ thêm cột `quy` trên dòng kê khai**;
-  `phieu_danh_gia` giữ nguyên khoá theo năm. `Models/PhieuQuy/` vẫn là thư mục rỗng.
-- **Trần 50 của cả nhóm.** Từng tiêu chí đã cap ở `diem_toi_da` (30/15/10/10, tổng 65 > 50).
-  Trần nhóm là chuyện của `nhom_tieu_chi.diem_toi_da` ở tầng phiếu, `sp_phieu_danh_gia_tinh_tong_diem`
-  hiện **chỉ cộng chứ không cap** — chưa đụng tới lần này.
-- **Hạn ngạch 20% xuất sắc cho viên chức** (hiện chỉ có `to_trinh_kpi_khoa` cho giảng viên).
+- ~~**Phiếu đánh giá theo quý**~~ — ĐÃ LÀM ở đợt "Đánh giá KPI viên chức theo quý". Xem mục 4.1
+  (cột `quy`, công tắc `nguon_diem_co_ban`, state machine rút gọn, công thức trung bình) và
+  mục 14 trong `procedure.sql`. `Models/PhieuQuy/` nay đã có nội dung.
+  **Còn ngoài phạm vi trong chính đợt đó:**
+  - ~~*Thành tích vượt trội theo quý.*~~ — ĐÃ LÀM ở đợt "Đánh giá vượt trội theo quý".
+    Mỗi quý nay chấm **cả nhóm A lẫn nhóm B**; phiếu năm thành bản ghi tổng hợp thuần tuý
+    không còn dòng nào. Vượt trội vẫn **cộng dồn cả năm** (không lấy trung bình) nhưng
+    từng tiêu chí bị kẹp ở khoảng hợp lệ của nó — xem mục 4.1 và
+    `fn_phieu_chi_tiet_vuot_troi_quy`.
+    - ~~*Chấm tự động nhóm B theo quý.*~~ — ĐÃ LÀM ở đợt "TTVT_* chấm theo quý + trần
+      nhóm B". Hai việc đi **cùng một commit** đúng như cảnh báo cũ:
+      `sp_phieu_quy_create` mở cổng seed cho 4 mã `TTVT_*`, **và** nhánh `TTVT_*` của
+      `fn_nckh_diem_tu_dong` lọc theo `chi_tiet_ke_khai_thanh_tich.quy`. Mở cổng trước
+      khi nối cột `quy` vào hàm là đếm một thành tích **bốn lần**, và phép kẹp trần sẽ
+      **che lấp** lỗi đó.
+      `so_tieu_chi_tu_dong_bo_sot` nay loại trừ cả 7 mã đã mở cổng (3 `VPVC_*` +
+      4 `TTVT_*`); còn > 0 nghĩa là có mã chấm tự động khác chưa có chỗ đứng ở cấp quý.
+  - *Hạn kê khai theo quý.* `nam_danh_gia` chỉ có MỘT mốc `ngay_dong_tu_danh_gia` cho cả năm;
+    mốc đó rơi vào tháng 11 thì không ai kê khai được Q4. Nên `sp_chi_tiet_danh_gia_update_tu_danh_gia`
+    **bỏ qua** chặn hạn khi `quy > 0`. Bảng `han_phieu_quy(id_nam, quy, ngay_mo, ngay_dong)`
+    để đợt sau; hiện TP kiểm soát bằng bước duyệt/chốt chứ không bằng ngày.
+  - *Mở lại phiếu quý đã chốt.* Trạng thái 5 của phiếu quý là terminal — chưa có nghiệp vụ.
+- ~~**Trần 50 của cả nhóm.**~~ — ĐÃ LÀM ở đợt "TTVT_* chấm theo quý + trần nhóm B".
+  Từng tiêu chí cap ở `tieu_chi_danh_gia.diem_toi_da` (30/15/10/10, tổng 65 > 50), rồi
+  **cả nhóm** cắt ở `nhom_tieu_chi.diem_toi_da` của **nút gốc** cây `loai_nhom = 2`.
+  Nguồn sự thật: `fn_phieu_tran_nhom_vuot_troi(@id_phieu)` — trả `NULL` = *không có trần*
+  (không được `ISNULL` về 0). Giải từ `phieu_danh_gia.id_mau`, **không** từ các dòng của
+  phiếu: phiếu năm roll-up không có dòng nhóm B nào.
+
+  **Hai phép cắt nối tiếp, đúng thứ tự** — đảo lại sẽ ra số khác (cắt nhóm trước rồi kẹp
+  tiêu chí sau sẽ cho phép một tiêu chí ăn hết hạn mức của cả nhóm):
+
+  ```
+  (1) từng TIÊU CHÍ  kẹp ở tieu_chi_danh_gia.diem_toi_da   (30/15/10/10)
+  (2) cả   NHÓM      cắt ở nhom_tieu_chi.diem_toi_da gốc   (50)
+  ```
+
+  Áp ở **ba nơi phải giống hệt nhau**: `sp_phieu_danh_gia_tinh_tong_diem` (xem trước),
+  `sp_phieu_khoa_duyet_ho_so` (ghi thật + chống tamper), `sp_phieu_nam_tong_hop_tu_quy`
+  (roll-up). ⚠️ **Cạm bẫy:** ở nhánh `ELSE` của hai SP đầu, `tong_diem_tich_luy` là `SUM`
+  của **mọi** dòng (để trùm cả nhóm `loai_nhom` NULL) chứ **không** phải
+  `co_ban + vuot_troi` — cắt vế vượt trội mà để nguyên tích luỹ là làm hai vế lệch nhau,
+  nên phải trừ đúng phần vừa bị cắt.
+
+  Hai cột giải trình đi kèm (`tran_nhom_vuot_troi`, `tong_vuot_troi_truoc_tran_nhom` →
+  `TranNhomVuotTroi`, `TongVuotTroiTruocTranNhom`): bảng `VuotTroiTheoTieuChi` chỉ giải
+  trình được phép cắt **thứ nhất**, trần nhóm không xuất hiện ở dòng nào trong bảng đó.
+
+  ⚠️ `nhom_tieu_chi.diem_toi_da` trước đợt này **chỉ để hiển thị**, nên giá trị ở môi
+  trường cũ có thể còn là `DEFAULT 100`. Mục 0 của `update_database.sql` bắt kiểm tra
+  trước khi chạy.
+- ~~**Hạn ngạch 20% xuất sắc cho viên chức**~~ — ĐÃ LÀM. Xem §8.2: viên chức / NLĐ nay có
+  bảng xếp hạng riêng (nhóm 2) với mẫu số = tổng đầu người, và cán bộ quản lý có nhóm 3
+  riêng của từng đơn vị.
+- **Quy tắc "đơn vị đạt HTXS ⇒ người đứng đầu đơn vị được xem xét HTXS".** Xếp loại đơn vị
+  (`phieu_danh_gia_don_vi`) và xếp loại cá nhân hiện vẫn hoàn toàn rời nhau. Đợt tách 3 nhóm
+  **cố ý không** đụng `sp_phieu_dv_chot` / `XepLoaiCalculator.TinhXepLoaiPhongTrungTam`.
+- **Trôi điểm của tiêu chí `TY_LE_XUAT_SAC` cấp đơn vị.** Tiêu chí tự động đó đếm
+  `xep_loai = 4` trên **mọi** phiếu của đơn vị. Từ khi viên chức lên được mức 4, con số này
+  tăng lên và kéo theo điểm tự động của phiếu đơn vị. Không sửa lần này (thiết kế lại chấm
+  điểm đơn vị nằm ngoài phạm vi) — nhưng là hệ quả đã biết, không phải lỗi.
 
 ---
 

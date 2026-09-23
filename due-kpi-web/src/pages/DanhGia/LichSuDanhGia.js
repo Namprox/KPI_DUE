@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
+import "../../css/DanhGia/PhieuQuy.css";
 import { useAuth } from "../../context/AuthContext";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import {
@@ -23,6 +24,10 @@ import {
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
 import TienDoCham from "../../components/QuanLyChamDiem/TienDoCham";
 import SearchSelect from "../../components/Common/SearchSelect";
+import {
+  fetchDanhSachPhieuQuy,
+  trangThaiPhieuQuy,
+} from "../../utils/phieuQuyApi";
 
 const PAGE_SIZE = 20;
 const SO_PHIEU_TAI_SONG_SONG = 5;
@@ -34,6 +39,12 @@ const MOI_TRANG_THAI = [
   TRANG_THAI.TK_DA_DUYET,
   TRANG_THAI.HOAN_TAT,
 ];
+
+const TRANG_THAI_QUY_META = {
+  1: { label: "Nháp", icon: "fa-pen" },
+  2: { label: "Chờ Trưởng đơn vị duyệt", icon: "fa-hourglass-half" },
+  5: { label: "Đã chốt điểm quý", icon: "fa-circle-check" },
+};
 
 /**
  * Tiến độ chấm của một phiếu, đếm từ ChiTiet[] của bản chi tiết.
@@ -78,10 +89,13 @@ const LichSuDanhGia = () => {
   const [donViList, setDonViList] = useState([]);
   const [idDonVi, setIdDonVi] = useState("");
   const [rows, setRows] = useState([]);
+  const [totalCount, setTotalCount] = useState(null);
   // IdPhieu -> tiến độ chấm. undefined = đang tải, null = tải hỏng.
   const [tienDoTheoPhieu, setTienDoTheoPhieu] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [idNam, setIdNam] = useState(""); // '' = mọi năm
+  const [loaiPhieu, setLoaiPhieu] = useState("nam");
+  const [quy, setQuy] = useState(""); // '' = cả bốn quý
   const [trangThaiChon, setTrangThaiChon] = useState([]); // rỗng = mọi trạng thái
   const [sortBy, setSortBy] = useState("ngay_tao");
   const [page, setPage] = useState(1);
@@ -108,6 +122,22 @@ const LichSuDanhGia = () => {
     if (!currentUser.IdNhanVien) return;
     setIsLoading(true);
     try {
+      if (loaiPhieu === "quy") {
+        const result = await fetchDanhSachPhieuQuy({
+          idNam: idNam || undefined,
+          idDonVi: idDonVi || undefined,
+          idNhanVien: currentUser.IdNhanVien,
+          quy: quy || undefined,
+          trangThai:
+            trangThaiChon.length > 0 ? trangThaiChon.join(",") : undefined,
+          page,
+          pageSize: PAGE_SIZE,
+        });
+        setRows(result.items);
+        setTotalCount(result.total);
+        return;
+      }
+
       const items = await fetchPhieuList({
         idNam: idNam || undefined,
         idDonVi: idDonVi || undefined,
@@ -118,14 +148,25 @@ const LichSuDanhGia = () => {
         sortBy,
       });
       setRows(items);
+      setTotalCount(null);
     } catch (error) {
       console.error("Lỗi tải danh sách phiếu của tôi:", error);
       showToast("error", "Lỗi", error.message);
       setRows([]);
+      setTotalCount(null);
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser.IdNhanVien, idNam, idDonVi, trangThaiChon, page, sortBy]);
+  }, [
+    currentUser.IdNhanVien,
+    idNam,
+    idDonVi,
+    loaiPhieu,
+    quy,
+    trangThaiChon,
+    page,
+    sortBy,
+  ]);
 
   useEffect(() => {
     if (daSanSang) taiDanhSach();
@@ -133,7 +174,7 @@ const LichSuDanhGia = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [idNam, idDonVi, trangThaiChon, sortBy]);
+  }, [idNam, idDonVi, loaiPhieu, quy, trangThaiChon, sortBy]);
 
   /**
    * Trạng thái chấm không có trong PhieuDanhGiaDto của danh sách (chỉ có trạng
@@ -145,7 +186,7 @@ const LichSuDanhGia = () => {
    */
   useEffect(() => {
     setTienDoTheoPhieu({});
-    if (rows.length === 0) return undefined;
+    if (loaiPhieu === "quy" || rows.length === 0) return undefined;
 
     let daHuy = false;
     (async () => {
@@ -182,7 +223,13 @@ const LichSuDanhGia = () => {
     return () => {
       daHuy = true;
     };
-  }, [rows]);
+  }, [loaiPhieu, rows]);
+
+  const chuyenLoaiPhieu = (loai) => {
+    setLoaiPhieu(loai);
+    setTrangThaiChon([]);
+    setPage(1);
+  };
 
   const toggleTrangThai = (tt) => {
     setTrangThaiChon((cur) =>
@@ -239,6 +286,25 @@ const LichSuDanhGia = () => {
     );
   };
 
+  const danhSachTrangThai =
+    loaiPhieu === "quy"
+      ? Object.keys(TRANG_THAI_QUY_META).map(Number)
+      : MOI_TRANG_THAI;
+
+  const moChiTiet = (p) => {
+    if (loaiPhieu !== "quy") {
+      navigate(`/lich-su-danh-gia/${p.IdPhieu}`);
+      return;
+    }
+    const search = new URLSearchParams({
+      loai: "quy",
+      idNam: String(p.IdNam),
+      quy: String(p.Quy),
+    });
+    if (p.IdDonVi != null) search.set("idDonVi", String(p.IdDonVi));
+    navigate(`/lich-su-danh-gia/${p.IdPhieu}?${search.toString()}`);
+  };
+
   return (
     <div className="page-container">
       <Toast ref={toast} position="top-right" />
@@ -255,8 +321,26 @@ const LichSuDanhGia = () => {
           Phiếu đánh giá của tôi
         </h2>
         <span className="breadcrumb">
-          {currentUser.HoTen || "Người dùng"} - toàn bộ phiếu KPI qua các năm
+          {currentUser.HoTen || "Người dùng"} - phiếu KPI năm và phiếu đánh giá
+          theo quý
         </span>
+      </div>
+
+      <div className="pq-tabs" aria-label="Loại phiếu đánh giá">
+        <button
+          type="button"
+          className={loaiPhieu === "nam" ? "active" : ""}
+          onClick={() => chuyenLoaiPhieu("nam")}
+        >
+          <i className="fa-solid fa-calendar"></i> Phiếu năm
+        </button>
+        <button
+          type="button"
+          className={loaiPhieu === "quy" ? "active" : ""}
+          onClick={() => chuyenLoaiPhieu("quy")}
+        >
+          <i className="fa-solid fa-calendar-days"></i> Phiếu quý
+        </button>
       </div>
 
       <div className="cd-toolbar">
@@ -295,17 +379,35 @@ const LichSuDanhGia = () => {
           </div>
         )}
 
-        <div className="cd-field">
-          <label className="cd-label">Sắp xếp</label>
-          <SearchSelect
-            value={sortBy}
-            onChange={(v) => setSortBy(v)}
-            options={[
-              { value: "ngay_tao", label: "Ngày tạo" },
-              { value: "ngay_gui", label: "Ngày gửi" },
-            ]}
-          />
-        </div>
+        {loaiPhieu === "quy" ? (
+          <div className="cd-field">
+            <label className="cd-label">Quý</label>
+            <SearchSelect
+              value={quy}
+              onChange={(v) => setQuy(v)}
+              options={[
+                { value: "", label: "-- Cả 4 quý --" },
+                { value: 1, label: "Quý 1" },
+                { value: 2, label: "Quý 2" },
+                { value: 3, label: "Quý 3" },
+                { value: 4, label: "Quý 4" },
+              ]}
+              placeholder="-- Cả 4 quý --"
+            />
+          </div>
+        ) : (
+          <div className="cd-field">
+            <label className="cd-label">Sắp xếp</label>
+            <SearchSelect
+              value={sortBy}
+              onChange={(v) => setSortBy(v)}
+              options={[
+                { value: "ngay_tao", label: "Ngày tạo" },
+                { value: "ngay_gui", label: "Ngày gửi" },
+              ]}
+            />
+          </div>
+        )}
 
         <button
           className="btn-cancel"
@@ -341,8 +443,11 @@ const LichSuDanhGia = () => {
         >
           Tất cả
         </button>
-        {MOI_TRANG_THAI.map((tt) => {
-          const meta = TRANG_THAI_META[tt];
+        {danhSachTrangThai.map((tt) => {
+          const meta =
+            loaiPhieu === "quy"
+              ? TRANG_THAI_QUY_META[tt]
+              : TRANG_THAI_META[tt];
           const chon = trangThaiChon.includes(tt);
           return (
             <button
@@ -375,8 +480,8 @@ const LichSuDanhGia = () => {
               Không có phiếu nào
             </h3>
             <p style={{ margin: 0 }}>
-              Bạn chưa có phiếu đánh giá khớp bộ lọc hiện tại. Thử chọn "Tất cả
-              các năm".
+              Bạn chưa có {loaiPhieu === "quy" ? "phiếu quý" : "phiếu năm"}{" "}
+              khớp bộ lọc hiện tại.
             </p>
           </div>
         ) : (
@@ -385,17 +490,24 @@ const LichSuDanhGia = () => {
               <thead>
                 <tr>
                   <th style={{ width: "8%" }}>Năm học</th>
+                  {loaiPhieu === "quy" && (
+                    <th style={{ width: "8%", textAlign: "center" }}>Quý</th>
+                  )}
                   <th style={{ width: "16%" }}>Đơn vị</th>
                   <th style={{ width: "14%", textAlign: "center" }}>
                     Trạng thái
                   </th>
-                  <th style={{ width: "18%" }}>Trạng thái chấm</th>
+                  {loaiPhieu === "nam" && (
+                    <th style={{ width: "18%" }}>Trạng thái chấm</th>
+                  )}
                   <th style={{ width: "10%", textAlign: "right" }}>
-                    Tổng điểm
+                    {loaiPhieu === "quy" ? "Điểm cơ bản" : "Tổng điểm"}
                   </th>
-                  <th style={{ width: "14%", textAlign: "center" }}>
-                    Xếp loại
-                  </th>
+                  {loaiPhieu === "nam" && (
+                    <th style={{ width: "14%", textAlign: "center" }}>
+                      Xếp loại
+                    </th>
+                  )}
                   <th style={{ width: "10%" }}>Ngày gửi</th>
                   <th style={{ width: "10%", textAlign: "center" }}>
                     Thao tác
@@ -408,6 +520,11 @@ const LichSuDanhGia = () => {
                     <td style={{ fontWeight: 700, color: "#0f172a" }}>
                       {p.IdNam}
                     </td>
+                    {loaiPhieu === "quy" && (
+                      <td style={{ textAlign: "center", fontWeight: 700 }}>
+                        Quý {p.Quy}
+                      </td>
+                    )}
                     <td
                       style={{
                         fontSize: "13px",
@@ -415,12 +532,23 @@ const LichSuDanhGia = () => {
                         fontWeight: 500,
                       }}
                     >
-                      {getTenDonViFromList(donViList, p.IdDonVi) || "-"}
+                      {p.TenDonVi ||
+                        getTenDonViFromList(donViList, p.IdDonVi) ||
+                        "-"}
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      <TrangThaiBadge trangThai={p.TrangThai} />
+                      {loaiPhieu === "quy" ? (
+                        <span className={`pq-status pq-status-${p.TrangThai}`}>
+                          {trangThaiPhieuQuy(p)}
+                        </span>
+                      ) : (
+                        <TrangThaiBadge
+                          trangThai={p.TrangThai}
+                          canHtDuyet={p.CanHtDuyet}
+                        />
+                      )}
                     </td>
-                    <td>{veTrangThaiCham(p)}</td>
+                    {loaiPhieu === "nam" && <td>{veTrangThaiCham(p)}</td>}
                     <td
                       style={{
                         textAlign: "right",
@@ -428,11 +556,17 @@ const LichSuDanhGia = () => {
                         color: "#0f172a",
                       }}
                     >
-                      {formatDiem(p.TongDiemTichLuy)}
+                      {formatDiem(
+                        loaiPhieu === "quy"
+                          ? p.TongDiemCoBan
+                          : p.TongDiemTichLuy,
+                      )}
                     </td>
-                    <td style={{ textAlign: "center" }}>
-                      <XepLoaiBadge xepLoai={p.XepLoai} />
-                    </td>
+                    {loaiPhieu === "nam" && (
+                      <td style={{ textAlign: "center" }}>
+                        <XepLoaiBadge xepLoai={p.XepLoai} />
+                      </td>
+                    )}
                     <td style={{ fontSize: "13px" }}>
                       {p.NgayGui ? (
                         formatNgay(p.NgayGui)
@@ -442,19 +576,14 @@ const LichSuDanhGia = () => {
                         </span>
                       )}
                     </td>
-                    {/* Bảng này chỉ để TRA CỨU. Lối vào form tự đánh giá nằm ở
-                        mục riêng trên sidebar, không nhân bản vào đây: form đi
-                        theo NĂM chứ không theo IdPhieu, và với phiếu đã qua thẩm
-                        định nó chỉ là bản chỉ đọc nghèo hơn trang chi tiết. */}
+                    {/* Bảng này chỉ để tra cứu; thao tác mở bản chi tiết chỉ đọc. */}
                     <td>
                       <div className="table-actions">
                         <button
                           type="button"
                           className="action-btn view-btn"
                           title="Xem điểm từng tiêu chí, minh chứng và lịch sử chấm"
-                          onClick={() =>
-                            navigate(`/lich-su-danh-gia/${p.IdPhieu}`)
-                          }
+                          onClick={() => moChiTiet(p)}
                         >
                           <i className="fa-solid fa-list-check"></i>
                         </button>
@@ -477,8 +606,7 @@ const LichSuDanhGia = () => {
           </div>
         )}
 
-        {/* Server không trả TotalCount trên nhóm API phiếu nên không dùng được
-            <Paginator>: chỉ suy ra "còn trang sau" từ số dòng nhận được. */}
+        {/* API phiếu năm chưa trả TotalCount; API phiếu quý có thể trả. */}
         <div
           style={{
             display: "flex",
@@ -490,7 +618,10 @@ const LichSuDanhGia = () => {
             color: "#64748b",
           }}
         >
-          <span>Trang {page}</span>
+          <span>
+            Trang {page}
+            {totalCount != null ? ` · ${totalCount} phiếu` : ""}
+          </span>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
               className="btn-cancel"
@@ -503,7 +634,12 @@ const LichSuDanhGia = () => {
             <button
               className="btn-cancel"
               style={{ padding: "8px 14px" }}
-              disabled={rows.length < PAGE_SIZE || isLoading}
+              disabled={
+                isLoading ||
+                (totalCount != null
+                  ? page * PAGE_SIZE >= totalCount
+                  : rows.length < PAGE_SIZE)
+              }
               onClick={() => setPage((p) => p + 1)}
             >
               Sau <i className="fa-solid fa-chevron-right"></i>

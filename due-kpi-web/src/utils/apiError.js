@@ -80,6 +80,29 @@ export const PHIEU_ERROR_MESSAGES = {
   PVCD_CAP_EXCEEDED: "Vượt trần 20 điểm phục vụ cộng đồng",
   PHIEU_NOT_FOUND: "Không tìm thấy phiếu, hoặc phiếu đã bị xóa",
   DA_CHAM: "Đơn vị đã bắt đầu thẩm định nên không hủy nộp được nữa",
+  KHONG_AP_DUNG_PHIEU_QUY: "Năm đánh giá này chưa áp dụng phiếu KPI theo quý",
+  NAM_KHONG_MO: "Năm đánh giá đã đóng, phiếu chỉ còn chế độ xem",
+  SAI_LOAI_DOI_TUONG: "Mẫu đánh giá không dành cho viên chức / người lao động",
+  PHIEU_QUY_DA_TON_TAI: "Phiếu quý này đã được tạo",
+  QUY_KHONG_HOP_LE: "Quý phải là một số từ 1 đến 4",
+  MAU_KHONG_HOP_LE: "Mẫu đánh giá không hợp lệ",
+  DON_VI_KHONG_HOP_LE: "Đơn vị đánh giá không hợp lệ",
+  NHAN_VIEN_KHONG_HOP_LE: "Nhân viên đánh giá không hợp lệ",
+  FORBIDDEN: "Bạn không có quyền thực hiện thao tác này",
+  INVALID_STATE: "Phiếu đã đổi trạng thái, dữ liệu sẽ được tải lại",
+  DONG_CHAM_TU_DONG: "Tiêu chí do hệ thống chấm không được gửi trong danh sách chấm tay",
+  CHI_TIET_KHONG_THUOC_PHIEU: "Tiêu chí không thuộc phiếu đang xử lý",
+  DIEM_VUOT_TOI_DA: "Điểm nhập vượt quá mức tối đa của tiêu chí",
+  DIEM_DUOI_SAN: "Điểm nhập thấp hơn mức tối thiểu của tiêu chí",
+  KHONG_CO_QUY_DA_CHOT: "Chưa có quý nào chốt điểm nên chưa thể tổng hợp năm",
+  CHUA_TONG_HOP_QUY: "Cần tổng hợp điểm từ các quý trước khi chốt hồ sơ năm",
+  PHIEU_NAM_CON_DONG_CHI_TIET:
+    "Phiếu năm cũ còn tiêu chí không phù hợp với chế độ quý, cần quản trị viên xử lý dữ liệu",
+  KHONG_PHAI_PHIEU_QUY: "Thao tác này chỉ dùng cho phiếu quý",
+  KHONG_PHAI_PHIEU_NAM: "Thao tác này chỉ dùng cho phiếu năm",
+  CONCURRENCY_CONFLICT:
+    "Phiếu vừa được người khác cập nhật. Dữ liệu sẽ được tải lại, vui lòng kiểm tra trước khi thao tác tiếp",
+  INVALID_ROW_VERSION: "Phiên bản phiếu không hợp lệ, vui lòng tải lại dữ liệu",
 };
 
 const ERROR_MESSAGES = { ...VI_PHAM_ERROR_MESSAGES, ...PHIEU_ERROR_MESSAGES };

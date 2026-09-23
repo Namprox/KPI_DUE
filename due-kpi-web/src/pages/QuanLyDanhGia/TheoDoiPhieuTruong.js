@@ -322,7 +322,10 @@ const TheoDoiPhieuTruong = () => {
                       <XepLoaiBadge xepLoai={p.XepLoai} />
                     </td>
                     <td>
-                      <TrangThaiBadge trangThai={p.TrangThai} />
+                      <TrangThaiBadge
+                        trangThai={p.TrangThai}
+                        canHtDuyet={p.CanHtDuyet}
+                      />
                     </td>
                     <td style={{ textAlign: "center" }}>
                       {daHoanTat && laHieuTruong ? (

@@ -500,7 +500,10 @@ const DanhSachPhieu = () => {
                       {p.nv.tenDonVi || "-"}
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      <TrangThaiBadge trangThai={p.TrangThai} />
+                      <TrangThaiBadge
+                        trangThai={p.TrangThai}
+                        canHtDuyet={p.CanHtDuyet}
+                      />
                     </td>
                     <td
                       style={{

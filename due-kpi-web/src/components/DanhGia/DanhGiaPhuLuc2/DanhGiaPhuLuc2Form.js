@@ -123,6 +123,7 @@ const DanhGiaPhuLuc2Form = ({
   isKhoaEvaluating = false,
   // Có truyền thì chip tệp đã lưu bấm được để xem trước; không truyền thì chip chỉ hiển thị
   onXemMinhChung,
+  loaiDoiTuong = 1,
 }) => {
   const sections = useMemo(() => {
     if (!Array.isArray(criteriaList) || criteriaList.length === 0) return [];
@@ -176,7 +177,12 @@ const DanhGiaPhuLuc2Form = ({
   // Current score of a criterion: auto score, or the manually entered/selected score
   const getScoreOf = (tc) => {
     const autoInfo = autoScores[tc.IdTieuChi];
-    if (autoInfo) return Number(autoInfo.DiemTuDong || 0);
+    if (autoInfo) {
+      const value = autoInfo.DiemTuDong;
+      return value === null || value === undefined || value === ""
+        ? null
+        : Number(value);
+    }
     const v = formData[tc.IdTieuChi]?.DiemTuDanhGia;
     return v == null || v === "" ? null : Number(v);
   };
@@ -280,6 +286,13 @@ const DanhGiaPhuLuc2Form = ({
                         const autoInfo = autoScores[tc.IdTieuChi];
                         const currentScore = getScoreOf(tc);
                         const hasScore = currentScore != null;
+                        const diemMoc = Number(tc.DiemToiDa) || 0;
+                        const khoangDiem =
+                          Number(loaiDoiTuong) === 2
+                            ? diemMoc > 0
+                              ? { san: -diemMoc, tran: diemMoc }
+                              : { san: diemMoc, tran: 0 }
+                            : { san: 0, tran: diemMoc };
 
                         const prefix = !nhomCon.isDirect
                           ? `${gIndex + 1}.${index + 1}.`
@@ -319,13 +332,28 @@ const DanhGiaPhuLuc2Form = ({
                           const isPhsv = congThuc.startsWith("PHSV");
                           const isNckh = congThuc.startsWith("NCKH");
                           const isVpgd = congThuc.startsWith("VPGD");
+                          const isTtvt = congThuc.startsWith("TTVT");
+                          const isVpvc = congThuc.startsWith("VPVC");
                           const autoNote = isNckh
                             ? "Điểm được tính tự động dựa vào dữ liệu từ website NCKH của trường"
                             : isPhsv
                               ? "Điểm được tính tự động dựa vào dữ liệu đánh giá của sinh viên"
                               : isVpgd
                                 ? "Điểm được tính tự động dựa vào các vi phạm giảng dạy đã ghi nhận"
-                                : "Không chỉnh sửa";
+                                : isTtvt
+                                  ? "Điểm được tính tự động từ thành tích đã ghi nhận"
+                                  : isVpvc
+                                    ? "Điểm được tính tự động từ dữ liệu chấp hành, vi phạm đã ghi nhận"
+                                    : "Không chỉnh sửa";
+                          const phamViDiem =
+                            Number(autoInfo.Quy) > 0
+                              ? autoInfo.ApDungQuy === false
+                                ? "Dữ liệu trọn năm"
+                                : `Dữ liệu quý ${autoInfo.Quy}`
+                              : null;
+                          const coDiemTuDong =
+                            autoInfo.DiemTuDong !== null &&
+                            autoInfo.DiemTuDong !== undefined;
 
                           const minhChungList = Array.isArray(
                             autoInfo.MinhChung,
@@ -337,7 +365,7 @@ const DanhGiaPhuLuc2Form = ({
                           // của các vi phạm trong năm (sàn 0), không vi phạm = trọn điểm.
                           const diemToiDaAuto =
                             Number(autoInfo.DiemToiDa ?? tc.DiemToiDa) || 0;
-                          const tongDiemTru = isVpgd
+                          const tongDiemTru = isVpgd && coDiemTuDong
                             ? Math.max(
                                 diemToiDaAuto -
                                   Number(autoInfo.DiemTuDong || 0),
@@ -402,12 +430,15 @@ const DanhGiaPhuLuc2Form = ({
                                   <i className="fa-solid fa-lock pl2-auto-lock"></i>
                                   <span className="pl2-auto-score-note">
                                     {autoNote}
+                                    {phamViDiem ? ` · ${phamViDiem}` : ""}
                                   </span>
                                 </div>
                                 <div
                                   className={`pl2-auto-score-value ${tongDiemTru > 0 ? "pl2-auto-score-value-tru" : ""}`}
                                 >
-                                  {formatDiem(autoInfo.DiemTuDong)}đ
+                                  {coDiemTuDong
+                                    ? `${formatDiem(autoInfo.DiemTuDong)}đ`
+                                    : "Chưa tính"}
                                 </div>
                               </div>
 
@@ -457,16 +488,21 @@ const DanhGiaPhuLuc2Form = ({
                                 </div>
                               )}
 
-                              {(isNckh || isVpgd) &&
+                              {(isNckh || isVpgd || isTtvt || isVpvc) &&
                                 minhChungList.length > 0 && (
                                   <div
                                     className={`pl2-nckh-mc-box ${isVpgd ? "pl2-mc-box-vpgd" : ""}`}
                                   >
                                     <div className="pl2-nckh-mc-title">
-                                      {isVpgd ? (
+                                      {isVpgd || isVpvc ? (
                                         <>
                                           <i className="fa-solid fa-triangle-exclamation"></i>{" "}
-                                          Vi phạm giảng dạy đã ghi nhận
+                                          Vi phạm đã ghi nhận
+                                        </>
+                                      ) : isTtvt ? (
+                                        <>
+                                          <i className="fa-solid fa-award"></i>{" "}
+                                          Thành tích đã ghi nhận
                                         </>
                                       ) : (
                                         <>
@@ -576,6 +612,8 @@ const DanhGiaPhuLuc2Form = ({
                                       formData[tc.IdTieuChi]?.DiemTuDanhGia ?? ""
                                     }
                                     diemToiDa={tc.DiemToiDa}
+                                    diemToiThieu={khoangDiem.san}
+                                    diemTran={khoangDiem.tran}
                                     doc={disabledRadio}
                                     onChange={(val) => {
                                       if (disabledRadio) return;
@@ -587,9 +625,10 @@ const DanhGiaPhuLuc2Form = ({
                                       // vòng duyệt nào chặn điểm vượt trần hộ.
                                       let parsed = parseFloat(val);
                                       if (isNaN(parsed)) parsed = 0;
-                                      if (parsed < 0) parsed = 0;
-                                      if (parsed > tc.DiemToiDa)
-                                        parsed = tc.DiemToiDa;
+                                      if (parsed < khoangDiem.san)
+                                        parsed = khoangDiem.san;
+                                      if (parsed > khoangDiem.tran)
+                                        parsed = khoangDiem.tran;
                                       onScoreChange(tc.IdTieuChi, null, parsed);
                                     }}
                                   />

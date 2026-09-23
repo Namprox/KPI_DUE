@@ -619,7 +619,10 @@ const DuyetHoSoPhong = () => {
                             <XepLoaiKhoaBadge xepLoaiKhoa={p.XepLoaiKhoa} />
                           )
                         ) : (
-                          <TrangThaiBadge trangThai={p.TrangThai} />
+                          <TrangThaiBadge
+                            trangThai={p.TrangThai}
+                            canHtDuyet={p.CanHtDuyet}
+                          />
                         )}
                       </td>
                       <td style={{ fontSize: "13px" }}>

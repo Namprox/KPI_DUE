@@ -5,14 +5,16 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
+import "../../css/DanhGia/PhieuQuy.css";
 import {
   fetchLichSuChamDiemPhieu,
   fetchPhieuDetail,
   fetchTieuChiTheoMau,
+  formatDiem,
   formatNgayGio,
   gomLichSuTheoChiTiet,
   laTieuChiChamTay,
@@ -29,6 +31,11 @@ import {
   XepLoaiBadge,
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
 import { fetchDonViList, getTenDonViFromList } from "../../utils/donViApi";
+import {
+  fetchPhieuQuy,
+  fetchPhieuQuyCuaToi,
+  trangThaiPhieuQuy,
+} from "../../utils/phieuQuyApi";
 
 /**
  * Bản CHỈ ĐỌC của màn hình thẩm định, dành cho chủ phiếu.
@@ -45,7 +52,12 @@ import { fetchDonViList, getTenDonViFromList } from "../../utils/donViApi";
 const ChiTietPhieuCuaToi = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const toast = useRef(null);
+  const laPhieuQuy = searchParams.get("loai") === "quy";
+  const idNamQuy = searchParams.get("idNam");
+  const quy = searchParams.get("quy");
+  const idDonViQuy = searchParams.get("idDonVi");
 
   const [donViList, setDonViList] = useState([]);
   const [phieu, setPhieu] = useState(null);
@@ -72,7 +84,15 @@ const ChiTietPhieuCuaToi = () => {
   const taiPhieu = useCallback(async () => {
     setIsLoading(true);
     try {
-      const item = await fetchPhieuDetail(id);
+      const item = laPhieuQuy
+        ? idNamQuy && quy
+          ? await fetchPhieuQuyCuaToi({
+              idNam: idNamQuy,
+              quy,
+              idDonVi: idDonViQuy || undefined,
+            })
+          : await fetchPhieuQuy(id)
+        : await fetchPhieuDetail(id);
       if (!item) {
         setLoiTai("Không tìm thấy phiếu này, hoặc phiếu không thuộc về bạn.");
         setPhieu(null);
@@ -87,7 +107,7 @@ const ChiTietPhieuCuaToi = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [id, idDonViQuy, idNamQuy, laPhieuQuy, quy]);
 
   useEffect(() => {
     taiPhieu();
@@ -217,10 +237,14 @@ const ChiTietPhieuCuaToi = () => {
             fontWeight: 700,
           }}
         >
-          Kết quả chấm điểm - năm học {phieu.IdNam}
+          {laPhieuQuy
+            ? `Kết quả chấm điểm quý ${phieu.Quy} - năm học ${phieu.IdNam}`
+            : `Kết quả chấm điểm - năm học ${phieu.IdNam}`}
         </h2>
         <span className="breadcrumb">
-          Lần đánh giá {phieu.LanDanhGia}
+          {laPhieuQuy
+            ? `Phiếu quý ${phieu.Quy}`
+            : `Lần đánh giá ${phieu.LanDanhGia}`}
           {phieu.LanMoLai > 0 ? ` · Đã mở lại ${phieu.LanMoLai} lần` : ""} · Chỉ
           xem, không chỉnh sửa
         </span>
@@ -228,10 +252,16 @@ const ChiTietPhieuCuaToi = () => {
 
       <div className="cd-phieu-header">
         <div className="cd-phieu-top">
-          <TrangThaiBadge
-            trangThai={phieu.TrangThai}
-            canHtDuyet={phieu.CanHtDuyet}
-          />
+          {laPhieuQuy ? (
+            <span className={`pq-status pq-status-${phieu.TrangThai}`}>
+              {trangThaiPhieuQuy(phieu)}
+            </span>
+          ) : (
+            <TrangThaiBadge
+              trangThai={phieu.TrangThai}
+              canHtDuyet={phieu.CanHtDuyet}
+            />
+          )}
           {tienDo.tong > 0 && (
             <TienDoCham
               xong={tienDo.xong}
@@ -247,7 +277,16 @@ const ChiTietPhieuCuaToi = () => {
         </div>
 
         <div className="cd-meta-grid">
-          <TongDiemMeta phieu={phieu} tamTinh={tamTinh} />
+          {laPhieuQuy ? (
+            <div>
+              <div className="cd-meta-label">Tổng điểm cơ bản quý</div>
+              <div className="cd-meta-value" style={{ color: "#1d4ed8" }}>
+                {formatDiem(phieu.TongDiemCoBan ?? tamTinh?.coBan)}
+              </div>
+            </div>
+          ) : (
+            <TongDiemMeta phieu={phieu} tamTinh={tamTinh} />
+          )}
           {phieu.IdDonVi && (
             <div>
               <div className="cd-meta-label">Đơn vị</div>
@@ -256,12 +295,14 @@ const ChiTietPhieuCuaToi = () => {
               </div>
             </div>
           )}
-          <div>
-            <div className="cd-meta-label">Xếp loại</div>
-            <div className="cd-meta-value">
-              <XepLoaiBadge xepLoai={phieu.XepLoai} />
+          {!laPhieuQuy && (
+            <div>
+              <div className="cd-meta-label">Xếp loại</div>
+              <div className="cd-meta-value">
+                <XepLoaiBadge xepLoai={phieu.XepLoai} />
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <div className="cd-meta-label">Ngày gửi</div>
             <div className="cd-meta-value">{formatNgayGio(phieu.NgayGui)}</div>
@@ -277,8 +318,9 @@ const ChiTietPhieuCuaToi = () => {
         {phieu.TongDiemTichLuy == null && tamTinh && (
           <div className="cd-hint">
             <i className="fa-solid fa-circle-info"></i> Hệ thống chỉ lưu tổng
-            điểm vào hồ sơ khi Trưởng khoa chốt. Số “tạm tính” do trình duyệt
-            cộng từ điểm hiện có của từng tiêu chí
+            điểm vào hồ sơ khi {laPhieuQuy ? "Trưởng đơn vị" : "Trưởng khoa"}{" "}
+            chốt. Số “tạm tính” do trình duyệt cộng từ điểm hiện có của từng tiêu
+            chí
             {tamTinh.soDongChuaChot > 0
               ? `, còn ${tamTinh.soDongChuaChot} tiêu chí chưa chốt điểm.`
               : "."}

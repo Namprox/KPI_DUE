@@ -18,7 +18,6 @@
 
 import { fetchAllNhanVien } from "./nhanVienApi";
 import { LOAI_DOI_TUONG, TRANG_THAI } from "./phieuApi";
-import { CHUC_DANH_SETS } from "./roles";
 
 /**
  * Trạng thái ẢO cho người chưa lập phiếu.
@@ -37,24 +36,17 @@ export const TRANG_THAI_CHUA_LAP_META = {
   border: "#fecaca",
 };
 
-const CHUC_DANH_LOAI = new Map([
-  ...CHUC_DANH_SETS.GIANG_VIEN.map((id) => [id, LOAI_DOI_TUONG.GIANG_VIEN]),
-  ...CHUC_DANH_SETS.NHAN_VIEN.map((id) => [id, LOAI_DOI_TUONG.VIEN_CHUC]),
-]);
-
 /**
- * Ngạch nghề nghiệp → loại phiếu KPI người đó phải nộp.
+ * Loại đối tượng do backend trả trên bản ghi nhân viên.
  *
- * null = KHÔNG thuộc diện đánh giá KPI cá nhân (tài khoản quản trị, ngạch nằm
- * ngoài hai tập trong roles.js). Những người này phải bị loại khỏi danh sách
- * "chưa tự chấm": họ không có phiếu vì đúng ra không phải nộp, kể tên họ vào đây
- * là báo động giả.
+ * null = backend chưa cung cấp loại đối tượng nên không đưa vào danh sách cần
+ * nộp; không suy đoán từ chức danh.
  */
-export const loaiDoiTuongTheoChucDanh = (nhanVien) => {
-  const id = Number(nhanVien?.IdChucDanh);
-  if (!Number.isFinite(id)) return null;
-  return CHUC_DANH_LOAI.get(id) ?? null;
-};
+export const loaiDoiTuongNhanVien = (nhanVien) =>
+  nhanVien?.LoaiDoiTuong === LOAI_DOI_TUONG.GIANG_VIEN ||
+  nhanVien?.LoaiDoiTuong === LOAI_DOI_TUONG.VIEN_CHUC
+    ? nhanVien.LoaiDoiTuong
+    : null;
 
 /**
  * Danh bạ những người PHẢI nộp phiếu KPI trong một phạm vi đơn vị.
@@ -73,9 +65,9 @@ export const fetchNhanVienPhaiNopKpi = async ({
     baoGomDonViCon,
     trangThai: true,
   });
-  return list
-    .map((nv) => ({ ...nv, LoaiDoiTuong: loaiDoiTuongTheoChucDanh(nv) }))
-    .filter((nv) => nv.IdNhanVien != null && nv.LoaiDoiTuong != null);
+  return list.filter(
+    (nv) => nv.IdNhanVien != null && loaiDoiTuongNhanVien(nv) != null,
+  );
 };
 
 /** Dòng hiển thị chung cho cả hai rổ, để các bảng dùng đúng một bộ trường. */

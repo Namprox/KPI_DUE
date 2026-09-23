@@ -2,11 +2,13 @@ import { matchPath } from "react-router-dom";
 import {
   ROLE_SETS,
   CHUC_DANH_SETS,
+  LOAI_DOI_TUONG_KPI,
   DON_VI_SETS,
   MOI_NGUOI,
   hasRole,
   hasChucDanh,
   hasDonVi,
+  coLoaiDoiTuong,
 } from "../utils/roles";
 
 export const PUBLIC_ROUTES = [
@@ -39,7 +41,6 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-file-pen",
         path: "/danh-gia-phu-luc-2",
         roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
       },
       {
         // Phiếu tự đánh giá theo ngạch viên chức / người lao động.
@@ -47,7 +48,6 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-file-pen",
         path: "/danh-gia-kpi-nhan-vien",
         roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.NHAN_VIEN,
       },
       {
         // Lịch sử của HAI mẫu phiếu cá nhân ngay trên - bản chỉ đọc của màn
@@ -119,16 +119,12 @@ export const MENU_GROUPS = [
         //
         // Server suy người dùng TỪ TOKEN nên đây chỉ là lối vào.
         //
-        // ⚠️ `chucDanh` bên dưới KHÔNG phải luật quyết định: đường dẫn này nằm
-        // trong DUONG_DAN_NGACH_NHAN_VIEN nên canAccessRule() xử lý riêng, cho
-        // qua cả người thuộc đơn vị ngoài Khoa dù chức danh trống hoặc lệch
-        // ngạch. Giữ lại trường này cho khớp cách khai của "Đánh giá KPI Nhân
-        // viên"; sửa luật thì sửa ở canAccessRule.
+        // Quyền vào trang dựa trên LoaiDoiTuong = 2 do backend gán theo từng
+        // đơn vị trong User.DonVi; canAccessRule() dùng chung luật với phiếu KPI.
         name: "Kê khai thành tích",
         icon: "fa-solid fa-medal",
         path: "/ke-khai-thanh-tich",
         roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.NHAN_VIEN,
       },
       {
         // Công trình NCKH đồng bộ từ hệ thống nghiên cứu khoa học của trường -
@@ -280,6 +276,12 @@ export const MENU_GROUPS = [
     icon: "fa-clipboard-check",
     items: [
       {
+        name: "Duyệt KPI viên chức theo quý",
+        icon: "fa-solid fa-calendar-check",
+        path: "/quan-ly/phieu-quy",
+        roles: ROLE_SETS.DUYET_PHIEU_QUY,
+      },
+      {
         // Giai đoạn 2 - lối vào duy nhất của chuyên viên thẩm định. Hàng đợi
         // theo TỪNG DÒNG tiêu chí (/quan-ly/tham-dinh) đã bị ẩn khỏi menu và
         // AppRoutes: nó không xem được minh chứng nên vẫn phải mở hồ sơ để
@@ -407,7 +409,7 @@ export const MENU_GROUPS = [
         name: "Định mức giảng viên",
         icon: "fa-solid fa-scale-balanced",
         path: "/quan-ly-dinh-muc-giang-vien",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.DINH_MUC_GIANG_VIEN,
       },
       {
         name: "Ngoại lệ định mức",
@@ -622,49 +624,21 @@ export const findRouteRule = (pathname) =>
   ROUTE_RULES.find((rule) => matchPath(rule.path, pathname)) || null;
 
 /**
- * Các trang dành cho NGẠCH viên chức / người lao động.
- *
- * `IdChucDanh` một mình KHÔNG đủ để nhận ra nhóm này: nhiều tài khoản để trống
- * chức danh, và người kiêm nhiệm có thể mang chức danh giảng viên nhưng làm
- * việc ở Phòng/Trung tâm. Vì vậy mọi trang ở đây dùng chung luật hai nhánh bên
- * dưới - đúng chức danh HOẶC thuộc một đơn vị ngoài Khoa.
- *
- * Thêm trang mới của nhóm này thì khai vào đây, đừng chỉ đặt
- * `chucDanh: CHUC_DANH_SETS.NHAN_VIEN` ở mục menu: nhánh đó fail-closed nên sẽ
- * ẩn mục với chính những người cần dùng nó.
+ * Các trang dùng mẫu phiếu viên chức / người lao động.
+ * Backend xác định LoaiDoiTuong riêng trên từng User.DonVi.
  */
-const DUONG_DAN_NGACH_NHAN_VIEN = [
-  "/danh-gia-kpi-nhan-vien",
-  "/ke-khai-thanh-tich",
-];
+const LOAI_DOI_TUONG_THEO_DUONG_DAN = {
+  "/danh-gia-phu-luc-2": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
+  "/danh-gia-kpi-nhan-vien": LOAI_DOI_TUONG_KPI.VIEN_CHUC,
+  "/ke-khai-thanh-tich": LOAI_DOI_TUONG_KPI.VIEN_CHUC,
+};
 
 export const canAccessRule = (rule, user) => {
   if (!user) return false;
 
-  // Xử lý đặc biệt cho 2 mẫu tự đánh giá khi kiêm nhiệm:
-  // - Nếu có đơn vị Khoa (K_) + chức danh giảng viên => được vào /danh-gia-phu-luc-2
-  // - Nếu có đơn vị ngoài Khoa (Phòng, TT...) => được vào /danh-gia-kpi-nhan-vien
-  if (rule.path === "/danh-gia-phu-luc-2") {
-    if (hasChucDanh(CHUC_DANH_SETS.GIANG_VIEN, user)) return true;
-    if (
-      Array.isArray(user?.DonVi) &&
-      user.DonVi.some((d) => String(d.MaDonVi || "").startsWith("K_")) &&
-      user?.IdChucDanh
-    ) {
-      return true;
-    }
-    return false;
-  }
-
-  if (DUONG_DAN_NGACH_NHAN_VIEN.includes(rule.path)) {
-    if (hasChucDanh(CHUC_DANH_SETS.NHAN_VIEN, user)) return true;
-    if (
-      Array.isArray(user?.DonVi) &&
-      user.DonVi.some((d) => !String(d.MaDonVi || "").startsWith("K_"))
-    ) {
-      return true;
-    }
-    return false;
+  const loaiDoiTuong = LOAI_DOI_TUONG_THEO_DUONG_DAN[rule.path];
+  if (loaiDoiTuong != null) {
+    return coLoaiDoiTuong(user, loaiDoiTuong);
   }
 
   // Nếu rule yêu cầu cả đơn vị lẫn chức vụ cụ thể

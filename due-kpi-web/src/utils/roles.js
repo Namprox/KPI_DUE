@@ -44,6 +44,13 @@ export const ROLE_SETS = {
   TO_TRINH_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG, ROLE.ADMIN],
   /** Chỉ quản trị viên hệ thống. */
   ADMIN: [ROLE.ADMIN],
+  /** Duyệt phiếu quý của viên chức tại đúng đơn vị phụ trách. */
+  DUYET_PHIEU_QUY: [
+    ROLE.TRUONG_PHONG,
+    ROLE.TRUONG_KHOA,
+    ROLE.TRUONG_KHOA_LON,
+    ROLE.ADMIN,
+  ],
 
   /**
    * Nhóm được quản trị dữ liệu hệ thống (danh mục, kế hoạch, cơ cấu tổ chức).
@@ -140,6 +147,9 @@ export const ROLE_SETS = {
    * duyệt gói KPI, đổi một tập không kéo theo tập còn lại.
    */
   NAM_DANH_GIA: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
+
+  /** Định mức giảng viên toàn trường chỉ do Admin và Hiệu trưởng quản lý. */
+  DINH_MUC_GIANG_VIEN: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
 
   /**
    * Upload thời khóa biểu là thao tác ghi đè dữ liệu nguồn toàn trường của một
@@ -476,18 +486,10 @@ export const donViTheoVaiTro = (roles, user) => {
 /* Chức danh nghề nghiệp (nhan_vien.IdChucDanh)                        */
 /* ------------------------------------------------------------------ */
 
-/**
- * Tập id chức danh theo loại phiếu KPI.
- *
- * Đây là ID trong bảng `chuc_danh_nghe_nghiep`, KHÔNG phải mã chức danh -
- * đổi dữ liệu danh mục thì phải sửa lại ở đây (và ở BLL tương ứng).
- */
+/** Tập id chức danh nghề nghiệp dùng cho các màn hình riêng của giảng viên. */
 export const CHUC_DANH_SETS = {
   /** Ngạch giảng viên - dùng phiếu KPI Giảng viên (Phụ lục 2). */
   GIANG_VIEN: [3, 4, 5, 6, 7],
-
-  /** Ngạch viên chức / người lao động - dùng phiếu KPI Nhân viên. */
-  NHAN_VIEN: [8, 9, 10],
 };
 
 /** Chuẩn hóa IdChucDanh về number; trả null nếu không xác định được. */
@@ -508,6 +510,21 @@ export const hasChucDanh = (chucDanh, user) => {
   return id != null && chucDanh.includes(id);
 };
 
+/** Các loại đối tượng KPI được backend gán theo từng đơn vị của người dùng. */
+export const LOAI_DOI_TUONG_KPI = {
+  GIANG_VIEN: 1,
+  VIEN_CHUC: 2,
+};
+
+/** Trả về các đơn vị có loại phiếu được backend xác định tương ứng. */
+export const donViTheoLoaiDoiTuong = (user, loaiDoiTuong) =>
+  Array.isArray(user?.DonVi)
+    ? user.DonVi.filter((donVi) => donVi?.LoaiDoiTuong === loaiDoiTuong)
+    : [];
+
+export const coLoaiDoiTuong = (user, loaiDoiTuong) =>
+  donViTheoLoaiDoiTuong(user, loaiDoiTuong).length > 0;
+
 /**
  * Đường dẫn form tự đánh giá đúng ngạch của người dùng.
  *
@@ -515,17 +532,21 @@ export const hasChucDanh = (chucDanh, user) => {
  */
 export const duongDanPhieuTuDanhGia = (user, idNam) => {
   const query = idNam ? `?year=${idNam}` : "";
-  if (hasChucDanh(CHUC_DANH_SETS.GIANG_VIEN, user)) {
+  const donViList = Array.isArray(user?.DonVi) ? user.DonVi : [];
+  const donViChinh = donViList.find((donVi) => donVi?.LaChinh);
+  const donViDaPhanLoai =
+    (donViChinh?.LoaiDoiTuong === LOAI_DOI_TUONG_KPI.GIANG_VIEN ||
+    donViChinh?.LoaiDoiTuong === LOAI_DOI_TUONG_KPI.VIEN_CHUC)
+      ? donViChinh
+      : donViList.find(
+          (donVi) =>
+            donVi?.LoaiDoiTuong === LOAI_DOI_TUONG_KPI.GIANG_VIEN ||
+            donVi?.LoaiDoiTuong === LOAI_DOI_TUONG_KPI.VIEN_CHUC,
+        );
+  if (donViDaPhanLoai?.LoaiDoiTuong === LOAI_DOI_TUONG_KPI.GIANG_VIEN) {
     return `/danh-gia-phu-luc-2${query}`;
   }
-  if (hasChucDanh(CHUC_DANH_SETS.NHAN_VIEN, user)) {
-    return `/danh-gia-kpi-nhan-vien${query}`;
-  }
-  if (Array.isArray(user?.DonVi) && user.DonVi.length > 0) {
-    const coKhoa = user.DonVi.some((d) =>
-      String(d.MaDonVi || "").startsWith("K_"),
-    );
-    if (coKhoa && user?.IdChucDanh) return `/danh-gia-phu-luc-2${query}`;
+  if (donViDaPhanLoai?.LoaiDoiTuong === LOAI_DOI_TUONG_KPI.VIEN_CHUC) {
     return `/danh-gia-kpi-nhan-vien${query}`;
   }
   return null;

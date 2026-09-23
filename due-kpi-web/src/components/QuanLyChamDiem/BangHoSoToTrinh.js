@@ -70,11 +70,10 @@ const BangHoSoToTrinh = ({
     }
     if (trangThai === 4 && h.CanHtDuyet === false) {
       return {
-        nhan: "Dữ liệu cũ - cần đóng gói lại",
-        mau: "#b45309",
-        icon: "fa-triangle-exclamation",
-        title:
-          "Hồ sơ từ quy trình cũ — Trưởng khoa cần đóng gói lại tờ trình để hoàn tất.",
+        nhan: "Chờ đóng gói tờ trình",
+        mau: "#475569",
+        icon: "fa-box-archive",
+        title: "Hồ sơ thường sẽ hoàn tất khi đơn vị đóng gói tờ trình.",
       };
     }
     return { nhan: "Chưa chốt", mau: "#64748b", icon: "fa-clock" };

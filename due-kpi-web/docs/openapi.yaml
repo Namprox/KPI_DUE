@@ -710,6 +710,14 @@ paths:
         Mỗi phần tử Items = 1 giảng viên × 1 tiêu chí tự động.
         DiemTuDong = null nghĩa là mã công thức chưa được hỗ trợ.
 
+        PHẠM VI THỜI GIAN — tham số quy: bỏ trống (hoặc 0) = TRỌN NĂM, đúng hành vi
+        trước đây. quy = 1..4 = bản XEM TRƯỚC của phiếu quý: dùng chung
+        fn_nckh_diem_tu_dong với sp_phieu_cham_tu_dong_apply (engine chạy bên trong
+        POST /api/phieu-quy/{id}/nop) nên con số KHÔNG THỂ lệch với lúc nộp phiếu quý đó.
+        CHỈ 7 mã đọc bộ lọc quý — 4 mã TTVT_* và 3 mã VPVC_*; các mã còn lại khóa theo
+        năm nên vẫn trả số trọn năm. Dùng Items[].ApDungQuy để biết dòng nào thực sự
+        được lọc, thay vì hardcode danh sách mã ở phía FE.
+
         MinhChung (các bản ghi nguồn đã tạo ra điểm) CHỈ được trả khi truyền
         idNhanVien — gọi toàn trường luôn trả mảng rỗng để tránh payload quá lớn.
         Minh chứng dùng chung bộ vị từ với sp_nckh_dong_bo (fn_nckh_minh_chung_tu_dong)
@@ -749,6 +757,23 @@ paths:
             Có giá trị = chỉ giảng viên đó, VÀ kèm MinhChung + DuLieuBaiBaoQuocTe.BaiBao.
           schema:
             type: integer
+        - name: quy
+          in: query
+          required: false
+          description: >
+            Bỏ trống hoặc 0 = trọn năm (mặc định, hành vi trước đây).
+            1..4 = chỉ dữ liệu ghi nhận trong quý đó — bản xem trước của phiếu quý.
+            Lọc theo quý ảnh hưởng ĐÚNG 7 mã: TTVT_SANG_KIEN, TTVT_KHEN_THUONG,
+            TTVT_DAO_TAO, TTVT_PHONG_TRAO (lọc chi_tiet_ke_khai_thanh_tich.quy) và
+            VPVC_HOAN_THANH_CV, VPVC_NOI_QUY, VPVC_CHINH_TRI (lọc vi_pham_giang_day.quy).
+            Các mã NCKH / phản hồi SV / VPGD_TUAN_THU / NVK_PHAN_CONG_KHOA khóa theo năm
+            → vẫn là số trọn năm. MinhChung cũng được lọc CÙNG phạm vi nên luôn cộng ra
+            đúng con số hiển thị bên cạnh.
+            Ngoài [0, 4] → 400.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 4
       responses:
         "200":
           description: OK
@@ -757,7 +782,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MauDanhGiaDiemTuDongResponse"
         "400":
-          description: Id mẫu hoặc id nhân viên không hợp lệ
+          description: Id mẫu, id nhân viên hoặc quý không hợp lệ
           content:
             application/json:
               schema:
@@ -3141,10 +3166,17 @@ paths:
         o tren thi "khac" chi con nghia la HA muc.
 
         DIEU KIEN DIEM TICH LUY LA TIEN QUYET, chan cung trong SP bang tong ma SP TU
-        TINH LAI (khong tin so BLL gui len): muc >= 2 can tong tich luy >= 80, muc >= 3
-        can tong tich luy > 100. Khong dat -> 400 DIEM_KHONG_DU.
+        TINH LAI (khong tin so BLL gui len): muc >= 2 can tong tich luy >= 80.
+        Nguong muc 3 LECH THEO LOAI DOI TUONG, co chu y:
+          - Giang vien (loai_doi_tuong = 1): can tong tich luy > 100
+          - Vien chuc / NLD (loai_doi_tuong = 2): can tong tich luy >= 101
+        Diem le la co that (diem tieu chi la DECIMAL(5,2), co thang diem Lien tuc /
+        Cong thuc, khong co buoc lam tron) nen o dai 100.01-100.99 giang vien len duoc
+        muc 3 con vien chuc thi khong. Khong dat -> 400 DIEM_KHONG_DU.
 
-        Vien chuc / NLD (loai_doi_tuong = 2) toi da muc 2; khong tranh han ngach.
+        Vien chuc / NLD (loai_doi_tuong = 2) NAY LEN DUOC muc 3 va muc 4. Tran muc 2 cu
+        (VUOT_MUC_VIEN_CHUC) da bi go bo. Ho tranh han ngach o bang xep hang rieng cua
+        minh - xem POST /api/to-trinh-khoa/{id}/dong-goi.
 
         Server tu tinh lai 3 tong diem bang dung cong thuc cua
         sp_phieu_danh_gia_tinh_tong_diem (chong tamper), snapshot dinh muc ap dung
@@ -3204,7 +3236,7 @@ paths:
         "409":
           description: >-
             Conflict - ho so khong o trang thai 3 (INVALID_STATE), con tieu chi chua
-            chot diem (CHUA_CHOT_HET), vien chuc vuot muc 2 (VUOT_MUC_VIEN_CHUC),
+            chot diem (CHUA_CHOT_HET), chon muc 4 (CAM_CHON_XUAT_SAC),
             goi KPI da trinh HT (TO_TRINH_DA_TRINH), hoac concurrency conflict.
           content:
             application/json:
@@ -3227,11 +3259,20 @@ paths:
         thay vi tu tie-break bang id - do la quyet dinh nhan su, he thong khong duoc
         am tham chon thay nguoi.
 
-        Truong khoa dung endpoint nay danh dau tung ho so. So nguoi duoc danh dau PHAI
-        BANG DUNG SoSuatConLai tra ve trong khoi DongHang cua loi DONG_HANG - khong
-        nhieu khong it, neu khong dong goi van bao DONG_HANG.
+        Truong don vi dung endpoint nay danh dau tung ho so. So nguoi duoc danh dau PHAI
+        BANG DUNG SoSuatConLai CUA NHOM DO - khong nhieu khong it, neu khong dong goi
+        van bao DONG_HANG. Dong hang co the no o nhieu nhom cung luc: doc mang
+        DongHangNhom de biet moi nhom con thieu bao nhieu suat.
 
-        Chi ap dung cho ho so o trang thai 4 va loai_doi_tuong = 1 (giang vien).
+        Chi nguoi DU DIEU KIEN len muc 4 moi duoc tinh (co du_dieu_kien_muc4 tren RS2
+        cua loi DONG_HANG): danh dau mot nguoi khong the len muc 4 la vo nghia.
+
+        Ap dung cho ho so o trang thai 4, MOI loai doi tuong (vien chuc / NLD nay cung
+        tranh han ngach - tran muc 2 cu da bi go bo).
+
+        QUYEN: chi TK / TKL / TP tai dung don vi cua ho so (hoac ADMIN). PTK / PTKL /
+        PTP KHONG duoc chi dinh: ho so cua ho can Hieu truong duyet nhung ban than ho
+        khong co quyen chot ho so nguoi khac.
       operationId: phieuDanhGiaUuTienXuatSac
       parameters:
         - name: id
@@ -3260,9 +3301,8 @@ paths:
                 $ref: "#/components/schemas/ToTrinhKhoaResponse"
         "409":
           description: >-
-            Conflict - ho so khong o trang thai 4 (INVALID_STATE), vien chuc khong tham
-            gia han ngach (VUOT_MUC_VIEN_CHUC), goi da trinh HT (TO_TRINH_DA_TRINH),
-            hoac concurrency conflict.
+            Conflict - ho so khong o trang thai 4 (INVALID_STATE), goi da trinh HT
+            (TO_TRINH_DA_TRINH), hoac concurrency conflict.
           content:
             application/json:
               schema:
@@ -5737,6 +5777,418 @@ paths:
           description: Không tìm thấy nhân viên
         "403":
           description: Không có quyền
+  /api/phieu/{id}/tong-hop-tu-quy:
+    post:
+      tags:
+        - PhieuQuy
+      summary: Tong hop diem co ban cuoi nam tu cac phieu quy (roll-up)
+      description: >
+        Ghi diem CO BAN cua phieu NAM = TRUNG BINH tong_diem_co_ban cua cac phieu QUY
+        da chot (trang thai 5), roi cong diem vuot troi (dong nhom B cua chinh phieu
+        nam) ra tong tich luy.
+
+        CHI ap dung cho phieu NAM cua vien chuc / NLD trong nam da bat
+        nam_danh_gia.ap_dung_phieu_quy (phieu do co NguonDiemCoBan = 2).
+
+        MAU SO LA SO QUY THUC SU DA CHOT, khong phai 4 — nguoi vao lam giua nam / nghi
+        thai san khong bi phat vi nhung quy khong ton tai.
+
+        0 QUY DA CHOT -> 409 KHONG_CO_QUY_DA_CHOT va KHONG ghi gi. Khong ngam coi la
+        0 diem, khong ngam chia cho 4.
+        1-3 QUY -> van thanh cong, CanhBao = true de FE hien "chi tong hop tu N quy".
+
+        PHAI chay TRUOC khi Truong khoa chot ho so: sp_phieu_khoa_duyet_ho_so chan bang
+        CHUA_TONG_HOP_QUY neu chua co quy nao chot.
+        Idempotent: goi lai duoc khi phieu nam con o trang thai 1 hoac 2.
+      operationId: phieuNamTongHopTuQuy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id cua phieu NAM (quy = 0)
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuNamTongHopQuyRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuNamTongHopQuyResponse"
+        "403":
+          description: FORBIDDEN_DON_VI
+        "404":
+          description: NOT_FOUND
+        "409":
+          description: >
+            KHONG_CO_QUY_DA_CHOT, KHONG_PHAI_PHIEU_NAM, SAI_LOAI_DOI_TUONG,
+            NGUON_DIEM_KHONG_PHAI_QUY, INVALID_STATE, CONCURRENCY_CONFLICT
+  /api/phieu-quy:
+    get:
+      tags:
+        - PhieuQuy
+      summary: Danh sach phieu danh gia theo quy
+      description: >
+        Chi tra phieu QUY (quy BETWEEN 1 AND 4). Phieu NAM nam o GET /api/phieu.
+        Pham vi: HT/ADMIN xem tat ca; truong don vi xem don vi minh; nguoi khac chi
+        xem phieu cua chinh minh.
+      operationId: phieuQuyGetPaged
+      parameters:
+        - name: idNam
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: quy
+          in: query
+          required: false
+          description: 1..4. Bo trong = ca 4 quy.
+          schema:
+            type: integer
+            enum: [1, 2, 3, 4]
+        - name: trangThai
+          in: query
+          required: false
+          description: CSV trang_thai. Phieu quy chi co 1, 2, 5.
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyResponse"
+    post:
+      tags:
+        - PhieuQuy
+      summary: Tao phieu danh gia cho mot quy
+      description: >
+        Chi tao duoc khi nam_danh_gia.ap_dung_phieu_quy = 1 va mau danh gia co
+        loai_doi_tuong = 2 (vien chuc / NLD).
+
+        Phieu quy CHI seed dong NHOM A cham tay. Nhom B (vuot troi) o lai phieu NAM vi
+        theo cong thuc, vuot troi duoc cong NGUYEN ca nam chu khong lay trung binh.
+        Tieu chi tu dong cung o lai phieu nam (moi nam chi mot phieu nhan diem tu dong).
+      operationId: phieuQuyCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuQuyCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyResponse"
+        "400":
+          description: QUY_KHONG_HOP_LE, INVALID_BODY
+        "409":
+          description: >
+            NAM_KHONG_MO, KHONG_AP_DUNG_PHIEU_QUY, SAI_LOAI_DOI_TUONG,
+            PHIEU_QUY_DA_TON_TAI, DON_VI_KHONG_HOP_LE, MAU_KHONG_HOP_LE
+  /api/phieu-quy/cua-toi:
+    get:
+      tags:
+        - PhieuQuy
+      summary: Phieu quy cua chinh nguoi dang dang nhap
+      operationId: phieuQuyGetCuaToi
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: quy
+          in: query
+          required: true
+          schema:
+            type: integer
+            enum: [1, 2, 3, 4]
+        - name: idDonVi
+          in: query
+          required: false
+          description: Nguoi kiem nhiem nhieu don vi co nhieu phieu trong cung mot quy.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyResponse"
+        "404":
+          description: Chua co phieu cho quy nay
+  /api/phieu-quy/tong-hop:
+    get:
+      tags:
+        - PhieuQuy
+      summary: Bang 4 quy + diem trung binh cua mot nguoi
+      description: >
+        LUON tra du 4 dong (quy 1..4); quy chua co phieu thi IdPhieu / TrangThai /
+        TongDiemCoBan deu null. SoQuyDaChot la MAU SO thuc dung cua phep trung binh.
+        DiemCoBanTbQuy = null khi SoQuyDaChot = 0 — "chua co quy nao" KHAC "duoc 0 diem".
+      operationId: phieuQuyGetTongHop
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          description: Bo trong = chinh minh.
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyTongHopResponse"
+        "403":
+          description: FORBIDDEN
+  /api/phieu-quy/tp/pending:
+    get:
+      tags:
+        - PhieuQuy
+      summary: Hang doi duyet cua Truong phong (phieu quy o trang thai 2)
+      operationId: phieuQuyGetTpPending
+      parameters:
+        - name: idNam
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: quy
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [1, 2, 3, 4]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyResponse"
+  /api/phieu-quy/{id}:
+    get:
+      tags:
+        - PhieuQuy
+      summary: Chi tiet mot phieu quy
+      operationId: phieuQuyGetDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyResponse"
+        "404":
+          description: NOT_FOUND (ke ca khi khong du quyen xem)
+  /api/phieu-quy/{id}/nop:
+    post:
+      tags:
+        - PhieuQuy
+      summary: Nhan vien nop phieu quy (1 -> 2)
+      description: >
+        Dong chua cham duoc dien 0 kem vet audit (quy uoc giong luong nam: khong ke khai
+        = khong co thanh tich = 0 diem). Sau do moi dong chuyen sang trang_thai_dong = 2
+        va phieu sang trang thai 2 (cho Truong phong duyet).
+      operationId: phieuQuyNop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuQuyNopRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyResponse"
+        "403":
+          description: FORBIDDEN (khong phai chu phieu)
+        "409":
+          description: INVALID_STATE, KHONG_PHAI_PHIEU_QUY, CONCURRENCY_CONFLICT
+  /api/phieu-quy/{id}/huy-nop:
+    post:
+      tags:
+        - PhieuQuy
+      summary: Nhan vien rut phieu quy vua nop (2 -> 1)
+      description: Bi chan bang DA_CHAM neu Truong phong da cham bat ky dong nao.
+      operationId: phieuQuyHuyNop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuQuyHuyNopRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyResponse"
+        "409":
+          description: DA_CHAM, INVALID_STATE, CONCURRENCY_CONFLICT
+  /api/phieu-quy/{id}/tp/duyet:
+    post:
+      tags:
+        - PhieuQuy
+      summary: Truong phong duyet va CHOT DIEM phieu quy (2 -> 5)
+      description: >
+        Ca buoc duyet trong MOT lan goi, mot transaction: ap diem TP cham (neu co) ->
+        ghi diem_chinh_thuc = COALESCE(diem_khoa, diem_tu_danh_gia, 0) -> khoa dong ->
+        tinh tong diem -> dua phieu ve trang thai 5.
+
+        XEP LOAI KHONG DUOC GHI — phieu quy khong co xep loai (chk_pdg_quy_khong_xep_loai).
+
+        Quyen: TP / TK / TKL (+ ADMIN) TAI DUNG don vi cua phieu. TK/TKL nam trong danh
+        sach vi vien chuc van phong Khoa co cap tren la Truong khoa chu khong phai
+        Truong phong.
+
+        Diem AM duoc phep: tieu chi vien chuc co the chi tru diem. Khoang hop le giong het
+        POST /api/chitiet/{idChiTiet}/tu-danh-gia.
+
+        Body.Diem bo trong = chap nhan nguyen diem nhan vien tu cham.
+      operationId: phieuQuyTpDuyet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuQuyTpDuyetRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyResponse"
+        "403":
+          description: FORBIDDEN, FORBIDDEN_DON_VI
+        "409":
+          description: >
+            INVALID_STATE, KHONG_PHAI_PHIEU_QUY, CONCURRENCY_CONFLICT,
+            CHI_TIET_KHONG_THUOC_PHIEU, DIEM_VUOT_TOI_DA, DIEM_DUOI_SAN
+  /api/phieu-quy/{id}/tp/tra-ve:
+    post:
+      tags:
+        - PhieuQuy
+      summary: Truong phong tra phieu quy ve cho nhan vien (2 -> 1)
+      description: LyDo BAT BUOC. so_lan_tra_ve cong don, khong reset.
+      operationId: phieuQuyTpTraVe
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuQuyTraVeRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuQuyResponse"
+        "400":
+          description: THIEU_LY_DO
+        "403":
+          description: FORBIDDEN_DON_VI
+        "409":
+          description: INVALID_STATE, KHONG_PHAI_PHIEU_QUY, CONCURRENCY_CONFLICT
   /api/phieu-don-vi:
     get:
       tags:
@@ -8627,11 +9079,20 @@ paths:
         HoSo[] lay theo (id_nam, id_don_vi) chu khong theo id_to_trinh, de HIEN CA ho so
         CHUA chot - do chinh la danh sach Truong khoa phai xu ly truoc khi dong goi duoc.
 
-        Moi ho so kem co DuDieuKienXuatSac (loai_doi_tuong = 1 AND xep_loai_khoa = 3 AND
-        muc_nckhcn_qd838 = 2) de FE hien truoc ai dang tranh han ngach.
+        Moi ho so kem co DuDieuKienXuatSac - xet theo LOAI DOI TUONG cua chinh nguoi do:
+        loai_doi_tuong = 1 can (xep_loai_khoa = 3 AND muc_nckhcn_qd838 = 2);
+        loai_doi_tuong = 2 chi can xep_loai_khoa = 3 (vien chuc khong co QD 838).
+        LUU Y: du dieu kien KHONG bao dam co suat - he thong cat Top theo han ngach TRUOC
+        roi moi loc dieu kien, nen nguoi du dieu kien ma nam ngoai Top van khong len muc 4.
 
-        SoGiangVienHienTai la so GV hien tai cua don vi; doi chieu voi SoGiangVien (mau
-        so da snapshot luc dong goi) de biet han ngach cu con dung khong.
+        Moi ho so cung kem NhomXepHang (snapshot lan dong goi gan nhat, NULL neu chua tung
+        dong goi) va NhomHienTai (tinh live - dung cai nay cho man hinh xem truoc).
+
+        Nhom[] la han ngach theo tung nhom, moi dong co CA ve snapshot lan ve hien tai;
+        so sanh hai ve de biet snapshot da cu chua. Rong = goi legacy truoc dot tach 3 nhom.
+
+        SoGiangVienHienTai / SoNguoiMuc3HienTai la so lieu HIEN TAI cua don vi; doi chieu
+        voi ban snapshot de biet han ngach cu con dung khong.
       operationId: toTrinhKhoaGetDetail
       parameters:
         - name: id
@@ -8669,7 +9130,7 @@ paths:
         LUONG DUYET TACH DOI — BUOC NAY NAY LA MOC HOAN TAT CUA HO SO THUONG.
         KPI cua nhan vien / giang vien chi can Truong khoa (TK/TKL) hoac Truong phong (TP)
         duyet la xong. Nhung xep_loai cuoi cung (ke ca muc 4) chi tinh duoc khi 100% ho so
-        cua don vi da chot, vi han ngach 20% xep hang tren TOAN KHOA — nen moc HOAN TAT cua
+        cua don vi da chot, vi han ngach 20% xep hang tren TOAN DON VI — nen moc HOAN TAT cua
         ho so thuong la buoc dong goi nay, KHONG phai buoc TK bam "Chot ho so" (3 -> 4).
         FE KHONG duoc hien "Da hoan tat" ngay sau khi chot ho so.
 
@@ -8680,19 +9141,44 @@ paths:
            da HOAN TAT o lan dong goi truoc — giu dieu kien cu thi moi lan dong goi LAI deu
            bao CHUA_DU_HO_SO vinh vien. FE tu dem tien do thi cung phai dem ca 4 va 5,
            hoac dung Item.SoHoSoDaChot do backend tra.)
-        2. SoGiangVien = so phieu loai_doi_tuong = 1 (VIEN CHUC KHONG VAO MAU SO).
-        3. HanNgach = FLOOR(SoGiangVien x TyLeXuatSac). 27 GV x 20% = 5, khong phai 6.
-        4. Du dieu kien = loai_doi_tuong 1 AND xep_loai_khoa = 3 AND muc_nckhcn_qd838 = 2.
-           Xep hang trong nhom du dieu kien theo (tong diem DESC, uu tien DESC, id ASC),
-           lay tu tren xuong den khi day han ngach. Nguoi diem cao nhung KHONG dat QD 838
-           bi BO QUA va suat DON cho nguoi ke tiep - suat khong bi bo trong.
-        5. Dong hang o ranh gioi: neu so nguoi bang diem tranh suat cuoi > so suat con
-           lai, phai co DUNG BANG so nguoi da duoc danh dau uu tien. Khong thi dung voi
-           409 DONG_HANG + khoi DongHang + HoSo[] la danh sach nguoi dong hang. He thong
-           CO Y khong tu tie-break: do la quyet dinh nhan su.
+        2. PHAN HOACH BA NHOM LOAI TRU NHAU trong tung don vi:
+           * nhom 1 Giang vien thuong  - loai_doi_tuong = 1, chuc vu NOT IN
+                                         {TK,TKL,PTK,PTKL,TP,PTP}
+           * nhom 2 Vien chuc / NLD    - loai_doi_tuong = 2, chuc vu NOT IN bo 6 ma
+           * nhom 3 Can bo quan ly     - chuc vu IN bo 6 ma (bat ke loai_doi_tuong)
+           Moi nguoi tranh DUNG MOT han ngach. Han ngach nhom 3 tinh RIENG trong tung
+           don vi, KHONG gop toan truong. Nhom khong co ai thi khong sinh dong nao.
+        3. BA MAU SO KHAC NHAU - bat doi xung CO CHU Y, FE dung tu suy mau so:
+           * nhom 1 -> SoMauSo = so nguoi da chot muc 3
+           * nhom 2 -> SoMauSo = TONG dau nguoi trong nhom
+           * nhom 3 -> SoMauSo = TONG so quan ly cua don vi
+           HanNgach = MAX(1, FLOOR(SoMauSo x TyLeXuatSac)); SoMauSo = 0 thi bang 0.
+           "Toi thieu mot suat" la ngoai le nghiep vu da xac nhan: nhom 1-4 nguoi se vuot
+           ty le 20% tren thuc te (nhom 3 nguoi => 1 suat = 33%).
+           Doc mang Nhom[] trong response de lay so lieu tung nhom.
+        4. XAC DINH TOP TRUOC, XET DIEU KIEN SAU - KHONG LAP SUAT.
+           Xep hang tren TOAN BO quan the cua nhom theo (tong diem DESC, uu tien DESC,
+           id ASC), cat Top dung bang han ngach, ROI MOI loc dieu kien muc 4.
+           Nguoi trong Top ma thieu dieu kien thi GIU MUC 3 va suat do BO TRONG - KHONG
+           don xuong nguoi ke tiep.
+           Vi du: han ngach 2, hang 1 khong dat QD 838 muc 2, hang 2 dat, hang 3 dat
+           => CHI hang 2 len muc 4. Hang 3 khong nhan suat cua hang 1.
+           => SoDat DUOC PHEP nho hon HanNgach. FE phai hien duoc ca hai con so.
+           Dieu kien muc 4 xet theo LOAI DOI TUONG cua chinh nguoi do:
+           * loai_doi_tuong = 1 -> xep_loai_khoa = 3 AND muc_nckhcn_qd838 = 2
+           * loai_doi_tuong = 2 -> xep_loai_khoa = 3 (vien chuc khong co QD 838)
+        5. Dong hang o ranh gioi Top, CHI CHAN KHI KET QUA THUC SU DOI:
+           * so nguoi dong hang DU DIEU KIEN <= so suat con lai -> khong chan (moi nguoi
+             du dieu kien chac chan co suat, ket qua duy nhat)
+           * da danh dau uu tien dung bang so suat con lai -> khong chan
+           * nguoc lai -> 409 DONG_HANG. He thong CO Y khong tu tie-break.
+           Dong hang co the no o TOI DA 3 NHOM CUNG LUC: SP xet het roi bao loi MOT LAN.
+           Khoi DongHang mo ta nhom co so hieu NHO NHAT; doc mang DongHangNhom de biet
+           het. HoSo[] la nguoi dong hang cua TAT CA nhom bi chan, kem co du_dieu_kien.
         6. Ghi xep_loai = 4 cho nguoi trung suat, = xep_loai_khoa cho nhung nguoi con
-           lai; HangTrongKhoa la thu hang trong TOAN BO giang vien (khong phai chi trong
-           nhom du dieu kien); gan id_to_trinh cho moi phieu trong goi.
+           lai; HangTrongKhoa la thu hang TRONG NHOM (tren toan bo quan the nhom, khong
+           phai chi trong nhom du dieu kien) va KHONG CON NULL voi vien chuc;
+           NhomXepHang = snapshot nhom; gan id_to_trinh cho moi phieu trong goi.
         7. MOI — day ho so THUONG (CanHtDuyet = false) tu 4 -> 5 HOAN TAT: ghi id_nguoi_chot,
            ngay_chot_ket_qua, snapshot diem vao lich_su_cham_diem (cap 4 Truong khoa) va
            mot dong lich_su_trang_thai_phieu (hanh_dong 4 Chot, cap_thuc_hien 4).
@@ -8706,10 +9192,13 @@ paths:
                         khong con gi de trinh. FE PHAI AN nut "Trinh Hieu truong".
            Doc SoHoSoChoHt trong response de re nhanh, dung doan tu Item.TrangThai.
 
-        RESPONSE bo sung SoHoSoHoanTat + SoHoSoChoHt; Message da duoc backend soan san
+        RESPONSE bo sung SoHoSoHoanTat + SoHoSoChoHt + mang Nhom[] (han ngach tung nhom);
+        Message da duoc backend soan san, da bao gom tom tat tung nhom va so suat bo trong
         (vd "Dong goi to trinh thanh cong. 28 ho so da hoan tat, 3 ho so lanh dao cho
-        Hieu truong duyet.") — nen hien thang thay vi FE tu ghep chuoi.
-        HoSo[] bo sung CanHtDuyet.
+        Hieu truong duyet. Han ngach theo nhom: Giang vien 1/2 suat (mau so 10); Vien chuc
+        / NLD 1/1 suat (mau so 8). Con 1 suat bo trong do nguoi trong Top chua du dieu kien
+        — suat khong don xuong nguoi ke tiep.") — nen hien thang thay vi FE tu ghep chuoi.
+        HoSo[] bo sung CanHtDuyet + NhomXepHang.
 
         CHAY LAI DUOC nhieu lan: goi o trang thai 2 (da dong goi), 5 (HT tra ve), hoac 4
         TU DONG HOAN TAT (id_nguoi_duyet IS NULL) deu dong goi lai duoc, ket qua ghi de.
@@ -8717,17 +9206,20 @@ paths:
         thi chan — thong diep loi khac nhau cho hai truong hop trang thai 4.
 
         CANH BAO NGHIEP VU: dong goi LAI co the HA xep loai cua ho so DA HOAN TAT. Them ho
-        so moi vao don vi lam mau so han ngach 20% doi => buoc 6 ghi de xep_loai cho TOAN BO
+        so moi vao don vi lam mau so han ngach doi => buoc 6 ghi de xep_loai cho TOAN BO
         phieu cua don vi, ke ca phieu dang o trang thai 5; mot nguoi dang Xuat sac co the
         rot ve Hoan thanh tot. Day la he qua toan hoc khong tranh duoc cua viec cho ho so
-        xong som o cap TK trong khi han ngach van tinh tren toan Khoa — KHONG phai loi.
+        xong som o cap TK trong khi han ngach van tinh tren toan don vi — KHONG phai loi.
+        Bien do con rong hon vi hai ly do: luat bo-lap-suat co the LAM GIAM so nguoi dat
+        muc 4 ngay ca khi thanh phan nhom khong doi; va mot nguoi DOI NHOM (vd duoc bo
+        nhiem PTK) lam doi mau so cua HAI nhom cung luc.
         SP ghi mot dong lich_su_trang_thai_phieu (truoc = sau = 5, hanh_dong = 4) neu ro
-        muc cu -> muc moi cho moi phieu bi doi. FE nen hien dialog xac nhan khi goi da tung
-        dong goi truoc do (Item.NgayDongGoi != null).
+        muc cu -> muc moi kem ten nhom va mau so, cho moi phieu bi doi. FE nen hien dialog
+        xac nhan khi goi da tung dong goi truoc do (Item.NgayDongGoi != null).
 
-        TyLeXuatSac de trong = giu ty le dang luu tren goi (mac dinh 0.2000). De o cot DB
-        chu khong hardcode vi quy dinh co the doi theo nam, va can snapshot lai ty le da
-        dung cho to trinh cu.
+        TyLeXuatSac HIEN KHOA CUNG O 0.2000: de trong = 0.2000, gia tri khac tra 400
+        TY_LE_KHONG_HOP_LE. Tham so va cot DB van giu (khong hardcode) vi quy dinh co the
+        doi theo nam va to trinh cu phai tra cuu lai duoc ty le da dung.
       operationId: toTrinhKhoaDongGoi
       parameters:
         - name: id
@@ -8749,7 +9241,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ToTrinhKhoaResponse"
         "400":
-          description: Ty le xuat sac ngoai khoang (0, 1] (TY_LE_KHONG_HOP_LE)
+          description: Ty le xuat sac khac 0.2000 (TY_LE_KHONG_HOP_LE)
           content:
             application/json:
               schema:
@@ -8763,7 +9255,7 @@ paths:
         "409":
           description: >-
             Conflict - con ho so chua chot (CHUA_DU_HO_SO, kem HoSo[]), dong hang o ranh
-            gioi han ngach (DONG_HANG, kem DongHang + HoSo[]), goi da trinh HT
+            gioi Top (DONG_HANG, kem DongHang + DongHangNhom[] + HoSo[]), goi da trinh HT
             (INVALID_STATE), don vi khong co ho so (KHONG_CO_HO_SO), hoac concurrency
             conflict.
           content:
@@ -11826,6 +12318,16 @@ components:
         LaChinh:
           type: boolean
           description: true = don vi chinh (nguon cua claim id_don_vi trong JWT).
+        LoaiDoiTuong:
+          type: integer
+          enum: [1, 2]
+          description: >-
+            Loai phieu ca nhan cua nguoi dung TAI DON VI nay. 1 = Giang vien (Khoa + chuc danh
+            ngach giang day TROGIANG/TAPSU/GV/GVC/GVCC/PGS/GS), 2 = Vien chuc / NLD (moi truong
+            hop con lai, ke ca nhan vien van phong Khoa khong co chuc danh va chuc danh
+            CV/NV/NCV/KHAC). FE bat menu "Danh gia KPI Nhan vien" khi co it nhat mot don vi
+            LoaiDoiTuong = 2; khong tu suy tu IdChucDanh / MaDonVi. Vang mat chi khi DB chua
+            chay migration.
     AuthResponse:
       type: object
       properties:
@@ -12330,6 +12832,23 @@ components:
         SoTieuChiTuDong:
           type: integer
           description: Số tiêu chí chấm tự động có trong mẫu
+        Quy:
+          type: integer
+          description: >
+            Echo lại phạm vi đã dùng để tính: 0 = trọn năm, 1..4 = chỉ quý đó.
+        SoTieuChiTheoQuy:
+          type: integer
+          description: >
+            Số tiêu chí trong mẫu CÓ đọc bộ lọc quý (4 mã TTVT_* + 3 mã VPVC_*).
+            Quy > 0 mà trường này = 0 nghĩa là bộ lọc không đổi được gì — toàn bộ con số
+            vẫn là trọn năm, và Message nói rõ điều đó.
+        NamApDungPhieuQuy:
+          type: boolean
+          description: >
+            nam_danh_gia.ap_dung_phieu_quy của năm thuộc mẫu — năm này có chạy chế độ
+            đánh giá theo quý hay không. Dùng để quyết định có hiện bộ lọc quý trên UI.
+            CỐ Ý không chặn quy > 0 khi cờ đang tắt: người cấu hình mẫu cần xem thử
+            TRƯỚC khi bật công tắc.
         Items:
           type: array
           nullable: true
@@ -12373,6 +12892,14 @@ components:
             Riêng NCKH_BBQT_DIEM_KPI: điểm KHÔNG do phía KPI tính — phía NCKH đã tính
             sẵn ở nckh_kpi_bai_bao_quoc_te.diem_kpi_cuoi (FinalKpiScore), phía KPI chỉ
             lấy nguyên con số đó, sàn ở 0 và chặn trần ở DiemToiDa.
+        ApDungQuy:
+          type: boolean
+          description: >
+            true = mã công thức này CÓ đọc bộ lọc quý (TTVT_* / VPVC_*), nên DiemTuDong
+            là con số của riêng quý đã hỏi.
+            false = mã khóa theo năm: DiemTuDong LUÔN là số trọn năm dù request có
+            truyền quy hay không — FE nên gắn nhãn "trọn năm" cho những dòng này khi
+            đang lọc theo quý, nếu không người xem sẽ tưởng đã được lọc.
         DiemTuDong:
           type: number
           nullable: true
@@ -13057,9 +13584,10 @@ components:
           enum: [1, 2, 3]
           description: >-
             BAT BUOC (validate o BLL, khong dat required tren nullable value type).
-            Truong khoa CHON TAY, chi 1/2/3. Gui 4 -> 400: muc Hoan thanh xuat sac do
-            han ngach 20% cua Khoa quyet dinh o buoc dong goi to trinh.
-            Vien chuc / NLD (loai_doi_tuong = 2) toi da muc 2.
+            Truong don vi CHON TAY, chi 1/2/3. Gui 4 -> 400: muc Hoan thanh xuat sac do
+            han ngach 20% cua NHOM quyet dinh o buoc dong goi to trinh.
+            Vien chuc / NLD (loai_doi_tuong = 2) NAY cung chon duoc muc 3 - can tong tich
+            luy >= 101 (giang vien la > 100). Tran muc 2 cu da bi go bo.
         LyDoXepLoai:
           type: string
           nullable: true
@@ -13889,11 +14417,569 @@ components:
           description: >-
             row_version MOI cua phieu cha sau thao tac. FE PHAI dung gia tri nay cho lan
             goi tiep theo tren cung phieu, neu khong se dinh 409 ngay o thao tac ke.
+    PhieuQuyDto:
+      type: object
+      description: >
+        Phieu danh gia cua MOT quy (vien chuc / NLD). CO Y gon hon PhieuDanhGiaChiTietDto:
+        phieu quy khong co xep loai, khong co to trinh, khong co dinh muc / QD 838.
+        No chi san sinh MOT CON SO: TongDiemCoBan cua quy do.
+      properties:
+        IdPhieu:
+          type: integer
+        IdNam:
+          type: integer
+        Quy:
+          type: integer
+          enum: [1, 2, 3, 4]
+          description: Luon 1..4. Quy = 0 la phieu NAM, khong bao gio xuat hien o day.
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        IdDonVi:
+          type: integer
+        TenDonVi:
+          type: string
+          nullable: true
+        IdChucVu:
+          type: integer
+          nullable: true
+        TenChucVu:
+          type: string
+          nullable: true
+        IdChucDanh:
+          type: integer
+          nullable: true
+        TenChucDanh:
+          type: string
+          nullable: true
+        IdMau:
+          type: integer
+          nullable: true
+        LoaiDoiTuong:
+          type: integer
+          description: Luon 2 (vien chuc / NLD) — chk_pdg_quy_loai_doi_tuong chan cung.
+        TrangThai:
+          type: integer
+          enum: [1, 2, 5]
+          description: >
+            CHI ba gia tri. 1 = nhan vien dang tu cham; 2 = DA NOP, CHO TRUONG PHONG
+            DUYET (doc KHAC luong nam, o do 2 la "Dang tham dinh"); 5 = TP da chot diem.
+            Gia tri 3 va 4 khong bao gio xuat hien (chk_pdg_quy_trang_thai).
+        TrangThaiText:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Nhap / Cho Truong phong duyet / Da chot diem quy.
+        LanDanhGia:
+          type: integer
+        TongDiemCoBan:
+          type: number
+          format: double
+          nullable: true
+          description: Con so duy nhat phieu quy sinh ra — dau vao cua roll-up cuoi nam.
+        TongDiemVuotTroi:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Luon 0 tren phieu quy. Diem vuot troi duoc cong NGUYEN ca nam o phieu NAM
+            chu khong lay trung binh, nen phieu quy khong seed dong nhom B.
+        TongDiemTichLuy:
+          type: number
+          format: double
+          nullable: true
+        IdNguoiDgKhoa:
+          type: integer
+          nullable: true
+          description: Truong phong da duyet (tai dung cot id_nguoi_dg_khoa cua bang chung).
+        NgayKhoaDuyet:
+          type: string
+          format: date-time
+          nullable: true
+        NhanXetKhoa:
+          type: string
+          nullable: true
+        IdNguoiChot:
+          type: integer
+          nullable: true
+        NgayChotKetQua:
+          type: string
+          format: date-time
+          nullable: true
+        NgayGui:
+          type: string
+          format: date-time
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+          nullable: true
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+          nullable: true
+        ChiTiet:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ChiTietDanhGiaDto"
+    PhieuQuyResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+          nullable: true
+        ErrorCode:
+          type: string
+          nullable: true
+        Item:
+          allOf:
+            - $ref: "#/components/schemas/PhieuQuyDto"
+          nullable: true
+        Items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/PhieuQuyDto"
+        TotalCount:
+          type: integer
+          nullable: true
+        TongDiemCoBan:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            CHI POST /api/phieu-quy/{id}/tp/duyet chieu ba cot nay — ket qua chot diem
+            cua quy vua duyet, de FE hien ngay khong phai goi lai GET. Cac thao tac khac
+            de null (NullValueHandling.Ignore nen JSON bo qua han).
+        TongDiemVuotTroi:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Nhu tren. DA cat tran nhom B neu nhom co cau hinh tran — xem
+            PhieuNamTongHopQuyResponse.TranNhomVuotTroi.
+        TongDiemTichLuy:
+          type: number
+          format: double
+          nullable: true
+          description: Nhu tren. = TongDiemCoBan + TongDiemVuotTroi.
+    PhieuQuyCreateRequest:
+      type: object
+      required:
+        - IdNam
+        - IdNhanVien
+        - Quy
+        - IdMau
+      properties:
+        IdNam:
+          type: integer
+        IdNhanVien:
+          type: integer
+        Quy:
+          type: integer
+          enum: [1, 2, 3, 4]
+        IdMau:
+          type: integer
+          description: Phai la mau co loai_doi_tuong = 2.
+        IdDonVi:
+          type: integer
+          nullable: true
+          description: Bo trong = don vi chinh cua nhan vien.
+    PhieuQuyNopRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+    PhieuQuyHuyNopRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        LyDo:
+          type: string
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+    PhieuQuyTraVeRequest:
+      type: object
+      required:
+        - LyDo
+        - RowVersion
+      properties:
+        LyDo:
+          type: string
+          description: BAT BUOC — thieu tra THIEU_LY_DO.
+        RowVersion:
+          type: string
+          format: byte
+    PhieuQuyDiemItem:
+      type: object
+      required:
+        - IdChiTiet
+      properties:
+        IdChiTiet:
+          type: integer
+        Diem:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Bo trong = giu nguyen diem nhan vien tu cham cho dong nay.
+            DUOC PHEP AM: tieu chi vien chuc co the chi tru diem.
+        NhanXet:
+          type: string
+          nullable: true
+    PhieuQuyTpDuyetRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+        Diem:
+          type: array
+          nullable: true
+          description: Bo trong = chap nhan nguyen diem nhan vien tu cham.
+          items:
+            $ref: "#/components/schemas/PhieuQuyDiemItem"
+        RowVersion:
+          type: string
+          format: byte
+    PhieuQuyTongHopDto:
+      type: object
+      properties:
+        Quy:
+          type: integer
+          enum: [1, 2, 3, 4]
+        IdPhieu:
+          type: integer
+          nullable: true
+          description: null = quy nay chua tao phieu.
+        TrangThai:
+          type: integer
+          nullable: true
+        TrangThaiText:
+          type: string
+          nullable: true
+          readOnly: true
+        TongDiemCoBan:
+          type: number
+          format: double
+          nullable: true
+        TongDiemVuotTroi:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Vuot troi RIENG cua quy nay, CHUA kep tran cuoi nam. DUNG cong bon con so
+            nay lai roi doi khop voi tong nam: cuoi nam tung tieu chi bi kep lai mot lan
+            nua roi ca nhom bi cat tiep, nen tong nam co the NHO HON.
+        TongDiemTichLuy:
+          type: number
+          format: double
+          nullable: true
+        NgayChotKetQua:
+          type: string
+          format: date-time
+          nullable: true
+        DaChot:
+          type: boolean
+          description: CHI nhung quy nay vao mau so cua phep trung binh.
+    PhieuQuyVuotTroiTieuChiDto:
+      type: object
+      description: >
+        MOT tieu chi nhom B (thanh tich vuot troi), cong don qua cac quy DA CHOT roi kep
+        vao khoang hop le cua chinh tieu chi do. Day la bang FE PHAI hien de nguoi bi kep
+        diem hieu vi sao tong cuoi nam nho hon tong bon quy cong lai.
+        LUU Y: bang nay chi giai trinh duoc phep cat THU NHAT (theo tung tieu chi). Phep
+        cat THU HAI (tran cua ca nhom B) khong xuat hien o dong nao trong bang — xem
+        TranNhomVuotTroi / TongVuotTroiTruocTranNhom o response bao ngoai.
+      properties:
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+          nullable: true
+        DiemToiDa:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Dau AM co nghia: tieu chi CHI TRU DIEM. Khi do khoang hop le la
+            [DiemToiDa, 0] chu khong phai [0, DiemToiDa].
+        DiemQuy1:
+          type: number
+          format: double
+          nullable: true
+        DiemQuy2:
+          type: number
+          format: double
+          nullable: true
+        DiemQuy3:
+          type: number
+          format: double
+          nullable: true
+        DiemQuy4:
+          type: number
+          format: double
+          nullable: true
+        TongCacQuy:
+          type: number
+          format: double
+          nullable: true
+          description: Tong bon quy TRUOC khi kep.
+        DiemSauKep:
+          type: number
+          format: double
+          nullable: true
+          description: Con so THUC SU duoc cong vao diem vuot troi cuoi nam.
+        BiKep:
+          type: boolean
+          description: true = TongCacQuy da cham tran (hoac san) nen bi cat bot.
+        SoQuyCoDong:
+          type: integer
+          nullable: true
+          description: So quy co dong cua tieu chi nay trong cac quy da chot (toi da 4).
+    PhieuQuyTongHopResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+          nullable: true
+        ErrorCode:
+          type: string
+          nullable: true
+        IdNam:
+          type: integer
+        IdNhanVien:
+          type: integer
+        IdDonVi:
+          type: integer
+        Quy:
+          type: array
+          description: LUON du 4 phan tu, quy 1..4 theo thu tu.
+          items:
+            $ref: "#/components/schemas/PhieuQuyTongHopDto"
+        SoQuyDaChot:
+          type: integer
+          description: MAU SO thuc dung cua phep trung binh — khong phai 4.
+        DiemCoBanTbQuy:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            null khi SoQuyDaChot = 0. KHONG phai 0 — hai truong hop khac nhau.
+            DA LOAI 3 dong VPVC_* ra khoi phep trung binh — xem DiemVpvcNam.
+        DiemVpvcNam:
+          type: number
+          format: double
+          description: >
+            3 tieu chi VPVC_* tren phieu NAM, cham TRON NAM (tru du moi vi pham trong
+            nam, KHONG lay trung binh 4 quy vi nhu vay chi tru ~1/4). 0 khi chua co
+            phieu nam. Ve co ban cuoi nam = DiemCoBanTbQuy + DiemVpvcNam.
+        DiemVuotTroiTongQuy:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            CONG DON cac quy da chot, tung tieu chi da KEP o tran cua no, ROI ca nhom B
+            da cat o TranNhomVuotTroi. Day la con so ma roll-up cuoi nam se ghi that.
+            null khi SoQuyDaChot = 0 — cung hop dong voi DiemCoBanTbQuy.
+        TranNhomVuotTroi:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Tran cua CA nhom B (nhom_tieu_chi.diem_toi_da cua nut goc, vd 50 voi bang
+            vien chuc / NLD). null = KHONG co tran (chua co phieu nam, hoac mau khong co
+            tieu chi nhom B nao). null KHONG phai 0 — 0 se la "khong duoc diem nao".
+        TongVuotTroiTruocTranNhom:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Tong sau khi kep TUNG tieu chi nhung TRUOC khi cat tran nhom. Lon hon
+            DiemVuotTroiTongQuy => tran nhom da cat bot. FE PHAI hien ro cho nguoi bi
+            cat: day la phep cat THU HAI, no khong the hien duoc trong bang
+            VuotTroiTheoTieuChi.
+        DiemTichLuyDuKien:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            XEM TRUOC tich luy cuoi nam
+            = DiemCoBanTbQuy + DiemVpvcNam + DiemVuotTroiTongQuy.
+            Con so ghi that do POST /api/phieu/{id}/tong-hop-tu-quy tinh lai.
+        VuotTroiTheoTieuChi:
+          type: array
+          description: >
+            Phan ra vuot troi theo tung tieu chi. LUON khac null (co the rong) de FE
+            khong phai kiem tra null truoc khi duyet.
+          items:
+            $ref: "#/components/schemas/PhieuQuyVuotTroiTieuChiDto"
+        DanhSachQuyDaChot:
+          type: string
+          nullable: true
+          description: Vi du "1,2,4".
+    PhieuNamTongHopQuyRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        RowVersion:
+          type: string
+          format: byte
+    PhieuNamTongHopQuyResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+          nullable: true
+        ErrorCode:
+          type: string
+          nullable: true
+        IdPhieu:
+          type: integer
+          nullable: true
+        CanhBao:
+          type: boolean
+          description: >
+            true khi tong hop tu DUOI 4 quy. KHONG phai loi — mau so la so quy thuc co —
+            nhung FE phai hien ro "chi tong hop tu N quy".
+        SoQuyDaChot:
+          type: integer
+        DanhSachQuyDaChot:
+          type: string
+          nullable: true
+        DiemCoBanTbQuy:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            SO HANG THU NHAT cua ve co ban: TRUNG BINH nhom A cac quy da chot, DA LOAI
+            3 dong VPVC_*. Giu rieng de con doi chieu duoc phep trung binh.
+        DiemVpvcNam:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            SO HANG THU HAI: 3 tieu chi VPVC_* cham TRON NAM tren chinh phieu nam.
+            Chung KHONG lay trung binh 4 quy — trung binh chi tru ~1/4 so vi pham ca nam.
+        TongDiemCoBan:
+          type: number
+          format: double
+          nullable: true
+          description: = DiemCoBanTbQuy + DiemVpvcNam. Day moi la con so ghi vao phieu.
+        TongDiemVuotTroi:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            CONG DON cac quy theo TUNG TIEU CHI (moi tieu chi kep vao khoang hop le cua
+            chinh no), ROI ca nhom B cat o TranNhomVuotTroi. DUNG doi khop con so nay
+            voi tong bon quy cong lai: khi tran can no NHO HON. Do la hai phep cat,
+            khong phai lech du lieu.
+        TranNhomVuotTroi:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Tran cua CA nhom B (nhom_tieu_chi.diem_toi_da cua nut goc, vd 50).
+            null = KHONG co tran, KHONG phai 0.
+        TongVuotTroiTruocTranNhom:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Tong sau khi kep TUNG tieu chi nhung TRUOC khi cat tran nhom. Lon hon
+            TongDiemVuotTroi => tran nhom da cat bot. PHAI hien cung VuotTroiTheoTieuChi:
+            bang do chi giai trinh duoc phep kep THU NHAT.
+        TongDiemTichLuy:
+          type: number
+          format: double
+          nullable: true
+          description: = TongDiemCoBan + TongDiemVuotTroi.
+        VuotTroiTheoTieuChi:
+          type: array
+          description: >
+            Phan ra theo tung tieu chi nhom B: tieu chi nao bi kep va kep bao nhieu.
+            LUON khac null (co the rong).
+          items:
+            $ref: "#/components/schemas/PhieuQuyVuotTroiTieuChiDto"
+        SoTieuChiTuDongBoSot:
+          type: integer
+          description: >
+            TRIPWIRE: so tieu chi CHAM TU DONG co trong mau nhung khong phieu nao seed,
+            nen dang dong gop 0 diem. 3 ma VPVC_* va 4 ma TTVT_* da duoc mo cong seed
+            nen deu duoc loai tru; > 0 nghia la con ma cham tu dong KHAC chua co cho
+            dung o cap quy.
+        CanhBaoTieuChiTuDong:
+          type: boolean
+          description: >
+            true khi SoTieuChiTuDongBoSot > 0 — FE phai hien banner tren man hinh roll-up.
     PhieuDanhGiaChiTietDto:
       type: object
       properties:
         IdPhieu:
           type: integer
+        Quy:
+          type: integer
+          description: >
+            Quy phat sinh cua phieu. 0 = phieu NAM (mac dinh; moi phieu giang vien va
+            moi phieu co truoc dot "Danh gia theo quy"). 1..4 = phieu QUY cua vien chuc.
+            GET /api/phieu va /api/phieu/me/{idNam} mac dinh CHI tra phieu nam.
+        NguonDiemCoBan:
+          type: integer
+          enum: [1, 2]
+          description: >
+            Chi co o GET /api/phieu/{id}. 1 = TongDiemCoBan la tong dong nhom A cua
+            CHINH phieu nay (hanh vi cu). 2 = TongDiemCoBan la TRUNG BINH cac quy DA
+            CHOT; phieu nay KHONG co dong nhom A. Chi vien chuc / NLD trong nam da bat
+            ap_dung_phieu_quy.
+        DiemCoBanTbQuy:
+          type: number
+          format: double
+          nullable: true
+          description: Ban sao audit cua trung binh da tinh. null khi chua chay roll-up.
+        SoQuyDaChot:
+          type: integer
+          nullable: true
+          description: MAU SO thuc dung — so quy DA CHOT, KHONG phai 4.
+        DanhSachQuyDaChot:
+          type: string
+          nullable: true
+          description: Vi du "1,2,4". SoQuyDaChot mot minh khong audit duoc la quy nao.
+        NgayTongHopQuy:
+          type: string
+          format: date-time
+          nullable: true
+        IdNguoiTongHopQuy:
+          type: integer
+          nullable: true
         TrangThaiText:
           type: string
           nullable: true
@@ -13938,7 +15024,21 @@ components:
         HangTrongKhoa:
           type: integer
           nullable: true
-          description: Thu hang trong TOAN BO giang vien cua Khoa, snapshot luc dong goi
+          description: >-
+            Thu hang TRONG NHOM XEP HANG cua chinh minh (tren toan bo quan the nhom, khong
+            chi rieng nguoi du dieu kien), snapshot luc dong goi. Tren du lieu legacy truoc
+            dot tach 3 nhom, cot nay van mang nghia CU (thu hang trong toan bo giang vien).
+        NhomXepHang:
+          type: integer
+          enum: [1, 2, 3]
+          nullable: true
+          description: >-
+            Nhom xep hang da snapshot luc dong goi: 1 Giang vien, 2 Vien chuc / NLD,
+            3 Can bo quan ly. NULL = phieu chua tung duoc dong goi.
+        NhomXepHangText:
+          type: string
+          nullable: true
+          readOnly: true
         LyDoHtTraVe:
           type: string
           nullable: true
@@ -17545,11 +18645,34 @@ components:
         SoGiangVien:
           type: integer
           nullable: true
-          description: Mau so han ngach - so phieu loai_doi_tuong = 1. Snapshot luc dong goi.
+          description: >-
+            KHONG CON LA MAU SO HAN NGACH. Chi la headcount hien thi (so phieu
+            loai_doi_tuong = 1), snapshot luc dong goi. Mau so THUC DUNG nam o
+            Nhom[].SoMauSo va KHAC NHAU theo nhom.
+        SoNguoiMuc3:
+          type: integer
+          nullable: true
+          description: >-
+            So lieu tong hop tham khao: tong so nguoi muc 3 cua ca 3 nhom. KHONG phai mau
+            so. NULL = goi legacy, chua tinh theo luat tach 3 nhom (FE dung lam co nhan
+            biet de fallback ve cac cot phang).
+        SoNguoiMuc3HienTai:
+          type: integer
+          nullable: true
+          description: So nguoi muc 3 HIEN TAI cua don vi. Chi co o GET chi tiet.
+        Nhom:
+          type: array
+          nullable: true
+          description: >-
+            Han ngach theo TUNG NHOM. Co o GET chi tiet va o ket qua dong-goi. Rong =
+            goi legacy truoc dot tach 3 nhom.
+          items:
+            $ref: "#/components/schemas/ToTrinhKhoaNhomDto"
         TyLeXuatSac:
           type: number
           nullable: true
           example: 0.2
+          description: Hien khoa cung o 0.2000. Cot van duoc snapshot de tra cuu to trinh cu.
         HanNgachXuatSac:
           type: integer
           nullable: true
@@ -17696,6 +18819,25 @@ components:
         HangTrongKhoa:
           type: integer
           nullable: true
+          description: >-
+            Thu hang TRONG NHOM (tren toan bo quan the nhom), snapshot luc dong goi.
+            KHONG CON NULL voi vien chuc nhu truoc day.
+        NhomXepHang:
+          type: integer
+          enum: [1, 2, 3]
+          nullable: true
+          description: Snapshot nhom luc dong goi. NULL = phieu chua tung duoc dong goi.
+        NhomHienTai:
+          type: integer
+          enum: [1, 2, 3]
+          nullable: true
+          description: >-
+            Nhom NEU dong goi ngay bay gio (tinh live). Dung cho man hinh xem truoc: phieu
+            chua dong goi thi NhomXepHang con NULL, va chuc vu co the da doi ke tu lan truoc.
+        NhomXepHangText:
+          type: string
+          nullable: true
+          readOnly: true
         IdToTrinh:
           type: integer
           nullable: true
@@ -17762,27 +18904,152 @@ components:
         NgayThucHien:
           type: string
           format: date-time
+    ToTrinhKhoaNhomDto:
+      type: object
+      description: >-
+        Han ngach xuat sac cua MOT NHOM. Moi don vi xep hang toi da 3 bang doc lap:
+        1 Giang vien thuong, 2 Vien chuc / NLD, 3 Can bo quan ly (TK/TKL/PTK/PTKL/TP/PTP).
+        Moi dong mang CA ve snapshot (lan dong goi gan nhat) lan ve hien tai (neu dong goi
+        ngay bay gio) - ve hien tai lam man hinh xem truoc chay duoc khi goi chua tung
+        dong goi, va giup phat hien snapshot da cu.
+      properties:
+        Nhom:
+          type: integer
+          enum: [1, 2, 3]
+          description: 1 Giang vien, 2 Vien chuc / NLD, 3 Can bo quan ly
+        TenNhom:
+          type: string
+          nullable: true
+          readOnly: true
+        SoNguoi:
+          type: integer
+          nullable: true
+          description: Tong dau nguoi trong nhom (snapshot)
+        SoNguoiMuc3:
+          type: integer
+          nullable: true
+          description: So nguoi xep_loai_khoa = 3 (snapshot)
+        SoMauSo:
+          type: integer
+          nullable: true
+          description: >-
+            MAU SO THUC DUNG de tinh han ngach. Nhom 1 = SoNguoiMuc3; nhom 2/3 = SoNguoi.
+            BAT DOI XUNG CO CHU Y - FE PHAI doc cot nay, KHONG duoc tu suy tu SoNguoiMuc3
+            hay SoNguoi.
+        SoDuDieuKien:
+          type: integer
+          nullable: true
+          description: So nguoi du dieu kien muc 4 trong TOAN nhom (khong chi trong Top)
+        HanNgach:
+          type: integer
+          nullable: true
+          description: MAX(1, FLOOR(SoMauSo x TyLeXuatSac)); SoMauSo = 0 thi bang 0
+        SoDat:
+          type: integer
+          nullable: true
+          description: >-
+            So nguoi THUC TE dat muc 4. CO THE NHO HON HanNgach: nguoi nam trong Top nhung
+            thieu dieu kien thi giu muc 3 va suat do BO TRONG, khong don xuong nguoi ke tiep.
+        SoNguoiHienTai:
+          type: integer
+          nullable: true
+        SoNguoiMuc3HienTai:
+          type: integer
+          nullable: true
+        SoMauSoHienTai:
+          type: integer
+          nullable: true
+        SoDuDieuKienHienTai:
+          type: integer
+          nullable: true
+        HanNgachHienTai:
+          type: integer
+          nullable: true
+
+    ToTrinhKhoaDongHangNhomDto:
+      type: object
+      description: Chi tiet the be tac DONG_HANG cua MOT nhom
+      properties:
+        Nhom:
+          type: integer
+          enum: [1, 2, 3]
+        TenNhom:
+          type: string
+          nullable: true
+          readOnly: true
+        SoNguoi:
+          type: integer
+        SoNguoiMuc3:
+          type: integer
+        SoMauSo:
+          type: integer
+        SoDuDieuKien:
+          type: integer
+        HanNgach:
+          type: integer
+        SoSuatConLai:
+          type: integer
+        SoNguoiDongHang:
+          type: integer
+          description: So nguoi cung diem ranh gioi, KE CA nguoi khong du dieu kien muc 4
+        SoDongHangDuDk:
+          type: integer
+          description: >-
+            Trong so do, bao nhieu nguoi DU DIEU KIEN len muc 4. He thong chi chan khi so
+            nay LON HON SoSuatConLai - dong hang giua nhung nguoi khong the len muc 4 thi
+            ai chiem suat cung khong doi ket qua.
+        SoNguoiDaUuTien:
+          type: integer
+        DiemRanhGioi:
+          type: number
+
     ToTrinhKhoaDongHangDto:
       type: object
-      description: Chi tiet the be tac DONG_HANG o ranh gioi han ngach 20%
+      description: >-
+        Chi tiet the be tac DONG_HANG o ranh gioi Top. Mo ta nhom bi chan co so hieu NHO
+        NHAT - khi SoNhomDongHang > 1, doc ToTrinhKhoaResponse.DongHangNhom de biet het.
       properties:
+        Nhom:
+          type: integer
+          enum: [1, 2, 3]
+          description: Nhom dang bi be tac
+        TenNhom:
+          type: string
+          nullable: true
+          readOnly: true
         HanNgachXuatSac:
           type: integer
         SoGiangVien:
+          type: integer
+          deprecated: true
+          description: >-
+            DEPRECATED - alias cu cua SoMauSo, giu de FE dang chay khong vo. Ten sai ke tu
+            khi tach 3 nhom: gia tri nay la MAU SO cua nhom bi chan, khong phai so giang
+            vien. Chuyen sang dung SoMauSo.
+        SoMauSo:
+          type: integer
+          description: Mau so han ngach cua nhom bi chan
+        SoNguoiMuc3:
           type: integer
         SoSuatConLai:
           type: integer
           description: So suat con lai sau khi tru nhung nguoi diem CAO HON diem ranh gioi
         SoNguoiDongHang:
           type: integer
-          description: So nguoi cung diem ranh gioi dang tranh so suat con lai
+          description: So nguoi cung diem ranh gioi, KE CA nguoi khong du dieu kien muc 4
+        SoDongHangDuDk:
+          type: integer
+          description: Trong so do, bao nhieu nguoi DU DIEU KIEN len muc 4
         SoNguoiDaUuTien:
           type: integer
           description: >-
-            Trong so do, bao nhieu nguoi da duoc TK danh dau uu tien. Dong goi chi di tiep
-            khi so nay BANG DUNG SoSuatConLai.
+            So nguoi DU DIEU KIEN da duoc truong don vi danh dau uu tien. Dong goi chi di
+            tiep khi so nay BANG DUNG SoSuatConLai.
         DiemRanhGioi:
           type: number
+        SoNhomDongHang:
+          type: integer
+          description: Tong so nhom dang be tac (1..3)
     ToTrinhKhoaResponse:
       type: object
       properties:
@@ -17815,6 +19082,21 @@ components:
             $ref: "#/components/schemas/ToTrinhKhoaPhieuDto"
         DongHang:
           $ref: "#/components/schemas/ToTrinhKhoaDongHangDto"
+        DongHangNhom:
+          type: array
+          nullable: true
+          description: >-
+            TAT CA cac nhom dang be tac dong hang (toi da 3). SP xet het 3 nhom roi bao loi
+            mot lan - fail-fast nhom dau se bat truong don vi dong goi lai 3 lan moi biet
+            het. Khoi DongHang o tren chi mo ta nhom co so hieu nho nhat.
+          items:
+            $ref: "#/components/schemas/ToTrinhKhoaDongHangNhomDto"
+        Nhom:
+          type: array
+          nullable: true
+          description: Han ngach theo tung nhom sau khi dong goi thanh cong.
+          items:
+            $ref: "#/components/schemas/ToTrinhKhoaNhomDto"
         TongSoDong:
           type: integer
           nullable: true

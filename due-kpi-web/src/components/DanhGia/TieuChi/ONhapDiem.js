@@ -20,6 +20,8 @@ import React from "react";
 const ONhapDiem = ({
   giaTri,
   diemToiDa,
+  diemToiThieu = 0,
+  diemTran = diemToiDa,
   doc = false,
   onChange,
   goiY = "Nhập số thập phân, ví dụ 17.5",
@@ -27,14 +29,14 @@ const ONhapDiem = ({
   const chuoi = giaTri === null || giaTri === undefined ? "" : String(giaTri);
   const so = chuoi.trim() === "" ? null : Number(chuoi);
   const khongHopLe = so !== null && Number.isNaN(so);
-  const vuotTran = so !== null && !Number.isNaN(so) && so > diemToiDa;
-  const amSo = so !== null && !Number.isNaN(so) && so < 0;
-  const loi = khongHopLe || vuotTran || amSo;
+  const vuotTran = so !== null && !Number.isNaN(so) && so > diemTran;
+  const duoiSan = so !== null && !Number.isNaN(so) && so < diemToiThieu;
+  const loi = khongHopLe || vuotTran || duoiSan;
 
   const thongBao = vuotTran
-    ? `Điểm vượt quá mức tối đa ${diemToiDa}`
-    : amSo
-      ? "Điểm không được nhỏ hơn 0"
+    ? `Điểm vượt quá mức tối đa ${diemTran}`
+    : duoiSan
+      ? `Điểm không được nhỏ hơn ${diemToiThieu}`
       : khongHopLe
         ? "Điểm không hợp lệ"
         : goiY;
@@ -57,8 +59,8 @@ const ONhapDiem = ({
             inputMode="decimal"
             placeholder="0"
             step="any"
-            min="0"
-            max={diemToiDa}
+            min={diemToiThieu}
+            max={diemTran}
             value={chuoi}
             disabled={doc}
             aria-label="Điểm chấm cho tiêu chí"
@@ -67,14 +69,16 @@ const ONhapDiem = ({
               onChange(e.target.value);
             }}
           />
-          <span className="pl2-score-suffix">/ {diemToiDa}</span>
+          <span className="pl2-score-suffix">
+            {diemToiThieu < 0 ? `${diemToiThieu} → ${diemTran}` : `/ ${diemTran}`}
+          </span>
         </div>
 
         <button
           type="button"
           className="pl2-score-quick"
           disabled={doc}
-          onClick={() => dat(diemToiDa)}
+          onClick={() => dat(diemTran)}
         >
           Điểm tối đa
         </button>

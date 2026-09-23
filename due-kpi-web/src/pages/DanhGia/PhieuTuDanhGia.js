@@ -168,40 +168,17 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
 
   const donViList = useMemo(() => {
     if (Array.isArray(currentUser?.DonVi) && currentUser.DonVi.length > 0) {
-      return currentUser.DonVi;
-    }
-    if (currentUser?.IdDonVi) {
-      return [
-        {
-          IdDonVi: currentUser.IdDonVi,
-          MaDonVi: currentUser.MaDonVi,
-          TenDonVi: currentUser.TenDonVi,
-          IdChucVu: currentUser.IdChucVu,
-          MaChucVu: currentUser.MaChucVu,
-          TenChucVu: currentUser.TenChucVu,
-          LaChinh: true,
-        },
-      ];
+      return currentUser.DonVi.filter(
+        (donVi) => donVi?.LoaiDoiTuong === loaiDoiTuong,
+      );
     }
     return [];
-  }, [currentUser]);
+  }, [currentUser, loaiDoiTuong]);
 
   const defaultDonViId = useMemo(() => {
-    // Tự động tìm đơn vị phù hợp với loại đối tượng (giảng viên/nhân viên)
-    const matchedDonVi = donViList.find((dv) => {
-      const isKhoa = String(dv.MaDonVi).startsWith("K_");
-      const hasChucDanh = !!currentUser?.IdChucDanh;
-      const type = isKhoa && hasChucDanh ? 1 : 2;
-      return type === loaiDoiTuong;
-    });
-
-    if (matchedDonVi) {
-      return matchedDonVi.IdDonVi;
-    }
-
     const primary = donViList.find((d) => d.LaChinh);
     return primary ? primary.IdDonVi : donViList[0]?.IdDonVi || null;
-  }, [donViList, loaiDoiTuong, currentUser?.IdChucDanh]);
+  }, [donViList]);
 
   const [selectedDonViId, setSelectedDonViId] = useState(defaultDonViId);
 
@@ -217,17 +194,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
     );
   }, [donViList, selectedDonViId]);
 
-  // LoaiDoiTuong giờ suy từ ĐƠN VỊ CỦA PHIẾU:
-  // - MaDonVi bắt đầu bằng K_ VÀ người có chức danh nghề nghiệp => 1 (mẫu Giảng viên)
-  // - mọi trường hợp còn lại (Phòng, Trung tâm...) => 2 (mẫu Viên chức/NLĐ)
-  const activeLoaiDoiTuong = useMemo(() => {
-    if (selectedDonVi?.MaDonVi) {
-      const isKhoa = String(selectedDonVi.MaDonVi).startsWith("K_");
-      const hasChucDanh = !!currentUser?.IdChucDanh;
-      return isKhoa && hasChucDanh ? 1 : 2;
-    }
-    return loaiDoiTuong || 1;
-  }, [selectedDonVi, currentUser?.IdChucDanh, loaiDoiTuong]);
+  const activeLoaiDoiTuong = selectedDonVi?.LoaiDoiTuong;
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -502,7 +469,11 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
       }
     };
 
-    if (listYears.length > 0 && currentUser.IdNhanVien) {
+    if (
+      listYears.length > 0 &&
+      currentUser.IdNhanVien &&
+      activeLoaiDoiTuong != null
+    ) {
       fetchScoringData();
     }
   }, [
@@ -1517,6 +1488,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
 
         <div className="phu-luc-2-content">
           <DanhGiaPhuLuc2Form
+            loaiDoiTuong={activeLoaiDoiTuong}
             criteriaList={criteriaHienThi}
             tieuChiThongKe={criteriaList}
             formData={formData}

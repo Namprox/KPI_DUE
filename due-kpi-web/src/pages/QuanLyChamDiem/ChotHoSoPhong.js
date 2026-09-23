@@ -699,7 +699,11 @@ const ChotHoSoPhong = () => {
       <div className="cd-chot-thanh-nut">
         <button
           className="btn-submit"
-          disabled={dangChot || !sanSangChot}
+          disabled={
+            dangChot ||
+            !sanSangChot ||
+            Number(phieu.SoQuyDaChot) === 0
+          }
           onClick={moXacNhan}
         >
           {dangChot ? (
@@ -719,7 +723,12 @@ const ChotHoSoPhong = () => {
         >
           Để sau
         </button>
-        {!sanSangChot ? (
+        {Number(phieu.SoQuyDaChot) === 0 ? (
+          <span className="cd-hint cd-hint-warn" style={{ marginTop: 0 }}>
+            <i className="fa-solid fa-lock"></i> Chưa có quý nào chốt điểm.
+            Cần tổng hợp điểm từ quý trước khi chốt hồ sơ năm.
+          </span>
+        ) : !sanSangChot ? (
           <span className="cd-hint cd-hint-warn" style={{ marginTop: 0 }}>
             <i className="fa-solid fa-lock"></i> Còn{" "}
             {dungDuongLui
@@ -1008,7 +1017,7 @@ const ChotHoSoPhong = () => {
               <button
                 className="close-btn"
                 onClick={() => setXacNhanChot(false)}
-                disabled={dangChot}
+                disabled={dangChot || Number(phieu.SoQuyDaChot) === 0}
               >
                 &times;
               </button>

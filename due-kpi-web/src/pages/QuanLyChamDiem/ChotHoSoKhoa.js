@@ -896,7 +896,11 @@ const ChotHoSoKhoa = () => {
       <div className="cd-chot-thanh-nut">
         <button
           className="btn-submit"
-          disabled={dangChot || chuaChot.length > 0}
+          disabled={
+            dangChot ||
+            chuaChot.length > 0 ||
+            Number(phieu.SoQuyDaChot) === 0
+          }
           onClick={moXacNhan}
         >
           {dangChot ? (
@@ -916,7 +920,12 @@ const ChotHoSoKhoa = () => {
         >
           Để sau
         </button>
-        {chuaChot.length > 0 ? (
+        {Number(phieu.SoQuyDaChot) === 0 ? (
+          <span className="cd-hint cd-hint-warn" style={{ marginTop: 0 }}>
+            <i className="fa-solid fa-lock"></i> Chưa có quý nào chốt điểm.
+            Cần tổng hợp điểm từ quý trước khi chốt hồ sơ năm.
+          </span>
+        ) : chuaChot.length > 0 ? (
           <span className="cd-hint cd-hint-warn" style={{ marginTop: 0 }}>
             <i className="fa-solid fa-lock"></i> Còn {chuaChot.length} tiêu chí
             chưa chốt điểm nên chưa chốt được hồ sơ.
@@ -1169,7 +1178,7 @@ const ChotHoSoKhoa = () => {
               <button
                 className="close-btn"
                 onClick={() => setXacNhanChot(false)}
-                disabled={dangChot}
+                disabled={dangChot || Number(phieu.SoQuyDaChot) === 0}
               >
                 &times;
               </button>

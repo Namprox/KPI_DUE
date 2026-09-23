@@ -148,6 +148,8 @@ const TieuChiChamCard = ({
   onTraThamDinh,
   onXemMinhChung,
   onTaiMinhChung,
+  nhanChuPhieu = "Giảng viên",
+  noiDungBen = null,
 }) => {
   const chamTay = laTieuChiChamTay(chiTiet);
   const trangThaiDong = Number(chiTiet.TrangThaiDong);
@@ -200,10 +202,13 @@ const TieuChiChamCard = ({
     };
   }, [chiTiet]);
 
-  // Tiêu chí tự động không đi qua ai chấm nên DiemKhoa/DiemTuDanhGia thường trống;
-  // điểm thật nằm ở DiemChinhThuc do hệ thống ghi.
+  // Tiêu chí tự động không đi qua ai chấm. Phiếu giảng viên lưu kết quả ở
+  // DiemChinhThuc, còn phiếu quý viên chức trả rõ DiemTuDong.
   const diemTuDong =
-    chiTiet.DiemChinhThuc ?? chiTiet.DiemKhoa ?? chiTiet.DiemTuDanhGia;
+    chiTiet.DiemTuDong ??
+    chiTiet.DiemChinhThuc ??
+    chiTiet.DiemKhoa ??
+    chiTiet.DiemTuDanhGia;
 
   // Khối kèm theo chỉ dựng cho phần thực sự có dữ liệu và mặc định mở sẵn -
   // tiêu chí trống thì không cần một hàng "không có gì" để người chấm bấm vào.
@@ -230,7 +235,7 @@ const TieuChiChamCard = ({
   const khoiTuDanhGia = (lopHop, lopTieuDe) =>
     (chiTiet.MoTaHoanThanh || chiTiet.NhanXetTuDanhGia) && (
       <div className={lopHop}>
-        <div className={lopTieuDe}>Giảng viên tự đánh giá</div>
+        <div className={lopTieuDe}>{nhanChuPhieu} tự đánh giá</div>
         {chiTiet.MoTaHoanThanh && (
           <p className="cd-tdg-mota">{chiTiet.MoTaHoanThanh}</p>
         )}
@@ -363,7 +368,7 @@ const TieuChiChamCard = ({
             {chamTay ? (
               <>
                 <div className="cdm-diem-o">
-                  <div className="cdm-diem-nhan">GV tự chấm</div>
+                  <div className="cdm-diem-nhan">{nhanChuPhieu} tự chấm</div>
                   <div
                     className={`cdm-diem-gt${chiTiet.DiemTuDanhGia == null ? " cdm-diem-trong" : ""}`}
                   >
@@ -454,7 +459,9 @@ const TieuChiChamCard = ({
         )}
       </div>
 
-      {chamTay ? (
+      {noiDungBen ? (
+        <div className="cdm-ben">{noiDungBen}</div>
+      ) : chamTay ? (
         <div className="cdm-ben">
           <div className="cdm-ben-tieu-de">
             {choPhepNhap ? "Thẩm định tiêu chí" : "Điểm đơn vị (chỉ đọc)"}
@@ -490,7 +497,7 @@ const TieuChiChamCard = ({
                 className="cdm-btn cdm-btn-chinh"
                 disabled={dangLuu}
                 onClick={() => onDuyet(chiTiet, { nhanXet: null })}
-                title="Chốt tiêu chí ở đúng mức điểm giảng viên tự kê khai"
+                title={`Chốt tiêu chí ở đúng mức điểm ${nhanChuPhieu.toLowerCase()} tự kê khai`}
               >
                 <i className="fa-solid fa-check"></i> Duyệt giữ nguyên{" "}
                 {formatDiem(chiTiet.DiemTuDanhGia)}
@@ -509,9 +516,9 @@ const TieuChiChamCard = ({
                 className="cdm-btn cdm-btn-canh-bao"
                 disabled={dangLuu}
                 onClick={() => onTraVe(chiTiet)}
-                title="Trả tiêu chí về cho giảng viên bổ sung; các tiêu chí khác giữ nguyên tiến độ"
+                title={`Trả tiêu chí về cho ${nhanChuPhieu.toLowerCase()} bổ sung; các tiêu chí khác giữ nguyên tiến độ`}
               >
-                <i className="fa-solid fa-rotate-left"></i> Trả về giảng viên
+                <i className="fa-solid fa-rotate-left"></i> Trả về {nhanChuPhieu.toLowerCase()}
               </button>
             </>
           )}

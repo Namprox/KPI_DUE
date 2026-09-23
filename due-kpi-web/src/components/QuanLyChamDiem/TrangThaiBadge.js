@@ -53,11 +53,11 @@ export const TrangThaiBadge = ({ trangThai, canHtDuyet }) => {
   const meta =
     Number(trangThai) === 4 && canHtDuyet === false
       ? {
-          label: "Dữ liệu cũ - cần đóng gói lại",
-          icon: "fa-triangle-exclamation",
-          bg: "#fffbeb",
-          color: "#b45309",
-          border: "#fde68a",
+          label: "Chờ đóng gói tờ trình",
+          icon: "fa-box-archive",
+          bg: "#f8fafc",
+          color: "#475569",
+          border: "#cbd5e1",
         }
       : trangThai != null && Number(trangThai) === TRANG_THAI_CHUA_LAP
         ? TRANG_THAI_CHUA_LAP_META

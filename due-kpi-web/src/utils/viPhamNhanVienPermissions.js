@@ -13,7 +13,7 @@
  */
 
 import { LOAI_DOI_TUONG } from "./phieuApi";
-import { loaiDoiTuongTheoChucDanh } from "./chuaLapPhieu";
+import { loaiDoiTuongNhanVien } from "./chuaLapPhieu";
 import { canGhiNhanLoai, canRecordViPham } from "./viPhamPermissions";
 
 /** Giá trị LoaiDoiTuong của dòng vi phạm / danh mục thuộc về màn hình này. */
@@ -24,15 +24,13 @@ export const LOAI_DOI_TUONG_VIEN_CHUC = LOAI_DOI_TUONG.VIEN_CHUC;
 /* ------------------------------------------------------------------ */
 
 /**
- * Ngạch viên chức / NLĐ suy từ IdChucDanh (CHUC_DANH_SETS.NHAN_VIEN trong
- * roles.js) - cùng bảng ánh xạ mà luồng phiếu KPI đang dùng, nên không cần nạp
- * thêm danh mục chuc-danh-nghe-nghiep chỉ để tra mã.
+ * Loại viên chức / NLĐ đọc từ LoaiDoiTuong do backend trả trên bản ghi nhân viên.
  *
  * Khác với giảng viên, đối tượng này KHÔNG bị ràng buộc phải thuộc Khoa: nhân
  * viên văn phòng Khoa cũng nằm trong tập của máy chủ.
  */
 export const laVienChuc = (nhanVien) =>
-  loaiDoiTuongTheoChucDanh(nhanVien) === LOAI_DOI_TUONG.VIEN_CHUC;
+  loaiDoiTuongNhanVien(nhanVien) === LOAI_DOI_TUONG.VIEN_CHUC;
 
 /** Trả null nếu hợp lệ, ngược lại trả lý do tiếng Việt để hiển thị. */
 export const getVienChucBlockReason = (nhanVien) => {

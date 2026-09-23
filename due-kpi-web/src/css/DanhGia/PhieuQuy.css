@@ -1,0 +1,101 @@
+.pq-page { color: #1e293b; }
+.pq-header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-end; margin-bottom: 18px; }
+.pq-header h2 { margin: 0; color: #0f2f6d; font-size: 22px; }
+.pq-header p { margin: 6px 0 0; color: #64748b; }
+.pq-filters { display: flex; gap: 10px; flex-wrap: wrap; }
+.pq-filters label, .pq-review-row label, .pq-review-footer label { display: grid; gap: 5px; color: #475569; font-size: 12px; font-weight: 700; }
+.pq-filters select, .pq-review-row input, .pq-review-row textarea, .pq-review-footer textarea, .pq-evidence-actions input { border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; padding: 8px 10px; color: #1e293b; }
+.pq-tabs { display: flex; gap: 4px; border-bottom: 1px solid #cbd5e1; margin-bottom: 18px; overflow-x: auto; }
+.pq-tabs button { border: 0; background: transparent; padding: 10px 16px; color: #64748b; font-weight: 700; white-space: nowrap; border-bottom: 3px solid transparent; cursor: pointer; }
+.pq-tabs button.active { color: #003399; border-bottom-color: #003399; }
+.pq-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9px; padding: 12px 14px; margin-bottom: 14px; }
+.pq-toolbar > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pq-status { border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 800; background: #e2e8f0; }
+.pq-status-1 { background: #e0f2fe; color: #075985; }
+.pq-status-2 { background: #fef3c7; color: #92400e; }
+.pq-status-5 { background: #dcfce7; color: #166534; }
+.pq-total { color: #334155; font-weight: 700; }
+.pq-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid transparent; border-radius: 7px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
+.pq-btn:disabled { cursor: not-allowed; opacity: .55; }
+.pq-btn-primary { color: #fff; background: #003399; }
+.pq-btn-secondary { color: #1e3a8a; background: #eff6ff; border-color: #bfdbfe; }
+.pq-btn-danger { color: #fff; background: #b91c1c; }
+.pq-back, .pq-link-button { border: 0; padding: 0; background: transparent; color: #1d4ed8; cursor: pointer; }
+.pq-empty, .pq-loading { text-align: center; padding: 42px 20px; color: #64748b; }
+.pq-empty > i { font-size: 34px; color: #94a3b8; }
+.pq-empty h3 { margin: 10px 0 4px; color: #334155; }
+.pq-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+.pq-section-title { display: flex; gap: 9px; align-items: center; padding: 12px 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #0f2f6d; }
+.pq-section-title h3 { margin: 0; font-size: 16px; }
+.pq-table-wrap { overflow-x: auto; }
+.pq-table { width: 100%; border-collapse: collapse; min-width: 760px; }
+.pq-table th { text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #64748b; background: #f8fafc; }
+.pq-table td { border-top: 1px solid #e2e8f0; padding: 12px; vertical-align: top; }
+.pq-table tbody tr:first-child td { border-top: 0; }
+.pq-col-score { width: 130px; }
+.pq-col-action { width: 110px; }
+.pq-auto-row { background: #f8fafc; }
+.pq-criterion-name { font-weight: 700; color: #1e293b; }
+.pq-criterion-meta, .pq-table small { display: block; margin-top: 4px; color: #64748b; font-size: 12px; }
+.pq-system-badge { display: inline-flex; gap: 5px; align-items: center; margin-top: 7px; padding: 3px 7px; color: #075985; background: #e0f2fe; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.pq-auto-links { display: flex; gap: 10px; margin-top: 6px; font-size: 11px; }
+.pq-auto-links a { color: #1d4ed8; }
+.pq-score-input { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px; }
+.pq-comment { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px; resize: vertical; }
+.pq-formula { color: #475569; font-size: 12px; white-space: pre-wrap; }
+.pq-evidence { margin-top: 8px; font-size: 12px; }
+.pq-evidence summary { color: #1d4ed8; font-weight: 700; cursor: pointer; }
+.pq-evidence > a, .pq-evidence > button { display: block; margin-top: 7px; text-decoration: none; }
+.pq-evidence-actions { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.pq-file-button { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; border: 1px solid #bfdbfe; border-radius: 6px; background: #eff6ff; color: #1d4ed8; padding: 7px 9px; font-weight: 700; }
+.pq-file-button input { display: none; }
+.pq-alert { display: flex; gap: 9px; align-items: flex-start; border-radius: 8px; padding: 11px 13px; margin-bottom: 14px; }
+.pq-alert-error { color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; }
+.pq-alert-warn { color: #92400e; background: #fffbeb; border: 1px solid #fde68a; }
+.pq-muted { color: #64748b; font-size: 13px; margin-top: 7px; }
+.pq-quarter-cards { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.pq-quarter-card { display: grid; gap: 5px; border: 1px solid #e2e8f0; border-radius: 9px; padding: 12px; background: #fff; }
+.pq-quarter-card span { color: #64748b; font-size: 12px; }
+.pq-quarter-card.done { border-color: #86efac; background: #f0fdf4; }
+.pq-metrics { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.pq-metrics > div { display: grid; gap: 5px; padding: 13px; border-radius: 9px; border: 1px solid #e2e8f0; background: #fff; }
+.pq-metrics span, .pq-metrics small { color: #64748b; }
+.pq-metrics strong { font-size: 24px; color: #0f2f6d; }
+.pq-metrics .primary { background: #0f2f6d; border-color: #0f2f6d; }
+.pq-metrics .primary span, .pq-metrics .primary small, .pq-metrics .primary strong { color: #fff; }
+.pq-summary-table th:not(:first-child), .pq-summary-table td:not(:first-child) { text-align: right; }
+.pq-clamped { background: #fff7ed; }
+.pq-clamped i { color: #ea580c; margin-left: 5px; }
+.pq-annual-card { display: grid; grid-template-columns: 1fr auto; gap: 12px; border: 1px solid #bfdbfe; background: #eff6ff; padding: 15px; border-radius: 10px; }
+.pq-annual-card h3 { margin: 0 0 5px; color: #0f2f6d; }
+.pq-annual-card p { margin: 0; color: #475569; }
+.pq-annual-actions { display: flex; gap: 8px; align-items: start; }
+.pq-annual-lines { grid-column: 1 / -1; display: grid; gap: 6px; }
+.pq-annual-warning { grid-column: 1 / -1; margin: 0; }
+.pq-annual-lines > div { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; background: #fff; border-radius: 7px; padding: 9px 11px; }
+.pq-annual-lines em { color: #075985; font-size: 12px; }
+.pq-review-grid { display: grid; gap: 8px; }
+.pq-review-row { display: grid; grid-template-columns: minmax(260px, 1fr) 100px minmax(250px, 1fr); gap: 16px; align-items: center; border: 1px solid #e2e8f0; border-radius: 9px; padding: 12px; }
+.pq-review-row.auto { background: #f8fafc; }
+.pq-review-row h4 { margin: 5px 0; }
+.pq-review-evidence { display: block; margin-top: 5px; text-align: left; font-size: 12px; }
+.pq-review-card-field { display: grid; gap: 6px; color: #6b7086; font-size: 13px; font-weight: 600; }
+.pq-review-card-field input, .pq-review-card-field textarea { width: 100%; box-sizing: border-box; border: 1px solid #d9dce7; border-radius: 8px; padding: 9px 10px; color: #1f2333; font: inherit; }
+.pq-review-card-field small { color: #8a8fa3; font-weight: 400; }
+.pq-review-row textarea, .pq-review-row input { width: 100%; box-sizing: border-box; }
+.pq-group-badge { color: #475569; font-size: 11px; font-weight: 800; }
+.pq-review-score { display: grid; gap: 3px; text-align: center; }
+.pq-review-score span { color: #64748b; font-size: 12px; }
+.pq-review-score strong { font-size: 20px; }
+.pq-review-footer { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; border-top: 1px solid #e2e8f0; margin-top: 16px; padding-top: 16px; }
+@media (max-width: 900px) {
+  .pq-header { align-items: stretch; flex-direction: column; }
+  .pq-quarter-cards, .pq-metrics { grid-template-columns: repeat(2, 1fr); }
+  .pq-review-row, .pq-review-footer { grid-template-columns: 1fr; }
+  .pq-annual-card { grid-template-columns: 1fr; }
+  .pq-annual-lines, .pq-annual-card .pq-muted { grid-column: 1; }
+}
+@media (max-width: 560px) {
+  .pq-quarter-cards, .pq-metrics { grid-template-columns: 1fr; }
+  .pq-toolbar { align-items: stretch; flex-direction: column; }
+}

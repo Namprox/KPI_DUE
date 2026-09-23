@@ -129,6 +129,17 @@ CREATE TABLE nam_danh_gia (
     ngay_dong_danh_gia_cap_tren DATE         NULL,
     trang_thai                  TINYINT      DEFAULT 1,    -- 1: Chuẩn bị, 2: Đang mở, 3: Đã đóng
     ghi_chu                     NVARCHAR(500) NULL,
+
+    -- Công tắc chế độ ĐÁNH GIÁ THEO QUÝ cho viên chức / NLĐ (đợt "Đánh giá theo quý").
+    -- 0 = tắt → hệ thống chạy y hệt trước đợt đó, delta hành vi bằng 0.
+    -- 1 = bật → sp_phieu_quy_create mới cho tạo phiếu quý, và sp_phieu_danh_gia_create
+    --     mới đặt nguon_diem_co_ban = 2 cho phiếu năm của viên chức.
+    -- Cờ để ở CẤP NĂM (không phải cấu hình toàn cục) nên năm đang chạy dở không bị
+    -- đổi cách tính giữa chừng.
+    -- DB thật: cột nằm cuối bảng (thêm qua ALTER).
+    ap_dung_phieu_quy           BIT          NOT NULL
+        CONSTRAINT df_nam_ap_dung_phieu_quy DEFAULT 0,
+
     CONSTRAINT chk_ngay_nam       CHECK (ngay_bat_dau < ngay_ket_thuc),
     CONSTRAINT chk_trang_thai_nam CHECK (trang_thai IN (1, 2, 3))
 );
@@ -292,12 +303,19 @@ CREATE TABLE nhom_vi_pham (
     -- Mở rộng sang VIÊN CHỨC / NLĐ: tách danh mục làm hai rõ ràng, và trần điểm trừ
     -- của viên chức nằm trên TỪNG NHÓM (70, 30, hoặc NULL = không áp trần như nhóm
     -- "Chính trị, tư tưởng") chứ không phải trần 15 tổng cá nhân như giảng viên.
-    loai_doi_tuong  TINYINT       NOT NULL DEFAULT 1,  -- 1: giảng viên, 2: viên chức
+    loai_doi_tuong  TINYINT       NOT NULL
+        CONSTRAINT df_nhom_vp_loai_doi_tuong DEFAULT 1,  -- 1: giảng viên, 2: viên chức
     tran_diem_tru   DECIMAL(5,2)  NULL,                -- NULL = không áp trần
     ma_nhom         NVARCHAR(50)  NULL,
     CONSTRAINT chk_nhom_vp_loai_doi_tuong CHECK (loai_doi_tuong IN (1, 2)),
     CONSTRAINT chk_nhom_vp_tran_diem_tru  CHECK (tran_diem_tru IS NULL OR tran_diem_tru > 0)
 );
+GO
+
+-- ma_nhom là duy nhất KHI CÓ giá trị. Dùng filtered unique index chứ không phải
+-- UNIQUE constraint: UNIQUE coi mọi NULL là trùng nhau, mà nhóm cũ chưa gán mã.
+-- (Filtered index ⇒ mọi INSERT/UPDATE lên bảng này bắt buộc QUOTED_IDENTIFIER ON.)
+CREATE UNIQUE INDEX uq_nhom_vi_pham_ma ON nhom_vi_pham(ma_nhom) WHERE ma_nhom IS NOT NULL;
 GO
 
 -- 3.2.b. Danh mục "việc chưa tuân thủ" (15 nội dung, mặc định 1 điểm / 1 nội dung)
@@ -313,12 +331,14 @@ CREATE TABLE loai_vi_pham (
     ghi_chu                NVARCHAR(500) NULL,
     thu_tu_hien_thi        INT           NOT NULL DEFAULT 0,
     trang_thai             BIT           NOT NULL DEFAULT 1,
-    loai_doi_tuong         TINYINT       NOT NULL DEFAULT 1,  -- 1: giảng viên, 2: viên chức
+    loai_doi_tuong         TINYINT       NOT NULL
+        CONSTRAINT df_loai_vp_loai_doi_tuong DEFAULT 1,  -- 1: giảng viên, 2: viên chức
     -- Quyết định cách áp mức trừ khi ghi nhận vi phạm:
     --   0 = tự do    (mặc định, giữ nguyên hành vi cũ của 15 loại giảng viên)
     --   1 = cố định  (vd "đi làm muộn: trừ 01 điểm/lần")
     --   2 = tối thiểu (vd "trừ tối thiểu 5 điểm/lần" — cho nâng, BẮT BUỘC lý do)
-    che_do_diem_tru        TINYINT       NOT NULL DEFAULT 0,
+    che_do_diem_tru        TINYINT       NOT NULL
+        CONSTRAINT df_loai_vp_che_do_diem_tru DEFAULT 0,
     CONSTRAINT uq_loai_vi_pham_ma    UNIQUE (ma_loai_vi_pham),
     CONSTRAINT fk_loai_vi_pham_nhom  FOREIGN KEY (id_nhom_vp) REFERENCES nhom_vi_pham(id_nhom_vp),
     CONSTRAINT chk_loai_vi_pham_diem CHECK (diem_tru_mac_dinh >= 0),
@@ -363,6 +383,12 @@ CREATE TABLE vi_pham_giang_day (
     -- BẮT BUỘC khi loai_vi_pham.che_do_diem_tru = 2 và người ghi nâng mức trừ lên
     -- trên mức tối thiểu (DB thật: cột nằm cuối bảng).
     ly_do_dieu_chinh   NVARCHAR(500) NULL,
+    -- QUÝ mà vi phạm này thuộc về (1-4). Nguồn duy nhất để phiếu quý của viên chức/NLĐ
+    -- biết phải trừ vi phạm nào — xem nhánh VPVC_* trong fn_nckh_diem_tu_dong.
+    -- NOT NULL có chủ đích: dòng NULL sẽ rơi khỏi MỌI phiếu quý mà vẫn vào tổng năm,
+    -- tức là mất điểm trong im lặng. SP create/update suy từ ngay_vi_pham khi không
+    -- được truyền. (DB thật: cột nằm cuối bảng do được ADD sau.)
+    quy                TINYINT       NOT NULL CONSTRAINT df_vp_quy DEFAULT 1,
     CONSTRAINT fk_vp_nv              FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_vp_nam             FOREIGN KEY (id_nam)             REFERENCES nam_danh_gia(id_nam),
     CONSTRAINT fk_vp_nguoi           FOREIGN KEY (id_nguoi_ghi_nhan)  REFERENCES nhan_vien(id_nhan_vien),
@@ -377,8 +403,15 @@ CREATE TABLE vi_pham_giang_day (
      OR (mc_duong_dan IS NOT NULL AND mc_ten_file_goc IS NOT NULL AND mc_nguoi_tai_len IS NOT NULL)
     ),
     -- Chỉ chấp nhận PDF
-    CONSTRAINT chk_vp_mc_pdf         CHECK (mc_duong_dan IS NULL OR mc_duong_dan LIKE '%.pdf')
+    CONSTRAINT chk_vp_mc_pdf         CHECK (mc_duong_dan IS NULL OR mc_duong_dan LIKE '%.pdf'),
+    CONSTRAINT chk_vp_quy            CHECK (quy BETWEEN 1 AND 4)
 );
+GO
+
+-- Index phục vụ nhánh VPVC_* của fn_nckh_diem_tu_dong: hàm đó chạy 3 lần / phiếu quý
+-- (1 lần / nhóm) và lọc đúng theo bộ ba này.
+CREATE INDEX ix_vi_pham_nv_nam_quy ON vi_pham_giang_day(id_nhan_vien, id_nam, quy)
+    INCLUDE (id_loai_vi_pham, diem_tru);
 GO
 
 -- 3.3. Phản hồi sinh viên (thang Likert 1-5, lưu thô từng lượt) → nguồn cho KPI I.3
@@ -949,6 +982,38 @@ CREATE TABLE phieu_danh_gia (
     -- DB thật: cột nằm cuối bảng.
     can_ht_duyet       BIT NOT NULL CONSTRAINT df_phieu_can_ht_duyet DEFAULT 0,
 
+    -- HẠN NGẠCH 20% TÁCH 3 NHÓM: nhóm xếp hạng đã SNAPSHOT lúc đóng gói tờ trình.
+    --   1 Giảng viên thường · 2 Viên chức/NLĐ · 3 Cán bộ quản lý
+    -- Mỗi nhóm có mẫu số + hạn ngạch riêng nên hang_trong_khoa chỉ đọc được khi biết
+    -- nhóm. NULL = phiếu chưa từng được đóng gói. Xem schema_ghi_chu.md mục 8.2.
+    -- DB thật: cột nằm cuối bảng (thêm qua ALTER).
+    nhom_xep_hang      TINYINT NULL,
+
+    -- ── ĐÁNH GIÁ THEO QUÝ (viên chức / NLĐ) ────────────────────────────────
+    -- quy = 0    : phiếu NĂM — mọi phiếu có trước đợt này, và TOÀN BỘ phiếu giảng viên.
+    -- quy = 1..4 : phiếu QUÝ, chỉ viên chức / NLĐ.
+    -- MỌI stored procedure cấp NĂM đều phải lọc quy = 0. Bốn ràng buộc chk_pdg_quy_*
+    -- bên dưới là lưới an toàn: sót bộ lọc ở một đường GHI thì va vào CHECK và báo lỗi
+    -- ầm ĩ, thay vì âm thầm làm sai một quyết định nhân sự (hạn ngạch 20%).
+    -- Chi tiết luồng: mục 14 trong App_Data/procedure.sql, schema_ghi_chu.md mục 4.1.
+    quy                    TINYINT NOT NULL CONSTRAINT df_phieu_quy DEFAULT 0,
+
+    -- Công tắc chuyển mạch của vế điểm CƠ BẢN:
+    --   1 = tổng dòng nhóm A của CHÍNH phiếu này (hành vi cũ — giảng viên, mọi phiếu
+    --       cũ, và cả phiếu quý);
+    --   2 = TRUNG BÌNH tong_diem_co_ban các quý ĐÃ CHỐT. Phiếu này KHÔNG có dòng
+    --       nhóm A; vế cơ bản do các phiếu quý lo. Chỉ viên chức / NLĐ trong năm đã
+    --       bật nam_danh_gia.ap_dung_phieu_quy.
+    -- Mặc định 1 nên mọi phiếu cũ chạy y hệt.
+    nguon_diem_co_ban      TINYINT NOT NULL CONSTRAINT df_pdg_nguon_diem_co_ban DEFAULT 1,
+
+    -- Vết của bước roll-up cuối năm (sp_phieu_nam_tong_hop_tu_quy).
+    diem_co_ban_tb_quy     DECIMAL(6,2)  NULL,  -- bản sao audit của trung bình đã tính
+    so_quy_da_chot         TINYINT       NULL,  -- MẪU SỐ thực dùng — KHÔNG phải luôn 4
+    danh_sach_quy_da_chot  NVARCHAR(20)  NULL,  -- VD '1,2,4'; số lượng một mình không audit được
+    ngay_tong_hop_quy      DATETIME      NULL,
+    id_nguoi_tong_hop_quy  INT           NULL,
+
     CONSTRAINT fk_phieu_nam        FOREIGN KEY (id_nam)             REFERENCES nam_danh_gia(id_nam),
     CONSTRAINT fk_phieu_nv         FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_phieu_don_vi     FOREIGN KEY (id_don_vi)          REFERENCES don_vi(id_don_vi),
@@ -960,6 +1025,7 @@ CREATE TABLE phieu_danh_gia (
     CONSTRAINT fk_phieu_chuc_vu    FOREIGN KEY (id_chuc_vu)         REFERENCES chuc_vu(id_chuc_vu),
     CONSTRAINT fk_phieu_chuc_danh  FOREIGN KEY (id_chuc_danh)       REFERENCES chuc_danh_nghe_nghiep(id_chuc_danh),
     CONSTRAINT fk_phieu_nguoi_xep_loai FOREIGN KEY (id_nguoi_xep_loai) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_phieu_nguoi_th_quy   FOREIGN KEY (id_nguoi_tong_hop_quy) REFERENCES nhan_vien(id_nhan_vien),
     -- FK id_to_trinh → to_trinh_kpi_khoa nằm ở mục 8.3 (ALTER TABLE): bảng đó
     -- khai báo sau nên không tham chiếu inline được.
 
@@ -977,10 +1043,38 @@ CREATE TABLE phieu_danh_gia (
     CONSTRAINT chk_gio_giang_dm_ap     CHECK (gio_giang_dinh_muc_ap_dung IS NULL OR gio_giang_dinh_muc_ap_dung >= 0),
     CONSTRAINT chk_gio_nckh_dm_ap      CHECK (gio_nckh_dinh_muc_ap_dung  IS NULL OR gio_nckh_dinh_muc_ap_dung  >= 0),
     CONSTRAINT chk_gio_pvcd_dm_ap      CHECK (gio_pvcd_dinh_muc_ap_dung  IS NULL OR gio_pvcd_dinh_muc_ap_dung  >= 0),
-    -- 1 phiếu / người / ĐƠN VỊ / năm (Đợt 3 — kiêm nhiệm đa đơn vị).
-    -- Người kiêm nhiệm 2 đơn vị nộp 2 phiếu, mỗi phiếu vào tờ trình + hạn ngạch
-    -- 20% của đúng đơn vị đó. Trước Đợt 3 khoá này là UNIQUE (id_nam, id_nhan_vien).
-    CONSTRAINT uq_phieu_unique         UNIQUE (id_nam, id_nhan_vien, id_don_vi)
+    CONSTRAINT chk_pdg_nhom_xep_hang   CHECK (nhom_xep_hang IS NULL OR nhom_xep_hang IN (1, 2, 3)),
+
+    -- ── Ràng buộc của ĐÁNH GIÁ THEO QUÝ ────────────────────────────────────
+    CONSTRAINT chk_phieu_quy             CHECK (quy BETWEEN 0 AND 4),
+    CONSTRAINT chk_pdg_nguon_diem_co_ban CHECK (nguon_diem_co_ban IN (1, 2)),
+    CONSTRAINT chk_pdg_so_quy_da_chot    CHECK (so_quy_da_chot IS NULL OR so_quy_da_chot BETWEEN 0 AND 4),
+
+    -- LƯỚI AN TOÀN — đây là lý do hạn ngạch 20% KHÔNG BAO GIỜ nhìn thấy phiếu quý,
+    -- kể cả khi một stored procedure nào đó sót bộ lọc quy = 0.
+    CONSTRAINT chk_pdg_quy_loai_doi_tuong CHECK (quy = 0 OR loai_doi_tuong = 2),
+    CONSTRAINT chk_pdg_quy_trang_thai     CHECK (quy = 0 OR trang_thai IN (1, 2, 5)),
+    -- Khiến sp_to_trinh_khoa_ht_duyet / _ht_tra_lai (khoá trên id_to_trinh) VỀ MẶT
+    -- CẤU TRÚC không thể chạm vào phiếu quý.
+    CONSTRAINT chk_pdg_quy_khong_xep_loai CHECK (quy = 0 OR (
+               xep_loai          IS NULL
+           AND xep_loai_khoa     IS NULL
+           AND xep_loai_de_xuat  IS NULL
+           AND id_to_trinh       IS NULL
+           AND nhom_xep_hang     IS NULL
+           AND hang_trong_khoa   IS NULL
+           AND ISNULL(uu_tien_xuat_sac, 0) = 0
+           AND ISNULL(can_ht_duyet, 0)     = 0)),
+    CONSTRAINT chk_pdg_quy_nguon_diem     CHECK (quy = 0 OR nguon_diem_co_ban = 1),
+
+    -- 1 phiếu / người / ĐƠN VỊ / năm / QUÝ.
+    -- Đợt 3 (kiêm nhiệm đa đơn vị) đổi UNIQUE (id_nam, id_nhan_vien)
+    --   → UNIQUE (id_nam, id_nhan_vien, id_don_vi): người kiêm nhiệm 2 đơn vị nộp
+    --   2 phiếu, mỗi phiếu vào tờ trình + hạn ngạch 20% của đúng đơn vị đó.
+    -- Đợt "Đánh giá theo quý" thêm `quy` vào CUỐI khoá — đặt cuối để mọi truy vấn
+    --   seek theo (id_nam, id_nhan_vien, id_don_vi) vẫn dùng được index này.
+    -- Khoá KHÔNG lọc da_xoa: phiếu soft-delete vẫn chiếm chỗ, y như trước.
+    CONSTRAINT uq_phieu_unique         UNIQUE (id_nam, id_nhan_vien, id_don_vi, quy)
 );
 GO
 
@@ -1159,8 +1253,15 @@ CREATE TABLE lich_su_cham_diem (
     CONSTRAINT fk_lscd_phieu FOREIGN KEY (id_phieu)           REFERENCES phieu_danh_gia(id_phieu) ON DELETE CASCADE,
     CONSTRAINT fk_lscd_nguoi FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT chk_lscd_cap  CHECK (cap IN (1, 2, 3, 4)),
-    CONSTRAINT chk_lscd_hd   CHECK (hanh_dong IN (1, 2, 3, 4, 5)),
-    CONSTRAINT chk_lscd_diem CHECK (diem IS NULL OR diem >= 0)
+    CONSTRAINT chk_lscd_hd   CHECK (hanh_dong IN (1, 2, 3, 4, 5))
+    -- chk_lscd_diem CHECK (diem >= 0) ĐÃ BỊ GỠ ở đợt "Đánh giá theo quý".
+    -- Tiêu chí viên chức ĐƯỢC ÂM ĐIỂM (mục 2.4 — mục III "Chấp hành quy định" khai
+    -- diem_toi_da = -100) và sp_chi_tiet_danh_gia_update_tu_danh_gia ghi thẳng @diem
+    -- vào bảng này, nên CHECK cũ làm mọi lần chấm điểm âm chết ngay ở ràng buộc.
+    -- Lỗi chưa nổ vì nhánh điểm âm chưa từng dùng thật; phiếu quý gồm TOÀN BỘ dòng
+    -- nhóm A của viên chức nên bắt buộc phải gỡ. Khoảng điểm hợp lệ nay do
+    -- sp_chi_tiet_danh_gia_update_tu_danh_gia cưỡng chế (CHECK không đọc được
+    -- loai_doi_tuong ở bảng khác).
 );
 GO
 
@@ -1495,6 +1596,16 @@ CREATE INDEX ix_phieu_to_trinh    ON phieu_danh_gia(id_to_trinh)        WHERE id
 -- Lọc hồ sơ LÃNH ĐẠO còn chờ Hiệu trưởng trong một gói tờ trình (luồng duyệt tách đôi).
 CREATE INDEX ix_phieu_can_ht_duyet ON phieu_danh_gia(id_to_trinh, trang_thai) WHERE can_ht_duyet = 1;
 
+-- ĐÁNH GIÁ THEO QUÝ: mọi SP cấp năm nay đều thêm "AND quy = 0", mà ix_phieu_don_vi
+-- (id_don_vi, id_nam) không còn phục vụ được mệnh đề đó. Hai filtered index dưới tách
+-- hai thế giới ra làm đôi, mỗi bên một index gọn.
+CREATE INDEX ix_phieu_nam_don_vi_quy0 ON phieu_danh_gia(id_nam, id_don_vi)
+    INCLUDE (trang_thai, loai_doi_tuong, tong_diem_tich_luy, xep_loai_khoa)
+    WHERE quy = 0;
+CREATE INDEX ix_phieu_quy_pending     ON phieu_danh_gia(id_nam, id_don_vi, trang_thai)
+    INCLUDE (quy, id_nhan_vien, tong_diem_co_ban)
+    WHERE quy > 0;
+
 -- chi tiết đánh giá
 CREATE INDEX ix_ct_phieu          ON chi_tiet_danh_gia(id_phieu);
 CREATE INDEX ix_ct_tieu_chi       ON chi_tiet_danh_gia(id_tieu_chi);
@@ -1730,10 +1841,16 @@ CREATE TABLE to_trinh_kpi_khoa (
         -- 5: HT_TRA_VE     — HT trả về ≥1 hồ sơ; TK xử lý rồi trình lại
 
     -- Snapshot hạn ngạch tại thời điểm đóng gói (quy định có thể đổi theo năm)
-    so_giang_vien      INT            NULL,       -- Mẫu số: đếm loai_doi_tuong = 1
+    -- ĐỔI Ý NGHĨA từ đợt tách 3 nhóm: so_giang_vien GIỮ TÊN nhưng nay chỉ là
+    -- headcount HIỂN THỊ (COUNT(loai_doi_tuong = 1)), KHÔNG còn là mẫu số hạn ngạch.
+    -- Mẫu số thật nằm ở to_trinh_kpi_khoa_nhom.so_mau_so, khác nhau theo từng nhóm.
+    so_giang_vien      INT            NULL,       -- Headcount giảng viên (hiển thị)
     ty_le_xuat_sac     DECIMAL(5,4)   NOT NULL DEFAULT 0.2000,
-    han_ngach_xuat_sac INT            NULL,       -- FLOOR(so_giang_vien * ty_le_xuat_sac)
-    so_dat_xuat_sac    INT            NULL,
+    han_ngach_xuat_sac INT            NULL,       -- roll-up SUM han_ngach của 3 nhóm
+    so_dat_xuat_sac    INT            NULL,       -- roll-up SUM so_dat của 3 nhóm
+    -- Số liệu tổng hợp tham khảo: số người xep_loai_khoa = 3 trong cả đơn vị.
+    -- DB thật: cột nằm cuối bảng (thêm qua ALTER).
+    so_nguoi_muc3      INT            NULL,
 
     lan_trinh          TINYINT        NOT NULL DEFAULT 0,   -- +1 mỗi lần trình HT
     id_nguoi_dong_goi  INT            NULL,
@@ -1760,8 +1877,52 @@ CREATE TABLE to_trinh_kpi_khoa (
     CONSTRAINT chk_ttkk_so_gv      CHECK (so_giang_vien      IS NULL OR so_giang_vien      >= 0),
     CONSTRAINT chk_ttkk_han_ngach  CHECK (han_ngach_xuat_sac IS NULL OR han_ngach_xuat_sac >= 0),
     CONSTRAINT chk_ttkk_so_dat     CHECK (so_dat_xuat_sac    IS NULL OR so_dat_xuat_sac    >= 0),
+    CONSTRAINT chk_ttkk_so_muc3    CHECK (so_nguoi_muc3      IS NULL OR so_nguoi_muc3      >= 0),
     -- Mỗi (năm, đơn vị) chỉ có 1 tờ trình
     CONSTRAINT uq_ttkk_nam_don_vi  UNIQUE (id_nam, id_don_vi)
+);
+GO
+
+-- 8.1b. Hạn ngạch xuất sắc theo TỪNG NHÓM xếp hạng của một tờ trình.
+--
+-- Bảng cha chỉ có MỘT bộ cột hạn ngạch nhưng luật mới cần BA. Dùng bảng con thay vì
+-- nới rộng bảng cha thêm 9+ cột: GROUP BY chỉ sinh dòng cho nhóm THỰC SỰ tồn tại, nên
+-- Phòng ra {2,3} và Khoa không có quản lý ra {1,2} — không có dòng rỗng giả.
+--
+-- MẪU SỐ BẤT ĐỐI XỨNG GIỮA CÁC NHÓM (quyết định nghiệp vụ, không phải lỗi sót):
+--   nhóm 1 Giảng viên     → so_mau_so = so_nguoi_muc3 (số người đã chốt mức 3)
+--   nhóm 2 Viên chức/NLĐ  → so_mau_so = so_nguoi      (tổng đầu người)
+--   nhóm 3 Cán bộ quản lý → so_mau_so = so_nguoi      (tổng quản lý của đơn vị)
+-- FE PHẢI đọc so_mau_so, KHÔNG được tự suy từ so_nguoi / so_nguoi_muc3.
+-- Xem schema_ghi_chu.md mục 8.2 và 8.6.
+CREATE TABLE to_trinh_kpi_khoa_nhom (
+    id_ttkk_nhom    INT     IDENTITY(1,1) NOT NULL,
+    id_to_trinh     INT     NOT NULL,
+    nhom            TINYINT NOT NULL,   -- 1 Giảng viên · 2 Viên chức/NLĐ · 3 Cán bộ quản lý
+
+    so_nguoi        INT     NOT NULL CONSTRAINT df_ttkkn_so_nguoi  DEFAULT 0,  -- tổng đầu người trong nhóm
+    so_nguoi_muc3   INT     NOT NULL CONSTRAINT df_ttkkn_muc3      DEFAULT 0,  -- số người xep_loai_khoa = 3
+    so_mau_so       INT     NOT NULL CONSTRAINT df_ttkkn_mau_so    DEFAULT 0,  -- MẪU SỐ THỰC DÙNG
+    so_du_dieu_kien INT     NOT NULL CONSTRAINT df_ttkkn_ddk       DEFAULT 0,  -- đủ điều kiện mức 4 (TOÀN nhóm)
+    han_ngach       INT     NOT NULL CONSTRAINT df_ttkkn_han_ngach DEFAULT 0,  -- MAX(1, FLOOR(so_mau_so * ty_le))
+    so_dat          INT     NOT NULL CONSTRAINT df_ttkkn_so_dat    DEFAULT 0,  -- thực tế đạt mức 4
+
+    CONSTRAINT pk_ttkkn           PRIMARY KEY (id_ttkk_nhom),
+    CONSTRAINT fk_ttkkn_to_trinh  FOREIGN KEY (id_to_trinh)
+        REFERENCES to_trinh_kpi_khoa(id_to_trinh) ON DELETE CASCADE,
+
+    CONSTRAINT chk_ttkkn_nhom      CHECK (nhom IN (1, 2, 3)),
+    CONSTRAINT chk_ttkkn_so_nguoi  CHECK (so_nguoi        >= 0),
+    CONSTRAINT chk_ttkkn_muc3      CHECK (so_nguoi_muc3   >= 0),
+    CONSTRAINT chk_ttkkn_mau_so    CHECK (so_mau_so       >= 0),
+    CONSTRAINT chk_ttkkn_ddk       CHECK (so_du_dieu_kien >= 0),
+    CONSTRAINT chk_ttkkn_han_ngach CHECK (han_ngach       >= 0),
+    -- Dưới luật "cắt Top trước, xét điều kiện sau — KHÔNG lấp suất", so_dat CÓ THỂ
+    -- nhỏ hơn han_ngach (suất để trống, không dồn xuống người kế tiếp). Bất biến
+    -- đúng theo cấu trúc, khác hẳn luật cũ.
+    CONSTRAINT chk_ttkkn_so_dat    CHECK (so_dat >= 0 AND so_dat <= han_ngach),
+    -- Mỗi tờ trình chỉ có 1 dòng / nhóm
+    CONSTRAINT uq_ttkkn_nhom       UNIQUE (id_to_trinh, nhom)
 );
 GO
 
