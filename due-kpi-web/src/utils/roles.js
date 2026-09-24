@@ -196,22 +196,15 @@ export const ROLE_SETS = {
   ],
 
   /**
-   * Ghi nhận vi phạm của VIÊN CHỨC / NLĐ (LoaiDoiTuong = 2) - giữ nguyên tập
-   * vai trò cũ, gồm cả Trưởng Phòng.
-   *
-   * Ở đây TP là người dùng CHÍNH chứ không phải ngoại lệ: nhân viên văn phòng
-   * thuộc Phòng của họ nằm đúng trong tập đối tượng hợp lệ của server.
-   *
-   * CỐ Ý tách khỏi GHI_NHAN_VI_PHAM_GIANG_VIEN dù hiện chỉ chênh nhau một vai
-   * trò: hai màn hình khác tập đối tượng, đổi một bên không được kéo theo bên
-   * kia.
+   * Lối vào màn hình ghi nhận vi phạm VIÊN CHỨC / NLĐ (LoaiDoiTuong = 2).
+   * TK/TKL không thấy màn hình này theo luồng KPI Khoa. TP (kể cả kiêm nhiệm)
+   * vẫn có lối vào; quyền xem sẵn có của cấp Trường và TBM được giữ nguyên.
+   * Không dùng chung tập với vi phạm giảng viên.
    */
   GHI_NHAN_VI_PHAM_NHAN_VIEN: [
     ROLE.ADMIN,
     ROLE.HIEU_TRUONG,
     ROLE.PHO_HIEU_TRUONG,
-    ROLE.TRUONG_KHOA,
-    ROLE.TRUONG_KHOA_LON,
     ROLE.TRUONG_BO_MON,
     ROLE.TRUONG_PHONG,
   ],
