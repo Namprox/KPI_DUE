@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { confirmDialog } from "primereact/confirmdialog";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch } from "../../utils/api";
-import { hasRole, ROLE_SETS } from "../../utils/roles";
+import { canManageHocVu } from "../../utils/roles";
+import HocVuSinhVienDoiChieu from "./HocVuSinhVienDoiChieu";
 import "../../css/Pages.css";
 import "../../css/HocVuSinhVien.css";
 
@@ -228,13 +229,14 @@ export default function HocVuSinhVien() {
   const [saveProgress, setSaveProgress] = useState("");
   const [uploading, setUploading] = useState(false);
   const [reload, setReload] = useState(0);
+  const [doiChieuSelection, setDoiChieuSelection] = useState({ loai: "tot-nghiep", idDonVi: "" });
 
   // Search & filter states
   const [searchKhoa, setSearchKhoa] = useState("");
   const [searchMapping, setSearchMapping] = useState("");
   const [mappingFilter, setMappingFilter] = useState("all"); // "all" | "unmapped" | "mapped"
 
-  const canManage = hasRole(ROLE_SETS.ADMIN, user);
+  const canManage = canManageHocVu(user);
   const khoaList = useMemo(() => donViList.filter((item) =>
     Number(item.CapDonVi) === 2 && String(item.MaDonVi || "").toUpperCase().startsWith("K_")
   ), [donViList]);
@@ -299,7 +301,7 @@ export default function HocVuSinhVien() {
   useEffect(() => { if (tab === "anhXa" && canManage) loadMappings(); }, [tab, canManage, loadMappings]);
 
   useEffect(() => {
-    if (!canManage && tab !== "tyLe") setTab("tyLe");
+    if (!canManage && tab !== "tyLe" && tab !== "doiChieu") setTab("tyLe");
   }, [canManage, tab]);
 
   const pendingMappings = mappings.filter((item) =>
@@ -362,7 +364,7 @@ export default function HocVuSinhVien() {
     },
   });
 
-  const overview = useMemo(() => tyLe?.TongQuan || {}, [tyLe]);
+  const overview = tyLe?.TongQuan;
   const items = useMemo(() => tyLe?.Items || [], [tyLe]);
 
   // Filter items in TyLe table
@@ -394,22 +396,26 @@ export default function HocVuSinhVien() {
 
   const mappedCount = useMemo(() => mappings.filter((m) => m.IdDonVi != null).length, [mappings]);
   const unmappedCount = mappings.length - mappedCount;
+  const openDoiChieu = (loai, idDonVi) => {
+    setDoiChieuSelection({ loai, idDonVi: tyLe?.XemTatCa ? idDonVi : "" });
+    setTab("doiChieu");
+  };
 
   return (
     <div className="page-container hoc-vu-page">
       {/* Header */}
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
         <div className="header-title">
-          <h2>HỌC VỤ SINH VIÊN</h2>
+          <h2>QUẢN LÝ HỌC VỤ</h2>
           <span className="breadcrumb">
-            Theo dõi tỷ lệ tốt nghiệp đúng hạn, cảnh báo học vụ theo Khoa và ánh xạ dữ liệu đào tạo
+            Theo dõi tỷ lệ tốt nghiệp đúng hạn, cảnh báo học vụ theo Khoa và đối chiếu sinh viên
           </span>
         </div>
       </div>
 
       {/* Toolbar */}
       <div className="hoc-vu-toolbar">
-        <div className="hoc-vu-tabs" role="tablist" aria-label="Nội dung học vụ sinh viên">
+        <div className="hoc-vu-tabs" role="tablist" aria-label="Nội dung quản lý học vụ">
           <button
             type="button"
             role="tab"
@@ -420,6 +426,17 @@ export default function HocVuSinhVien() {
           >
             <i className="fa-solid fa-chart-pie" aria-hidden="true" />
             <span>Tỷ lệ theo Khoa</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            disabled={uploading}
+            aria-selected={tab === "doiChieu"}
+            className={`hoc-vu-tab-btn ${tab === "doiChieu" ? "active" : ""}`}
+            onClick={() => setTab("doiChieu")}
+          >
+            <i className="fa-solid fa-users-viewfinder" aria-hidden="true" />
+            <span>Đối chiếu sinh viên</span>
           </button>
           {canManage && (
             <button
@@ -522,7 +539,7 @@ export default function HocVuSinhVien() {
 
           {!loadingTyLe && !loadError && tyLe && (
             <>
-              {/* Stat Cards Grid */}
+              {/* Khóa nhập học áp dụng cho cả cấp Khoa khi TongQuan là null. */}
               <div className="stat-card-grid">
                 <div className="stat-card">
                   <div className="stat-icon-box stat-icon-blue">
@@ -532,9 +549,9 @@ export default function HocVuSinhVien() {
                     <div className="stat-label">Khóa tốt nghiệp</div>
                     <div
                       className="stat-value"
-                      title={overview.NamNhapHocTotNghiep != null ? `Năm nhập học: ${overview.NamNhapHocTotNghiep}` : undefined}
+                      title={tyLe.NamNhapHocTotNghiep != null ? `Năm nhập học: ${tyLe.NamNhapHocTotNghiep}` : undefined}
                     >
-                      {overview.NamNhapHocTotNghiep != null ? toKhoaHoc(overview.NamNhapHocTotNghiep) : "—"}
+                      {tyLe.NamNhapHocTotNghiep != null ? toKhoaHoc(tyLe.NamNhapHocTotNghiep) : "—"}
                     </div>
                   </div>
                 </div>
@@ -548,19 +565,19 @@ export default function HocVuSinhVien() {
                     <div
                       className="stat-value"
                       title={
-                        overview.NamNhapHocCanhBaoTu != null && overview.NamNhapHocCanhBaoDen != null
-                          ? `Năm nhập học: ${overview.NamNhapHocCanhBaoTu} – ${overview.NamNhapHocCanhBaoDen}`
+                        tyLe.NamNhapHocCanhBaoTu != null && tyLe.NamNhapHocCanhBaoDen != null
+                          ? `Năm nhập học: ${tyLe.NamNhapHocCanhBaoTu} – ${tyLe.NamNhapHocCanhBaoDen}`
                           : undefined
                       }
                     >
-                      {overview.NamNhapHocCanhBaoTu != null && overview.NamNhapHocCanhBaoDen != null
-                        ? `${toKhoaHoc(overview.NamNhapHocCanhBaoTu)} - ${toKhoaHoc(overview.NamNhapHocCanhBaoDen)}`
+                      {tyLe.NamNhapHocCanhBaoTu != null && tyLe.NamNhapHocCanhBaoDen != null
+                        ? `${toKhoaHoc(tyLe.NamNhapHocCanhBaoTu)} - ${toKhoaHoc(tyLe.NamNhapHocCanhBaoDen)}`
                         : "—"}
                     </div>
                   </div>
                 </div>
 
-                <div className="stat-card">
+                {overview && <div className="stat-card">
                   <div className="stat-icon-box stat-icon-green">
                     <i className="fa-solid fa-users" aria-hidden="true" />
                   </div>
@@ -568,9 +585,9 @@ export default function HocVuSinhVien() {
                     <div className="stat-label">Tổng số sinh viên</div>
                     <div className="stat-value">{number(overview.SoSinhVien)}</div>
                   </div>
-                </div>
+                </div>}
 
-                <div className="stat-card">
+                {overview && <div className="stat-card">
                   <div className="stat-icon-box stat-icon-purple">
                     <i className="fa-solid fa-file-circle-exclamation" aria-hidden="true" />
                   </div>
@@ -578,11 +595,11 @@ export default function HocVuSinhVien() {
                     <div className="stat-label">Số dòng cảnh báo</div>
                     <div className="stat-value">{number(overview.SoDongCanhBao)}</div>
                   </div>
-                </div>
+                </div>}
               </div>
 
               {/* Metadata Info Bar */}
-              <div className="hoc-vu-meta-bar">
+              {overview && <div className="hoc-vu-meta-bar">
                 <span>
                   <i className="fa-regular fa-clock" aria-hidden="true" /> Cập nhật sinh viên:{" "}
                   <strong>{dateTime(overview.NgayCapNhatSinhVien)}</strong>
@@ -592,10 +609,10 @@ export default function HocVuSinhVien() {
                   <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Import cảnh báo:{" "}
                   <strong>{dateTime(overview.NgayImportCanhBao)}</strong>
                 </span>
-              </div>
+              </div>}
 
               {/* Unmapped Warnings */}
-              {overview.SoSinhVienChuaAnhXa > 0 && (
+              {overview?.SoSinhVienChuaAnhXa > 0 && (
                 <div className="hoc-vu-alert-warning" role="status">
                   <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
                   <div>
@@ -610,7 +627,7 @@ export default function HocVuSinhVien() {
                 </div>
               )}
 
-              {overview.SoSvCanhBaoKhongKhop > 0 && (
+              {overview?.SoSvCanhBaoKhongKhop > 0 && (
                 <div className="hoc-vu-secondary-warning">
                   <i className="fa-solid fa-circle-info" aria-hidden="true" />
                   <span>
@@ -686,6 +703,7 @@ export default function HocVuSinhVien() {
                                 / ({number(item.SoSvKhoaTotNghiep)} − {number(item.SoThoiHocKhoaTotNghiep)})
                               </span>
                             </div>
+                            <button type="button" className="hoc-vu-drilldown" onClick={() => openDoiChieu("tot-nghiep", item.IdDonVi)}>Đối chiếu sinh viên</button>
                           </td>
                           <td style={{ textAlign: "center" }}>
                             {item.TyLeTotNghiepDungHan == null ? (
@@ -703,6 +721,7 @@ export default function HocVuSinhVien() {
                                 / ({number(item.SoSvKhoaCanhBao)} − {number(item.SoThoiHocKhoaCanhBao)})
                               </span>
                             </div>
+                            <button type="button" className="hoc-vu-drilldown" onClick={() => openDoiChieu("canh-bao", item.IdDonVi)}>Đối chiếu sinh viên</button>
                           </td>
                           <td style={{ textAlign: "center" }}>
                             {item.TyLeCanhBaoHocVu == null ? (
@@ -747,6 +766,15 @@ export default function HocVuSinhVien() {
           )}
         </>
       )}
+
+      {tab === "doiChieu" && (loadingTyLe ? (
+        <div className="hoc-vu-empty-state" role="status">Đang tải phạm vi Khoa...</div>
+      ) : loadError ? (
+        <div className="hoc-vu-banner error" role="alert">{loadError}</div>
+      ) : tyLe ? (
+        <HocVuSinhVienDoiChieu key={idNam} idNam={idNam} tyLe={tyLe}
+          initialSelection={doiChieuSelection} reload={reload} />
+      ) : null)}
 
       {/* Tab: Upload dữ liệu */}
       {tab === "upload" && canManage && (

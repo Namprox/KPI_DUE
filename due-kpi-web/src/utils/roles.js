@@ -492,6 +492,19 @@ export const CHUC_DANH_SETS = {
   GIANG_VIEN: [3, 4, 5, 6, 7],
 };
 
+/** Quyền xem học vụ: cấp Khoa hoặc tài khoản xem toàn trường. */
+export const canManageHocVu = (user) =>
+  hasRole(ROLE_SETS.ADMIN, user) ||
+  (normalizeRole(user) === ROLE.TRUONG_PHONG &&
+    String(user?.MaDonVi || "").toUpperCase() === "P_DTBDCL") ||
+  (Array.isArray(user?.DonVi) && user.DonVi.some((dv) =>
+    String(dv.MaChucVu || "").trim().toUpperCase() === ROLE.TRUONG_PHONG &&
+    String(dv.MaDonVi || "").trim().toUpperCase() === "P_DTBDCL"
+  ));
+
+export const canViewHocVu = (user) =>
+  canManageHocVu(user) || hasRole(ROLE_SETS.KPI_KHOA, user);
+
 /** Chuẩn hóa IdChucDanh về number; trả null nếu không xác định được. */
 export const normalizeChucDanh = (user) => {
   const id = Number(user?.IdChucDanh);

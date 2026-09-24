@@ -9,6 +9,7 @@ import {
   hasChucDanh,
   hasDonVi,
   coLoaiDoiTuong,
+  canViewHocVu,
 } from "../utils/roles";
 
 export const PUBLIC_ROUTES = [
@@ -490,10 +491,10 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.QUAN_TRI,
       },
       {
-        name: "Học vụ sinh viên",
+        name: "Quản lý học vụ",
         icon: "fa-solid fa-graduation-cap",
         path: "/hoc-vu-sinh-vien",
-        roles: MOI_NGUOI,
+        access: canViewHocVu,
       },
       {
         // Khoa nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò cho giảng
@@ -612,6 +613,7 @@ const buildRouteRules = () => {
         roles: item.roles,
         chucDanh: item.chucDanh,
         donVi: item.donVi,
+        access: item.access,
       };
       rules.push({ path: item.path, ...rule });
       (item.childPaths || []).forEach((child) => {
@@ -641,6 +643,8 @@ const LOAI_DOI_TUONG_THEO_DUONG_DAN = {
 
 export const canAccessRule = (rule, user) => {
   if (!user) return false;
+
+  if (rule.access) return rule.access(user);
 
   const loaiDoiTuong = LOAI_DOI_TUONG_THEO_DUONG_DAN[rule.path];
   if (loaiDoiTuong != null) {

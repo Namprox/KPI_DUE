@@ -5,6 +5,7 @@ import HocVuSinhVien from "./HocVuSinhVien";
 import { apiFetch } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import { confirmDialog } from "primereact/confirmdialog";
+import { canAccessPath, visibleGroups } from "../../config/menuConfig";
 
 jest.mock("../../utils/api", () => ({ apiFetch: jest.fn() }));
 jest.mock("../../context/AuthContext", () => ({ useAuth: jest.fn() }));
@@ -22,14 +23,15 @@ beforeEach(() => {
     ] });
     if (endpoint === "hoc-vu/ty-le-khoa?idNam=2026") return reply({
       Success: true,
+      XemTatCa: false,
+      NamNhapHocTotNghiep: 2022,
+      NamNhapHocCanhBaoTu: 2023,
+      NamNhapHocCanhBaoDen: 2026,
       TongQuan: {
         SoSinhVien: 10,
         SoDongCanhBao: 2,
         SoSinhVienChuaAnhXa: 1,
         SoMaKhoaChuaAnhXa: 1,
-        NamNhapHocTotNghiep: 2022,
-        NamNhapHocCanhBaoTu: 2023,
-        NamNhapHocCanhBaoDen: 2026,
       },
       Items: [{ IdDonVi: 5, TenDonVi: "Khoa Công nghệ thông tin", MaKhoaDaoTao: "202",
         SoTotNghiepDungHan: 0, SoSvKhoaTotNghiep: 0, SoThoiHocKhoaTotNghiep: 0,
@@ -38,6 +40,25 @@ beforeEach(() => {
     });
     if (endpoint === "hoc-vu/anh-xa-khoa") return reply({ Items: [{ MaKhoa: "202", TenKhoa: "CNTT", SoSinhVien: 10 }] });
     throw new Error(`Unexpected endpoint: ${endpoint}`);
+  });
+});
+
+test("menu và URL Học vụ chỉ mở cho đúng vai trò, kể cả kiêm nhiệm", () => {
+  const path = "/hoc-vu-sinh-vien";
+  const allowed = [
+    { MaChucVu: "ADMIN" }, { MaChucVu: "TK" }, { MaChucVu: "TKL" }, { MaChucVu: "TKK" },
+    { MaChucVu: "TP", DonVi: [{ MaChucVu: "TP", MaDonVi: "P_DTBDCL" }] },
+    { MaChucVu: "TK", DonVi: [{ MaChucVu: "TP", MaDonVi: "P_DTBDCL" }] },
+  ];
+  allowed.forEach((user) => {
+    expect(canAccessPath(path, user)).toBe(true);
+    expect(visibleGroups(user).some((group) => group.items.some((item) => item.path === path))).toBe(true);
+  });
+  [
+    { MaChucVu: "GV" }, { MaChucVu: "TP", DonVi: [{ MaChucVu: "TP", MaDonVi: "P_KHHTQT" }] },
+  ].forEach((user) => {
+    expect(canAccessPath(path, user)).toBe(false);
+    expect(visibleGroups(user).some((group) => group.items.some((item) => item.path === path))).toBe(false);
   });
 });
 
@@ -75,15 +96,83 @@ test("ADMIN thấy upload và hiển thị Message khi API trả 403", async () 
   await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Không có quyền upload"));
 });
 
-test.each(["P_DTBDCL", "P_KHHTQT"])("TP của %s không thấy upload và ánh xạ", async (maDonVi) => {
+test.each(["P_DTBDCL", "P_KHHTQT"])("TP của %s thấy đúng quyền quản lý", async (maDonVi) => {
   useAuth.mockReturnValue({ user: {
     MaChucVu: "TP",
     DonVi: [{ IdDonVi: 8, MaDonVi: maDonVi, MaChucVu: "TP" }],
   } });
   render(<HocVuSinhVien />);
   await screen.findByText("Khoa Công nghệ thông tin");
-  expect(screen.queryByRole("tab", { name: "Upload dữ liệu" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("tab", { name: "Ánh xạ Khoa" })).not.toBeInTheDocument();
+  if (maDonVi === "P_DTBDCL") {
+    expect(screen.getByRole("tab", { name: "Upload dữ liệu" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Ánh xạ Khoa" })).toBeInTheDocument();
+  } else {
+    expect(screen.queryByRole("tab", { name: "Upload dữ liệu" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Ánh xạ Khoa" })).not.toBeInTheDocument();
+  }
+});
+
+test("cấp Khoa đối chiếu cảnh báo theo trạng thái, không gửi idDonVi và không thấy TongQuan", async () => {
+  useAuth.mockReturnValue({ user: { MaChucVu: "TKK" } });
+  apiFetch.mockImplementation(async (endpoint) => {
+    if (endpoint === "namdanhgia") return reply({ Items: [{ IdNam: 2026 }] });
+    if (endpoint === "donvi") return reply({ Items: [] });
+    if (endpoint === "hoc-vu/ty-le-khoa?idNam=2026") return reply({
+      Success: true, XemTatCa: false, TongQuan: null,
+      NamNhapHocTotNghiep: 2022, NamNhapHocCanhBaoTu: 2023, NamNhapHocCanhBaoDen: 2026,
+      Items: [{ IdDonVi: 5, TenDonVi: "Khoa Công nghệ thông tin", SoSvBiCanhBao: 1,
+        SoSvKhoaCanhBao: 4, SoThoiHocKhoaCanhBao: 0, TyLeCanhBaoHocVu: 25 }],
+    });
+    if (endpoint.startsWith("hoc-vu/sinh-vien?")) return reply({
+      Success: true, SoTrangThai1: 1, SoTrangThai2: 3, SoTrangThai3: 1,
+      Page: 1, PageSize: 20, TotalCount: 5, TotalPages: 1,
+      Items: [{ MaSinhVien: "SV01", HoVaTen: "Nguyễn Văn A", Lop: "K48", NamNhapHoc: 2023,
+        TrangThai: 1, SoDongCanhBao: 2, ChiTietCanhBao: "CB lan 1 - QD 123; CB lan 2 - QD 456" }],
+    });
+    throw new Error(`Unexpected endpoint: ${endpoint}`);
+  });
+
+  render(<HocVuSinhVien />);
+  expect(await screen.findByText("Khoa Công nghệ thông tin")).toBeInTheDocument();
+  expect(screen.getByText("48")).toBeInTheDocument();
+  expect(screen.getByText("49 - 52")).toBeInTheDocument();
+  expect(screen.queryByText("Tổng số sinh viên")).not.toBeInTheDocument();
+  fireEvent.click(screen.getAllByRole("button", { name: "Đối chiếu sinh viên" })[1]);
+  expect(await screen.findByText("CB lan 1 - QD 123; CB lan 2 - QD 456")).toBeInTheDocument();
+  expect(screen.getAllByText("25,00%", { selector: ".hoc-vu-detail-summary strong" })).toHaveLength(2);
+  expect(screen.queryByRole("combobox", { name: "Khoa" })).not.toBeInTheDocument();
+  const endpoints = apiFetch.mock.calls.map(([endpoint]) => endpoint).filter((endpoint) => endpoint.startsWith("hoc-vu/sinh-vien?"));
+  expect(endpoints[0]).toContain("loai=canh-bao");
+  expect(endpoints[0]).not.toContain("idDonVi=");
+  fireEvent.click(screen.getByRole("button", { name: /Không bị cảnh báo 3/ }));
+  await waitFor(() => expect(apiFetch.mock.calls.some(([endpoint]) => endpoint.includes("trangThai=2"))).toBe(true));
+});
+
+test("quản trị chọn Khoa từ tỷ lệ và lọc tìm sinh viên", async () => {
+  useAuth.mockReturnValue({ user: { MaChucVu: "ADMIN" } });
+  apiFetch.mockImplementation(async (endpoint) => {
+    if (endpoint === "namdanhgia") return reply({ Items: [{ IdNam: 2026 }] });
+    if (endpoint === "donvi") return reply({ Items: [] });
+    if (endpoint === "hoc-vu/ty-le-khoa?idNam=2026") return reply({
+      Success: true, XemTatCa: true, TongQuan: {}, Items: [{ IdDonVi: 5, TenDonVi: "Khoa CNTT" }],
+    });
+    if (endpoint.startsWith("hoc-vu/sinh-vien?")) return reply({
+      Success: true, SoTrangThai1: 0, SoTrangThai2: 1, SoTrangThai3: 0,
+      Page: Number(new URLSearchParams(endpoint.split("?")[1]).get("page")),
+      PageSize: 20, TotalCount: 21, TotalPages: 2, Items: [],
+    });
+    throw new Error(`Unexpected endpoint: ${endpoint}`);
+  });
+  render(<HocVuSinhVien />);
+  await screen.findByText("Khoa CNTT");
+  fireEvent.click(screen.getAllByRole("button", { name: "Đối chiếu sinh viên" })[0]);
+  await waitFor(() => expect(apiFetch.mock.calls.some(([endpoint]) => endpoint.includes("idDonVi=5"))).toBe(true));
+  expect(screen.getByRole("combobox", { name: "Khoa" })).toHaveValue("5");
+  fireEvent.change(screen.getByRole("textbox", { name: "Tìm sinh viên" }), { target: { value: "SV01" } });
+  fireEvent.click(screen.getByRole("button", { name: "Tìm" }));
+  await waitFor(() => expect(apiFetch.mock.calls.some(([endpoint]) => endpoint.includes("keyword=SV01"))).toBe(true));
+  fireEvent.click(screen.getByRole("button", { name: "Sau" }));
+  await waitFor(() => expect(apiFetch.mock.calls.some(([endpoint]) => endpoint.includes("page=2"))).toBe(true));
 });
 
 test("một nút lưu xử lý mọi dòng đã đổi, giữ dòng lỗi và chỉ hiện tên Khoa", async () => {

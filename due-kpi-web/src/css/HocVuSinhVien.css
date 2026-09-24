@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Học vụ sinh viên - Stylesheet đồng bộ với hệ thống DUE KPI
+   Quản lý học vụ - Stylesheet đồng bộ với hệ thống DUE KPI
    ========================================================================== */
 
 .hoc-vu-page {
@@ -832,6 +832,338 @@
 
 .hoc-vu-unmapped-row:hover {
   background-color: #fffbeb !important;
+}
+
+.hoc-vu-drilldown {
+  display: block;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #0056b3;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.hoc-vu-drilldown:hover { text-decoration: underline; }
+
+.hoc-vu-detail-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #eef2f6;
+  background-color: #ffffff;
+}
+
+/* Segmented Control cho loại tỷ lệ */
+.hoc-vu-detail-segmented {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  gap: 3px;
+}
+
+.hoc-vu-segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.hoc-vu-segmented-btn i {
+  font-size: 13.5px;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+}
+
+.hoc-vu-segmented-btn:hover:not(.active) {
+  color: #1e293b;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+.hoc-vu-segmented-btn.active {
+  background-color: #0056b3;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 86, 179, 0.25);
+}
+
+.hoc-vu-segmented-btn.active i {
+  color: #ffffff;
+}
+
+/* Cụm bộ lọc: Dropdown Khoa + Ô Tìm kiếm */
+.hoc-vu-detail-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hoc-vu-detail-khoa {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  margin: 0;
+  cursor: pointer;
+}
+
+.hoc-vu-detail-khoa i {
+  color: #0056b3;
+  font-size: 13.5px;
+}
+
+.hoc-vu-detail-select {
+  height: 38px !important;
+  min-width: 200px;
+  max-width: 280px;
+  padding: 0 12px !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  background-color: #ffffff !important;
+  cursor: pointer;
+  outline: none;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hoc-vu-detail-select:focus {
+  border-color: #0056b3 !important;
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.12) !important;
+}
+
+.hoc-vu-detail-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.hoc-vu-search-input-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.hoc-vu-search-input-wrap i.fa-magnifying-glass {
+  position: absolute;
+  left: 11px;
+  color: #94a3b8;
+  font-size: 13.5px;
+  pointer-events: none;
+}
+
+.hoc-vu-detail-input {
+  height: 38px !important;
+  width: 220px;
+  padding: 0 12px 0 32px !important;
+  font-size: 13.5px !important;
+  font-weight: 400 !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  background-color: #f8fafc !important;
+  outline: none;
+  box-sizing: border-box !important;
+  transition: all 0.15s ease;
+}
+
+.hoc-vu-detail-input:focus {
+  background-color: #ffffff !important;
+  border-color: #0056b3 !important;
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.12) !important;
+}
+
+.hoc-vu-detail-button {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #0056b3;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.hoc-vu-detail-button:hover:not(:disabled) {
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.hoc-vu-detail-button.hoc-vu-btn-primary {
+  background-color: #0056b3;
+  border-color: #0056b3;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 86, 179, 0.2);
+}
+
+.hoc-vu-detail-button.hoc-vu-btn-primary:hover:not(:disabled) {
+  background-color: #004494;
+  border-color: #004494;
+  box-shadow: 0 2px 5px rgba(0, 86, 179, 0.28);
+  transform: translateY(-0.5px);
+}
+
+.hoc-vu-detail-button.hoc-vu-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.hoc-vu-detail-button.hoc-vu-btn-secondary {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.hoc-vu-detail-button.hoc-vu-btn-secondary:hover:not(:disabled) {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.hoc-vu-detail-status,
+.hoc-vu-detail-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.hoc-vu-detail-summary {
+  background: #f8fafc;
+  font-size: 13px;
+  color: #475569;
+}
+
+.hoc-vu-detail-summary strong {
+  color: #0f172a;
+}
+
+.hoc-vu-detail-status .hoc-vu-chip-btn {
+  height: 32px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 16px;
+  font-size: 13px;
+}
+
+.hoc-vu-detail-status .hoc-vu-chip-btn strong {
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+.hoc-vu-student-table td { vertical-align: top; }
+.hoc-vu-student-table .status-pill { white-space: nowrap; }
+.hoc-vu-warning-detail { white-space: normal; overflow-wrap: anywhere; }
+.hoc-vu-detail-footer,
+.hoc-vu-detail-pagination { display: flex; align-items: center; gap: 8px; }
+.hoc-vu-detail-footer { justify-content: space-between; flex-wrap: wrap; }
+.hoc-vu-detail-pagination button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.hoc-vu-detail .hoc-vu-banner { margin: 12px 20px; }
+.hoc-vu-detail .hoc-vu-banner button { margin-left: auto; }
+
+@media screen and (max-width: 900px) {
+  .hoc-vu-detail-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .hoc-vu-detail-segmented {
+    width: 100%;
+  }
+
+  .hoc-vu-segmented-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .hoc-vu-detail-filters {
+    width: 100%;
+  }
+
+  .hoc-vu-detail-khoa {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .hoc-vu-detail-select {
+    flex: 1;
+    width: 100%;
+    max-width: none;
+  }
+
+  .hoc-vu-detail-search {
+    flex: 1.5;
+    min-width: 240px;
+  }
+
+  .hoc-vu-search-input-wrap {
+    flex: 1;
+  }
+
+  .hoc-vu-detail-input {
+    width: 100%;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .hoc-vu-detail-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hoc-vu-detail-khoa,
+  .hoc-vu-detail-search {
+    width: 100%;
+  }
+
+  .hoc-vu-detail-search {
+    flex-wrap: wrap;
+  }
+
+  .hoc-vu-search-input-wrap {
+    width: 100%;
+  }
+
+  .hoc-vu-detail-button {
+    flex: 1;
+  }
 }
 
 /* Responsive adjustments */
