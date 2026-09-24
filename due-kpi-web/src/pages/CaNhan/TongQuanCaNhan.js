@@ -27,7 +27,13 @@ import {
   TRANG_THAI,
   TRANG_THAI_META,
 } from "../../utils/phieuApi";
-import { duongDanPhieuTuDanhGia, hasRole, ROLE_SETS } from "../../utils/roles";
+import {
+  donViTheoVaiTro,
+  duongDanPhieuTuDanhGia,
+  hasRole,
+  ROLE,
+  ROLE_SETS,
+} from "../../utils/roles";
 import SearchSelect from "../../components/Common/SearchSelect";
 import ThieuTieuChiChecklist from "../../components/DanhGia/ThieuTieuChiChecklist";
 import {
@@ -84,20 +90,19 @@ const TongQuanCaNhan = () => {
   // token này sang để nó tải lại, thay vì kéo state của Khoa lên trang cha.
   const [lanLamMoi, setLanLamMoi] = useState(0);
 
-  const laTruongKhoa = hasRole(ROLE_SETS.TRUONG_KHOA, currentUser);
+  const coTongQuanKhoa = hasRole(ROLE_SETS.KPI_KHOA, currentUser);
 
   const idDonViKhoa = useMemo(() => {
-    if (currentUser?.DonVi && Array.isArray(currentUser.DonVi)) {
-      const dvKhoa = currentUser.DonVi.find((d) =>
-        ["TK", "TKL"].includes(
-          String(d.MaChucVu || "")
-            .trim()
-            .toUpperCase(),
-        ),
-      );
-      if (dvKhoa) return dvKhoa.IdDonVi;
-    }
-    return currentUser.IdDonVi;
+    const donViKpiKhoa = donViTheoVaiTro(ROLE_SETS.KPI_KHOA, currentUser);
+    const donViTruongKhoa = donViKpiKhoa.find((d) =>
+      ROLE_SETS.TRUONG_KHOA.includes(
+        String(d.MaChucVu || "").trim().toUpperCase(),
+      ),
+    );
+    const donViThuKyKhoa = donViKpiKhoa.find(
+      (d) => String(d.MaChucVu || "").trim().toUpperCase() === ROLE.THU_KY_KHOA,
+    );
+    return (donViTruongKhoa || donViThuKyKhoa)?.IdDonVi || currentUser.IdDonVi;
   }, [currentUser]);
 
   const showToast = (severity, summary, detail) => {
@@ -256,10 +261,10 @@ const TongQuanCaNhan = () => {
         </button>
       </div>
 
-      {/* Đặt TRÊN phần cá nhân và ngoài nhánh isLoading: với Trưởng khoa thì số
-          liệu Khoa mới là việc hằng ngày, và để ngoài thì hai nửa tải song song
+      {/* Đặt TRÊN phần cá nhân và ngoài nhánh isLoading: với TK/TKL/TKK thì số
+          liệu Khoa là việc hằng ngày, và để ngoài thì hai nửa tải song song
           thay vì nửa dưới phải chờ phiếu cá nhân xong. */}
-      {laTruongKhoa && !dangTaiNam && (
+      {coTongQuanKhoa && !dangTaiNam && (
         <TongQuanKhoa
           idNam={selectedNam}
           idDonVi={idDonViKhoa}
@@ -267,7 +272,7 @@ const TongQuanCaNhan = () => {
         />
       )}
 
-      {laTruongKhoa && <p className="sub-title">PHIẾU KPI CỦA BẠN</p>}
+      {coTongQuanKhoa && <p className="sub-title">PHIẾU KPI CỦA BẠN</p>}
 
       {isLoading || dangTaiNam ? (
         <div className="modern-table-card">
@@ -365,7 +370,7 @@ const TongQuanCaNhan = () => {
                       : !kiemTra && cuaSoNam.trangThai === "chua-mo"
                         ? "Chưa mở"
                         : !hanNop
-                          ? "Không giới hạn"
+                          ? "Chưa thiết lập"
                           : `${soNgayConLai} ngày`}
                   </div>
                   {hanNop && (

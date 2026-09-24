@@ -3915,11 +3915,21 @@ paths:
     get:
       tags:
         - BaoCao
-      summary: Overview report - phieu counts by trang_thai and xep_loai
+      summary: Overview report - phieu counts, chua lap phieu, ty le hoc vu
       description: |
-        Counts phieu by trang_thai (1..5) and, for trang_thai=5 only, also by xep_loai.
-        Phạm vi theo ma_chuc_vu: Trường (HT/ADMIN) xem tất cả; Khoa (TK/TKL/TP)
-        giới hạn cây đơn vị mình; chủ phiếu (id 11) xem phiếu của chính mình.
+        Counts phieu NAM (quy = 0) by trang_thai (1..5) and, for trang_thai=5 only, also by xep_loai.
+        DemTheoTrangThai chỉ có phần tử cho trạng thái có phiếu — FE mặc định 0 cho trạng thái vắng.
+        Phạm vi theo ma_chuc_vu: Trường (HT/ADMIN) xem tất cả; Khoa (TK/TKL/TP) và
+        Thư ký Khoa (TKK, chỉ đọc) giới hạn cây đơn vị mình; chủ phiếu (id 11) xem phiếu
+        của chính mình.
+
+        SoChuaLapPhieu: nhân viên đang hoạt động CHƯA có phiếu năm tại ĐƠN VỊ CHÍNH, cùng phạm vi
+        và cùng bộ lọc idDonVi như các số đếm phiếu. Phiếu ở đơn vị kiêm nhiệm là tùy chọn nên không tính.
+
+        HocVu: tỷ lệ tốt nghiệp đúng hạn + tỷ lệ cảnh báo học vụ GỘP các Khoa người gọi được xem
+        (công thức của fn_ty_le_hoc_vu_khoa; nhiều Khoa thì cộng tử/mẫu rồi chia). Khoa được xem:
+        ADMIN / HT / TP@P_DTBDCL mọi Khoa; TK / TKL / TKK Khoa của mình. Không được xem Khoa nào
+        (vd TP của Phòng) hoặc idDonVi không phải Khoa → HocVu vắng mặt trong JSON.
       operationId: baoCaoTongQuan
       parameters:
         - name: idNam
@@ -6838,7 +6848,15 @@ paths:
         LoaiNguonDiem = 2 (tu dong). Response co them khoi TongHop.
         Ma cong thuc: DIEM_TB_THANH_VIEN, TY_LE_XUAT_SAC, TY_LE_HOAN_THANH,
         DIEM_TRU_TAP_THE, PHSV_DIEM_TB_KHOA, NCKH_TY_LE_HOAN_THANH_KHOA,
-        NCKH_BAI_BAO_TB_KHOA va NCKH_BAI_BAO_Q1Q2_TB_KHOA.
+        NCKH_BAI_BAO_TB_KHOA, NCKH_BAI_BAO_Q1Q2_TB_KHOA,
+        HV_TOT_NGHIEP_TREN_50_KHOA, HV_CANH_BAO_DUOI_20_KHOA,
+        HV_TOT_NGHIEP_TREN_70_KHOA va HV_CANH_BAO_DUOI_10_KHOA.
+        Bon ma HV_* (tinh tu du lieu hoc vu sinh vien, cung chay ke ca khi chua
+        co phieu thanh vien nao chot) cham DAT / KHONG DAT: dat -> du DiemToiDa,
+        khong dat -> 0. Dieu kien dat (so sanh CHAT): TyLeTotNghiepDungHan > 50 /
+        > 70; TyLeCanhBaoHocVu < 20 / < 10. Chua import hoc vu hoac MaKhoa chua
+        anh xa (mau so = 0) thi cham 0 - phai import qua
+        POST /api/hoc-vu/import-sinh-vien va /api/hoc-vu/import-canh-bao truoc.
         Rieng DIEM_TRU_TAP_THE (tinh tu so vi pham cua Khoa: MAX(0, DiemToiDa -
         DiemTruTapThe)), PHSV_DIEM_TB_KHOA (tinh tu diem TB phan hoi sinh vien),
         NCKH_TY_LE_HOAN_THANH_KHOA (tinh tu gio NCKH da dong bo),
@@ -12324,6 +12342,10 @@ components:
           nullable: true
         TongSoPhieu:
           type: integer
+          description: Tổng phiếu năm ĐÃ LẬP (cộng DemTheoTrangThai), không gồm SoChuaLapPhieu.
+        SoChuaLapPhieu:
+          type: integer
+          description: Nhân viên đang hoạt động chưa có phiếu năm tại đơn vị chính.
         DemTheoTrangThai:
           type: array
           items:
@@ -12332,6 +12354,45 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DemXepLoaiDto"
+        HocVu:
+          $ref: "#/components/schemas/BaoCaoHocVuTongQuanDto"
+    BaoCaoHocVuTongQuanDto:
+      type: object
+      description: |
+        Tỷ lệ học vụ gộp các Khoa được xem. Tỷ lệ là phần trăm 0..100; null = mẫu số 0
+        (chưa import / Khoa chưa ánh xạ), KHÁC 0%.
+      properties:
+        SoKhoa:
+          type: integer
+        NamNhapHocTotNghiep:
+          type: integer
+          description: idNam - 4
+        SoSvKhoaTotNghiep:
+          type: integer
+        SoThoiHocKhoaTotNghiep:
+          type: integer
+        SoTotNghiepDungHan:
+          type: integer
+        TyLeTotNghiepDungHan:
+          type: number
+          nullable: true
+          description: SoTotNghiepDungHan * 100 / (SoSvKhoaTotNghiep - SoThoiHocKhoaTotNghiep)
+        NamNhapHocCanhBaoTu:
+          type: integer
+          description: idNam - 3
+        NamNhapHocCanhBaoDen:
+          type: integer
+          description: idNam
+        SoSvKhoaCanhBao:
+          type: integer
+        SoThoiHocKhoaCanhBao:
+          type: integer
+        SoSvBiCanhBao:
+          type: integer
+        TyLeCanhBaoHocVu:
+          type: number
+          nullable: true
+          description: SoSvBiCanhBao * 100 / (SoSvKhoaCanhBao - SoThoiHocKhoaCanhBao)
     BaoCaoTongQuanResponse:
       type: object
       properties:
@@ -18833,6 +18894,41 @@ components:
             Q1/Q2 duoc tinh o CA NCKH_BAI_BAO_TB_KHOA lan ma nay - day la CHU Y. Bang
             0 khi SoGiangVien = 0 (don vi khong phai Khoa) hoac chua dong bo bai bao -
             luc do tieu chi cham 0.
+        TyLeTotNghiepDungHan:
+          type: number
+          description: >-
+            Ty le (%) SV tot nghiep dung han cua Khoa = SoTotNghiepDungHan * 100 /
+            (SoSvKhoaTotNghiep - SoThoiHocKhoaTotNghiep). Co so cham
+            HV_TOT_NGHIEP_TREN_50_KHOA (> 50) va HV_TOT_NGHIEP_TREN_70_KHOA (> 70):
+            dat -> du DiemToiDa, khong dat -> 0. Cung con so voi
+            GET /api/hoc-vu/ty-le-khoa. Bang 0 khi mau so = 0 (chua import / MaKhoa
+            chua anh xa) - luc do tieu chi cham 0.
+        SoSvKhoaTotNghiep:
+          type: integer
+          description: So SV khoa xet tot nghiep (nam_nhap_hoc = idNam - 4), ke ca SV thoi hoc.
+        SoThoiHocKhoaTotNghiep:
+          type: integer
+          description: So SV thoi hoc cua khoa xet tot nghiep - bi loai khoi ca tu lan mau.
+        SoTotNghiepDungHan:
+          type: integer
+          description: Tu so - SV khoa xet tot nghiep, khong thoi hoc, co so hieu van bang.
+        TyLeCanhBaoHocVu:
+          type: number
+          description: >-
+            Ty le (%) SV bi canh bao hoc vu cua Khoa = SoSvBiCanhBao * 100 /
+            (SoSvKhoaCanhBao - SoThoiHocKhoaCanhBao). Co so cham
+            HV_CANH_BAO_DUOI_20_KHOA (< 20) va HV_CANH_BAO_DUOI_10_KHOA (< 10):
+            dat -> du DiemToiDa, khong dat -> 0. LUU Y: bang 0 VA mau so = 0 la
+            THIEU du lieu (tieu chi cham 0), KHONG phai 0% canh bao.
+        SoSvKhoaCanhBao:
+          type: integer
+          description: So SV cac khoa xet canh bao (nam_nhap_hoc tu idNam - 3 den idNam), ke ca SV thoi hoc.
+        SoThoiHocKhoaCanhBao:
+          type: integer
+          description: So SV thoi hoc cua cac khoa xet canh bao - bi loai khoi ca tu lan mau.
+        SoSvBiCanhBao:
+          type: integer
+          description: Tu so - SV khong thoi hoc co it nhat 1 canh bao hoc vu trong idNam (dem 1 lan / SV).
     PhieuDanhGiaDonViResponse:
       type: object
       properties:

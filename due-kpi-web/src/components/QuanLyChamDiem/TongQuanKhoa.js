@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   fetchBaoCaoTongQuan,
   fetchThamDinhPending,
@@ -24,9 +25,11 @@ import {
   TY_LE_XUAT_SAC_MAC_DINH,
 } from "../../utils/toTrinhApi";
 import { TRANG_THAI_CHUA_LAP_META } from "../../utils/chuaLapPhieu";
+import { coQuyenTaiDonVi, hasRole, ROLE_SETS } from "../../utils/roles";
 import { useChuaTuCham } from "../../hooks/useChuaTuCham";
 import { TrangThaiToTrinhBadge } from "./TrangThaiBadge";
 import TienDoCham from "./TienDoCham";
+import HocVuTongQuan from "./HocVuTongQuan";
 
 /** Thứ tự hiển thị của bảng xếp loại - mức cao trước, giống mọi bảng kết quả khác. */
 const THU_TU_XEP_LOAI = [4, 3, 2, 1];
@@ -57,26 +60,35 @@ const TRANG_THAI_DA_AP_HAN_NGACH = [
 ];
 
 /**
- * Khối tổng quan KPI cấp Khoa trên trang chủ của Trưởng khoa / Trưởng khoa lớn.
+ * Khối tổng quan KPI cấp Khoa trên trang chủ của TK/TKL/TKK.
  *
- * Ba endpoint chính đều tự kẹp phạm vi theo `ma_chuc_vu` trong JWT (TK/TKL chỉ
- * thấy cây đơn vị mình), nên KHÔNG truyền idDonVi - truyền vào chỉ thu hẹp thêm,
- * và với Trưởng khoa lớn còn cắt mất các Khoa con. `idDonVi` ở đây dùng cho đúng
- * hai việc: chọn gói tờ trình của chính đơn vị mình, và làm gốc cây cho danh bạ
- * đối chiếu người chưa lập phiếu.
+ * Báo cáo tổng quan tự giới hạn phạm vi theo chức vụ trong JWT (TK/TKL/TKK chỉ
+ * thấy cây đơn vị mình), nên không truyền idDonVi: với Trưởng khoa lớn, bộ lọc
+ * còn cắt mất các Khoa con. idDonVi dùng để chọn gói của đơn vị mình và, với
+ * Trưởng khoa, làm gốc cây cho danh bạ đối chiếu người chưa lập phiếu.
  *
- * Hai con số KHÔNG lấy từ báo cáo server, vì server không trả được:
- *
- *  - Người chưa lập phiếu: phiếu chỉ tồn tại sau khi giảng viên bấm lưu lần đầu,
- *    nên họ vắng mặt trong mọi endpoint đọc `phieu_danh_gia` - kể cả TongSoPhieu.
- *    Ghép ở client qua useChuaTuCham (danh bạ trừ đi danh sách phiếu).
- *  - Phân bố xếp loại: `DemTheoXepLoai` của /bao-cao/tong-quan chỉ đếm phiếu
- *    trang_thai = 5, tức sau khi Hiệu trưởng duyệt cả gói. Suốt mùa đánh giá nó
- *    rỗng - đúng lúc Trưởng khoa cần nhìn nhất. Ở đây đếm từ HoSo[] của tờ trình,
- *    nguồn duy nhất có xếp loại ở MỌI giai đoạn.
+ * Số chưa lập phiếu lấy từ SoChuaLapPhieu cùng phạm vi với TongSoPhieu.
+ * TK/TKL dùng useChuaTuCham để đối chiếu số giảng viên chưa có phiếu; TKK chỉ
+ * cần số tổng hợp từ API, không gọi thêm các API danh bạ/phiếu cá nhân.
+ * Phân bố xếp loại không lấy từ báo cáo server: `DemTheoXepLoai` chỉ đếm phiếu
+ * trang_thai = 5, tức sau khi Hiệu trưởng duyệt cả gói. Suốt mùa đánh giá nó
+ * rỗng - đúng lúc Trưởng khoa cần nhìn nhất. Ở đây đếm từ HoSo[] của tờ trình,
+ * nguồn duy nhất có xếp loại ở MỌI giai đoạn.
  */
 const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const laTruongKhoaTaiDonVi = coQuyenTaiDonVi(
+    ROLE_SETS.TRUONG_KHOA,
+    idDonVi,
+    user,
+  );
+  const duocThamDinh = coQuyenTaiDonVi(
+    ROLE_SETS.TRUONG_DON_VI,
+    idDonVi,
+    user,
+  );
+  const duocXemBaoCao = hasRole(ROLE_SETS.TRUONG_DON_VI, user);
 
   const [tongQuan, setTongQuan] = useState(null);
   const [soDongThamDinh, setSoDongThamDinh] = useState(null);
@@ -89,7 +101,11 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
     dangTai: dangTaiChuaLap,
     loi: loiChuaLap,
     taiLai: taiLaiChuaLap,
-  } = useChuaTuCham({ idNam, idDonViGoc: idDonVi });
+  } = useChuaTuCham({
+    idNam,
+    idDonViGoc: idDonVi,
+    bat: laTruongKhoaTaiDonVi,
+  });
 
   const tai = useCallback(async () => {
     if (!idNam) return;
@@ -99,14 +115,18 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
     const [tq, td, ds] = await Promise.allSettled([
       fetchBaoCaoTongQuan({ idNam }),
       // Chỉ cần TongSoDong nên lấy trang nhỏ nhất - không dòng nào được dùng tới.
-      fetchThamDinhPending({ idNam, pageSize: 1 }),
+      duocThamDinh
+        ? fetchThamDinhPending({ idNam, pageSize: 1 })
+        : Promise.resolve(null),
       fetchToTrinhList({ idNam }),
     ]);
 
     setTongQuan(tq.status === "fulfilled" ? tq.value : null);
     // Trưởng khoa không được giao tiêu chí nào thì endpoint trả 403 - đó là cấu
     // hình hợp lệ, không phải lỗi: để null và ẩn hẳn dòng việc tương ứng.
-    setSoDongThamDinh(td.status === "fulfilled" ? td.value.tongSoDong : null);
+    setSoDongThamDinh(
+      td.status === "fulfilled" ? (td.value?.tongSoDong ?? null) : null,
+    );
 
     const dsGoi = ds.status === "fulfilled" ? ds.value : [];
     const goiCuaToi =
@@ -116,6 +136,9 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
 
     if (!goiCuaToi) {
       setGoi(null);
+    } else if (!laTruongKhoaTaiDonVi) {
+      // TKK được đọc danh sách gói, nhưng API chi tiết chỉ cho TK/TKL/TP.
+      setGoi(goiCuaToi);
     } else {
       try {
         setGoi(await fetchToTrinhDetail(goiCuaToi.IdToTrinh));
@@ -132,7 +155,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
       setLoi(tq.reason?.message || "Không tải được số liệu KPI của Khoa");
     }
     setDangTai(false);
-  }, [idNam, idDonVi]);
+  }, [idNam, idDonVi, duocThamDinh, laTruongKhoaTaiDonVi]);
 
   useEffect(() => {
     tai();
@@ -162,14 +185,15 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
   }, [tongQuan]);
 
   const soPhieu = Number(tongQuan?.TongSoPhieu) || 0;
-  const soChuaLap = chuaLapPhieu.length;
+  const coSoChuaLapTuApi = tongQuan?.SoChuaLapPhieu != null;
+  const soChuaLap = coSoChuaLapTuApi
+    ? Number(tongQuan.SoChuaLapPhieu) || 0
+    : chuaLapPhieu.length;
   const soDangNhap = demTheoTrangThai.get(TRANG_THAI.NHAP) || 0;
   const soChoToiChot = demTheoTrangThai.get(TRANG_THAI.CHO_TK_DUYET) || 0;
 
   /**
-   * Mẫu số là NGƯỜI phải nộp, không phải phiếu đã tồn tại: cộng thêm những người
-   * chưa lập phiếu, nếu không thì khoa nào càng nhiều người chưa động vào phiếu
-   * lại càng hiện tỷ lệ hoàn thành đẹp.
+   * Mẫu số gồm phiếu đã lập và người chưa lập phiếu trong cùng phạm vi API.
    */
   const soPhaiNop = soPhieu + soChuaLap;
   const soDaNop = soPhieu - soDangNhap;
@@ -179,7 +203,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
       {
         key: "chua-lap",
         meta: TRANG_THAI_CHUA_LAP_META,
-        soLuong: dangTaiChuaLap ? null : soChuaLap,
+        soLuong: !coSoChuaLapTuApi && dangTaiChuaLap ? null : soChuaLap,
       },
       ...Object.entries(TRANG_THAI_META).map(([tt, meta]) => ({
         key: tt,
@@ -187,7 +211,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
         soLuong: demTheoTrangThai.get(Number(tt)) || 0,
       })),
     ],
-    [dangTaiChuaLap, soChuaLap, demTheoTrangThai],
+    [coSoChuaLapTuApi, dangTaiChuaLap, soChuaLap, demTheoTrangThai],
   );
 
   const viecCanLam = useMemo(
@@ -195,6 +219,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
       [
         {
           key: "chot",
+          duocMo: laTruongKhoaTaiDonVi,
           so: soChoToiChot,
           nhan: "hồ sơ chờ bạn chốt và chọn xếp loại",
           icon: "fa-user-check",
@@ -204,6 +229,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
         },
         {
           key: "tham-dinh",
+          duocMo: duocThamDinh,
           so: soDongThamDinh,
           nhan: "dòng tiêu chí đơn vị bạn phải thẩm định",
           icon: "fa-clipboard-check",
@@ -213,15 +239,25 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
         },
         {
           key: "chua-lap",
-          so: dangTaiChuaLap ? 0 : soChuaLap,
+          duocMo: duocXemBaoCao,
+          so: !coSoChuaLapTuApi && dangTaiChuaLap ? 0 : soChuaLap,
           nhan: "người chưa lập phiếu, cần nhắc nộp",
           icon: "fa-user-slash",
           mau: "#b91c1c",
           nen: "#fdecec",
           duongDan: "/quan-ly/bao-cao",
         },
-      ].filter((v) => Number(v.so) > 0),
-    [soChoToiChot, soDongThamDinh, soChuaLap, dangTaiChuaLap],
+      ].filter((v) => v.duocMo && Number(v.so) > 0),
+    [
+      soChoToiChot,
+      soDongThamDinh,
+      soChuaLap,
+      coSoChuaLapTuApi,
+      dangTaiChuaLap,
+      laTruongKhoaTaiDonVi,
+      duocThamDinh,
+      duocXemBaoCao,
+    ],
   );
 
   /**
@@ -298,12 +334,14 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
       <p className="sub-title tqk-title">
         TỔNG QUAN KPI KHOA
         {goi?.TenDonVi ? ` - ${goi.TenDonVi.toUpperCase()}` : ""}
-        <button
-          className="cd-link-btn"
-          onClick={() => navigate("/quan-ly/bao-cao")}
-        >
-          Xem báo cáo đầy đủ <i className="fa-solid fa-arrow-right"></i>
-        </button>
+        {duocXemBaoCao && (
+          <button
+            className="cd-link-btn"
+            onClick={() => navigate("/quan-ly/bao-cao")}
+          >
+            Xem báo cáo đầy đủ <i className="fa-solid fa-arrow-right"></i>
+          </button>
+        )}
       </p>
 
       {loi && (
@@ -322,9 +360,9 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
             // Chỉ giữ lại hai trạng thái BẤT THƯỜNG của mẫu số: đang đối chiếu và
             // đối chiếu hỏng. Trường hợp bình thường không cần chú thích - số người
             // chưa lập phiếu đã có thẻ đếm riêng ngay bên dưới.
-            dangTaiChuaLap
+            !coSoChuaLapTuApi && dangTaiChuaLap
               ? "Đang đối chiếu danh bạ đơn vị..."
-              : loiChuaLap
+              : !coSoChuaLapTuApi && loiChuaLap
                 ? "Mẫu số chỉ gồm người đã có phiếu - không đối chiếu được danh bạ."
                 : undefined
           }
@@ -384,6 +422,8 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
         </div>
       )}
 
+      <HocVuTongQuan hocVu={tongQuan?.HocVu} />
+
       <div className="cd-phieu-header tqk-goi">
         <div className="cd-phieu-top tqk-goi-top">
           <div>
@@ -391,7 +431,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
             <div className="tqk-goi-phu">
               {goi
                 ? `Năm học ${goi.IdNam}${goi.LanTrinh > 0 ? ` · đã trình Hiệu trưởng ${goi.LanTrinh} lần` : ""}`
-                : "Tờ trình được tạo tự động ngay khi bạn chốt hồ sơ đầu tiên của Khoa"}
+                : "Tờ trình được tạo tự động khi Trưởng khoa chốt hồ sơ đầu tiên của Khoa"}
             </div>
           </div>
           {goi ? (
@@ -404,7 +444,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
           )}
         </div>
 
-        {goi && (
+        {goi && laTruongKhoaTaiDonVi && (
           <>
             <div className="cd-meta-grid tqk-meta-grid">
               <div>

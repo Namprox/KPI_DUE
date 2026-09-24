@@ -1,0 +1,56 @@
+.hoc-vu-tong-quan {
+  margin: 20px 0 24px;
+}
+
+.hoc-vu-tong-quan-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.hoc-vu-tong-quan-header h3 {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hoc-vu-tong-quan-header span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.hoc-vu-tong-quan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.hoc-vu-tong-quan-card {
+  padding: 16px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.hoc-vu-tong-quan-label {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hoc-vu-tong-quan-year,
+.hoc-vu-tong-quan-detail {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.hoc-vu-tong-quan-ratio {
+  margin: 7px 0;
+  color: #003399;
+  font-size: 22px;
+  font-weight: 700;
+}

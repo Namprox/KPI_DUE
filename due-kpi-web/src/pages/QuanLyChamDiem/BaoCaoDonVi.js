@@ -23,6 +23,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import { useChuaTuCham } from "../../hooks/useChuaTuCham";
 import { TrangThaiBadge } from "../../components/QuanLyChamDiem/TrangThaiBadge";
+import HocVuTongQuan from "../../components/QuanLyChamDiem/HocVuTongQuan";
+import { TRANG_THAI_CHUA_LAP_META } from "../../utils/chuaLapPhieu";
 import SearchSelect from "../../components/Common/SearchSelect";
 
 /** Số ngày trôi mà một phiếu chưa hoàn tất bị coi là "để quá lâu". */
@@ -39,10 +41,8 @@ const TEN_LOAI_DOI_TUONG = {
  * Cả ba endpoint đều BẮT BUỘC idNam (thiếu là 400) và tự giới hạn phạm vi theo
  * chức vụ trong JWT, nên bộ lọc đơn vị ở đây chỉ để thu hẹp trong phạm vi sẵn có.
  *
- * Khối cuối trang KHÔNG đến từ báo cáo: /bao-cao/chua-hoan-tat chỉ liệt kê phiếu
- * ĐÃ TỒN TẠI, nên người chưa bấm lưu lần nào không lọt vào bất kỳ con số nào phía
- * trên - kể cả "Tổng số phiếu". Danh sách chưa lập phiếu được ghép riêng ở client
- * (useChuaTuCham) và cố tình để tách bảng: nó đếm NGƯỜI, không đếm phiếu.
+ * SoChuaLapPhieu là số người chưa có phiếu trong phạm vi báo cáo. Danh sách
+ * đối chiếu cuối trang vẫn ghép riêng ở client để hiển thị từng người.
  */
 const BaoCaoDonVi = () => {
   const toast = useRef(null);
@@ -213,9 +213,28 @@ const BaoCaoDonVi = () => {
       ) : (
         <>
           <p className="sub-title" style={{ marginBottom: "10px" }}>
-            TIẾN ĐỘ PHIẾU ({tongQuan?.TongSoPhieu ?? 0} phiếu)
+            TIẾN ĐỘ PHIẾU ({tongQuan?.TongSoPhieu ?? 0} phiếu đã lập)
           </p>
           <div className="stat-card-grid">
+            <div className="stat-card">
+              <div
+                className="stat-icon-box"
+                style={{
+                  background: TRANG_THAI_CHUA_LAP_META.bg,
+                  color: TRANG_THAI_CHUA_LAP_META.color,
+                }}
+              >
+                <i className={`fa-solid ${TRANG_THAI_CHUA_LAP_META.icon}`}></i>
+              </div>
+              <div>
+                <div className="stat-label">
+                  {TRANG_THAI_CHUA_LAP_META.label}
+                </div>
+                <div className="stat-value">
+                  {tongQuan?.SoChuaLapPhieu ?? "—"}
+                </div>
+              </div>
+            </div>
             {Object.entries(TRANG_THAI_META).map(([tt, meta]) => (
               <div className="stat-card" key={tt}>
                 <div
@@ -233,6 +252,8 @@ const BaoCaoDonVi = () => {
               </div>
             ))}
           </div>
+
+          <HocVuTongQuan hocVu={tongQuan?.HocVu} />
 
           {(tongQuan?.DemTheoXepLoai || []).length > 0 && (
             <>
@@ -423,7 +444,8 @@ const BaoCaoDonVi = () => {
             className="sub-title"
             style={{ marginTop: "24px", marginBottom: "10px" }}
           >
-            CHƯA LẬP PHIẾU ({dangTaiChuaLap ? "…" : chuaLapPhieu.length} người)
+            DANH SÁCH ĐỐI CHIẾU CHƯA LẬP PHIẾU (
+            {dangTaiChuaLap ? "…" : chuaLapPhieu.length} người)
           </p>
           <div className="modern-table-card">
             {loiChuaLap ? (
