@@ -1,0 +1,880 @@
+/* ==========================================================================
+   Học vụ sinh viên - Stylesheet đồng bộ với hệ thống DUE KPI
+   ========================================================================== */
+
+.hoc-vu-page {
+  color: #1e293b;
+}
+
+/* Header & Breadcrumb */
+.hoc-vu-page .page-header {
+  margin-bottom: 22px;
+}
+
+.hoc-vu-page .page-header .header-title h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #1e293b;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.hoc-vu-page .page-header .breadcrumb {
+  font-size: 13.5px;
+  color: #64748b;
+  margin-top: 6px;
+  display: block;
+  line-height: 1.4;
+}
+
+/* Toolbar & Navigation Tabs */
+.hoc-vu-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 22px;
+  background-color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.hoc-vu-tabs {
+  display: flex;
+  background-color: #f1f5f9;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.hoc-vu-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.hoc-vu-tab-btn:hover:not(:disabled):not(.active) {
+  background-color: #e2e8f0;
+  color: #334155;
+}
+
+.hoc-vu-tab-btn.active {
+  background-color: #ffffff;
+  color: #0056b3;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+}
+
+.hoc-vu-tab-btn i {
+  font-size: 14px;
+}
+
+.hoc-vu-tab-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Year Selector Control */
+.hoc-vu-year-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hoc-vu-year-control label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.hoc-vu-year-control label i {
+  color: #0056b3;
+}
+
+.hoc-vu-year-control select.form-input {
+  width: auto;
+  min-width: 140px;
+  padding: 7px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hoc-vu-year-control select.form-input:focus {
+  border-color: #0056b3;
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.12);
+}
+
+/* Banner / Message Alerts */
+.hoc-vu-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.hoc-vu-banner i {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.hoc-vu-banner span {
+  flex: 1;
+}
+
+.hoc-vu-banner.success {
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.hoc-vu-banner.success i {
+  color: #059669;
+}
+
+.hoc-vu-banner.error {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.hoc-vu-banner.error i {
+  color: #dc2626;
+}
+
+.hoc-vu-banner-close {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hoc-vu-banner-close:hover {
+  opacity: 1;
+}
+
+/* Stat Card Grid & Stat Info */
+.hoc-vu-page .stat-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.hoc-vu-page .stat-card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hoc-vu-page .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.hoc-vu-page .stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hoc-vu-page .stat-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.hoc-vu-page .stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+/* Metadata Strip below stats */
+.hoc-vu-meta-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 18px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.hoc-vu-meta-bar i {
+  color: #0056b3;
+  margin-right: 4px;
+}
+
+.hoc-vu-meta-bar strong {
+  color: #334155;
+  font-weight: 600;
+}
+
+.hoc-vu-meta-divider {
+  color: #cbd5e1;
+}
+
+/* Warnings and Alerts */
+.hoc-vu-alert-warning {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background-color: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  color: #92400e;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.hoc-vu-alert-warning > i {
+  font-size: 20px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.hoc-vu-alert-warning > div {
+  flex: 1;
+  line-height: 1.45;
+}
+
+.hoc-vu-warning-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #fff;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.hoc-vu-warning-btn:hover {
+  background-color: #fef3c7;
+}
+
+.hoc-vu-secondary-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -10px 0 18px 0;
+  padding: 10px 14px;
+  background-color: #fffdf5;
+  border-left: 3px solid #f59e0b;
+  font-size: 13px;
+  color: #9a6700;
+}
+
+/* Modern Table Card & Table Header */
+.hoc-vu-page .modern-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.hoc-vu-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 18px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.hoc-vu-table-title-area h3 {
+  margin: 0 0 4px 0;
+  font-size: 16.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.hoc-vu-table-subtitle {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Search Box */
+.hoc-vu-search-box {
+  position: relative;
+  min-width: 250px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.hoc-vu-search-box i.fa-magnifying-glass {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.hoc-vu-search-input {
+  width: 100%;
+  padding: 8px 34px 8px 34px !important;
+  font-size: 13.5px !important;
+  border-radius: 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  transition: all 0.15s ease;
+}
+
+.hoc-vu-search-input:focus {
+  background-color: #ffffff !important;
+  border-color: #0056b3 !important;
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1) !important;
+}
+
+.hoc-vu-clear-search {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 12px;
+}
+
+.hoc-vu-clear-search:hover {
+  color: #475569;
+}
+
+/* Custom Table specifics */
+.hoc-vu-table thead th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 13px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.hoc-vu-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.hoc-vu-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.hoc-vu-calc-cell {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 13.5px;
+}
+
+.hoc-vu-calc-cell strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.hoc-vu-calc-formula {
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+/* Empty state */
+.hoc-vu-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 45px 20px;
+  text-align: center;
+  color: #64748b;
+}
+
+.hoc-vu-empty-state i {
+  font-size: 42px;
+  color: #cbd5e1;
+  margin-bottom: 12px;
+}
+
+.hoc-vu-empty-state h4 {
+  margin: 0 0 6px 0;
+  font-size: 15px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.hoc-vu-empty-state p {
+  margin: 0;
+  font-size: 13.5px;
+  color: #64748b;
+}
+
+/* Upload Section */
+.hoc-vu-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+  gap: 22px;
+}
+
+.hoc-vu-upload-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hoc-vu-upload-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.hoc-vu-upload-card-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hoc-vu-upload-card-header h3 i {
+  color: #16a34a;
+  font-size: 20px;
+}
+
+.hoc-vu-upload-rules {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.hoc-vu-upload-rules-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.hoc-vu-upload-rules-row:last-child {
+  margin-bottom: 0;
+}
+
+.hoc-vu-upload-rules-label {
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.hoc-vu-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 26px 20px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.hoc-vu-dropzone:hover {
+  border-color: #0056b3;
+  background-color: #f0f7ff;
+}
+
+.hoc-vu-dropzone input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hoc-vu-dropzone-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #eff6ff;
+  color: #0056b3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.hoc-vu-dropzone-text {
+  font-size: 14px;
+  color: #334155;
+}
+
+.hoc-vu-dropzone-text strong {
+  color: #0056b3;
+}
+
+.hoc-vu-file-subtext {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.hoc-vu-file-selected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.hoc-vu-file-selected i {
+  color: #16a34a;
+  font-size: 20px;
+}
+
+.hoc-vu-file-name {
+  word-break: break-all;
+}
+
+.hoc-vu-file-size {
+  color: #64748b;
+  font-weight: normal;
+  font-size: 12.5px;
+}
+
+.hoc-vu-upload-btn {
+  margin: 0 !important;
+  width: 100%;
+  justify-content: center;
+  padding: 11px 20px;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+/* Upload Results Box */
+.hoc-vu-upload-result {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.hoc-vu-upload-result h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hoc-vu-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.hoc-vu-stat-pill {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.hoc-vu-stat-pill strong {
+  font-size: 17px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.hoc-vu-stat-pill span {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.hoc-vu-upload-result details {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.hoc-vu-upload-result summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.hoc-vu-upload-result ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  color: #92400e;
+}
+
+.hoc-vu-upload-result li {
+  margin: 4px 0;
+}
+
+/* Ánh xạ Khoa specifics */
+.hoc-vu-mapping-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.hoc-vu-filter-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.hoc-vu-save-all {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.hoc-vu-save-all .hoc-vu-btn-save {
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+.hoc-vu-chip-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hoc-vu-chip-btn:hover {
+  background-color: #f1f5f9;
+}
+
+.hoc-vu-chip-btn.active {
+  background-color: #0056b3;
+  color: #ffffff;
+  border-color: #0056b3;
+}
+
+.hoc-vu-mapping-select {
+  width: 100% !important;
+  max-width: 320px;
+  padding: 7px 10px !important;
+  font-size: 13.5px !important;
+  border-radius: 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+}
+
+.hoc-vu-mapping-select:focus {
+  border-color: #0056b3 !important;
+}
+
+.hoc-vu-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.hoc-vu-btn-save {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  background-color: #0056b3 !important;
+  color: #ffffff !important;
+  border: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.hoc-vu-btn-save:hover:not(:disabled) {
+  background-color: #004494 !important;
+}
+
+.hoc-vu-btn-save:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.hoc-vu-btn-delete {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fecaca !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  transition: all 0.15s ease !important;
+}
+
+.hoc-vu-btn-delete:hover:not(:disabled) {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+
+.hoc-vu-btn-delete:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.hoc-vu-unmapped-row {
+  background-color: #fffdf5;
+}
+
+.hoc-vu-unmapped-row:hover {
+  background-color: #fffbeb !important;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .hoc-vu-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hoc-vu-tabs {
+    overflow-x: auto;
+    width: 100%;
+  }
+
+  .hoc-vu-year-control {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .hoc-vu-year-control select.form-input {
+    flex: 1;
+  }
+
+  .hoc-vu-table-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hoc-vu-search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .hoc-vu-mapping-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hoc-vu-save-all {
+    justify-content: space-between;
+  }
+
+  .hoc-vu-upload-grid {
+    grid-template-columns: 1fr;
+  }
+}

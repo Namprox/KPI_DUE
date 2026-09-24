@@ -490,6 +490,12 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.QUAN_TRI,
       },
       {
+        name: "Học vụ sinh viên",
+        icon: "fa-solid fa-graduation-cap",
+        path: "/hoc-vu-sinh-vien",
+        roles: MOI_NGUOI,
+      },
+      {
         // Khoa nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò cho giảng
         // viên (KPI Nhóm III). Chỉ TK/TKL được vào; nút Chốt kỳ trên màn hình
         // vẫn phụ thuộc cờ CanChot của server.

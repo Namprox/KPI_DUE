@@ -30,6 +30,7 @@ import QLTongHopViPham from "../pages/QuanLyKeHoach/QL_TongHopViPham";
 import QLThongKeViPhamKhoa from "../pages/QuanLyKeHoach/QL_ThongKeViPhamKhoa";
 import QLDanhGiaSinhVien from "../pages/QuanLyKeHoach/QL_DanhGiaSinhVien";
 import QLDiemTbDanhGiaSinhVien from "../pages/QuanLyKeHoach/QL_DiemTbDanhGiaSinhVien";
+import HocVuSinhVien from "../pages/QuanLyKeHoach/HocVuSinhVien";
 import QLChucDanh from "../pages/QuanLyToChuc/QL_ChucDanh";
 import QLChucVu from "../pages/QuanLyToChuc/QL_ChucVu";
 import DanhSachThanhVien from "../pages/QuanLyToChuc/DanhSachThanhVien";
@@ -189,6 +190,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
           path="/diem-trung-binh-danh-gia-sinh-vien"
           element={<QLDiemTbDanhGiaSinhVien />}
         />
+        <Route path="/hoc-vu-sinh-vien" element={<HocVuSinhVien />} />
 
         <Route path="/quan-ly/cho-cham" element={<ChoCham />} />
         <Route path="/quan-ly/phieu-quy" element={<DuyetPhieuQuy />} />

@@ -2574,3 +2574,126 @@ GO
 CREATE INDEX ix_ggtkb_ct_header ON gio_giang_tkb_chi_tiet(id_gio_giang_tkb);
 CREATE INDEX ix_ggtkb_ax_nv     ON gio_giang_tkb_anh_xa(id_nhan_vien);
 GO
+
+-- =============================================================================
+-- 14. HỌC VỤ SINH VIÊN (tốt nghiệp đúng hạn + cảnh báo học vụ) → nguồn số KPI Khoa
+-- =============================================================================
+-- Phòng Đào tạo upload 2 file Excel mỗi năm đánh giá (id_nam):
+--   File 1 → sinh_vien_hoc_vu : danh sách SV (vd 2026: khóa 48–52).
+--   File 2 → canh_bao_hoc_vu  : SV bị cảnh báo học vụ (vd 2026: khóa 49–52).
+-- Khóa tính tỷ lệ suy ra từ id_nam, KHÔNG hardcode số khóa:
+--   Tốt nghiệp đúng hạn: nam_nhap_hoc = id_nam − 4
+--   Cảnh báo học vụ    : nam_nhap_hoc BETWEEN id_nam − 3 AND id_nam
+-- Không lưu Khoa 201, 344 và lớp bắt đầu bằng CTS (lọc trong sp_sinh_vien_hoc_vu_import).
+-- Tỷ lệ tính trong fn_ty_le_hoc_vu_khoa (procedure.sql).
+-- =============================================================================
+
+-- 14.1. Sinh viên — 1 MSSV = 1 dòng DÙNG CHUNG mọi năm.
+--       Upload năm sau CẬP NHẬT dòng cũ (MERGE theo MSSV), không tạo dòng mới.
+--       id_nam_cap_nhat = năm của lần upload gần nhất đã ghi vào dòng:
+--         - upload lại cùng năm: SV không còn trong file VÀ id_nam_cap_nhat = năm đó → xoá;
+--         - SV năm cũ không có trong file năm mới (vd khóa 48 khi upload 2027) → giữ nguyên;
+--         - file năm cũ KHÔNG đè dòng có id_nam_cap_nhat lớn hơn.
+--       Gắn Khoa qua khoa_dao_tao_anh_xa (JOIN lúc đọc), KHÔNG lưu id_don_vi ở đây.
+CREATE TABLE sinh_vien_hoc_vu (
+    id_sinh_vien_hv   INT           IDENTITY(1,1) PRIMARY KEY,
+    ma_sinh_vien      NVARCHAR(20)  NOT NULL,
+    ho_va_ten         NVARCHAR(150) NULL,
+    ma_khoa           NVARCHAR(20)  NOT NULL,           -- MaKhoa trong file (vd 202), không hard-FK
+    ten_khoa          NVARCHAR(200) NULL,
+    nam_nhap_hoc      SMALLINT      NOT NULL,           -- namNhaphoc (vd 2022)
+    ma_khoa_hoc       NVARCHAR(20)  NULL,               -- maKhoahoc (vd 48), chỉ lưu thông tin
+    lop               NVARCHAR(50)  NULL,
+    thoi_hoc          BIT           NOT NULL DEFAULT 0, -- ThoiHoc: 1 = đã thôi học
+    so_hieu_van_bang  NVARCHAR(50)  NULL,               -- SO_HIEU_VAN_BANG_TOT_NGHIEP_CT1; NULL = chưa tốt nghiệp
+    nam_tot_nghiep    SMALLINT      NULL,               -- NamTotNghiepNganh1, chỉ lưu thông tin
+    id_nam_cap_nhat   INT           NOT NULL,
+    id_nguoi_cap_nhat INT           NULL,
+    ngay_tao          DATETIME      NOT NULL DEFAULT GETDATE(),
+    ngay_cap_nhat     DATETIME      NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT uq_svhv_ma_sv       UNIQUE (ma_sinh_vien),
+    CONSTRAINT fk_svhv_nam         FOREIGN KEY (id_nam_cap_nhat)   REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_svhv_nguoi       FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES nhan_vien(id_nhan_vien)
+);
+GO
+
+-- 14.2. Cảnh báo học vụ — lưu THEO id_nam (cảnh báo là sự kiện của từng năm).
+--       Upload lại cùng năm = xoá cảnh báo năm đó rồi chèn lại. 1 SV có thể có nhiều dòng
+--       (CB lần 1, CB lần 2) → khi tính tỷ lệ đếm DISTINCT MSSV.
+--       CHỈ LƯU SV CÓ TRONG sinh_vien_hoc_vu: file chứa cả SV khoá trên (không cần xét) và SV
+--       Khoa 201 / 344 / lớp CTS (file không có MaKhoa/LOP để lọc) → bỏ qua khi import.
+--       ⇒ phải import danh sách SV trước.
+CREATE TABLE canh_bao_hoc_vu (
+    id_canh_bao      INT           IDENTITY(1,1) PRIMARY KEY,
+    id_nam           INT           NOT NULL,
+    ma_sinh_vien     NVARCHAR(20)  NOT NULL,            -- MSV
+    ho               NVARCHAR(100) NULL,
+    ten              NVARCHAR(50)  NULL,
+    ghi_chu_cb       NVARCHAR(200) NULL,                -- "Ghi chú CB" gốc (vd "CB lần 2")
+    lan_canh_bao     TINYINT       NULL,                -- số tách từ ghi_chu_cb (vd 2)
+    so_quyet_dinh    NVARCHAR(100) NULL,                -- số QĐ
+    so_thong_bao     NVARCHAR(100) NULL,                -- số TB
+    id_nguoi_import  INT           NULL,
+    ngay_import      DATETIME      NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT fk_cbhv_nam   FOREIGN KEY (id_nam)          REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_cbhv_nguoi FOREIGN KEY (id_nguoi_import) REFERENCES nhan_vien(id_nhan_vien)
+);
+GO
+
+-- 14.3. Ánh xạ MaKhoa (mã Khoa đào tạo trong file) → Khoa (don_vi cấp 2, mã K_*).
+--       Cùng khuôn gio_giang_tkb_anh_xa (13.4): KHÔNG gắn id_nam, KHÔNG bị xoá khi import,
+--       JOIN lúc đọc → sửa ánh xạ có hiệu lực ngay. Import tự THÊM khi TenKhoa khớp DUY NHẤT
+--       một ten_don_vi của Khoa đang hoạt động; không bao giờ ghi đè ánh xạ đã có.
+--       Nhiều MaKhoa có thể về cùng 1 Khoa (Khoa gộp) → không UNIQUE trên id_don_vi.
+CREATE TABLE khoa_dao_tao_anh_xa (
+    ma_khoa        NVARCHAR(20)  NOT NULL PRIMARY KEY,
+    id_don_vi      INT           NOT NULL,
+    id_nguoi_tao   INT           NULL,
+    ngay_tao       DATETIME      NOT NULL DEFAULT GETDATE(),
+    ngay_cap_nhat  DATETIME      NULL,
+    CONSTRAINT fk_kdtax_don_vi FOREIGN KEY (id_don_vi)    REFERENCES don_vi(id_don_vi),
+    CONSTRAINT fk_kdtax_nguoi  FOREIGN KEY (id_nguoi_tao) REFERENCES nhan_vien(id_nhan_vien)
+);
+GO
+
+-- 14.4. TVP: dòng đã làm sạch ở C# (HocVuExcelReader), đẩy xuống trong 1 request.
+--       dong_excel dùng để khử trùng MSSV trong file: giữ dòng xuất hiện ĐẦU TIÊN.
+IF TYPE_ID(N'dbo.SinhVienHocVuRow') IS NOT NULL
+    DROP TYPE dbo.SinhVienHocVuRow;
+GO
+CREATE TYPE dbo.SinhVienHocVuRow AS TABLE (
+    dong_excel       INT           NOT NULL,
+    ma_sinh_vien     NVARCHAR(20)  NOT NULL,
+    ho_va_ten        NVARCHAR(150) NULL,
+    ma_khoa          NVARCHAR(20)  NOT NULL,
+    ten_khoa         NVARCHAR(200) NULL,
+    nam_nhap_hoc     SMALLINT      NOT NULL,
+    ma_khoa_hoc      NVARCHAR(20)  NULL,
+    lop              NVARCHAR(50)  NULL,
+    thoi_hoc         BIT           NOT NULL,
+    so_hieu_van_bang NVARCHAR(50)  NULL,
+    nam_tot_nghiep   SMALLINT      NULL
+);
+GO
+
+IF TYPE_ID(N'dbo.CanhBaoHocVuRow') IS NOT NULL
+    DROP TYPE dbo.CanhBaoHocVuRow;
+GO
+CREATE TYPE dbo.CanhBaoHocVuRow AS TABLE (
+    ma_sinh_vien   NVARCHAR(20)  NOT NULL,
+    ho             NVARCHAR(100) NULL,
+    ten            NVARCHAR(50)  NULL,
+    ghi_chu_cb     NVARCHAR(200) NULL,
+    lan_canh_bao   TINYINT       NULL,
+    so_quyet_dinh  NVARCHAR(100) NULL,
+    so_thong_bao   NVARCHAR(100) NULL
+);
+GO
+
+-- 14.5. Index của module
+CREATE INDEX ix_svhv_khoa_nam_nh ON sinh_vien_hoc_vu(ma_khoa, nam_nhap_hoc)
+    INCLUDE (thoi_hoc, so_hieu_van_bang, ma_sinh_vien);
+CREATE INDEX ix_svhv_nam_cap_nhat ON sinh_vien_hoc_vu(id_nam_cap_nhat);
+CREATE INDEX ix_cbhv_nam_sv       ON canh_bao_hoc_vu(id_nam, ma_sinh_vien);
+CREATE INDEX ix_kdtax_don_vi      ON khoa_dao_tao_anh_xa(id_don_vi);
+GO

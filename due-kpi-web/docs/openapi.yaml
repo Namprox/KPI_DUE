@@ -2330,7 +2330,7 @@ paths:
         ma_can_bo = nhan_vien.ma_nhan_vien; khong khop bi bo qua, so luong tra ve o
         SoMaKhongKhop). Chi gop 1 diem tong hop ca nam (khong tach rieng tung ky). Moi
         nam chi giu 1 lan chot cuoi cung: chot lai se GHI DE (xoa ket qua cu cua nam do).
-        Quyen chot: chi ma_chuc_vu = 'TP' cua don vi ma_don_vi = 'P_QLCL', hoac ADMIN.
+        Quyen chot: chi ma_chuc_vu = 'TP' cua don vi ma_don_vi = 'P_DTBDCL' (Phong Dao tao va Bao dam chat luong), hoac ADMIN.
       operationId: diemTbPhanHoiSvChot
       requestBody:
         required: true
@@ -2358,7 +2358,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DiemTbChotResponse"
         "403":
-          description: Khong co quyen chot (khong phai ADMIN hoac TP cua P_QLCL)
+          description: Khong co quyen chot (khong phai ADMIN hoac TP cua P_DTBDCL)
           content:
             application/json:
               schema:
@@ -2377,9 +2377,9 @@ paths:
       description: >
         Moi nam chi con 1 lan chot cuoi cung -> chi can idNam. Tra ve tom tat (nguoi
         chot / ngay chot / so GV / so ma khong khop) + diem trung binh tung giang vien.
-        Quyen xem: ADMIN/TP@P_QLCL xem toan truong; TK/TKL/TP/TKK (Thu ky Khoa) chi
+        Quyen xem: ADMIN/TP@P_DTBDCL xem toan truong; TK/TKL/TP/TKK (Thu ky Khoa) chi
         xem giang vien thuoc don vi minh (+ con truc tiep). TKK chi DOC - quyen chot
-        van chi ADMIN / TP@P_QLCL.
+        van chi ADMIN / TP@P_DTBDCL.
         Nguoi khong giu chuc vu nao trong so tren nhan 404 (SP khong tra result set).
       operationId: diemTbPhanHoiSvGetChiTiet
       parameters:
@@ -2413,6 +2413,334 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DiemTbChiTietResponse"
+  /api/hoc-vu/import-sinh-vien:
+    post:
+      tags:
+        - HocVu
+      summary: Import danh sach sinh vien (File 1) cho 1 nam danh gia
+      description: >
+        multipart/form-data: file Excel sheet "Sheet1" + field 'idNam' (vd 2026).
+        Cot tim THEO TEN header (khong phan biet hoa thuong / dau / gach duoi): MaKhoa,
+        TenKhoa, namNhaphoc, maKhoahoc, LOP, MA_SINH_VIEN, hovaten, ThoiHoc,
+        SO_HIEU_VAN_BANG_TOT_NGHIEP_CT1, NamTotNghiepNganh1. O rong hoac chu "NULL" = khong co gia tri.
+        KHONG luu Khoa 201, 344 va lop bat dau bang CTS (ExcludedRows).
+        1 MSSV = 1 ban ghi dung chung moi nam, MERGE theo MSSV: co roi -> cap nhat,
+        chua co -> them; SV khong con trong file va lan cap nhat gan nhat la CHINH nam nay -> xoa;
+        SV nam cu khong co trong file -> giu nguyen; ban ghi da duoc nam MOI HON cap nhat
+        -> khong ghi de (SkippedNewerRows). File khong con dong hop le -> khong thay doi gi.
+        Tu anh xa MaKhoa -> Khoa khi TenKhoa trung DUY NHAT ten 1 Khoa (chi them, khong ghi de).
+        Quyen: ADMIN hoac TP cua P_DTBDCL.
+      operationId: hocVuImportSinhVien
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - idNam
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File Excel (.xls / .xlsx), kiem duoi file + chu ky nhu cac endpoint import khac.
+                idNam:
+                  type: integer
+                  example: 2026
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+        "400":
+          description: >-
+            Thieu file/idNam, sai dinh dang, khong tim thay sheet / dong tieu de / cot bat buoc,
+            khong co dong hop le, hoac loi ghi CSDL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+        "403":
+          description: Khong phai ADMIN / TP P_DTBDCL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+        "404":
+          description: Nam danh gia khong ton tai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+        "415":
+          description: Khong phai multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+  /api/hoc-vu/import-canh-bao:
+    post:
+      tags:
+        - HocVu
+      summary: Import danh sach sinh vien bi canh bao hoc vu (File 2) cho 1 nam danh gia
+      description: >
+        multipart/form-data: file Excel sheet "Canh bao" (co dau) + field 'idNam'.
+        Cot: MSV (bat buoc), Ho, Ten, Ghi chu CB, so QD, so TB. So lan canh bao tach tu
+        "Ghi chu CB" (vd "CB lan 2" -> 2). Luu THEO NAM: upload lai = xoa canh bao cua nam
+        do roi chen lai; cac nam khac giu nguyen. CHI LUU SV co trong danh sach sinh vien:
+        SV khoa tren (khong can xet), Khoa 201 / 344, lop CTS bi BO QUA (UnmatchedStudents /
+        UnmatchedRows) -> phai import danh sach sinh vien TRUOC; khong SV nao khop -> 400,
+        du lieu cu giu nguyen. Import lai danh sach SV co them SV thi import lai file nay.
+        Quyen: ADMIN hoac TP cua P_DTBDCL.
+      operationId: hocVuImportCanhBao
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - idNam
+              properties:
+                file:
+                  type: string
+                  format: binary
+                idNam:
+                  type: integer
+                  example: 2026
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+        "400":
+          description: Thieu file/idNam, sai dinh dang, sai cau truc file, khong co dong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+        "403":
+          description: Khong phai ADMIN / TP P_DTBDCL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+        "404":
+          description: Nam danh gia khong ton tai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+        "415":
+          description: Khong phai multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuImportResponse"
+  /api/hoc-vu/ty-le-khoa:
+    get:
+      tags:
+        - HocVu
+      summary: Ty le tot nghiep dung han + ty le canh bao hoc vu cua moi Khoa trong 1 nam
+      description: >
+        Khoa hoc suy ra tu idNam: tot nghiep dung han = SV nhap hoc nam idNam - 4;
+        canh bao = SV nhap hoc tu idNam - 3 den idNam.
+        TyLeTotNghiepDungHan = so co so hieu van bang (va khong thoi hoc) * 100 / (tong - thoi hoc).
+        TyLeCanhBaoHocVu = so SV (distinct) bi canh bao trong nam (khong thoi hoc) * 100 / (tong - thoi hoc).
+        Ty le null = mau so 0 (chua co du lieu / Khoa chua anh xa), khac 0%.
+        Tinh tren du lieu SV MOI NHAT nen xem lai nam cu co the khac luc chot.
+        Quyen xem: ADMIN / TP@P_DTBDCL thay moi Khoa (XemTatCa = true, co TongQuan doi soat
+        toan truong); TK / TKL / TKK chi thay Khoa ma minh giu chuc vu (TongQuan = null);
+        nguoi khac nhan 403.
+      operationId: hocVuGetTyLeKhoa
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 2026
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TyLeHocVuResponse"
+        "400":
+          description: Thieu / sai idNam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TyLeHocVuResponse"
+        "403":
+          description: Khong phai ADMIN / TP@P_DTBDCL / TK / TKL / TKK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TyLeHocVuResponse"
+  /api/hoc-vu/sinh-vien:
+    get:
+      tags:
+        - HocVu
+      summary: Danh sach sinh vien dung sau ty le hoc vu cua Khoa (de doi chieu)
+      description: >
+        loai=tot-nghiep: SV nhap hoc nam idNam - 4; loai=canh-bao: SV nhap hoc idNam - 3 .. idNam.
+        TrangThai tung SV cung dinh nghia voi cong thuc ty le:
+        1 = vao tu so (tot-nghiep: co so hieu van bang; canh-bao: bi canh bao trong nam);
+        2 = trong mau so nhung khong vao tu so; 3 = thoi hoc (loai khoi ca tu va mau).
+        SoTrangThai1/2/3 dem truoc loc trangThai - khong keyword thi khop dung so lieu cua
+        ty-le-khoa (ty le = SoTrangThai1 / (SoTrangThai1 + SoTrangThai2)).
+        Quyen nhu ty-le-khoa; idDonVi bo trong = moi Khoa duoc xem, idDonVi ngoai quyen -> 403.
+      operationId: hocVuGetSinhVien
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 2026
+        - name: loai
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [tot-nghiep, canh-bao]
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: trangThai
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+        - name: keyword
+          in: query
+          required: false
+          description: Tim theo MSSV hoac ho ten
+          schema:
+            type: string
+            maxLength: 100
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 500
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuSinhVienListResponse"
+        "400":
+          description: Thieu / sai idNam, loai, trangThai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuSinhVienListResponse"
+        "403":
+          description: Khong co quyen xem, hoac idDonVi khong thuoc Khoa duoc xem
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HocVuSinhVienListResponse"
+  /api/hoc-vu/anh-xa-khoa:
+    get:
+      tags:
+        - HocVu
+      summary: Danh sach MaKhoa trong du lieu SV va Khoa dang anh xa
+      description: Dong chua anh xa (IdDonVi null) xep len dau - SV cua cac ma do chua duoc tinh vao Khoa nao.
+      operationId: hocVuGetAnhXaKhoa
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KhoaDaoTaoAnhXaResponse"
+    post:
+      tags:
+        - HocVu
+      summary: Them / sua anh xa MaKhoa -> Khoa
+      description: >
+        IdDonVi phai la Khoa (cap 2, ma K_*). Co hieu luc ngay cho moi nam (ty le JOIN luc doc),
+        khong can import lai. Quyen: ADMIN hoac TP cua P_DTBDCL.
+      operationId: hocVuSaveAnhXaKhoa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KhoaDaoTaoAnhXaSaveRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KhoaDaoTaoAnhXaResponse"
+        "400":
+          description: Thieu MaKhoa / IdDonVi, hoac don vi khong phai Khoa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KhoaDaoTaoAnhXaResponse"
+        "403":
+          description: Khong phai ADMIN / TP P_DTBDCL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KhoaDaoTaoAnhXaResponse"
+  /api/hoc-vu/anh-xa-khoa/{maKhoa}:
+    delete:
+      tags:
+        - HocVu
+      summary: Xoa anh xa MaKhoa -> Khoa
+      description: SV cua ma Khoa nay se khong con duoc tinh vao Khoa nao. Quyen ADMIN hoac TP cua P_DTBDCL.
+      operationId: hocVuDeleteAnhXaKhoa
+      parameters:
+        - name: maKhoa
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KhoaDaoTaoAnhXaResponse"
+        "403":
+          description: Khong phai ADMIN / TP P_DTBDCL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KhoaDaoTaoAnhXaResponse"
+        "404":
+          description: Ma Khoa chua co anh xa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KhoaDaoTaoAnhXaResponse"
   /api/phieu:
     get:
       tags:
@@ -13408,6 +13736,251 @@ components:
         InsertedRows:
           type: integer
           description: So dong THO thuc su chen vao DB
+    HocVuImportResponse:
+      type: object
+      description: >-
+        Ket qua import hoc vu. Cac truong danh dau (File 1) / (File 2) chi co o endpoint tuong ung
+        (null bi an khoi JSON).
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        TotalRowsRead:
+          type: integer
+          description: So dong du lieu doc tu file (khong tinh header va dong trang)
+        ValidRows:
+          type: integer
+        SkippedRows:
+          type: integer
+          description: So dong bi bo qua khi doc file (thieu MSSV, namNhaphoc / ThoiHoc sai...)
+        Warnings:
+          type: array
+          items:
+            type: string
+          description: Toi da 20 thong bao "Dong n - ly do"
+        InsertedRows:
+          type: integer
+        DeletedRows:
+          type: integer
+          description: (File 1) SV cua chinh nam nay khong con trong file; (File 2) canh bao cu cua nam
+        UpdatedRows:
+          type: integer
+          description: (File 1) SV da co duoc cap nhat
+        SkippedNewerRows:
+          type: integer
+          description: (File 1) SV da duoc file nam moi hon cap nhat -> khong ghi de
+        ExcludedRows:
+          type: integer
+          description: (File 1) Dong Khoa 201, 344 / lop CTS - khong luu
+        DuplicateRows:
+          type: integer
+          description: (File 1) Dong trung MSSV trong file (giu dong dau tien)
+        AutoMappedKhoa:
+          type: integer
+          description: (File 1) So MaKhoa vua tu anh xa theo TenKhoa
+        UnmappedKhoa:
+          type: integer
+          description: (File 1) So MaKhoa trong file chua co anh xa
+        SoSinhVien:
+          type: integer
+          description: (File 2) So SV (distinct) bi canh bao trong nam
+        UnmatchedStudents:
+          type: integer
+          description: (File 2) So SV (distinct) khong co trong danh sach SV -> bo qua, khong luu
+        UnmatchedRows:
+          type: integer
+          description: (File 2) So dong canh bao bi bo qua tuong ung
+    TyLeHocVuKhoaDto:
+      type: object
+      properties:
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        MaKhoaDaoTao:
+          type: string
+          description: Cac MaKhoa dang anh xa ve Khoa nay, noi bang ", "
+        SoSvKhoaTotNghiep:
+          type: integer
+        SoThoiHocKhoaTotNghiep:
+          type: integer
+        SoTotNghiepDungHan:
+          type: integer
+        TyLeTotNghiepDungHan:
+          type: number
+          nullable: true
+          description: Phan tram 0..100; null = mau so 0
+        SoSvKhoaCanhBao:
+          type: integer
+        SoThoiHocKhoaCanhBao:
+          type: integer
+        SoSvBiCanhBao:
+          type: integer
+        TyLeCanhBaoHocVu:
+          type: number
+          nullable: true
+          description: Phan tram 0..100; null = mau so 0
+    TyLeHocVuTongQuanDto:
+      type: object
+      description: Doi soat toan truong - chi tra cho ADMIN / TP@P_DTBDCL
+      properties:
+        SoSinhVien:
+          type: integer
+          description: SV nhap hoc tu idNam - 4 den idNam
+        SoSinhVienChuaAnhXa:
+          type: integer
+        SoMaKhoaChuaAnhXa:
+          type: integer
+        SoDongCanhBao:
+          type: integer
+        SoSvCanhBaoKhongKhop:
+          type: integer
+        NgayCapNhatSinhVien:
+          type: string
+          format: date-time
+          nullable: true
+          description: Lan upload danh sach SV gan nhat cua chinh nam nay
+        NgayImportCanhBao:
+          type: string
+          format: date-time
+          nullable: true
+    TyLeHocVuResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        IdNam:
+          type: integer
+        XemTatCa:
+          type: boolean
+          description: true = ADMIN / TP@P_DTBDCL (moi Khoa); false = cap Khoa
+        NamNhapHocTotNghiep:
+          type: integer
+        NamNhapHocCanhBaoTu:
+          type: integer
+        NamNhapHocCanhBaoDen:
+          type: integer
+        TongQuan:
+          $ref: "#/components/schemas/TyLeHocVuTongQuanDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TyLeHocVuKhoaDto"
+    HocVuSinhVienDto:
+      type: object
+      properties:
+        MaSinhVien:
+          type: string
+        HoVaTen:
+          type: string
+        Lop:
+          type: string
+        MaKhoa:
+          type: string
+        TenKhoa:
+          type: string
+        NamNhapHoc:
+          type: integer
+        MaKhoaHoc:
+          type: string
+        ThoiHoc:
+          type: boolean
+        SoHieuVanBang:
+          type: string
+        NamTotNghiep:
+          type: integer
+          nullable: true
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        TrangThai:
+          type: integer
+          description: 1 = vao tu so; 2 = trong mau so, khong vao tu so; 3 = thoi hoc
+        SoDongCanhBao:
+          type: integer
+        ChiTietCanhBao:
+          type: string
+          description: Vd "CB lan 1 - QD 123; CB lan 2 - QD 456"; null neu khong bi canh bao
+    HocVuSinhVienListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        SoTrangThai1:
+          type: integer
+        SoTrangThai2:
+          type: integer
+        SoTrangThai3:
+          type: integer
+        Page:
+          type: integer
+        PageSize:
+          type: integer
+        TotalCount:
+          type: integer
+        TotalPages:
+          type: integer
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HocVuSinhVienDto"
+    KhoaDaoTaoAnhXaDto:
+      type: object
+      properties:
+        MaKhoa:
+          type: string
+        TenKhoa:
+          type: string
+        SoSinhVien:
+          type: integer
+        IdDonVi:
+          type: integer
+          nullable: true
+          description: null = chua anh xa
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        NgayTao:
+          type: string
+          format: date-time
+        NgayCapNhat:
+          type: string
+          format: date-time
+    KhoaDaoTaoAnhXaResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/KhoaDaoTaoAnhXaDto"
+    KhoaDaoTaoAnhXaSaveRequest:
+      type: object
+      required:
+        - MaKhoa
+        - IdDonVi
+      properties:
+        MaKhoa:
+          type: string
+          maxLength: 20
+          example: "202"
+        IdDonVi:
+          type: integer
+          description: Khoa (don_vi cap 2, ma K_*)
     PhieuDanhGiaCreateRequest:
       type: object
       required:
@@ -18416,7 +18989,7 @@ components:
         IdMau:
           type: integer
           nullable: true
-          description: "Bo trong: backend tu suy mau theo ma_don_vi (K_* va TNNCN => Khoa/loai 3, con lai => Phong/loai 4)."
+          description: "Bo trong: backend tu suy mau theo ma_don_vi (K_* => Khoa/loai 3, con lai P_* => Phong/loai 4)."
     PhieuDonViSubmitRequest:
       type: object
       required:

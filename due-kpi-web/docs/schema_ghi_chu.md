@@ -15,6 +15,21 @@
 
 ## 1. BẢNG THAM CHIẾU
 
+### 1.1. `don_vi` — Quy ước mã đơn vị (cơ cấu 2026)
+Không có cột "loại đơn vị": code phân loại **chỉ qua tiền tố `ma_don_vi`**. Từ đợt "Cơ cấu đơn vị 2026"
+chỉ còn 2 tiền tố (không còn `TT_`, `V_`, `TO_`):
+
+| Tiền tố | Nhóm | Hệ quả trong code |
+|---|---|---|
+| `K_` | Khoa | GV (ngạch giảng dạy) → loại đối tượng 1 (`fn_loai_doi_tuong_ca_nhan`); vào `v_giang_vien_khoa`; có điểm trừ tập thể, nhiệm vụ Khoa, NCKH Khoa; phiếu đơn vị mẫu loại 3 |
+| `P_` | Phòng / Trung tâm / Viện / Tổ | Mọi người → loại 2 (viên chức); phiếu đơn vị mẫu loại 4 |
+
+Mã đơn vị duy nhất còn viết cứng trong SP: `N'P_DTBDCL'` (Phòng Đào tạo và Bảo đảm chất lượng, gộp từ
+`P_DT` + `P_QLCL`) — TP của đơn vị này được chốt / xem toàn trường điểm TB phản hồi SV
+(`sp_diem_tb_phan_hoi_sv_chot`, `_get_chi_tiet`). Đổi mã này phải sửa cả 2 SP.
+Đơn vị mới thuộc nhóm Phòng/TT/Viện **không được** đặt mã `K_…`, kể cả khi danh sách tổ chức xếp nó cạnh các Khoa
+(vd Viện Đào tạo quốc tế = `P_DTQT`).
+
 ### 1.3. `chuc_danh_nghe_nghiep` — Chức danh nghề nghiệp
 Theo Bảng 1 QĐ ĐHKT: Trợ giảng, Tập sự, GV, GVC, GVCC/PGS, GS.
 
@@ -200,7 +215,7 @@ Lưu các vi phạm quy định giảng dạy trong năm để tính điểm tr�
   `sp_vi_pham_diem_tru_khoa` (báo cáo `GET api/vi-pham/diem-tru-khoa`) và `sp_phieu_dv_tong_hop_kpi`
   (mã công thức `DIEM_TRU_TAP_THE` chấm điểm tiêu chí KPI Khoa — xem §4.9-4.14). Sửa công thức chỉ
   được sửa trong hàm; hai con số này lệch nhau là bảng đối chiếu trên FE vô nghĩa.
-  Hàm **luôn trả đúng 1 dòng**; đơn vị không phải Khoa (Phòng, `TNNCN`) → tất cả cột = 0.
+  Hàm **luôn trả đúng 1 dòng**; đơn vị không phải Khoa (mã `P_`) → tất cả cột = 0.
 - Điểm tiêu chí "Tuân thủ đúng quy định về giảng dạy" (mã công thức `VPGD_TUAN_THU`,
   chấm tự động qua `fn_nckh_diem_tu_dong`) = `15 − SUM(diem_tru)` trong năm, sàn 0.
 
@@ -2189,7 +2204,7 @@ mà đơn vị **chính** lại là Khoa (ca kiêm nhiệm) không thao tác đ�
 > đơn vị) vẫn đối chiếu **trên cùng một dòng** — `TP` của một Phòng khác vẫn bị từ chối.
 
 Mã `N'P_QLCL'` **vẫn là hằng số**; biến nó thành cấu hình là một việc khác, không thuộc
-phạm vi Đợt 2.
+phạm vi Đợt 2. *(Đợt "Cơ cấu đơn vị 2026": `P_QLCL` gộp vào `P_DTBDCL`, hằng số đổi thành `N'P_DTBDCL'` — xem §1.1.)*
 
 Chữ ký chỉ đổi ở `_get_chi_tiet` (`+@current_user_id INT = NULL`). `_chot` không đổi — nó
 đã có `@id_nguoi_chot` vốn luôn bằng `currentUserId`. `DiemTbPhanHoiSinhVienService`
@@ -3044,3 +3059,95 @@ không hai endpoint trả hai con số khác nhau cho cùng một giảng viên.
 Cổng quyền **sao y** SP gốc: ADMIN/HT toàn trường; TK/TKL/TP theo đơn vị mình giữ chức vụ
 (+ cây con). Dùng `EXISTS` trên tập `DISTINCT` chứ **không** `JOIN`, để người kiêm nhiệm
 nhiều đơn vị không bị nhân dòng.
+
+---
+
+## 14. HỌC VỤ SINH VIÊN — tốt nghiệp đúng hạn + cảnh báo học vụ (`sinh_vien_hoc_vu`, `canh_bao_hoc_vu`)
+
+### 14.0. Vì sao có module này
+
+KPI Khoa cần hai số liệu của Phòng Đào tạo: **tỷ lệ tốt nghiệp đúng hạn** và **tỷ lệ cảnh báo học vụ**.
+Mỗi năm đánh giá upload 2 file Excel:
+
+| File | Sheet | Cột | Endpoint |
+|---|---|---|---|
+| 1 — danh sách SV | `Sheet1` | MaKhoa, TenKhoa, namNhaphoc, maKhoahoc, LOP, MA_SINH_VIEN, hovaten, ThoiHoc, SO_HIEU_VAN_BANG_TOT_NGHIEP_CT1, NamTotNghiepNganh1 | `POST api/hoc-vu/import-sinh-vien` |
+| 2 — cảnh báo học vụ | `Cảnh báo` | MSV, Họ, Tên, Ghi chú CB, số QĐ, số TB | `POST api/hoc-vu/import-canh-bao` |
+
+- Cột tìm **theo tên header** đã chuẩn hoá (bỏ dấu, `Đ → d`, chữ thường, bỏ ký tự không phải chữ/số), không theo vị trí.
+  Header được dò trong 10 dòng đầu. Workbook chỉ có 1 sheet mà sai tên thì vẫn dùng sheet đó.
+- Ô rỗng **hoặc chữ `NULL`** = không có giá trị (file xuất từ hệ thống đào tạo ghi `NULL` dạng text).
+- **Không lưu** Khoa `201`, `344` và lớp bắt đầu bằng `CTS` (lọc trong `sp_sinh_vien_hoc_vu_import`, đếm `ExcludedRows`).
+  File 2 **chỉ lưu SV có trong `sinh_vien_hoc_vu`**: file chứa cả SV khoá trên (không cần xét) và SV
+  Khoa 201 / 344 / lớp CTS (file không có MaKhoa/LOP để lọc) → bỏ qua, đếm `UnmatchedStudents` / `UnmatchedRows`.
+  ⇒ **Import danh sách SV (File 1) trước.** Không SV nào khớp → trả 400, không xoá cảnh báo cũ.
+  Import lại File 1 có thêm SV thì phải import lại File 2 để lấy cảnh báo của các SV đó.
+- Quyền import / sửa ánh xạ: **ADMIN hoặc TP của `P_DTBDCL`** (`fn_hoc_vu_co_quyen_quan_ly`, cùng luật
+  `sp_diem_tb_phan_hoi_sv_chot`).
+- Quyền **xem** (`fn_hoc_vu_khoa_duoc_xem`, dùng chung cho `ty-le-khoa` và `sinh-vien`):
+  ADMIN / TP@`P_DTBDCL` → mọi Khoa (kèm `TongQuan` đối soát toàn trường); **TK / TKL / TKK** → chỉ Khoa
+  mình thực sự giữ chức vụ (qua `fn_pham_vi_don_vi`, kiêm nhiệm nhiều Khoa thấy đủ); người khác → 403.
+  Chốt với người dùng: **không** gồm TP (trưởng phòng khác) và giảng viên.
+- `GET api/hoc-vu/sinh-vien?loai=tot-nghiep|canh-bao` cho Khoa đối chiếu từng con số. `TrangThai` của mỗi SV
+  dùng **đúng** định nghĩa của `fn_ty_le_hoc_vu_khoa`: 1 = vào tử số, 2 = trong mẫu số nhưng không vào tử số,
+  3 = thôi học. Không keyword thì `SoTrangThai1 / (SoTrangThai1 + SoTrangThai2)` = tỷ lệ của Khoa.
+  ⚠️ Sửa định nghĩa ở một bên phải sửa cả bên kia.
+
+### 14.1. Khoá học suy ra từ `id_nam` — không hardcode
+
+| id_nam | Tốt nghiệp đúng hạn (`nam_nhap_hoc = id_nam − 4`) | Cảnh báo (`nam_nhap_hoc` từ `id_nam − 3` đến `id_nam`) |
+|---|---|---|
+| 2026 | 2022 (khoá 48) | 2023–2026 (khoá 49–52) |
+| 2027 | 2023 (khoá 49) | 2024–2027 (khoá 50–53) |
+
+Dùng `nam_nhap_hoc`, **không** dùng `ma_khoa_hoc` (chỉ lưu thông tin). File có thêm khoá ngoài khoảng vẫn lưu nhưng không tính.
+
+### 14.2. Công thức (`fn_ty_le_hoc_vu_khoa(@id_don_vi, @id_nam)` — nguồn sự thật duy nhất)
+
+- `ty_le_tot_nghiep_dung_han = so_tot_nghiep_dung_han × 100 / (so_sv_khoa_tot_nghiep − so_thoi_hoc_khoa_tot_nghiep)`
+  - tử số: SV khoá tốt nghiệp, `thoi_hoc = 0`, **có** `so_hieu_van_bang`. `nam_tot_nghiep` chỉ lưu tham khảo, không xét.
+- `ty_le_canh_bao_hoc_vu = so_sv_bi_canh_bao × 100 / (so_sv_khoa_canh_bao − so_thoi_hoc_khoa_canh_bao)`
+  - tử số: SV các khoá cảnh báo, `thoi_hoc = 0`, có ≥ 1 dòng `canh_bao_hoc_vu` **cùng `id_nam`**.
+    Bị cảnh báo nhiều lần (CB lần 1, lần 2) vẫn đếm **1** SV.
+- SV thôi học bị loại khỏi **cả tử lẫn mẫu** → tử không bao giờ vượt mẫu.
+- Đơn vị: **phần trăm 0..100** (cùng quy ước `fn_ty_le_hoan_thanh_nckh_khoa`). Mẫu số 0 → **NULL**, khác 0%.
+- Luôn trả **đúng 1 dòng** (aggregate không GROUP BY) → gọi từ `sp_phieu_dv_tong_hop_kpi` an toàn.
+
+### 14.3. Upload lại / sang năm mới — đã chốt với người dùng
+
+**Sinh viên: 1 MSSV = 1 bản ghi dùng chung mọi năm** (`UNIQUE (ma_sinh_vien)`), `MERGE` theo MSSV:
+
+| Trường hợp | Xử lý |
+|---|---|
+| Có trong file, đã có trong bảng | UPDATE, `id_nam_cap_nhat = @id_nam` |
+| Có trong file, chưa có | INSERT |
+| Không có trong file, `id_nam_cap_nhat = @id_nam` | DELETE — upload lại cùng năm = thay toàn bộ phần của năm đó |
+| Không có trong file, năm cũ hơn | **Giữ nguyên** (vd khoá 48 khi upload 2027 — còn cần để tính lại 2026) |
+| Bản ghi có `id_nam_cap_nhat > @id_nam` | **Bỏ qua** (`SkippedNewerRows`) — file năm cũ không đè dữ liệu mới hơn |
+
+- Trùng MSSV trong cùng file → giữ dòng xuất hiện **đầu tiên** (`dong_excel`), đếm `DuplicateRows`.
+- File không còn dòng hợp lệ → **không thay đổi gì** (không xoá dữ liệu cũ).
+- ⚠️ Hệ quả (người dùng đã chấp nhận): xem lại tỷ lệ năm cũ tính trên dữ liệu SV **mới nhất**.
+  SV khoá 48 nhận bằng muộn trong file 2027 → tỷ lệ tốt nghiệp 2026 tăng. Điểm đã ghi vào phiếu thì không đổi.
+
+**Cảnh báo học vụ: lưu theo `id_nam`** (cảnh báo là sự kiện của từng năm). Upload lại = xoá cảnh báo năm đó rồi chèn lại.
+
+### 14.4. Ánh xạ MaKhoa → Khoa (`khoa_dao_tao_anh_xa`)
+
+MaKhoa trong file (vd `202`) không khớp `don_vi.ma_don_vi` (`K_*`) → cần bảng ánh xạ, cùng khuôn `gio_giang_tkb_anh_xa` (13.6):
+
+- **Không** gắn `id_nam`, **không** bị xoá khi import, JOIN **lúc đọc** → sửa ánh xạ có hiệu lực ngay, không phải import lại.
+- Import tự **thêm** ánh xạ khi `TenKhoa` trùng **duy nhất** `ten_don_vi` của một Khoa đang hoạt động
+  (cấp 2, mã `K_*`). Không khớp / khớp ≥ 2 → để trống, không đoán. **Không bao giờ ghi đè** ánh xạ đã có.
+- Nhiều MaKhoa có thể về cùng một Khoa (Khoa gộp).
+- Mã còn thiếu: `GET api/hoc-vu/anh-xa-khoa` (dòng chưa ánh xạ xếp đầu) → `POST api/hoc-vu/anh-xa-khoa`.
+  Chưa ánh xạ = SV của mã đó **không được tính vào Khoa nào** (xem `TongQuan.SoSinhVienChuaAnhXa`).
+
+### 14.5. Chưa gắn vào phiếu đơn vị — việc của đợt sau
+
+`GET api/hoc-vu/ty-le-khoa?idNam=` chỉ để xem / đối soát. Khi gắn thành tiêu chí:
+
+1. Thêm 2 mã `cong_thuc_tong_hop` (vd `HV_TY_LE_TOT_NGHIEP_KHOA`, `HV_TY_LE_CANH_BAO_KHOA`) và mốc quy đổi tỷ lệ → điểm.
+2. Trong `sp_phieu_dv_tong_hop_kpi`: `SELECT ... FROM dbo.fn_ty_le_hoc_vu_khoa(@id_don_vi, @id_nam)` rồi thêm nhánh `CASE`.
+3. ⚠️ Đặt nhánh **TRƯỚC** guard `WHEN @so_phieu = 0 THEN 0` — mã này không phụ thuộc phiếu thành viên (xem bẫy ở mục phiếu đơn vị).
+4. Tỷ lệ NULL (chưa có dữ liệu) phải quyết định rõ: giữ điểm cũ hay 0.
