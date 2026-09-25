@@ -41,6 +41,7 @@ import {
   XepLoaiBadge,
 } from "../../components/QuanLyChamDiem/TrangThaiBadge";
 import TongQuanKhoa from "../../components/QuanLyChamDiem/TongQuanKhoa";
+import TongQuanCapQuanLy from "../../components/QuanLyChamDiem/TongQuanCapQuanLy";
 
 /** Màu thẻ hạn theo mức độ gấp. */
 const MAU_HAN = {
@@ -91,6 +92,9 @@ const TongQuanCaNhan = () => {
   const [lanLamMoi, setLanLamMoi] = useState(0);
 
   const coTongQuanKhoa = hasRole(ROLE_SETS.KPI_KHOA, currentUser);
+  const coTongQuanTruong = hasRole(ROLE_SETS.CAP_TRUONG, currentUser);
+  const coTongQuanPhong =
+    !coTongQuanTruong && hasRole(ROLE_SETS.KPI_PHONG, currentUser);
 
   const idDonViKhoa = useMemo(() => {
     const donViKpiKhoa = donViTheoVaiTro(ROLE_SETS.KPI_KHOA, currentUser);
@@ -234,8 +238,8 @@ const TongQuanCaNhan = () => {
         <h2 className="tq-title">Xin chào, {currentUser.HoTen || "bạn"}</h2>
       </div>
 
-      <div className="cd-toolbar">
-        <div className="cd-field">
+      <div className="cd-toolbar tq-toolbar">
+        <div className="cd-field tq-filter-field">
           <label className="cd-label">Năm đánh giá</label>
           <SearchSelect
             value={selectedNam}
@@ -249,7 +253,7 @@ const TongQuanCaNhan = () => {
         </div>
 
         <button
-          className="btn-cancel"
+          className="btn-cancel tq-btn-refresh"
           onClick={() => {
             taiDuLieu();
             setLanLamMoi((n) => n + 1);
@@ -272,7 +276,18 @@ const TongQuanCaNhan = () => {
         />
       )}
 
-      {coTongQuanKhoa && <p className="sub-title">PHIẾU KPI CỦA BẠN</p>}
+      {(coTongQuanTruong || coTongQuanPhong) && !dangTaiNam && (
+        <TongQuanCapQuanLy
+          idNam={selectedNam}
+          cap={coTongQuanTruong ? "truong" : "phong"}
+          reloadKey={lanLamMoi}
+          anThongKeTienDo={hasRole(ROLE_SETS.TRUONG_KHOA, currentUser)}
+        />
+      )}
+
+      {(coTongQuanKhoa || coTongQuanTruong || coTongQuanPhong) && (
+        <p className="sub-title">PHIẾU KPI CỦA BẠN</p>
+      )}
 
       {isLoading || dangTaiNam ? (
         <div className="modern-table-card">

@@ -1,0 +1,494 @@
+/* TongQuanCapQuanLy.css - Modern, Clean & Visual Management Dashboard */
+
+.tqql {
+  margin-bottom: 28px;
+}
+
+.tqql-header-bar {
+  margin-bottom: 16px;
+}
+
+.tqql-title-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.02em;
+}
+
+.tqql-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #eef2ff;
+  color: #003399;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+/* Hero Progress Block */
+.tqql-hero-progress {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+
+.tqql-total-line {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eceef4;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.tqql-total-line strong { color: #0f172a; font-size: 16px; }
+
+/* 6-Card Pipeline Grid */
+.tqql-pipeline-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tqql-pipeline-grid .stat-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.tqql-pipeline-grid .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
+}
+
+.tqql-pipeline-grid .stat-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: transform 0.2s ease;
+}
+
+.tqql-pipeline-grid .stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.35;
+  min-height: 36px;
+  margin-bottom: 0;
+}
+
+.tqql-pipeline-grid .stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Contrast: Active vs Zero */
+.stat-card-zero .stat-value {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.stat-card-zero .stat-icon-box {
+  opacity: 0.6;
+}
+
+.stat-card-zero .stat-label {
+  color: #64748b;
+}
+
+.stat-card-active {
+  border-color: #cbd5e1;
+  background: #ffffff;
+}
+
+.stat-card-active .stat-value {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.stat-card-active:hover .stat-icon-box {
+  transform: scale(1.06);
+}
+
+/* Sections */
+.tqql-section-wrapper {
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.tqql-section-header {
+  margin-bottom: 12px;
+}
+
+.tqql-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: 0.03em;
+}
+
+.tqql-section-icon {
+  color: #003399;
+  font-size: 13px;
+}
+
+/* Viêc chờ Hiệu trưởng */
+.tqql-viec {
+  cursor: default;
+}
+
+.tqql-viec:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+/* Tiến độ Phiếu Quý - Clean, Visual & Compact */
+.tqql-quarter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 16px;
+}
+
+.tqql-quarter {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tqql-quarter:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.tqql-quarter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tqql-quarter .tqk-goi-ten {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tqql-quarter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.tqql-quarter .tqk-goi-phu {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.tqql-quarter-progress {
+  margin: 12px 0 14px;
+}
+
+.tqql-quarter-progress .cd-progress-track {
+  height: 6px;
+}
+
+/* Mini Metric Cells inside Quarter */
+.tqql-quarter-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.tqql-stat-cell {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.tqql-stat-cell .cd-meta-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.tqql-cell-icon {
+  font-size: 11px;
+}
+
+.tqql-stat-cell .cd-meta-value {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Tone styles for mini metrics */
+.tqql-stat-cell.is-zero {
+  background: #fcfdfe;
+  border-color: #f1f5f9;
+}
+
+.tqql-stat-cell.is-zero .cd-meta-value {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.tqql-stat-cell.is-zero .cd-meta-label {
+  color: #64748b;
+}
+
+.tqql-stat-cell.is-zero .tqql-cell-icon {
+  opacity: 0.5;
+}
+
+.tqql-stat-cell.has-value {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.tqql-stat-cell.has-value .cd-meta-value {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.dot-red .tqql-cell-icon { color: #dc2626; }
+.dot-amber .tqql-cell-icon { color: #d97706; }
+.dot-blue .tqql-cell-icon { color: #2563eb; }
+.dot-green .tqql-cell-icon { color: #16a34a; }
+.dot-gray .tqql-cell-icon { color: #64748b; }
+.dot-teal .tqql-cell-icon { color: #0d9488; }
+.dot-indigo .tqql-cell-icon { color: #4f46e5; }
+
+/* Unit (Đơn vị) Card */
+.tqql-unit {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.tqql-unit .tqk-goi-top {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 14px;
+}
+
+.tqql-unit .tqk-goi-ten {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tqql-unit-staff {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.tqql-unit-sep {
+  color: #cbd5e1;
+  margin: 0 2px;
+}
+
+.tqql-unit-chualap-warn {
+  display: inline-inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 12.5px;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  padding: 1px 7px;
+  border-radius: 6px;
+}
+
+.tqql-unit-type {
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Unit 6-Metrics Grid */
+.tqql-unit-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.tqql-unit-metrics .tqql-stat-cell {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 9px 12px;
+  gap: 5px;
+}
+
+.tqql-unit-metrics .cd-meta-label {
+  font-size: 12px;
+}
+
+.tqql-unit-metrics .cd-meta-value {
+  font-size: 16px;
+}
+
+/* Unit Bottom Action/Status Bar */
+.tqql-unit-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.tqql-bottom-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-width: 160px;
+}
+
+.tqql-bottom-cell .cd-meta-label {
+  margin-bottom: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.tqql-bottom-cell strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Xếp loại Card */
+.tqql-xep-loai {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 22px;
+}
+
+.tqql-xl-title-icon {
+  color: #003399;
+  margin-right: 8px;
+  font-size: 15px;
+}
+
+.tqql-xl-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 13.5px;
+}
+
+.tqql-xl-empty i {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media screen and (max-width: 1200px) {
+  .tqql-pipeline-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .tqql-pipeline-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .tqql-quarter-grid {
+    grid-template-columns: 1fr;
+  }
+  .tqql-unit-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .tqql-quarter-metrics {
+    grid-template-columns: 1fr;
+  }
+  .tqql-unit-metrics {
+    grid-template-columns: 1fr;
+  }
+  .tqql-bottom-cell {
+    width: 100%;
+  }
+}

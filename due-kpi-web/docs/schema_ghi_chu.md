@@ -133,6 +133,11 @@ duyệt / trả lại / chốt.
 
 Đọc live (không snapshot vào phiếu): sửa phân quyền có hiệu lực ngay cả trên phiếu đang mở.
 
+**Áp dụng cho CẢ phiếu đơn vị (Khoa/Phòng, §4.9–4.14)** — slot `diem_duyet_dv` ở trạng thái 2:
+tiêu chí có dòng → trưởng đơn vị được giao chấm; không có dòng → trưởng đơn vị CỦA PHIẾU.
+Nguồn "được giao" của luồng đơn vị: `dbo.fn_tieu_chi_dv_duoc_giao_cham`. Tiêu chí của mẫu cá nhân
+và mẫu đơn vị là các dòng `tieu_chi_danh_gia` khác nhau nên dùng chung bảng không đụng nhau.
+
 Liên quan: cột "ai chấm" KHÔNG khai báo trong `tieu_chi_danh_gia` — cột
 `cap_danh_gia` cũ đã bị bỏ (xem update_database.sql).
 
@@ -1195,8 +1200,8 @@ SELECT COUNT(*) FROM lich_su_trang_thai_phieu WHERE id_phieu = ? AND hanh_dong =
 ### 4.9 → 4.14. ĐÁNH GIÁ ĐƠN VỊ (KHOA / PHÒNG)
 Bộ bảng bản ghi đánh giá đơn vị, song song với luồng người (`phieu_danh_gia` …) nhưng khoá
 theo `id_phieu_dv` / `id_chi_tiet_dv`. Quy trình 3 cấp nhận diện theo `ma_chuc_vu`:
-Thư ký Khoa/Phòng (TKK/TKP) nhập → Trưởng Khoa/Phòng (TK/TKL/TP) duyệt → Hiệu trưởng (HT)
-duyệt & chốt.
+Thư ký Khoa/Phòng (TKK/TKP) nhập → Trưởng Khoa/Phòng (TK/TKL/TP) duyệt (tiêu chí đã phân quyền
+do trưởng đơn vị được giao chấm) → Hiệu trưởng (HT) duyệt & chốt.
 
 Trạng thái `phieu_danh_gia_don_vi.trang_thai`:
 
@@ -1207,6 +1212,27 @@ Trạng thái `phieu_danh_gia_don_vi.trang_thai`:
 | 3 | Trưởng đơn vị đã duyệt / chờ Trường |
 | 4 | Trường (HT) đã duyệt, chờ chốt |
 | 5 | Hoàn tất (read-only, trừ khi mở lại) |
+
+**Chấm cấp 2 theo `tieu_chi_don_vi_cham`** (xem §2.8):
+
+| Tiêu chí | Ai ghi `diem_duyet_dv` (trạng thái 2) | Bắt buộc có `diem_duyet_dv` trước khi duyệt 2→3? |
+|---|---|---|
+| Có phân quyền, nhập tay (`loai_nguon_diem = 1`) | TK/TKL/TP của đơn vị được giao | **Có** — thiếu → `VALIDATION_FAILED` |
+| Có phân quyền, tự động (`loai_nguon_diem = 2`) | TK/TKL/TP của đơn vị được giao | Không — không chấm = giữ `diem_tong_hop` |
+| Không phân quyền | TK/TKL/TP của đơn vị của phiếu (như cũ) | Không (điểm nguồn là đủ) |
+
+- Nút duyệt 2→3 (`sp_phieu_dv_duyet`) **vẫn** thuộc trưởng đơn vị của phiếu. Trưởng đơn vị
+  của phiếu **không** sửa được điểm tiêu chí đã giao cho đơn vị khác (trừ khi đơn vị mình cũng
+  được giao). HT vẫn ghi đè được ở trạng thái 3 như cũ.
+- Trưởng đơn vị được giao **xem** được phiếu (list/detail) và **đọc** minh chứng của phiếu từ
+  trạng thái ≥ 2. Không thấy phiếu đang nháp; không ghi minh chứng; kho minh chứng
+  (`sp_minh_chung_dv_get_kho`) không mở.
+- Hàng đợi: `GET api/phieu-don-vi?choToiCham=true` = phiếu trạng thái 2 còn tiêu chí được giao
+  cho mình mà `diem_duyet_dv IS NULL`.
+- `sp_phieu_dv_get_detail` trả cờ theo người xem: header `so_tieu_chi_giao_chua_cham`; chi tiết
+  `co_phan_quyen`, `duoc_cham_duyet_dv`, `ten_don_vi_cham`. Luật của `duoc_cham_duyet_dv` phải
+  GIỐNG HỆT gate của `sp_chi_tiet_dv_update_diem_duyet_dv` — sửa một nơi phải sửa cả hai.
+- Mở lại về 2 (`sp_phieu_dv_mo_lai`) xoá `diem_duyet_dv` → đơn vị được giao phải chấm lại.
 
 Ghi chú từng bảng:
 - **4.10 `chi_tiet_danh_gia_don_vi`**: `loai_nguon_diem` 1 = chấm thủ công (TKK/TKP nhập
@@ -1226,12 +1252,16 @@ phiếu** nên phiếu tạo trước khi gán tiêu chí sẽ không nhận mã
 | `NCKH_TY_LE_HOAN_THANH_KHOA` | `> 75% → 20` ; `(65, 75] → 15` ; `(50, 65] → 10` ; `<= 50% → 0` (kẹp trần `diem_toi_da`) | `fn_ty_le_hoan_thanh_nckh_khoa` (giờ NCKH đã đồng bộ) |
 | `NCKH_BAI_BAO_TB_KHOA` | `MIN(so_bai_bao / N, 1) × diem_toi_da` (tuyến tính, kẹp trần) | `fn_so_bai_bao_wos_scopus_khoa` (bài báo WoS/Scopus đã đồng bộ) |
 | `NCKH_BAI_BAO_Q1Q2_TB_KHOA` | `MIN(so_bai_bao_q1q2 / N, 1) × diem_toi_da` (tuyến tính, kẹp trần) | `fn_so_bai_bao_wos_scopus_khoa` (**cùng hàm**, cột `so_bai_bao_q1q2`) |
+| `HV_TOT_NGHIEP_TREN_50_KHOA` | `ty_le_tot_nghiep_dung_han > 50 → diem_toi_da` ; ngược lại `0` | `fn_ty_le_hoc_vu_khoa` (xem 14.5) |
+| `HV_CANH_BAO_DUOI_20_KHOA` | `ty_le_canh_bao_hoc_vu < 20 → diem_toi_da` ; ngược lại `0` | nt |
+| `HV_TOT_NGHIEP_TREN_70_KHOA` | `ty_le_tot_nghiep_dung_han > 70 → diem_toi_da` ; ngược lại `0` | nt |
+| `HV_CANH_BAO_DUOI_10_KHOA` | `ty_le_canh_bao_hoc_vu < 10 → diem_toi_da` ; ngược lại `0` | nt |
 
 - Ba mã đầu phụ thuộc phiếu thành viên: **không có phiếu nào chốt → 0**.
-- `DIEM_TRU_TAP_THE`, `PHSV_DIEM_TB_KHOA`, `NCKH_TY_LE_HOAN_THANH_KHOA`, `NCKH_BAI_BAO_TB_KHOA` và
-  `NCKH_BAI_BAO_Q1Q2_TB_KHOA` thì
+- `DIEM_TRU_TAP_THE`, `PHSV_DIEM_TB_KHOA`, `NCKH_TY_LE_HOAN_THANH_KHOA`, `NCKH_BAI_BAO_TB_KHOA`,
+  `NCKH_BAI_BAO_Q1Q2_TB_KHOA` và 4 mã `HV_*` thì
   **không**: chúng đọc từ
-  số vi phạm / điểm phản hồi sinh viên / giờ NCKH / bài báo NCKH, nên các nhánh này nằm **TRƯỚC** guard
+  số vi phạm / điểm phản hồi sinh viên / giờ NCKH / bài báo NCKH / học vụ sinh viên, nên các nhánh này nằm **TRƯỚC** guard
   `@so_phieu = 0` trong `CASE`. Để sau guard thì
   Khoa chưa chốt phiếu nào sẽ bị ghi 0, tức là bị trừ sạch `diem_toi_da` thay vì đạt đủ điểm. Đây là
   cái bẫy chính mỗi khi thêm mã "không phụ thuộc phiếu thành viên".
@@ -3143,11 +3173,26 @@ MaKhoa trong file (vd `202`) không khớp `don_vi.ma_don_vi` (`K_*`) → cần 
 - Mã còn thiếu: `GET api/hoc-vu/anh-xa-khoa` (dòng chưa ánh xạ xếp đầu) → `POST api/hoc-vu/anh-xa-khoa`.
   Chưa ánh xạ = SV của mã đó **không được tính vào Khoa nào** (xem `TongQuan.SoSinhVienChuaAnhXa`).
 
-### 14.5. Chưa gắn vào phiếu đơn vị — việc của đợt sau
+### 14.5. Gắn vào phiếu đơn vị — 4 mã `HV_*`
 
-`GET api/hoc-vu/ty-le-khoa?idNam=` chỉ để xem / đối soát. Khi gắn thành tiêu chí:
+`sp_phieu_dv_tong_hop_kpi` đọc `fn_ty_le_hoc_vu_khoa(@id_don_vi, @id_nam)` (`@id_don_vi` của **chính phiếu**)
+và chấm **ĐẠT / KHÔNG ĐẠT** — đạt → đủ `diem_toi_da`, không đạt → 0, không có bậc trung gian:
 
-1. Thêm 2 mã `cong_thuc_tong_hop` (vd `HV_TY_LE_TOT_NGHIEP_KHOA`, `HV_TY_LE_CANH_BAO_KHOA`) và mốc quy đổi tỷ lệ → điểm.
-2. Trong `sp_phieu_dv_tong_hop_kpi`: `SELECT ... FROM dbo.fn_ty_le_hoc_vu_khoa(@id_don_vi, @id_nam)` rồi thêm nhánh `CASE`.
-3. ⚠️ Đặt nhánh **TRƯỚC** guard `WHEN @so_phieu = 0 THEN 0` — mã này không phụ thuộc phiếu thành viên (xem bẫy ở mục phiếu đơn vị).
-4. Tỷ lệ NULL (chưa có dữ liệu) phải quyết định rõ: giữ điểm cũ hay 0.
+| Mã | Đạt khi |
+|---|---|
+| `HV_TOT_NGHIEP_TREN_50_KHOA` | `ty_le_tot_nghiep_dung_han > 50` |
+| `HV_CANH_BAO_DUOI_20_KHOA` | `ty_le_canh_bao_hoc_vu < 20` |
+| `HV_TOT_NGHIEP_TREN_70_KHOA` | `ty_le_tot_nghiep_dung_han > 70` |
+| `HV_CANH_BAO_DUOI_10_KHOA` | `ty_le_canh_bao_hoc_vu < 10` |
+
+- So sánh **CHẶT** đúng văn bản: đúng 50% / 70% → 0đ; đúng 20% / 10% → 0đ.
+- So trên tỷ lệ `DECIMAL(5,2)` của hàm — chính con số `ty-le-khoa` hiển thị — nên điểm và số hiển thị không lệch.
+- Điểm đạt **BÁM `diem_toi_da`** (không hằng số) → đổi trọng số chỉ cần sửa tiêu chí, không sửa SP.
+- **Tỷ lệ NULL → 0đ** (đã chốt với người dùng). ⚠️ Quan trọng nhất với 2 mã cảnh báo: không có số liệu
+  **không** được coi là "< 20%" — đừng viết lại thành `NOT (ty_le >= 20)`, biểu thức đó cho NULL đạt đủ điểm.
+- Nhánh nằm **TRƯỚC** guard `@so_phieu = 0` (không phụ thuộc phiếu thành viên).
+- Result set trả thêm `TyLeTotNghiepDungHan`, `SoSvKhoaTotNghiep`, `SoThoiHocKhoaTotNghiep`, `SoTotNghiepDungHan`,
+  `TyLeCanhBaoHocVu`, `SoSvKhoaCanhBao`, `SoThoiHocKhoaCanhBao`, `SoSvBiCanhBao`. Mẫu số = 0 ⇒ thiếu dữ liệu,
+  FE dùng để phân biệt với "0% cảnh báo".
+- Tiêu chí tạo qua API tiêu chí (`loai_doi_tuong = 3`, `loai_nguon_diem = 2`, `loai_thang_diem = 2`), **không seed SQL**.
+  Phiếu tạo trước khi gán tiêu chí phải tạo lại. Import lại học vụ **không** tự sửa điểm đã ghi — phải tổng hợp lại.

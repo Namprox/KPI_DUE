@@ -1386,31 +1386,6 @@
   cursor: not-allowed;
 }
 
-.btn-tong-hop {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid #c7d7f5;
-  background-color: #f0f7ff;
-  color: #003399;
-}
-
-.btn-tong-hop:hover:not(:disabled) {
-  background-color: #dbeafe;
-  color: #002266;
-}
-
-.btn-tong-hop:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 /* ==========================================================================
    MINH CHỨNG CỦA MỘT DÒNG TIÊU CHÍ - dùng chung cho cả 4 phiếu KPI
    (giảng viên, nhân viên, khoa/đơn vị, phòng/trung tâm)

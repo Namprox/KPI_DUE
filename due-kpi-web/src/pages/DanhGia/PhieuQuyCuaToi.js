@@ -190,7 +190,6 @@ const TongHopNam = ({ idNam, idDonVi, idNhanVien, idMau, toast }) => {
       <section className="pq-annual-card">
         <div>
           <h3>Phiếu năm và chốt điểm</h3>
-          <p>Phiếu năm chỉ giữ ba tiêu chí VPVC chấm tự động. Tổng hợp quý trước khi Trưởng đơn vị chốt hồ sơ.</p>
         </div>
         <div className="pq-annual-actions">
           <button type="button" className="pq-btn pq-btn-primary" disabled={busy || Number(data?.SoQuyDaChot) === 0} onClick={rollup}>
@@ -546,7 +545,19 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
       ) : loading ? (
         <div className="pq-loading"><i className="fa-solid fa-spinner fa-spin"></i> Đang tải phiếu quý {tab}...</div>
       ) : error ? <CanhBaoLoi error={error} /> : !phieu ? (
-        <div className="pq-empty"><i className="fa-regular fa-file-lines"></i><h3>Chưa có phiếu quý {tab}</h3><p>Tạo phiếu từ mẫu KPI viên chức của năm {selectedYear}.</p><button type="button" className="pq-btn pq-btn-primary" disabled={busy} onClick={create}>Tạo phiếu quý {tab}</button></div>
+        <div className="pq-empty">
+          <i className="fa-regular fa-file-lines"></i>
+          <h3>Chưa có phiếu quý {tab}</h3>
+          <p>Tạo phiếu từ mẫu KPI viên chức của năm {selectedYear}.</p>
+          <button
+            type="button"
+            className="pq-btn pq-btn-primary"
+            disabled={busy}
+            onClick={create}
+          >
+            <i className="fa-solid fa-plus"></i> Tạo phiếu quý {tab}
+          </button>
+        </div>
       ) : (
         <>
           <div className="pq-toolbar"><div><TrangThaiQuy phieu={phieu} /><span className="pq-total">Phiếu quý {tab}</span></div></div>

@@ -24,7 +24,7 @@ const ONhapDiem = ({
   diemTran = diemToiDa,
   doc = false,
   onChange,
-  goiY = "Nhập số thập phân, ví dụ 17.5",
+  goiY = "",
 }) => {
   const chuoi = giaTri === null || giaTri === undefined ? "" : String(giaTri);
   const so = chuoi.trim() === "" ? null : Number(chuoi);

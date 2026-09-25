@@ -377,7 +377,10 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
 
       <div className="stat-card-grid tqk-stat-grid">
         {theTrangThai.map((t) => (
-          <div className="stat-card" key={t.key}>
+          <div
+            className={`stat-card ${Number(t.soLuong || 0) === 0 ? "stat-card-zero" : "stat-card-active"}`}
+            key={t.key}
+          >
             <div
               className="stat-icon-box"
               style={

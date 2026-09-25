@@ -4011,6 +4011,90 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BaoCaoChuaHoanTatResponse"
+  /api/bao-cao/phong/tong-quan:
+    get:
+      tags:
+        - BaoCao
+      summary: Thống kê riêng của Phòng (TP / TKP)
+      description: |
+        Quyền: TP / TKP xem các Phòng (cấp 2, mã P_*) mình thực sự giữ chức vụ đó (kiêm nhiệm
+        nhiều Phòng thấy đủ); HT / ADMIN xem mọi Phòng; người khác 403 FORBIDDEN.
+        idDonVi (tùy chọn) phải là một Phòng trong phạm vi đó, ngược lại 403 FORBIDDEN_DON_VI.
+        Năm không tồn tại → 404 NOT_FOUND.
+
+        Số của Tổ trực thuộc được gộp lên Phòng cha. TongHop = cộng các dòng DonVi.
+        PhieuQuy (tiến độ phiếu quý của viên chức) rỗng khi năm chưa bật đánh giá theo quý.
+        Khoa dùng GET /api/bao-cao/tong-quan.
+      operationId: baoCaoPhongTongQuan
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaoCaoPhongResponse"
+        "403":
+          description: FORBIDDEN / FORBIDDEN_DON_VI
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaoCaoPhongResponse"
+        "404":
+          description: NOT_FOUND - năm đánh giá không tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaoCaoPhongResponse"
+  /api/bao-cao/toan-truong:
+    get:
+      tags:
+        - BaoCao
+      summary: Thống kê toàn trường của Hiệu trưởng (HT / ADMIN)
+      description: |
+        Quyền: chỉ HT / ADMIN; người khác 403 FORBIDDEN. Năm không tồn tại → 404 NOT_FOUND.
+
+        DonVi: 1 dòng / đơn vị gốc (Trường → các Khoa → các Phòng); số của Bộ môn / Tổ gộp lên
+        đơn vị cha; đơn vị ngừng hoạt động chỉ hiện khi còn số liệu. TongHop = cộng các dòng DonVi.
+        ChoHieuTruong: việc đang chờ HT (tờ trình, hồ sơ lãnh đạo, phiếu đánh giá đơn vị).
+        HocVu: tỷ lệ gộp mọi Khoa (cùng phép gộp với HocVu của /api/bao-cao/tong-quan).
+        PhieuQuy rỗng khi năm chưa bật đánh giá theo quý.
+      operationId: baoCaoToanTruong
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaoCaoToanTruongResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaoCaoToanTruongResponse"
+        "404":
+          description: NOT_FOUND - năm đánh giá không tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaoCaoToanTruongResponse"
   /api/viphamgiangday:
     get:
       tags:
@@ -6541,6 +6625,10 @@ paths:
         cac chuc vu tren (+ cay don vi cap duoi), khong chi don vi trong JWT. Chuc vu
         giu o don vi nay KHONG keo sang don vi khac - xem muc phan quyen o dau tai
         lieu. HT/ADMIN van thay toan bo.
+
+
+        Truong don vi (TK/TKL/TP) DUOC GIAO cham tieu chi qua tieu_chi_don_vi_cham
+        thay them cac phieu co tieu chi do, tu trang_thai >= 2 (khong thay phieu nhap).
       operationId: phieuDonViGetPaged
       parameters:
         - name: idNam
@@ -6576,6 +6664,17 @@ paths:
           required: false
           schema:
             type: string
+        - name: choToiCham
+          in: query
+          required: false
+          description: >-
+            true = hang doi cua don vi duoc giao: chi phieu o trang_thai = 2 con it nhat
+            1 tieu chi duoc giao cho nguoi goi (tieu_chi_don_vi_cham) ma chua co
+            DiemDuyetDv. Tieu chi tu dong (LoaiNguonDiem = 2) cung tinh - cham/xac nhan
+            xong thi phieu roi hang doi; phieu len trang_thai 3 cung roi hang doi.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: OK
@@ -6680,6 +6779,14 @@ paths:
       tags:
         - PhieuDonVi
       summary: Truong don vi (TK/TKL/TP) duyet phieu (2 -> 3)
+      description: >-
+        Chi Truong don vi CUA PHIEU (khong phai don vi duoc giao) bam duyet. Dieu kien:
+        moi tieu chi co diem cap don vi, VA moi tieu chi da phan quyen
+        (tieu_chi_don_vi_cham) co LoaiNguonDiem = 1 phai co DiemDuyetDv - tuc don vi
+        duoc giao da cham. Thieu -> 422 VALIDATION_FAILED ("Con N tieu chi da phan
+        quyen chua duoc don vi duoc giao cham."). Tieu chi tu dong duoc giao khong bat
+        buoc (khong cham = giu DiemTongHop). FE doc san
+        PhieuDanhGiaDonViDto.SoTieuChiGiaoChuaCham de khoa nut.
       operationId: phieuDonViDuyetDv
       parameters:
         - name: id
@@ -6708,6 +6815,14 @@ paths:
                 $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
         "409":
           description: Conflict - sai trang thai hoac RowVersion da thay doi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
+        "422":
+          description: >-
+            VALIDATION_FAILED - thieu diem cap don vi, hoac con tieu chi da phan quyen
+            chua duoc don vi duoc giao cham
           content:
             application/json:
               schema:
@@ -6956,6 +7071,21 @@ paths:
       tags:
         - PhieuDonVi
       summary: Cham diem chi tiet - cap duyet don vi (TK/TKL/TP)
+      description: >-
+        Phieu phai o trang_thai = 2. Ai cham theo tieu_chi_don_vi_cham (doc live):
+
+
+        - Tieu chi CO phan quyen: chi TK/TKL/TP cua don vi duoc giao (hoac don vi cha
+          cua no). Truong don vi cua phieu bi 403 "Tieu chi nay da duoc phan quyen cho
+          don vi khac cham." tru khi don vi minh cung duoc giao.
+
+        - Tieu chi KHONG phan quyen: TK/TKL/TP tai dung don vi cua phieu (nhu cu).
+
+        - ADMIN: moi dong.
+
+
+        Ap dung cho ca tieu chi nhap tay lan tu dong. FE dung
+        ChiTietDanhGiaDonViDto.DuocChamDuyetDv (tu GET api/phieu-don-vi/{id}) de mo o nhap.
       operationId: chiTietDonViDiemDuyetDv
       parameters:
         - name: idChiTiet
@@ -6972,6 +7102,12 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChiTietDanhGiaDonViResponse"
+        "403":
+          description: Forbidden - khong phai truong don vi duoc cham tieu chi nay
           content:
             application/json:
               schema:
@@ -12482,6 +12618,199 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BaoCaoChuaHoanTatDto"
+    BaoCaoTongHopDto:
+      type: object
+      description: Tổng của danh sách DonVi (khớp đúng từng dòng).
+      properties:
+        SoNhanVien:
+          type: integer
+        SoChuaLapPhieu:
+          type: integer
+        TongSoPhieu:
+          type: integer
+          description: Tổng phiếu năm đã lập.
+        SoChoHtDuyet:
+          type: integer
+          description: Hồ sơ lãnh đạo đang chờ HT (tập con của TrangThai 4).
+        DemTheoTrangThai:
+          type: array
+          description: LUÔN đủ 5 phần tử (TrangThai 1..5), trạng thái không có phiếu = 0.
+          items:
+            $ref: "#/components/schemas/DemTrangThaiDto"
+    BaoCaoDonViThongKeDto:
+      type: object
+      description: |
+        1 dòng / đơn vị gốc; số của Bộ môn / Tổ đã gộp lên đơn vị cha. Trường nullable vắng mặt
+        = chưa có (chưa lập phiếu đơn vị / chưa có tờ trình / không phải Khoa).
+      properties:
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        CapDonVi:
+          type: integer
+        LoaiDonVi:
+          type: string
+          enum: [TRUONG, KHOA, PHONG]
+        SoNhanVien:
+          type: integer
+          description: Nhân viên đang hoạt động có đơn vị chính thuộc đơn vị này.
+        SoChuaLapPhieu:
+          type: integer
+        SoNhap:
+          type: integer
+        SoThamDinh:
+          type: integer
+        SoChoTkDuyet:
+          type: integer
+        SoTkDaDuyet:
+          type: integer
+          description: trang_thai 4 - trưởng đơn vị đã chốt, chờ đóng gói / chờ HT.
+        SoChoHtDuyet:
+          type: integer
+          description: Tập con của SoTkDaDuyet - hồ sơ lãnh đạo chờ HT.
+        SoHoanTat:
+          type: integer
+        IdPhieuDv:
+          type: integer
+          nullable: true
+        TrangThaiPhieuDv:
+          type: integer
+          nullable: true
+          description: 1 Nháp · 2 Chờ trưởng đơn vị · 3 Chờ Trường · 4 HT đã duyệt, chờ chốt · 5 Hoàn tất
+        TongDiemPhieuDv:
+          type: number
+          nullable: true
+        XepLoaiPhieuDv:
+          type: integer
+          nullable: true
+        IdToTrinh:
+          type: integer
+          nullable: true
+        TrangThaiToTrinh:
+          type: integer
+          nullable: true
+          description: 1 Đang tổng hợp · 2 Đã đóng gói · 3 Đã trình HT · 4 HT đã duyệt · 5 HT trả về
+        TyLeTotNghiepDungHan:
+          type: number
+          nullable: true
+          description: Chỉ Khoa; phần trăm 0..100.
+        TyLeCanhBaoHocVu:
+          type: number
+          nullable: true
+          description: Chỉ Khoa; phần trăm 0..100.
+    BaoCaoPhieuQuyThongKeDto:
+      type: object
+      description: Tiến độ phiếu quý (viên chức / NLĐ) của 1 quý.
+      properties:
+        Quy:
+          type: integer
+        SoNhanVien:
+          type: integer
+          description: Viên chức đang hoạt động phải lập phiếu quý.
+        SoChuaLapPhieu:
+          type: integer
+        SoDangChamDiem:
+          type: integer
+          description: trang_thai 1
+        SoChoDuyet:
+          type: integer
+          description: trang_thai 2 - chờ Trưởng phòng duyệt
+        SoDaChot:
+          type: integer
+          description: trang_thai 5
+    BaoCaoChoHieuTruongDto:
+      type: object
+      properties:
+        SoToTrinhChoDuyet:
+          type: integer
+          description: Tờ trình trang_thai 3 (đã trình HT).
+        SoHoSoLanhDaoChoDuyet:
+          type: integer
+          description: Hồ sơ lãnh đạo (can_ht_duyet = 1) ở trang_thai 4.
+        SoPhieuDonViChoDuyet:
+          type: integer
+          description: Phiếu đánh giá đơn vị trang_thai 3 (chờ Trường).
+        SoPhieuDonViChoChot:
+          type: integer
+          description: Phiếu đánh giá đơn vị trang_thai 4 (HT đã duyệt, chờ chốt).
+    BaoCaoPhongDto:
+      type: object
+      properties:
+        IdNam:
+          type: integer
+        IdDonVi:
+          type: integer
+          nullable: true
+        XemTatCa:
+          type: boolean
+        ApDungPhieuQuy:
+          type: boolean
+        TongHop:
+          $ref: "#/components/schemas/BaoCaoTongHopDto"
+        DemTheoXepLoai:
+          type: array
+          items:
+            $ref: "#/components/schemas/DemXepLoaiDto"
+        PhieuQuy:
+          type: array
+          items:
+            $ref: "#/components/schemas/BaoCaoPhieuQuyThongKeDto"
+        DonVi:
+          type: array
+          items:
+            $ref: "#/components/schemas/BaoCaoDonViThongKeDto"
+    BaoCaoPhongResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Item:
+          $ref: "#/components/schemas/BaoCaoPhongDto"
+    BaoCaoToanTruongDto:
+      type: object
+      properties:
+        IdNam:
+          type: integer
+        ApDungPhieuQuy:
+          type: boolean
+        TongHop:
+          $ref: "#/components/schemas/BaoCaoTongHopDto"
+        ChoHieuTruong:
+          $ref: "#/components/schemas/BaoCaoChoHieuTruongDto"
+        DemTheoXepLoai:
+          type: array
+          items:
+            $ref: "#/components/schemas/DemXepLoaiDto"
+        PhieuQuy:
+          type: array
+          items:
+            $ref: "#/components/schemas/BaoCaoPhieuQuyThongKeDto"
+        HocVu:
+          $ref: "#/components/schemas/BaoCaoHocVuTongQuanDto"
+        DonVi:
+          type: array
+          items:
+            $ref: "#/components/schemas/BaoCaoDonViThongKeDto"
+    BaoCaoToanTruongResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Item:
+          $ref: "#/components/schemas/BaoCaoToanTruongDto"
     DiemTbDotChotDto:
       type: object
       description: Tom tat lan chot cua 1 nam (moi nam 1 lan chot cuoi cung)
@@ -18637,6 +18966,26 @@ components:
           description: >
             Snapshot tu tieu_chi_danh_gia. CHI mang tinh hien thi - minh chung phieu don vi
             la TUY CHON, sp_phieu_dv_submit khong chan nop khi tieu chi nay chua co minh chung.
+        CoPhanQuyen:
+          type: boolean
+          nullable: true
+          description: >
+            Chi co o GET api/phieu-don-vi/{id}. true = tieu chi co dong trong
+            tieu_chi_don_vi_cham - cap 2 do don vi duoc giao cham, khong phai Truong
+            don vi cua phieu.
+        DuocChamDuyetDv:
+          type: boolean
+          nullable: true
+          description: >
+            Chi co o GET api/phieu-don-vi/{id}. Nguoi dang xem co duoc goi
+            PUT api/chi-tiet-don-vi/{idChiTiet}/diem-duyet-dv cho dong nay khong (cung
+            luat voi SP). KHONG xet trang thai - FE ghep voi TrangThai = 2.
+        TenDonViCham:
+          type: string
+          nullable: true
+          description: >
+            Chi co o GET api/phieu-don-vi/{id}. Ten cac don vi duoc giao cham, noi bang
+            ", ". null khi tieu chi chua phan quyen.
         MinhChung:
           type: array
           description: >
@@ -18766,6 +19115,13 @@ components:
           type: string
           format: date-time
           nullable: true
+        SoTieuChiGiaoChuaCham:
+          type: integer
+          nullable: true
+          description: >
+            Chi co o GET api/phieu-don-vi/{id}. So tieu chi da phan quyen
+            (tieu_chi_don_vi_cham) + nhap tay (LoaiNguonDiem = 1) chua co DiemDuyetDv.
+            > 0 thi POST duyet-dv tra 422.
         ChiTiet:
           type: array
           items:

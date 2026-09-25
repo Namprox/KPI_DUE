@@ -1318,6 +1318,22 @@ export const fetchBaoCaoTongQuan = async ({ idNam, idDonVi }) => {
   return data.Item || null;
 };
 
+export const fetchBaoCaoPhongTongQuan = async ({ idNam, idDonVi }) => {
+  const data = await getJson(
+    `bao-cao/phong/tong-quan${buildQuery({ idNam, idDonVi })}`,
+    "Không tải được tổng quan KPI Phòng",
+  );
+  return data.Item || null;
+};
+
+export const fetchBaoCaoToanTruong = async ({ idNam }) => {
+  const data = await getJson(
+    `bao-cao/toan-truong${buildQuery({ idNam })}`,
+    "Không tải được tổng quan KPI toàn trường",
+  );
+  return data.Item || null;
+};
+
 export const fetchBaoCaoDiemTrungBinh = async ({ idNam, idDonVi }) => {
   const data = await getJson(
     `bao-cao/diem-trung-binh${buildQuery({ idNam, idDonVi })}`,

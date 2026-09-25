@@ -561,14 +561,13 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
   /**
    * Chạy POST phieu-don-vi/{id}/tong-hop-kpi.
    *
-   * `imLang` dành cho lần chạy tự động lúc mở phiếu: không báo thành công (người
-   * dùng không bấm gì thì đừng bắn toast), và lỗi chỉ hạ xuống banner cảnh báo
-   * chứ không được làm hỏng màn hình - thư ký vẫn còn nút bấm tay.
+   * Tự chạy lúc mở phiếu và trước khi trình. Lỗi lúc mở phiếu chỉ hiện cảnh báo,
+   * để thư ký vẫn xem và nhập được điểm; bước trình sẽ thử tổng hợp lại.
    *
    * @returns {object|null} phiếu mới sau khi tổng hợp, null nếu lỗi
    */
   const chayTongHop = useCallback(
-    async ({ imLang = false } = {}) => {
+    async () => {
       if (!choPhepNhap) return null;
       setDangTongHop(true);
       try {
@@ -576,32 +575,27 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
         const { item, tongHop: ketQua } = await tongHopKpiDonVi(id);
         setTongHop(ketQua);
         setLoiTongHop("");
-        // Phải dùng phiếu của response: POST làm đổi RowVersion của phiếu cha,
-        // giữ state cũ là ăn 409 ở thao tác kế tiếp.
-        if (item) setPhieu(item);
-        else await taiPhieu({ imLang: true });
-        if (!imLang) {
-          showToast(
-            "success",
-            "Đã tổng hợp",
-            "Điểm của các tiêu chí tự động đã được cập nhật theo KPI thành viên.",
+        // POST đổi RowVersion nhưng API hiện chỉ trả TongHop (Item = null).
+        // Đọc lại phiếu để lần trình tiếp theo dùng đúng phiên bản mới.
+        const phieuMoi = item || (await taiPhieu({ imLang: true }));
+        if (!phieuMoi?.RowVersion) {
+          throw new Error(
+            "Không tải được phiên bản phiếu sau khi tổng hợp. Vui lòng thử lại.",
           );
         }
-        return item;
+        if (item) setPhieu(item);
+        return phieuMoi;
       } catch (error) {
         console.error("Lỗi tổng hợp KPI thành viên:", error);
         setLoiTongHop(error.message);
-        if (!imLang) showToast("error", "Tổng hợp thất bại", error.message);
         if (error.isConflict) await taiPhieu({ imLang: true });
         return null;
       } finally {
         setDangTongHop(false);
       }
     },
-    [id, taiPhieu, showToast, choPhepNhap],
+    [id, taiPhieu, choPhepNhap],
   );
-
-  const handleTongHop = () => chayTongHop();
 
   // Đổi sang phiếu khác thì cho phép tổng hợp tự động lại từ đầu
   useEffect(() => {
@@ -615,9 +609,8 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
   /**
    * Tổng hợp TỰ ĐỘNG ngay khi mở phiếu.
    *
-   * VÌ SAO: trước đây điểm của dòng `LoaiNguonDiem = 2` chỉ được cập nhật khi thư
-   * ký nhớ bấm "Tổng hợp KPI". Quên bấm là phiếu lên Trưởng khoa với điểm rỗng -
-   * nặng nhất là tiêu chí DIEM_TRU_TAP_THE (mức TUÂN THỦ, thường 7,5đ): Khoa
+   * VÌ SAO: điểm của dòng `LoaiNguonDiem = 2` cần được cập nhật trước khi thư
+   * ký trình phiếu. Tiêu chí DIEM_TRU_TAP_THE (mức TUÂN THỦ, thường 7,5đ): Khoa
    * không vi phạm mà vẫn bị 0 vì chưa ai tổng hợp.
    *
    * Endpoint idempotent và chỉ ghi dòng tự động, không đụng `diem_nhap`, nên chạy
@@ -635,7 +628,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     if (!chiTietList.some((ct) => !laDongChamTay(ct))) return;
 
     daTuTongHop.current = true;
-    chayTongHop({ imLang: true });
+    chayTongHop();
   }, [id, phieu, chiTietList, chayTongHop, choPhepNhap]);
 
   /**
@@ -722,7 +715,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
       // lúc mở màn hình, và sau bước này thư ký hết sửa được điểm.
       let rowVersion = phieu?.RowVersion;
       if (chiTietList.some((ct) => !laDongChamTay(ct))) {
-        const sauTongHop = await chayTongHop({ imLang: true });
+        const sauTongHop = await chayTongHop();
         if (!sauTongHop) {
           // Thà không nộp còn hơn nộp phiếu mang điểm tự động cũ
           setMoTrinh(false);
@@ -884,21 +877,8 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
 
       <button
         type="button"
-        className="btn-tong-hop"
-        disabled={dangTongHop || dangLuuTatCa}
-        onClick={handleTongHop}
-        title="Tổng hợp lại điểm KPI từ các thành viên trong đơn vị"
-      >
-        <i
-          className={`fa-solid ${dangTongHop ? "fa-spinner fa-spin" : "fa-calculator"}`}
-        ></i>
-        {dangTongHop ? "Đang tổng hợp..." : "Tổng hợp KPI"}
-      </button>
-
-      <button
-        type="button"
         className="btn-nop-phieu"
-        disabled={dangTrinh || dangLuuTatCa}
+        disabled={dangTrinh || dangLuuTatCa || dangTongHop}
         onClick={() => setMoTrinh(true)}
       >
         <i className="fa-solid fa-paper-plane"></i> Trình Trưởng đơn vị

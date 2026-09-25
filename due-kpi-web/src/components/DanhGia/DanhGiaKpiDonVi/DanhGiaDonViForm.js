@@ -206,7 +206,7 @@ const DanhGiaDonViForm = ({
         <div className="cd-hint cd-hint-warn" style={{ marginBottom: "20px" }}>
           <i className="fa-solid fa-triangle-exclamation"></i> Chưa tổng hợp
           được điểm tự động ({loiTongHop}). Các tiêu chí tự động có thể đang giữ
-          điểm cũ - hãy bấm <b>Tổng hợp KPI</b> để thử lại.
+          điểm cũ. Hệ thống sẽ thử tổng hợp lại khi bạn trình phiếu.
         </div>
       )}
 

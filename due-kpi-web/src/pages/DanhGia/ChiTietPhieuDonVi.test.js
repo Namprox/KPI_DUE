@@ -167,3 +167,45 @@ test("Trưởng Khoa ở trạng thái 1 chỉ xem, phần việc nhập vẫn l
     apiFetch.mock.calls.every(([, options]) => !options?.method || options.method === "GET"),
   ).toBe(true);
 });
+
+test("thư ký trình được phiếu sau khi API tổng hợp trả Item null", async () => {
+  useAuth.mockReturnValue({ user: thuKyKhoa });
+  let soLanTongHop = 0;
+  const rowVersions = ["AAAA", "BBBB", "CCCC"];
+  apiFetch.mockImplementation(async (url, options) => ({
+    ok: true,
+    json: async () => {
+      if (url === "phieu-don-vi/7/tong-hop-kpi") {
+        soLanTongHop += 1;
+        return { Success: true, Item: null, TongHop: { SoPhieuThanhVien: 1 } };
+      }
+      if (url === "phieu-don-vi/7/submit") {
+        return { Item: { ...phieu(2), RowVersion: "DDDD" } };
+      }
+      if (url === "phieu-don-vi/7") {
+        return { Item: { ...phieu(1), RowVersion: rowVersions[soLanTongHop] } };
+      }
+      if (url === "maudanhgia/99/chi-tiet") return { Item: chiTietMau };
+      return { Item: {}, Items: [] };
+    },
+  }));
+  mount();
+
+  // Lần tổng hợp tự động khi mở phiếu đã đổi RowVersion lần đầu.
+  await waitFor(() => expect(soLanTongHop).toBe(1));
+  await waitFor(() =>
+    expect(
+      apiFetch.mock.calls.filter(([url]) => url === "phieu-don-vi/7"),
+    ).toHaveLength(2),
+  );
+  expect(screen.queryByRole("button", { name: "Tổng hợp KPI" })).toBeNull();
+
+  fireEvent.click(screen.getByRole("button", { name: "Trình Trưởng đơn vị" }));
+  fireEvent.click(screen.getByRole("button", { name: "Trình phiếu" }));
+
+  await waitFor(() => expect(ghiVao("phieu-don-vi/7/submit")).toBeTruthy());
+  expect(soLanTongHop).toBe(2);
+  expect(JSON.parse(ghiVao("phieu-don-vi/7/submit")[1].body)).toMatchObject({
+    RowVersion: "CCCC",
+  });
+});
