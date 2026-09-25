@@ -37,9 +37,8 @@ const QL_DinhMucListing = ({ data, onEdit, onDelete, isLoading }) => {
                         <thead>
                             <tr>
                                 <th width="10%" style={{ textAlign: 'center' }}>NĂM</th>
-                                <th width="30%">CHỨC DANH NGHỀ NGHIỆP</th> {/* ĐÃ SỬA TIÊU ĐỀ */}
-                                <th width="20%" style={{ textAlign: 'center' }}>GIỜ GIẢNG DẠY</th>
-                                <th width="20%" style={{ textAlign: 'center' }}>GIỜ NCKH</th>
+                                <th width="30%">CHỨC DANH NGHỀ NGHIỆP</th>
+                                <th width="20%" style={{ textAlign: 'center' }}>Giờ giảng lý thuyết (giờ/năm)</th>
                                 <th width="20%" style={{ textAlign: 'center' }}>THAO TÁC</th>
                             </tr>
                         </thead>
@@ -47,14 +46,12 @@ const QL_DinhMucListing = ({ data, onEdit, onDelete, isLoading }) => {
                             {paginatedData.map((item) => (
                                 <tr key={item.IdDinhMuc}>
                                     <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.IdNam}</td>
-                                    {/* ĐÃ SỬA TÊN BIẾN */}
-                                    <td style={{ fontWeight: '600', color: '#003399' }}>{item.TenChucDanh || '---'}</td>
+                                    <td title={item.TenChucDanh} style={{ fontWeight: '600', color: '#003399', maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.TenChucDanh || '---'}</td>
                                     <td style={{ textAlign: 'center' }}>{item.GioGiangLyThuyet} giờ</td>
-                                    <td style={{ textAlign: 'center' }}>{item.GioNckh} giờ</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-                                            <div className="action-btn edit-btn" onClick={() => onEdit(item)}><i className="fa-solid fa-pen"></i></div>
-                                            <div className="action-btn delete-btn" onClick={() => onDelete(item.IdDinhMuc)}><i className="fa-solid fa-trash"></i></div>
+                                            <button type="button" aria-label={`Sửa định mức ${item.IdNam} ${item.TenChucDanh || ""}`} className="action-btn edit-btn" onClick={() => onEdit(item)}><i className="fa-solid fa-pen"></i></button>
+                                            <button type="button" aria-label={`Xóa định mức ${item.IdNam} ${item.TenChucDanh || ""}`} className="action-btn delete-btn" onClick={() => onDelete(item.IdDinhMuc)}><i className="fa-solid fa-trash"></i></button>
                                         </div>
                                     </td>
                                 </tr>

@@ -20,11 +20,11 @@ const QL_ChucDanhForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isE
                     <form id="cdForm" onSubmit={onSubmit}>
                         <div className="form-group" style={{ marginBottom: '20px' }}>
                             <label>Mã chức danh <span className="text-red">*</span></label>
-                            <input type="text" name="MaChucDanh" className="form-input" value={formData.MaChucDanh || ''} onChange={handleChange} required placeholder="GS, PGS, GVC, ..." />
+                            <input type="text" name="MaChucDanh" className="form-input" value={formData.MaChucDanh || ''} onChange={handleChange} required placeholder="Nhập mã chức danh" />
                         </div>
                         <div className="form-group" style={{ marginBottom: '20px' }}>
                             <label>Tên chức danh <span className="text-red">*</span></label>
-                            <input type="text" name="TenChucDanh" className="form-input" value={formData.TenChucDanh || ''} onChange={handleChange} required placeholder="Giáo sư, Phó Giáo sư, ..." />
+                            <input type="text" name="TenChucDanh" className="form-input" value={formData.TenChucDanh || ''} onChange={handleChange} required placeholder="Nhập tên chức danh" />
                         </div>
                         <div className="form-group" style={{ marginBottom: '20px' }}>
                             <label>Mô tả / Ghi chú</label>

@@ -103,32 +103,6 @@ const QL_ChucVuForm = ({
                   placeholder="Ví dụ: 0.85"
                 />
               </div>
-              <div className="form-group" style={{ marginBottom: "20px" }}>
-                <label>Định mức NCKH (0.0 - 1.0)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="1"
-                  name="ty_le_dinh_muc_nckh"
-                  className="form-input"
-                  value={
-                    formData.ty_le_dinh_muc_nckh !== null &&
-                    formData.ty_le_dinh_muc_nckh !== undefined
-                      ? formData.ty_le_dinh_muc_nckh
-                      : ""
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      ty_le_dinh_muc_nckh:
-                        e.target.value === ""
-                          ? null
-                          : parseFloat(e.target.value),
-                    })
-                  }
-                  placeholder="Ví dụ: 0.85"
-                />
-              </div>
             </div>
             <div className="form-group" style={{ marginBottom: "20px" }}>
               <label>Điều kiện áp dụng / Ghi chú</label>

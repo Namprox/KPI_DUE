@@ -179,10 +179,7 @@ const QL_NhanVienChiTiet = () => {
         const res = await cdRes.json();
         const list = res.Items || (Array.isArray(res) ? res : []);
         const processedList = list
-          .filter((item) => {
-            const name = item.ten_chuc_danh || item.TenChucDanh || "";
-            return !name.toLowerCase().includes("không có chức danh");
-          })
+          .filter((item) => item.TrangThai === true)
           .sort((a, b) => {
             const idA = a.id_chuc_danh || a.IdChucDanh || 0;
             const idB = b.id_chuc_danh || b.IdChucDanh || 0;

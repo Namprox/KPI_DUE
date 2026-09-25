@@ -21,7 +21,6 @@ import { useViPhamMinhChungPreview } from "../../hooks/useViPhamMinhChungPreview
 import {
   canRecordViPham,
   buildDonViIndex,
-  buildChucDanhIndex,
   resolveKhoaCuaNhanVien,
   laDonViKhoa,
   laGiangVienKhoa,
@@ -93,7 +92,6 @@ const QL_ViPham = () => {
   const [donViList, setDonViList] = useState([]);
   const [nhomList, setNhomList] = useState([]);
   const [loaiList, setLoaiList] = useState([]);
-  const [chucDanhList, setChucDanhList] = useState([]);
 
   // Bộ lọc gọi server
   const [selectedNam, setSelectedNam] = useState("");
@@ -116,10 +114,6 @@ const QL_ViPham = () => {
   const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
   const donViIndex = useMemo(() => buildDonViIndex(donViList), [donViList]);
-  const chucDanhIndex = useMemo(
-    () => buildChucDanhIndex(chucDanhList),
-    [chucDanhList],
-  );
   const khoaList = useMemo(() => donViList.filter(laDonViKhoa), [donViList]);
 
   /** Giảng viên đang được chọn trong form - cần cho nhánh quyền "Khoa chủ quản". */
@@ -140,13 +134,13 @@ const QL_ViPham = () => {
   );
 
   /**
-   * Đối tượng chọn được trong form = đúng tập server cho phép: giảng viên thuộc Khoa.
+   * Đối tượng chọn được trong form = nhân viên thuộc Khoa; máy chủ xác nhận ngạch khi lưu.
    * Bản ghi cũ có thể trỏ tới người đã đổi đơn vị/chức danh - vẫn giữ lại trong
    * danh sách khi đang sửa, nếu không select sẽ mất value và ghi đè mất dữ liệu.
    */
   const nhanVienChoForm = useMemo(() => {
     const hopLe = nhanVienList.filter((nv) =>
-      laGiangVienKhoa(nv, donViIndex, chucDanhIndex),
+      laGiangVienKhoa(nv, donViIndex),
     );
     if (
       selectedLecturer &&
@@ -157,12 +151,12 @@ const QL_ViPham = () => {
       return [selectedLecturer, ...hopLe];
     }
     return hopLe;
-  }, [nhanVienList, donViIndex, chucDanhIndex, selectedLecturer]);
+  }, [nhanVienList, donViIndex, selectedLecturer]);
 
   /** Lý do đối tượng đang chọn không hợp lệ (null = hợp lệ). */
   const lecturerBlockReason = useMemo(
-    () => getNhanVienBlockReason(selectedLecturer, donViIndex, chucDanhIndex),
-    [selectedLecturer, donViIndex, chucDanhIndex],
+    () => getNhanVienBlockReason(selectedLecturer, donViIndex),
+    [selectedLecturer, donViIndex],
   );
 
   /** Loại vi phạm kèm cờ quyền ghi nhận, tính client-side theo §1.4. */
@@ -205,7 +199,7 @@ const QL_ViPham = () => {
       // Nạp nhân viên song song với các lookup khác (endpoint này phân trang nên tốn nhiều vòng)
       const nhanVienPromise = fetchAllNhanVien({ trangThai: true });
 
-      const [namRes, nhomRes, loaiRes, donViRes, chucDanhRes] =
+      const [namRes, nhomRes, loaiRes, donViRes] =
         await Promise.all([
           apiFetch("namdanhgia"),
           // Danh mục nay dùng chung cho cả hai đối tượng - phải lọc
@@ -214,7 +208,6 @@ const QL_ViPham = () => {
           apiFetch("nhom-vi-pham?loaiDoiTuong=1"),
           apiFetch("loai-vi-pham?trangThai=true&loaiDoiTuong=1"),
           apiFetch("donvi"),
-          apiFetch("chuc-danh-nghe-nghiep"),
         ]);
 
       let years = [];
@@ -245,16 +238,6 @@ const QL_ViPham = () => {
       if (donViRes.ok) {
         const result = await donViRes.json();
         setDonViList(result.Items || (Array.isArray(result) ? result : []));
-      }
-
-      if (chucDanhRes.ok) {
-        const result = await chucDanhRes.json();
-        setChucDanhList(result.Items || (Array.isArray(result) ? result : []));
-      } else {
-        // Không chặn luồng: laGiangVien() sẽ bỏ qua bước lọc chức danh khi danh mục rỗng
-        console.warn(
-          "Không tải được danh mục chức danh - bỏ qua lọc giảng viên phía client.",
-        );
       }
 
       const employees = await nhanVienPromise;

@@ -77,9 +77,6 @@ const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading }) => {
                 <th width="15%" style={{ textAlign: "center" }}>
                   ĐỊNH MỨC GIỜ GIẢNG DẠY
                 </th>
-                <th width="15%" style={{ textAlign: "center" }}>
-                  ĐỊNH MỨC NCKH
-                </th>
                 <th width="28%">ĐIỀU KIỆN ÁP DỤNG / GHI CHÚ</th>
                 <th width="10%" style={{ textAlign: "center" }}>
                   TRẠNG THÁI
@@ -110,18 +107,6 @@ const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading }) => {
                       }}
                     >
                       {formatRatio(item.TyLeDinhMucGiang)}
-                    </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "500",
-                        color:
-                          item.ty_le_dinh_muc_nckh !== null
-                            ? "#1e293b"
-                            : "#94a3b8",
-                      }}
-                    >
-                      {formatRatio(item.ty_le_dinh_muc_nckh)}
                     </td>
                     <td
                       style={{

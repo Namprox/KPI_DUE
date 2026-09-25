@@ -12,8 +12,6 @@ import "../../css/QuanLyChamDiem.css";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch } from "../../utils/api";
 import {
-  fetchDinhMucApDung,
-  fetchGioNckhThucTe,
   fetchLichSuChamDiemPhieu,
   fetchPhieuDetail,
   fetchXemTruocChot,
@@ -100,7 +98,7 @@ const ChotHoSoKhoa = () => {
   const [dangTaiLichSu, setDangTaiLichSu] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [loiTai, setLoiTai] = useState("");
-  const [dinhMuc, setDinhMuc] = useState({ apDung: null, gioNckh: null });
+  const [nckhPhieuId, setNckhPhieuId] = useState(null);
 
   const [dangChot, setDangChot] = useState(false);
   const [xacNhanChot, setXacNhanChot] = useState(false);
@@ -112,7 +110,7 @@ const ChotHoSoKhoa = () => {
     xepLoaiKhoa: null,
     lyDoXepLoai: "",
     mucNckhcnQd838: null,
-    duDinhMucGioNckh: true,
+    duDinhMucGioNckh: false,
     khongViPhamPhapLuat: true,
     ghiChuXepLoai: "",
     nhanXet: "",
@@ -159,6 +157,9 @@ const ChotHoSoKhoa = () => {
   );
 
   useEffect(() => {
+    daSuaForm.current = false;
+    setNckhPhieuId(null);
+    setXemTruocChot(null);
     taiPhieu();
   }, [taiPhieu]);
 
@@ -216,6 +217,7 @@ const ChotHoSoKhoa = () => {
   const xemTruocChot = duLieuXemTruoc?.khoa === khoaXemTruoc ? duLieuXemTruoc.data : null;
   const loaiTuPreview = duLieuXemTruoc?.id === id ? duLieuXemTruoc.data?.LoaiDoiTuong : null;
   const laVienChuc = Number(loaiTuPreview ?? phieu?.LoaiDoiTuong) === LOAI_DOI_TUONG.VIEN_CHUC;
+  const laGiangVien = Number(loaiTuPreview ?? phieu?.LoaiDoiTuong) === LOAI_DOI_TUONG.GIANG_VIEN;
 
   useEffect(() => {
     if (!phieu || String(phieu.IdPhieu) !== String(id)) return undefined;
@@ -223,42 +225,28 @@ const ChotHoSoKhoa = () => {
     const timer = setTimeout(async () => {
       try {
         const data = await fetchXemTruocChot(id, {
-          duNckh: laVienChuc ? undefined : form.duDinhMucGioNckh,
+          duNckh: laVienChuc || nckhPhieuId !== id ? undefined : form.duDinhMucGioNckh,
           khongViPham: form.khongViPhamPhapLuat,
           qd838: laVienChuc ? undefined : form.mucNckhcnQd838,
         });
-        if (!huy) setXemTruocChot({ id, khoa: khoaXemTruoc, data });
+        if (!huy) {
+          if (nckhPhieuId !== id) {
+            const duNckh = data?.DuDinhMucGioNckhApDung === true;
+            setForm((prev) => ({ ...prev, duDinhMucGioNckh: duNckh }));
+            setNckhPhieuId(id);
+            setXemTruocChot({ id, khoa: JSON.stringify([id, phieu.RowVersion, duNckh, form.khongViPhamPhapLuat, form.mucNckhcnQd838]), data });
+          } else {
+            setXemTruocChot({ id, khoa: khoaXemTruoc, data });
+          }
+        }
       } catch (error) {
         if (!huy) setXemTruocChot(null);
         console.error("Lỗi xem trước kết quả chốt:", error);
       }
     }, 350);
     return () => { huy = true; clearTimeout(timer); };
-  }, [id, phieu, khoaXemTruoc, laVienChuc, form.duDinhMucGioNckh, form.khongViPhamPhapLuat, form.mucNckhcnQd838]);
+  }, [id, phieu, khoaXemTruoc, laVienChuc, nckhPhieuId, form.duDinhMucGioNckh, form.khongViPhamPhapLuat, form.mucNckhcnQd838]);
 
-
-  // Ô tick "Đủ định mức giờ NCKH" là một phán quyết, không phải một con số tự
-  // động - nhưng người phán quyết cần thấy giờ thực tế / định mức trước khi tick.
-  // Hỏng thì bỏ trống, không chặn màn hình.
-  useEffect(() => {
-    const idNv = phieu?.IdNhanVien;
-    const idNam = phieu?.IdNam;
-    if (!idNv || !idNam || laVienChuc) return undefined;
-    let huy = false;
-    Promise.allSettled([
-      fetchDinhMucApDung(idNv, idNam),
-      fetchGioNckhThucTe(idNv, idNam),
-    ]).then(([ad, gio]) => {
-      if (huy) return;
-      setDinhMuc({
-        apDung: ad.status === "fulfilled" ? ad.value : null,
-        gioNckh: gio.status === "fulfilled" ? gio.value : null,
-      });
-    });
-    return () => {
-      huy = true;
-    };
-  }, [phieu?.IdNhanVien, phieu?.IdNam, laVienChuc]);
 
   // Nạp form từ dữ liệu server mỗi khi hồ sơ được tải lại. Mức mặc định là mức
   // hệ thống đề xuất (kẹp trần ở 3 vì Trưởng khoa không chọn được mức 4) -
@@ -276,7 +264,7 @@ const ChotHoSoKhoa = () => {
           : null),
       lyDoXepLoai: phieu.LyDoXepLoai || "",
       mucNckhcnQd838: phieu.MucNckhcnQd838 ?? null,
-      duDinhMucGioNckh: phieu.DuDinhMucGioNckh ?? true,
+      duDinhMucGioNckh: phieu.DuDinhMucGioNckh ?? false,
       khongViPhamPhapLuat: phieu.KhongViPhamPhapLuat ?? true,
       ghiChuXepLoai: phieu.GhiChuXepLoai || "",
       nhanXet: "",
@@ -602,14 +590,6 @@ const ChotHoSoKhoa = () => {
     );
   }
 
-  const gioNckhThucTe = dinhMuc.gioNckh?.GioNckhThucTe;
-  const gioNckhApDung = dinhMuc.apDung?.GioNckhApDung;
-  const mienNckh = !!dinhMuc.apDung?.MienNckh;
-  const datGioNckh =
-    gioNckhThucTe != null &&
-    gioNckhApDung != null &&
-    Number(gioNckhThucTe) >= Number(gioNckhApDung);
-
   // Ba cột tong_diem_* được server ghi trong cùng một transaction lúc chốt, nên
   // chỉ cần tích lũy có giá trị là cả ba đều là số đã lưu.
   const daCoDiemServer = phieu.TongDiemTichLuy != null;
@@ -674,8 +654,7 @@ const ChotHoSoKhoa = () => {
       <div className="cd-chot-panel-head">
         <div className="cd-chot-eyebrow">Kết luận của Trưởng khoa</div>
         <div className="cd-chot-phu-de">
-          Quyết định của Trưởng khoa được ưu tiên hơn kết quả tự động của hệ
-          thống.
+          Trưởng khoa xác nhận các điều kiện và lựa chọn mức xếp loại hồ sơ.
         </div>
       </div>
 
@@ -685,33 +664,18 @@ const ChotHoSoKhoa = () => {
           {/* Viên chức / NLĐ không có định mức giờ NCKH nên ô này không có
               nghĩa với họ - server cũng bỏ qua. Ẩn hẳn thay vì bày một ô luôn
               tick. */}
-          {!laVienChuc && (
+          {laGiangVien && (
             <label className="cd-checkbox">
               <input
                 type="checkbox"
                 checked={form.duDinhMucGioNckh}
-                disabled={dangChot}
+                disabled={dangChot || nckhPhieuId !== id}
                 onChange={(e) =>
                   capNhat({ duDinhMucGioNckh: e.target.checked })
                 }
               />
               <span>Đủ định mức giờ nghiên cứu khoa học</span>
             </label>
-          )}
-          {/* Ô tick trên là một phán quyết, nhưng người phán quyết cần thấy giờ
-              thực tế / định mức ngay cạnh nó mới tick được có căn cứ. */}
-          {!laVienChuc && (gioNckhThucTe != null || gioNckhApDung != null) && (
-            <div
-              className={`cd-nckh-so${
-                mienNckh ? "" : datGioNckh ? " cd-nckh-dat" : " cd-nckh-thieu"
-              }`}
-            >
-              Giờ NCKH thực tế / định mức:{" "}
-              <b>
-                {formatDiem(gioNckhThucTe, 1)} / {formatDiem(gioNckhApDung, 1)}
-                {mienNckh ? " (miễn)" : ""}
-              </b>
-            </div>
           )}
           <label className="cd-checkbox">
             <input
@@ -893,11 +857,17 @@ const ChotHoSoKhoa = () => {
         </div>
       )}
 
+      {xemTruocChot?.CanhBaoDinhMuc != null && (
+        <div role="alert" className="cd-hint cd-hint-error">{xemTruocChot.CanhBaoDinhMuc}</div>
+      )}
       <div className="cd-chot-thanh-nut">
         <button
           className="btn-submit"
           disabled={
             dangChot ||
+            !xemTruocChot ||
+            xemTruocChot.CanhBaoDinhMuc != null ||
+            xemTruocChot.SanSangChot === false ||
             chuaChot.length > 0 ||
             Number(phieu.SoQuyDaChot) === 0
           }

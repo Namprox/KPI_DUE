@@ -26,11 +26,6 @@ const initialForm = {
   LoaiNgoaiLe: "",
   HeSoGiamGiang: "",
   SoGioGiamGiang: "",
-  HeSoNckh: "",
-  HeSoGiamNckh: "",
-  SoGioThemNckh: "",
-  HeSoGiamPvcd: "",
-  MienNckh: false,
   TuNgay: "",
   DenNgay: "",
   LyDo: "",
@@ -243,11 +238,6 @@ const QL_NgoaiLeDinhMuc = () => {
       LoaiNgoaiLe: item.LoaiNgoaiLe || item.loai_ngoai_le,
       HeSoGiamGiang: item.HeSoGiamGiang ?? item.he_so_giam_giang ?? "",
       SoGioGiamGiang: item.SoGioGiamGiang ?? item.so_gio_giam_giang ?? "",
-      HeSoNckh: item.HeSoNckh ?? item.he_so_nckh ?? "",
-      HeSoGiamNckh: item.HeSoGiamNckh ?? item.he_so_giam_nckh ?? "",
-      SoGioThemNckh: item.SoGioThemNckh ?? item.so_gio_them_nckh ?? "",
-      HeSoGiamPvcd: item.HeSoGiamPvcd ?? item.he_so_giam_pvcd ?? "",
-      MienNckh: item.MienNckh ?? item.mien_nckh ?? false,
       TuNgay: item.TuNgay || item.tu_ngay || "",
       DenNgay: item.DenNgay || item.den_ngay || "",
       LyDo: item.LyDo || item.ly_do || "",
@@ -313,21 +303,7 @@ const QL_NgoaiLeDinhMuc = () => {
             formData.SoGioGiamGiang !== ""
               ? parseFloat(formData.SoGioGiamGiang)
               : null,
-          HeSoNckh:
-            formData.HeSoNckh !== "" ? parseFloat(formData.HeSoNckh) : null,
-          HeSoGiamNckh:
-            formData.HeSoGiamNckh !== ""
-              ? parseFloat(formData.HeSoGiamNckh)
-              : null,
-          SoGioThemNckh:
-            formData.SoGioThemNckh !== ""
-              ? parseFloat(formData.SoGioThemNckh)
-              : null,
-          HeSoGiamPvcd:
-            formData.HeSoGiamPvcd !== ""
-              ? parseFloat(formData.HeSoGiamPvcd)
-              : null,
-          MienNckh: !!formData.MienNckh,
+          MienNckh: Number(formData.LoaiNgoaiLe) === 1,
           TuNgay: formData.TuNgay || null,
           DenNgay: formData.DenNgay || null,
           LyDo: formData.LyDo || null,

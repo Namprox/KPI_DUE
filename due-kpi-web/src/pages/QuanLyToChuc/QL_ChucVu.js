@@ -6,7 +6,7 @@ import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
 
 const QL_ChucVu = () => {
-    const initialForm = { MaChucVu: '', TenChucVu: '', TyLeDinhMucGiang: null, ty_le_dinh_muc_nckh: null, GhiChuDieuKien: '', TrangThai: true };
+    const initialForm = { MaChucVu: '', TenChucVu: '', TyLeDinhMucGiang: null, GhiChuDieuKien: '', TrangThai: true };
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');

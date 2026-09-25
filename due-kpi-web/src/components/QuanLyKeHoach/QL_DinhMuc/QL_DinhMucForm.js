@@ -29,13 +29,13 @@ const QL_DinhMucForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
                                     required
                                 />
                             </div>
-                            <div className="form-group">
+                            <div className="form-group" style={{ minWidth: 0 }}>
                                 <label>Chức danh nghề nghiệp</label>
                                 <SearchSelect
                                     name="IdChucDanh"
                                     value={formData.IdChucDanh || ''}
                                     onChange={handleSelect('IdChucDanh')}
-                                    options={chucDanhList.map(cd => ({ value: cd.IdChucDanh, label: cd.TenChucDanh }))}
+                                    options={chucDanhList.filter(cd => cd.TrangThai === true).map(cd => ({ value: cd.IdChucDanh, label: cd.TenChucDanh }))}
                                     placeholder="Chọn chức danh"
                                     required
                                 />
@@ -43,12 +43,8 @@ const QL_DinhMucForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEd
                         </div>
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                             <div className="form-group">
-                                <label>Giờ giảng dạy chuẩn</label>
-                                <input type="number" name="GioGiangLyThuyet" className="form-input" value={formData.GioGiangLyThuyet || ''} onChange={handleChange} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Giờ NCKH chuẩn</label>
-                                <input type="number" name="GioNckh" className="form-input" value={formData.GioNckh || ''} onChange={handleChange} required />
+                                <label>Giờ giảng lý thuyết (giờ/năm)</label>
+                                <input type="number" min="0" step="0.01" name="GioGiangLyThuyet" className="form-input" value={formData.GioGiangLyThuyet ?? ''} onChange={handleChange} required />
                             </div>
                         </div>
                     </form>

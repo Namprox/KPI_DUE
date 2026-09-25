@@ -5,10 +5,11 @@ import QLDinhMucListing from '../../components/QuanLyKeHoach/QL_DinhMuc/QL_DinhM
 import QLDinhMucForm from '../../components/QuanLyKeHoach/QL_DinhMuc/QL_DinhMucForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { confirmDialog } from 'primereact/confirmdialog';
+import { hasRole, ROLE_SETS, normalizeRole } from '../../utils/roles';
 import { apiFetch } from '../../utils/api';
 
 const QL_DinhMucGiangVien = () => {
-    const initialForm = { IdChucDanh: '', IdNam: '', GioGiangLyThuyet: '', GioNckh: '', MoTa: '' };
+    const initialForm = { IdChucDanh: '', IdNam: '', GioGiangLyThuyet: '', MoTa: '' };
     const [data, setData] = useState([]);
     const [namList, setNamList] = useState([]);
     const [chucDanhList, setChucDanhList] = useState([]);
@@ -22,10 +23,8 @@ const QL_DinhMucGiangVien = () => {
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
     const { user } = useAuth();
     const currentUser = user || {};
-    const roleCode = currentUser?.MaChucVu || '';
-    const isAdmin = roleCode === 'Admin';
-    const isManager = ['HT', 'PHT', 'TK', 'TBM'].includes(roleCode);
-    const canManage = isAdmin || isManager;
+    const isAdmin = normalizeRole(currentUser) === 'ADMIN';
+    const canManage = hasRole(ROLE_SETS.DINH_MUC_GIANG_VIEN, currentUser);
 
     useEffect(() => {
         fetchData();
@@ -81,22 +80,25 @@ const QL_DinhMucGiangVien = () => {
         if (!canManage) return;
         const method = editId ? 'PUT' : 'POST';
         try {
-            const response = await apiFetch('dinhmucgiangvien', {
-                method, body: JSON.stringify(formData)
+            const response = await apiFetch(editId ? `dinhmucgiangvien/${editId}` : 'dinhmucgiangvien', {
+                method, body: JSON.stringify({ IdChucDanh: Number(formData.IdChucDanh), IdNam: Number(formData.IdNam), GioGiangLyThuyet: Number(formData.GioGiangLyThuyet), MoTa: formData.MoTa || null })
             });
-            if (response.ok) { fetchData(); closeModal(); } else alert("Lưu thất bại!");
+            const result = await response.json();
+            if (response.ok && result.Success !== false) { fetchData(); closeModal(); } else alert(result.Message || "Lưu thất bại!");
         } catch (error) { console.error(error); alert("Lỗi kết nối!"); }
     };
 
     const handleDelete = (id) => {
+        if (!canManage) return;
         confirmDeleteDialog({
             header: 'Xác nhận xóa', message: 'Bạn có chắc chắn muốn xóa định mức này?',
             accept: async () => {
-                const res = await apiFetch(`dinh-muc-gv?id=${id}`, { method: 'DELETE' });
-                if (res.ok) {
+                try {
+                    const res = await apiFetch(`dinhmucgiangvien/${id}`, { method: 'DELETE' });
                     const result = await res.json();
-                    if (result.status === "success") fetchData(); else alert(result.message);
-                }
+                    if (res.ok && result.Success !== false) fetchData();
+                    else alert(result.Message || "Xóa thất bại!");
+                } catch (error) { console.error(error); alert("Lỗi kết nối!"); }
             }
         });
     };

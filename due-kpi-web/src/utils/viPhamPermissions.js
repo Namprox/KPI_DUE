@@ -146,52 +146,30 @@ export const resolveKhoaCuaToi = (user, donViList = []) => {
 /* ------------------------------------------------------------------ */
 
 /**
- * Server chỉ cho ghi nhận vi phạm của giảng viên thuộc Khoa
- * (view v_giang_vien_khoa - chuc_danh_nghe_nghiep.ma_chuc_danh trong tập này).
- * Sai đối tượng → 403 NOT_GIANG_VIEN_KHOA.
+ * Chỉ dùng phân loại do backend cung cấp. Danh bạ hiện không trả phân loại;
+ * khi thiếu, giữ ứng viên để server kiểm tra lúc lưu, không suy từ chức danh.
+ * Không dùng auth/me của người ghi nhận để phân loại người được chọn.
  */
-export const MA_CHUC_DANH_GIANG_VIEN = ["GV", "GVC", "GVCC", "PGS", "GS"];
-
-export const buildChucDanhIndex = (chucDanhList = []) => {
-  const map = new Map();
-  chucDanhList.forEach((cd) => {
-    if (cd && cd.IdChucDanh != null) map.set(cd.IdChucDanh, cd);
-  });
-  return map;
-};
-
-/**
- * NhanVienListItemDto chỉ có IdChucDanh/TenChucDanh (không có MaChucDanh)
- * nên phải tra mã qua danh mục chuc-danh-nghe-nghiep.
- * Nếu danh mục chưa nạp được thì KHÔNG chặn - nhường quyết định cho server,
- * tránh việc lỗi 1 endpoint lookup làm rỗng toàn bộ dropdown giảng viên.
- */
-export const laGiangVien = (nhanVien, chucDanhIndex) => {
+export const laGiangVien = (nhanVien) => {
   if (!nhanVien) return false;
-  if (!chucDanhIndex || chucDanhIndex.size === 0) return true;
-  if (nhanVien.IdChucDanh == null) return false;
-  const cd = chucDanhIndex.get(nhanVien.IdChucDanh);
-  if (!cd) return false;
-  return MA_CHUC_DANH_GIANG_VIEN.includes(
-    String(cd.MaChucDanh || "")
-      .trim()
-      .toUpperCase(),
-  );
+  if (Array.isArray(nhanVien.DonVi)) return nhanVien.DonVi.some((dv) => dv.LoaiDoiTuong === 1);
+  if (nhanVien.LoaiDoiTuong != null) return Number(nhanVien.LoaiDoiTuong) === 1;
+  return true;
 };
 
 /** Đủ điều kiện bị ghi nhận vi phạm: vừa là giảng viên, vừa thuộc một Khoa. */
-export const laGiangVienKhoa = (nhanVien, donViIndex, chucDanhIndex) =>
-  laGiangVien(nhanVien, chucDanhIndex) &&
+export const laGiangVienKhoa = (nhanVien, donViIndex) =>
+  laGiangVien(nhanVien) &&
   laDonViKhoa(resolveKhoaCuaNhanVien(nhanVien?.IdDonVi, donViIndex));
 
 /** Trả null nếu hợp lệ, ngược lại trả lý do tiếng Việt để hiển thị. */
-export const getNhanVienBlockReason = (nhanVien, donViIndex, chucDanhIndex) => {
+export const getNhanVienBlockReason = (nhanVien, donViIndex) => {
   if (!nhanVien) return null;
-  if (!laGiangVien(nhanVien, chucDanhIndex)) {
+  if (!laGiangVien(nhanVien)) {
     const ten = nhanVien.TenChucDanh
       ? ` (chức danh: ${nhanVien.TenChucDanh})`
       : "";
-    return `${nhanVien.HoTen || "Người này"} không có chức danh giảng viên${ten} - máy chủ sẽ từ chối ghi nhận.`;
+    return `${nhanVien.HoTen || "Người này"} không thuộc danh sách giảng viên do máy chủ xác định${ten} - máy chủ sẽ từ chối ghi nhận.`;
   }
   if (!laDonViKhoa(resolveKhoaCuaNhanVien(nhanVien.IdDonVi, donViIndex))) {
     return `${nhanVien.HoTen || "Người này"} không thuộc Khoa nào - chỉ ghi nhận được vi phạm của giảng viên thuộc Khoa.`;

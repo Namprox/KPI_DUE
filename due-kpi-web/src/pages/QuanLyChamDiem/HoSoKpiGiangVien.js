@@ -340,34 +340,6 @@ const HoSoKpiGiangVien = () => {
                     </div>
                   </div>
                   <div className="stat-card">
-                    <div className="stat-icon-box stat-icon-purple">
-                      <i className="fa-solid fa-flask"></i>
-                    </div>
-                    <div>
-                      <div className="stat-label">Giờ NCKH áp dụng</div>
-                      <div className="stat-value">
-                        {formatDiem(dinhMuc.data.GioNckhApDung, 1)}
-                      </div>
-                      <div className="cd-hint">
-                        gốc {formatDiem(dinhMuc.data.GioNckhBase, 1)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-icon-box stat-icon-green">
-                      <i className="fa-solid fa-hands-holding-circle"></i>
-                    </div>
-                    <div>
-                      <div className="stat-label">Giờ PVCĐ áp dụng</div>
-                      <div className="stat-value">
-                        {formatDiem(dinhMuc.data.GioPvcdApDung, 1)}
-                      </div>
-                      <div className="cd-hint">
-                        gốc {formatDiem(dinhMuc.data.GioPvcdBase, 1)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="stat-card">
                     <div className="stat-icon-box stat-icon-amber">
                       <i className="fa-solid fa-flask-vial"></i>
                     </div>
@@ -377,7 +349,7 @@ const HoSoKpiGiangVien = () => {
                         {formatDiem(dinhMuc.gioNckh?.GioNckhThucTe, 1)}
                       </div>
                       <div className="cd-hint">
-                        đã cộng giờ thêm từ ngoại lệ
+                        giờ thực tế từ hệ thống NCKH
                       </div>
                     </div>
                   </div>
@@ -387,15 +359,8 @@ const HoSoKpiGiangVien = () => {
                   nhan="Chức danh"
                   giaTri={dinhMuc.data.TenChucDanh || "-"}
                 />
-                <Dong
-                  nhan="Hệ số NCKH áp dụng"
-                  giaTri={formatDiem(dinhMuc.data.HeSoNckhApDung)}
-                />
-                <Dong
-                  nhan="Miễn điều kiện NCKH (tập sự)"
-                  giaTri={dinhMuc.data.MienNckh ? "Có" : "Không"}
-                  nhanMau={dinhMuc.data.MienNckh ? "#b45309" : undefined}
-                />
+                <Dong nhan="Chức vụ áp dụng" giaTri={dinhMuc.data.TenChucVuApDung || "—"} />
+                <Dong nhan="Tỷ lệ giờ giảng theo chức vụ" giaTri={formatDiem(dinhMuc.data.TyLeGiangChucVu)} />
                 {dinhMuc.data.LyDoDieuChinh && (
                   <div className="cd-box" style={{ marginTop: "12px" }}>
                     <div className="cd-box-title">Lý do điều chỉnh</div>

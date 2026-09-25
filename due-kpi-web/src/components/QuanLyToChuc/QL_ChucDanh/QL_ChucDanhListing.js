@@ -46,7 +46,7 @@ const QL_ChucDanhListing = ({ data, onEdit, onDelete, isLoading }) => {
                             {paginatedData.map((item) => (
                                 <tr key={item.IdChucDanh}>
                                     <td style={{ fontWeight: 'bold', color: '#003399' }}>{item.MaChucDanh}</td>
-                                    <td style={{ fontWeight: '600' }}>{item.TenChucDanh}</td>
+                                    <td title={item.TenChucDanh} style={{ fontWeight: '600', maxWidth: '320px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.TenChucDanh}</td>
                                     <td style={{ color: '#666', fontSize: '13px' }}>{item.MoTa || '---'}</td>
                                     <td style={{ textAlign: 'center' }}>
                                         {item.TrangThai ? (

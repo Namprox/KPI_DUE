@@ -83,23 +83,15 @@ const QL_NgoaiLeForm = ({
     let updated = {
       ...formData,
       LoaiNgoaiLe: loai,
-      MienNckh: false,
       SoGioGiamGiang: "",
       HeSoGiamGiang: "",
-      SoGioThemNckh: "",
-      HeSoNckh: "",
-      HeSoGiamNckh: "",
-      HeSoGiamPvcd: "",
     };
 
-    if (loai === 1) {
-      updated.MienNckh = true;
-    } else if (loai === 4) {
+    if (loai === 4) {
       updated.SoGioGiamGiang = 40;
     } else if (loai === 5) {
       updated.HeSoGiamGiang = 0.1;
-    } else if (loai === 7) {
-      updated.HeSoNckh = 1.2;
+
     }
 
     setFormData(updated);
@@ -225,7 +217,7 @@ const QL_NgoaiLeForm = ({
             </div>
 
             {/* Additional fields depending on LoaiNgoaiLe (only when creating) */}
-            {!isEditing && selectedLoai > 0 && (
+            {!isEditing && [2, 3, 4, 5, 8].includes(selectedLoai) && (
               <div
                 style={{
                   background: "#f8fafc",
@@ -249,40 +241,6 @@ const QL_NgoaiLeForm = ({
                   Thiết lập thông số giảm/tăng định mức
                 </h4>
 
-                {selectedLoai === 1 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      id="MienNckh"
-                      name="MienNckh"
-                      checked={!!formData.MienNckh}
-                      onChange={handleChange}
-                      style={{
-                        width: "18px",
-                        height: "18px",
-                        cursor: "pointer",
-                      }}
-                    />
-                    <label
-                      htmlFor="MienNckh"
-                      style={{
-                        margin: 0,
-                        cursor: "pointer",
-                        fontWeight: "600",
-                        color: "#1e293b",
-                      }}
-                    >
-                      Miễn điều kiện đủ NCKH khi xếp loại (Tập sự / thử việc)
-                    </label>
-                  </div>
-                )}
-
                 {selectedLoai === 4 && (
                   <div className="form-group">
                     <label>Số giờ giảng giảm (giờ chuẩn)</label>
@@ -303,40 +261,13 @@ const QL_NgoaiLeForm = ({
                     <input
                       type="number"
                       min="0"
+                      step="0.01"
                       max="1"
                       name="HeSoGiamGiang"
                       className="form-input"
                       value={formData.HeSoGiamGiang ?? 0.1}
                       onChange={handleChange}
                       placeholder="Default: 0.10 (10%)"
-                    />
-                  </div>
-                )}
-
-                {selectedLoai === 6 && (
-                  <div className="form-group">
-                    <label>Số giờ NCKH cộng thêm vào thực tế</label>
-                    <input
-                      type="number"
-                      name="SoGioThemNckh"
-                      className="form-input"
-                      value={formData.SoGioThemNckh || ""}
-                      onChange={handleChange}
-                      placeholder="Nhập số giờ NCKH cộng thêm"
-                    />
-                  </div>
-                )}
-
-                {selectedLoai === 7 && (
-                  <div className="form-group">
-                    <label>Hệ số NCKH nhân thêm</label>
-                    <input
-                      type="number"
-                      name="HeSoNckh"
-                      className="form-input"
-                      value={formData.HeSoNckh ?? 1.2}
-                      onChange={handleChange}
-                      placeholder="Default: 1.20"
                     />
                   </div>
                 )}
@@ -350,22 +281,11 @@ const QL_NgoaiLeForm = ({
                       <input
                         type="number"
                         min="0"
+                      step="0.01"
                         max="1"
                         name="HeSoGiamGiang"
                         className="form-input"
                         value={formData.HeSoGiamGiang || ""}
-                        onChange={handleChange}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Tỷ lệ giảm NCKH (0 - 1)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="1"
-                        name="HeSoGiamNckh"
-                        className="form-input"
-                        value={formData.HeSoGiamNckh || ""}
                         onChange={handleChange}
                       />
                     </div>

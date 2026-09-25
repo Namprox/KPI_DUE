@@ -54,13 +54,8 @@ const QL_NgoaiLeListing = ({ data, nhanVienList, onEdit, onDelete, isLoading, ca
 
     const renderDetails = (item) => {
         const parts = [];
-        if (item.MienNckh) parts.push('Miễn NCKH');
         if (item.HeSoGiamGiang != null) parts.push(`Giảm giờ giảng: ${item.HeSoGiamGiang * 100}%`);
         if (item.SoGioGiamGiang != null) parts.push(`Giảm giờ giảng: ${item.SoGioGiamGiang}h`);
-        if (item.HeSoNckh != null) parts.push(`Hệ số NCKH: ${item.HeSoNckh}`);
-        if (item.HeSoGiamNckh != null) parts.push(`Giảm NCKH: ${item.HeSoGiamNckh * 100}%`);
-        if (item.SoGioThemNckh != null) parts.push(`Cộng giờ NCKH: +${item.SoGioThemNckh}h`);
-        if (item.HeSoGiamPvcd != null) parts.push(`Giảm PVCĐ: ${item.HeSoGiamPvcd * 100}%`);
 
         if (parts.length === 0) return <span style={{ color: '#95a5a6', fontStyle: 'italic' }}>Theo quy định</span>;
         return (
