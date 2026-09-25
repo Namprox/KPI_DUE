@@ -38,22 +38,33 @@ Từ đợt "Chức danh chính thức": danh mục = **23 chức danh theo danh
 |---|---|---|
 | `GV` / `GVC` / `GVCC` | Giảng viên / Giảng viên chính / Giảng viên cao cấp | ✅ |
 | `HDLD_GV` | HĐLĐ/Giảng viên | ✅ |
+| `HDLD_HUU` | HĐLĐ/ Hưu trí | ✅ (từ đợt "Thêm HDLD_HUU vào ngạch giảng dạy") |
 | `CV`, `CVC`, `NCV`, `KS`, `TVV`, `YS` | Chuyên viên, Chuyên viên chính, Nghiên cứu viên, Kỹ sư, Thư viện viên, Y sĩ | — |
 | `KTV`, `KTV_C`, `KTV_TC` | Kế toán viên, Kế toán viên chính, Kế toán viên trung cấp | — |
 | `NV_PV68`, `NV_BV68`, `NV_KT68` | Nhân viên phục vụ/68, bảo vệ/68, kỹ thuật/68 | — |
-| `HDLD_HUU`, `HDLD_BV`, `HDLD_DC` | HĐLĐ/ Hưu trí, HĐLĐ/ Nhân viên bảo vệ, HĐLĐ dùng chung | — |
+| `HDLD_BV`, `HDLD_DC` | HĐLĐ/ Nhân viên bảo vệ, HĐLĐ dùng chung | — |
 | `HDLD_CTVP`, `HDLD_CNTT`, `HDLD_CTDT`, `HDLD_KNST`, `HDLD_CTD` | HĐLĐ/ Hỗ trợ CTVP, CNTT, CTĐT, công tác khởi nghiệp và đổi mới sáng tạo, CT Đảng | — |
 
-**Ngạch giảng dạy = `GV, GVC, GVCC, HDLD_GV`**, khai báo ở **đúng 3 chỗ** phải khớp nhau:
+**Ngạch giảng dạy = `GV, GVC, GVCC, HDLD_GV, HDLD_HUU`**, khai báo ở **đúng 3 chỗ** phải khớp nhau:
 `fn_loai_doi_tuong_ca_nhan`, `v_giang_vien_khoa`, `v_vien_chuc_don_vi`. Thêm ngạch giảng dạy mới = sửa cả ba
-+ tạo định mức giờ giảng cho nó.
++ tạo định mức giờ giảng cho nó. Thông điệp lỗi `NOT_GIANG_VIEN_KHOA` của `sp_vi_pham_kiem_tra_quyen_ghi`
+cũng liệt kê cứng danh sách này — sửa kèm.
+
+Đợt "Thêm HDLD_HUU vào ngạch giảng dạy" (chỉ SQL, không đổi schema / C#):
+- Người `HDLD_HUU` ở **Khoa** chuyển từ loại 2 sang loại 1: phiếu **mới** theo mẫu giảng viên, không tạo được
+  phiếu quý, tính vào `N` của điểm trừ tập thể, chỉ nhận vi phạm loại 1. Ở Phòng / Trung tâm vẫn là loại 2.
+- Phiếu **đã tạo** trước đợt giữ nguyên `loai_doi_tuong = 2` (snapshot lúc tạo). Script không tự chuyển —
+  truy vấn KT5 trong `update_database.sql` của đợt liệt kê phiếu lệch để xoá / tạo lại từng phiếu.
+- `HDLD_HUU` phải có dòng `dinh_muc_giang_vien` cho từng năm (KT3 liệt kê năm còn thiếu), nếu không bước
+  duyệt hồ sơ trả 400.
 
 Các mã cũ `TROGIANG, TAPSU, GS, PGS, NV, KHAC` đã **xoá hẳn** (người mang PGS/GS chuyển tạm sang `GVCC`,
 NV → `HDLD_CNTT` — dữ liệu dev). GS/PGS là **học hàm**, không phải chức danh nghề nghiệp.
 
 ### 2.2. `dinh_muc_giang_vien` — chỉ còn giờ giảng
 Từ đợt "Chức danh chính thức": cột `gio_nckh`, `gio_pvcd` đã **DROP**. Định mức = `gio_giang_ly_thuyet`
-(270 cho cả 4 ngạch giảng dạy). Hệ quả:
+(270 cho 4 ngạch `GV, GVC, GVCC, HDLD_GV`; `HDLD_HUU` vào ngạch sau nên định mức của nó phải tạo riêng
+theo từng năm — xem §1.3). Hệ quả:
 - Điều kiện "đủ định mức giờ NCKH" khi duyệt hồ sơ do **Trưởng khoa tick tay**; hệ thống không còn gợi ý.
 - Điểm tự động NCKH (`NCKH_GIO_TY_LE`) **không đổi** — dùng `nckh_gio_nckh.gio_nckh_dinh_muc` của web NCKH.
 - Còn lại nhưng **không còn tác dụng**: `chuc_vu.ty_le_dinh_muc_nckh`; `ngoai_le_dinh_muc.he_so_nckh /
@@ -239,7 +250,7 @@ Mirror `tieu_chi_don_vi_cham`: chỉ trưởng (`ma_chuc_vu` TK/TKL/TP) của đ
 Lưu các vi phạm quy định giảng dạy trong năm để tính điểm trừ KPI.
 
 - CHỈ áp dụng cho GIẢNG VIÊN thuộc KHOA (`ma_don_vi LIKE 'K_%'`).
-  Giảng viên = `chuc_danh_nghe_nghiep.ma_chuc_danh IN ('GV','GVC','GVCC','HDLD_GV')`
+  Giảng viên = `chuc_danh_nghe_nghiep.ma_chuc_danh IN ('GV','GVC','GVCC','HDLD_GV','HDLD_HUU')`
   — xem view `v_giang_vien_khoa` trong procedure.sql.
 - KHÔNG bao gồm vi phạm pháp luật (xử lý qua `phieu_danh_gia.khong_vi_pham_phap_luat`).
 - Điểm trừ cá nhân = `MIN(SUM(diem_tru) trong năm, 15)`.
@@ -1036,7 +1047,7 @@ và `sp_chi_tiet_danh_gia_update_tu_danh_gia` ghi **thẳng** `@diem` vào bản
 
 | Đơn vị của phiếu | Chức danh (`nhan_vien.id_chuc_danh`) | `loai_doi_tuong` | Mẫu dùng |
 |---|---|---|---|
-| Khoa (`ma_don_vi LIKE 'K_%'`) | ngạch giảng dạy: `GV, GVC, GVCC, HDLD_GV` | **1** | Giảng viên |
+| Khoa (`ma_don_vi LIKE 'K_%'`) | ngạch giảng dạy: `GV, GVC, GVCC, HDLD_GV, HDLD_HUU` | **1** | Giảng viên |
 | Khoa | NULL, hoặc mọi mã còn lại (`CV, CVC, NCV, KTV, HDLD_CNTT, ...`) | **2** | Viên chức / NLĐ — nhân viên văn phòng Khoa |
 | Phòng / Trung tâm / Trường | bất kỳ | **2** | Viên chức / NLĐ |
 
@@ -1052,6 +1063,8 @@ cho người loại 1) và `sp_auth_get_user_by_id` RS2 → `GET api/auth/me` tr
 > ✅ Đợt "Chức danh chính thức" đã thống nhất: hàm này, `v_giang_vien_khoa` và `v_vien_chuc_don_vi`
 > (module vi phạm) cùng dùng **4 ngạch** `GV, GVC, GVCC, HDLD_GV` (trước đó hàm dùng 7 mã, hai view
 > dùng 5 mã). Sửa danh sách ở một nơi phải sửa cả ba — xem §1.3.
+>
+> ✅ Đợt "Thêm HDLD_HUU vào ngạch giảng dạy": cả ba nâng lên **5 ngạch** (+ `HDLD_HUU`).
 
 Đây là hiện thực của quyết định "KPI Phòng khác KPI Khoa": một PGS làm Trưởng phòng chấm
 theo **mẫu viên chức** trên phiếu Phòng và theo **mẫu giảng viên** trên phiếu Khoa.
@@ -2871,7 +2884,7 @@ Nguồn NCKH trả về `TitleName` = "Chuyên viên" và "Khác". Đợt "Khoa 
 thêm `CV` (Chuyên viên) và `KHAC` (Khác). Đợt "Chức danh chính thức" **giữ `CV`** (có trong danh
 sách chính thức) và **xoá `KHAC`**.
 
-⚠️ Mọi mã ngoài `GV, GVC, GVCC, HDLD_GV` **cố ý** nằm ngoài danh sách ngạch giảng dạy (§1.3).
+⚠️ Mọi mã ngoài `GV, GVC, GVCC, HDLD_GV, HDLD_HUU` **cố ý** nằm ngoài danh sách ngạch giảng dạy (§1.3).
 Người mang `CV`, `CVC`, `NCV`… **không** được tính là giảng viên khi chấm KPI — đúng nghiệp vụ,
 đừng "sửa" bằng cách nhét chúng vào danh sách đó.
 
@@ -3225,3 +3238,83 @@ và chấm **ĐẠT / KHÔNG ĐẠT** — đạt → đủ `diem_toi_da`, không
   FE dùng để phân biệt với "0% cảnh báo".
 - Tiêu chí tạo qua API tiêu chí (`loai_doi_tuong = 3`, `loai_nguon_diem = 2`, `loai_thang_diem = 2`), **không seed SQL**.
   Phiếu tạo trước khi gán tiêu chí phải tạo lại. Import lại học vụ **không** tự sửa điểm đã ghi — phải tổng hợp lại.
+
+---
+
+## 15. GIẢM TRỪ ĐỊNH MỨC — import file "Mẫu giảm trừ" (`giam_tru_nhan_vien`, `giam_tru_con_nho`)
+
+### 15.0. Vì sao có module này
+
+File Excel "Mẫu giảm trừ" (Phòng TCHC) vừa là **danh sách toàn bộ CBVC hiện tại**, vừa chứa các thông tin để
+**tính giảm trừ định mức** theo năm. `POST api/giam-tru/import` (multipart: `file` + `idNam`, **chỉ ADMIN**) làm
+2 việc trong 1 transaction (`sp_giam_tru_nhan_vien_import`):
+
+1. **Đồng bộ nhân sự**: tạo `nhan_vien` chưa có (theo `ma_nhan_vien`), cập nhật họ tên, chức danh
+   (`nhan_vien_chuc_danh`) và đơn vị chính + chức vụ đang giữ (`nhan_vien_chuc_vu`, `la_chinh = 1`).
+2. **Lưu NGUYÊN dữ liệu giảm trừ** theo (năm × nhân viên). Đợt này **chưa tính** giảm trừ.
+
+### 15.1. Đọc file (`Helper/GiamTruExcelReader.cs`)
+
+- Đọc **sheet đầu tiên**; 2 sheet sau ("Dữ liệu đi học", "Dữ liệu dân quân tự vệ") là bảng tham khảo, không đọc.
+- Header **gộp 2 dòng** → cột đọc **theo vị trí cố định**, không theo tên. Dòng tiêu đề chỉ dùng để xác nhận
+  đúng mẫu (cột B bắt đầu bằng "Mã", cột D = "Họ và tên").
+
+| Cột | Nội dung | Lưu vào |
+|---|---|---|
+| B / C / D | Mã CBVC / Email / Họ và tên | `nhan_vien` |
+| F / G / H | Đơn vị / Chức danh nghề nghiệp / Chức vụ | `id_don_vi` / `id_chuc_danh` / `id_chuc_vu` |
+| I / J | Giữ chức vụ từ / đến ngày | `chuc_vu_tu_ngay` / `chuc_vu_den_ngay` |
+| K | Tập sự / thử việc "dd/MM/yyyy - dd/MM/yyyy" | `tap_su_tu_ngay` / `tap_su_den_ngay` |
+| M / N | Nghỉ từ / đến ngày | `nghi_tu_ngay` / `nghi_den_ngay` |
+| O | Số tháng không làm việc trong năm | `so_thang_khong_lam_viec` |
+| P | Ngày bắt đầu làm việc tại Trường | `ngay_bat_dau_lam_viec` |
+| Q / R / S | Đi đào tạo TS (Có/Không) / bắt đầu / kết thúc | `di_dao_tao_tien_si` / `dao_tao_tu_ngay` / `dao_tao_den_ngay` |
+| V | Ngày sinh con nhỏ (nhiều con cách nhau xuống dòng) | `giam_tru_con_nho` (1 dòng / con) |
+| X | Số ngày huấn luyện / diễn tập QNDB, tự vệ | `so_ngay_huan_luyen_qndb` |
+
+- Ngày: ô ngày, số serial Excel, hoặc text `d/M/yyyy` (một số ô I/J là text do VLOOKUP).
+- **J = "nay" / "đến nay" / "khi hết tuổi quản lý" → NULL = đang giữ, không thời hạn** (không cảnh báo).
+  Text khác hoặc ngày sai (vd `31/2/2027`) → NULL + cảnh báo.
+- Thiếu Mã CBVC / Họ tên / Đơn vị → **bỏ dòng**. Ô giảm trừ sai định dạng → **để trống + cảnh báo**, nhân viên
+  vẫn được tạo. Cặp ngày ngược (đến < từ) → bỏ cả cặp + cảnh báo (bảng có CHECK `den >= tu`).
+- Q = "Không" nhưng có R/S → lưu nguyên như file (Q là cờ "tính 2024–2026 tại tháng 9", không suy từ R/S).
+
+### 15.2. Quy tắc đồng bộ — đã chốt với người dùng
+
+- **Danh mục STRICT**: tên Đơn vị / Chức danh / Chức vụ phải khớp **đúng 1** mục đang hoạt động (so theo
+  collation CSDL → không phân biệt hoa thường; C# đã trim + gộp khoảng trắng). Còn tên nào thiếu → **từ chối cả
+  file**, không ghi gì, `ChiTiet` liệt kê tên thiếu. Người dùng tự bổ sung danh mục rồi import lại.
+  "Trưởng khoa" chỉ khớp `TK` (không khớp `TKL`) — phân biệt khoa lớn để dành bước tính giảm trừ.
+- **Nhân viên mới**: mật khẩu = `appSettings["ImportNhanVien:MatKhauMacDinh"]` (mặc định `123456`).
+  Email trống / trùng người khác / trùng dòng trước → **vẫn tạo, email = NULL** (sẽ có đăng nhập bằng mã cán bộ).
+- **Nhân viên đã có**: cập nhật họ tên, chức danh, đơn vị chính + chức vụ; **giữ nguyên email + mật khẩu**
+  (chỉ điền email khi đang NULL).
+- **Chức vụ đang giữ** = H khớp VÀ (I NULL hoặc ≤ hôm nay) VÀ (J NULL hoặc ≥ hôm nay). Hết hạn / chưa bắt đầu
+  → chỉ là thành viên (`id_chuc_vu` NULL). Chức vụ đã hết (J < hôm nay, kể cả khi H trống) → thành viên từ J + 1.
+- **Người đang giữ ADMIN ở đơn vị chính → không đụng `nhan_vien_chuc_vu`** (tránh tự khoá quyền Admin);
+  vẫn cập nhật họ tên / chức danh / giảm trừ. Trả `GIU_ADMIN` trong `ChiTiet`.
+- Thay đơn vị / chức vụ / chức danh: đóng dòng mở cũ (`den_ngay = hôm qua`; tạo trong ngày thì xoá), thêm dòng
+  mới từ hôm nay. Có sẵn dòng kiêm nhiệm trùng (đơn vị, chức vụ) → nâng thành đơn vị chính (tránh `ux_nvcv_hieu_luc`).
+- **Idempotent**: import lại cùng file không đổi `nhan_vien_chuc_vu` / `nhan_vien_chuc_danh`;
+  dữ liệu giảm trừ của năm bị **ghi đè** (xoá rồi chèn lại).
+- Nhân viên có trong DB mà không có trong file: **không xoá / không khoá** (chỉ đếm `NhanVienNgoaiFile`).
+- **`capNhatNhanVien = false`** (field multipart tuỳ chọn, mặc định `true` → `@cap_nhat_nhan_vien`):
+  **không** tạo / sửa `nhan_vien`, `nhan_vien_chuc_danh`, `nhan_vien_chuc_vu` — chỉ ghi đè dữ liệu giảm trừ
+  của năm. Dòng có mã chưa tồn tại → **bỏ qua** (FK không cho lưu), liệt kê `KHONG_CO_NHAN_VIEN` trong
+  `ChiTiet`, đếm `KhongCoNhanVien`. Danh mục strict chỉ xét các dòng được lưu (người mới chưa có tài khoản
+  không chặn cả file). Không dòng nào khớp → 400 `EMPTY`, dữ liệu giảm trừ cũ giữ nguyên.
+
+### 15.3. DB test — `App_Data/reset_nhan_vien_test.sql`
+
+Muốn danh sách nhân viên **chỉ** gồm người trong file (DB test restore từ backup): chạy `update_database.sql`,
+sửa `@ten_db_test` trong script reset rồi chạy trong SSMS, sau đó mới import.
+
+- Guard: `DB_NAME()` phải bằng `@ten_db_test`; dừng nếu không còn ai giữ ADMIN.
+- **Giữ** người đang giữ ADMIN (để còn đăng nhập gọi API import) cùng dòng đơn vị / chức danh của họ.
+- **Xoá toàn bộ** dữ liệu nghiệp vụ gắn với con người (phiếu cá nhân / đơn vị, tờ trình, nhiệm vụ Khoa, kê khai,
+  vi phạm, ngoại lệ định mức, giờ thực hiện, gia hạn, điểm TB phản hồi SV, ánh xạ tên TKB, giảm trừ).
+- **Giữ** dữ liệu nguồn đã import (SV học vụ, cảnh báo, giờ giảng TKB, phản hồi SV, NCKH, ánh xạ Khoa, kỳ
+  nhiệm vụ Khoa): chỉ SET NULL cột người import / đồng bộ / chốt.
+- Lưới an toàn: quét mọi FK trỏ vào `nhan_vien`; còn dòng tham chiếu người sắp xoá (bảng mới chưa có trong
+  script) → ROLLBACK và báo tên bảng. **Thêm bảng mới có FK tới `nhan_vien` thì bổ sung vào script này.**
+- Sau reset: chốt lại điểm TB phản hồi SV; chạy lại tự ánh xạ giờ giảng TKB sau khi import nhân viên.

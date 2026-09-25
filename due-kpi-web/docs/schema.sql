@@ -2697,3 +2697,104 @@ CREATE INDEX ix_svhv_nam_cap_nhat ON sinh_vien_hoc_vu(id_nam_cap_nhat);
 CREATE INDEX ix_cbhv_nam_sv       ON canh_bao_hoc_vu(id_nam, ma_sinh_vien);
 CREATE INDEX ix_kdtax_don_vi      ON khoa_dao_tao_anh_xa(id_don_vi);
 GO
+
+-- =============================================================================
+-- 15. GIẢM TRỪ ĐỊNH MỨC — nạp file Excel "Mẫu giảm trừ" (POST api/giam-tru/import)
+-- =============================================================================
+-- File vừa là DANH SÁCH TOÀN BỘ CBVC, vừa chứa thông tin để tính giảm trừ theo năm.
+-- sp_giam_tru_nhan_vien_import (procedure.sql) trong 1 transaction:
+--   1. (capNhatNhanVien = true, mặc định) đồng bộ nhan_vien / nhan_vien_chuc_danh /
+--      nhan_vien_chuc_vu theo file;
+--   2. lưu NGUYÊN dữ liệu giảm trừ vào 2 bảng dưới (ghi đè năm đó). Đợt này CHƯA tính giảm trừ.
+-- Danh mục STRICT: tên đơn vị / chức danh / chức vụ phải khớp đúng 1 mục đang hoạt động,
+-- nên bảng lưu thẳng id đã ánh xạ. Chi tiết: schema_ghi_chu.md §15.
+-- =============================================================================
+
+-- 15.1. Dữ liệu giảm trừ: 1 dòng / (năm × nhân viên). Chữ cái trong chú thích = cột Excel.
+CREATE TABLE giam_tru_nhan_vien (
+    id_giam_tru             INT           IDENTITY(1,1) PRIMARY KEY,
+    id_nam                  INT           NOT NULL,
+    id_nhan_vien            INT           NOT NULL,
+    id_don_vi               INT           NOT NULL,   -- F
+    id_chuc_danh            INT           NULL,       -- G
+    id_chuc_vu              INT           NULL,       -- H
+    chuc_vu_tu_ngay         DATE          NULL,       -- I
+    chuc_vu_den_ngay        DATE          NULL,       -- J (NULL = "nay" / "khi hết tuổi quản lý" = không thời hạn)
+    tap_su_tu_ngay          DATE          NULL,       -- K (tách "từ ngày - đến ngày")
+    tap_su_den_ngay         DATE          NULL,       -- K
+    nghi_tu_ngay            DATE          NULL,       -- M
+    nghi_den_ngay           DATE          NULL,       -- N
+    so_thang_khong_lam_viec DECIMAL(5,2)  NULL,       -- O
+    ngay_bat_dau_lam_viec   DATE          NULL,       -- P
+    di_dao_tao_tien_si      BIT           NOT NULL CONSTRAINT df_gtnv_dao_tao_ts DEFAULT 0,  -- Q (Có/Không)
+    dao_tao_tu_ngay         DATE          NULL,       -- R
+    dao_tao_den_ngay        DATE          NULL,       -- S
+    so_ngay_huan_luyen_qndb DECIMAL(5,1)  NULL,       -- X
+    dong_excel              INT           NULL,
+    id_nguoi_import         INT           NULL,
+    ngay_import             DATETIME      NOT NULL CONSTRAINT df_gtnv_ngay_import DEFAULT GETDATE(),
+    CONSTRAINT uq_gtnv_nam_nv      UNIQUE (id_nam, id_nhan_vien),
+    CONSTRAINT fk_gtnv_nam         FOREIGN KEY (id_nam)          REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_gtnv_nv          FOREIGN KEY (id_nhan_vien)    REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_gtnv_don_vi      FOREIGN KEY (id_don_vi)       REFERENCES don_vi(id_don_vi),
+    CONSTRAINT fk_gtnv_chuc_danh   FOREIGN KEY (id_chuc_danh)    REFERENCES chuc_danh_nghe_nghiep(id_chuc_danh),
+    CONSTRAINT fk_gtnv_chuc_vu     FOREIGN KEY (id_chuc_vu)      REFERENCES chuc_vu(id_chuc_vu),
+    CONSTRAINT fk_gtnv_nguoi       FOREIGN KEY (id_nguoi_import) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_gtnv_chuc_vu    CHECK (chuc_vu_tu_ngay IS NULL OR chuc_vu_den_ngay IS NULL OR chuc_vu_den_ngay >= chuc_vu_tu_ngay),
+    CONSTRAINT chk_gtnv_tap_su     CHECK (tap_su_tu_ngay  IS NULL OR tap_su_den_ngay  IS NULL OR tap_su_den_ngay  >= tap_su_tu_ngay),
+    CONSTRAINT chk_gtnv_nghi       CHECK (nghi_tu_ngay    IS NULL OR nghi_den_ngay    IS NULL OR nghi_den_ngay    >= nghi_tu_ngay),
+    CONSTRAINT chk_gtnv_dao_tao    CHECK (dao_tao_tu_ngay IS NULL OR dao_tao_den_ngay IS NULL OR dao_tao_den_ngay >= dao_tao_tu_ngay),
+    CONSTRAINT chk_gtnv_so_thang   CHECK (so_thang_khong_lam_viec IS NULL OR so_thang_khong_lam_viec >= 0),
+    CONSTRAINT chk_gtnv_so_ngay    CHECK (so_ngay_huan_luyen_qndb IS NULL OR so_ngay_huan_luyen_qndb >= 0)
+);
+GO
+
+-- 15.2. Ngày sinh con nhỏ (cột V; nhiều con cách nhau xuống dòng): 1 dòng / con.
+CREATE TABLE giam_tru_con_nho (
+    id_giam_tru INT  NOT NULL,
+    ngay_sinh   DATE NOT NULL,
+    CONSTRAINT pk_gtcn      PRIMARY KEY (id_giam_tru, ngay_sinh),
+    CONSTRAINT fk_gtcn_gtnv FOREIGN KEY (id_giam_tru) REFERENCES giam_tru_nhan_vien(id_giam_tru)
+);
+GO
+
+-- 15.3. TVP: dòng đã làm sạch ở C# (GiamTruExcelReader), đẩy xuống trong 1 request.
+--       Con nhỏ gắn với dòng nhân viên qua dong_excel.
+IF TYPE_ID(N'dbo.GiamTruNhanVienRow') IS NOT NULL
+    DROP TYPE dbo.GiamTruNhanVienRow;
+GO
+CREATE TYPE dbo.GiamTruNhanVienRow AS TABLE (
+    dong_excel              INT           NOT NULL,
+    ma_nhan_vien            NVARCHAR(20)  NOT NULL,
+    ho_ten                  NVARCHAR(100) NOT NULL,
+    email                   NVARCHAR(150) NULL,
+    ten_don_vi              NVARCHAR(200) NOT NULL,
+    ten_chuc_danh           NVARCHAR(200) NULL,
+    ten_chuc_vu             NVARCHAR(100) NULL,
+    chuc_vu_tu_ngay         DATE          NULL,
+    chuc_vu_den_ngay        DATE          NULL,
+    tap_su_tu_ngay          DATE          NULL,
+    tap_su_den_ngay         DATE          NULL,
+    nghi_tu_ngay            DATE          NULL,
+    nghi_den_ngay           DATE          NULL,
+    so_thang_khong_lam_viec DECIMAL(5,2)  NULL,
+    ngay_bat_dau_lam_viec   DATE          NULL,
+    di_dao_tao_tien_si      BIT           NOT NULL,
+    dao_tao_tu_ngay         DATE          NULL,
+    dao_tao_den_ngay        DATE          NULL,
+    so_ngay_huan_luyen_qndb DECIMAL(5,1)  NULL
+);
+GO
+
+IF TYPE_ID(N'dbo.GiamTruConNhoRow') IS NOT NULL
+    DROP TYPE dbo.GiamTruConNhoRow;
+GO
+CREATE TYPE dbo.GiamTruConNhoRow AS TABLE (
+    dong_excel INT  NOT NULL,
+    ngay_sinh  DATE NOT NULL
+);
+GO
+
+-- 15.4. Index của module
+CREATE INDEX ix_gtnv_nv ON giam_tru_nhan_vien(id_nhan_vien);
+GO

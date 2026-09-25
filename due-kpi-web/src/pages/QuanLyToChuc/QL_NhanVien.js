@@ -42,14 +42,14 @@ const QL_NhanVien = () => {
     const donViPhuTrach = useMemo(() => {
         if (isToanTruong) return [];
         const list = donViTheoVaiTro(
-            [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG, ROLE.TRUONG_BO_MON],
+            [...ROLE_SETS.TRUONG_DON_VI, ROLE.TRUONG_BO_MON],
             user
         );
         if (list.length > 0) return list;
         // Fallback nếu danh sách kiêm nhiệm chưa có trong user.DonVi nhưng role chính là trưởng và có IdDonVi
         if (
             user?.IdDonVi &&
-            [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG, ROLE.TRUONG_BO_MON].includes(role)
+            [...ROLE_SETS.TRUONG_DON_VI, ROLE.TRUONG_BO_MON].includes(role)
         ) {
             return [{
                 IdDonVi: user.IdDonVi,

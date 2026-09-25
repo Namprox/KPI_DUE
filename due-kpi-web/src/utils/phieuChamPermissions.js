@@ -20,12 +20,13 @@ import {
   coQuyenTaiDonVi,
   donViTheoVaiTro,
   normalizeRole,
-  ROLE,
+  ROLE_SETS,
+  VAI_TRO_TRUONG_PHONG,
 } from "./roles";
 import { buildDonViIndex } from "./viPhamPermissions";
 import { TRANG_THAI_DONG, laTieuChiChamTay } from "./phieuApi";
 
-const ROLE_TRUONG_DON_VI = ["TK", "TKL", "TP"];
+const ROLE_TRUONG_DON_VI = ROLE_SETS.TRUONG_DON_VI;
 
 /** Trưởng Phòng cũng thẩm định được - họ được giao tiêu chí qua bảng phân quyền. */
 export const laTruongDonVi = (user) =>
@@ -37,7 +38,7 @@ export const laTruongDonVi = (user) =>
  * điều hướng chỉ có ích cho người nhìn cả phiếu.
  */
 export const laTruongPhong = (user) =>
-  normalizeRole(user) === ROLE.TRUONG_PHONG;
+  VAI_TRO_TRUONG_PHONG.includes(normalizeRole(user));
 
 const ROLE_TRUONG_KHOA = ["TK", "TKL"];
 
@@ -61,7 +62,7 @@ export const laTruongKhoa = (user) =>
  * vụ TP ở đâu cả. Xem donViTheoVaiTro() để biết vì sao đó là câu trả lời đúng.
  */
 export const phongToiPhuTrach = (user) =>
-  donViTheoVaiTro([ROLE.TRUONG_PHONG], user);
+  donViTheoVaiTro(VAI_TRO_TRUONG_PHONG, user);
 
 /**
  * Tôi có phải Trưởng phòng CỦA ĐÚNG đơn vị chủ quản hồ sơ này không?
@@ -83,7 +84,7 @@ export const phongToiPhuTrach = (user) =>
  * Vẫn chỉ là lớp gợi ý UI - server kiểm tra lại và trả 403.
  */
 export const laTruongPhongCuaPhieu = (user, phieu) =>
-  coQuyenTaiDonVi([ROLE.TRUONG_PHONG], phieu?.IdDonVi, user);
+  coQuyenTaiDonVi(VAI_TRO_TRUONG_PHONG, phieu?.IdDonVi, user);
 
 /**
  * `idCha` có phải chính nó hoặc tổ tiên của `idCon` không (đi ngược IdDonViCha).
@@ -202,7 +203,7 @@ export const lyDoKhoaONhap = (chiTiet, ctx) => {
     return "Tiêu chí đã chốt điểm chính thức. Chỉ Trưởng khoa mới trả về thẩm định lại được.";
   }
   if (!laTruongDonVi(ctx?.user)) {
-    return "Chỉ trưởng đơn vị (TK/TKL/TP) mới được thẩm định tiêu chí.";
+    return "Chỉ trưởng đơn vị mới được thẩm định tiêu chí.";
   }
   const tenDonVi = tenDonViDuocGiaoCham(chiTiet, ctx);
   return tenDonVi

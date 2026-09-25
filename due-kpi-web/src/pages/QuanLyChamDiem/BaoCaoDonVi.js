@@ -20,6 +20,7 @@ import {
   TRANG_THAI_META,
 } from "../../utils/phieuApi";
 import { useAuth } from "../../context/AuthContext";
+import { ROLE_SETS, ROLE } from "../../utils/roles";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import { useChuaTuCham } from "../../hooks/useChuaTuCham";
 import { TrangThaiBadge } from "../../components/QuanLyChamDiem/TrangThaiBadge";
@@ -60,7 +61,7 @@ const BaoCaoDonVi = () => {
   const idDonViGoc = useMemo(() => {
     if (user?.DonVi && Array.isArray(user.DonVi)) {
       const dv = user.DonVi.find((d) =>
-        ["TK", "TKL", "TP", "PTP"].includes(
+        [...ROLE_SETS.TRUONG_DON_VI, ROLE.PHO_TRUONG_PHONG].includes(
           String(d.MaChucVu || "")
             .trim()
             .toUpperCase(),

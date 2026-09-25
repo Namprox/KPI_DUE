@@ -2413,6 +2413,89 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DiemTbChiTietResponse"
+  /api/giam-tru/import:
+    post:
+      tags:
+        - GiamTru
+      summary: Import file "Mau giam tru" - danh sach CBVC + du lieu giam tru cua 1 nam
+      description: >
+        multipart/form-data: file Excel "Mau giam tru" + field 'idNam' (vd 2026).
+        Doc SHEET DAU TIEN, header gop 2 dong (dong tieu de phai co cot B = "MaCBVC", cot D = "Ho va ten"),
+        cot doc THEO VI TRI: B Ma CBVC, C Email, D Ho va ten, F Don vi, G Chuc danh nghe nghiep, H Chuc vu,
+        I/J Giu chuc vu tu/den ngay (J = "nay" / "khi het tuoi quan ly" -> khong thoi han),
+        K Tap su (tu ngay - den ngay), M/N Nghi tu/den ngay, O So thang khong lam viec,
+        P Ngay bat dau lam viec, Q Di dao tao tien si (Co/Khong), R/S Bat dau/ket thuc hoc,
+        V Ngay sinh con nho (nhieu con cach nhau xuong dong), X So ngay huan luyen QNDB.
+        Thieu Ma CBVC / Ho ten / Don vi -> bo dong (SkippedRows); o du lieu giam tru sai dinh dang
+        -> de trong + Warnings (nhan vien van duoc tao).
+        DANH MUC STRICT: ten Don vi / Chuc danh / Chuc vu phai khop DUNG 1 muc dang hoat dong
+        (khong phan biet hoa thuong) - con ten nao thieu -> 400 DANH_MUC_THIEU, KHONG ghi gi,
+        ChiTiet liet ke ten thieu.
+        Nhan vien chua co (theo ma) -> tao moi, mat khau = appSettings ImportNhanVien:MatKhauMacDinh
+        (mac dinh 123456), email trong / trung nguoi khac -> NULL. Nhan vien da co -> cap nhat ho ten,
+        chuc danh, don vi chinh + chuc vu dang giu; GIU NGUYEN email + mat khau. Nguoi dang giu ADMIN
+        o don vi chinh -> khong doi don vi / chuc vu. Du lieu giam tru cua nam bi GHI DE.
+        Chay lai cung file khong doi don vi / chuc vu / chuc danh.
+        capNhatNhanVien = false: KHONG tao / sua nhan vien, chuc danh, don vi / chuc vu - chi ghi de
+        du lieu giam tru cua nam; dong co ma chua ton tai -> bo qua (ChiTiet loai KHONG_CO_NHAN_VIEN),
+        danh muc strict chi xet cac dong duoc luu; khong dong nao khop -> 400 EMPTY, khong xoa gi.
+        Quyen: chi ADMIN.
+      operationId: giamTruImport
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - idNam
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File Excel (.xls / .xlsx), kiem duoi file + chu ky nhu cac endpoint import khac.
+                idNam:
+                  type: integer
+                  example: 2026
+                capNhatNhanVien:
+                  type: boolean
+                  default: true
+                  description: >-
+                    Tuy chon (true/false/1/0). false = chi luu du lieu giam tru, khong cap nhat danh sach can bo.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiamTruImportResponse"
+        "400":
+          description: >-
+            Thieu file/idNam, sai mau file, khong co dong hop le, danh muc thieu (ErrorCode = DANH_MUC_THIEU,
+            xem ChiTiet), hoac loi ghi CSDL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiamTruImportResponse"
+        "403":
+          description: Khong phai ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiamTruImportResponse"
+        "404":
+          description: Nam danh gia khong ton tai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiamTruImportResponse"
+        "415":
+          description: Khong phai multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiamTruImportResponse"
   /api/hoc-vu/import-sinh-vien:
     post:
       tags:
@@ -14120,6 +14203,94 @@ components:
         InsertedRows:
           type: integer
           description: So dong THO thuc su chen vao DB
+    GiamTruImportResponse:
+      type: object
+      description: >-
+        Ket qua import file "Mau giam tru". Cac truong so lieu chi co khi Success = true
+        (null bi an khoi JSON).
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          description: FORBIDDEN / NOT_FOUND / DANH_MUC_THIEU / EMPTY / DB_ERROR
+        IdNam:
+          type: integer
+        CapNhatNhanVien:
+          type: boolean
+          description: Gia tri capNhatNhanVien da dung (chi khi thanh cong)
+        KhongCoNhanVien:
+          type: integer
+          description: (capNhatNhanVien = false) So dong bo qua vi ma chua co nhan vien
+        TotalRowsRead:
+          type: integer
+          description: So dong du lieu doc tu file (khong tinh header va dong trang)
+        ValidRows:
+          type: integer
+        SkippedRows:
+          type: integer
+          description: So dong bi bo qua (thieu Ma CBVC / Ho ten / Don vi)
+        Warnings:
+          type: array
+          items:
+            type: string
+          description: Toi da 50 thong bao "Dong n (ma X) - ly do" + dong tong so canh bao con lai
+        SoNhanVien:
+          type: integer
+          description: So nhan vien (ma khong trung) trong file
+        DuplicateRows:
+          type: integer
+          description: Dong trung ma trong file (giu dong dau tien)
+        NhanVienTaoMoi:
+          type: integer
+        NhanVienCapNhat:
+          type: integer
+        ChucDanhThayDoi:
+          type: integer
+          description: So nguoi duoc them / doi chuc danh nghe nghiep
+        DonViChucVuThayDoi:
+          type: integer
+          description: So nguoi duoc them / doi don vi chinh hoac chuc vu
+        GiuNguyenAdmin:
+          type: integer
+          description: So nguoi dang giu ADMIN o don vi chinh -> khong doi don vi / chuc vu
+        EmailBoTrong:
+          type: integer
+          description: So nguoi co email trong file nhung bi de trong (trung nguoi khac / trung dong truoc)
+        GiamTruDaLuu:
+          type: integer
+        ConNhoDaLuu:
+          type: integer
+        NhanVienNgoaiFile:
+          type: integer
+          description: Nhan vien dang hoat dong khong co trong file (chi thong tin, khong xoa)
+        ChiTiet:
+          type: array
+          items:
+            $ref: "#/components/schemas/GiamTruChiTietDto"
+    GiamTruChiTietDto:
+      type: object
+      properties:
+        Loai:
+          type: string
+          description: >-
+            That bai: DON_VI / CHUC_DANH / CHUC_VU (hoac *_TRUNG_TEN). Thanh cong: TRUNG_MA /
+            EMAIL_BO_TRONG / EMAIL_GIU_NGUYEN / GIU_ADMIN / KHONG_CO_NHAN_VIEN (capNhatNhanVien = false)
+        GiaTri:
+          type: string
+          description: Ten trong file chua co trong danh muc, hoac email / ho ten lien quan
+        SoDong:
+          type: integer
+          description: So dong trong file dung gia tri nay
+        DongExcel:
+          type: integer
+          nullable: true
+          description: Dong Excel (dong dau tien gap voi loai danh muc)
+        MaNhanVien:
+          type: string
+          nullable: true
     HocVuImportResponse:
       type: object
       description: >-

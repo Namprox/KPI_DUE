@@ -1,6 +1,7 @@
 import { matchPath } from "react-router-dom";
 import {
   ROLE_SETS,
+  VAI_TRO_TRUONG_PHONG,
   CHUC_DANH_SETS,
   LOAI_DOI_TUONG_KPI,
   DON_VI_SETS,
@@ -283,7 +284,7 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-list-check",
         path: "/phieu-don-vi-cho-cham",
         childPaths: ["/phieu-don-vi-cho-cham/:id"],
-        roles: ["TK", "TKL", "TP", "ADMIN"],
+        roles: ["TK", "TKL", ...VAI_TRO_TRUONG_PHONG, "ADMIN"],
       },
       {
         name: "Phiếu toàn đơn vị",
@@ -652,7 +653,7 @@ export const canAccessRule = (rule, user) => {
   // Nếu rule yêu cầu cả đơn vị lẫn chức vụ cụ thể
   if (rule.donVi && rule.roles && rule.roles !== MOI_NGUOI) {
     if (hasRole(ROLE_SETS.ADMIN, user)) return true;
-    if (Array.isArray(user?.DonVi)) {
+    if (Array.isArray(user?.DonVi) && user.DonVi.length > 0) {
       const match = user.DonVi.some((dv) => {
         const r = String(dv.MaChucVu || "")
           .trim()
@@ -662,7 +663,13 @@ export const canAccessRule = (rule, user) => {
         );
       });
       if (match) return true;
+    } else if (
+      rule.donVi.includes(Number(user.IdDonVi)) &&
+      rule.roles.includes(String(user.MaChucVu || "").trim().toUpperCase())
+    ) {
+      return true;
     }
+    return false;
   }
 
   return (

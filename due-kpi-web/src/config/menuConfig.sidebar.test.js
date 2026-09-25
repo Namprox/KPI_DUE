@@ -18,6 +18,55 @@ const expectedGroups = [
 
 const donVi = (MaChucVu, LoaiDoiTuong) => ({ MaChucVu, LoaiDoiTuong });
 
+const duLieuGiangVienPaths = [
+  "/ke-khai-gio-quy-doi",
+  "/thanh-tich-nckh",
+  "/phan-hoi-sinh-vien-cua-toi",
+  "/nhiem-vu-khoa-cua-toi",
+  "/vi-pham-cua-toi",
+];
+
+test.each(["GV", "GVC", "GVCC", "HDLD_GV", "HDLD_HUU", " hdld_huu "])(
+  "%s được vào cả menu và URL dữ liệu giảng viên bằng mã, không phụ thuộc id",
+  (MaChucDanh) => {
+    const user = { MaChucDanh, IdChucDanh: 999, DonVi: [donVi("GV", 1)] };
+    const visible = visibleGroups(user).flatMap((group) => group.items.map((item) => item.path));
+    duLieuGiangVienPaths.forEach((path) => {
+      expect(visible).toContain(path);
+      expect(canAccessPath(path, user)).toBe(true);
+    });
+  },
+);
+
+test.each(["HDLD_LX", "HDLD_NVCX", "HDLD_NVPV", "HDLD_NVKT", "CV", "", null, undefined])(
+  "%s không vào dữ liệu giảng viên dù mang id cũ",
+  (MaChucDanh) => {
+    const user = { MaChucDanh, IdChucDanh: 3, DonVi: [donVi("NV", 2)] };
+    const visible = visibleGroups(user).flatMap((group) => group.items.map((item) => item.path));
+    duLieuGiangVienPaths.forEach((path) => {
+      expect(visible).not.toContain(path);
+      expect(canAccessPath(path, user)).toBe(false);
+    });
+    expect(canAccessPath("/danh-gia-kpi-nhan-vien", user)).toBe(true);
+    expect(canAccessPath("/ke-khai-thanh-tich", user)).toBe(true);
+  },
+);
+
+test("giảng viên kiêm nhiệm giữ các loại phiếu do backend phân loại", () => {
+  const user = { MaChucDanh: "HDLD_HUU", DonVi: [donVi("GV", 1), donVi("TP", 2)] };
+  const visible = visibleGroups(user).flatMap((group) => group.items.map((item) => item.path));
+  [...duLieuGiangVienPaths, "/danh-gia-phu-luc-2", "/danh-gia-kpi-nhan-vien", "/ke-khai-thanh-tich"].forEach((path) => {
+    expect(visible).toContain(path);
+    expect(canAccessPath(path, user)).toBe(true);
+  });
+});
+
+test("mã chức danh không ghi đè phân loại phiếu KPI hoặc tự cấp quyền khi thiếu phân loại", () => {
+  expect(canAccessPath("/danh-gia-phu-luc-2", { MaChucDanh: "HDLD_HUU" })).toBe(false);
+  expect(canAccessPath("/danh-gia-phu-luc-2", { MaChucDanh: "HDLD_HUU", DonVi: [donVi("NV", 2)] })).toBe(false);
+  expect(canAccessPath("/danh-gia-kpi-nhan-vien", { MaChucDanh: "HDLD_HUU", DonVi: [donVi("NV", 2)] })).toBe(true);
+});
+
 test("nhóm và mục sidebar theo đúng thứ tự công việc", () => {
   expect(
     MENU_GROUPS.map((group) => [
@@ -31,7 +80,7 @@ test("nhóm và mục sidebar theo đúng thứ tự công việc", () => {
 });
 
 test.each([
-  ["giảng viên", { MaChucVu: "GV", IdChucDanh: 3, DonVi: [donVi("GV", 1)] }, ["/danh-gia-phu-luc-2", "/ke-khai-gio-quy-doi"], ["/danh-gia-kpi-nhan-vien"]],
+  ["giảng viên", { MaChucVu: "GV", MaChucDanh: "GV", IdChucDanh: 3, DonVi: [donVi("GV", 1)] }, ["/danh-gia-phu-luc-2", "/ke-khai-gio-quy-doi"], ["/danh-gia-kpi-nhan-vien"]],
   ["nhân viên", { MaChucVu: "NV", DonVi: [donVi("NV", 2)] }, ["/danh-gia-kpi-nhan-vien", "/ke-khai-thanh-tich"], ["/danh-gia-phu-luc-2"]],
   ["thư ký Khoa", { MaChucVu: "TKK", DonVi: [donVi("TKK", 1)] }, ["/danh-gia-kpi-don-vi"], ["/quan-ly/phieu"]],
   ["thư ký Phòng", { MaChucVu: "TKP", DonVi: [donVi("TKP", 2)] }, ["/danh-gia-kpi-phong"], ["/quan-ly/phieu"]],

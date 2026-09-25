@@ -56,7 +56,7 @@ export const getLoaiBlockReasonNhanVien = (
 ) => {
   if (canGhiNhanLoai(loai, user, nhanVien, donViIndex)) return null;
   if (!canRecordViPham(user)) {
-    return "Chỉ trưởng đơn vị (TK/TKL/TP) hoặc Admin mới được ghi nhận vi phạm.";
+    return "Chỉ trưởng đơn vị hoặc Admin mới được ghi nhận vi phạm.";
   }
   if (loai?.ChoPhepKhoaChuQuan === true && !nhanVien) {
     return "Loại vi phạm này do đơn vị chủ quản ghi nhận - hãy chọn nhân viên trước.";

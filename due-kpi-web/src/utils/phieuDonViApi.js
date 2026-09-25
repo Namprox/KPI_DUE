@@ -35,7 +35,7 @@
 
 import { apiFetch } from "./api";
 import { readApiError } from "./apiError";
-import { coQuyenTaiDonVi, normalizeRole, ROLE } from "./roles";
+import { coQuyenTaiDonVi, normalizeRole, ROLE, ROLE_SETS } from "./roles";
 
 /* ------------------------------------------------------------------ */
 /* Trạng thái phiếu                                                    */
@@ -378,7 +378,11 @@ export const quyenPhieuDonVi = (
   const chucVu = normalizeRole(user);
 
   const laThuKy = chucVu === ROLE.ADMIN || coQuyenTaiDonVi(vaiTroThuKy, phieu?.IdDonVi, user);
-  const laTruongDonVi = chucVu === ROLE.ADMIN || coQuyenTaiDonVi([ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG], phieu?.IdDonVi, user);
+  const laTruongDonVi = chucVu === ROLE.ADMIN || coQuyenTaiDonVi(
+    vaiTroTruongDv.length > 0 ? vaiTroTruongDv : ROLE_SETS.TRUONG_DON_VI,
+    phieu?.IdDonVi,
+    user,
+  );
   const laCapTruong = chucVu === ROLE.HIEU_TRUONG || chucVu === ROLE.ADMIN;
 
   return {

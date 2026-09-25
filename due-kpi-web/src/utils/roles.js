@@ -30,23 +30,34 @@ export const ROLE = {
   PHO_TRUONG_KHOA: "PTK",
   PHO_TRUONG_KHOA_LON: "PTKL",
   TRUONG_PHONG: "TP",
+  QUYEN_TRUONG_PHONG: "QTP",
+  GIAM_DOC: "GD",
+  VIEN_TRUONG: "VT",
   PHO_TRUONG_PHONG: "PTP",
   TRUONG_BO_MON: "TBM",
   THU_KY_KHOA: "TKK",
   THU_KY_PHONG: "TKP",
 };
 
+/** Các chức vụ cấp trưởng của Phòng, Trung tâm và Viện. */
+export const VAI_TRO_TRUONG_PHONG = [
+  ROLE.TRUONG_PHONG,
+  ROLE.QUYEN_TRUONG_PHONG,
+  ROLE.GIAM_DOC,
+  ROLE.VIEN_TRUONG,
+];
+
 /** Sentinel: mọi người dùng đã đăng nhập đều truy cập được. */
 export const MOI_NGUOI = "*";
 
 export const ROLE_SETS = {
   /** Đóng gói và chỉ định ưu tiên tại đúng đơn vị; không gồm cấp phó. */
-  TO_TRINH_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG, ROLE.ADMIN],
+  TO_TRINH_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ...VAI_TRO_TRUONG_PHONG, ROLE.ADMIN],
   /** Chỉ quản trị viên hệ thống. */
   ADMIN: [ROLE.ADMIN],
   /** Duyệt phiếu quý của viên chức tại đúng đơn vị phụ trách. */
   DUYET_PHIEU_QUY: [
-    ROLE.TRUONG_PHONG,
+    ...VAI_TRO_TRUONG_PHONG,
     ROLE.TRUONG_KHOA,
     ROLE.TRUONG_KHOA_LON,
     ROLE.ADMIN,
@@ -112,7 +123,7 @@ export const ROLE_SETS = {
     ROLE.PHO_HIEU_TRUONG,
     ROLE.TRUONG_KHOA,
     ROLE.TRUONG_KHOA_LON,
-    ROLE.TRUONG_PHONG,
+    ...VAI_TRO_TRUONG_PHONG,
     ROLE.TRUONG_BO_MON,
   ],
 
@@ -164,7 +175,7 @@ export const ROLE_SETS = {
    * chí qua bảng `tieu_chi_don_vi_cham` (ví dụ P.QLCL chấm tiêu chí phản hồi SV).
    * Ai chấm được tiêu chí NÀO thì server quyết; ở đây chỉ mở cửa vào màn hình.
    */
-  TRUONG_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG],
+  TRUONG_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ...VAI_TRO_TRUONG_PHONG],
 
   /**
    * Ghi nhận vi phạm của GIẢNG VIÊN (LoaiDoiTuong = 1).
@@ -206,7 +217,7 @@ export const ROLE_SETS = {
     ROLE.HIEU_TRUONG,
     ROLE.PHO_HIEU_TRUONG,
     ROLE.TRUONG_BO_MON,
-    ROLE.TRUONG_PHONG,
+    ...VAI_TRO_TRUONG_PHONG,
   ],
 
   /**
@@ -233,7 +244,7 @@ export const ROLE_SETS = {
   DUYET_KE_KHAI_GIO: [
     ROLE.TRUONG_KHOA,
     ROLE.TRUONG_KHOA_LON,
-    ROLE.TRUONG_PHONG,
+    ...VAI_TRO_TRUONG_PHONG,
     ROLE.HIEU_TRUONG,
     ROLE.ADMIN,
   ],
@@ -259,7 +270,7 @@ export const ROLE_SETS = {
    * gửi lẫn dòng của đơn vị khác sẽ nhận 403 FORBIDDEN_DONG cho cả request.
    */
   DUYET_KE_KHAI_THANH_TICH: [
-    ROLE.TRUONG_PHONG,
+    ...VAI_TRO_TRUONG_PHONG,
     ROLE.HIEU_TRUONG,
     ROLE.ADMIN,
   ],
@@ -278,7 +289,7 @@ export const ROLE_SETS = {
     ROLE.THU_KY_PHONG,
     ROLE.TRUONG_KHOA,
     ROLE.TRUONG_KHOA_LON,
-    ROLE.TRUONG_PHONG,
+    ...VAI_TRO_TRUONG_PHONG,
   ],
 
   /**
@@ -315,7 +326,7 @@ export const ROLE_SETS = {
    * Ai làm được gì trên MỘT phiếu cụ thể thì quyenPhieuPhong() trong
    * phieuPhongApi.js quyết; tập này chỉ mở cửa vào màn hình.
    */
-  KPI_PHONG: [ROLE.THU_KY_PHONG, ROLE.TRUONG_PHONG],
+  KPI_PHONG: [ROLE.THU_KY_PHONG, ...VAI_TRO_TRUONG_PHONG],
 
   /**
    * Giám sát hoạt động giảng dạy toàn trường: quản lý phiếu khảo sát ý kiến
@@ -326,7 +337,7 @@ export const ROLE_SETS = {
    * DON_VI_SETS.GIAM_SAT_GIANG_DAY - trưởng phòng của phòng khác không có việc
    * gì ở các màn hình này. Admin nằm ngoài ràng buộc đơn vị, xem hasDonVi().
    */
-  GIAM_SAT_GIANG_DAY: [ROLE.TRUONG_PHONG, ROLE.ADMIN],
+  GIAM_SAT_GIANG_DAY: [...VAI_TRO_TRUONG_PHONG, ROLE.ADMIN],
 
   /**
    * Giai đoạn 3 trên hồ sơ KPI của NHÂN VIÊN / VIÊN CHỨC (loai_doi_tuong = 2):
@@ -346,7 +357,7 @@ export const ROLE_SETS = {
    * nào nên laTruongPhongCuaPhieu() trả false và panel chốt tự ẩn - với Admin
    * trang chạy ở chế độ CHỈ XEM. Đây là lựa chọn có chủ đích, không phải sót.
    */
-  DUYET_HO_SO_NHAN_VIEN: [ROLE.TRUONG_PHONG, ROLE.ADMIN],
+  DUYET_HO_SO_NHAN_VIEN: [...VAI_TRO_TRUONG_PHONG, ROLE.ADMIN],
 };
 
 /**
@@ -476,44 +487,43 @@ export const donViTheoVaiTro = (roles, user) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Chức danh nghề nghiệp (nhan_vien.IdChucDanh)                        */
+/* Chức danh nghề nghiệp (User.MaChucDanh từ auth/me)                  */
 /* ------------------------------------------------------------------ */
 
-/** Tập id chức danh nghề nghiệp dùng cho các màn hình riêng của giảng viên. */
+/** Tập mã chức danh dùng cho các màn dữ liệu cá nhân của giảng viên. */
 export const CHUC_DANH_SETS = {
-  /** Ngạch giảng viên - dùng phiếu KPI Giảng viên (Phụ lục 2). */
-  GIANG_VIEN: [3, 4, 5, 6, 7],
+  GIANG_VIEN: ["GV", "GVC", "GVCC", "HDLD_GV", "HDLD_HUU"],
 };
 
 /** Quyền xem học vụ: cấp Khoa hoặc tài khoản xem toàn trường. */
 export const canManageHocVu = (user) =>
   hasRole(ROLE_SETS.ADMIN, user) ||
-  (normalizeRole(user) === ROLE.TRUONG_PHONG &&
+  ([ROLE.TRUONG_PHONG, ROLE.QUYEN_TRUONG_PHONG].includes(normalizeRole(user)) &&
     String(user?.MaDonVi || "").toUpperCase() === "P_DTBDCL") ||
   (Array.isArray(user?.DonVi) && user.DonVi.some((dv) =>
-    String(dv.MaChucVu || "").trim().toUpperCase() === ROLE.TRUONG_PHONG &&
+    [ROLE.TRUONG_PHONG, ROLE.QUYEN_TRUONG_PHONG].includes(String(dv.MaChucVu || "").trim().toUpperCase()) &&
     String(dv.MaDonVi || "").trim().toUpperCase() === "P_DTBDCL"
   ));
 
 export const canViewHocVu = (user) =>
   canManageHocVu(user) || hasRole(ROLE_SETS.KPI_KHOA, user);
 
-/** Chuẩn hóa IdChucDanh về number; trả null nếu không xác định được. */
+/** Chuẩn hóa mã chức danh; không suy mã từ id hoặc tên hiển thị. */
 export const normalizeChucDanh = (user) => {
-  const id = Number(user?.IdChucDanh);
-  return Number.isFinite(id) ? id : null;
+  const ma = String(user?.MaChucDanh || "").trim().toUpperCase();
+  return ma || null;
 };
 
 /**
- * @param {number[]|undefined|null} chucDanh tập id được phép.
+ * @param {string[]|undefined|null} chucDanh tập mã được phép.
  *   Không khai (undefined/null) = trang không xét chức danh → cho qua.
  * @param {object} user
  */
 export const hasChucDanh = (chucDanh, user) => {
   if (chucDanh == null) return true;
   if (!Array.isArray(chucDanh) || chucDanh.length === 0) return false; // fail closed
-  const id = normalizeChucDanh(user);
-  return id != null && chucDanh.includes(id);
+  const ma = normalizeChucDanh(user);
+  return ma != null && chucDanh.includes(ma);
 };
 
 /** Các loại đối tượng KPI được backend gán theo từng đơn vị của người dùng. */

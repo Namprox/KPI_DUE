@@ -17,7 +17,7 @@
  * trong DTO phiếu nên phải suy từ mã đơn vị - xem laDonViPhongTrungTam().
  */
 
-import { ROLE } from "./roles";
+import { ROLE, VAI_TRO_TRUONG_PHONG } from "./roles";
 import {
   CAP_CHAM,
   diemDangHienThi,
@@ -166,7 +166,7 @@ export const NHAN_CAP_CHAM = {
 export const quyenPhieuPhong = (phieu, user) => {
   const quyen = quyenPhieuDonVi(phieu, user, {
     vaiTroThuKy: [ROLE.THU_KY_PHONG],
-    vaiTroTruongDv: [ROLE.TRUONG_PHONG],
+    vaiTroTruongDv: VAI_TRO_TRUONG_PHONG,
   });
   return { ...quyen, laTruongPhong: quyen.laTruongDonVi };
 };

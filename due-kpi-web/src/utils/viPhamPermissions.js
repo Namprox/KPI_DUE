@@ -9,9 +9,9 @@
  * Đây chỉ là lớp gợi ý cho UI. Server vẫn chặn lại ở BLL + Stored Procedure.
  */
 
-import { normalizeRole } from "./roles";
+import { normalizeRole, ROLE_SETS } from "./roles";
 
-const ROLE_TRUONG_DON_VI = ["TK", "TKL", "TP"];
+const ROLE_TRUONG_DON_VI = ROLE_SETS.TRUONG_DON_VI;
 
 /** Re-export để các file đang import normalizeRole từ đây vẫn chạy. */
 export { normalizeRole };
@@ -228,7 +228,7 @@ export const canGhiNhanLoai = (loai, user, lecturer, donViIndex) => {
 export const getLoaiBlockReason = (loai, user, lecturer, donViIndex) => {
   if (canGhiNhanLoai(loai, user, lecturer, donViIndex)) return null;
   if (!canRecordViPham(user)) {
-    return "Chỉ trưởng đơn vị (TK/TKL/TP) hoặc Admin mới được ghi nhận vi phạm.";
+    return "Chỉ trưởng đơn vị hoặc Admin mới được ghi nhận vi phạm.";
   }
   if (loai?.ChoPhepKhoaChuQuan === true && !lecturer) {
     return "Loại vi phạm này do Khoa chủ quản ghi nhận - hãy chọn giảng viên trước.";

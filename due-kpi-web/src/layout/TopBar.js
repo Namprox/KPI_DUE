@@ -55,7 +55,7 @@ const TopBar = ({
                                         {user?.HoTen}
                                     </strong>
                                     <p style={{ margin: 0, fontSize: '12px', color: '#888', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                        {user?.Email}
+                                        {user?.Email || user?.MaNhanVien}
                                     </p>
                                 </div>
                             </div>

@@ -3,7 +3,7 @@ import { Toast } from "primereact/toast";
 import { confirmDialog } from "primereact/confirmdialog";
 import { useAuth } from "../../context/AuthContext";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
-import { ROLE, donViTheoVaiTro, normalizeRole } from "../../utils/roles";
+import { ROLE, ROLE_SETS, donViTheoVaiTro, normalizeRole } from "../../utils/roles";
 import { fetchDonViList } from "../../utils/donViApi";
 import TieuChiChamCard from "../../components/QuanLyChamDiem/TieuChiChamCard";
 import TienDoCham from "../../components/QuanLyChamDiem/TienDoCham";
@@ -34,7 +34,7 @@ const DuyetPhieuQuy = () => {
   const donViTheoQuyen = useMemo(
     () =>
       donViTheoVaiTro(
-        [ROLE.TRUONG_PHONG, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON],
+        ROLE_SETS.TRUONG_DON_VI,
         user,
       ),
     [user],

@@ -8,7 +8,7 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [credentials, setCredentials] = useState({ Email: "", Password: "" });
+  const [credentials, setCredentials] = useState({ Identifier: "", Password: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -28,11 +28,19 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    const identifier = credentials.Identifier.trim();
+    if (!identifier) {
+      setError("Vui lòng nhập mã nhân viên hoặc email.");
+      return;
+    }
     setIsLoading(true);
     setError("");
 
     try {
-      const result = await login(credentials);
+      const result = await login({
+        [identifier.includes("@") ? "Email" : "MaNhanVien"]: identifier,
+        Password: credentials.Password,
+      });
 
       if (result.success) {
         navigate("/");
@@ -111,6 +119,7 @@ const Login = () => {
         <form onSubmit={handleLogin}>
           <div style={{ marginBottom: "20px" }}>
             <label
+              htmlFor="login-identifier"
               style={{
                 display: "block",
                 marginBottom: "5px",
@@ -118,14 +127,16 @@ const Login = () => {
                 color: "#333",
               }}
             >
-              Email đăng nhập
+              Mã nhân viên / Email
             </label>
             <input
-              type="email"
-              name="Email"
-              value={credentials.Email}
+              id="login-identifier"
+              type="text"
+              name="Identifier"
+              value={credentials.Identifier}
               onChange={handleChange}
               required
+              autoComplete="username"
               style={{
                 width: "100%",
                 padding: "10px",
@@ -138,6 +149,7 @@ const Login = () => {
 
           <div style={{ marginBottom: "30px", position: "relative" }}>
             <label
+              htmlFor="login-password"
               style={{
                 display: "block",
                 marginBottom: "5px",
@@ -148,11 +160,13 @@ const Login = () => {
               Mật khẩu
             </label>
             <input
+              id="login-password"
               type={showPassword ? "text" : "password"}
               name="Password"
               value={credentials.Password}
               onChange={handleChange}
               required
+              autoComplete="current-password"
               style={{
                 width: "100%",
                 padding: "10px",
