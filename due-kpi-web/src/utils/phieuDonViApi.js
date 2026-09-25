@@ -102,7 +102,7 @@ export const NGUON_DIEM_DV = {
 
 /** Dòng thư ký được gõ điểm. Dòng tự động chỉ đổi qua nút Tổng hợp KPI. */
 export const laDongChamTay = (ct) =>
-  Number(ct?.LoaiNguonDiem) !== NGUON_DIEM_DV.TU_DONG;
+  Number(ct?.LoaiNguonDiem) === NGUON_DIEM_DV.CHAM_TAY;
 
 /**
  * Phiếu có tiêu chí chấm theo điểm trừ tập thể của Khoa hay không.
@@ -363,6 +363,12 @@ export const diemDangHienThi = (ct, nhapDiem, cap) => {
  * @param {string[]} vaiTroThuKy chức vụ nhập phiếu ở cấp 1 (TKK hoặc TKP)
  * @param {string[]} vaiTroTruongDv chức vụ duyệt ở cấp 2 (TK/TKL hoặc TP)
  */
+export const duocChamDuyetDv = (phieu, ct) =>
+  Number(phieu?.TrangThai) === TRANG_THAI_DV.CHO_DV_DUYET && ct?.DuocChamDuyetDv === true;
+
+export const laDongGiaoChuaCham = (ct) =>
+  ct?.CoPhanQuyen === true && Number(ct.LoaiNguonDiem) === 1 && ct.DiemDuyetDv == null;
+
 export const quyenPhieuDonVi = (
   phieu,
   user,
@@ -371,8 +377,8 @@ export const quyenPhieuDonVi = (
   const trangThai = Number(phieu?.TrangThai);
   const chucVu = normalizeRole(user);
 
-  const laThuKy = coQuyenTaiDonVi(vaiTroThuKy, phieu?.IdDonVi, user);
-  const laTruongDonVi = coQuyenTaiDonVi(vaiTroTruongDv, phieu?.IdDonVi, user);
+  const laThuKy = chucVu === ROLE.ADMIN || coQuyenTaiDonVi(vaiTroThuKy, phieu?.IdDonVi, user);
+  const laTruongDonVi = chucVu === ROLE.ADMIN || coQuyenTaiDonVi([ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG], phieu?.IdDonVi, user);
   const laCapTruong = chucVu === ROLE.HIEU_TRUONG || chucVu === ROLE.ADMIN;
 
   return {
@@ -382,7 +388,7 @@ export const quyenPhieuDonVi = (
     coTheNhap: laThuKy && trangThai === TRANG_THAI_DV.NHAP,
     coTheTrinh: laThuKy && trangThai === TRANG_THAI_DV.NHAP,
     coTheChamDuyetDv:
-      laTruongDonVi && trangThai === TRANG_THAI_DV.CHO_DV_DUYET,
+      (phieu?.ChiTiet || []).some((ct) => duocChamDuyetDv(phieu, ct)),
     coTheDuyetDv: laTruongDonVi && trangThai === TRANG_THAI_DV.CHO_DV_DUYET,
     coTheChamTruong: laCapTruong && trangThai === TRANG_THAI_DV.DV_DA_DUYET,
     coTheDuyetTruong: laCapTruong && trangThai === TRANG_THAI_DV.DV_DA_DUYET,
@@ -473,7 +479,7 @@ const buildApiError = async (response, fallback) => {
       ? info.rawMessage ||
           info.message ||
           "Phiếu đơn vị đã bị người khác cập nhật. Vui lòng tải lại trang."
-      : info.message,
+      : info.rawMessage || info.message,
   );
   error.status = response.status;
   error.errorCode = info.errorCode;
@@ -524,6 +530,7 @@ export const fetchPhieuDonViList = async ({
   page = 1,
   pageSize = 20,
   sortBy,
+  choToiCham,
 } = {}) => {
   const csv = Array.isArray(trangThai) ? trangThai.join(",") : trangThai;
   const data = await getJson(
@@ -534,6 +541,7 @@ export const fetchPhieuDonViList = async ({
       page,
       pageSize,
       sortBy,
+      choToiCham,
     })}`,
     "Không tải được danh sách phiếu KPI đơn vị",
   );

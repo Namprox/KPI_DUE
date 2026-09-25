@@ -155,7 +155,7 @@ const DanhGiaPhongForm = ({
                   const hasScore = currentScore != null;
                   const daSua = oDaSua ? oDaSua(ct) : false;
                   const dangLuu = idDangLuu === idCt;
-                  const moNhap = choPhepNhap && !!truongCuaCap;
+                  const moNhap = choPhepNhap && !!truongCuaCap && (cap !== CAP_CHAM.NHAP || Number(ct.LoaiNguonDiem) === 1);
 
                   const loaiThangDiem =
                     tcInfo?.loaiThangDiem || ct.LoaiThangDiem || 2;
@@ -187,6 +187,11 @@ const DanhGiaPhongForm = ({
                       <TieuChiCardHeader
                         soThuTu={String(index + 1)}
                         tieuDe={ct.TenTieuChi}
+                        metaPhu={ct.CoPhanQuyen === true ? (
+                          <span className="pl2-criteria-meta-pill">
+                            Đơn vị thẩm định: {ct.TenDonViCham || "Chưa có tên đơn vị"}
+                          </span>
+                        ) : null}
                         moTa={tcInfo?.moTa ?? ct.MoTa}
                         batBuocMinhChung={!!ct.BatBuocMinhChung}
                         soMinhChung={(ct.MinhChung || []).length}

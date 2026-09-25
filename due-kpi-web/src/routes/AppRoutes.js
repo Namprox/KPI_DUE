@@ -14,6 +14,7 @@ import QLNgoaiLeDinhMuc from "../pages/QuanLyKeHoach/QL_NgoaiLeDinhMuc";
 import DanhGiaPhuLuc2 from "../pages/DanhGia/DanhGiaPhuLuc2";
 import DanhGiaNhanVien from "../pages/DanhGia/DanhGiaNhanVien";
 import DanhGiaKpiDonVi from "../pages/DanhGia/DanhGiaKpiDonVi";
+import PhieuDonViChoCham from "../pages/DanhGia/PhieuDonViChoCham";
 import ChiTietPhieuDonVi from "../pages/DanhGia/ChiTietPhieuDonVi";
 import DanhGiaKpiPhong from "../pages/DanhGia/DanhGiaKpiPhong";
 import ChiTietPhieuPhong from "../pages/DanhGia/ChiTietPhieuPhong";
@@ -96,6 +97,8 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         />
         <Route path="/danh-gia-phu-luc-2" element={<DanhGiaPhuLuc2 />} />
         <Route path="/danh-gia-kpi-nhan-vien" element={<DanhGiaNhanVien />} />
+        <Route path="/phieu-don-vi-cho-cham" element={<PhieuDonViChoCham />} />
+        <Route path="/phieu-don-vi-cho-cham/:id" element={<PhieuDonViChoCham />} />
         <Route path="/danh-gia-kpi-don-vi" element={<DanhGiaKpiDonVi />} />
         <Route
           path="/danh-gia-kpi-don-vi/:id"

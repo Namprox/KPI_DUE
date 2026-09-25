@@ -279,7 +279,7 @@ const DuyetDonViForm = ({
                 className="fa-solid fa-circle-check"
                 style={{ color: "#10b981" }}
               ></i>
-              Đã duyệt hết tiêu chí. Bấm “Duyệt phiếu” để chuyển lên cấp Trường.
+              Không còn tiêu chí trong mục này.
             </>
           ) : (
             <>
@@ -319,9 +319,9 @@ const DuyetDonViForm = ({
                     stt={sttTheoDong.get(ct.IdChiTietDv)}
                     moTa={tieuChiMap?.get(Number(ct.IdTieuChi))?.moTa ?? ct.MoTa}
                     nhanCap={NHAN_CAP_CHAM_KHOA}
-                    choPhepNhap={choPhepNhap}
-                    lyDoKhoa={lyDoKhoa}
-                    dangLuu={idDangLuu === ct.IdChiTietDv}
+                    choPhepNhap={choPhepNhap && Number(phieu.TrangThai) === 2 && ct.DuocChamDuyetDv === true}
+                    lyDoKhoa={readOnly ? lyDoKhoa : "Bạn không được giao chấm tiêu chí này."}
+                    dangLuu={idDangLuu !== null}
                     cauHinhMc={cauHinhMc}
                     onDuyet={onDuyetDong}
                     onSuaDiem={onSuaDiemDong}

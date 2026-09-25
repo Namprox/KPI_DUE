@@ -3422,7 +3422,8 @@ paths:
           required: false
           description: |
             Dieu kien "du dinh muc gio NCKH" ma nguoi dung dang tick. Bo trong =
-            lay ket luan tu dong cua he thong (DuDinhMucGioNckhTuDong).
+            gia tri da luu tren phieu (mac dinh false). He thong KHONG con tu doi chieu
+            gio NCKH (dinh muc chi con gio giang) - Truong khoa tick tay.
           schema:
             type: boolean
         - name: khongViPham
@@ -6110,11 +6111,10 @@ paths:
         - DinhMucGiangVien
       summary: Tính định mức áp dụng sau ngoại lệ cho một GV trong năm
       description: >
-        Trả về định mức gốc (base) và định mức đã áp dụng các ngoại lệ active.
+        Trả về định mức giờ giảng gốc (base) và định mức đã áp dụng chức vụ + các
+        ngoại lệ active. Định mức CHỈ CÒN giờ giảng (bỏ NCKH / PVCĐ).
         Công thức:
-        GioGiangApDung = max(0, base − SoGioGiamGiang − base × ΣHeSoGiamGiang).
-        GioNckhApDung  = max(0, base × max(HeSoNckh) − base × ΣHeSoGiamNckh).
-        GioPvcdApDung  = max(0, base − base × ΣHeSoGiamPvcd).
+        GioGiangApDung = max(0, base × TyLeGiangChucVu − SoGioGiamGiang − (base × TyLeGiangChucVu) × ΣHeSoGiamGiang).
         GV chỉ xem của chính mình; Admin/BGH (chucVu 1, 7, 8) xem mọi người.
       operationId: dinhMucGiangVienGetApDung
       parameters:
@@ -13041,9 +13041,9 @@ components:
           enum: [1, 2]
           description: >-
             Loai phieu ca nhan cua nguoi dung TAI DON VI nay. 1 = Giang vien (Khoa + chuc danh
-            ngach giang day TROGIANG/TAPSU/GV/GVC/GVCC/PGS/GS), 2 = Vien chuc / NLD (moi truong
-            hop con lai, ke ca nhan vien van phong Khoa khong co chuc danh va chuc danh
-            CV/NV/NCV/KHAC). FE bat menu "Danh gia KPI Nhan vien" khi co it nhat mot don vi
+            ngach giang day GV/GVC/GVCC/HDLD_GV), 2 = Vien chuc / NLD (moi truong
+            hop con lai, ke ca nhan vien van phong Khoa khong co chuc danh va moi chuc danh
+            phi giang day: CV/CVC/NCV/KTV/HDLD_CNTT...). FE bat menu "Danh gia KPI Nhan vien" khi co it nhat mot don vi
             LoaiDoiTuong = 2; khong tu suy tu IdChucDanh / MaDonVi. Vang mat chi khi DB chua
             chay migration.
     AuthResponse:
@@ -13925,8 +13925,6 @@ components:
           type: integer
         GioGiangLyThuyet:
           type: number
-        GioNckh:
-          type: number
         MoTa:
           type: string
     DinhMucGiangVienUpdateRequest:
@@ -13937,8 +13935,6 @@ components:
         IdNam:
           type: integer
         GioGiangLyThuyet:
-          type: number
-        GioNckh:
           type: number
         MoTa:
           type: string
@@ -13956,8 +13952,6 @@ components:
         IdNam:
           type: integer
         GioGiangLyThuyet:
-          type: number
-        GioNckh:
           type: number
         MoTa:
           type: string
@@ -14505,21 +14499,6 @@ components:
         BatBuocQd838:
           type: boolean
           description: "true khi la giang vien VA id_nam >= 2025. FE dua vao day de hien dau *."
-        DuDinhMucGioNckhTuDong:
-          type: boolean
-          nullable: true
-          description: "Ket luan tu dong cua he thong; null khi khong doc duoc dinh muc."
-        GioNckhThucTe:
-          type: number
-          format: double
-          nullable: true
-        GioNckhDinhMucApDung:
-          type: number
-          format: double
-          nullable: true
-        MienNckh:
-          type: boolean
-          description: "Tap su / duoc mien dieu kien du gio NCKH."
         CanhBaoDinhMuc:
           type: string
           nullable: true
@@ -16114,12 +16093,15 @@ components:
         GioNckhDinhMucApDung:
           type: number
           nullable: true
+          description: "Khong con ghi (dinh muc chi con gio giang) - phieu moi luon null."
         GioPvcdDinhMucApDung:
           type: number
           nullable: true
+          description: "Khong con ghi (dinh muc chi con gio giang) - phieu moi luon null."
         HeSoNckhApDung:
           type: number
           nullable: true
+          description: "Khong con ghi (dinh muc chi con gio giang) - phieu moi luon null."
         GioGiangThucTeSnapshot:
           type: number
           nullable: true
@@ -18827,37 +18809,24 @@ components:
         TenChucDanh:
           type: string
           nullable: true
+        IdChucVuApDung:
+          type: integer
+          nullable: true
+        TenChucVuApDung:
+          type: string
+          nullable: true
+        TyLeGiangChucVu:
+          type: number
+          format: decimal
+          description: Tỷ lệ định mức giảng theo chức vụ (1.0 = không giảm)
         GioGiangBase:
           type: number
           format: decimal
           description: Giờ giảng gốc (HC) theo chức danh + năm
-        GioNckhBase:
-          type: number
-          format: decimal
-          description: Giờ NCKH gốc theo chức danh + năm
-        GioPvcdBase:
-          type: number
-          format: decimal
-          description: Giờ PVCĐ gốc theo chức danh + năm
         GioGiangApDung:
           type: number
           format: decimal
-          description: "Giờ giảng sau ngoại lệ: max(0, base − SoGioGiam − base × ΣHeSoGiam)"
-        GioNckhApDung:
-          type: number
-          format: decimal
-          description: "Giờ NCKH sau ngoại lệ: max(0, base × MAX(HeSoNckh) − base × ΣHeSoGiamNckh)"
-        GioPvcdApDung:
-          type: number
-          format: decimal
-          description: "Giờ PVCĐ sau ngoại lệ: max(0, base − base × ΣHeSoGiamPvcd)"
-        HeSoNckhApDung:
-          type: number
-          format: decimal
-          description: Hệ số nhân cuối (MAX từ các ngoại lệ; mặc định 1.0)
-        MienNckh:
-          type: boolean
-          description: true = tập sự, điều kiện NCKH bị bỏ qua khi xếp loại
+          description: "Giờ giảng sau chức vụ + ngoại lệ: max(0, base × TyLe − SoGioGiam − base × TyLe × ΣHeSoGiam)"
         LyDoDieuChinh:
           type: string
           nullable: true

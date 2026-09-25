@@ -303,6 +303,11 @@ const DanhGiaDonViForm = ({
                           <TieuChiCardHeader
                             soThuTu={prefix.replace(/\.$/, "")}
                             tieuDe={ct.TenTieuChi}
+                        metaPhu={ct.CoPhanQuyen === true ? (
+                          <span className="pl2-criteria-meta-pill">
+                            Đơn vị thẩm định: {ct.TenDonViCham || "Chưa có tên đơn vị"}
+                          </span>
+                        ) : null}
                             moTa={tcInfo?.moTa ?? ct.MoTa}
                             tenNhom={nhomCon.isDirect ? nhomCon.ten : null}
                             batBuocMinhChung={!!ct.BatBuocMinhChung}

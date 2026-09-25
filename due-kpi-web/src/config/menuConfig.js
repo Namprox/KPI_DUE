@@ -279,6 +279,13 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.TRUONG_DON_VI,
       },
       {
+        name: "Chờ tôi chấm KPI đơn vị",
+        icon: "fa-solid fa-list-check",
+        path: "/phieu-don-vi-cho-cham",
+        childPaths: ["/phieu-don-vi-cho-cham/:id"],
+        roles: ["TK", "TKL", "TP", "ADMIN"],
+      },
+      {
         name: "Phiếu toàn đơn vị",
         icon: "fa-solid fa-folder-open",
         path: "/quan-ly/phieu",

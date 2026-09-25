@@ -20,6 +20,7 @@ import {
   duyetDvPhieuDonVi,
   duyetTruongPhieuDonVi,
   fetchPhieuDonViDetail,
+  duocChamDuyetDv,
   moLaiPhieuDonVi,
   nhapDiemChiTietDonVi,
   nhapDiemDuyetDvChiTietDonVi,
@@ -211,6 +212,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     setNhapNhanXet({});
   }, [phieu?.TrangThai]);
 
+  const soChoCham = Number(phieu?.SoTieuChiGiaoChuaCham) || 0;
   const chiTietList = useMemo(() => phieu?.ChiTiet || [], [phieu]);
   const cap = useMemo(() => capChamTheoTrangThai(phieu?.TrangThai), [phieu]);
   const truongCuaCap = cap ? TRUONG_DIEM_CUA_CAP[cap] : null;
@@ -332,7 +334,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
    *    trường server tự tính (DiemChinhThuc, NgayDuyetDv).
    */
   const ghiDiemDong = async (ct, { diem, nhanXet }, thongDiepXong) => {
-    if (!cap || !choPhepNhap) return false;
+    if (!cap || !choPhepNhap || (cap === CAP_CHAM.NHAP && Number(ct.LoaiNguonDiem) !== 1) || idDangLuu !== null || (cap === CAP_CHAM.DUYET_DV && !duocChamDuyetDv(phieu, ct))) return false;
     const idCt = ct.IdChiTietDv;
     setIdDangLuu(idCt);
     try {
@@ -342,6 +344,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
         rowVersion: phieu?.RowVersion,
       });
 
+      if (newRowVersion) setPhieu((cur) => ({ ...cur, RowVersion: newRowVersion }));
       boNhapCuaDong(idCt);
 
       if (laBuocDuyetPhong || !newRowVersion || !item) {
@@ -366,7 +369,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     } catch (error) {
       console.error("Lỗi lưu điểm tiêu chí Phòng:", error);
       showToast("error", "Lưu thất bại", error.message);
-      if (error.isConflict) await taiPhieu({ imLang: true });
+      if (error.isConflict || error.isForbidden || error.status === 422) await taiPhieu({ imLang: true });
       return false;
     } finally {
       setIdDangLuu(null);
@@ -402,7 +405,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     if (!truongCuaCap) return undefined;
     return ghiDiemDong(
       ct,
-      { diem: ct.DiemNhap, nhanXet: ct[truongCuaCap.nhanXet] },
+      { diem: Number(ct.LoaiNguonDiem) === 2 ? ct.DiemTongHop : ct.DiemNhap, nhanXet: ct[truongCuaCap.nhanXet] },
       `Đã duyệt "${ct.TenTieuChi}" giữ nguyên ${formatDiem(ct.DiemNhap)} điểm.`,
     );
   };
@@ -422,8 +425,8 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
    * một giá trị mới, bắn song song sẽ ăn 409 ngay từ dòng thứ hai.
    */
   const handleLuuTatCa = async () => {
-    if (!cap || !choPhepNhap) return false;
-    const danhSachSua = chiTietList.filter((ct) => oDaSua(ct));
+    if (!cap || !choPhepNhap || idDangLuu !== null) return false;
+    const danhSachSua = chiTietList.filter((ct) => oDaSua(ct) && (cap !== CAP_CHAM.NHAP || Number(ct.LoaiNguonDiem) === 1) && (cap !== CAP_CHAM.DUYET_DV || duocChamDuyetDv(phieu, ct)));
     if (danhSachSua.length === 0) return true;
 
     setDangLuuTatCa(true);
@@ -440,6 +443,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
         });
         if (newRowVersion) rowVersionHienTai = newRowVersion;
         daLuu += 1;
+        if (newRowVersion) setPhieu((cur) => ({ ...cur, RowVersion: newRowVersion }));
         boNhapCuaDong(idCt);
       }
 
@@ -506,7 +510,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
   }, [quyen, id]);
 
   const handleChuyenTiep = async ({ lyDo }) => {
-    if (!buocChuyenTiep) return;
+    if (!buocChuyenTiep || idDangLuu !== null || (laBuocDuyetPhong && soChoCham > 0)) return;
     setDangGui(true);
     try {
       const item = await buocChuyenTiep.ham({
@@ -520,7 +524,8 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     } catch (error) {
       console.error("Lỗi chuyển trạng thái phiếu Phòng:", error);
       showToast("error", "Thao tác thất bại", error.message);
-      if (error.isConflict) await taiPhieu({ imLang: true });
+      setMoChuyenTiep(false);
+      if (error.isConflict || error.isForbidden || error.status === 422) await taiPhieu({ imLang: true });
     } finally {
       setDangGui(false);
     }
@@ -543,7 +548,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     } catch (error) {
       console.error("Lỗi chốt phiếu Phòng:", error);
       showToast("error", "Chốt thất bại", error.message, 6000);
-      if (error.isConflict) await taiPhieu({ imLang: true });
+      if (error.isConflict || error.isForbidden || error.status === 422) await taiPhieu({ imLang: true });
     } finally {
       setDangGui(false);
     }
@@ -571,7 +576,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     } catch (error) {
       console.error("Lỗi mở lại phiếu Phòng:", error);
       showToast("error", "Mở lại thất bại", error.message);
-      if (error.isConflict) await taiPhieu({ imLang: true });
+      if (error.isConflict || error.isForbidden || error.status === 422) await taiPhieu({ imLang: true });
     } finally {
       setDangGui(false);
     }
@@ -632,7 +637,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     <button
       type="button"
       className="btn-submit"
-      disabled={dangGui}
+      disabled={dangGui || idDangLuu !== null || (laBuocDuyetPhong && soChoCham > 0)}
       onClick={() => setMoChuyenTiep(true)}
     >
       <i className={`fa-solid ${buocChuyenTiep.icon}`}></i>{" "}
@@ -685,7 +690,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
         <button
           type="button"
           className="btn-nop-phieu"
-          disabled={dangGui}
+          disabled={dangGui || idDangLuu !== null || (laBuocDuyetPhong && soChoCham > 0)}
           onClick={() => setMoChot(true)}
         >
           <i className="fa-solid fa-lock"></i> Chốt phiếu
@@ -696,7 +701,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
         <button
           type="button"
           className="btn-thu-hoi"
-          disabled={dangGui}
+          disabled={dangGui || idDangLuu !== null || (laBuocDuyetPhong && soChoCham > 0)}
           onClick={() => setMoMoLai(true)}
         >
           <i className="fa-solid fa-rotate-left"></i> Mở lại phiếu
@@ -776,6 +781,12 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
           </div>
         </div>
       </div>
+
+      {Number(phieu.TrangThai) === 2 && soChoCham > 0 && (
+        <div className="cd-hint cd-hint-warn" role="alert">
+          Còn {soChoCham} tiêu chí chờ đơn vị được giao chấm
+        </div>
+      )}
 
       {laBuocDuyetPhong ? (
         <DuyetPhongForm
@@ -903,7 +914,7 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
                     type="radio"
                     name="trang_thai_mo_lai"
                     checked={Number(trangThaiMoLai) === tt}
-                    disabled={dangGui}
+                    disabled={dangGui || idDangLuu !== null || (laBuocDuyetPhong && soChoCham > 0)}
                     onChange={() => setTrangThaiMoLai(String(tt))}
                   />
                   <span>

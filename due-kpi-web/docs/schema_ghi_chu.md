@@ -31,7 +31,35 @@ Mã đơn vị duy nhất còn viết cứng trong SP: `N'P_DTBDCL'` (Phòng Đ�
 (vd Viện Đào tạo quốc tế = `P_DTQT`).
 
 ### 1.3. `chuc_danh_nghe_nghiep` — Chức danh nghề nghiệp
-Theo Bảng 1 QĐ ĐHKT: Trợ giảng, Tập sự, GV, GVC, GVCC/PGS, GS.
+Từ đợt "Chức danh chính thức": danh mục = **23 chức danh theo danh sách nhân sự thực tế + `HDLD_GV`**
+(24 mã). Tên lưu **nguyên văn** danh sách (kể cả khoảng trắng sau "HĐLĐ/").
+
+| Mã | Tên | Ngạch giảng dạy |
+|---|---|---|
+| `GV` / `GVC` / `GVCC` | Giảng viên / Giảng viên chính / Giảng viên cao cấp | ✅ |
+| `HDLD_GV` | HĐLĐ/Giảng viên | ✅ |
+| `CV`, `CVC`, `NCV`, `KS`, `TVV`, `YS` | Chuyên viên, Chuyên viên chính, Nghiên cứu viên, Kỹ sư, Thư viện viên, Y sĩ | — |
+| `KTV`, `KTV_C`, `KTV_TC` | Kế toán viên, Kế toán viên chính, Kế toán viên trung cấp | — |
+| `NV_PV68`, `NV_BV68`, `NV_KT68` | Nhân viên phục vụ/68, bảo vệ/68, kỹ thuật/68 | — |
+| `HDLD_HUU`, `HDLD_BV`, `HDLD_DC` | HĐLĐ/ Hưu trí, HĐLĐ/ Nhân viên bảo vệ, HĐLĐ dùng chung | — |
+| `HDLD_CTVP`, `HDLD_CNTT`, `HDLD_CTDT`, `HDLD_KNST`, `HDLD_CTD` | HĐLĐ/ Hỗ trợ CTVP, CNTT, CTĐT, công tác khởi nghiệp và đổi mới sáng tạo, CT Đảng | — |
+
+**Ngạch giảng dạy = `GV, GVC, GVCC, HDLD_GV`**, khai báo ở **đúng 3 chỗ** phải khớp nhau:
+`fn_loai_doi_tuong_ca_nhan`, `v_giang_vien_khoa`, `v_vien_chuc_don_vi`. Thêm ngạch giảng dạy mới = sửa cả ba
++ tạo định mức giờ giảng cho nó.
+
+Các mã cũ `TROGIANG, TAPSU, GS, PGS, NV, KHAC` đã **xoá hẳn** (người mang PGS/GS chuyển tạm sang `GVCC`,
+NV → `HDLD_CNTT` — dữ liệu dev). GS/PGS là **học hàm**, không phải chức danh nghề nghiệp.
+
+### 2.2. `dinh_muc_giang_vien` — chỉ còn giờ giảng
+Từ đợt "Chức danh chính thức": cột `gio_nckh`, `gio_pvcd` đã **DROP**. Định mức = `gio_giang_ly_thuyet`
+(270 cho cả 4 ngạch giảng dạy). Hệ quả:
+- Điều kiện "đủ định mức giờ NCKH" khi duyệt hồ sơ do **Trưởng khoa tick tay**; hệ thống không còn gợi ý.
+- Điểm tự động NCKH (`NCKH_GIO_TY_LE`) **không đổi** — dùng `nckh_gio_nckh.gio_nckh_dinh_muc` của web NCKH.
+- Còn lại nhưng **không còn tác dụng**: `chuc_vu.ty_le_dinh_muc_nckh`; `ngoai_le_dinh_muc.he_so_nckh /
+  he_so_giam_nckh / so_gio_them_nckh / he_so_giam_pvcd / mien_nckh`; `phieu_danh_gia.gio_nckh_dinh_muc_ap_dung /
+  gio_pvcd_dinh_muc_ap_dung / he_so_nckh_ap_dung` (phiếu mới lưu NULL).
+- `schema.sql` chưa phản ánh việc DROP 2 cột (file read-only) — nguồn sự thật là DB sau `update_database.sql`.
 
 ### 1.5. `nhan_vien_chuc_vu` — Quan hệ người × đơn vị × chức vụ × thời gian
 Từ Đợt 1 của kế hoạch kiêm nhiệm, bảng này không còn là "lịch sử chức vụ" mà là
@@ -211,7 +239,7 @@ Mirror `tieu_chi_don_vi_cham`: chỉ trưởng (`ma_chuc_vu` TK/TKL/TP) của đ
 Lưu các vi phạm quy định giảng dạy trong năm để tính điểm trừ KPI.
 
 - CHỈ áp dụng cho GIẢNG VIÊN thuộc KHOA (`ma_don_vi LIKE 'K_%'`).
-  Giảng viên = `chuc_danh_nghe_nghiep.ma_chuc_danh IN ('GV','GVC','GVCC','PGS','GS')`
+  Giảng viên = `chuc_danh_nghe_nghiep.ma_chuc_danh IN ('GV','GVC','GVCC','HDLD_GV')`
   — xem view `v_giang_vien_khoa` trong procedure.sql.
 - KHÔNG bao gồm vi phạm pháp luật (xử lý qua `phieu_danh_gia.khong_vi_pham_phap_luat`).
 - Điểm trừ cá nhân = `MIN(SUM(diem_tru) trong năm, 15)`.
@@ -389,8 +417,8 @@ phiếu đánh giá" ở cuối mục này).
 | Cột | Trường API | Ý nghĩa | Khái niệm KPI tương đương |
 |---|---|---|---|
 | `gio_chuan` | `StandardHours` | Giờ chuẩn tổng/năm (vd 720) | — |
-| `ty_le_giam` | `ReductionPercentage` | Tỷ lệ định mức, đơn vị **%** (vd 85) | `chuc_vu.ty_le_dinh_muc_nckh` |
-| `gio_nckh_dinh_muc` | `RequiredHours` | Định mức giờ NCKH phải đạt (vd 108) | `dinh_muc_giang_vien.gio_nckh` |
+| `ty_le_giam` | `ReductionPercentage` | Tỷ lệ định mức, đơn vị **%** (vd 85) | `chuc_vu.ty_le_dinh_muc_nckh` (không còn dùng) |
+| `gio_nckh_dinh_muc` | `RequiredHours` | Định mức giờ NCKH phải đạt (vd 108) | — (`dinh_muc_giang_vien.gio_nckh` đã DROP, xem §2.2) |
 | `gio_nckh_quy_doi` | `ConvertedHours` | Giờ NCKH quy đổi thực tế (vd 100.02) | `gio_thuc_hien_gv.gio_nckh_thuc_te` |
 
 ⚠️ **API KHÔNG NHẬN THAM SỐ LỌC.** Đã kiểm chứng: `?nam=2025` và `?nam=2026` trả kết quả
@@ -1008,8 +1036,8 @@ và `sp_chi_tiet_danh_gia_update_tu_danh_gia` ghi **thẳng** `@diem` vào bản
 
 | Đơn vị của phiếu | Chức danh (`nhan_vien.id_chuc_danh`) | `loai_doi_tuong` | Mẫu dùng |
 |---|---|---|---|
-| Khoa (`ma_don_vi LIKE 'K_%'`) | ngạch giảng dạy: `TROGIANG, TAPSU, GV, GVC, GVCC, PGS, GS` | **1** | Giảng viên |
-| Khoa | NULL, hoặc `CV, NV, NCV, KHAC` | **2** | Viên chức / NLĐ — nhân viên văn phòng Khoa |
+| Khoa (`ma_don_vi LIKE 'K_%'`) | ngạch giảng dạy: `GV, GVC, GVCC, HDLD_GV` | **1** | Giảng viên |
+| Khoa | NULL, hoặc mọi mã còn lại (`CV, CVC, NCV, KTV, HDLD_CNTT, ...`) | **2** | Viên chức / NLĐ — nhân viên văn phòng Khoa |
 | Phòng / Trung tâm / Trường | bất kỳ | **2** | Viên chức / NLĐ |
 
 Luật này khai báo **một nơi duy nhất**: inline TVF `dbo.fn_loai_doi_tuong_ca_nhan(@id_nhan_vien,
@@ -1021,9 +1049,9 @@ cho người loại 1) và `sp_auth_get_user_by_id` RS2 → `GET api/auth/me` tr
 > tạo phiếu năm theo **mẫu giảng viên** trong khi phiếu quý lại theo mẫu viên chức.
 > `update_database.sql` của đợt này có truy vấn liệt kê các phiếu lệch loại còn sót.
 >
-> ⚠ `v_giang_vien_khoa` / `v_vien_chuc_don_vi` (module vi phạm) chỉ coi **5 ngạch**
-> `GV, GVC, GVCC, PGS, GS` là giảng viên — chưa gồm `TROGIANG, TAPSU`. Hiện chưa có nhân viên
-> nào mang 2 chức danh này nên chưa gây lệch; khi có thì phải đồng bộ hai view đó.
+> ✅ Đợt "Chức danh chính thức" đã thống nhất: hàm này, `v_giang_vien_khoa` và `v_vien_chuc_don_vi`
+> (module vi phạm) cùng dùng **4 ngạch** `GV, GVC, GVCC, HDLD_GV` (trước đó hàm dùng 7 mã, hai view
+> dùng 5 mã). Sửa danh sách ở một nơi phải sửa cả ba — xem §1.3.
 
 Đây là hiện thực của quyết định "KPI Phòng khác KPI Khoa": một PGS làm Trưởng phòng chấm
 theo **mẫu viên chức** trên phiếu Phòng và theo **mẫu giảng viên** trên phiếu Khoa.
@@ -2806,8 +2834,9 @@ Hai thứ dễ nhầm là chỗ lưu nhưng không phải:
 - `nckh_gio_nckh.hoc_vi` / `hoc_ham` — chỉ là text denormalize đổ về từ API NCKH, nằm trên bảng
   **wipe-and-reload** (`sp_nckh_gio_nckh_dong_bo` mở đầu bằng `DELETE FROM dbo.nckh_gio_nckh;`),
   không FK tới `nhan_vien`, mất sạch sau mỗi lần đồng bộ. Không dùng làm hồ sơ nhân sự được.
-- `chuc_danh_nghe_nghiep` — đây là **ngạch/chức danh nghề nghiệp** (GV/GVC/GVCC/PGS/GS), không
-  phải học vị. GS/PGS nằm ở đây vì Bảng 1 QĐ ĐHKT xếp GVCC và PGS cùng một dòng.
+- `chuc_danh_nghe_nghiep` — đây là **ngạch/chức danh nghề nghiệp** (GV/GVC/GVCC/HĐLĐ…), không
+  phải học vị. Trước đây có cả GS/PGS (theo Bảng 1 QĐ ĐHKT); đợt "Chức danh chính thức" đã xoá
+  vì đó là học hàm, không có trong danh sách chức danh nhân sự — xem §1.3.
 
 **Học vị (ĐH/ThS/TS) ≠ chức danh nghề nghiệp (GV/GVC/GVCC) ≠ học hàm (GS/PGS).** Một người có
 thể là Tiến sĩ nhưng vẫn giữ ngạch Giảng viên.
@@ -2836,15 +2865,15 @@ Ba quy ước nên giữ giống hệt lịch sử chức danh để khỏi ph�
 Khi viết CRUD, copy nguyên `sp_nhan_vien_chuc_danh_create/_update/_delete` (auto-close bản ghi
 đang mở, từ chối chồng lấn, sync cột cache).
 
-### 12.3. Hai mã chức danh mới: `CV` và `KHAC` (phần NÀY đã làm rồi)
+### 12.3. Hai mã chức danh `CV` và `KHAC` (lịch sử)
 
-Nguồn NCKH trả về `TitleName` = "Chuyên viên" và "Khác" — không nằm trong 5 ngạch giảng dạy.
-Đợt "Khoa Thống kê - Tin học" đã seed thêm `CV` (Chuyên viên) và `KHAC` (Khác) vào
-`chuc_danh_nghe_nghiep`.
+Nguồn NCKH trả về `TitleName` = "Chuyên viên" và "Khác". Đợt "Khoa Thống kê - Tin học" đã seed
+thêm `CV` (Chuyên viên) và `KHAC` (Khác). Đợt "Chức danh chính thức" **giữ `CV`** (có trong danh
+sách chính thức) và **xoá `KHAC`**.
 
-⚠️ Hai mã này **cố ý nằm ngoài** bộ `ma_chuc_danh IN ('GV','GVC','GVCC','PGS','GS')` mà ~10 SP
-dùng để lọc giảng viên. Người mang `CV`/`KHAC` **không** được tính là giảng viên khi chấm KPI —
-đúng nghiệp vụ, đừng "sửa" bằng cách nhét chúng vào danh sách đó.
+⚠️ Mọi mã ngoài `GV, GVC, GVCC, HDLD_GV` **cố ý** nằm ngoài danh sách ngạch giảng dạy (§1.3).
+Người mang `CV`, `CVC`, `NCV`… **không** được tính là giảng viên khi chấm KPI — đúng nghiệp vụ,
+đừng "sửa" bằng cách nhét chúng vào danh sách đó.
 
 ### 12.4. Đặc thù dữ liệu nguồn NCKH (biết trước để khỏi tưởng là bug)
 

@@ -8,7 +8,7 @@ import {
 const expectedGroups = [
   ["evaluation", "Phiếu KPI", "Đánh giá KPI Giảng viên|Đánh giá KPI Nhân viên|Lịch sử đánh giá|Đánh giá KPI Khoa|Lịch sử đánh giá KPI Khoa|Đánh giá KPI Phòng/Trung tâm|Lịch sử đánh giá KPI Phòng/Trung tâm|Kho minh chứng cá nhân|Kho minh chứng đơn vị"],
   ["personalData", "Kê khai và dữ liệu của tôi", "Kê khai giờ quy đổi|Kê khai thành tích|Thành tích NCKH|Phản hồi sinh viên|Phục vụ cộng đồng|Vi phạm của tôi"],
-  ["unitScoring", "Xử lý KPI đơn vị", "Hồ sơ chờ thẩm định|Phiếu toàn đơn vị|Duyệt KPI viên chức theo quý|Duyệt hồ sơ KPI|Chốt hồ sơ nhân viên|Tờ trình KPI đơn vị|Duyệt kê khai giờ quy đổi|Duyệt kê khai thành tích|Ghi nhận vi phạm nhân viên|Báo cáo đơn vị"],
+  ["unitScoring", "Xử lý KPI đơn vị", "Hồ sơ chờ thẩm định|Chờ tôi chấm KPI đơn vị|Phiếu toàn đơn vị|Duyệt KPI viên chức theo quý|Duyệt hồ sơ KPI|Chốt hồ sơ nhân viên|Tờ trình KPI đơn vị|Duyệt kê khai giờ quy đổi|Duyệt kê khai thành tích|Ghi nhận vi phạm nhân viên|Báo cáo đơn vị"],
   ["evaluationMgmt", "Duyệt KPI cấp trường", "Duyệt hồ sơ lãnh đạo|Theo dõi phiếu toàn trường"],
   ["kpiSources", "Ghi nhận và số liệu KPI", "Giờ giảng từ thời khóa biểu|Quản lý học vụ|Quản lý đánh giá sinh viên|Điểm trung bình ĐGSV|Ghi nhận phục vụ cộng đồng|Ghi nhận vi phạm giảng viên|Tổng hợp điểm trừ vi phạm|Thống kê vi phạm của Khoa"],
   ["planMgmt", "Thiết lập KPI", "Quản lý năm đánh giá|Định mức giảng viên|Ngoại lệ định mức|Danh mục thành tích vượt trội|Danh mục loại vi phạm"],
@@ -89,4 +89,11 @@ test("TK kiêm nhiệm TP vẫn thấy trang vi phạm nhân viên", () => {
 
   expect(paths).toContain("/ghi-nhan-vi-pham-nhan-vien");
   expect(canAccessPath("/ghi-nhan-vi-pham-nhan-vien", user)).toBe(true);
+});
+
+
+test.each(["TK", "TKL", "TP", "ADMIN"])("%s vào được menu và URL phiếu được giao", (MaChucVu) => {
+  const user = { MaChucVu, DonVi: [{ IdDonVi: 20, MaChucVu }] };
+  expect(canAccessPath("/phieu-don-vi-cho-cham/7", user)).toBe(true);
+  expect(visibleGroups(user).some((g) => g.items.some((i) => i.path === "/phieu-don-vi-cho-cham"))).toBe(true);
 });

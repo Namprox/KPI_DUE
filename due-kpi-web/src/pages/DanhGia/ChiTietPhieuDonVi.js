@@ -34,6 +34,7 @@ import {
   diemHieuLucCuaDong,
   duyetDvPhieuDonVi,
   fetchPhieuDonViDetail,
+  duocChamDuyetDv,
   laDongChamTay,
   nhapDiemChiTietDonVi,
   nhapDiemDuyetDvChiTietDonVi,
@@ -240,6 +241,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     setNhapNhanXet({});
   }, [phieu?.TrangThai]);
 
+  const soChoCham = Number(phieu?.SoTieuChiGiaoChuaCham) || 0;
   const chiTietList = useMemo(() => phieu?.ChiTiet || [], [phieu]);
   const cap = useMemo(() => capChamTheoTrangThai(phieu?.TrangThai), [phieu]);
   const quyen = useMemo(() => quyenPhieuKhoa(phieu, user), [phieu, user]);
@@ -254,7 +256,8 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
    * người đăng nhập, khó đối chiếu khi trao đổi với nhau.
    */
   const laBuocDuyet = Number(phieu?.TrangThai) === TRANG_THAI_DV.CHO_DV_DUYET;
-  const choPhepDuyet = !readOnly && quyen.coTheChamDuyetDv;
+  const choPhepDuyet = !readOnly && quyen.coTheDuyetDv;
+  const choPhepCham = !readOnly && quyen.coTheChamDuyetDv;
 
   /**
    * Tổng điểm tạm tính, có tính cả bản nháp đang gõ.
@@ -433,7 +436,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
   // Lưu tất cả tiêu chí đã chỉnh sửa
   const handleLuuTatCa = async () => {
     if (!choPhepNhap) return false;
-    const danhSachSua = chiTietList.filter((ct) => oDaSua(ct));
+    const danhSachSua = chiTietList.filter((ct) => laDongChamTay(ct) && oDaSua(ct));
     if (danhSachSua.length === 0) return true;
 
     setDangLuuTatCa(true);
@@ -450,7 +453,10 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
           rowVersion: currentRowVersion,
         });
 
-        if (newRowVersion) currentRowVersion = newRowVersion;
+        if (newRowVersion) {
+          currentRowVersion = newRowVersion;
+          setPhieu((cur) => ({ ...cur, RowVersion: newRowVersion }));
+        }
         savedCount++;
 
         // Xóa bản nháp dòng đã lưu thành công
@@ -497,22 +503,23 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
    * (DiemChinhThuc, NgayDuyetDv).
    */
   const ghiDiemDong = async (ct, { diem, nhanXet }, thongDiepXong) => {
-    if (!cap || !choPhepDuyet) return false;
+    if (!cap || readOnly || !duocChamDuyetDv(phieu, ct) || idDangLuu !== null) return false;
     const idCt = ct.IdChiTietDv;
     setIdDangLuu(idCt);
     try {
-      await HAM_GHI_DIEM[cap](idCt, {
+      const { newRowVersion } = await HAM_GHI_DIEM[cap](idCt, {
         diem,
         nhanXet,
         rowVersion: phieu?.RowVersion,
       });
+      if (newRowVersion) setPhieu((cur) => ({ ...cur, RowVersion: newRowVersion }));
       await taiPhieu({ imLang: true });
       showToast("success", "Đã lưu", thongDiepXong);
       return true;
     } catch (error) {
       console.error("Lỗi lưu điểm tiêu chí đơn vị:", error);
       showToast("error", "Lưu thất bại", error.message);
-      if (error.isConflict) await taiPhieu({ imLang: true });
+      if (error.isConflict || error.isForbidden || error.status === 422) await taiPhieu({ imLang: true });
       return false;
     } finally {
       setIdDangLuu(null);
@@ -588,7 +595,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
       } catch (error) {
         console.error("Lỗi tổng hợp KPI thành viên:", error);
         setLoiTongHop(error.message);
-        if (error.isConflict) await taiPhieu({ imLang: true });
+        if (error.isConflict || error.isForbidden || error.status === 422) await taiPhieu({ imLang: true });
         return null;
       } finally {
         setDangTongHop(false);
@@ -747,7 +754,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     } catch (error) {
       console.error("Lỗi trình phiếu KPI đơn vị:", error);
       showToast("error", "Trình phiếu thất bại", error.message);
-      if (error.isConflict) await taiPhieu({ imLang: true });
+      if (error.isConflict || error.isForbidden || error.status === 422) await taiPhieu({ imLang: true });
     } finally {
       setDangTrinh(false);
     }
@@ -762,7 +769,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
    * cấp Trường sẽ bị chặn vì chúng.
    */
   const handleDuyet = async ({ lyDo }) => {
-    if (!choPhepDuyet) return;
+    if (!choPhepDuyet || soChoCham > 0 || idDangLuu !== null) return;
     setDangDuyet(true);
     try {
       const item = await duyetDvPhieuDonVi(id, {
@@ -781,7 +788,8 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     } catch (error) {
       console.error("Lỗi duyệt phiếu KPI đơn vị:", error);
       showToast("error", "Duyệt phiếu thất bại", error.message);
-      if (error.isConflict) await taiPhieu({ imLang: true });
+      setMoDuyet(false);
+      if (error.isConflict || error.isForbidden || error.status === 422) await taiPhieu({ imLang: true });
     } finally {
       setDangDuyet(false);
     }
@@ -841,7 +849,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
     <button
       type="button"
       className="btn-submit"
-      disabled={dangDuyet || idDangLuu !== null}
+      disabled={dangDuyet || idDangLuu !== null || soChoCham > 0}
       onClick={() => setMoDuyet(true)}
     >
       <i className="fa-solid fa-user-check"></i> Duyệt phiếu
@@ -959,6 +967,12 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
         </div>
       </div>
 
+      {Number(phieu.TrangThai) === 2 && soChoCham > 0 && (
+        <div className="cd-hint cd-hint-warn" role="alert">
+          Còn {soChoCham} tiêu chí chờ đơn vị được giao chấm
+        </div>
+      )}
+
       {/* Trạng thái 2: bố cục duyệt; các trạng thái khác: form kê khai */}
       {laBuocDuyet ? (
         <DuyetDonViForm
@@ -967,7 +981,7 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
           chiTietList={chiTietList}
           sections={sections}
           tieuChiMap={tieuChiMap}
-          choPhepNhap={choPhepDuyet}
+          choPhepNhap={choPhepCham}
           lyDoKhoa={
             readOnly
               ? "Bạn đang xem lịch sử đánh giá (chỉ đọc)."

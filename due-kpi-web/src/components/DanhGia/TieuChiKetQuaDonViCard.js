@@ -34,6 +34,7 @@ export default function TieuChiKetQuaDonViCard({ chiTiet: ct, stt, onXem, onTai 
         </div>
       </div>
       <div className="cdm-tags">
+        {ct.CoPhanQuyen === true && <span className="cdm-pill">Đơn vị thẩm định: {ct.TenDonViCham || "Chưa có tên đơn vị"}</span>}
         <span className="cdm-pill">Tối đa {formatDiem(ct.DiemToiDa)}</span>
         <span className="cdm-pill"><i className={`fa-solid ${tuDong ? "fa-robot" : "fa-pen-to-square"}`}></i> {tuDong ? "Điểm tự động" : "Chấm thủ công"}</span>
         {ct.TenNhom && <span className="cdm-pill">{ct.TenNhom}</span>}

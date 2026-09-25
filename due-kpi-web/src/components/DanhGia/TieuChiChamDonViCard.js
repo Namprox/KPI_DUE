@@ -5,6 +5,7 @@ import {
   diemGocCuaDong,
   diemHieuLucCuaDong,
   laDongChamTay,
+  laDongGiaoChuaCham,
 } from "../../utils/phieuDonViApi";
 import MinhChungTieuChiBox from "./TieuChi/MinhChungTieuChiBox";
 
@@ -30,21 +31,7 @@ import MinhChungTieuChiBox from "./TieuChi/MinhChungTieuChiBox";
  *  - Khối "Lịch sử chấm điểm": bảng lich_su_cham_diem_don_vi có trong CSDL nhưng
  *    chưa mở qua API (không có GET phieu-don-vi/{id}/lich-su-cham-diem).
  *
- * DUYỆT XONG LÀ CHỐT DÒNG. Dòng đã có `DiemDuyetDv` không còn nút nào, giống hệt
- * dòng đã chốt bên giảng viên. Khác ở chỗ bên đó còn đường mở lại (Trưởng khoa
- * gọi chitiet/{id}/khoa/tra-tham-dinh), còn họ phiếu đơn vị không có endpoint
- * trả về nào - sửa được chỉ khi cấp Trường mở lại CẢ phiếu. Đây là lựa chọn có
- * chủ đích, đừng "sửa" bằng cách thêm lại nút chấm lại.
- *
- * Hai thao tác còn lại đều ghi qua CÙNG một endpoint
- * PUT api/chi-tiet-don-vi/{id}/diem-duyet-dv, chỉ khác giá trị `Diem`:
- *   - "Duyệt giữ nguyên" gửi đúng điểm gốc cấp dưới đề xuất
- *   - "Chỉnh sửa điểm"  mở SuaDiemDonViModal để chọn lại mức
- *
- * DÒNG TỰ ĐỘNG (`loai_nguon_diem = 2`, chỉ mẫu Khoa mới có) không có nút "Duyệt
- * giữ nguyên": điểm do hệ thống tổng hợp từ KPI thành viên, không phải đề xuất
- * của ai để duyệt lại, và nó đã là điểm hiệu lực sẵn rồi. Vẫn giữ "Chỉnh sửa
- * điểm" làm đòn bẩy cho trưởng đơn vị khi con số tổng hợp sai.
+ * Quyền chấm từng dòng do backend quyết định; còn trạng thái 2 thì được sửa lại.
  */
 const TieuChiChamDonViCard = ({
   chiTiet,
@@ -133,6 +120,8 @@ const TieuChiChamDonViCard = ({
         </div>
 
         <div className="cdm-tags">
+          {chiTiet.CoPhanQuyen === true && <span className="cdm-pill">Đơn vị thẩm định: {chiTiet.TenDonViCham || "Chưa có tên đơn vị"}</span>}
+          {laDongGiaoChuaCham(chiTiet) && <span className="cdm-pill cdm-pill-canh-bao">Chờ đơn vị được giao chấm</span>}
           {/* Thay cho TrangThaiDongBadge của luồng cá nhân: phiếu đơn vị không
               có cột trang_thai_dong, "đã duyệt" chỉ suy ra từ việc dòng đã có
               điểm ở lớp Trưởng phòng. */}
@@ -278,21 +267,20 @@ const TieuChiChamDonViCard = ({
           </div>
         )}
 
-        {/* Duyệt xong là CHỐT: dòng đã có DiemDuyetDv không còn nút nào, chỉ
-            còn câu kết luận ở trên. */}
+        {/* Điểm đã chấm vẫn được sửa trong trạng thái 2 theo cờ backend. */}
         {tuDong && !daDuyet && (
           <div className="cdm-ghi-chu">
             <i className="fa-solid fa-robot"></i> Hệ thống tính từ KPI của thành
-            viên đơn vị - đã tính vào tổng, không cần duyệt.
+            viên đơn vị. Có thể xác nhận hoặc chỉnh sửa khi được giao chấm.
           </div>
         )}
 
-        {choPhepNhap && !daDuyet && (
+        {choPhepNhap && (
           <>
             {/* Giữ nguyên mức thư ký là lối đi thường gặp nhất - để trước để
                 người duyệt khỏi phải mở hộp thoại chọn lại đúng mức đó. Dòng tự
                 động không có bước này, xem khối chú thích ở đầu file. */}
-            {!tuDong && (
+            {(!tuDong || chiTiet.CoPhanQuyen === true) && !daDuyet && (
               <button
                 type="button"
                 className="cdm-btn cdm-btn-chinh"
@@ -300,11 +288,11 @@ const TieuChiChamDonViCard = ({
                 onClick={() => onDuyet(chiTiet)}
                 title={
                   diemGoc == null
-                    ? "Thư ký chưa nhập điểm cho tiêu chí này"
-                    : "Ghi nhận đúng mức điểm thư ký đơn vị đã đề xuất"
+                    ? "Tiêu chí chưa có điểm nguồn"
+                    : "Ghi nhận đúng mức điểm nguồn của tiêu chí"
                 }
               >
-                <i className="fa-solid fa-check"></i> Duyệt giữ nguyên{" "}
+                <i className="fa-solid fa-check"></i> {tuDong ? "Xác nhận" : "Duyệt giữ nguyên"}{" "}
                 {formatDiem(diemGoc)}
               </button>
             )}

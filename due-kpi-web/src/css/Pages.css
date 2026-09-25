@@ -206,33 +206,52 @@
   font-variant-numeric: tabular-nums;
 }
 
-.table-btn-primary {
+.table-btn-primary,
+.custom-table a.table-btn-primary,
+.custom-table .table-btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: #ffffff;
-  background-color: #0056b3;
-  border: 1px solid #4a5c71;
+  color: #ffffff !important;
+  background-color: #2563eb;
+  border: 1px solid #1d4ed8;
   border-radius: 8px;
-  padding: 9px 14px;
+  padding: 8px 14px;
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none !important;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
   transition:
     background-color 0.18s ease,
-    border-color 0.18s ease;
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.table-btn-primary:hover:not(:disabled) {
-  background-color: #2f80d8;
-  border-color: #2f80d8;
+.table-btn-primary:hover:not(:disabled),
+.custom-table a.table-btn-primary:hover:not(:disabled),
+.custom-table .table-btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  border-color: #1e40af;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3);
+}
+
+.table-btn-primary:active:not(:disabled),
+.custom-table a.table-btn-primary:active:not(:disabled),
+.custom-table .table-btn-primary:active:not(:disabled) {
+  background-color: #1e40af;
+  border-color: #172554;
+  color: #ffffff !important;
 }
 
 .table-btn-primary:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .table-title-cell {
