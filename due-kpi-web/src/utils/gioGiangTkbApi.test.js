@@ -4,6 +4,8 @@ import {
   kiemTraFileThoiKhoaBieu,
   kiemTraImportTkb,
   quetAnhXaTuDong,
+  luuAnhXaGioGiangTkb,
+  lyDoChuaAnhXa,
 } from "./gioGiangTkbApi";
 import { canAccessPath } from "../config/menuConfig";
 import { apiFetch } from "./api";
@@ -93,5 +95,28 @@ describe("gioGiangTkbApi validation", () => {
     ["PHT", "TK", "TKL", "TP", "TBM"].forEach((role) => {
       expect(canAccessPath("/quan-ly-gio-giang", { MaChucVu: role })).toBe(false);
     });
+  });
+
+  test("lưu và gỡ ánh xạ giữ nguyên cặp tên, khoa của từng dòng trùng tên", async () => {
+    apiFetch.mockResolvedValue({ ok: true, json: async () => ({ Success: true }) });
+    await luuAnhXaGioGiangTkb({ HoTenChuan: "LE VAN CUONG", KhoaChuan: "KE TOAN" }, 6);
+    await luuAnhXaGioGiangTkb({ HoTenChuan: "LE VAN CUONG", KhoaChuan: "KINH TE" }, null);
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toEqual({ HoTenChuan: "LE VAN CUONG", KhoaChuan: "KE TOAN", IdNhanVien: 6 });
+    expect(JSON.parse(apiFetch.mock.calls[1][1].body)).toEqual({ HoTenChuan: "LE VAN CUONG", KhoaChuan: "KINH TE", IdNhanVien: null });
+  });
+
+  test.each([
+    [{ SoNguoiKhopTen: 0 }, "Không có nhân viên"],
+    [{ SoNguoiKhopTen: 2, KhoaChuan: "" }, "file không ghi khoa"],
+    [{ SoNguoiKhopTen: 2, KhoaChuan: "KT", SoNguoiKhopKhoa: 0 }, "không ai thuộc khoa"],
+    [{ SoNguoiKhopTen: 3, KhoaChuan: "KT", SoNguoiKhopKhoa: 2 }, "Trùng cả tên lẫn khoa"],
+    [{}, "Chưa ánh xạ"],
+  ])("lý do chưa ánh xạ theo dữ liệu API %j", (item, message) => {
+    expect(lyDoChuaAnhXa(item)).toContain(message);
+  });
+
+  test("giữ nguyên lỗi 400 nhiều dòng để UI trình bày đầy đủ", async () => {
+    apiFetch.mockResolvedValue({ ok: false, status: 400, json: async () => ({ Success: false, ErrorCode: "INVALID", Message: "Sheet DH dong 2: loi | Sheet SDH dong 3: loi" }) });
+    await expect(importThoiKhoaBieu({ file: new File([""], "tkb.xlsx"), idNam: 2026 })).rejects.toMatchObject({ status: 400, errorCode: "INVALID", message: "Sheet DH dong 2: loi | Sheet SDH dong 3: loi" });
   });
 });

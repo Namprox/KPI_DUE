@@ -22,14 +22,11 @@ CREATE TABLE chuc_vu (
     ma_chuc_vu           NVARCHAR(20)  NOT NULL,
     ten_chuc_vu          NVARCHAR(100) NOT NULL,
     ty_le_dinh_muc_giang DECIMAL(5,4)  NULL,    -- 0.0000 - 1.0000 (giờ giảng dạy)
-    ty_le_dinh_muc_nckh  DECIMAL(5,4)  NULL,    -- 0.0000 - 1.0000 (giờ NCKH)
     ghi_chu_dieu_kien    NVARCHAR(500) NULL,    -- VD: 'Khoa ≥40 GV hoặc ≥800 SV'
     trang_thai           BIT           DEFAULT 1,
     CONSTRAINT uq_ma_chuc_vu         UNIQUE (ma_chuc_vu),
     CONSTRAINT chk_chuc_vu_tldm      CHECK (ty_le_dinh_muc_giang IS NULL
-                                        OR (ty_le_dinh_muc_giang >= 0 AND ty_le_dinh_muc_giang <= 1)),
-    CONSTRAINT chk_chuc_vu_tldm_nckh CHECK (ty_le_dinh_muc_nckh IS NULL
-                                        OR (ty_le_dinh_muc_nckh >= 0 AND ty_le_dinh_muc_nckh <= 1))
+                                        OR (ty_le_dinh_muc_giang >= 0 AND ty_le_dinh_muc_giang <= 1))
 );
 GO
 
@@ -2441,20 +2438,24 @@ CREATE INDEX ix_lsttvt_ke_khai   ON lich_su_ke_khai_thanh_tich(id_ke_khai, ngay_
 GO
 
 -- =============================================================================
--- 13. GIỜ GIẢNG THEO THỜI KHOÁ BIỂU
+-- 13. GIỜ GIẢNG (FILE THỐNG KÊ SỐ TIẾT — SHEET DH + SDH)
 --     Nguồn (1) của "thời gian thực hiện" — tiết giảng dạy quy đổi — mà mục 9.0
---     của schema_ghi_chu.md từng ghi là CHƯA làm. Nhập từ file Excel thời khoá
---     biểu, tự lọc theo kỳ học và quy đổi sang giờ chuẩn theo sĩ số.
+--     của schema_ghi_chu.md từng ghi là CHƯA làm. Nhập từ file Excel thống kê số
+--     tiết gồm HAI sheet: DH (đại học) và SDH (sau đại học); tự lọc theo kỳ học và
+--     quy đổi sang giờ chuẩn theo hệ đào tạo + sĩ số + loại hình giảng dạy.
 --
 --     Nhóm bảng này khoá theo NĂM ĐÁNH GIÁ và có đường nối về nhân viên (qua bảng
---     ánh xạ họ tên ở 13.4), thay cho cách nhập staging phẳng theo kỳ học trước đây.
+--     ánh xạ (họ tên, khoa) ở 13.4), thay cho cách nhập staging phẳng theo kỳ học.
+--
+--     GIẢNG VIÊN = (ho_ten_chuan, khoa_chuan): TenKhoa trong file là khoa CỦA GIẢNG
+--     VIÊN, nên hai người trùng tên ở hai khoa là hai dòng riêng.
 --
 --     BẤT BIẾN — toàn bộ quy tắc ở tầng C#:
 --       BLL/GioGiangTkbService quyết định dòng nào thuộc năm nào (LỌC THEO KỲ HỌC:
 --       năm N nhận đúng 3 kỳ (N−2000)*10+2, (N−2000)*10+3 và (N−1999)*10+1 — vd năm
 --       2026 nhận 262, 263, 271); Helper/GioChuanQuyDoi quy đổi tiết → giờ chuẩn theo
---       sĩ số. SQL CHỈ NHẬN các con số đã chốt qua TVP dbo.GioGiangTkbRow — không
---       tính lại ở đây.
+--       hệ đào tạo + sĩ số + loại hình. SQL CHỈ NHẬN các con số đã chốt qua TVP
+--       dbo.GioGiangTkbRow — không tính lại ở đây.
 --
 --       Số tiết lấy THẲNG cột SoTiet của file Excel, không tính lại từ lịch học.
 --
@@ -2478,49 +2479,65 @@ CREATE TABLE gio_giang_tkb_lan_import (
 );
 GO
 
--- 13.2. Tổng hợp 1 dòng / (năm × giảng viên).
---       Khoá gộp là ho_ten_chuan vì file TKB CHỈ có HoLot + Ten — không mã giảng
---       viên, không email. Đường nối về nhân viên nằm ở 13.4 và join LÚC ĐỌC.
+-- 13.2. Tổng hợp 1 dòng / (năm × giảng viên), gộp CẢ HAI sheet DH + SDH.
+--       Khoá gộp là (ho_ten_chuan, khoa_chuan) vì file CHỈ có Họ + Tên + TenKhoa —
+--       không mã giảng viên, không email. Đường nối về nhân viên nằm ở 13.4 và join
+--       LÚC ĐỌC. Giờ tách sẵn ĐH / SĐH để API tổng hợp không phải quét lại chi tiết:
+--       gio_chuan_trong_nam = gio_chuan_dai_hoc + gio_chuan_sau_dai_hoc.
 CREATE TABLE gio_giang_tkb (
-    id_gio_giang_tkb    INT           IDENTITY(1,1) PRIMARY KEY,
-    id_nam              INT           NOT NULL,
-    ho_ten              NVARCHAR(150) NOT NULL,   -- nguyên văn từ file
-    ho_ten_chuan        NVARCHAR(150) NOT NULL,   -- bỏ dấu + gộp khoảng trắng + viết hoa
-    ten_khoa            NVARCHAR(200) NULL,
-    so_lop              INT           NOT NULL DEFAULT 0,
-    so_tiet_trong_nam   INT           NOT NULL DEFAULT 0,   -- tổng cột SoTiet của các lớp trong năm
-    gio_chuan_trong_nam DECIMAL(10,2) NOT NULL DEFAULT 0,
-    id_lan_import       INT           NULL,
-    ngay_import         DATETIME      NOT NULL DEFAULT GETDATE(),
+    id_gio_giang_tkb      INT           IDENTITY(1,1) PRIMARY KEY,
+    id_nam                INT           NOT NULL,
+    ho_ten                NVARCHAR(150) NOT NULL,   -- nguyên văn từ file
+    ho_ten_chuan          NVARCHAR(150) NOT NULL,   -- bỏ dấu + gộp khoảng trắng + viết hoa
+    ten_khoa              NVARCHAR(200) NULL,       -- nguyên văn TenKhoa (không có tiền tố "Khoa")
+    khoa_chuan            NVARCHAR(200) NOT NULL CONSTRAINT df_ggtkb_khoa_chuan DEFAULT N'',
+                                                    -- TenKhoa chuẩn hoá như ho_ten_chuan; '' = file không ghi khoa
+    so_lop                INT           NOT NULL DEFAULT 0,
+    so_tiet_trong_nam     INT           NOT NULL DEFAULT 0,   -- tổng cột SoTiet của các lớp trong năm
+    gio_chuan_trong_nam   DECIMAL(10,2) NOT NULL DEFAULT 0,
+    gio_chuan_dai_hoc     DECIMAL(10,2) NOT NULL CONSTRAINT df_ggtkb_gio_dh  DEFAULT 0,  -- sheet DH
+    gio_chuan_sau_dai_hoc DECIMAL(10,2) NOT NULL CONSTRAINT df_ggtkb_gio_sdh DEFAULT 0,  -- sheet SDH
+    id_lan_import         INT           NULL,
+    ngay_import           DATETIME      NOT NULL DEFAULT GETDATE(),
     CONSTRAINT fk_ggtkb_nam     FOREIGN KEY (id_nam)        REFERENCES nam_danh_gia(id_nam),
     CONSTRAINT fk_ggtkb_lan     FOREIGN KEY (id_lan_import) REFERENCES gio_giang_tkb_lan_import(id_lan_import),
-    CONSTRAINT uq_ggtkb_nam_ten UNIQUE (id_nam, ho_ten_chuan)
+    CONSTRAINT uq_ggtkb_nam_ten UNIQUE (id_nam, ho_ten_chuan, khoa_chuan)
 );
 GO
 
--- 13.3. Chi tiết 1 dòng / lớp tín chỉ. Giữ để người dùng bóc tách đối chiếu tay:
+-- 13.3. Chi tiết 1 dòng / lớp (cả DH lẫn SDH). Giữ để người dùng bóc tách đối chiếu tay:
 --       SUM(gio_chuan_trong_nam) của chi tiết = gio_chuan_trong_nam của dòng tổng hợp.
 --
 --       Dòng trùng (họ tên, kỳ học, mã lớp) được GIỮ NGUYÊN CẢ HAI — đồng giảng là
 --       có thật, khử trùng sẽ làm mất giờ. BLL cảnh báo TRUNG_LOP để người nhập kiểm.
+--
+--       he_so (Helper/GioChuanQuyDoi):
+--         DH  Tiếng Việt: ≤40: 1,0 · 41-50: 1,1 · 51-60: 1,2 · 61-70: 1,3 · 71-80: 1,4 · ≥81: 1,5
+--         DH  Tiếng Anh : 1,5
+--         SDH Tiếng Việt: ≤40: 1,5 · 41-50: 1,6 · 51-60: 1,7 · ≥61: 1,8
+--         SDH Tiếng Anh : ≤40: 1,7 · 41-50: 1,8 · 51-60: 1,9 · ≥61: 2,0
+--       Sĩ số ≤ 0 (ô trống) → bậc thấp nhất của loại hình.
 CREATE TABLE gio_giang_tkb_chi_tiet (
     id_chi_tiet         INT           IDENTITY(1,1) PRIMARY KEY,
     id_gio_giang_tkb    INT           NOT NULL,
+    he_dao_tao          NVARCHAR(3)   NOT NULL CONSTRAINT df_ggtkb_ct_he_dao_tao DEFAULT N'DH',  -- 'DH' / 'SDH' = sheet
+    giang_tieng_anh     BIT           NOT NULL CONSTRAINT df_ggtkb_ct_tieng_anh  DEFAULT 0,      -- LoaiHinhGiangDay = "Tiếng Anh"
     ky_hoc              SMALLINT      NOT NULL,   -- id_nam = 2026 → chỉ có 262, 263, 271
-    ma_lop_tin_chi      NVARCHAR(50)  NULL,
+    ma_lop_tin_chi      NVARCHAR(50)  NULL,       -- MA_LOP_TIN_CHI (DH) / Lop (SDH)
     ma_hoc_phan         NVARCHAR(50)  NULL,
     ten_hoc_phan        NVARCHAR(300) NULL,
     ten_khoa            NVARCHAR(200) NULL,
     slsv_dang_ky_hoc    INT           NOT NULL DEFAULT 0,
-    he_so               DECIMAL(4,2)  NOT NULL DEFAULT 1,  -- ≤40 SV: 1,0 · 41-50: 1,1 · 51-60: 1,2
-    so_tiet_trong_nam   INT           NOT NULL DEFAULT 0,  -- 61-70: 1,3 · 71-80: 1,4 · ≥81: 1,5
+    he_so               DECIMAL(4,2)  NOT NULL DEFAULT 1,
+    so_tiet_trong_nam   INT           NOT NULL DEFAULT 0,
     gio_chuan_trong_nam DECIMAL(10,2) NOT NULL DEFAULT 0,
-    CONSTRAINT fk_ggtkb_ct         FOREIGN KEY (id_gio_giang_tkb) REFERENCES gio_giang_tkb(id_gio_giang_tkb),
-    CONSTRAINT chk_ggtkb_ct_ky_hoc CHECK (ky_hoc >= 100 AND (ky_hoc % 10) IN (1, 2, 3))
+    CONSTRAINT fk_ggtkb_ct             FOREIGN KEY (id_gio_giang_tkb) REFERENCES gio_giang_tkb(id_gio_giang_tkb),
+    CONSTRAINT chk_ggtkb_ct_ky_hoc     CHECK (ky_hoc >= 100 AND (ky_hoc % 10) IN (1, 2, 3)),
+    CONSTRAINT chk_ggtkb_ct_he_dao_tao CHECK (he_dao_tao IN (N'DH', N'SDH'))
 );
 GO
 
--- 13.4. Ánh xạ họ tên (trong file TKB) → nhân viên.
+-- 13.4. Ánh xạ (họ tên, khoa) (trong file) → nhân viên.
 --
 --       BA tính chất làm nên giá trị của bảng này:
 --         1. KHÔNG gắn id_nam  → ánh xạ làm một lần dùng cho mọi năm;
@@ -2528,30 +2545,35 @@ GO
 --         3. Join LÚC ĐỌC (không lưu id_nhan_vien trên gio_giang_tkb) → sửa ánh xạ
 --            có hiệu lực NGAY, không phải import lại file.
 --
---       ÁNH XẠ TỰ ĐỘNG (đã chốt): import tự gắn những họ tên khớp DUY NHẤT một nhân
---       viên đang hoạt động — xem fn_gio_giang_tkb_khop_ten. Trùng tên (≥ 2 người)
---       hoặc không khớp ai thì để trống, hệ thống KHÔNG đoán bừa.
+--       ÁNH XẠ TỰ ĐỘNG (đã chốt) — xem fn_gio_giang_tkb_khop_ten:
+--         tên khớp DUY NHẤT một nhân viên đang hoạt động       → gắn (không xét khoa);
+--         trùng tên (≥ 2 người) nhưng KHOA khớp duy nhất một người → gắn người đó;
+--         còn lại (không ai / trùng cả tên lẫn khoa)           → để trống, KHÔNG đoán.
+--       Khoa của nhân viên: nhan_vien_chuc_vu hiệu lực → don_vi (Khoa K_, hoặc Khoa
+--       cha của Bộ môn); so với khoa_chuan cả dạng đầy đủ lẫn đã bỏ tiền tố "Khoa ".
 --
 --       RÀNG BUỘC CỨNG: cả hai đường ghi (import và sp_..._anh_xa_tu_dong) CHỈ THÊM,
 --       KHÔNG BAO GIỜ GHI ĐÈ. Bảng này không có cột phân biệt "máy gắn" với "người
 --       gắn", nên ghi đè sẽ xoá công sửa tay mà không có cách nào biết.
 --
---       Một nhân viên có thể nhận NHIỀU tên (file ghi tên không nhất quán giữa các
---       kỳ) nên KHÔNG đặt UNIQUE trên id_nhan_vien.
+--       Một nhân viên có thể nhận NHIỀU cặp (tên, khoa) (file ghi không nhất quán giữa
+--       các kỳ / hai sheet) nên KHÔNG đặt UNIQUE trên id_nhan_vien.
 CREATE TABLE gio_giang_tkb_anh_xa (
-    ho_ten_chuan  NVARCHAR(150) NOT NULL PRIMARY KEY,
+    ho_ten_chuan  NVARCHAR(150) NOT NULL,
+    khoa_chuan    NVARCHAR(200) NOT NULL CONSTRAINT df_ggtkb_ax_khoa_chuan DEFAULT N'',  -- '' = dòng không ghi khoa
     id_nhan_vien  INT           NOT NULL,
     id_nguoi_tao  INT           NULL,
     ngay_tao      DATETIME      NOT NULL DEFAULT GETDATE(),
     ngay_cap_nhat DATETIME      NULL,
+    CONSTRAINT pk_ggtkb_ax       PRIMARY KEY (ho_ten_chuan, khoa_chuan),
     CONSTRAINT fk_ggtkb_ax_nv    FOREIGN KEY (id_nhan_vien) REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_ggtkb_ax_nguoi FOREIGN KEY (id_nguoi_tao) REFERENCES nhan_vien(id_nhan_vien)
 );
 GO
 
 -- 13.5. TVP: các dòng chi tiết ĐÃ TÍNH XONG ở BLL, đẩy xuống trong 1 request.
---       Bảng phẳng (mang cả họ tên) vì SP tự GROUP BY ho_ten_chuan để dựng bảng
---       tổng hợp — C# không gửi hai tập dữ liệu lồng nhau.
+--       Bảng phẳng (mang cả họ tên) vì SP tự GROUP BY (ho_ten_chuan, khoa_chuan) để
+--       dựng bảng tổng hợp — C# không gửi hai tập dữ liệu lồng nhau.
 --
 --       CỐ Ý KHÔNG có PRIMARY KEY: dòng trùng (họ tên, kỳ học, mã lớp) có thể là
 --       đồng giảng thật sự — xem 13.3.
@@ -2559,6 +2581,9 @@ CREATE TYPE dbo.GioGiangTkbRow AS TABLE (
     ho_ten              NVARCHAR(150) NOT NULL,
     ho_ten_chuan        NVARCHAR(150) NOT NULL,
     ten_khoa            NVARCHAR(200) NULL,
+    khoa_chuan          NVARCHAR(200) NOT NULL,
+    he_dao_tao          NVARCHAR(3)   NOT NULL,
+    giang_tieng_anh     BIT           NOT NULL,
     ky_hoc              SMALLINT      NOT NULL,
     ma_lop_tin_chi      NVARCHAR(50)  NULL,
     ma_hoc_phan         NVARCHAR(50)  NULL,

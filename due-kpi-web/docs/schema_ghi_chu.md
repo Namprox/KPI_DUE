@@ -67,10 +67,13 @@ Từ đợt "Chức danh chính thức": cột `gio_nckh`, `gio_pvcd` đã **DRO
 theo từng năm — xem §1.3). Hệ quả:
 - Điều kiện "đủ định mức giờ NCKH" khi duyệt hồ sơ do **Trưởng khoa tick tay**; hệ thống không còn gợi ý.
 - Điểm tự động NCKH (`NCKH_GIO_TY_LE`) **không đổi** — dùng `nckh_gio_nckh.gio_nckh_dinh_muc` của web NCKH.
-- Còn lại nhưng **không còn tác dụng**: `chuc_vu.ty_le_dinh_muc_nckh`; `ngoai_le_dinh_muc.he_so_nckh /
+- Còn lại nhưng **không còn tác dụng**: `ngoai_le_dinh_muc.he_so_nckh /
   he_so_giam_nckh / so_gio_them_nckh / he_so_giam_pvcd / mien_nckh`; `phieu_danh_gia.gio_nckh_dinh_muc_ap_dung /
   gio_pvcd_dinh_muc_ap_dung / he_so_nckh_ap_dung` (phiếu mới lưu NULL).
-- `schema.sql` chưa phản ánh việc DROP 2 cột (file read-only) — nguồn sự thật là DB sau `update_database.sql`.
+- Từ 2026-09-26, `chuc_vu` và `api/chucvu` chỉ còn tỷ lệ giờ giảng
+  (`ty_le_dinh_muc_giang` trong DB, `TyLeDinhMucGiang` trong JSON); cột NCKH và CHECK tương ứng **đã DROP**.
+- `schema.sql` đã cập nhật `chuc_vu`, nhưng **chưa** phản ánh việc DROP `dinh_muc_giang_vien.gio_nckh /
+  gio_pvcd` — nguồn sự thật là DB sau `update_database.sql`.
 
 ### 1.5. `nhan_vien_chuc_vu` — Quan hệ người × đơn vị × chức vụ × thời gian
 Từ Đợt 1 của kế hoạch kiêm nhiệm, bảng này không còn là "lịch sử chức vụ" mà là
@@ -428,7 +431,7 @@ phiếu đánh giá" ở cuối mục này).
 | Cột | Trường API | Ý nghĩa | Khái niệm KPI tương đương |
 |---|---|---|---|
 | `gio_chuan` | `StandardHours` | Giờ chuẩn tổng/năm (vd 720) | — |
-| `ty_le_giam` | `ReductionPercentage` | Tỷ lệ định mức, đơn vị **%** (vd 85) | `chuc_vu.ty_le_dinh_muc_nckh` (không còn dùng) |
+| `ty_le_giam` | `ReductionPercentage` | Tỷ lệ định mức, đơn vị **%** (vd 85) | — (dữ liệu riêng của web NCKH; Chức vụ chỉ còn tỷ lệ giờ giảng, xem §2.2) |
 | `gio_nckh_dinh_muc` | `RequiredHours` | Định mức giờ NCKH phải đạt (vd 108) | — (`dinh_muc_giang_vien.gio_nckh` đã DROP, xem §2.2) |
 | `gio_nckh_quy_doi` | `ConvertedHours` | Giờ NCKH quy đổi thực tế (vd 100.02) | `gio_thuc_hien_gv.gio_nckh_thuc_te` |
 
@@ -2922,13 +2925,17 @@ Quyết định nghiệp vụ đã chốt: **giữ dòng Thạc sĩ cho cả hai
 Hai ca này chỉ ảnh hưởng tới học vị nên đợt này không đụng tới. Dữ liệu học vị gốc nằm ở
 `tkth.json` (đã không còn trong `update_database.sql`) — lấy lại từ đó khi cần.
 
-## 13. GIỜ GIẢNG THEO THỜI KHOÁ BIỂU (`gio_giang_tkb`)
+## 13. GIỜ GIẢNG — FILE THỐNG KÊ SỐ TIẾT, SHEET DH + SDH (`gio_giang_tkb`)
 
 ### 13.0. Vì sao có module này
 
 Mục 9.0 ghi "Thời gian thực hiện" của giảng viên có **hai** nguồn, và nguồn (1) — *tiết
 giảng dạy quy đổi* — **CHƯA làm**. Module này **chính là nguồn (1)**, lấy từ file Excel
-thời khoá biểu thay vì chờ hệ thống ngoài gọi sang.
+thống kê số tiết thay vì chờ hệ thống ngoài gọi sang.
+
+File có **hai sheet**: `DH` (giảng dạy đại học) và `SDH` (giảng dạy sau đại học) — xem 13.9.
+Bản đầu chỉ đọc một sheet thời khoá biểu đại học; tên bảng / endpoint `gio-giang-tkb` giữ
+nguyên để không phá hợp đồng API.
 
 Kết quả cuối cùng nằm ở `sp_gio_giang_tkb_tong_hop` (`GET api/gio-giang-tkb/tong-hop`):
 
@@ -2992,35 +2999,43 @@ Hệ quả kéo theo, ghi lại để không ai đi lại đường cũ:
 - `SoTiet` trống hoặc ≤ 0 → dòng vẫn được nhận nhưng đóng góp **0 giờ**, kèm cảnh báo
   `SO_TIET_TRONG`. Không chặn: thiếu dữ liệu ở một lớp không nên huỷ cả lần import.
 
-### 13.4. Quy đổi tiết → giờ chuẩn theo sĩ số
+### 13.4. Quy đổi tiết → giờ chuẩn theo hệ đào tạo, sĩ số và loại hình
 
-| `SLSV_DangKyHoc` | Hệ số |
-|---|---|
-| ≤ 40 | 1,0 |
-| 41 – 50 | 1,1 |
-| 51 – 60 | 1,2 |
-| 61 – 70 | 1,3 |
-| 71 – 80 | 1,4 |
-| ≥ 81 | 1,5 |
+| `SLSV_DangKyHoc` | ĐH – Tiếng Việt | ĐH – Tiếng Anh | SĐH – Tiếng Việt | SĐH – Tiếng Anh |
+|---|---|---|---|---|
+| ≤ 40 | 1,0 | 1,5 | 1,5 | 1,7 |
+| 41 – 50 | 1,1 | 1,5 | 1,6 | 1,8 |
+| 51 – 60 | 1,2 | 1,5 | 1,7 | 1,9 |
+| 61 – 70 | 1,3 | 1,5 | 1,8 | 2,0 |
+| 71 – 80 | 1,4 | 1,5 | 1,8 | 2,0 |
+| ≥ 81 | 1,5 | 1,5 | 1,8 | 2,0 |
 
-Hệ số áp **theo tiết**, không theo lớp: lớp 90 SV dạy 45 tiết = 45 × 1,5 = 67,5 giờ chuẩn.
-Sĩ số ≤ 0 (ô trống / thiếu dữ liệu) áp bậc thấp nhất 1,0.
+"Tiếng Anh" = giảng bằng tiếng nước ngoài đối với môn **không** phải môn ngoại ngữ
+(`LoaiHinhGiangDay = "Tiếng Anh"`). ĐH tiếng Anh là 1,5 phẳng, không xét sĩ số.
+
+Hệ số áp **theo tiết**, không theo lớp: lớp ĐH 90 SV dạy 45 tiết = 45 × 1,5 = 67,5 giờ chuẩn.
+Sĩ số ≤ 0 (ô trống / thiếu dữ liệu) áp bậc **thấp nhất của loại hình** (ĐH 1,0; SĐH 1,5 hoặc
+1,7) — không có căn cứ để cho hưởng hệ số cao hơn.
 
 `gio_chuan_trong_nam = ROUND(so_tiet_trong_nam × he_so, 2)`, làm tròn `AwayFromZero` để
 không lệch với cách người dùng cộng tay trên Excel. Làm tròn **từng lớp** rồi mới cộng, đúng
 thứ tự mà bảng chi tiết hiển thị — nhờ vậy tổng ở dòng header luôn bằng tổng các dòng chi
 tiết mà người dùng nhìn thấy.
 
-⚠️ **BẤT BIẾN — toàn bộ quy tắc ở tầng C#.** `BLL/GioGiangTkbService` lọc kỳ học,
-`Helper/GioChuanQuyDoi` quy đổi tiết → giờ. SQL **chỉ nhận** các con số đã chốt qua TVP
-`dbo.GioGiangTkbRow`. Tuyệt đối không tính lại ở SQL — nhân bản logic sẽ lệch.
+⚠️ **BẤT BIẾN — toàn bộ quy tắc ở tầng C#.** `BLL/GioGiangTkbService` lọc kỳ học và đọc
+`LoaiHinhGiangDay`, `Helper/GioChuanQuyDoi` quy đổi tiết → giờ. SQL **chỉ nhận** các con số
+đã chốt qua TVP `dbo.GioGiangTkbRow`. Tuyệt đối không tính lại ở SQL — nhân bản logic sẽ lệch.
 
-### 13.5. Hai cột số — vì sao chỉ cần hai
+### 13.5. Các cột số
 
 | Cột | Ý nghĩa |
 |---|---|
-| `so_tiet_trong_nam` | tổng cột `SoTiet` của các lớp thuộc 3 kỳ của năm |
-| `gio_chuan_trong_nam` | tổng `SoTiet × hệ số` của từng lớp |
+| `so_tiet_trong_nam` | tổng cột `SoTiet` của các lớp thuộc 3 kỳ của năm (cả hai sheet) |
+| `gio_chuan_trong_nam` | tổng `SoTiet × hệ số` của từng lớp (cả hai sheet) |
+| `gio_chuan_dai_hoc` / `gio_chuan_sau_dai_hoc` | phần của sheet DH / SDH; tổng hai cột = `gio_chuan_trong_nam` |
+
+Hai cột tách ĐH / SĐH chỉ nằm ở **dòng tổng hợp** để `sp_gio_giang_tkb_tong_hop` không phải
+quét lại chi tiết; nguồn gốc vẫn là cột `he_dao_tao` của `gio_giang_tkb_chi_tiet`.
 
 Bản trước có **bốn** cột (`so_tiet_excel`, `so_tiet_tkb`, `so_tiet_nghi`,
 `so_tiet_trong_nam`) để lọc dần từng bước và đối chiếu tay. Khi số tiết lấy thẳng từ file thì
@@ -3031,14 +3046,42 @@ Dòng trùng `(họ tên, kỳ học, mã lớp tín chỉ)` được **giữ ng
 thật, khử trùng sẽ làm mất giờ — kèm cảnh báo `TRUNG_LOP`. Vì vậy TVP `GioGiangTkbRow` **cố ý
 không có PRIMARY KEY**.
 
-### 13.6. Ánh xạ họ tên → nhân viên (`gio_giang_tkb_anh_xa`)
+### 13.6. Ánh xạ (họ tên, khoa) → nhân viên (`gio_giang_tkb_anh_xa`)
 
-File TKB **chỉ có** `HoLot` + `Ten` — không mã giảng viên, không email. Khoá gộp là
-`ho_ten_chuan` (bỏ dấu + gộp khoảng trắng + viết hoa, do `Helper/ChuanHoaTen` sinh ra).
+File **chỉ có** `HoLot`/`Ho` + `Ten` + `TenKhoa` — không mã giảng viên, không email.
+`TenKhoa` là khoa **của giảng viên** (đã chốt với người dùng). Khoá gộp và khoá ánh xạ là
+cặp **`(ho_ten_chuan, khoa_chuan)`**: cả hai do `Helper/ChuanHoaTen.ChuanHoa` sinh ra (bỏ
+dấu + gộp khoảng trắng + viết hoa); `khoa_chuan = ''` khi file không ghi khoa. Hai người
+trùng tên ở hai khoa vì vậy là **hai dòng** tổng hợp riêng, không bị gộp giờ vào nhau.
 
-**Quyết định đã chốt: hệ thống TỰ ánh xạ khi tên khớp duy nhất.** Import xong, mọi
-`ho_ten_chuan` khớp **đúng một** nhân viên đang hoạt động được gắn ngay. Trùng tên (≥ 2
-người) hoặc không khớp ai thì để trống — người dùng xử lý tay.
+**Quyết định đã chốt: hệ thống TỰ ánh xạ khi xác định được duy nhất một người**
+(`fn_gio_giang_tkb_khop_ten`):
+
+| Tình huống | Kết quả |
+|---|---|
+| Tên khớp **đúng một** nhân viên đang hoạt động | gắn ngay — **không** xét khoa (một `TenKhoa` ghi lệch không được chặn mất ánh xạ đúng) |
+| Trùng tên (≥ 2) và **khoa** khớp đúng một người | gắn người đó |
+| Không khớp ai / trùng cả tên lẫn khoa / file không ghi khoa | để trống — người dùng xử lý tay |
+
+API trả `SoNguoiKhopTen` và `SoNguoiKhopKhoa` để FE giải thích vì sao một dòng chưa ánh xạ.
+
+**Khoa của nhân viên**: mọi dòng `nhan_vien_chuc_vu` đang hiệu lực → `don_vi` là Khoa (`K_`),
+hoặc Khoa cha nếu là Bộ môn — cùng cách `v_giang_vien_khoa` leo cây, nhưng **không** lọc 5
+ngạch (tập ứng viên theo tên là mọi nhân viên đang hoạt động). Người kiêm nhiệm nhiều Khoa
+khớp nếu **bất kỳ** Khoa nào trùng.
+
+**So tên khoa**: `don_vi.ten_don_vi` lưu `"Khoa Kế toán"`, file ghi `"Kế toán"`. Tiền tố
+`"Khoa "` chỉ được bỏ ở **phía DB** (`fn_gio_giang_tkb_khoa_so_sanh`), và phép so khớp chấp
+nhận **cả** tên đầy đủ lẫn tên đã bỏ tiền tố. Cố ý **không** bỏ tiền tố ở phía C#: tên thật có
+thể bắt đầu bằng chữ "Khoa" — `"Khoa học cơ bản"` (DB: `"Khoa Khoa học cơ bản"`) sẽ bị cắt
+thành `"HOC CO BAN"` và không bao giờ khớp.
+
+**Chuyển đổi từ khoá cũ (chỉ theo tên)**: ánh xạ cũ nhận `khoa_chuan = ''`, nên dữ liệu các
+năm đã import (dòng tổng hợp cũ cũng có `khoa_chuan = ''`) vẫn khớp y nguyên. Từ lần import
+đầu bằng file hai sheet, dòng tổng hợp có khoa → ánh xạ **tự động** được tạo lại, còn ánh xạ
+**tay** cũ của những tên không tự khớp được phải gán lại **một lần** (`update_database.sql`
+KT3 liệt kê chúng). Cố ý **không** làm ánh xạ "mọi khoa" (wildcard) để giữ công cũ: khi một
+người mới trùng tên vào khoa khác, wildcard sẽ lặng lẽ cộng giờ của họ cho người cũ.
 
 Đây là **đảo lại** quyết định ban đầu ("cố ý không tự ánh xạ") vì với file cả trường thì việc
 bấm xác nhận từng người là hàng trăm lượt. Lý do cũ — *khớp tên là phỏng đoán, ghi nhầm sẽ
@@ -3058,9 +3101,10 @@ bao nhiêu lần cũng vô hại, lần thứ hai trả về 0.
 
 #### `fn_gio_giang_tkb_khop_ten` — một định nghĩa cho phép khớp
 
-Bốn nơi cần biết "tên này khớp ai": hai đường ghi ở trên, `sp_gio_giang_tkb_list` và
+Bốn nơi cần biết "dòng này khớp ai": hai đường ghi ở trên, `sp_gio_giang_tkb_list` và
 `sp_gio_giang_tkb_chi_tiet`. Trước đây mỗi nơi tự viết lại; nay tất cả gọi chung hàm này,
-trả `(ho_ten_chuan, id_nhan_vien, so_nguoi_khop)`.
+trả `(ho_ten_chuan, khoa_chuan, id_nhan_vien, so_nguoi_khop, so_nguoi_khop_khoa)`. Tham số
+là `(@id_nam, @id_gio_giang_tkb)` — cả hai nullable = không lọc.
 
 Nó là **multi-statement TVF** chứ không phải inline, có lý do: bên trong vật hoá tên so sánh
 của nhân viên vào một table variable **một lần** rồi mới join. Để `fn_gio_giang_tkb_ten_so_sanh`
@@ -3071,7 +3115,9 @@ vào thẳng mệnh đề `JOIN` thì số lần gọi hàm là `N * M` thay vì
 tên**, không phải một người bị đếm hai lần.
 
 `SoNguoiKhopTen` được trả ra API: với dòng chưa ánh xạ, `0` = không có ai tên này trong hệ
-thống (sai chính tả / chưa có hồ sơ), `≥ 2` = trùng tên, cần người chọn.
+thống (sai chính tả / chưa có hồ sơ), `≥ 2` = trùng tên — xem tiếp `SoNguoiKhopKhoa`: `0` =
+không ai trong số đó thuộc khoa này (hoặc file không ghi khoa), `≥ 2` = trùng cả tên lẫn
+khoa, cần người chọn.
 
 Hệ quả: `GoiYIdNhanVien` nay **gần như luôn null** — tên khớp duy nhất thì đã được gắn rồi.
 Cột vẫn giữ (không phá hợp đồng API) và còn giá trị trong khoảng giữa hai lần quét, ví dụ
@@ -3084,9 +3130,12 @@ Ba tính chất làm nên giá trị của bảng này:
 3. **Join lúc ĐỌC** (không lưu `id_nhan_vien` trên `gio_giang_tkb`) → sửa ánh xạ có hiệu lực
    **ngay**, không phải import lại file.
 
-Một nhân viên có thể nhận **nhiều** tên (file ghi tên không nhất quán giữa các kỳ), nên
-**không** đặt UNIQUE trên `id_nhan_vien`, và `sp_gio_giang_tkb_tong_hop` phải `SUM` chứ
-không lấy một dòng.
+Một nhân viên có thể nhận **nhiều** cặp (tên, khoa) (file ghi không nhất quán giữa các kỳ
+hoặc giữa hai sheet), nên **không** đặt UNIQUE trên `id_nhan_vien`, và
+`sp_gio_giang_tkb_tong_hop` phải `SUM` chứ không lấy một dòng.
+
+Mọi phép nối dòng tổng hợp ↔ ánh xạ đi qua **`fn_gio_giang_tkb_dong`** (list, chi tiết, tổng
+hợp, bộ đếm `so_chua_anh_xa` của import) — một định nghĩa khoá ánh xạ duy nhất.
 
 Hàm `fn_gio_giang_tkb_ten_so_sanh` chỉ làm **hai** việc: gộp khoảng trắng và đổi `Đ`/`đ`
 (U+0110 / U+0111) thành `D`/`d`. Phần bỏ dấu thanh giao cho `COLLATE Latin1_General_CI_AI`
@@ -3102,7 +3151,9 @@ người này cộng cho người khác. Sửa hàm phải cân nhắc theo chu�
 ### 13.7. Import lại = ghi đè sạch, có chốt chặn
 
 `sp_gio_giang_tkb_dong_bo` xoá toàn bộ `gio_giang_tkb` + `gio_giang_tkb_chi_tiet` của
-`@id_nam` rồi chèn lại, trong **một** transaction (khuôn của `sp_nckh_gio_nckh_dong_bo`).
+`@id_nam` — **cả ĐH lẫn SĐH** — rồi chèn lại, trong **một** transaction (khuôn của
+`sp_nckh_gio_nckh_dong_bo`). Vì vậy file **bắt buộc đủ hai sheet** (13.9): thiếu một sheet mà
+vẫn chạy sẽ xoá sạch hệ đào tạo đó của năm.
 
 **GUARD: TVP rỗng → KHÔNG xoá gì.** Nếu không, một file lỗi sẽ xoá sạch dữ liệu cũ.
 
@@ -3114,13 +3165,18 @@ phá dữ liệu nào, nên không cần siết bằng cổng của import.
 
 `sp_gio_giang_tkb_tong_hop` lấy tập giảng viên là **HỢP** của:
 
-- người có dòng TKB **đã ánh xạ**, và
+- người có dòng giờ giảng (sheet DH hoặc SDH) **đã ánh xạ**, và
 - người có `ke_khai_gio_quy_doi` **đã chốt** (`trang_thai = 3`).
 
 Người chỉ có một nguồn vẫn xuất hiện, nguồn còn lại bằng 0. Dùng `INNER JOIN` ở đây sẽ làm
 biến mất người chưa kê khai — đúng nhóm mà bảng này cần nhìn thấy nhất.
 
-Dòng TKB **chưa ánh xạ** không vào được bảng tổng hợp (không biết là ai). Số lượng những
+RS2 trả giờ file tách sẵn `gio_tkb_dai_hoc` / `gio_tkb_sau_dai_hoc` (tổng = `gio_tkb`).
+⚠️ **Đừng nhầm** với `gio_dai_hoc` / `gio_sau_dai_hoc`: hai cột đó là **Phụ lục II** (hướng
+dẫn, chấm thi… tách theo mục gốc DH / SDH), không phải tiết đứng lớp — hai nguồn không trùng
+nhau nên cộng thẳng vào `tong_gio`.
+
+Dòng giờ giảng **chưa ánh xạ** không vào được bảng tổng hợp (không biết là ai). Số lượng những
 dòng đó trả về ở `SoDongChuaAnhXa` — còn lớn hơn 0 nghĩa là **tổng hợp chưa đầy đủ**, FE
 phải cảnh báo trước khi ai đó dùng số liệu.
 
@@ -3131,6 +3187,32 @@ không hai endpoint trả hai con số khác nhau cho cùng một giảng viên.
 Cổng quyền **sao y** SP gốc: ADMIN/HT toàn trường; TK/TKL/TP theo đơn vị mình giữ chức vụ
 (+ cây con). Dùng `EXISTS` trên tập `DISTINCT` chứ **không** `JOIN`, để người kiêm nhiệm
 nhiều đơn vị không bị nhân dòng.
+
+### 13.9. File hai sheet DH + SDH và `LoaiHinhGiangDay`
+
+| Ý nghĩa | Sheet `DH` | Sheet `SDH` | Cột DB |
+|---|---|---|---|
+| Kỳ học | `KY_HOC` | `KYHOC` | `ky_hoc` |
+| Mã lớp | `MA_LOP_TIN_CHI` | `Lop` | `ma_lop_tin_chi` |
+| Họ (lót) | `HoLot` | `Ho` | ghép vào `ho_ten` |
+| Tên | `Ten` | `Ten` | ghép vào `ho_ten` |
+| Học phần | `MA_HOC_PHAN`, `TEN_HOC_PHAN` | như DH | `ma_hoc_phan`, `ten_hoc_phan` |
+| Sĩ số | `SLSV_DangKyHoc` | như DH | `slsv_dang_ky_hoc` |
+| Số tiết | `SoTiet` | như DH | `so_tiet_trong_nam` |
+| Loại hình | `LoaiHinhGiangDay` (**bắt buộc**) | `LoaiHinhGiangDay` (**tuỳ chọn**, hiện chưa có) | `giang_tieng_anh` |
+| Khoa của GV | `TenKhoa` | `TenKhoa` | `ten_khoa`, `khoa_chuan` |
+
+- `Helper/ExcelHelper.ReadGioGiangRows` tìm sheet theo **tên** (bỏ dấu, không phân biệt hoa
+  thường) và tìm cột theo **alias** tiêu đề — một parser cho cả hai sheet. Thiếu sheet nào →
+  400, thông báo liệt kê các sheet có trong file.
+- Lọc kỳ học (13.2) áp dụng cho **cả hai** sheet. Một sheet có 0 dòng thuộc năm là hợp lệ
+  (năm đó không mở lớp SĐH); cả hai cùng 0 dòng → 400.
+- `LoaiHinhGiangDay` chỉ có hai giá trị: `"Tiếng Anh"` → `giang_tieng_anh = 1`; `"Tiếng
+  Việt"`, ô trống hoặc sheet không có cột (SDH hiện tại) → 0. Giá trị khác → **lỗi dòng**, huỷ
+  cả lần import (đoán ở đây là áp sai hệ số mà không ai biết). Khi bổ sung cột này vào sheet
+  SDH thì không phải sửa code.
+- `he_dao_tao` (`'DH'` / `'SDH'`, CHECK) ghi sheet nguồn của từng lớp. Dòng trùng
+  (`TRUNG_LOP`) chỉ so trong cùng sheet.
 
 ---
 

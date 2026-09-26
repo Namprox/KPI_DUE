@@ -4,6 +4,8 @@ import SearchSelect from "../../components/Common/SearchSelect";
 import "../../css/Pages.css";
 import "../../css/QuanLyKeHoach/QL_GioGiang.css";
 import { apiFetch } from "../../utils/api";
+import { COT_TKB, taiMauGioGiangTkb } from "../../utils/gioGiangTkbTemplate";
+import { AnhXaGioGiang, ChiTietGioGiang, TongHopGioGiang } from "./GioGiangTkbPanels";
 import {
   chonNamDanhGiaMacDinh,
   importThoiKhoaBieu,
@@ -11,12 +13,18 @@ import {
   kiemTraImportTkb,
   layDanhSachGioGiangTkb,
   quetAnhXaTuDong,
+  lyDoChuaAnhXa,
 } from "../../utils/gioGiangTkbApi";
 
 const BO_LOC_ANH_XA = [
   { value: "tat-ca", label: "Tất cả trạng thái" },
   { value: "da-anh-xa", label: "Đã ánh xạ nhân viên" },
   { value: "chua-anh-xa", label: "Chưa ánh xạ nhân viên" },
+];
+
+const TABS = [
+  { id: "tkb", label: "Dữ liệu TKB", icon: "fa-table-list" },
+  { id: "tong-hop", label: "Tổng hợp giờ giảng", icon: "fa-chart-column" },
 ];
 
 const CANH_BAO_META = {
@@ -56,7 +64,6 @@ const TrangThaiAnhXa = ({ item }) => {
     );
   }
 
-  const soNguoiKhop = Number(item.SoNguoiKhopTen || 0);
   if (item.GoiYIdNhanVien) {
     return (
       <div className="ggtk-mapped-person">
@@ -72,23 +79,12 @@ const TrangThaiAnhXa = ({ item }) => {
     );
   }
 
-  if (soNguoiKhop >= 2) {
-    return (
-      <div className="ggtk-mapped-person">
-        <span className="ggtk-badge is-warning">
-          <i className="fa-solid fa-users" aria-hidden="true" /> Trùng tên
-        </span>
-        <small>Có {soNguoiKhop} nhân viên trùng tên, cần chọn thủ công.</small>
-      </div>
-    );
-  }
-
   return (
     <div className="ggtk-mapped-person">
-      <span className="ggtk-badge is-danger">
-        <i className="fa-solid fa-user-slash" aria-hidden="true" /> Không tìm thấy
+      <span className="ggtk-badge is-warning">
+        <i className="fa-solid fa-user-slash" aria-hidden="true" /> Chưa ánh xạ
       </span>
-      <small>Kiểm tra họ tên hoặc hồ sơ nhân viên trong hệ thống.</small>
+      <small>{lyDoChuaAnhXa(item)}</small>
     </div>
   );
 };
@@ -110,6 +106,10 @@ const QL_GioGiang = () => {
   const [formError, setFormError] = useState("");
   const [importResult, setImportResult] = useState(null);
   const [importFile, setImportFile] = useState(null);
+  const [mappingItem, setMappingItem] = useState(null);
+  const [detailItem, setDetailItem] = useState(null);
+  const [revision, setRevision] = useState(0);
+  const [activeTab, setActiveTab] = useState("tkb");
 
   useEffect(() => {
     let cancelled = false;
@@ -160,6 +160,7 @@ const QL_GioGiang = () => {
     setLoadError("");
     try {
       const result = await layDanhSachGioGiangTkb(idNam, signal);
+      if (signal?.aborted) return;
       setItems(result.items);
       setSoDongChuaAnhXa(result.soDongChuaAnhXa);
     } catch (error) {
@@ -178,6 +179,12 @@ const QL_GioGiang = () => {
     fetchData(selectedYear, controller.signal);
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear]);
+
+  useEffect(() => {
+    setImportResult(null);
+    setMappingItem(null);
+    setDetailItem(null);
   }, [selectedYear]);
 
   useEffect(() => {
@@ -266,6 +273,8 @@ const QL_GioGiang = () => {
         soDongDoc: result.SoDongDoc ?? result.soDongDoc ?? 0,
         importedCount: result.ImportedCount ?? result.importedCount ?? 0,
         soGiangVien: result.SoGiangVien ?? result.soGiangVien ?? 0,
+        soDongDaiHoc: result.SoDongDaiHoc,
+        soDongSauDaiHoc: result.SoDongSauDaiHoc,
         soDongBoQua: result.SoDongBoQua ?? result.soDongBoQua ?? 0,
         soDongTrung: result.SoDongTrung ?? result.soDongTrung ?? 0,
         soDongTuDongAnhXa:
@@ -275,7 +284,9 @@ const QL_GioGiang = () => {
         canhBao: result.CanhBao || result.canhBao || [],
       });
       setIsImportModalOpen(false);
+      setActiveTab("tkb");
       await fetchData(selectedYear);
+      setRevision((value) => value + 1);
       toast.current?.show({
         severity: "success",
         summary: "Upload thành công",
@@ -302,6 +313,7 @@ const QL_GioGiang = () => {
         result.SoDongTuDongAnhXa ?? result.soDongTuDongAnhXa ?? 0;
       const soConLai = result.SoDongChuaAnhXa ?? result.soDongChuaAnhXa ?? 0;
       await fetchData(selectedYear);
+      setRevision((value) => value + 1);
       toast.current?.show({
         severity: soDaAnhXa > 0 ? "success" : "info",
         summary: soDaAnhXa > 0 ? "Đã quét ánh xạ" : "Không có ánh xạ mới",
@@ -359,6 +371,36 @@ const QL_GioGiang = () => {
         </div>
       </div>
 
+      <div className="ggtk-tabs" role="tablist" aria-label="Nội dung quản lý giờ giảng">
+        {TABS.map((tab, index) => (
+          <button
+            key={tab.id}
+            id={`ggtk-tab-${tab.id}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls={`ggtk-panel-${tab.id}`}
+            tabIndex={activeTab === tab.id ? 0 : -1}
+            onClick={() => setActiveTab(tab.id)}
+            onKeyDown={(event) => {
+              let nextIndex;
+              if (event.key === "ArrowRight") nextIndex = (index + 1) % TABS.length;
+              else if (event.key === "ArrowLeft") nextIndex = (index + TABS.length - 1) % TABS.length;
+              else if (event.key === "Home") nextIndex = 0;
+              else if (event.key === "End") nextIndex = TABS.length - 1;
+              else return;
+              event.preventDefault();
+              setActiveTab(TABS[nextIndex].id);
+              document.getElementById(`ggtk-tab-${TABS[nextIndex].id}`)?.focus();
+            }}
+          >
+            <i className={`fa-solid ${tab.icon}`} aria-hidden="true" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <section id="ggtk-panel-tkb" role="tabpanel" aria-labelledby="ggtk-tab-tkb" hidden={activeTab !== "tkb"} tabIndex={0}>
       <div className="ggtk-summary-grid" aria-label="Tổng quan giờ giảng">
         <div className="ggtk-summary-card">
           <span className="ggtk-summary-icon is-blue">
@@ -391,7 +433,7 @@ const QL_GioGiang = () => {
           <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
           <div>
             <strong>Còn {so(soDongChuaAnhXa, 0)} dòng dữ liệu chưa ánh xạ</strong>
-            <span>Đây là các trường hợp không khớp ai hoặc có nhiều nhân viên trùng tên; các dòng này chưa được tính vào bảng tổng hợp.</span>
+            <span>Các dòng chưa xác định được nhân viên theo họ tên và khoa chưa được tính vào bảng tổng hợp.</span>
           </div>
           <button
             type="button"
@@ -419,21 +461,23 @@ const QL_GioGiang = () => {
             </button>
           </div>
           <div className="ggtk-result-counts">
+              <span className="is-success">DH: {importResult.soDongDaiHoc == null ? "—" : so(importResult.soDongDaiHoc, 0)} dòng đã lưu</span>
+              <span className="is-success">SDH: {importResult.soDongSauDaiHoc == null ? "—" : so(importResult.soDongSauDaiHoc, 0)} dòng đã lưu</span>
               <span className="is-success">{so(importResult.soDongTuDongAnhXa, 0)} dòng được tự ánh xạ</span>
               {importResult.soDongChuaAnhXa > 0 && <span className="is-warning">{so(importResult.soDongChuaAnhXa, 0)} dòng còn chưa ánh xạ</span>}
               {importResult.soDongBoQua > 0 && <span>{so(importResult.soDongBoQua, 0)} dòng thuộc năm khác đã bỏ qua</span>}
               {importResult.soDongTrung > 0 && <span>{so(importResult.soDongTrung, 0)} dòng trùng lớp</span>}
           </div>
           {importResult.canhBao.length > 0 && (
-            <ul className="ggtk-warning-list">
-              {importResult.canhBao.slice(0, 5).map((warning, index) => (
-                <li key={`${warning.Loai || "warning"}-${warning.SoDongExcel || index}-${index}`}>
-                  <strong>{CANH_BAO_META[warning.Loai] || "Cảnh báo"}</strong>
-                  {warning.SoDongExcel > 0 && <span>Dòng {warning.SoDongExcel}: </span>}
-                  {warning.ThongDiep}
-                </li>
-              ))}
-            </ul>
+            <div className="table-scroll ggtk-warning-table"><table className="custom-table">
+              <thead><tr><th>Sheet</th><th>Dòng Excel</th><th>Loại</th><th>Cảnh báo</th></tr></thead>
+              <tbody>{importResult.canhBao.map((warning, index) => (
+                <tr key={`${warning.HeDaoTao}-${warning.SoDongExcel}-${index}`}>
+                  <td>{warning.HeDaoTao || "—"}</td><td>{warning.SoDongExcel ?? "—"}</td>
+                  <td>{CANH_BAO_META[warning.Loai] || "Cảnh báo"}</td><td>{warning.ThongDiep}</td>
+                </tr>
+              ))}</tbody>
+            </table></div>
           )}
         </div>
       )}
@@ -494,13 +538,16 @@ const QL_GioGiang = () => {
                   <th>Khoa</th>
                   <th className="ggtk-number">Số lớp</th>
                   <th className="ggtk-number">Tiết trong năm</th>
+                  <th className="ggtk-number">Giờ ĐH</th>
+                  <th className="ggtk-number">Giờ SĐH</th>
                   <th className="ggtk-number">Giờ chuẩn</th>
                   <th>Ánh xạ nhân viên</th>
+                  <th>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredItems.map((item, index) => (
-                  <tr key={item.IdGioGiangTkb || `${item.HoTenChuan}-${index}`}>
+                  <tr key={item.IdGioGiangTkb}>
                     <td className="ggtk-stt">{index + 1}</td>
                     <td>
                       <div className="ggtk-person-cell">
@@ -511,15 +558,21 @@ const QL_GioGiang = () => {
                     <td>{item.TenKhoa || "---"}</td>
                     <td className="ggtk-number">{so(item.SoLop, 0)}</td>
                     <td className="ggtk-number">{so(item.SoTietTrongNam, 0)}</td>
+                    <td className="ggtk-number">{item.GioChuanDaiHoc == null ? "—" : so(item.GioChuanDaiHoc)}</td>
+                    <td className="ggtk-number">{item.GioChuanSauDaiHoc == null ? "—" : so(item.GioChuanSauDaiHoc)}</td>
                     <td className="ggtk-number ggtk-hours">{so(item.GioChuanTrongNam)}</td>
                     <td>
                       <TrangThaiAnhXa item={item} />
                     </td>
+                    <td><div className="ggtk-row-actions">
+                      <button type="button" className="btn-cancel" onClick={() => setDetailItem(item)}>Chi tiết</button>
+                      <button type="button" className="btn-cancel" onClick={() => setMappingItem(item)}>Ánh xạ</button>
+                    </div></td>
                   </tr>
                 ))}
                 {filteredItems.length === 0 && (
                   <tr>
-                    <td colSpan="7">
+                    <td colSpan="10">
                       <div className="ggtk-empty-state">
                         <i className="fa-regular fa-calendar-xmark" aria-hidden="true" />
                         <strong>{items.length === 0 ? "Chưa có dữ liệu thời khóa biểu" : "Không tìm thấy kết quả phù hợp"}</strong>
@@ -540,6 +593,17 @@ const QL_GioGiang = () => {
           </div>
         )}
       </div>
+
+      </section>
+      <section id="ggtk-panel-tong-hop" role="tabpanel" aria-labelledby="ggtk-tab-tong-hop" hidden={activeTab !== "tong-hop"} tabIndex={0}>
+        {activeTab === "tong-hop" && <TongHopGioGiang idNam={selectedYear} revision={revision} />}
+      </section>
+      {detailItem && <ChiTietGioGiang key={detailItem.IdGioGiangTkb} item={detailItem} onClose={() => setDetailItem(null)} />}
+      {mappingItem && <AnhXaGioGiang key={mappingItem.IdGioGiangTkb} item={mappingItem} onClose={() => setMappingItem(null)} onSaved={async () => {
+        await fetchData(selectedYear);
+        setRevision((value) => value + 1);
+        toast.current?.show({ severity: "success", summary: "Đã cập nhật ánh xạ", life: 3000 });
+      }} />}
 
       {isImportModalOpen && (
         <div
@@ -568,7 +632,7 @@ const QL_GioGiang = () => {
               <div className="modal-body">
                 <div className="ggtk-overwrite-note">
                   <i className="fa-solid fa-circle-info" aria-hidden="true" />
-                  <span>Lần upload mới sẽ ghi đè dữ liệu thời khóa biểu của năm {selectedYear} và tự ánh xạ các họ tên khớp duy nhất một nhân viên đang hoạt động. Ánh xạ đã có, kể cả đã sửa tay, luôn được giữ nguyên.</span>
+                  <span>Lần upload mới sẽ ghi đè dữ liệu thời khóa biểu của năm {selectedYear} và tự ánh xạ nhân viên theo họ tên, khoa. Ánh xạ đã có, kể cả đã sửa tay, luôn được giữ nguyên.</span>
                 </div>
 
                 <div className="form-group">
@@ -594,13 +658,22 @@ const QL_GioGiang = () => {
                     onChange={(event) => selectFile(event.target.files?.[0] || null)}
                     tabIndex="-1"
                   />
-                  <small className="ggtk-field-help">Cột bắt buộc: KY_HOC, Ten, SLSV_DangKyHoc và SoTiet. Hệ thống tự bỏ qua các kỳ không thuộc năm {selectedYear}.</small>
+                  <div className="ggtk-import-guide">
+                    <strong>File bắt buộc có đủ 2 sheet DH và SDH (không phân biệt hoa thường).</strong>
+                    {Object.entries(COT_TKB).map(([sheet, columns]) => <p key={sheet}><strong>{sheet}:</strong> {columns.join(", ")}</p>)}
+                    <p>LoaiHinhGiangDay: “Tiếng Anh” hoặc “Tiếng Việt”. Cột này bắt buộc có ở DH; SDH có thể bỏ cột, mặc định Tiếng Việt.</p>
+                    <p>TenKhoa là khoa của giảng viên, không ghi tiền tố “Khoa” (ví dụ: Kế toán).</p>
+                    <p>Năm {selectedYear} chỉ lấy kỳ {(Number(selectedYear) - 2000) * 10 + 2}, {(Number(selectedYear) - 2000) * 10 + 3} và {(Number(selectedYear) - 1999) * 10 + 1}. Một sheet có thể không có dữ liệu thuộc năm; cả hai cùng trống sẽ bị từ chối.</p>
+                    <button type="button" className="btn-cancel" onClick={() => {
+                      try { taiMauGioGiangTkb(); } catch { setFormError("Không tải được file mẫu. Vui lòng thử lại."); }
+                    }}>Tải file mẫu DH + SDH</button>
+                  </div>
                 </div>
 
                 {formError && (
                   <div className="ggtk-form-error" role="alert">
                     <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-                    {formError}
+                    <ul className="ggtk-error-list">{formError.split(" | ").map((message, index) => <li key={index}>{message}</li>)}</ul>
                   </div>
                 )}
               </div>

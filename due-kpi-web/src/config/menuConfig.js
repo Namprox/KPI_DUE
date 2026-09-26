@@ -338,20 +338,6 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.TO_TRINH_DON_VI,
       },
       {
-        // Duyệt bản kê giờ quy đổi (Phụ lục II) của giảng viên trong phạm vi
-        // đơn vị. Trục nghiệp vụ RIÊNG, không nằm trong máy trạng thái của phiếu
-        // KPI: module cố ý chưa ghi vào gio_thuc_hien_gv, chỉ lưu và phát API
-        // đọc cho bước cộng với giờ giảng dạy sau này.
-        //
-        // Tập vai trò rộng hơn các mục khác của nhóm (thêm HT/Admin) vì server
-        // cho hai chức vụ đó xem toàn trường - xem ROLE_SETS.DUYET_KE_KHAI_GIO.
-        name: "Duyệt kê khai giờ quy đổi",
-        icon: "fa-solid fa-stopwatch",
-        path: "/quan-ly/ke-khai-gio-quy-doi",
-        roles: ROLE_SETS.DUYET_KE_KHAI_GIO,
-        childPaths: ["/quan-ly/ke-khai-gio-quy-doi/:id"],
-      },
-      {
         // Duyệt bản kê thành tích vượt trội của viên chức / NLĐ.
         //
         // Khác mọi mục còn lại của nhóm ở chỗ phạm vi KHÔNG phải "đơn vị mình +
@@ -419,6 +405,26 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-calendar-week",
         path: "/quan-ly-gio-giang",
         roles: ROLE_SETS.GIO_GIANG_TKB,
+      },
+      {
+        // Duyệt bản kê giờ quy đổi (Phụ lục II) của giảng viên trong phạm vi
+        // đơn vị. Trục nghiệp vụ RIÊNG, không nằm trong máy trạng thái của phiếu
+        // KPI: module cố ý chưa ghi vào gio_thuc_hien_gv, chỉ lưu và phát API
+        // đọc cho bước cộng với giờ giảng dạy sau này.
+        //
+        // Tập vai trò rộng hơn các mục khác của nhóm (thêm HT/Admin) vì server
+        // cho hai chức vụ đó xem toàn trường - xem ROLE_SETS.DUYET_KE_KHAI_GIO.
+        name: "Duyệt kê khai giờ quy đổi",
+        icon: "fa-solid fa-stopwatch",
+        path: "/quan-ly/ke-khai-gio-quy-doi",
+        roles: ROLE_SETS.DUYET_KE_KHAI_GIO,
+        childPaths: ["/quan-ly/ke-khai-gio-quy-doi/:id"],
+      },
+      {
+        name: "Mẫu giảm trừ",
+        icon: "fa-solid fa-file-arrow-up",
+        path: "/mau-giam-tru",
+        roles: ROLE_SETS.ADMIN,
       },
       {
         name: "Quản lý học vụ",

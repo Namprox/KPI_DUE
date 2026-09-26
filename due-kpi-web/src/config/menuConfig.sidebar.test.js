@@ -8,9 +8,9 @@ import {
 const expectedGroups = [
   ["evaluation", "Phiếu KPI", "Đánh giá KPI Giảng viên|Đánh giá KPI Nhân viên|Lịch sử đánh giá|Đánh giá KPI Khoa|Lịch sử đánh giá KPI Khoa|Đánh giá KPI Phòng/Trung tâm|Lịch sử đánh giá KPI Phòng/Trung tâm|Kho minh chứng cá nhân|Kho minh chứng đơn vị"],
   ["personalData", "Kê khai và dữ liệu của tôi", "Kê khai giờ quy đổi|Kê khai thành tích|Thành tích NCKH|Phản hồi sinh viên|Phục vụ cộng đồng|Vi phạm của tôi"],
-  ["unitScoring", "Xử lý KPI đơn vị", "Hồ sơ chờ thẩm định|Chờ tôi chấm KPI đơn vị|Phiếu toàn đơn vị|Duyệt KPI viên chức theo quý|Duyệt hồ sơ KPI|Chốt hồ sơ nhân viên|Tờ trình KPI đơn vị|Duyệt kê khai giờ quy đổi|Duyệt kê khai thành tích|Ghi nhận vi phạm nhân viên|Báo cáo đơn vị"],
+  ["unitScoring", "Xử lý KPI đơn vị", "Hồ sơ chờ thẩm định|Chờ tôi chấm KPI đơn vị|Phiếu toàn đơn vị|Duyệt KPI viên chức theo quý|Duyệt hồ sơ KPI|Chốt hồ sơ nhân viên|Tờ trình KPI đơn vị|Duyệt kê khai thành tích|Ghi nhận vi phạm nhân viên|Báo cáo đơn vị"],
   ["evaluationMgmt", "Duyệt KPI cấp trường", "Duyệt hồ sơ lãnh đạo|Theo dõi phiếu toàn trường"],
-  ["kpiSources", "Ghi nhận và số liệu KPI", "Giờ giảng từ thời khóa biểu|Quản lý học vụ|Quản lý đánh giá sinh viên|Điểm trung bình ĐGSV|Ghi nhận phục vụ cộng đồng|Ghi nhận vi phạm giảng viên|Tổng hợp điểm trừ vi phạm|Thống kê vi phạm của Khoa"],
+  ["kpiSources", "Ghi nhận và số liệu KPI", "Giờ giảng từ thời khóa biểu|Duyệt kê khai giờ quy đổi|Mẫu giảm trừ|Quản lý học vụ|Quản lý đánh giá sinh viên|Điểm trung bình ĐGSV|Ghi nhận phục vụ cộng đồng|Ghi nhận vi phạm giảng viên|Tổng hợp điểm trừ vi phạm|Thống kê vi phạm của Khoa"],
   ["planMgmt", "Thiết lập KPI", "Quản lý năm đánh giá|Định mức giảng viên|Ngoại lệ định mức|Danh mục thành tích vượt trội|Danh mục loại vi phạm"],
   ["criteriaMgmt", "Quản lý tiêu chí", "Nhóm tiêu chí|Tiêu chí đánh giá|Mẫu phiếu đánh giá"],
   ["orgMgmt", "Cơ cấu tổ chức", "Cơ cấu đơn vị|Người dùng|Chức danh nghề nghiệp|Quản lý chức vụ"],

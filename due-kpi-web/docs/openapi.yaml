@@ -100,10 +100,11 @@ paths:
         - Auth
       summary: Login
       description: >-
-        Dang nhap. Khi thanh cong, access token va refresh token duoc set vao
-        2 cookie httpOnly (kpi_access_token, kpi_refresh_token; Path=/;
-        SameSite=Lax; Secure khi HTTPS). Body KHONG con tra Tokens — chi gom
-        Success va User.
+        Dang nhap bang DUNG MOT dinh danh: Email HOAC MaNhanVien (kem Password).
+        Gui ca hai, hoac khong gui cai nao, tra 400. Khi thanh cong, access token
+        va refresh token duoc set vao 2 cookie httpOnly (kpi_access_token,
+        kpi_refresh_token; Path=/; SameSite=Lax; Secure khi HTTPS). Body KHONG
+        con tra Tokens — chi gom Success va User.
       operationId: authLogin
       security: []
       requestBody:
@@ -112,11 +113,30 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/LoginRequest"
+            examples:
+              email:
+                summary: Dang nhap bang email
+                value:
+                  Email: nguyenvana@example.edu.vn
+                  Password: "********"
+              maNhanVien:
+                summary: Dang nhap bang ma nhan vien
+                value:
+                  MaNhanVien: NV001
+                  Password: "********"
       responses:
         "200":
           description: >-
             OK — set cookie httpOnly kpi_access_token va kpi_refresh_token.
             Body chi gom Success va User (khong co Tokens).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: >-
+            Thieu Password; khong gui Email lan MaNhanVien; gui CA HAI dinh danh;
+            hoac Email sai dinh dang.
           content:
             application/json:
               schema:
@@ -7616,10 +7636,17 @@ paths:
     post:
       tags:
         - GioGiangTkb
-      summary: Import file Excel thoi khoa bieu va tinh gio giang trong nam
+      summary: Import file Excel gio giang (2 sheet DH + SDH) va tinh gio chuan trong nam
       description: >-
-        Doc file Excel thoi khoa bieu giang vien, lay cac dong thuoc NAM DANH GIA dang
-        tinh, quy doi tiet sang gio chuan theo si so lop, gop theo giang vien.
+        Doc file Excel thong ke so tiet giang vien gom HAI sheet BAT BUOC: DH (giang day
+        dai hoc) va SDH (giang day sau dai hoc). Lay cac dong thuoc NAM DANH GIA dang
+        tinh, quy doi tiet sang gio chuan theo he dao tao + si so + loai hinh giang day,
+        gop theo giang vien = (ho ten, khoa).
+
+
+        Thieu sheet DH hoac SDH -> 400 (thong bao liet ke cac sheet co trong file).
+        Import GHI DE du lieu CA HAI he cua nam nen khong cho phep thieu sheet. Mot sheet
+        khong co dong nao thuoc nam van hop le; ca hai cung khong co -> 400.
 
 
         DONG NAO THUOC NAM NAO - chi dua vao cot KY_HOC, khong tinh ngay thang. ky_hoc
@@ -7640,23 +7667,35 @@ paths:
         (Thu2..chuNhat) - cac cot do khong con duoc doc nua.
 
 
-        He so quy doi theo si so: toi da 40 SV = 1,0 gio chuan / tiet; 41-50 = 1,1;
-        51-60 = 1,2; 61-70 = 1,3; 71-80 = 1,4; tu 81 tro len = 1,5.
+        He so quy doi (gio chuan / tiet) theo si so SLSV_DangKyHoc:
+        DH Tieng Viet: toi da 40 = 1,0; 41-50 = 1,1; 51-60 = 1,2; 61-70 = 1,3;
+        71-80 = 1,4; tu 81 = 1,5.
+        DH Tieng Anh: 1,5.
+        SDH Tieng Viet: toi da 40 = 1,5; 41-50 = 1,6; 51-60 = 1,7; tu 61 = 1,8.
+        SDH Tieng Anh: toi da 40 = 1,7; 41-50 = 1,8; 51-60 = 1,9; tu 61 = 2,0.
+        Si so 0 / trong -> bac thap nhat cua loai hinh.
         GioChuanTrongNam = SoTiet * he so, lam tron 2 chu so (AwayFromZero).
 
 
-        ANH XA TU DONG: sau khi ghi xong, he thong TU GAN nhung ho ten khop DUY NHAT
-        mot nhan vien dang hoat dong (so luong tra ve o SoDongTuDongAnhXa). Trung ten
-        (>= 2 nguoi) hoac khong khop ai thi de trong - dem vao SoDongChuaAnhXa, phai
-        anh xa tay qua POST /api/gio-giang-tkb/anh-xa.
+        LoaiHinhGiangDay: "Tieng Anh" hoac "Tieng Viet" (khong phan biet hoa thuong /
+        dau). O trong, hoac sheet SDH chua co cot nay -> Tieng Viet. Gia tri khac -> 400.
+
+
+        ANH XA TU DONG: sau khi ghi xong, he thong TU GAN (so luong o SoDongTuDongAnhXa):
+        ho ten khop DUY NHAT mot nhan vien dang hoat dong -> gan (khong xet khoa);
+        trung ten nhung TenKhoa khop DUY NHAT mot nguoi (khoa cua nhan vien - Khoa hoac
+        Khoa cha cua Bo mon; ten don vi "Khoa Ke toan" khop TenKhoa "Ke toan") -> gan.
+        Con lai (khong ai / trung ca ten lan khoa) de trong - dem vao SoDongChuaAnhXa,
+        phai anh xa tay qua POST /api/gio-giang-tkb/anh-xa.
 
 
         Viec tu gan CHI THEM anh xa con thieu, KHONG BAO GIO ghi de dong da co: neu
         ban da sua tay mot anh xa, import lai se KHONG keo no ve nguoi khop ten.
 
 
-        GHI DE toan bo du lieu TKB cua nam do. Anh xa ho ten -> nhan vien (bang
-        gio_giang_tkb_anh_xa) KHONG bi xoa, nen cong anh xa tay van con nguyen.
+        GHI DE toan bo du lieu gio giang (DH + SDH) cua nam do. Anh xa (ho ten, khoa)
+        -> nhan vien (bang gio_giang_tkb_anh_xa) KHONG bi xoa, nen cong anh xa tay van
+        con nguyen.
         Chay all-or-nothing: bat ky loi du lieu nao cung huy ca lan import.
 
 
@@ -7673,14 +7712,17 @@ paths:
                   type: string
                   format: binary
                   description: >-
-                    File Excel (.xls / .xlsx) thoi khoa bieu; toi da 100 MB
+                    File Excel (.xls / .xlsx) gom 2 sheet DH va SDH; toi da 100 MB
                     (appSettings allowedImportExtensions / maxImportFileSizeKb).
                     Kiem HAI LOP: duoi file phai la .xls/.xlsx VA noi dung phai khop
                     chu ky (magic bytes ZIP/OLE2) - doi duoi se bi tu choi 400.
-                    Cot bat buoc: KY_HOC, Ten, SLSV_DangKyHoc, SoTiet.
-                    Cot tuy chon: HoLot, MA_LOP_TIN_CHI, MA_HOC_PHAN, TEN_HOC_PHAN,
-                    TenKhoa. Cot tim theo TEN TIEU DE, khong theo vi tri.
-                    Cac cot lich hoc (Thu2..chuNhat) KHONG con duoc doc.
+                    Sheet DH: KY_HOC, MA_LOP_TIN_CHI, MA_HOC_PHAN, TEN_HOC_PHAN, HoLot,
+                    Ten, SLSV_DangKyHoc, SoTiet, LoaiHinhGiangDay, TenKhoa.
+                    Sheet SDH: KYHOC, Lop, MA_HOC_PHAN, TEN_HOC_PHAN, Ho, Ten,
+                    SLSV_DangKyHoc, SoTiet, TenKhoa (+ LoaiHinhGiangDay tuy chon).
+                    Bat buoc ca hai sheet: ky hoc, Ten, SLSV_DangKyHoc, SoTiet; rieng DH
+                    them LoaiHinhGiangDay. Cot tim theo TEN TIEU DE, khong theo vi tri.
+                    TenKhoa la khoa CUA GIANG VIEN, khong co tien to "Khoa".
                 idNam:
                   type: integer
                   description: >-
@@ -7692,18 +7734,19 @@ paths:
       responses:
         "200":
           description: >-
-            OK - tra ImportedCount (so dong chi tiet da luu), SoGiangVien, SoDongBoQua
-            (dong thuoc ky cua nam khac), SoDongTuDongAnhXa / SoDongChuaAnhXa va danh
-            sach CanhBao (TRUNG_LOP / SO_TIET_TRONG).
+            OK - tra ImportedCount (so dong chi tiet da luu), SoDongDaiHoc /
+            SoDongSauDaiHoc (tach theo sheet), SoGiangVien, SoDongBoQua (dong thuoc ky
+            cua nam khac), SoDongTuDongAnhXa / SoDongChuaAnhXa va danh sach CanhBao
+            (TRUNG_LOP / SO_TIET_TRONG).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GioGiangTkbResponse"
         "400":
           description: >-
-            Bad Request - thieu/sai idNam, tep rong hoac sai dinh dang, thieu cot bat
-            buoc, dong thieu ho ten giang vien, hoac file khong co dong nao thuoc 3 ky
-            cua nam dang import.
+            Bad Request - thieu/sai idNam, tep rong hoac sai dinh dang, thieu sheet DH /
+            SDH, thieu cot bat buoc, dong thieu ho ten giang vien, LoaiHinhGiangDay
+            khong hop le, hoac ca hai sheet khong co dong nao thuoc 3 ky cua nam.
           content:
             application/json:
               schema:
@@ -7730,15 +7773,16 @@ paths:
     get:
       tags:
         - GioGiangTkb
-      summary: Danh sach gio giang TKB theo nam (kem trang thai anh xa)
+      summary: Danh sach gio giang (DH + SDH) theo nam (kem trang thai anh xa)
       description: >-
-        Mot dong / giang vien. Cot IdNhanVien khac null = da anh xa; null = CHUA anh xa
-        (dong do khong vao duoc bang tong hop).
+        Mot dong / giang vien = (HoTenChuan, KhoaChuan). Cot IdNhanVien khac null = da
+        anh xa; null = CHUA anh xa (dong do khong vao duoc bang tong hop).
+        SoNguoiKhopTen / SoNguoiKhopKhoa cho biet vi sao mot dong chua anh xa.
 
 
-        GoiYIdNhanVien la GOI Y do server tinh khi ten khop DUY NHAT mot nhan vien dang
-        hoat dong - he thong KHONG tu ghi anh xa, nguoi dung phai xac nhan qua
-        POST /api/gio-giang-tkb/anh-xa. Trung ten hoac khong khop ai -> khong goi y.
+        GoiYIdNhanVien la GOI Y do server tinh khi xac dinh duoc DUY NHAT mot nhan vien
+        (ten duy nhat, hoac trung ten nhung khoa duy nhat). Import va anh-xa/tu-dong da
+        tu gan cac dong nay nen cot gan nhu luon null.
 
 
         SoDongChuaAnhXa tinh tren TOAN BO nam, khong chiu anh huong cua bo loc.
@@ -7778,14 +7822,19 @@ paths:
     get:
       tags:
         - GioGiangTkb
-      summary: TONG GIO GIANG trong nam = gio TKB + gio ke khai da duyet
+      summary: TONG GIO GIANG trong nam = gio file (DH + SDH) + gio ke khai da duyet
       description: >-
-        KET QUA CUOI CUNG cua module. Moi dong: GioTkb (tu thoi khoa bieu) +
+        KET QUA CUOI CUNG cua module. Moi dong: GioTkb (tu file gio giang, tach san
+        GioTkbDaiHoc / GioTkbSauDaiHoc theo sheet) +
         GioKeKhaiDuyet (Phu luc II, CHI ban ke da chot trang_thai = 3 va dong duoc duyet
         TrangThaiDong = 2, tach san GioSauDaiHoc / GioDaiHoc) = TongGio.
 
 
-        TAP GIANG VIEN la HOP cua hai nguon: nguoi co dong TKB DA ANH XA, va nguoi co
+        GioTkbDaiHoc / GioTkbSauDaiHoc (tiet dung lop tu file) KHAC voi GioDaiHoc /
+        GioSauDaiHoc (hoat dong Phu luc II) - hai nguon khong trung nhau.
+
+
+        TAP GIANG VIEN la HOP cua hai nguon: nguoi co dong gio giang DA ANH XA, va nguoi co
         ban ke khai da chot. Nguoi chi co mot nguon van xuat hien, nguon con lai bang 0.
 
 
@@ -7833,9 +7882,10 @@ paths:
         - GioGiangTkb
       summary: Quet lai anh xa tu dong tren du lieu da import
       description: >-
-        Gan nhan vien cho cac ho ten khop DUY NHAT mot nhan vien dang hoat dong, tren
-        du lieu DA CO cua nam - khong phai import lai file. Can khi nhan vien moi duoc
-        them vao he thong sau lan import gan nhat.
+        Gan nhan vien cho cac dong xac dinh duoc DUY NHAT mot nhan vien dang hoat dong
+        (ten duy nhat; hoac trung ten nhung khoa duy nhat), tren du lieu DA CO cua nam -
+        khong phai import lai file. Can khi nhan vien moi duoc them vao he thong (hoac
+        doi don vi) sau lan import gan nhat.
 
 
         Import da tu chay viec nay roi; endpoint chi de quet BO SUNG.
@@ -7846,8 +7896,8 @@ paths:
         SoDongTuDongAnhXa = 0.
 
 
-        Trung ten (>= 2 nguoi) hoac khong khop ai -> van de trong, dem vao
-        SoDongChuaAnhXa; dung GET /api/gio-giang-tkb de xem SoNguoiKhopTen cua tung dong.
+        Khong khop ai / trung ca ten lan khoa -> van de trong, dem vao SoDongChuaAnhXa;
+        dung GET /api/gio-giang-tkb de xem SoNguoiKhopTen / SoNguoiKhopKhoa cua tung dong.
 
 
         Quyen: ADMIN / HT / TK / TKL / TP.
@@ -7890,11 +7940,16 @@ paths:
     post:
       tags:
         - GioGiangTkb
-      summary: Gan / go anh xa ho ten trong file TKB ve mot nhan vien
+      summary: Gan / go anh xa (ho ten, khoa) trong file gio giang ve mot nhan vien
       description: >-
-        Dung cho cac dong ma anh xa TU DONG khong xu ly duoc: trung ten (SoNguoiKhopTen
-        >= 2) hoac khong khop ai (= 0). Cung dung de SUA mot anh xa tu dong bi sai -
-        import lai se KHONG keo no ve nhu cu.
+        Dung cho cac dong ma anh xa TU DONG khong xu ly duoc: trung ca ten lan khoa
+        (SoNguoiKhopKhoa >= 2), trung ten ma khoa khong khop ai, hoac khong khop ai
+        (SoNguoiKhopTen = 0). Cung dung de SUA mot anh xa tu dong bi sai - import lai se
+        KHONG keo no ve nhu cu.
+
+
+        Khoa anh xa la cap (HoTenChuan, KhoaChuan): gui NGUYEN VAN hai gia tri cua dong
+        lay tu GET /api/gio-giang-tkb. KhoaChuan bo trong = dong khong ghi khoa.
 
 
         Anh xa KHONG gan voi nam va KHONG bi xoa khi import lai -> chi can lam mot lan
@@ -7902,9 +7957,9 @@ paths:
         phai import lai.
 
 
-        IdNhanVien = null -> GO anh xa cua ho ten do.
-        HoTenChuan duoc chuan hoa lai o server (bo dau, gop khoang trang, viet hoa) nen
-        co the gui ten con dau lay tu man hinh.
+        IdNhanVien = null -> GO anh xa cua (ho ten, khoa) do.
+        HoTenChuan / KhoaChuan duoc chuan hoa lai o server (bo dau, gop khoang trang,
+        viet hoa) nen co the gui ten con dau lay tu man hinh.
 
 
         Quyen: ADMIN / HT / TK / TKL / TP.
@@ -7944,7 +7999,7 @@ paths:
     get:
       tags:
         - GioGiangTkb
-      summary: Boc tach gio giang cua mot giang vien theo tung lop tin chi
+      summary: Boc tach gio giang cua mot giang vien theo tung lop (DH + SDH)
       description: >-
         Dung de doi chieu tay: cong GioChuanTrongNam cua tat ca dong trong ChiTiet phai
         bang dung GioChuanTrongNam o Item, va cong SoTietTrongNam phai bang SoTietTrongNam
@@ -12970,14 +13025,25 @@ components:
             $ref: "#/components/schemas/DiemTbPhanHoiSinhVienDto"
     LoginRequest:
       type: object
+      description: >-
+        Gui DUNG MOT trong hai dinh danh Email / MaNhanVien (khong gui ca hai).
+        Luat "dung mot" kiem o BLL (AuthService.Login), nen ca hai deu khong
+        nam trong required.
       required:
-        - Email
         - Password
       properties:
         Email:
           type: string
+          maxLength: 150
+          pattern: "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+          description: Email dang nhap. Bo trong khi dang nhap bang MaNhanVien.
+        MaNhanVien:
+          type: string
+          maxLength: 20
+          description: Ma nhan vien (nhan_vien.ma_nhan_vien). Bo trong khi dang nhap bang Email.
         Password:
           type: string
+          maxLength: 100
     RefreshTokenRequest:
       type: object
       required:
@@ -13076,6 +13142,13 @@ components:
         IdChucDanh:
           type: integer
           nullable: true
+        MaChucDanh:
+          type: string
+          nullable: true
+          description: >-
+            Ma chuc danh HIEN TAI (chuc_danh_nghe_nghiep.ma_chuc_danh theo
+            nhan_vien.id_chuc_danh), vd GV, GVC, HDLD_HUU, CV. NULL (bi bo khoi
+            JSON) khi nhan vien chua co chuc danh. Tra o login, register va me.
         ScienceUserId:
           type: integer
           nullable: true
@@ -13124,7 +13197,7 @@ components:
           enum: [1, 2]
           description: >-
             Loai phieu ca nhan cua nguoi dung TAI DON VI nay. 1 = Giang vien (Khoa + chuc danh
-            ngach giang day GV/GVC/GVCC/HDLD_GV), 2 = Vien chuc / NLD (moi truong
+            ngach giang day GV/GVC/GVCC/HDLD_GV/HDLD_HUU), 2 = Vien chuc / NLD (moi truong
             hop con lai, ke ca nhan vien van phong Khoa khong co chuc danh va moi chuc danh
             phi giang day: CV/CVC/NCV/KTV/HDLD_CNTT...). FE bat menu "Danh gia KPI Nhan vien" khi co it nhat mot don vi
             LoaiDoiTuong = 2; khong tu suy tu IdChucDanh / MaDonVi. Vang mat chi khi DB chua
@@ -17052,7 +17125,9 @@ components:
             $ref: "#/components/schemas/ChucDanhNgheNghiepDto"
     GioGiangTkbDto:
       type: object
-      description: Tong hop gio giang theo TKB cua mot giang vien trong mot nam.
+      description: >-
+        Tong hop gio giang (DH + SDH) cua mot giang vien trong mot nam
+        (1 dong / (IdNam, HoTenChuan, KhoaChuan)).
       properties:
         IdGioGiangTkb:
           type: integer
@@ -17067,6 +17142,12 @@ components:
         TenKhoa:
           type: string
           nullable: true
+        KhoaChuan:
+          type: string
+          description: >-
+            TenKhoa da bo dau, gop khoang trang, viet hoa ("" = file khong ghi khoa).
+            Cung HoTenChuan tao thanh khoa anh xa - gui lai nguyen van khi goi
+            POST /api/gio-giang-tkb/anh-xa.
         SoLop:
           type: integer
         SoTietTrongNam:
@@ -17075,7 +17156,17 @@ components:
         GioChuanTrongNam:
           type: number
           format: double
-          description: Tong cua (SoTiet * he so si so) tung lop, moi lop lam tron 2 chu so.
+          description: >-
+            Tong cua (SoTiet * he so) tung lop, moi lop lam tron 2 chu so.
+            = GioChuanDaiHoc + GioChuanSauDaiHoc.
+        GioChuanDaiHoc:
+          type: number
+          format: double
+          description: Phan cua sheet DH.
+        GioChuanSauDaiHoc:
+          type: number
+          format: double
+          description: Phan cua sheet SDH.
         IdNhanVien:
           type: integer
           nullable: true
@@ -17095,13 +17186,21 @@ components:
             So nhan vien DANG HOAT DONG co ho ten trung voi dong nay.
             1 = da duoc anh xa tu dong luc import (IdNhanVien co gia tri);
             0 = khong ai ten nay trong he thong (sai chinh ta / chua co ho so);
-            >= 2 = TRUNG TEN, he thong khong doan - phai co nguoi chon.
+            >= 2 = TRUNG TEN - xem SoNguoiKhopKhoa.
             Voi dong chua anh xa, con so nay cho biet vi sao.
+        SoNguoiKhopKhoa:
+          type: integer
+          description: >-
+            Chi co nghia khi SoNguoiKhopTen >= 2: so nguoi trung ten co KHOA khop
+            KhoaChuan. 1 = da anh xa tu dong theo khoa; 0 = khong ai trong so do thuoc
+            khoa nay (hoac file khong ghi khoa); >= 2 = trung ca ten lan khoa, phai co
+            nguoi chon.
         GoiYIdNhanVien:
           type: integer
           nullable: true
           description: >-
-            Goi y khi ten khop DUY NHAT mot nhan vien dang hoat dong. Tu khi co anh xa
+            Goi y khi xac dinh duoc DUY NHAT mot nhan vien (ten duy nhat, hoac trung ten
+            nhung khoa duy nhat). Tu khi co anh xa
             tu dong, cot nay GAN NHU LUON NULL (ten khop duy nhat thi da duoc gan roi);
             no chi con gia tri trong khoang giua hai lan quet - vd vua them nhan vien
             moi ma chua goi POST /api/gio-giang-tkb/anh-xa/tu-dong.
@@ -17117,12 +17216,21 @@ components:
           nullable: true
     GioGiangTkbChiTietDto:
       type: object
-      description: Mot lop tin chi trong bang gio giang TKB cua giang vien.
+      description: Mot lop (sheet DH hoac SDH) trong bang gio giang cua giang vien.
       properties:
         IdChiTiet:
           type: integer
         IdGioGiangTkb:
           type: integer
+        HeDaoTao:
+          type: string
+          enum:
+            - DH
+            - SDH
+          description: Sheet ma lop nay duoc doc ra.
+        GiangTiengAnh:
+          type: boolean
+          description: LoaiHinhGiangDay = "Tieng Anh".
         KyHoc:
           type: integer
           description: >-
@@ -17131,6 +17239,7 @@ components:
         MaLopTinChi:
           type: string
           nullable: true
+          description: MA_LOP_TIN_CHI (sheet DH) / Lop (sheet SDH).
         MaHocPhan:
           type: string
           nullable: true
@@ -17145,7 +17254,9 @@ components:
         HeSo:
           type: number
           format: double
-          description: "He so quy doi theo si so: 1,0 / 1,1 / 1,2 / 1,3 / 1,4 / 1,5."
+          description: >-
+            He so quy doi theo he dao tao + si so + loai hinh (1,0 - 2,0) - xem endpoint
+            import.
         SoTietTrongNam:
           type: integer
           description: Nguyen van cot SoTiet cua file cho lop nay.
@@ -17155,7 +17266,7 @@ components:
           description: SoTietTrongNam * HeSo, lam tron 2 chu so (AwayFromZero).
     GioGiangTkbTongHopDto:
       type: object
-      description: TONG GIO GIANG trong nam = gio TKB + gio ke khai Phu luc II da duyet.
+      description: TONG GIO GIANG trong nam = gio file (DH + SDH) + gio ke khai Phu luc II da duyet.
       properties:
         IdNhanVien:
           type: integer
@@ -17179,7 +17290,17 @@ components:
         GioTkb:
           type: number
           format: double
-          description: Tong gio chuan tu thoi khoa bieu (0 neu nguoi nay khong co dong TKB).
+          description: >-
+            Tong gio chuan tu file gio giang (0 neu nguoi nay khong co dong nao).
+            = GioTkbDaiHoc + GioTkbSauDaiHoc.
+        GioTkbDaiHoc:
+          type: number
+          format: double
+          description: Phan tu sheet DH (tiet dung lop dai hoc).
+        GioTkbSauDaiHoc:
+          type: number
+          format: double
+          description: Phan tu sheet SDH (tiet dung lop sau dai hoc).
         SoLopTkb:
           type: integer
         SoTietTrongNam:
@@ -17191,9 +17312,11 @@ components:
         GioSauDaiHoc:
           type: number
           format: double
+          description: Phu luc II, muc goc SDH (KHONG phai tiet dung lop - xem GioTkbSauDaiHoc).
         GioDaiHoc:
           type: number
           format: double
+          description: Phu luc II, muc goc DH (KHONG phai tiet dung lop - xem GioTkbDaiHoc).
         TongGio:
           type: number
           format: double
@@ -17201,8 +17324,8 @@ components:
     GioGiangTkbCanhBaoDto:
       type: object
       description: >-
-        Canh bao phat hien khi doc file TKB. KHONG chan import (du lieu van tinh duoc)
-        nhung deu la dau hieu file hoac tham so co van de.
+        Canh bao phat hien khi doc file gio giang. KHONG chan import (du lieu van tinh
+        duoc) nhung deu la dau hieu file hoac tham so co van de.
       properties:
         Loai:
           type: string
@@ -17210,12 +17333,18 @@ components:
             - TRUNG_LOP
             - SO_TIET_TRONG
           description: >-
-            TRUNG_LOP = trung (ho ten, ky hoc, ma lop) - van giu CA HAI dong vi dong
-            giang la co that;
+            TRUNG_LOP = trung (ho ten, khoa, ky hoc, ma lop) trong CUNG sheet - van giu
+            CA HAI dong vi dong giang la co that;
             SO_TIET_TRONG = cot SoTiet trong hoac khong duong - lop do duoc tinh 0 gio.
+        HeDaoTao:
+          type: string
+          enum:
+            - DH
+            - SDH
+          description: Sheet chua dong nay.
         SoDongExcel:
           type: integer
-          description: So dong tren file Excel (dem tu 1, tinh ca dong tieu de).
+          description: So dong trong sheet HeDaoTao (dem tu 1, tinh ca dong tieu de).
         HoTen:
           type: string
           nullable: true
@@ -17232,11 +17361,18 @@ components:
         HoTenChuan:
           type: string
           maxLength: 150
-          description: Ho ten trong file TKB. Server tu chuan hoa lai (co the gui ten con dau).
+          description: Ho ten trong file. Server tu chuan hoa lai (co the gui ten con dau).
+        KhoaChuan:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: >-
+            KhoaChuan cua dong can anh xa (lay tu GET /api/gio-giang-tkb). Bo trong =
+            dong khong ghi khoa. Server tu chuan hoa lai.
         IdNhanVien:
           type: integer
           nullable: true
-          description: Null = GO anh xa cua ho ten nay.
+          description: Null = GO anh xa cua (ho ten, khoa) nay.
       required:
         - HoTenChuan
     GioGiangTkbResponse:
@@ -17267,7 +17403,15 @@ components:
         SoDongDoc:
           type: integer
           nullable: true
-          description: So dong du lieu doc duoc tu file Excel (chi o endpoint import).
+          description: So dong du lieu doc duoc tu file Excel, ca hai sheet (chi o endpoint import).
+        SoDongDaiHoc:
+          type: integer
+          nullable: true
+          description: So dong chi tiet da luu tu sheet DH (chi o endpoint import).
+        SoDongSauDaiHoc:
+          type: integer
+          nullable: true
+          description: So dong chi tiet da luu tu sheet SDH (chi o endpoint import).
         ImportedCount:
           type: integer
           nullable: true
@@ -17275,7 +17419,7 @@ components:
         SoGiangVien:
           type: integer
           nullable: true
-          description: So giang vien sau khi gop theo ho ten chuan (chi o endpoint import).
+          description: So giang vien sau khi gop theo (ho ten, khoa) (chi o endpoint import).
         SoDongBoQua:
           type: integer
           nullable: true
@@ -17290,7 +17434,8 @@ components:
           nullable: true
           description: >-
             So giang vien duoc gan TU DONG vao nhan vien trong lan chay nay (ten khop
-            duy nhat mot nguoi). Chi o endpoint import va anh-xa/tu-dong.
+            duy nhat mot nguoi, hoac trung ten nhung khoa duy nhat). Chi o endpoint import
+            va anh-xa/tu-dong.
         CanhBao:
           type: array
           description: Toi da 20 canh bao dau; bo dem day du nam o cac cot SoDong*.
@@ -17300,9 +17445,9 @@ components:
           type: integer
           nullable: true
           description: >-
-            So giang vien trong nam CHUA anh xa ve nhan vien (trung ten hoac khong khop
-            ai). Con > 0 nghia la bang tong hop chua day du - phai canh bao truoc khi
-            dung so lieu.
+            So giang vien trong nam CHUA anh xa ve nhan vien (khong khop ai, hoac trung
+            ten ma khoa khong phan dinh duoc). Con > 0 nghia la bang tong hop chua day du
+            - phai canh bao truoc khi dung so lieu.
     NckhSyncResult:
       type: object
       properties:
