@@ -1,20 +1,13 @@
-import HanNgachTheoNhom from "./HanNgachTheoNhom";
-import { nhomHanNgachHienThi } from "../../utils/hanNgachXuatSac";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
+  fetchBaoCaoChuaHoanTat,
+  fetchBaoCaoChuaLapPhieu,
+  fetchBaoCaoDiemTrungBinh,
   fetchBaoCaoTongQuan,
   fetchThamDinhPending,
   formatNgayGio,
-  LOAI_DOI_TUONG,
-  TRANG_THAI,
   TRANG_THAI_META,
   XEP_LOAI_META,
 } from "../../utils/phieuApi";
@@ -22,35 +15,40 @@ import {
   fetchToTrinhDetail,
   fetchToTrinhList,
   TRANG_THAI_TO_TRINH,
+  TRANG_THAI_TO_TRINH_META,
   TY_LE_XUAT_SAC_MAC_DINH,
 } from "../../utils/toTrinhApi";
-import { TRANG_THAI_CHUA_LAP_META } from "../../utils/chuaLapPhieu";
-import { coQuyenTaiDonVi, hasRole, ROLE_SETS } from "../../utils/roles";
-import { useChuaTuCham } from "../../hooks/useChuaTuCham";
-import { TrangThaiToTrinhBadge } from "./TrangThaiBadge";
-import TienDoCham from "./TienDoCham";
-import HocVuTongQuan from "./HocVuTongQuan";
-
-/** Thứ tự hiển thị của bảng xếp loại - mức cao trước, giống mọi bảng kết quả khác. */
-const THU_TU_XEP_LOAI = [4, 3, 2, 1];
-
-/**
- * Màu ô icon riêng của dải thẻ đếm ở đây, ĐÈ lên màu trong TRANG_THAI_META.
- *
- * Hai bảng màu phục vụ hai việc khác nhau: TRANG_THAI_META phải cho mỗi trạng
- * thái một sắc riêng để badge trong bảng phiếu phân biệt được với nhau, còn ở đây
- * sáu thẻ đứng cạnh nhau theo đúng thứ tự tiến trình nên màu đọc theo mức độ cần
- * can thiệp: đỏ = phải nhắc người ta, hổ phách = đang tới lượt mình, xanh dương =
- * đang chờ mình duyệt, xanh lá = xong, xám = chưa cần đụng tới.
- */
-const MAU_O_ICON = {
-  "chua-lap": { background: "#fdecec", color: "#b91c1c" },
-  1: { background: "#eef0f6", color: "#565c74" },
-  2: { background: "#fef3e0", color: "#b4680a" },
-  3: { background: "#eef1fb", color: "#003399" },
-  4: { background: "#eaf7ee", color: "#15803d" },
-  5: { background: "#eef0f6", color: "#565c74" },
-};
+import { fetchPhieuDonViList } from "../../utils/phieuDonViApi";
+import { nhomHanNgachHienThi } from "../../utils/hanNgachXuatSac";
+import { coQuyenTaiDonVi, ROLE_SETS } from "../../utils/roles";
+import { DanhSachChuaLap } from "./BaoCaoBoSung";
+import TongQuanThuKy from "./TongQuanThuKy";
+import {
+  Alert,
+  Card,
+  chuGiaiQuy,
+  DangTai,
+  DashHeader,
+  demTrangThai,
+  DiemTrungBinhCard,
+  hangXepLoaiNam,
+  HeroKpi,
+  Icon,
+  KpiCard,
+  KpiRow,
+  LegendInline,
+  PhieuNamVienChucPanel,
+  QuyCard,
+  RAMP5,
+  Section,
+  so,
+  taoNhanTrangThai,
+  TaskCard,
+  theHocVu,
+  TienDoPhieuNam,
+  XepLoaiBars,
+  XL4,
+} from "./TongQuanUi";
 
 /** Gói đã chạy thuật toán hạn ngạch → cột XepLoai mới có nghĩa. */
 const TRANG_THAI_DA_AP_HAN_NGACH = [
@@ -59,96 +57,101 @@ const TRANG_THAI_DA_AP_HAN_NGACH = [
   TRANG_THAI_TO_TRINH.HT_DA_DUYET,
 ];
 
+const NHAN_TRANG_THAI_NAM = Object.fromEntries(
+  Object.entries(TRANG_THAI_META).map(([tt, meta]) => [tt, meta.label]),
+);
+
+/** Ngày đứng yên ở một trạng thái từ mức này trở lên thì gắn cờ. */
+const NGUONG_TRE = 30;
+
+/** Số dòng hai danh sách cuối trang; phần còn lại ở trang Báo cáo. */
+const SO_DONG_DANH_SACH = 6;
+
+const MOT_NGAY_MS = 24 * 60 * 60 * 1000;
+const soNgayTu = (ngay) => {
+  const t = ngay ? new Date(ngay).getTime() : NaN;
+  return Number.isNaN(t) ? null : Math.max(Math.floor((Date.now() - t) / MOT_NGAY_MS), 0);
+};
+
 /**
- * Khối tổng quan KPI cấp Khoa trên trang chủ của TK/TKL/TKK.
+ * Tổng quan KPI cấp Khoa trên trang chủ của TK / TKL (Trưởng khoa) và TKK (Thư
+ * ký khoa - chỉ số tổng hợp, xem TongQuanThuKy).
  *
  * Báo cáo tổng quan tự giới hạn phạm vi theo chức vụ trong JWT (TK/TKL/TKK chỉ
  * thấy cây đơn vị mình), nên không truyền idDonVi: với Trưởng khoa lớn, bộ lọc
- * còn cắt mất các Khoa con. idDonVi dùng để chọn gói của đơn vị mình và, với
- * Trưởng khoa, làm gốc cây cho danh bạ đối chiếu người chưa lập phiếu.
+ * còn cắt mất các Khoa con. idDonVi dùng để chọn gói tờ trình và phiếu đánh giá
+ * của đúng đơn vị mình.
  *
- * Số chưa lập phiếu lấy từ SoChuaLapPhieu cùng phạm vi với TongSoPhieu.
- * TK/TKL dùng useChuaTuCham để đối chiếu số giảng viên chưa có phiếu; TKK chỉ
- * cần số tổng hợp từ API, không gọi thêm các API danh bạ/phiếu cá nhân.
- * Phân bố xếp loại không lấy từ báo cáo server: `DemTheoXepLoai` chỉ đếm phiếu
- * trang_thai = 5, tức sau khi Hiệu trưởng duyệt cả gói. Suốt mùa đánh giá nó
- * rỗng - đúng lúc Trưởng khoa cần nhìn nhất. Ở đây đếm từ HoSo[] của tờ trình,
- * nguồn duy nhất có xếp loại ở MỌI giai đoạn.
+ * Phân bố xếp loại ưu tiên HoSo[] của tờ trình thay vì `DemTheoXepLoai`: cái sau
+ * chỉ đếm phiếu trang_thai = 5 (sau khi Hiệu trưởng duyệt cả gói) nên suốt mùa
+ * đánh giá nó rỗng - đúng lúc Trưởng khoa cần nhìn nhất.
  */
-const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
-  const navigate = useNavigate();
+const TongQuanKhoa = ({ idNam, idDonVi, tenDonVi, reloadKey = 0, controls, chinh = true }) => {
   const { user } = useAuth();
-  const laTruongKhoaTaiDonVi = coQuyenTaiDonVi(
-    ROLE_SETS.TRUONG_KHOA,
-    idDonVi,
-    user,
-  );
-  const duocThamDinh = coQuyenTaiDonVi(
-    ROLE_SETS.TRUONG_DON_VI,
-    idDonVi,
-    user,
-  );
-  const duocXemBaoCao = hasRole(ROLE_SETS.TRUONG_DON_VI, user);
+  const laTruongKhoaTaiDonVi = coQuyenTaiDonVi(ROLE_SETS.TRUONG_KHOA, idDonVi, user);
+  const duocThamDinh = coQuyenTaiDonVi(ROLE_SETS.TRUONG_DON_VI, idDonVi, user);
 
-  const [tongQuan, setTongQuan] = useState(null);
-  const [soDongThamDinh, setSoDongThamDinh] = useState(null);
-  const [goi, setGoi] = useState(null);
+  const [duLieu, setDuLieu] = useState(null);
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState("");
-
-  const {
-    chuaLapPhieu,
-    dangTai: dangTaiChuaLap,
-    loi: loiChuaLap,
-    taiLai: taiLaiChuaLap,
-  } = useChuaTuCham({
-    idNam,
-    idDonViGoc: idDonVi,
-    bat: laTruongKhoaTaiDonVi,
-  });
+  const [drill, setDrill] = useState(null);
+  const lanTai = useRef(0);
 
   const tai = useCallback(async () => {
     if (!idNam) return;
+    const lan = ++lanTai.current;
     setDangTai(true);
     setLoi("");
+    setDrill(null);
 
-    const [tq, td, ds] = await Promise.allSettled([
+    const [tq, td, ds, tb, pdv] = await Promise.allSettled([
       fetchBaoCaoTongQuan({ idNam }),
       // Chỉ cần TongSoDong nên lấy trang nhỏ nhất - không dòng nào được dùng tới.
-      duocThamDinh
-        ? fetchThamDinhPending({ idNam, pageSize: 1 })
-        : Promise.resolve(null),
+      duocThamDinh ? fetchThamDinhPending({ idNam, pageSize: 1 }) : Promise.resolve(null),
       fetchToTrinhList({ idNam }),
+      fetchBaoCaoDiemTrungBinh({ idNam }),
+      laTruongKhoaTaiDonVi
+        ? Promise.resolve(null)
+        : fetchPhieuDonViList({ idNam, idDonVi, pageSize: 5 }),
     ]);
+    if (lan !== lanTai.current) return;
 
-    setTongQuan(tq.status === "fulfilled" ? tq.value : null);
-    // Trưởng khoa không được giao tiêu chí nào thì endpoint trả 403 - đó là cấu
-    // hình hợp lệ, không phải lỗi: để null và ẩn hẳn dòng việc tương ứng.
-    setSoDongThamDinh(
-      td.status === "fulfilled" ? (td.value?.tongSoDong ?? null) : null,
-    );
+    const tongQuan = tq.status === "fulfilled" ? tq.value : null;
+    const coQuyenDs = tongQuan?.CoQuyenXemDanhSach === true;
+    const dsGoi = ds.status === "fulfilled" ? ds.value || [] : [];
+    const goiTomTat =
+      dsGoi.find((t) => Number(t.IdDonVi) === Number(idDonVi)) || dsGoi[0] || null;
 
-    const dsGoi = ds.status === "fulfilled" ? ds.value : [];
-    const goiCuaToi =
-      dsGoi.find((t) => Number(t.IdDonVi) === Number(idDonVi)) ||
-      dsGoi[0] ||
-      null;
+    // TKK đọc được danh sách gói nhưng API chi tiết chỉ cho TK/TKL/TP.
+    const [chiTiet, cht, cl] = await Promise.allSettled([
+      goiTomTat && laTruongKhoaTaiDonVi
+        ? fetchToTrinhDetail(goiTomTat.IdToTrinh)
+        : Promise.resolve(goiTomTat),
+      coQuyenDs ? fetchBaoCaoChuaHoanTat({ idNam }) : Promise.resolve(null),
+      coQuyenDs
+        ? fetchBaoCaoChuaLapPhieu({ idNam, page: 1, pageSize: SO_DONG_DANH_SACH })
+        : Promise.resolve(null),
+    ]);
+    if (lan !== lanTai.current) return;
 
-    if (!goiCuaToi) {
-      setGoi(null);
-    } else if (!laTruongKhoaTaiDonVi) {
-      // TKK được đọc danh sách gói, nhưng API chi tiết chỉ cho TK/TKL/TP.
-      setGoi(goiCuaToi);
-    } else {
-      try {
-        setGoi(await fetchToTrinhDetail(goiCuaToi.IdToTrinh));
-      } catch (error) {
-        // Dòng tóm tắt trong danh sách vẫn đủ dựng khối gói; chỉ mất phân bố xếp
-        // loại vì HoSo[] chỉ có ở endpoint chi tiết.
-        console.error("Lỗi tải chi tiết gói KPI Khoa:", error);
-        setGoi(goiCuaToi);
-      }
+    if (chiTiet.status === "rejected") {
+      // Dòng tóm tắt vẫn đủ dựng thẻ tờ trình; chỉ mất phân bố xếp loại.
+      console.error("Lỗi tải chi tiết gói KPI Khoa:", chiTiet.reason);
     }
+    const dsPhieuDv = pdv.status === "fulfilled" ? pdv.value || [] : [];
+
+    setDuLieu({
+      tongQuan,
+      // Trưởng khoa không được giao tiêu chí nào thì endpoint trả 403 - cấu hình
+      // hợp lệ, không phải lỗi: để null và ẩn hẳn thẻ việc tương ứng.
+      soDongThamDinh: td.status === "fulfilled" ? (td.value?.tongSoDong ?? null) : null,
+      goi: chiTiet.status === "fulfilled" ? chiTiet.value : goiTomTat,
+      diemTb: tb.status === "fulfilled" ? tb.value || [] : null,
+      phieuDv:
+        dsPhieuDv.find((p) => Number(p.IdDonVi) === Number(idDonVi)) || dsPhieuDv[0] || null,
+      chuaHoanTat: cht.status === "fulfilled" ? cht.value : null,
+      chuaLap: cl.status === "fulfilled" ? cl.value : null,
+    });
 
     if (tq.status === "rejected") {
       console.error("Lỗi tải báo cáo tổng quan Khoa:", tq.reason);
@@ -159,386 +162,431 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
 
   useEffect(() => {
     tai();
-  }, [tai]);
+  }, [tai, reloadKey]);
 
-  /**
-   * Nút "Làm mới" của trang cha. Bỏ qua lần chạy đầu: hai nguồn dữ liệu đã tự tải
-   * trong effect của mình rồi, chạy thêm ở đây là nhân đôi request lúc mở trang.
-   */
-  const lanDau = useRef(true);
-  useEffect(() => {
-    if (lanDau.current) {
-      lanDau.current = false;
-      return;
-    }
-    tai();
-    taiLaiChuaLap();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reloadKey]);
+  const tongQuan = duLieu?.tongQuan;
+  const goi = duLieu?.goi;
+  const tieuDe = goi?.TenDonVi || tenDonVi || "Tổng quan KPI Khoa";
+  const apDungQuy = tongQuan?.ApDungPhieuQuy === true && (tongQuan?.PhieuQuy || []).length > 0;
+  const quyHienTai = apDungQuy ? tongQuan?.QuyHienTai : null;
 
-  const demTheoTrangThai = useMemo(() => {
-    const map = new Map();
-    (tongQuan?.DemTheoTrangThai || []).forEach((d) =>
-      map.set(Number(d.TrangThai), Number(d.SoLuong) || 0),
-    );
-    return map;
-  }, [tongQuan]);
-
-  const soPhieu = Number(tongQuan?.TongSoPhieu) || 0;
-  const coSoChuaLapTuApi = tongQuan?.SoChuaLapPhieu != null;
-  const soChuaLap = coSoChuaLapTuApi
-    ? Number(tongQuan.SoChuaLapPhieu) || 0
-    : chuaLapPhieu.length;
-  const soDangNhap = demTheoTrangThai.get(TRANG_THAI.NHAP) || 0;
-  const soChoToiChot = demTheoTrangThai.get(TRANG_THAI.CHO_TK_DUYET) || 0;
-
-  /**
-   * Mẫu số gồm phiếu đã lập và người chưa lập phiếu trong cùng phạm vi API.
-   */
-  const soPhaiNop = soPhieu + soChuaLap;
-  const soDaNop = soPhieu - soDangNhap;
-
-  const theTrangThai = useMemo(
-    () => [
-      {
-        key: "chua-lap",
-        meta: TRANG_THAI_CHUA_LAP_META,
-        soLuong: !coSoChuaLapTuApi && dangTaiChuaLap ? null : soChuaLap,
-      },
-      ...Object.entries(TRANG_THAI_META).map(([tt, meta]) => ({
-        key: tt,
-        meta,
-        soLuong: demTheoTrangThai.get(Number(tt)) || 0,
-      })),
-    ],
-    [coSoChuaLapTuApi, dangTaiChuaLap, soChuaLap, demTheoTrangThai],
-  );
-
-  const viecCanLam = useMemo(
-    () =>
-      [
-        {
-          key: "chot",
-          duocMo: laTruongKhoaTaiDonVi,
-          so: soChoToiChot,
-          nhan: "hồ sơ chờ bạn chốt và chọn xếp loại",
-          icon: "fa-user-check",
-          mau: "#003399",
-          nen: "#eef1fb",
-          duongDan: "/quan-ly/duyet-ho-so",
-        },
-        {
-          key: "tham-dinh",
-          duocMo: duocThamDinh,
-          so: soDongThamDinh,
-          nhan: "dòng tiêu chí đơn vị bạn phải thẩm định",
-          icon: "fa-clipboard-check",
-          mau: "#b4680a",
-          nen: "#fef3e0",
-          duongDan: "/quan-ly/cho-cham",
-        },
-        {
-          key: "chua-lap",
-          duocMo: duocXemBaoCao,
-          so: !coSoChuaLapTuApi && dangTaiChuaLap ? 0 : soChuaLap,
-          nhan: "người chưa lập phiếu, cần nhắc nộp",
-          icon: "fa-user-slash",
-          mau: "#b91c1c",
-          nen: "#fdecec",
-          duongDan: "/quan-ly/bao-cao",
-        },
-      ].filter((v) => v.duocMo && Number(v.so) > 0),
-    [
-      soChoToiChot,
-      soDongThamDinh,
-      soChuaLap,
-      coSoChuaLapTuApi,
-      dangTaiChuaLap,
-      laTruongKhoaTaiDonVi,
-      duocThamDinh,
-      duocXemBaoCao,
-    ],
-  );
-
-  /**
-   * Xếp loại của cả Khoa, đếm từ HoSo[] của gói.
-   *
-   * `XepLoai` chỉ được ghi ở bước đóng gói (và chỉ ở đó mới có mức 4), nên trước
-   * đó phải rơi về `XepLoaiKhoa` - mức Trưởng khoa chọn tay, trần là 3. Hai cột
-   * này khác nghĩa nên nhãn hiển thị phải đổi theo trạng thái gói.
-   */
-  const phanBoXepLoai = useMemo(() => {
-    const hoSo = goi?.HoSo || [];
-    if (hoSo.length === 0) return null;
-
-    const dem = new Map();
-    let chuaXep = 0;
-    hoSo.forEach((h) => {
-      const muc = Number(h.XepLoai ?? h.XepLoaiKhoa) || 0;
-      if (!muc) chuaXep += 1;
-      else dem.set(muc, (dem.get(muc) || 0) + 1);
-    });
-    return { dem, chuaXep, tong: hoSo.length };
-  }, [goi]);
-
-  const daApHanNgach = TRANG_THAI_DA_AP_HAN_NGACH.includes(
-    Number(goi?.TrangThai),
-  );
-
-  /**
-   * `NgayDongGoi` là dấu hiệu đáng tin duy nhất cho "đã có số liệu hạn ngạch
-   * thật": trạng thái 5 cũng từng đóng gói nên vẫn còn số cũ, còn trạng thái 1
-   * thì chưa bao giờ có.
-   */
-  const daTinhHanNgach = goi?.NgayDongGoi != null;
-
-  const soGvCoPhieu = useMemo(
-    () =>
-      (goi?.HoSo || []).filter(
-        (h) => Number(h.LoaiDoiTuong) === LOAI_DOI_TUONG.GIANG_VIEN,
-      ).length,
-    [goi],
-  );
-
-  /** Số giảng viên chưa lập phiếu chỉ phục vụ thống kê đầu người. */
-  const soGvChuaLapPhieu = useMemo(
-    () =>
-      chuaLapPhieu.filter(
-        (r) => Number(r.LoaiDoiTuong) === LOAI_DOI_TUONG.GIANG_VIEN,
-      ).length,
-    [chuaLapPhieu],
-  );
-
-  const soGvHienThi = daTinhHanNgach
-    ? (goi?.SoGiangVien ?? soGvCoPhieu)
-    : soGvCoPhieu;
-  const soGvToanKhoa = soGvCoPhieu + soGvChuaLapPhieu;
-  const nhomHanNgach = nhomHanNgachHienThi(goi);
-  const hanNgachHienTai = nhomHanNgach.length
-    ? nhomHanNgach.reduce((sum, n) => sum + Number(n.HanNgach || 0), 0)
-    : "-";
-
-  if (dangTai) {
+  if (!duLieu) {
     return (
-      <div className="modern-table-card">
-        <div className="cd-empty">
-          <i className="fa-solid fa-spinner fa-spin"></i>
-          Đang tổng hợp số liệu KPI của Khoa...
-        </div>
-      </div>
+      <>
+        <DashHeader title={tieuDe} controls={controls} chinh={chinh} />
+        {dangTai ? (
+          <DangTai>Đang tổng hợp số liệu KPI của Khoa...</DangTai>
+        ) : (
+          loi && <Alert muc="danger">{loi}</Alert>
+        )}
+      </>
+    );
+  }
+
+  if (!laTruongKhoaTaiDonVi) {
+    return (
+      <TongQuanThuKy
+        tieuDe={tieuDe}
+        phuDe={`Năm đánh giá ${idNam} · số liệu tổng hợp của Khoa`}
+        loaiDonVi="Khoa"
+        controls={controls}
+        chinh={chinh}
+        duLieu={tongQuan}
+        trangThaiPhieuDv={duLieu.phieuDv?.TrangThai ?? null}
+        duongDanPhieuDv="/danh-gia-kpi-don-vi"
+        diemTb={duLieu.diemTb}
+      />
     );
   }
 
   return (
+    <TruongKhoa
+      idNam={idNam}
+      tieuDe={tieuDe}
+      controls={controls}
+      chinh={chinh}
+      quyHienTai={quyHienTai}
+      apDungQuy={apDungQuy}
+      loi={loi}
+      duLieu={duLieu}
+      drill={drill}
+      setDrill={setDrill}
+      reloadKey={reloadKey}
+    />
+  );
+};
+
+const TruongKhoa = ({
+  idNam,
+  tieuDe,
+  controls,
+  chinh,
+  quyHienTai,
+  apDungQuy,
+  loi,
+  duLieu,
+  drill,
+  setDrill,
+  reloadKey,
+}) => {
+  const { tongQuan, goi, soDongThamDinh, diemTb, chuaHoanTat, chuaLap } = duLieu;
+  const dem = demTrangThai(tongQuan?.DemTheoTrangThai);
+  const nhanTrangThai = taoNhanTrangThai(tongQuan?.DemTheoTrangThai, NHAN_TRANG_THAI_NAM);
+  const tongSoPhieu = Number(tongQuan?.TongSoPhieu) || 0;
+  const soChuaLap = Number(tongQuan?.SoChuaLapPhieu) || 0;
+  const soNhanVien =
+    tongQuan?.SoNhanVien != null ? Number(tongQuan.SoNhanVien) : tongSoPhieu + soChuaLap;
+  const coQuyenDs = tongQuan?.CoQuyenXemDanhSach === true;
+  const moDrill = coQuyenDs ? setDrill : undefined;
+  const phieuNamVc = tongQuan?.PhieuNamVienChuc;
+  const biChan = Number(phieuNamVc?.SoChoTkDuyetChuaChotQuy) || 0;
+  const quyRows = apDungQuy ? tongQuan.PhieuQuy : [];
+  const quyChoDuyet = quyRows.filter((r) => Number(r.SoChoDuyet) > 0);
+
+  const phanBoXepLoai = useMemo(() => {
+    const hoSo = goi?.HoSo || [];
+    if (hoSo.length === 0) return null;
+    const demXl = new Map();
+    let chuaXep = 0;
+    hoSo.forEach((h) => {
+      // `XepLoai` chỉ ghi ở bước đóng gói (mới có mức 4); trước đó rơi về
+      // `XepLoaiKhoa` - mức Trưởng khoa chọn tay, trần là 3.
+      const muc = Number(h.XepLoai ?? h.XepLoaiKhoa) || 0;
+      if (!muc) chuaXep += 1;
+      else demXl.set(muc, (demXl.get(muc) || 0) + 1);
+    });
+    return { dem: demXl, chuaXep, tong: hoSo.length };
+  }, [goi]);
+
+  const daApHanNgach = TRANG_THAI_DA_AP_HAN_NGACH.includes(Number(goi?.TrangThai));
+  // NgayDongGoi là dấu hiệu duy nhất đáng tin cho "đã có số liệu hạn ngạch thật".
+  const daTinhHanNgach = goi?.NgayDongGoi != null;
+  const nhomHanNgach = nhomHanNgachHienThi(goi);
+  const hanNgachDuKien = nhomHanNgach.length
+    ? nhomHanNgach.reduce((sum, n) => sum + Number(n.HanNgach || 0), 0)
+    : null;
+
+  const xepLoaiRows = phanBoXepLoai
+    ? [1, 2, 3, 4].map((muc) => ({
+        key: muc,
+        nhan: `${XEP_LOAI_META[muc].label} nhiệm vụ`,
+        so: phanBoXepLoai.dem.get(muc) || 0,
+        c: XL4[muc - 1],
+      }))
+    : hangXepLoaiNam(tongQuan?.DemTheoXepLoai);
+
+  const drillKey = JSON.stringify([idNam, reloadKey, drill]);
+  const khoiDrill = (theoQuy) =>
+    coQuyenDs &&
+    drill &&
+    Boolean(drill.quy) === theoQuy && (
+      <div className="db-drill">
+        <DanhSachChuaLap key={drillKey} idNam={idNam} {...drill} onClose={() => setDrill(null)} />
+      </div>
+    );
+
+  const hoSoCho = [...(chuaHoanTat || [])].sort(
+    (a, b) => (Number(b.SoNgayOTrangThai) || 0) - (Number(a.SoNgayOTrangThai) || 0),
+  );
+
+  return (
     <>
-      <p className="sub-title tqk-title">
-        TỔNG QUAN KPI KHOA
-        {goi?.TenDonVi ? ` - ${goi.TenDonVi.toUpperCase()}` : ""}
-        {duocXemBaoCao && (
-          <button
-            className="cd-link-btn"
-            onClick={() => navigate("/quan-ly/bao-cao")}
-          >
-            Xem báo cáo đầy đủ <i className="fa-solid fa-arrow-right"></i>
-          </button>
-        )}
-      </p>
+      <DashHeader
+        title={tieuDe}
+        subtitle={`Năm đánh giá ${idNam} · gồm cả các đơn vị trực thuộc Khoa`}
+        quyHienTai={quyHienTai}
+        controls={controls}
+        chinh={chinh}
+      />
+      {loi && <Alert muc="danger">{loi}</Alert>}
 
-      {loi && (
-        <div className="cd-canh-bao tqk-canh-bao">
-          <i className="fa-solid fa-triangle-exclamation"></i>
-          <span>{loi}</span>
+      <Section title="Việc cần làm">
+        <div className="db-task-grid">
+          <TaskCard
+            nhan="Hồ sơ năm chờ bạn duyệt"
+            giaTri={so(dem.get(3) || 0)}
+            phu={
+              biChan > 0
+                ? `${so(biChan)} hồ sơ viên chức chưa duyệt được`
+                : "Chốt hồ sơ và chọn xếp loại"
+            }
+            phuIcon={biChan > 0 ? "chan" : undefined}
+            to="/quan-ly/duyet-ho-so"
+          />
+          {apDungQuy && (
+            <TaskCard
+              nhan="Phiếu quý chờ bạn duyệt"
+              giaTri={so(quyChoDuyet.reduce((s, r) => s + Number(r.SoChoDuyet), 0))}
+              phu={
+                quyChoDuyet.length
+                  ? quyChoDuyet.map((r) => `Quý ${r.Quy}: ${so(r.SoChoDuyet)} phiếu`).join(" · ")
+                  : "Không có phiếu nào đang chờ"
+              }
+              to="/quan-ly/phieu-quy"
+            />
+          )}
+          {Number(soDongThamDinh) > 0 && (
+            <TaskCard
+              nhan="Tiêu chí chờ bạn thẩm định"
+              giaTri={so(soDongThamDinh)}
+              phu="Dòng tiêu chí đơn vị bạn được giao chấm"
+              to="/quan-ly/cho-cham"
+            />
+          )}
+          <TaskCard
+            nhan="Chưa lập phiếu năm"
+            giaTri={so(soChuaLap)}
+            phu={
+              (tongQuan?.TheoLoaiDoiTuong || [])
+                .filter((r) => Number(r.SoChuaLapPhieu) > 0)
+                .map((r) => `${so(r.SoChuaLapPhieu)} ${String(r.LoaiDoiTuongText || "").toLowerCase()}`)
+                .join(" · ") || undefined
+            }
+            onClick={moDrill && soChuaLap > 0 ? () => moDrill({ quy: 0 }) : undefined}
+          />
+          <TaskCard
+            nhan="Tờ trình KPI Khoa"
+            laChu
+            giaTri={
+              goi
+                ? TRANG_THAI_TO_TRINH_META[goi.TrangThai]?.label || "Chưa có nhãn"
+                : "Chưa có tờ trình"
+            }
+            phu={
+              goi?.LyDoTraVe
+                ? "Hiệu trưởng đã trả gói về"
+                : goi
+                  ? `${so(goi.SoHoSoDaChot ?? 0)} / ${so(goi.SoHoSo ?? 0)} hồ sơ đã chốt`
+                  : "Tạo tự động khi bạn chốt hồ sơ đầu tiên"
+            }
+            phuIcon={goi?.LyDoTraVe ? "canhBao" : undefined}
+            cta={
+              Number(goi?.TrangThai) === TRANG_THAI_TO_TRINH.DANG_TONG_HOP
+                ? "Mở trang đóng gói tờ trình"
+                : "Mở tờ trình KPI Khoa"
+            }
+            to={goi ? "/quan-ly/to-trinh" : undefined}
+          />
         </div>
-      )}
+      </Section>
 
-      <div className="cd-phieu-header tqk-tien-do">
-        <TienDoCham
-          nhan="Đã nộp phiếu"
-          xong={soDaNop}
-          tong={soPhaiNop}
-          ghiChu={
-            // Chỉ giữ lại hai trạng thái BẤT THƯỜNG của mẫu số: đang đối chiếu và
-            // đối chiếu hỏng. Trường hợp bình thường không cần chú thích - số người
-            // chưa lập phiếu đã có thẻ đếm riêng ngay bên dưới.
-            !coSoChuaLapTuApi && dangTaiChuaLap
-              ? "Đang đối chiếu danh bạ đơn vị..."
-              : !coSoChuaLapTuApi && loiChuaLap
-                ? "Mẫu số chỉ gồm người đã có phiếu - không đối chiếu được danh bạ."
-                : undefined
+      <KpiRow
+        hero={
+          <HeroKpi
+            nhan="Nhân sự đã lập phiếu năm"
+            xong={Math.max(soNhanVien - soChuaLap, 0)}
+            tong={soNhanVien}
+          >
+            {soChuaLap > 0 &&
+              (moDrill ? (
+                <button type="button" className="db-link-btn" onClick={() => moDrill({ quy: 0 })}>
+                  <Icon ten="canhBao" />
+                  {so(soChuaLap)} người chưa lập phiếu năm — xem danh sách
+                </button>
+              ) : (
+                <span className="db-kpi-phu">{so(soChuaLap)} người chưa lập phiếu năm</span>
+              ))}
+          </HeroKpi>
+        }
+      >
+        <KpiCard
+          nhan="Phiếu năm hoàn tất"
+          giaTri={so(dem.get(5) || 0)}
+          phu={`trên ${so(tongSoPhieu)} phiếu đã lập`}
+        />
+        {theHocVu(tongQuan?.HocVu)}
+      </KpiRow>
+      {khoiDrill(false)}
+
+      <div className="db-grid-3">
+        <TienDoPhieuNam
+          className="db-span-2"
+          dem={dem}
+          nhanTrangThai={nhanTrangThai}
+          tongSoPhieu={tongSoPhieu}
+          theoLoai={tongQuan?.TheoLoaiDoiTuong}
+        />
+        <Card
+          title="Xếp loại năm"
+          meta={
+            phanBoXepLoai
+              ? daApHanNgach
+                ? `Kết quả chính thức · ${so(phanBoXepLoai.tong)} hồ sơ`
+                : `Mức bạn chọn khi chốt · ${so(phanBoXepLoai.tong)} hồ sơ`
+              : `${so(dem.get(5) || 0)} phiếu hoàn tất`
           }
-        />
-        <TienDoCham
-          phu
-          nhan="Đã chốt hồ sơ"
-          xong={goi?.SoHoSoDaChot ?? 0}
-          tong={goi?.SoHoSo ?? 0}
-        />
+        >
+          {xepLoaiRows.length ? (
+            <XepLoaiBars rows={xepLoaiRows} />
+          ) : (
+            <p className="db-empty">Chưa có hồ sơ nào được xếp loại.</p>
+          )}
+          {goi && (
+            <div className="db-meta-lines">
+              {phanBoXepLoai?.chuaXep > 0 && (
+                <div className="db-meta-line">
+                  <span>Bạn chưa chốt</span>
+                  <span>{so(phanBoXepLoai.chuaXep)} hồ sơ</span>
+                </div>
+              )}
+              <div className="db-meta-line">
+                <span>Suất Xuất sắc ({(TY_LE_XUAT_SAC_MAC_DINH * 100).toFixed(0)}%)</span>
+                <span>
+                  {daTinhHanNgach
+                    ? `${so(goi.HanNgachXuatSac ?? 0)} suất`
+                    : hanNgachDuKien == null
+                      ? "—"
+                      : `${so(hanNgachDuKien)} suất (dự kiến)`}
+                </span>
+              </div>
+              <div className="db-meta-line">
+                <span>Đã đạt Xuất sắc</span>
+                <span>{daTinhHanNgach ? so(goi.SoDatXuatSac ?? 0) : "Chưa xét"}</span>
+              </div>
+              <div className="db-meta-line">
+                <span>Đóng gói lần cuối</span>
+                <span>{daTinhHanNgach ? formatNgayGio(goi.NgayDongGoi) : "Chưa đóng gói"}</span>
+              </div>
+            </div>
+          )}
+        </Card>
       </div>
 
-      <div className="stat-card-grid tqk-stat-grid">
-        {theTrangThai.map((t) => (
-          <div
-            className={`stat-card ${Number(t.soLuong || 0) === 0 ? "stat-card-zero" : "stat-card-active"}`}
-            key={t.key}
-          >
-            <div
-              className="stat-icon-box"
-              style={
-                MAU_O_ICON[t.key] || {
-                  background: t.meta.bg,
-                  color: t.meta.color,
-                }
+      {diemTb && <DiemTrungBinhCard rows={diemTb} />}
+
+      {apDungQuy && (
+        <Card
+          title="Viên chức văn phòng Khoa — đánh giá theo quý"
+          meta={`${so(quyRows[0]?.SoNhanVien)} viên chức · Trưởng khoa duyệt phiếu quý`}
+          actions={<LegendInline items={chuGiaiQuy()} />}
+        >
+          <div className={phieuNamVc ? "db-quy-layout" : undefined}>
+            <div className="db-quy-grid">
+              {quyRows.map((r) => (
+                <QuyCard key={r.Quy} row={r} quyHienTai={quyHienTai} onChuaLap={moDrill} />
+              ))}
+            </div>
+            <PhieuNamVienChucPanel data={phieuNamVc} choBan />
+          </div>
+          {khoiDrill(true)}
+        </Card>
+      )}
+
+      {coQuyenDs && (chuaHoanTat || chuaLap) && (
+        <div className="db-grid-3">
+          {chuaHoanTat && (
+            <Card
+              flush
+              className="db-span-2"
+              title="Hồ sơ chưa hoàn tất"
+              meta={`Sắp theo số ngày đứng ở trạng thái hiện tại · ${so(Math.min(hoSoCho.length, SO_DONG_DANH_SACH))} / ${so(hoSoCho.length)} hồ sơ`}
+              actions={
+                <Link className="db-link-strong" to="/quan-ly/bao-cao">
+                  Xem tất cả
+                </Link>
               }
             >
-              <i className={`fa-solid ${t.meta.icon}`}></i>
-            </div>
-            <div className="stat-label">{t.meta.label}</div>
-            <div className="stat-value">
-              {t.soLuong == null ? "…" : t.soLuong}
-            </div>
-          </div>
-        ))}
-      </div>
+              {hoSoCho.length === 0 ? (
+                <p className="db-empty" style={{ padding: "0 24px 20px" }}>
+                  Mọi phiếu trong phạm vi của bạn đã hoàn tất.
+                </p>
+              ) : (
+                <div className="db-table-wrap">
+                  <table className="db-table" style={{ minWidth: 640 }}>
+                    <thead>
+                      <tr>
+                        <th>Họ tên</th>
+                        <th>Nhóm</th>
+                        <th>Trạng thái</th>
+                        <th className="is-num">Ở trạng thái</th>
+                        <th className="is-num">Tuổi phiếu</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hoSoCho.slice(0, SO_DONG_DANH_SACH).map((r) => {
+                        const tt = Number(r.TrangThai);
+                        const oTrangThai = r.SoNgayOTrangThai;
+                        const tuoi = r.SoNgayTroi ?? soNgayTu(r.NgayTao);
+                        return (
+                          <tr key={r.IdPhieu}>
+                            <td>
+                              <div className="db-table-ten">
+                                <Link to={`/quan-ly/phieu/${r.IdPhieu}`}>
+                                  {r.HoTen || `#${r.IdNhanVien}`}
+                                </Link>
+                              </div>
+                            </td>
+                            <td className="is-muted">{r.LoaiDoiTuongText || "—"}</td>
+                            <td>
+                              <div className="db-tt-cell">
+                                <span>
+                                  <span
+                                    className="db-swatch db-swatch-sm"
+                                    style={{ background: RAMP5[tt - 1] || RAMP5[0] }}
+                                  />
+                                  {r.TrangThaiText || nhanTrangThai(tt)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="is-num">
+                              <span className="db-canh-bao-so">
+                                {Number(oTrangThai) >= NGUONG_TRE && (
+                                  <Icon ten="dongHo" size={14} nhan={`Quá ${NGUONG_TRE} ngày`} />
+                                )}
+                                {oTrangThai == null ? "—" : `${so(oTrangThai)} ngày`}
+                              </span>
+                            </td>
+                            <td className="is-num is-muted">
+                              {tuoi == null ? "—" : `${so(tuoi)} ngày`}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          )}
 
-      {viecCanLam.length > 0 && (
-        <div className="tqk-viec-list">
-          {viecCanLam.map((v) => (
-            <button
-              type="button"
-              className="tqk-viec"
-              key={v.key}
-              onClick={() => navigate(v.duongDan)}
+          {chuaLap && (
+            <Card
+              flush
+              title="Chưa lập phiếu năm"
+              meta={`${so(chuaLap.TotalCount)} người · tại đơn vị chính`}
+              actions={
+                chuaLap.TotalCount > 0 && (
+                  <button
+                    type="button"
+                    className="db-link-btn db-link-strong"
+                    onClick={() => setDrill({ quy: 0 })}
+                  >
+                    Xem tất cả
+                  </button>
+                )
+              }
             >
-              <span
-                className="tqk-viec-icon"
-                style={{ background: v.nen, color: v.mau }}
-              >
-                <i className={`fa-solid ${v.icon}`}></i>
-              </span>
-              <span className="tqk-viec-so" style={{ color: v.mau }}>
-                {v.so}
-              </span>
-              <span className="tqk-viec-nhan">{v.nhan}</span>
-              <i className="fa-solid fa-arrow-right tqk-viec-mui"></i>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <HocVuTongQuan hocVu={tongQuan?.HocVu} />
-
-      <div className="cd-phieu-header tqk-goi">
-        <div className="cd-phieu-top tqk-goi-top">
-          <div>
-            <div className="tqk-goi-ten">Tờ trình KPI của Khoa</div>
-            <div className="tqk-goi-phu">
-              {goi
-                ? `Năm học ${goi.IdNam}${goi.LanTrinh > 0 ? ` · đã trình Hiệu trưởng ${goi.LanTrinh} lần` : ""}`
-                : "Tờ trình được tạo tự động khi Trưởng khoa chốt hồ sơ đầu tiên của Khoa"}
-            </div>
-          </div>
-          {goi ? (
-            <TrangThaiToTrinhBadge
-              trangThai={goi.TrangThai}
-              idNguoiDuyet={goi.IdNguoiDuyet}
-            />
-          ) : (
-            <span className="tq-placeholder">Chưa có gói</span>
+              {chuaLap.Items.length === 0 ? (
+                <p className="db-empty" style={{ padding: "0 24px 20px" }}>
+                  Mọi người đã lập phiếu năm.
+                </p>
+              ) : (
+                <div className="db-person-list">
+                  {chuaLap.Items.map((p) => (
+                    <div className="db-person" key={p.IdNhanVien}>
+                      <div className="db-person-ten">
+                        <span>{p.HoTen}</span>
+                        <span>{p.TenChucDanh || p.TenDonVi || "—"}</span>
+                      </div>
+                      {p.LoaiDoiTuongText && <span className="db-chip">{p.LoaiDoiTuongText}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
           )}
         </div>
-
-        {goi && laTruongKhoaTaiDonVi && (
-          <>
-            <div className="cd-meta-grid tqk-meta-grid">
-              <div>
-                <div className="cd-meta-label">Giảng viên đã có phiếu</div>
-                <div className="cd-meta-value">
-                  {soGvHienThi}
-                  {soGvChuaLapPhieu > 0 && (
-                    <span className="tqk-mau-so-phu">
-                      {" "}
-                      / {soGvToanKhoa} của Khoa
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <div className="cd-meta-label">
-                  Suất Xuất sắc ({(TY_LE_XUAT_SAC_MAC_DINH * 100).toFixed(0)}%)
-                </div>
-                <div className="cd-meta-value tqk-nhan-manh">
-                  {daTinhHanNgach
-                    ? (goi.HanNgachXuatSac ?? 0)
-                    : hanNgachHienTai}{" "}
-                  <span className="tqk-don-vi">
-                    {daTinhHanNgach ? "suất" : "suất (dự kiến)"}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div className="cd-meta-label">Đã đạt Xuất sắc</div>
-                <div className="cd-meta-value">
-                  {daTinhHanNgach ? (goi.SoDatXuatSac ?? 0) : "Chưa xét"}
-                </div>
-              </div>
-              <div>
-                <div className="cd-meta-label">Đóng gói lần cuối</div>
-                <div className="cd-meta-value">
-                  {daTinhHanNgach
-                    ? formatNgayGio(goi.NgayDongGoi)
-                    : "Chưa đóng gói"}
-                </div>
-              </div>
-            </div>
-
-            <HanNgachTheoNhom goi={goi} />
-
-            {goi.LyDoTraVe && (
-              <div className="cd-canh-bao tqk-canh-bao">
-                <i className="fa-solid fa-rotate-left"></i>
-                <span>Hiệu trưởng đã trả gói về: {goi.LyDoTraVe}</span>
-              </div>
-            )}
-
-            {phanBoXepLoai && (
-              <div className="tqk-xep-loai">
-                <div className="cd-meta-label">
-                  {daApHanNgach
-                    ? `Kết quả xếp loại chính thức (${phanBoXepLoai.tong} hồ sơ)`
-                    : `Xếp loại bạn đã chọn khi chốt hồ sơ (${phanBoXepLoai.tong} hồ sơ)`}
-                </div>
-                <div className="tqk-xl-list">
-                  {THU_TU_XEP_LOAI.filter((muc) =>
-                    phanBoXepLoai.dem.get(muc),
-                  ).map((muc) => (
-                    <span
-                      className={`rating-badge ${XEP_LOAI_META[muc].className}`}
-                      key={muc}
-                    >
-                      {XEP_LOAI_META[muc].label}: {phanBoXepLoai.dem.get(muc)}
-                    </span>
-                  ))}
-                  {phanBoXepLoai.chuaXep > 0 && (
-                    <span className="tqk-xl-chua">
-                      Bạn chưa chốt: {phanBoXepLoai.chuaXep}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <button
-              className="btn-submit tqk-goi-nut"
-              onClick={() => navigate("/quan-ly/to-trinh")}
-            >
-              <i className="fa-solid fa-file-signature"></i>{" "}
-              {Number(goi.TrangThai) === TRANG_THAI_TO_TRINH.DANG_TONG_HOP
-                ? "Mở trang đóng gói tờ trình"
-                : "Mở tờ trình KPI Khoa"}
-            </button>
-          </>
-        )}
-      </div>
+      )}
     </>
   );
 };

@@ -1357,6 +1357,14 @@ export const fetchBaoCaoChuaHoanTat = async ({ idNam, idDonVi }) => {
   return data.Items || [];
 };
 
+export const fetchBaoCaoChuaLapPhieu = async ({ idNam, idDonVi, quy = 0, loaiDoiTuong, page = 1, pageSize = 20 }) => {
+  const data = await getJson(
+    `bao-cao/chua-lap-phieu${buildQuery({ idNam, idDonVi, quy, loaiDoiTuong, page, pageSize })}`,
+    "Không tải được danh sách chưa lập phiếu",
+  );
+  return { Items: data.Items || [], TotalCount: data.TotalCount ?? 0 };
+};
+
 /* ------------------------------------------------------------------ */
 /* Hồ sơ KPI của một giảng viên                                        */
 /* ------------------------------------------------------------------ */

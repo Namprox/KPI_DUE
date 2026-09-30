@@ -1,0 +1,1476 @@
+/*
+ * Trang tổng quan theo vai trò (Hiệu trưởng, Trưởng khoa, Trưởng phòng, Thư ký,
+ * Viên chức). Mọi lớp nằm dưới .db để không đè lên các màn hình dùng chung
+ * .stat-card / .cd-* khác.
+ *
+ * Thang màu trạng thái / xếp loại / tiến độ quý là MỘT dải xanh đậm dần: đọc
+ * theo thứ tự tiến trình chứ không phải theo "tốt / xấu". Cảnh báo luôn đi kèm
+ * biểu tượng và chữ, không dựa vào màu.
+ *
+ * Nền, font và màu khung dùng CHUNG bộ với các trang khác: nền trang trắng và
+ * padding của .page-container, font kế thừa từ body (App.css), thẻ trắng viền
+ * #e2e8f0 như .cd-phieu-header, chữ tông slate, nút chính #0056b3 như
+ * .btn-submit. Đừng đặt font-family hay nền riêng ở đây.
+ */
+.db {
+  --db-surface: #ffffff;
+  --db-surface-2: #f8fafc;
+  --db-chip: #f1f5f9;
+  --db-border: #e2e8f0;
+  --db-border-strong: #cbd5e1;
+  --db-divider: #e2e8f0;
+  --db-row: #f1f5f9;
+  --db-text: #0f172a;
+  --db-heading: #1e293b;
+  --db-muted: #64748b;
+  --db-accent: #0056b3;
+  --db-accent-strong: #004494;
+  --db-accent-soft: #eff6ff;
+  --db-info-bg: #eff6ff;
+  --db-info-border: #bfdbfe;
+  --db-track: #dbeafe;
+  --db-fill: #2a78d6;
+  --db-warn-bg: #fffbeb;
+  --db-warn-border: #fde68a;
+  --db-danger-bg: #fef2f2;
+  --db-danger-border: #fecaca;
+  --db-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  color: var(--db-text);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  line-height: 1.5;
+}
+
+.db *,
+.db *::before,
+.db *::after {
+  box-sizing: border-box;
+}
+
+.db h1,
+.db h2,
+.db h3,
+.db p {
+  margin: 0;
+}
+
+.db a {
+  color: var(--db-accent);
+}
+
+.db a:hover {
+  color: var(--db-accent-strong);
+}
+
+.db-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.db-muted {
+  color: var(--db-muted);
+}
+
+/* ---------------------------------------------------------------- */
+/* Đầu trang                                                          */
+/* ---------------------------------------------------------------- */
+
+.db-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.db-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Cùng cỡ tiêu đề trang với các màn hình khác (vd. Báo cáo đơn vị). */
+.db-header h1,
+.db-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--db-heading);
+  line-height: 1.3;
+}
+
+.db-header-sub {
+  font-size: 14px;
+  color: var(--db-muted);
+}
+
+.db-header-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.db-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--db-muted);
+}
+
+.db-select {
+  height: 42px;
+  min-width: 120px;
+  padding: 0 12px;
+  border: 1px solid var(--db-border-strong);
+  border-radius: 8px;
+  background: var(--db-surface);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--db-text);
+}
+
+.db-select-wide {
+  min-width: 240px;
+}
+
+.db-quy-chip {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--db-accent-soft);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--db-accent-strong);
+  white-space: nowrap;
+}
+
+.db-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1px solid var(--db-border);
+  background: var(--db-surface-2);
+  color: #475569;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.db .db-btn:hover:not(:disabled) {
+  background: var(--db-chip);
+  border-color: var(--db-border-strong);
+  color: var(--db-text);
+}
+
+/* <Link className="db-btn"> phải thắng quy tắc màu chung `.db a`. */
+.db a.db-btn {
+  color: #475569;
+}
+
+.db-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.db-btn-primary,
+.db a.db-btn-primary {
+  background: var(--db-accent);
+  border-color: var(--db-accent);
+  color: #ffffff;
+}
+
+.db .db-btn-primary:hover:not(:disabled) {
+  background: var(--db-accent-strong);
+  border-color: var(--db-accent-strong);
+  color: #ffffff;
+}
+
+.db-btn .db-spin {
+  animation: db-spin 1s linear infinite;
+}
+
+@keyframes db-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.db-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--db-accent);
+  text-align: left;
+  cursor: pointer;
+}
+
+.db-link-btn:hover {
+  color: var(--db-accent-strong);
+  text-decoration: underline;
+}
+
+.db-link-strong {
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- */
+/* Khung chung                                                        */
+/* ---------------------------------------------------------------- */
+
+.db-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.db-section-title,
+.db-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--db-heading);
+  line-height: 1.35;
+}
+
+.db-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  box-shadow: var(--db-shadow);
+  min-width: 0;
+}
+
+.db-card-flush {
+  padding: 0;
+  gap: 0;
+}
+
+.db-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+}
+
+.db-card-flush .db-card-head {
+  padding: 20px 24px;
+}
+
+.db-card-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.db-card-meta {
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-divider {
+  height: 1px;
+  background: var(--db-divider);
+}
+
+.db-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.db-grid-3 > .db-span-2 {
+  grid-column: span 2;
+}
+
+.db-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.db-kpi-row.db-has-hero {
+  grid-template-columns: minmax(0, 2fr) repeat(var(--db-kpi-con, 3), minmax(0, 1fr));
+}
+
+.db-task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.db-empty {
+  font-size: 14px;
+  color: var(--db-muted);
+  padding: 4px 0;
+}
+
+.db-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  font-size: 14px;
+  color: var(--db-muted);
+}
+
+/* ---------------------------------------------------------------- */
+/* Thẻ việc cần làm                                                   */
+/* ---------------------------------------------------------------- */
+
+.db-task {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  color: var(--db-text);
+  text-decoration: none;
+  font-family: inherit;
+  text-align: left;
+  min-width: 0;
+}
+
+.db a.db-task,
+button.db-task {
+  cursor: pointer;
+  color: var(--db-text);
+}
+
+.db a.db-task:hover,
+button.db-task:hover {
+  border-color: #93c5fd;
+  color: var(--db-text);
+}
+
+.db-task-nhan {
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-task-so {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-task-so.is-text {
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.db-task-phu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--db-muted);
+}
+
+.db-task-cta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--db-accent);
+}
+
+.db-thu-ky-task {
+  gap: 10px;
+}
+
+.db-thu-ky-task .db-task-tieu-de {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.db-thu-ky-task .db-btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+/* ---------------------------------------------------------------- */
+/* Thẻ số liệu                                                        */
+/* ---------------------------------------------------------------- */
+
+.db-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  min-width: 0;
+}
+
+.db-kpi-nhan {
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-kpi-so {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-kpi-so.is-text {
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.db-kpi-phu {
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-hero {
+  gap: 14px;
+}
+
+.db-hero-line {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Chỉ nhỉnh hơn số của thẻ thường (32px) - 56px theo bản thiết kế quá to. */
+.db-hero-so {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-hero-mau {
+  font-size: 14px;
+  color: var(--db-muted);
+}
+
+.db-bar {
+  height: 10px;
+  border-radius: 4px;
+  background: var(--db-track);
+  display: flex;
+  overflow: hidden;
+}
+
+.db-bar-fill {
+  background: var(--db-fill);
+}
+
+.db-bar-sm {
+  height: 8px;
+}
+
+/* ---------------------------------------------------------------- */
+/* Biểu đồ thanh chồng + chú giải                                     */
+/* ---------------------------------------------------------------- */
+
+.db-stack {
+  display: flex;
+  gap: 2px;
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.db-stack-empty {
+  background: var(--db-divider);
+}
+
+.db-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.db-swatch-sm {
+  width: 8px;
+  height: 8px;
+}
+
+.db-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.db-legend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.db-legend-nhan {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-legend-so {
+  padding-left: 18px;
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-legend-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.db-legend-inline > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-legend-inline.is-small > span {
+  gap: 6px;
+  font-size: 12px;
+}
+
+.db-legend-inline b {
+  color: var(--db-text);
+  font-weight: 600;
+}
+
+/* Dòng theo loại đối tượng dưới "Tiến độ phiếu năm". */
+.db-loai-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.db-loai-row {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 100px 90px 100px;
+  align-items: center;
+  gap: 16px;
+}
+
+.db-loai-ten {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.db-loai-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.db-loai-cap {
+  font-size: 12px;
+  color: var(--db-muted);
+}
+
+.db-loai-so {
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-loai-so b {
+  color: var(--db-text);
+  font-weight: 600;
+}
+
+/* Thanh ngang xếp loại. */
+.db-xl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.db-xl-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.db-xl-nhan {
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-xl-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.db-xl-bar {
+  height: 16px;
+  min-width: 4px;
+  border-radius: 0 4px 4px 0;
+}
+
+.db-xl-so {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-meta-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--db-divider);
+  font-size: 13px;
+}
+
+.db-meta-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.db-meta-line > span:first-child {
+  color: var(--db-muted);
+}
+
+.db-meta-line > span:last-child {
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ---------------------------------------------------------------- */
+/* Thẻ quý                                                            */
+/* ---------------------------------------------------------------- */
+
+.db-quy-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 24px;
+}
+
+.db-quy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.db-quy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  min-width: 0;
+}
+
+.db-quy.is-current {
+  border-color: #93c5fd;
+}
+
+.db-quy.is-future {
+  background: var(--db-surface-2);
+}
+
+.db-quy-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.db-quy-ten {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.db-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--db-chip);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--db-muted);
+  white-space: nowrap;
+}
+
+.db-chip.is-accent {
+  background: var(--db-accent-soft);
+  color: var(--db-accent-strong);
+}
+
+.db-chip-lg {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--db-text);
+  white-space: normal;
+}
+
+.db-quy .db-stack {
+  height: 12px;
+}
+
+.db-quy-dong {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.db-quy-dong-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.db-quy-dong-row > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--db-muted);
+}
+
+.db-quy-dong-row > span:last-child {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-quy-xl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--db-divider);
+}
+
+.db-quy-xl-tieu-de {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--db-muted);
+}
+
+.db-quy-xl-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.db-quy-xl-row > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--db-muted);
+}
+
+.db-quy-xl-row > span:last-child {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-quy-xl-bar-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.db-quy-xl-bar-row > span {
+  color: var(--db-muted);
+}
+
+.db-quy-xl-bar-row .db-xl-bar {
+  height: 10px;
+  min-width: 3px;
+}
+
+.db-quy-xl-bar-row .db-xl-so {
+  font-size: 12px;
+}
+
+/* Tiến độ quý dạng gọn (thư ký). */
+.db-quy-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.db-quy-compact-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.db-quy-compact-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.db-quy-compact-head > span:first-child {
+  font-weight: 600;
+}
+
+.db-quy-compact-head > span:last-child {
+  color: var(--db-muted);
+}
+
+.db-quy-compact .db-stack {
+  height: 10px;
+}
+
+/* ---------------------------------------------------------------- */
+/* Phiếu năm viên chức + cảnh báo                                     */
+/* ---------------------------------------------------------------- */
+
+.db-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 10px;
+  background: var(--db-surface-2);
+  border: 1px solid var(--db-row);
+  min-width: 0;
+}
+
+.db-aside h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.db-aside .db-stack {
+  height: 12px;
+}
+
+.db-alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.db-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--db-warn-bg);
+  border: 1px solid var(--db-warn-border);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.db-alert.is-danger {
+  background: var(--db-danger-bg);
+  border-color: var(--db-danger-border);
+}
+
+.db-alert.is-info {
+  background: var(--db-info-bg);
+  border-color: var(--db-info-border);
+}
+
+.db-alert > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.db-alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.db-alert-tieu-de {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.db-alert-mo-ta {
+  font-size: 12px;
+  color: var(--db-muted);
+}
+
+.db-alert-sm {
+  padding: 8px;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.db-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: var(--db-info-bg);
+  border: 1px solid var(--db-info-border);
+  font-size: 14px;
+  line-height: 1.45;
+  flex-wrap: wrap;
+}
+
+.db-banner.is-warn {
+  background: var(--db-warn-bg);
+  border-color: var(--db-warn-border);
+}
+
+.db-banner.is-danger {
+  background: var(--db-danger-bg);
+  border-color: var(--db-danger-border);
+}
+
+.db-banner-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.db-banner-main > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.db-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.db-banner-tieu-de {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.db-banner-mo-ta {
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-inline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.db-inline-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.db-inline-item > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.db-inline-item b {
+  font-weight: 600;
+}
+
+.db-subpanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--db-surface-2);
+}
+
+.db-subpanel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.db-subpanel-col > .db-stack {
+  height: 12px;
+}
+
+.db-subpanel-tieu-de {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- */
+/* Bảng                                                               */
+/* ---------------------------------------------------------------- */
+
+.db-table-wrap {
+  overflow-x: auto;
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.db-table th {
+  padding: 10px 12px;
+  background: var(--db-surface-2);
+  border-top: 1px solid var(--db-divider);
+  border-bottom: 1px solid var(--db-divider);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--db-muted);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.db-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--db-row);
+  vertical-align: middle;
+}
+
+.db-table th:first-child,
+.db-table td:first-child {
+  padding-left: 24px;
+}
+
+.db-table th:last-child,
+.db-table td:last-child {
+  padding-right: 24px;
+}
+
+.db-table .is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.db-table .is-muted {
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-table .db-stack {
+  height: 10px;
+  min-width: 120px;
+}
+
+.db-table-ten {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.db-table-ten > :first-child {
+  font-weight: 600;
+  color: var(--db-text);
+  text-decoration: none;
+}
+
+.db-table-ten > span:last-child {
+  font-size: 12px;
+  color: var(--db-muted);
+}
+
+.db-table-foot {
+  display: flex;
+  justify-content: center;
+  padding: 12px 24px 16px;
+}
+
+.db-tt-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.db-tt-cell > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.db-canh-bao-so {
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.db-person-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.db-person {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--db-row);
+}
+
+.db-person-ten {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.db-person-ten > span:first-child {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.db-person-ten > span:last-child {
+  font-size: 12px;
+  color: var(--db-muted);
+}
+
+/* Điểm TB tách nhóm GV / VC. */
+.db-diem-nhom {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.db-diem-nhom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.db-diem-nhom-row .db-xl-bar {
+  height: 14px;
+}
+
+.db-diem-nhom-row > span {
+  font-size: 13px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- */
+/* Viên chức: dự kiến cả năm                                          */
+/* ---------------------------------------------------------------- */
+
+.db-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.db-gauge-track {
+  position: relative;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--db-track);
+}
+
+.db-gauge-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+  background: var(--db-fill);
+}
+
+.db-gauge-mark {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 20px;
+  background: var(--db-text);
+}
+
+.db-gauge-scale {
+  position: relative;
+  height: 34px;
+  font-size: 12px;
+  color: var(--db-muted);
+}
+
+.db-gauge-scale > span {
+  position: absolute;
+  line-height: 1.4;
+}
+
+.db-gauge-scale > .is-mark {
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.db-cong-thuc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--db-surface-2);
+}
+
+.db-cong-thuc > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.db-cong-thuc > div > span:first-child {
+  font-size: 12px;
+  color: var(--db-muted);
+}
+
+.db-cong-thuc > div > span:last-child {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-cong-thuc > .db-toan-tu {
+  font-size: 18px;
+  color: var(--db-muted);
+  text-align: center;
+}
+
+.db-quy-vc {
+  padding: 20px;
+}
+
+.db-quy-vc .db-quy-ten {
+  font-size: 16px;
+}
+
+.db-quy-vc-diem {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.db-quy-vc-diem > span:first-child {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-quy-vc-diem > span:last-child {
+  font-size: 13px;
+  color: var(--db-muted);
+}
+
+.db-quy-vc-note {
+  font-size: 13px;
+  color: var(--db-muted);
+  line-height: 1.5;
+}
+
+.db-xl-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.db-kv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.db-kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--db-row);
+  font-size: 14px;
+}
+
+.db-kv > span:first-child {
+  color: var(--db-muted);
+}
+
+.db-kv > span:last-child {
+  font-weight: 600;
+  text-align: right;
+}
+
+.db-note {
+  font-size: 13px;
+  color: var(--db-muted);
+  line-height: 1.5;
+}
+
+.db-quick-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Khối phiếu cá nhân (giảng viên) và danh sách thiếu/trả về dùng lại
+   component chung; chỉ nắn lại màu nền cho hợp với trang. */
+.db .cd-mc-row {
+  background: transparent;
+}
+
+.db-tra-ve-ly-do {
+  font-size: 13px;
+  color: var(--db-text);
+  margin: 2px 0;
+}
+
+.db-drill {
+  border-radius: 12px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+}
+
+.db-drill .bc-bo-sung {
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------- */
+/* Màn hình hẹp                                                       */
+/* ---------------------------------------------------------------- */
+
+@media (max-width: 1280px) {
+  .db-quy-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .db-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .db-grid-3 > .db-span-2 {
+    grid-column: auto;
+  }
+
+  .db-kpi-row.db-has-hero {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .db-kpi-row.db-has-hero > .db-hero {
+    grid-column: 1 / -1;
+  }
+
+  .db-quy-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .db-legend-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .db-loai-row {
+    grid-template-columns: minmax(0, 1fr) repeat(3, auto);
+  }
+
+  .db-loai-row > .db-loai-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .db {
+    gap: 20px;
+  }
+
+  .db-header h1,
+  .db-header h2 {
+    font-size: 20px;
+  }
+
+  .db-hero-so {
+    font-size: 32px;
+  }
+
+  .db-card {
+    padding: 18px;
+  }
+
+  .db-kpi-row.db-has-hero,
+  .db-quy-grid,
+  .db-subpanel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .db-legend-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .db-cong-thuc {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .db-cong-thuc > .db-toan-tu {
+    display: none;
+  }
+
+  .db-select-wide {
+    min-width: 0;
+    width: 100%;
+  }
+}

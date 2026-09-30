@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
@@ -15,7 +15,6 @@ import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import {
   fetchKiemTraHopLe,
   fetchPhieuCuaToi,
-  formatDiem,
   formatNgay,
   laDongBiTraVe,
   locDongChoBoSung,
@@ -25,7 +24,7 @@ import {
   tenTrangThai,
   tinhCuaSoTuDanhGia,
   TRANG_THAI,
-  TRANG_THAI_META,
+  XEP_LOAI_META,
 } from "../../utils/phieuApi";
 import {
   donViTheoVaiTro,
@@ -33,24 +32,23 @@ import {
   hasRole,
   ROLE,
   ROLE_SETS,
+  coLoaiDoiTuong,
+  LOAI_DOI_TUONG_KPI,
+  VAI_TRO_TRUONG_PHONG,
 } from "../../utils/roles";
-import SearchSelect from "../../components/Common/SearchSelect";
 import ThieuTieuChiChecklist from "../../components/DanhGia/ThieuTieuChiChecklist";
-import {
-  TrangThaiBadge,
-  XepLoaiBadge,
-} from "../../components/QuanLyChamDiem/TrangThaiBadge";
 import TongQuanKhoa from "../../components/QuanLyChamDiem/TongQuanKhoa";
 import TongQuanCapQuanLy from "../../components/QuanLyChamDiem/TongQuanCapQuanLy";
-
-/** Màu thẻ hạn theo mức độ gấp. */
-const MAU_HAN = {
-  "chua-mo": { bg: "#f1f5f9", color: "#475569" },
-  "dang-mo": { bg: "#ecfdf5", color: "#047857" },
-  "sap-het": { bg: "#fffbeb", color: "#b45309" },
-  "da-dong": { bg: "#fef2f2", color: "#b91c1c" },
-  "khong-ro": { bg: "#f1f5f9", color: "#64748b" },
-};
+import TongQuanVienChucCaNhan from "../../components/QuanLyChamDiem/TongQuanVienChucCaNhan";
+import {
+  Card,
+  DangTai,
+  DashHeader,
+  diem,
+  Icon,
+  KpiCard,
+  KpiRow,
+} from "../../components/QuanLyChamDiem/TongQuanUi";
 
 const MOT_NGAY_MS = 24 * 60 * 60 * 1000;
 
@@ -70,8 +68,10 @@ const soNgayToiHan = (han) => {
 };
 
 /**
- * Trang chủ của người dùng: phiếu năm hiện tại đang ở đâu, được bao nhiêu điểm,
- * còn bao lâu để tự đánh giá và còn thiếu gì trước khi nộp.
+ * Trang chủ: bảng điều khiển theo vai trò (Hiệu trưởng, Trưởng khoa / Thư ký
+ * khoa, Trưởng phòng / Thư ký phòng) rồi tới phiếu KPI của chính người xem -
+ * phiếu năm hiện tại đang ở đâu, được bao nhiêu điểm, còn bao lâu để tự đánh
+ * giá và còn thiếu gì trước khi nộp.
  *
  * Route "/" mở cho MỌI vai trò (xem PUBLIC_ROUTES trong config/menuConfig.js), kể
  * cả tài khoản quản trị vốn không có phiếu KPI cá nhân nào. Vì vậy mọi khối đều
@@ -87,14 +87,20 @@ const TongQuanCaNhan = () => {
   const [phieu, setPhieu] = useState(null);
   const [kiemTra, setKiemTra] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Khối Khoa tự quản lý vòng đời dữ liệu của nó; nút "Làm mới" chung chỉ đẩy
-  // token này sang để nó tải lại, thay vì kéo state của Khoa lên trang cha.
-  const [lanLamMoi, setLanLamMoi] = useState(0);
 
   const coTongQuanKhoa = hasRole(ROLE_SETS.KPI_KHOA, currentUser);
   const coTongQuanTruong = hasRole(ROLE_SETS.CAP_TRUONG, currentUser);
   const coTongQuanPhong =
     !coTongQuanTruong && hasRole(ROLE_SETS.KPI_PHONG, currentUser);
+  // TKP chỉ xem số tổng hợp; người vừa là TKP vừa là trưởng Phòng thì xem bản trưởng.
+  const laThuKyPhong =
+    coTongQuanPhong && !hasRole(VAI_TRO_TRUONG_PHONG, currentUser);
+  const coDashboard = coTongQuanKhoa || coTongQuanTruong || coTongQuanPhong;
+
+  const dsDonVi = useMemo(
+    () => (Array.isArray(currentUser.DonVi) ? currentUser.DonVi : []),
+    [currentUser],
+  );
 
   const idDonViKhoa = useMemo(() => {
     const donViKpiKhoa = donViTheoVaiTro(ROLE_SETS.KPI_KHOA, currentUser);
@@ -108,6 +114,11 @@ const TongQuanCaNhan = () => {
     );
     return (donViTruongKhoa || donViThuKyKhoa)?.IdDonVi || currentUser.IdDonVi;
   }, [currentUser]);
+
+  const tenDonViKhoa = dsDonVi.find(
+    (d) => Number(d.IdDonVi) === Number(idDonViKhoa),
+  )?.TenDonVi;
+  const donViChinh = dsDonVi.find((d) => d?.LaChinh) || dsDonVi[0];
 
   const showToast = (severity, summary, detail) => {
     toast.current?.show({ severity, summary, detail, life: 4000 });
@@ -183,18 +194,8 @@ const TongQuanCaNhan = () => {
 
   const hanNop = kiemTra ? kiemTra.HanNop : cuaSoNam.ngayDong;
   const soNgayConLai = quaHan ? null : soNgayToiHan(hanNop);
-
-  const mauHan = !conViecCuaChuPhieu
-    ? MAU_HAN["dang-mo"]
-    : quaHan
-      ? MAU_HAN["da-dong"]
-      : !kiemTra && cuaSoNam.trangThai === "chua-mo"
-        ? MAU_HAN["chua-mo"]
-        : soNgayConLai == null
-          ? MAU_HAN["khong-ro"]
-          : soNgayConLai <= 7
-            ? MAU_HAN["sap-het"]
-            : MAU_HAN["dang-mo"];
+  const chuaMo = !kiemTra && cuaSoNam.trangThai === "chua-mo";
+  const sapHetHan = soNgayConLai != null && soNgayConLai <= 7;
 
   /**
    * Điểm tạm tính khi server chưa chốt TongDiemTichLuy: cộng dồn điểm tự đánh giá
@@ -230,49 +231,299 @@ const TongQuanCaNhan = () => {
     if (duongDanPhieu) navigate(duongDanPhieu);
   };
 
+  const boLoc = (
+    <label className="db-field">
+      Năm đánh giá
+      <select
+        className="db-select"
+        value={selectedNam}
+        onChange={(e) => setSelectedNam(e.target.value)}
+        disabled={dangTaiNam}
+      >
+        {namList.map((n) => (
+          <option key={n.IdNam} value={String(n.IdNam)}>
+            {n.IdNam}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  /* -------------------------------------------------------------- */
+  /* Khối "việc với phiếu năm": trả về / còn thiếu / chưa có phiếu    */
+  /* -------------------------------------------------------------- */
+
+  const khoiViecPhieu = !phieu ? (
+    <Card title="Phiếu năm của bạn">
+      {duongDanPhieu ? (
+        <div className="db-inline-item" style={{ fontSize: 14 }}>
+          <Icon ten="thongTin" />
+          <span>
+            <b>Bạn chưa có phiếu năm {selectedNam}.</b> Phiếu được tạo khi bạn lưu
+            lần đầu trong form tự đánh giá.
+          </span>
+        </div>
+      ) : (
+        <div className="db-inline-item" style={{ fontSize: 14 }}>
+          <Icon ten="thongTin" />
+          <span>
+            <b>Bạn không thuộc diện tự đánh giá KPI.</b> Chức danh nghề nghiệp hiện
+            tại không gắn với biểu mẫu KPI cá nhân nào.
+          </span>
+        </div>
+      )}
+    </Card>
+  ) : dongBiTraVe.length > 0 ? (
+    <Card
+      title="Cần bạn bổ sung"
+      meta={`${dongBiTraVe.length} tiêu chí bị trả về - sửa xong bấm "Nộp lại" trong phiếu tự đánh giá`}
+    >
+      <div>
+        {dongBiTraVe.map((ct) => (
+          <div className="cd-mc-row" key={ct.IdChiTiet}>
+            <i
+              className="fa-solid fa-circle-exclamation cd-mc-icon"
+              style={{ color: "#d97706" }}
+            ></i>
+            <div className="cd-mc-main">
+              <div
+                className="cd-mc-name"
+                style={{ color: "#0f172a", cursor: "default" }}
+              >
+                {ct.TenTieuChi || `Tiêu chí #${ct.IdTieuChi}`}
+              </div>
+              {ct.LyDoTraVe && (
+                <div className="db-tra-ve-ly-do">{ct.LyDoTraVe}</div>
+              )}
+              <div className="cd-mc-meta">
+                {ct.TenDonViThamDinh || "Đơn vị thẩm định"} trả về
+                {ct.NgayTraVe ? ` ngày ${formatNgay(ct.NgayTraVe)}` : ""}
+                {ct.SoLanTraVe > 1 ? ` · lần thứ ${ct.SoLanTraVe}` : ""}
+              </div>
+            </div>
+            {duongDanPhieu && (
+              <button type="button" className="cd-mc-act" onClick={moPhieu}>
+                <i className="fa-solid fa-arrow-right"></i> Bổ sung
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </Card>
+  ) : Number(phieu.TrangThai) !== TRANG_THAI.NHAP ? null : !kiemTra ? (
+    <Card title="Còn thiếu gì để nộp">
+      <div className="db-inline-item" style={{ fontSize: 14 }}>
+        <Icon ten="canhBao" />
+        <span>Chưa lấy được kết quả kiểm tra. Tải lại trang để thử lại.</span>
+      </div>
+    </Card>
+  ) : (
+    <Card
+      title="Còn thiếu gì để nộp"
+      meta={
+        kiemTra.CoTheNop
+          ? `Phiếu đủ điều kiện nộp (${kiemTra.TongSoTieuChi} tiêu chí đã hoàn tất)`
+          : `Còn ${kiemTra.SoTieuChiThieu}/${kiemTra.TongSoTieuChi} tiêu chí chưa xong`
+      }
+    >
+      {/* Cùng schema với missingItems của 422 /submit và /nop-lai nên dùng
+          chung đúng một component checklist. */}
+      {thieu.length > 0 ? (
+        <ThieuTieuChiChecklist
+          items={thieu}
+          onMo={duongDanPhieu ? moPhieu : undefined}
+        />
+      ) : (
+        <div className="db-inline-item" style={{ fontSize: 14 }}>
+          <Icon ten="xong" />
+          <span>Không còn tiêu chí nào thiếu minh chứng.</span>
+        </div>
+      )}
+    </Card>
+  );
+
+  /* -------------------------------------------------------------- */
+  /* Phiếu cá nhân chung (giảng viên, và viên chức khi năm chưa chấm  */
+  /* theo quý)                                                        */
+  /* -------------------------------------------------------------- */
+
+  const bannerMuc = !conViecCuaChuPhieu
+    ? ""
+    : quaHan
+      ? " is-danger"
+      : sapHetHan || (!kiemTra && cuaSoNam.trangThai !== "dang-mo")
+        ? " is-warn"
+        : "";
+
+  const khoiPhieuChung = (
+    <>
+      <div className={`db-banner${bannerMuc}`}>
+        <div className="db-banner-main">
+          <Icon
+            ten={!conViecCuaChuPhieu ? "xong" : quaHan || sapHetHan ? "canhBao" : "dongHo"}
+            size={20}
+            mau={!conViecCuaChuPhieu || !(quaHan || sapHetHan) ? "#0056b3" : undefined}
+          />
+          <div className="db-banner-text">
+            {conViecCuaChuPhieu ? (
+              <>
+                <span className="db-banner-tieu-de">{thongDiepHan}</span>
+                {dongBiTraVe.length > 0 && (
+                  <span className="db-banner-mo-ta">
+                    Đơn vị thẩm định đã trả về {dongBiTraVe.length} tiêu chí cần bạn
+                    bổ sung rồi nộp lại. Các tiêu chí khác vẫn giữ nguyên tiến độ.
+                    {/* Hạn chặn việc bổ sung là hạn THẨM ĐỊNH chứ không phải hạn tự
+                        đánh giá - QuaHan của kiem-tra-hop-le đã phản ánh đúng. */}
+                    {quaHan &&
+                      " Đã quá hạn nên bạn cần được gia hạn riêng mới sửa được - liên hệ đơn vị quản lý."}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="db-banner-tieu-de">
+                Bạn đã nộp xong phần của mình. Phiếu đang{" "}
+                {tenTrangThai(phieu?.TrangThai).toLowerCase()}.
+              </span>
+            )}
+          </div>
+        </div>
+        {duongDanPhieu && (
+          <button type="button" className="db-btn db-btn-primary" onClick={moPhieu}>
+            {dongBiTraVe.length > 0
+              ? `Bổ sung ${dongBiTraVe.length} tiêu chí`
+              : phieu
+                ? "Mở phiếu tự đánh giá"
+                : "Bắt đầu tự đánh giá"}
+          </button>
+        )}
+      </div>
+
+      <KpiRow>
+        <KpiCard
+          nhan="Trạng thái phiếu"
+          laChu
+          giaTri={phieu ? tenTrangThai(phieu.TrangThai) : "Chưa có phiếu"}
+          phu={phieu ? `Lần đánh giá ${phieu.LanDanhGia ?? 1}` : undefined}
+        />
+        <KpiCard
+          nhan={daChotDiem ? "Tổng điểm tích lũy" : "Điểm tạm tính"}
+          giaTri={diem(daChotDiem ? phieu.TongDiemTichLuy : diemTamTinh)}
+          phu={!daChotDiem && diemTamTinh != null ? "Chưa gồm điểm cấp trên chấm" : undefined}
+        />
+        <KpiCard
+          nhan="Xếp loại"
+          laChu
+          giaTri={phieu?.XepLoai ? XEP_LOAI_META[phieu.XepLoai]?.label || "—" : "Chưa chốt kết quả"}
+        />
+        {/* Không còn việc thì thẻ này nói về tình trạng chứ không nói về hạn:
+            hạn của giai đoạn vẫn còn hiệu lực nhưng không phải việc của chủ
+            phiếu nữa. */}
+        {conViecCuaChuPhieu ? (
+          <KpiCard
+            nhan={nhanHan}
+            laChu={quaHan || chuaMo || !hanNop}
+            giaTri={
+              quaHan
+                ? "Đã đóng"
+                : chuaMo
+                  ? "Chưa mở"
+                  : !hanNop
+                    ? "Chưa thiết lập"
+                    : `${soNgayConLai} ngày`
+            }
+            phu={hanNop ? `Hạn chót ${formatNgay(hanNop)}` : undefined}
+          />
+        ) : (
+          <KpiCard
+            nhan="Việc của bạn"
+            laChu
+            giaTri="Đã xong"
+            phu={`Phiếu đang ${tenTrangThai(phieu?.TrangThai).toLowerCase()}`}
+          />
+        )}
+      </KpiRow>
+
+      <div className="db-grid-3">
+        <div className="db-span-2" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {khoiViecPhieu || (
+            <Card title="Còn thiếu gì để nộp">
+              <div className="db-inline-item" style={{ fontSize: 14 }}>
+                <Icon ten="xong" />
+                <span>
+                  Phiếu đã nộp, đang <b>{tenTrangThai(phieu?.TrangThai)}</b>.
+                </span>
+              </div>
+            </Card>
+          )}
+        </div>
+        <Card title={`Phiếu năm ${selectedNam}`}>
+          <div className="db-kv-list">
+            <div className="db-kv">
+              <span>Ngày gửi</span>
+              <span>{phieu ? formatNgay(phieu.NgayGui) : "—"}</span>
+            </div>
+            <div className="db-kv">
+              <span>Cập nhật gần nhất</span>
+              <span>{phieu ? formatNgay(phieu.NgayCapNhat) : "—"}</span>
+            </div>
+            <div className="db-kv">
+              <span>Số tiêu chí</span>
+              <span>{phieu ? (phieu.ChiTiet || []).length : "—"}</span>
+            </div>
+          </div>
+          <div className="db-quick-links">
+            <Link className="db-btn" to="/lich-su-danh-gia">
+              Danh sách phiếu của tôi
+            </Link>
+            <Link className="db-btn" to="/kho-minh-chung">
+              Kho minh chứng
+            </Link>
+          </div>
+        </Card>
+      </div>
+    </>
+  );
+
+  const laVienChuc = coLoaiDoiTuong(currentUser, LOAI_DOI_TUONG_KPI.VIEN_CHUC);
+  // Chỉ việc thật sự cần làm mới đi kèm khối viên chức; phiếu đã nộp thì thôi.
+  const khoiViecVienChuc =
+    phieu && (dongBiTraVe.length > 0 || Number(phieu.TrangThai) === TRANG_THAI.NHAP)
+      ? khoiViecPhieu
+      : null;
+
+  const phanCaNhan =
+    isLoading || dangTaiNam ? (
+      <DangTai>Đang tải thông tin phiếu của bạn...</DangTai>
+    ) : !coDashboard && laVienChuc ? (
+      <TongQuanVienChucCaNhan
+        idNam={selectedNam}
+        idNhanVien={currentUser.IdNhanVien}
+        phieu={phieu}
+        hanNop={hanNop}
+        nhanHan={nhanHan}
+        duongDanPhieu={duongDanPhieu}
+        fallback={khoiPhieuChung}
+      >
+        {khoiViecVienChuc}
+      </TongQuanVienChucCaNhan>
+    ) : (
+      khoiPhieuChung
+    );
+
   return (
-    <div className="page-container tq-page">
+    <div className="page-container tq-page db">
       <Toast ref={toast} position="top-right" />
 
-      <div className="page-header">
-        <h2 className="tq-title">Xin chào, {currentUser.HoTen || "bạn"}</h2>
-      </div>
-
-      <div className="cd-toolbar tq-toolbar">
-        <div className="cd-field tq-filter-field">
-          <label className="cd-label">Năm đánh giá</label>
-          <SearchSelect
-            value={selectedNam}
-            onChange={(v) => setSelectedNam(v)}
-            options={namList.map((n) => ({
-              value: n.IdNam,
-              label: `Năm học ${n.IdNam}`,
-            }))}
-            disabled={dangTaiNam}
-          />
-        </div>
-
-        <button
-          className="btn-cancel tq-btn-refresh"
-          onClick={() => {
-            taiDuLieu();
-            setLanLamMoi((n) => n + 1);
-          }}
-          disabled={isLoading || dangTaiNam}
-        >
-          <i className={`fa-solid fa-rotate${isLoading ? " fa-spin" : ""}`}></i>{" "}
-          Làm mới
-        </button>
-      </div>
-
-      {/* Đặt TRÊN phần cá nhân và ngoài nhánh isLoading: với TK/TKL/TKK thì số
-          liệu Khoa là việc hằng ngày, và để ngoài thì hai nửa tải song song
-          thay vì nửa dưới phải chờ phiếu cá nhân xong. */}
+      {/* Khối quản lý đặt TRÊN phần cá nhân và ngoài nhánh isLoading: số liệu
+          đơn vị là việc hằng ngày của người quản lý, và để ngoài thì hai nửa tải
+          song song thay vì nửa dưới phải chờ phiếu cá nhân xong. */}
       {coTongQuanKhoa && !dangTaiNam && (
         <TongQuanKhoa
           idNam={selectedNam}
           idDonVi={idDonViKhoa}
-          reloadKey={lanLamMoi}
+          tenDonVi={tenDonViKhoa}
+          controls={boLoc}
+          chinh
         />
       )}
 
@@ -280,394 +531,28 @@ const TongQuanCaNhan = () => {
         <TongQuanCapQuanLy
           idNam={selectedNam}
           cap={coTongQuanTruong ? "truong" : "phong"}
-          reloadKey={lanLamMoi}
           anThongKeTienDo={hasRole(ROLE_SETS.TRUONG_KHOA, currentUser)}
+          thuKy={laThuKyPhong}
+          controls={coTongQuanKhoa ? undefined : boLoc}
+          chinh={!coTongQuanKhoa}
         />
       )}
 
-      {(coTongQuanKhoa || coTongQuanTruong || coTongQuanPhong) && (
-        <p className="sub-title">PHIẾU KPI CỦA BẠN</p>
-      )}
-
-      {isLoading || dangTaiNam ? (
-        <div className="modern-table-card">
-          <div className="cd-empty">
-            <i className="fa-solid fa-spinner fa-spin"></i>
-            Đang tải thông tin phiếu của bạn...
-          </div>
-        </div>
+      {coDashboard ? (
+        <h2 className="db-section-title" style={{ fontSize: 20, marginTop: 8 }}>
+          Phiếu KPI của bạn
+        </h2>
       ) : (
-        <>
-          <div className="stat-card-grid">
-            <div className="stat-card">
-              <div
-                className="stat-icon-box"
-                style={{
-                  // .stat-icon-box không có màu mặc định: luôn phải truyền, nếu
-                  // không ô icon sẽ trong suốt khi người dùng chưa có phiếu.
-                  background:
-                    TRANG_THAI_META[phieu?.TrangThai]?.bg || "#f1f5f9",
-                  color: TRANG_THAI_META[phieu?.TrangThai]?.color || "#94a3b8",
-                }}
-              >
-                <i
-                  className={`fa-solid ${
-                    TRANG_THAI_META[phieu?.TrangThai]?.icon ||
-                    "fa-file-circle-question"
-                  }`}
-                ></i>
-              </div>
-              <div>
-                <div className="stat-label">Trạng thái phiếu</div>
-                <div style={{ marginTop: "4px" }}>
-                  {phieu ? (
-                    <TrangThaiBadge trangThai={phieu.TrangThai} />
-                  ) : (
-                    <span className="tq-placeholder">Chưa có phiếu</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon-box stat-icon-blue">
-                <i className="fa-solid fa-star"></i>
-              </div>
-              <div>
-                <div className="stat-label">
-                  {daChotDiem ? "Tổng điểm tích lũy" : "Điểm tạm tính"}
-                </div>
-                <div className="stat-value">
-                  {daChotDiem
-                    ? formatDiem(phieu.TongDiemTichLuy)
-                    : formatDiem(diemTamTinh)}
-                </div>
-                {!daChotDiem && diemTamTinh != null && (
-                  <div className="cd-hint" style={{ marginTop: 0 }}>
-                    Chưa gồm điểm cấp trên chấm
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon-box stat-icon-green">
-                <i className="fa-solid fa-award"></i>
-              </div>
-              <div>
-                <div className="stat-label">Xếp loại</div>
-                <div style={{ marginTop: "4px" }}>
-                  {phieu?.XepLoai ? (
-                    <XepLoaiBadge xepLoai={phieu.XepLoai} />
-                  ) : (
-                    <span className="tq-placeholder">Chưa chốt kết quả</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div
-                className="stat-icon-box"
-                style={{ background: mauHan.bg, color: mauHan.color }}
-              >
-                <i className="fa-solid fa-hourglass-half"></i>
-              </div>
-              {/* Không còn việc thì thẻ này nói về tình trạng chứ không nói về
-                  hạn: hạn của giai đoạn vẫn còn hiệu lực nhưng không phải việc
-                  của chủ phiếu nữa. */}
-              {conViecCuaChuPhieu ? (
-                <div>
-                  <div className="stat-label">{nhanHan}</div>
-                  <div className="stat-value" style={{ color: mauHan.color }}>
-                    {quaHan
-                      ? "Đã đóng"
-                      : !kiemTra && cuaSoNam.trangThai === "chua-mo"
-                        ? "Chưa mở"
-                        : !hanNop
-                          ? "Chưa thiết lập"
-                          : `${soNgayConLai} ngày`}
-                  </div>
-                  {hanNop && (
-                    <div className="cd-hint" style={{ marginTop: 0 }}>
-                      Hạn chót {formatNgay(hanNop)}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <div className="stat-label">Việc của bạn</div>
-                  <div className="stat-value" style={{ color: "#047857" }}>
-                    Đã xong
-                  </div>
-                  <div className="cd-hint" style={{ marginTop: 0 }}>
-                    Phiếu đang {tenTrangThai(phieu?.TrangThai).toLowerCase()}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {dongBiTraVe.length > 0 && (
-            <div className="cd-canh-bao tq-canh-bao-tra-ve">
-              <i className="fa-solid fa-rotate-left"></i>
-              <span>
-                Đơn vị thẩm định đã trả về <b>{dongBiTraVe.length} tiêu chí</b>{" "}
-                cần bạn bổ sung rồi nộp lại. Các tiêu chí khác vẫn giữ nguyên
-                tiến độ.
-                {/* Hạn chặn việc bổ sung là hạn THẨM ĐỊNH chứ không phải hạn tự
-                    đánh giá - QuaHan của kiem-tra-hop-le đã phản ánh đúng hạn
-                    của giai đoạn phiếu đang đứng. */}
-                {quaHan && (
-                  <>
-                    {" "}
-                    {thongDiepHan} nên bạn cần được gia hạn riêng mới sửa được -
-                    liên hệ đơn vị quản lý.
-                  </>
-                )}
-              </span>
-            </div>
-          )}
-
-          <div className="cd-phieu-header">
-            <div className="cd-phieu-top">
-              <div style={{ flex: "1 1 320px" }}>
-                {conViecCuaChuPhieu ? (
-                  <div
-                    className={`cd-hint tq-status-line ${
-                      quaHan
-                        ? "cd-hint-error"
-                        : !kiemTra && cuaSoNam.trangThai !== "dang-mo"
-                          ? "cd-hint-warn"
-                          : ""
-                    }`}
-                    style={{ marginTop: 0 }}
-                  >
-                    <i
-                      className="fa-solid fa-calendar-day"
-                      style={{ marginRight: "8px" }}
-                    ></i>
-                    {thongDiepHan}
-                  </div>
-                ) : (
-                  <div
-                    className="cd-hint tq-status-line"
-                    style={{ marginTop: 0 }}
-                  >
-                    <i
-                      className="fa-solid fa-circle-check"
-                      style={{ color: "#047857", marginRight: "8px" }}
-                    ></i>
-                    Bạn đã nộp xong phần của mình. Phiếu đang{" "}
-                    <b>{tenTrangThai(phieu?.TrangThai).toLowerCase()}</b>.
-                  </div>
-                )}
-                {phieu && (
-                  <div
-                    className="cd-meta-grid"
-                    style={{ marginTop: "14px", paddingTop: "14px" }}
-                  >
-                    <div>
-                      <div className="cd-meta-label">Lần đánh giá</div>
-                      <div className="cd-meta-value">
-                        {phieu.LanDanhGia ?? 1}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="cd-meta-label">Ngày gửi</div>
-                      <div className="cd-meta-value">
-                        {formatNgay(phieu.NgayGui)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="cd-meta-label">Cập nhật gần nhất</div>
-                      <div className="cd-meta-value">
-                        {formatNgay(phieu.NgayCapNhat)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="cd-meta-label">Số tiêu chí</div>
-                      <div className="cd-meta-value">
-                        {(phieu.ChiTiet || []).length}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {duongDanPhieu && (
-                <button className="btn-submit" onClick={moPhieu}>
-                  <i className="fa-solid fa-file-pen"></i>{" "}
-                  {dongBiTraVe.length > 0
-                    ? `Bổ sung ${dongBiTraVe.length} tiêu chí`
-                    : phieu
-                      ? "Mở phiếu tự đánh giá"
-                      : "Bắt đầu tự đánh giá"}
-                </button>
-              )}
-            </div>
-          </div>
-
-          <p className="sub-title" style={{ marginBottom: "10px" }}>
-            {dongBiTraVe.length > 0 ? "CẦN BẠN BỔ SUNG" : "CÒN THIẾU GÌ ĐỂ NỘP"}
-          </p>
-          <div
-            className="modern-table-card"
-            style={{ padding: "18px 20px", marginBottom: "24px" }}
-          >
-            {!phieu ? (
-              <div className="cd-empty" style={{ padding: "40px 20px" }}>
-                <i className="fa-solid fa-file-circle-plus"></i>
-                {duongDanPhieu ? (
-                  <>
-                    <h3 style={{ color: "#334155", margin: "0 0 6px 0" }}>
-                      Bạn chưa có phiếu năm {selectedNam}
-                    </h3>
-                    <p style={{ margin: 0 }}>
-                      Phiếu được tạo khi bạn lưu lần đầu trong form tự đánh giá.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h3 style={{ color: "#334155", margin: "0 0 6px 0" }}>
-                      Bạn không thuộc diện tự đánh giá KPI
-                    </h3>
-                    <p style={{ margin: 0 }}>
-                      Chức danh nghề nghiệp hiện tại không gắn với biểu mẫu KPI
-                      cá nhân nào.
-                    </p>
-                  </>
-                )}
-              </div>
-            ) : dongBiTraVe.length > 0 ? (
-              <>
-                <div
-                  className="cd-hint cd-hint-warn tq-status-line"
-                  style={{ marginTop: 0, marginBottom: "14px" }}
-                >
-                  <i
-                    className="fa-solid fa-rotate-left"
-                    style={{ marginRight: "8px" }}
-                  ></i>
-                  {dongBiTraVe.length} tiêu chí bị trả về - sửa xong bấm{" "}
-                  <b>Nộp lại</b> trong phiếu tự đánh giá
-                </div>
-
-                {dongBiTraVe.map((ct) => (
-                  <div className="cd-mc-row" key={ct.IdChiTiet}>
-                    <i
-                      className="fa-solid fa-circle-exclamation cd-mc-icon"
-                      style={{ color: "#ea580c" }}
-                    ></i>
-                    <div className="cd-mc-main">
-                      <div
-                        className="cd-mc-name"
-                        style={{ color: "#0f172a", cursor: "default" }}
-                      >
-                        {ct.TenTieuChi || `Tiêu chí #${ct.IdTieuChi}`}
-                      </div>
-                      {ct.LyDoTraVe && (
-                        <div className="tq-tra-ve-ly-do">{ct.LyDoTraVe}</div>
-                      )}
-                      <div className="cd-mc-meta">
-                        {ct.TenDonViThamDinh || "Đơn vị thẩm định"} trả về
-                        {ct.NgayTraVe
-                          ? ` ngày ${formatNgay(ct.NgayTraVe)}`
-                          : ""}
-                        {ct.SoLanTraVe > 1 ? ` · lần thứ ${ct.SoLanTraVe}` : ""}
-                      </div>
-                    </div>
-                    {duongDanPhieu && (
-                      <button
-                        type="button"
-                        className="cd-mc-act"
-                        onClick={moPhieu}
-                      >
-                        <i className="fa-solid fa-arrow-right"></i> Bổ sung
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </>
-            ) : phieu.TrangThai !== TRANG_THAI.NHAP ? (
-              <div className="cd-hint tq-status-line" style={{ marginTop: 0 }}>
-                <i
-                  className="fa-solid fa-circle-check"
-                  style={{ color: "#047857", marginRight: "8px" }}
-                ></i>
-                Phiếu đã nộp, đang <b>{tenTrangThai(phieu.TrangThai)}</b>.
-              </div>
-            ) : !kiemTra ? (
-              <div
-                className="cd-hint cd-hint-warn tq-status-line"
-                style={{ marginTop: 0 }}
-              >
-                <i
-                  className="fa-solid fa-triangle-exclamation"
-                  style={{ marginRight: "8px" }}
-                ></i>
-                Chưa lấy được kết quả kiểm tra. Bấm "Làm mới" để thử lại.
-              </div>
-            ) : (
-              <>
-                <div
-                  className={`cd-hint tq-status-line ${
-                    kiemTra.CoTheNop ? "" : "cd-hint-warn"
-                  }`}
-                  style={{
-                    marginTop: 0,
-                    marginBottom: thieu.length > 0 ? "14px" : 0,
-                    color: kiemTra.CoTheNop ? "#047857" : undefined,
-                  }}
-                >
-                  <i
-                    className={`fa-solid ${
-                      kiemTra.CoTheNop
-                        ? "fa-circle-check"
-                        : "fa-triangle-exclamation"
-                    }`}
-                    style={{ marginRight: "8px" }}
-                  ></i>
-                  {kiemTra.CoTheNop
-                    ? `Phiếu đủ điều kiện nộp (${kiemTra.TongSoTieuChi} tiêu chí đã hoàn tất)`
-                    : `Còn ${kiemTra.SoTieuChiThieu}/${kiemTra.TongSoTieuChi} tiêu chí chưa xong`}
-                </div>
-
-                {/* Cùng schema với missingItems của 422 /submit và /nop-lai nên
-                    dùng chung đúng một component checklist. */}
-                <ThieuTieuChiChecklist
-                  items={thieu}
-                  onMo={duongDanPhieu ? moPhieu : undefined}
-                />
-              </>
-            )}
-          </div>
-
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <button
-              className="cd-chip"
-              onClick={() => navigate("/lich-su-danh-gia")}
-            >
-              <i className="fa-solid fa-clock-rotate-left"></i>
-              <span>Danh sách phiếu của tôi</span>
-            </button>
-            <button
-              className="cd-chip"
-              onClick={() => navigate("/kho-minh-chung")}
-            >
-              <i className="fa-solid fa-folder-tree"></i>
-              <span>Kho minh chứng cá nhân</span>
-            </button>
-            <button
-              className="cd-chip"
-              onClick={() => navigate("/thong-tin-lien-he")}
-            >
-              <i className="fa-solid fa-user"></i>
-              <span>Hồ sơ của tôi</span>
-            </button>
-          </div>
-        </>
+        <DashHeader
+          title="Kết quả đánh giá của tôi"
+          subtitle={[currentUser.HoTen, currentUser.TenChucDanh, donViChinh?.TenDonVi]
+            .filter(Boolean)
+            .join(" · ")}
+          controls={boLoc}
+        />
       )}
+
+      {phanCaNhan}
     </div>
   );
 };

@@ -378,7 +378,7 @@ export const MENU_GROUPS = [
         name: "Báo cáo đơn vị",
         icon: "fa-solid fa-chart-line",
         path: "/quan-ly/bao-cao",
-        roles: ROLE_SETS.TRUONG_DON_VI,
+        roles: [...ROLE_SETS.TRUONG_DON_VI, ...ROLE_SETS.CAP_TRUONG, ...ROLE_SETS.KPI_KHOA, ...ROLE_SETS.KPI_PHONG],
       },
     ],
   },

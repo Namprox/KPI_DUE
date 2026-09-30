@@ -16,39 +16,20 @@ import {
   fetchBaoCaoTongQuan,
   formatDiem,
   formatNgay,
-  LOAI_DOI_TUONG,
   TRANG_THAI_META,
 } from "../../utils/phieuApi";
-import { useAuth } from "../../context/AuthContext";
-import { ROLE_SETS, ROLE } from "../../utils/roles";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
-import { useChuaTuCham } from "../../hooks/useChuaTuCham";
-import { TrangThaiBadge } from "../../components/QuanLyChamDiem/TrangThaiBadge";
+import BaoCaoBoSung, { DanhSachChuaLap } from "../../components/QuanLyChamDiem/BaoCaoBoSung";
 import HocVuTongQuan from "../../components/QuanLyChamDiem/HocVuTongQuan";
 import { TRANG_THAI_CHUA_LAP_META } from "../../utils/chuaLapPhieu";
 import SearchSelect from "../../components/Common/SearchSelect";
 
-/** Số ngày trôi mà một phiếu chưa hoàn tất bị coi là "để quá lâu". */
+/** Ngày ở trạng thái mà một phiếu chưa hoàn tất bị coi là "để quá lâu". */
 const NGUONG_TRE = 30;
 
-const TEN_LOAI_DOI_TUONG = {
-  [LOAI_DOI_TUONG.GIANG_VIEN]: "Giảng viên",
-  [LOAI_DOI_TUONG.VIEN_CHUC]: "Viên chức / NLĐ",
-};
-
-/**
- * Báo cáo tiến độ và kết quả KPI của đơn vị.
- *
- * Cả ba endpoint đều BẮT BUỘC idNam (thiếu là 400) và tự giới hạn phạm vi theo
- * chức vụ trong JWT, nên bộ lọc đơn vị ở đây chỉ để thu hẹp trong phạm vi sẵn có.
- *
- * SoChuaLapPhieu là số người chưa có phiếu trong phạm vi báo cáo. Danh sách
- * đối chiếu cuối trang vẫn ghép riêng ở client để hiển thị từng người.
- */
 const BaoCaoDonVi = () => {
   const toast = useRef(null);
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
 
   const [donViList, setDonViList] = useState([]);
@@ -58,30 +39,9 @@ const BaoCaoDonVi = () => {
   const [diemTb, setDiemTb] = useState([]);
   const [chuaHoanTat, setChuaHoanTat] = useState([]);
 
-  const idDonViGoc = useMemo(() => {
-    if (user?.DonVi && Array.isArray(user.DonVi)) {
-      const dv = user.DonVi.find((d) =>
-        [...ROLE_SETS.TRUONG_DON_VI, ROLE.PHO_TRUONG_PHONG].includes(
-          String(d.MaChucVu || "")
-            .trim()
-            .toUpperCase(),
-        ),
-      );
-      if (dv) return dv.IdDonVi;
-    }
-    return user?.IdDonVi;
-  }, [user]);
-
-  const {
-    chuaLapPhieu,
-    dangTai: dangTaiChuaLap,
-    loi: loiChuaLap,
-    taiLai: taiLaiChuaLap,
-  } = useChuaTuCham({
-    idNam: selectedNam,
-    idDonViGoc,
-    idDonViLoc: idDonVi || undefined,
-  });
+  const [drill, setDrill] = useState(null);
+  const [loiDanhSach, setLoiDanhSach] = useState("");
+  const requestId = useRef(0);
 
   const showToast = (severity, summary, detail) => {
     toast.current?.show({ severity, summary, detail, life: 4000 });
@@ -106,25 +66,37 @@ const BaoCaoDonVi = () => {
     setIsLoading(true);
     const tham = { idNam: selectedNam, idDonVi: idDonVi || undefined };
 
-    const [tq, tb, cht] = await Promise.allSettled([
-      fetchBaoCaoTongQuan(tham),
-      fetchBaoCaoDiemTrungBinh(tham),
-      fetchBaoCaoChuaHoanTat(tham),
+    const current = ++requestId.current;
+    setDrill(null);
+    setTongQuan(null);
+    setChuaHoanTat([]);
+    setLoiDanhSach("");
+    const [tq, tb] = await Promise.allSettled([
+      fetchBaoCaoTongQuan(tham), fetchBaoCaoDiemTrungBinh(tham),
     ]);
-
-    setTongQuan(tq.status === "fulfilled" ? tq.value : null);
+    if (current !== requestId.current) return;
+    const overview = tq.status === "fulfilled" ? tq.value : null;
+    setTongQuan(overview);
     setDiemTb(tb.status === "fulfilled" ? tb.value : []);
-    setChuaHoanTat(cht.status === "fulfilled" ? cht.value : []);
-
-    // Gộp lỗi thành một toast: ba khối cùng hỏng thường là cùng một nguyên nhân.
-    const loi = [tq, tb, cht].find((r) => r.status === "rejected");
+    const loi = [tq, tb].find((r) => r.status === "rejected");
     if (loi) showToast("error", "Lỗi tải báo cáo", loi.reason.message);
-
+    if (overview?.CoQuyenXemDanhSach === true) {
+      try {
+        // Keep the unpaged contract until the database migration is confirmed.
+        const rows = await fetchBaoCaoChuaHoanTat(tham);
+        if (current !== requestId.current) return;
+        setChuaHoanTat(rows);
+      } catch (error) {
+        if (current !== requestId.current) return;
+        setLoiDanhSach(error.message);
+      }
+    }
     setIsLoading(false);
   }, [selectedNam, idDonVi]);
 
   useEffect(() => {
     if (!dangTaiNam) taiBaoCao();
+    return () => { requestId.current += 1; };
   }, [dangTaiNam, taiBaoCao]);
 
   const demTheoTrangThai = useMemo(() => {
@@ -136,7 +108,7 @@ const BaoCaoDonVi = () => {
   }, [tongQuan]);
 
   const soTre = useMemo(
-    () => chuaHoanTat.filter((r) => (r.SoNgayTroi || 0) >= NGUONG_TRE).length,
+    () => chuaHoanTat.filter((r) => (r.SoNgayOTrangThai || 0) >= NGUONG_TRE).length,
     [chuaHoanTat],
   );
 
@@ -195,7 +167,6 @@ const BaoCaoDonVi = () => {
           className="btn-cancel"
           onClick={() => {
             taiBaoCao();
-            taiLaiChuaLap();
           }}
           disabled={isLoading}
         >
@@ -245,7 +216,7 @@ const BaoCaoDonVi = () => {
                   <i className={`fa-solid ${meta.icon}`}></i>
                 </div>
                 <div>
-                  <div className="stat-label">{meta.label}</div>
+                  <div className="stat-label">{tongQuan?.DemTheoTrangThai?.find((r) => Number(r.TrangThai) === Number(tt))?.TrangThaiText || meta.label}</div>
                   <div className="stat-value">
                     {demTheoTrangThai.get(Number(tt)) || 0}
                   </div>
@@ -254,6 +225,8 @@ const BaoCaoDonVi = () => {
             ))}
           </div>
 
+          <BaoCaoBoSung data={tongQuan} onChuaLap={tongQuan?.CoQuyenXemDanhSach === true ? setDrill : undefined} />
+          {tongQuan?.CoQuyenXemDanhSach === true && drill && <DanhSachChuaLap key={JSON.stringify([selectedNam, idDonVi, drill])} idNam={selectedNam} idDonVi={idDonVi || undefined} {...drill} onClose={() => setDrill(null)} />}
           <HocVuTongQuan hocVu={tongQuan?.HocVu} />
 
           {(tongQuan?.DemTheoXepLoai || []).length > 0 && (
@@ -263,12 +236,12 @@ const BaoCaoDonVi = () => {
               </p>
               <div className="stat-card-grid">
                 {tongQuan.DemTheoXepLoai.map((x) => (
-                  <div className="stat-card" key={x.XepLoai}>
+                  <div className="stat-card" key={x.MaXepLoai}>
                     <div className="stat-icon-box stat-icon-green">
                       <i className="fa-solid fa-award"></i>
                     </div>
                     <div>
-                      <div className="stat-label">{x.XepLoai}</div>
+                      <div className="stat-label">{x.XepLoaiText || "Chưa có nhãn"}</div>
                       <div className="stat-value">{x.SoLuong}</div>
                     </div>
                   </div>
@@ -294,16 +267,16 @@ const BaoCaoDonVi = () => {
                     <tr>
                       <th>Đơn vị</th>
                       <th style={{ width: "110px", textAlign: "center" }}>
-                        Số phiếu
+                        Phiếu GV / VC
                       </th>
                       <th style={{ width: "130px", textAlign: "right" }}>
-                        Trung bình
+                        TB giảng viên
                       </th>
                       <th style={{ width: "120px", textAlign: "right" }}>
-                        Thấp nhất
+                        TB viên chức
                       </th>
                       <th style={{ width: "120px", textAlign: "right" }}>
-                        Cao nhất
+                        TB chung (tham khảo)
                       </th>
                     </tr>
                   </thead>
@@ -312,7 +285,7 @@ const BaoCaoDonVi = () => {
                       <tr key={r.IdDonVi}>
                         <td>
                           <b style={{ color: "#0f172a" }}>
-                            {r.TenDonVi || `Đơn vị #${r.IdDonVi}`}
+                            {r.LaTrucThuoc && "Trực thuộc "}{r.TenDonVi || `Đơn vị #${r.IdDonVi}`}
                           </b>
                           {r.MaDonVi && (
                             <span
@@ -323,7 +296,7 @@ const BaoCaoDonVi = () => {
                             </span>
                           )}
                         </td>
-                        <td style={{ textAlign: "center" }}>{r.SoPhieu}</td>
+                        <td style={{ textAlign: "center" }}>{r.SoPhieuGiangVien ?? "—"} / {r.SoPhieuVienChuc ?? "—"}</td>
                         <td
                           style={{
                             textAlign: "right",
@@ -331,13 +304,13 @@ const BaoCaoDonVi = () => {
                             color: "#1d4ed8",
                           }}
                         >
+                          {formatDiem(r.DiemTrungBinhGiangVien)}
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          {formatDiem(r.DiemTrungBinhVienChuc)}
+                        </td>
+                        <td style={{ textAlign: "right" }}>
                           {formatDiem(r.DiemTrungBinh)}
-                        </td>
-                        <td style={{ textAlign: "right" }}>
-                          {formatDiem(r.DiemThapNhat)}
-                        </td>
-                        <td style={{ textAlign: "right" }}>
-                          {formatDiem(r.DiemCaoNhat)}
                         </td>
                       </tr>
                     ))}
@@ -347,12 +320,13 @@ const BaoCaoDonVi = () => {
             )}
           </div>
 
+          {tongQuan?.CoQuyenXemDanhSach === true && <>
           <p className="sub-title" style={{ marginBottom: "10px" }}>
             PHIẾU CHƯA HOÀN TẤT ({chuaHoanTat.length}
             {soTre > 0 ? `, ${soTre} phiếu quá ${NGUONG_TRE} ngày` : ""})
           </p>
           <div className="modern-table-card">
-            {chuaHoanTat.length === 0 ? (
+            {loiDanhSach ? <p role="alert">{loiDanhSach}</p> : chuaHoanTat.length === 0 ? (
               <div className="cd-empty">
                 <i
                   className="fa-solid fa-circle-check"
@@ -365,27 +339,28 @@ const BaoCaoDonVi = () => {
                 <table className="custom-table" style={{ minWidth: "900px" }}>
                   <thead>
                     <tr>
-                      <th style={{ width: "26%" }}>Giảng viên</th>
+                      <th style={{ width: "26%" }}>Nhân viên</th>
                       <th style={{ width: "20%" }}>Đơn vị</th>
                       <th style={{ width: "16%", textAlign: "center" }}>
                         Trạng thái
                       </th>
                       <th style={{ width: "12%" }}>Ngày tạo</th>
                       <th style={{ width: "12%", textAlign: "center" }}>
-                        Số ngày trôi
+                        Ngày ở trạng thái
                       </th>
                       <th style={{ width: "8%", textAlign: "center" }}>Mở</th>
                     </tr>
                   </thead>
                   <tbody>
                     {chuaHoanTat.map((r) => {
-                      const tre = (r.SoNgayTroi || 0) >= NGUONG_TRE;
+                      const tre = (r.SoNgayOTrangThai || 0) >= NGUONG_TRE;
                       return (
                         <tr key={r.IdPhieu}>
                           <td>
                             <b style={{ color: "#0f172a", display: "block" }}>
                               {r.HoTen || `#${r.IdNhanVien}`}
                             </b>
+                            <small>{r.LoaiDoiTuongText}</small>
                             {r.MaNhanVien && (
                               <span className="code-pill">{r.MaNhanVien}</span>
                             )}
@@ -394,7 +369,7 @@ const BaoCaoDonVi = () => {
                             {r.TenDonVi || "-"}
                           </td>
                           <td style={{ textAlign: "center" }}>
-                            <TrangThaiBadge trangThai={r.TrangThai} />
+                            {r.TrangThaiText || "—"}
                           </td>
                           <td style={{ fontSize: "13px" }}>
                             {formatNgay(r.NgayTao)}
@@ -416,7 +391,7 @@ const BaoCaoDonVi = () => {
                                   }
                               }
                             >
-                              {r.SoNgayTroi} ngày
+                              {r.SoNgayOTrangThai == null ? "—" : `${r.SoNgayOTrangThai} ngày`}
                             </span>
                           </td>
                           <td>
@@ -441,88 +416,7 @@ const BaoCaoDonVi = () => {
             )}
           </div>
 
-          <p
-            className="sub-title"
-            style={{ marginTop: "24px", marginBottom: "10px" }}
-          >
-            DANH SÁCH ĐỐI CHIẾU CHƯA LẬP PHIẾU (
-            {dangTaiChuaLap ? "…" : chuaLapPhieu.length} người)
-          </p>
-          <div className="modern-table-card">
-            {loiChuaLap ? (
-              <div className="cd-empty">
-                <i
-                  className="fa-solid fa-triangle-exclamation"
-                  style={{ color: "#f59e0b" }}
-                ></i>
-                {loiChuaLap}
-              </div>
-            ) : dangTaiChuaLap ? (
-              <div className="cd-empty">
-                <i className="fa-solid fa-spinner fa-spin"></i>
-                Đang đối chiếu danh bạ đơn vị với danh sách phiếu...
-              </div>
-            ) : chuaLapPhieu.length === 0 ? (
-              <div className="cd-empty">
-                <i
-                  className="fa-solid fa-circle-check"
-                  style={{ color: "#10b981" }}
-                ></i>
-                Mọi người thuộc diện đánh giá trong phạm vi của bạn đều đã có
-                phiếu.
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table className="custom-table" style={{ minWidth: "800px" }}>
-                  <thead>
-                    <tr>
-                      <th style={{ width: "30%" }}>Họ tên</th>
-                      <th style={{ width: "26%" }}>Đơn vị</th>
-                      <th style={{ width: "22%" }}>Chức danh</th>
-                      <th style={{ width: "14%" }}>Loại phiếu</th>
-                      <th style={{ width: "8%", textAlign: "center" }}>Mở</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {chuaLapPhieu.map((r) => (
-                      <tr key={r.key}>
-                        <td>
-                          <b style={{ color: "#0f172a", display: "block" }}>
-                            {r.HoTen}
-                          </b>
-                          {r.MaNhanVien && (
-                            <span className="code-pill">{r.MaNhanVien}</span>
-                          )}
-                        </td>
-                        <td style={{ fontSize: "13px", color: "#475569" }}>
-                          {r.TenDonVi || "-"}
-                        </td>
-                        <td style={{ fontSize: "13px", color: "#475569" }}>
-                          {r.TenChucDanh || "-"}
-                        </td>
-                        <td style={{ fontSize: "13px", color: "#475569" }}>
-                          {TEN_LOAI_DOI_TUONG[Number(r.LoaiDoiTuong)] || "-"}
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              className="action-btn view-btn"
-                              title="Xem hồ sơ KPI của người này"
-                              onClick={() =>
-                                navigate(`/quan-ly/giang-vien/${r.IdNhanVien}`)
-                              }
-                            >
-                              <i className="fa-solid fa-id-card"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          </>}
         </>
       )}
     </div>
