@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { laCongThucGioGiang } from "../../../utils/gioGiangTyLe";
 import {
   chuanHoaFileMinhChung,
   ACCEPT_PDF,
@@ -334,7 +336,9 @@ const DanhGiaPhuLuc2Form = ({
                           const isVpgd = congThuc.startsWith("VPGD");
                           const isTtvt = congThuc.startsWith("TTVT");
                           const isVpvc = congThuc.startsWith("VPVC");
-                          const autoNote = isNckh
+                          const autoNote = laCongThucGioGiang(autoInfo)
+                            ? "Điểm dựa trên tỷ lệ hoàn thành định mức giờ giảng do hệ thống cung cấp"
+                            : isNckh
                             ? "Điểm được tính tự động dựa vào dữ liệu từ website NCKH của trường"
                             : isPhsv
                               ? "Điểm được tính tự động dựa vào dữ liệu đánh giá của sinh viên"
@@ -432,13 +436,22 @@ const DanhGiaPhuLuc2Form = ({
                                     {autoNote}
                                     {phamViDiem ? ` · ${phamViDiem}` : ""}
                                   </span>
+                                  {congThuc === "GIO_GIANG_TY_LE" && (
+                                    <Link
+                                      className="pl2-auto-detail-link"
+                                      to="/gio-giang-cua-toi"
+                                    >
+                                      <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+                                      Xem chi tiết giờ giảng của tôi
+                                    </Link>
+                                  )}
                                 </div>
                                 <div
                                   className={`pl2-auto-score-value ${tongDiemTru > 0 ? "pl2-auto-score-value-tru" : ""}`}
                                 >
                                   {coDiemTuDong
                                     ? `${formatDiem(autoInfo.DiemTuDong)}đ`
-                                    : "Chưa tính"}
+                                    : laCongThucGioGiang(autoInfo) ? "Không chấm tự động" : "Chưa tính"}
                                 </div>
                               </div>
 

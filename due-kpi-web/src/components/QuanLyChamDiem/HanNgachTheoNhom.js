@@ -13,8 +13,8 @@ export default function HanNgachTheoNhom({ goi }) {
           <thead><tr><th>Nhóm</th><th>Mẫu số</th><th>Đạt / hạn ngạch</th></tr></thead>
           <tbody>{nhom.map((n) => <tr key={n.Nhom}>
             <td>{n.TenNhom || TEN_NHOM_XEP_HANG[n.Nhom]}</td>
-            <td>{n.SoMauSo ?? "—"}</td>
-            <td>{n.SoDat ?? "—"} / {n.HanNgach ?? "—"} suất</td>
+            <td>{n.SoMauSo ?? "-"}</td>
+            <td>{n.SoDat ?? "-"} / {n.HanNgach ?? "-"} suất</td>
           </tr>)}</tbody>
         </table>
       </div>

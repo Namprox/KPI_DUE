@@ -862,6 +862,7 @@ const ChotHoSoPhong = () => {
             <div>
               <span>Xếp loại cuối cùng</span>
               <XepLoaiBadge xepLoai={phieu.XepLoai} />
+              {Number(phieu.NguonDiemCoBan) === 2 && <div><div className="cd-meta-label">Xếp loại theo điểm (tổng hợp quý)</div><div className="cd-meta-value">{phieu.XepLoaiTongHopQuyText || "-"}</div></div>}
             </div>
           </div>
         </div>

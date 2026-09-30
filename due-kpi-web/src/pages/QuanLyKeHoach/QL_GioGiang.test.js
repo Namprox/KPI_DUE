@@ -18,6 +18,7 @@ beforeEach(() => {
   apiFetch.mockReset();
   apiFetch.mockImplementation(async (url) => {
     if (url === "namdanhgia") return ok({ Items: [{ IdNam: 2026 }] });
+    if (url === "donvi") return ok({ Items: [{ IdDonVi: 12, MaDonVi: "K_KT", CapDonVi: 2, TenDonVi: "Khoa Kế toán" }] });
     if (url.startsWith("gio-giang-tkb?idNam=")) return ok({ Items: rows, SoDongChuaAnhXa: 1 });
     if (url.startsWith("gio-giang-tkb/tong-hop")) return ok({ TongHop: [{ IdNhanVien: 7, HoTen: "Nguyễn Văn An", GioTkbDaiHoc: 10, GioTkbSauDaiHoc: 20, GioTkb: 30, GioDaiHoc: 41, GioSauDaiHoc: 52, TongGio: 123 }], SoDongChuaAnhXa: 1 });
     if (url.startsWith("nhan-vien?")) return ok({ Items: [{ IdNhanVien: 8, HoTen: "Nguyễn Văn An", MaNhanVien: "NV8", TenDonVi: "Khoa Kế toán" }], TotalCount: 1 });

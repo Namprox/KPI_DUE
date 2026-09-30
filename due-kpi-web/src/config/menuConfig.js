@@ -205,6 +205,12 @@ export const MENU_GROUPS = [
         chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
       },
       {
+        name: "Giờ giảng của tôi",
+        icon: "fa-solid fa-chalkboard-user",
+        path: "/gio-giang-cua-toi",
+        access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
+      },
+      {
         // Song sinh của mục trên cho VIÊN CHỨC / NLĐ: kê khai THÀNH TÍCH VƯỢT
         // TRỘI (Nhóm II - sáng kiến, khen thưởng, đào tạo, phong trào). Nhân
         // viên TỰ kê từng thành tích, đơn vị phụ trách duyệt từng dòng.
@@ -405,6 +411,12 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-calendar-week",
         path: "/quan-ly-gio-giang",
         roles: ROLE_SETS.GIO_GIANG_TKB,
+      },
+      {
+        name: "Tỷ lệ hoàn thành giờ giảng",
+        icon: "fa-solid fa-chart-column",
+        path: "/ty-le-hoan-thanh-gio-giang",
+        roles: ROLE_SETS.TY_LE_GIO_GIANG,
       },
       {
         // Duyệt bản kê giờ quy đổi (Phụ lục II) của giảng viên trong phạm vi

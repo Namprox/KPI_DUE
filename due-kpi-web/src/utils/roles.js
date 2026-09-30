@@ -169,6 +169,9 @@ export const ROLE_SETS = {
    */
   GIO_GIANG_TKB: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
 
+  /** Quyền đọc tỷ lệ giờ giảng; phạm vi người được xem do backend kiểm tra. */
+  TY_LE_GIO_GIANG: [ROLE.ADMIN, ROLE.HIEU_TRUONG, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG],
+
   /**
    * Trưởng đơn vị - nhóm được chấm điểm cấp Khoa cho phiếu KPI cá nhân.
    * Gồm cả Trưởng Phòng: phòng ban ngoài Khoa vẫn được giao chấm một số tiêu

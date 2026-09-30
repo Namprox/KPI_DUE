@@ -24,7 +24,7 @@ import "../../css/QuanLyChamDiem.css";
 
 const formatDiem = (value) =>
   value == null || value === ""
-    ? "—"
+    ? "-"
     : Number(value).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
 
 const DuyetPhieuQuy = () => {
@@ -129,16 +129,16 @@ const DuyetPhieuQuy = () => {
     const payloadScores = quick
       ? []
       : manual
-          .filter((row) => scores[row.IdChiTiet] !== undefined)
-          .map((row) => ({
-            IdChiTiet: row.IdChiTiet,
-            Diem:
-              scores[row.IdChiTiet]?.Diem === "" ||
+        .filter((row) => scores[row.IdChiTiet] !== undefined)
+        .map((row) => ({
+          IdChiTiet: row.IdChiTiet,
+          Diem:
+            scores[row.IdChiTiet]?.Diem === "" ||
               scores[row.IdChiTiet]?.Diem == null
-                ? null
-                : Number(scores[row.IdChiTiet].Diem),
-            NhanXet: scores[row.IdChiTiet]?.NhanXet || null,
-          }));
+              ? null
+              : Number(scores[row.IdChiTiet].Diem),
+          NhanXet: scores[row.IdChiTiet]?.NhanXet || null,
+        }));
 
     const invalid = payloadScores.find((entry) => {
       if (entry.Diem == null) return false;
@@ -168,7 +168,7 @@ const DuyetPhieuQuy = () => {
             RowVersion: selected.RowVersion,
           });
           toast(
-            `Đã chốt quý: cơ bản ${formatDiem(result.TongDiemCoBan)}, vượt trội ${formatDiem(result.TongDiemVuotTroi)}, tích lũy ${formatDiem(result.TongDiemTichLuy)}`,
+            `Đã chốt quý: cơ bản ${formatDiem(result.TongDiemCoBan)}, vượt trội ${formatDiem(result.TongDiemVuotTroi)}, tích lũy ${formatDiem(result.TongDiemTichLuy)}${result.XepLoaiQuyText ? ` · Xếp loại quý: ${result.XepLoaiQuyText}` : ""}`,
             "success",
           );
           setSelected(null);
@@ -273,6 +273,7 @@ const DuyetPhieuQuy = () => {
             </div>
             <div className="cd-meta-grid">
               <TongDiemMeta phieu={{}} tamTinh={reviewTotals} />
+              {Number(selected.TrangThai) === 5 && selected.XepLoaiQuyText && <div><div className="cd-meta-label">Xếp loại quý</div><div className="cd-meta-value">{selected.XepLoaiQuyText}</div></div>}
               <div><div className="cd-meta-label">Quý đánh giá</div><div className="cd-meta-value">Quý {selected.Quy}</div></div>
               <div><div className="cd-meta-label">Lần đánh giá</div><div className="cd-meta-value">{selected.LanDanhGia || 1}</div></div>
             </div>
@@ -331,7 +332,7 @@ const DuyetPhieuQuy = () => {
       ) : (
         <section className="pq-section">
           <div className="pq-section-title"><i className="fa-solid fa-inbox"></i><h3>Phiếu chờ duyệt ({items.length})</h3></div>
-          {loading ? <div className="pq-loading"><i className="fa-solid fa-spinner fa-spin"></i> Đang tải hàng đợi...</div> : items.length === 0 ? <div className="pq-empty"><i className="fa-solid fa-check"></i><h3>Không có phiếu đang chờ</h3></div> : <div className="pq-table-wrap"><table className="pq-table"><thead><tr><th>Nhân viên</th><th>Đơn vị</th><th>Quý</th><th>Trạng thái</th><th></th></tr></thead><tbody>{items.map((item) => <tr key={item.IdPhieu}><td><strong>{item.HoTen || item.TenNhanVien}</strong></td><td>{item.TenDonVi}</td><td>Quý {item.Quy}</td><td>{item.TrangThaiText || trangThaiPhieuQuy(item)}</td><td><button type="button" className="pq-btn pq-btn-primary" onClick={() => open(item)}>Mở phiếu</button></td></tr>)}</tbody></table></div>}
+          {loading ? <div className="pq-loading"><i className="fa-solid fa-spinner fa-spin"></i> Đang tải hàng đợi...</div> : items.length === 0 ? <div className="pq-empty"><i className="fa-solid fa-check"></i><h3>Không có phiếu đang chờ</h3></div> : <div className="pq-table-wrap"><table className="pq-table"><thead><tr><th>Nhân viên</th><th>Đơn vị</th><th>Quý</th><th>Trạng thái</th><th>Xếp loại quý</th><th></th></tr></thead><tbody>{items.map((item) => <tr key={item.IdPhieu}><td><strong>{item.HoTen || item.TenNhanVien}</strong></td><td>{item.TenDonVi}</td><td>Quý {item.Quy}</td><td>{item.TrangThaiText || trangThaiPhieuQuy(item)}</td><td>{Number(item.TrangThai) === 5 ? item.XepLoaiQuyText || "" : ""}</td><td><button type="button" className="pq-btn pq-btn-primary" onClick={() => open(item)}>Mở phiếu</button></td></tr>)}</tbody></table></div>}
         </section>
       )}
     </div>

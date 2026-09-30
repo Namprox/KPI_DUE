@@ -50,7 +50,7 @@ const QL_DanhMucThanhTichListing = ({ data, onEdit, onDelete, isLoading }) => {
       );
     }
     if (!item.LaLa) {
-      return <span style={{ color: "#cbd5e1" }}>—</span>;
+      return <span style={{ color: "#cbd5e1" }}>-</span>;
     }
     return (
       <span
@@ -185,7 +185,7 @@ const QL_DanhMucThanhTichListing = ({ data, onEdit, onDelete, isLoading }) => {
                           {meta.label}
                         </span>
                       ) : (
-                        <span style={{ color: "#cbd5e1" }}>—</span>
+                        <span style={{ color: "#cbd5e1" }}>-</span>
                       )}
                       {item.TranDiem != null && (
                         <div

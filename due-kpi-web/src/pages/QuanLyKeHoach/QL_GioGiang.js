@@ -18,14 +18,15 @@ import {
 
 const BO_LOC_ANH_XA = [
   { value: "tat-ca", label: "Tất cả trạng thái" },
-  { value: "da-anh-xa", label: "Đã ánh xạ nhân viên" },
-  { value: "chua-anh-xa", label: "Chưa ánh xạ nhân viên" },
+  { value: "da-anh-xa", label: "Đã ánh xạ giảng viên" },
+  { value: "chua-anh-xa", label: "Chưa ánh xạ giảng viên" },
 ];
 
 const TABS = [
   { id: "tkb", label: "Dữ liệu TKB", icon: "fa-table-list" },
   { id: "tong-hop", label: "Tổng hợp giờ giảng", icon: "fa-chart-column" },
 ];
+const SO_NGUOI_MOI_TRANG = 20;
 
 const CANH_BAO_META = {
   TRUNG_LOP: "Trùng lớp",
@@ -98,6 +99,8 @@ const QL_GioGiang = () => {
   const [soDongChuaAnhXa, setSoDongChuaAnhXa] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [mappingFilter, setMappingFilter] = useState("tat-ca");
+  const [facultyFilter, setFacultyFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -196,20 +199,56 @@ const QL_GioGiang = () => {
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [isImportModalOpen, isImporting]);
 
+  const facultyOptions = useMemo(() => {
+    const faculties = [...new Set(
+      items.map((item) => String(item.TenKhoa || "").trim()).filter(Boolean),
+    )].sort((a, b) => a.localeCompare(b, "vi"));
+    if (
+      facultyFilter &&
+      facultyFilter !== "__chua_co_khoa__" &&
+      !faculties.includes(facultyFilter)
+    ) {
+      faculties.push(facultyFilter);
+      faculties.sort((a, b) => a.localeCompare(b, "vi"));
+    }
+    const options = [
+      { value: "", label: "Tất cả khoa" },
+      ...faculties.map((name) => ({ value: name, label: name })),
+    ];
+    if (items.some((item) => !String(item.TenKhoa || "").trim())) {
+      options.push({ value: "__chua_co_khoa__", label: "Chưa ghi khoa" });
+    }
+    return options;
+  }, [items, facultyFilter]);
+
   const filteredItems = useMemo(() => {
     const keyword = searchQuery.trim().toLocaleLowerCase("vi-VN");
     return items.filter((item) => {
       const daAnhXa = Boolean(item.IdNhanVien);
       if (mappingFilter === "da-anh-xa" && !daAnhXa) return false;
       if (mappingFilter === "chua-anh-xa" && daAnhXa) return false;
+      const khoa = String(item.TenKhoa || "").trim();
+      if (facultyFilter === "__chua_co_khoa__" && khoa) return false;
+      if (
+        facultyFilter &&
+        facultyFilter !== "__chua_co_khoa__" &&
+        khoa !== facultyFilter
+      ) return false;
       if (!keyword) return true;
-      return [item.HoTen, item.TenKhoa, item.HoTenNhanVien, item.MaNhanVien]
-        .filter(Boolean)
-        .some((value) =>
-          String(value).toLocaleLowerCase("vi-VN").includes(keyword),
-        );
+      return String(item.HoTen || "").toLocaleLowerCase("vi-VN").includes(keyword);
     });
-  }, [items, mappingFilter, searchQuery]);
+  }, [items, mappingFilter, facultyFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / SO_NGUOI_MOI_TRANG));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pagedItems = filteredItems.slice(
+    (safeCurrentPage - 1) * SO_NGUOI_MOI_TRANG,
+    safeCurrentPage * SO_NGUOI_MOI_TRANG,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, facultyFilter, mappingFilter, selectedYear]);
 
   const summary = useMemo(
     () => ({
@@ -290,11 +329,9 @@ const QL_GioGiang = () => {
       toast.current?.show({
         severity: "success",
         summary: "Upload thành công",
-        detail: `Đã cập nhật ${
-          result.SoGiangVien ?? result.soGiangVien ?? 0
-        } giảng viên, tự ánh xạ ${
-          result.SoDongTuDongAnhXa ?? result.soDongTuDongAnhXa ?? 0
-        } dòng dữ liệu.`,
+        detail: `Đã cập nhật ${result.SoGiangVien ?? result.soGiangVien ?? 0
+          } giảng viên, tự ánh xạ ${result.SoDongTuDongAnhXa ?? result.soDongTuDongAnhXa ?? 0
+          } dòng dữ liệu.`,
         life: 4500,
       });
     } catch (error) {
@@ -401,198 +438,218 @@ const QL_GioGiang = () => {
       </div>
 
       <section id="ggtk-panel-tkb" role="tabpanel" aria-labelledby="ggtk-tab-tkb" hidden={activeTab !== "tkb"} tabIndex={0}>
-      <div className="ggtk-summary-grid" aria-label="Tổng quan giờ giảng">
-        <div className="ggtk-summary-card">
-          <span className="ggtk-summary-icon is-blue">
-            <i className="fa-solid fa-chalkboard-user" aria-hidden="true" />
-          </span>
-          <div><span>Giảng viên</span><strong>{so(summary.soGiangVien, 0)}</strong></div>
-        </div>
-        <div className="ggtk-summary-card">
-          <span className="ggtk-summary-icon is-violet">
-            <i className="fa-solid fa-layer-group" aria-hidden="true" />
-          </span>
-          <div><span>Lớp tín chỉ</span><strong>{so(summary.soLop, 0)}</strong></div>
-        </div>
-        <div className="ggtk-summary-card">
-          <span className="ggtk-summary-icon is-amber">
-            <i className="fa-solid fa-clock" aria-hidden="true" />
-          </span>
-          <div><span>Tiết trong năm</span><strong>{so(summary.soTietTrongNam, 0)}</strong></div>
-        </div>
-        <div className="ggtk-summary-card">
-          <span className="ggtk-summary-icon is-green">
-            <i className="fa-solid fa-calculator" aria-hidden="true" />
-          </span>
-          <div><span>Giờ chuẩn</span><strong>{so(summary.gioChuan)}</strong></div>
-        </div>
-      </div>
-
-      {soDongChuaAnhXa > 0 && (
-        <div className="ggtk-alert is-warning" role="status">
-          <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
-          <div>
-            <strong>Còn {so(soDongChuaAnhXa, 0)} dòng dữ liệu chưa ánh xạ</strong>
-            <span>Các dòng chưa xác định được nhân viên theo họ tên và khoa chưa được tính vào bảng tổng hợp.</span>
+        <div className="ggtk-summary-grid" aria-label="Tổng quan giờ giảng">
+          <div className="ggtk-summary-card">
+            <span className="ggtk-summary-icon is-blue">
+              <i className="fa-solid fa-chalkboard-user" aria-hidden="true" />
+            </span>
+            <div><span>Giảng viên</span><strong>{so(summary.soGiangVien, 0)}</strong></div>
           </div>
-          <button
-            type="button"
-            className="ggtk-remap-button"
-            onClick={handleRemap}
-            disabled={isRemapping}
-          >
-            <i className={`fa-solid ${isRemapping ? "fa-spinner fa-spin" : "fa-wand-magic-sparkles"}`} aria-hidden="true" />
-            {isRemapping ? "Đang quét..." : "Quét lại tự động"}
-          </button>
+          <div className="ggtk-summary-card">
+            <span className="ggtk-summary-icon is-violet">
+              <i className="fa-solid fa-layer-group" aria-hidden="true" />
+            </span>
+            <div><span>Lớp tín chỉ</span><strong>{so(summary.soLop, 0)}</strong></div>
+          </div>
+          <div className="ggtk-summary-card">
+            <span className="ggtk-summary-icon is-amber">
+              <i className="fa-solid fa-clock" aria-hidden="true" />
+            </span>
+            <div><span>Tiết trong năm</span><strong>{so(summary.soTietTrongNam, 0)}</strong></div>
+          </div>
+          <div className="ggtk-summary-card">
+            <span className="ggtk-summary-icon is-green">
+              <i className="fa-solid fa-calculator" aria-hidden="true" />
+            </span>
+            <div><span>Giờ chuẩn</span><strong>{so(summary.gioChuan)}</strong></div>
+          </div>
         </div>
-      )}
 
-      {importResult && (
-        <div className="ggtk-import-result" role="status">
-          <div className="ggtk-result-heading">
+        {soDongChuaAnhXa > 0 && (
+          <div className="ggtk-alert is-warning" role="status">
+            <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
             <div>
-              <strong>Kết quả upload gần nhất</strong>
-              <span>
-                Đọc {so(importResult.soDongDoc, 0)} dòng, lưu {so(importResult.importedCount, 0)} lớp của {so(importResult.soGiangVien, 0)} giảng viên.
-              </span>
+              <strong>Còn {so(soDongChuaAnhXa, 0)} dòng dữ liệu chưa ánh xạ</strong>
+              <span>Các dòng chưa xác định được giảng viên theo họ tên và khoa chưa được tính vào bảng tổng hợp.</span>
             </div>
-            <button type="button" onClick={() => setImportResult(null)} aria-label="Đóng kết quả upload">
-              <i className="fa-solid fa-xmark" aria-hidden="true" />
+            <button
+              type="button"
+              className="ggtk-remap-button"
+              onClick={handleRemap}
+              disabled={isRemapping}
+            >
+              <i className={`fa-solid ${isRemapping ? "fa-spinner fa-spin" : "fa-wand-magic-sparkles"}`} aria-hidden="true" />
+              {isRemapping ? "Đang quét..." : "Quét lại tự động"}
             </button>
           </div>
-          <div className="ggtk-result-counts">
-              <span className="is-success">DH: {importResult.soDongDaiHoc == null ? "—" : so(importResult.soDongDaiHoc, 0)} dòng đã lưu</span>
-              <span className="is-success">SDH: {importResult.soDongSauDaiHoc == null ? "—" : so(importResult.soDongSauDaiHoc, 0)} dòng đã lưu</span>
+        )}
+
+        {importResult && (
+          <div className="ggtk-import-result" role="status">
+            <div className="ggtk-result-heading">
+              <div>
+                <strong>Kết quả upload gần nhất</strong>
+                <span>
+                  Đọc {so(importResult.soDongDoc, 0)} dòng, lưu {so(importResult.importedCount, 0)} lớp của {so(importResult.soGiangVien, 0)} giảng viên.
+                </span>
+              </div>
+              <button type="button" onClick={() => setImportResult(null)} aria-label="Đóng kết quả upload">
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="ggtk-result-counts">
+              <span className="is-success">DH: {importResult.soDongDaiHoc == null ? "-" : so(importResult.soDongDaiHoc, 0)} dòng đã lưu</span>
+              <span className="is-success">SDH: {importResult.soDongSauDaiHoc == null ? "-" : so(importResult.soDongSauDaiHoc, 0)} dòng đã lưu</span>
               <span className="is-success">{so(importResult.soDongTuDongAnhXa, 0)} dòng được tự ánh xạ</span>
               {importResult.soDongChuaAnhXa > 0 && <span className="is-warning">{so(importResult.soDongChuaAnhXa, 0)} dòng còn chưa ánh xạ</span>}
               {importResult.soDongBoQua > 0 && <span>{so(importResult.soDongBoQua, 0)} dòng thuộc năm khác đã bỏ qua</span>}
               {importResult.soDongTrung > 0 && <span>{so(importResult.soDongTrung, 0)} dòng trùng lớp</span>}
+            </div>
+            {importResult.canhBao.length > 0 && (
+              <div className="table-scroll ggtk-warning-table"><table className="custom-table">
+                <thead><tr><th>Sheet</th><th>Dòng Excel</th><th>Loại</th><th>Cảnh báo</th></tr></thead>
+                <tbody>{importResult.canhBao.map((warning, index) => (
+                  <tr key={`${warning.HeDaoTao}-${warning.SoDongExcel}-${index}`}>
+                    <td>{warning.HeDaoTao || "-"}</td><td>{warning.SoDongExcel ?? "-"}</td>
+                    <td>{CANH_BAO_META[warning.Loai] || "Cảnh báo"}</td><td>{warning.ThongDiep}</td>
+                  </tr>
+                ))}</tbody>
+              </table></div>
+            )}
           </div>
-          {importResult.canhBao.length > 0 && (
-            <div className="table-scroll ggtk-warning-table"><table className="custom-table">
-              <thead><tr><th>Sheet</th><th>Dòng Excel</th><th>Loại</th><th>Cảnh báo</th></tr></thead>
-              <tbody>{importResult.canhBao.map((warning, index) => (
-                <tr key={`${warning.HeDaoTao}-${warning.SoDongExcel}-${index}`}>
-                  <td>{warning.HeDaoTao || "—"}</td><td>{warning.SoDongExcel ?? "—"}</td>
-                  <td>{CANH_BAO_META[warning.Loai] || "Cảnh báo"}</td><td>{warning.ThongDiep}</td>
-                </tr>
-              ))}</tbody>
-            </table></div>
+        )}
+
+        <div className="table-card ggtk-table-card">
+          <div className="ggtk-table-toolbar">
+            <div>
+              <h3>Danh sách giờ giảng</h3>
+              <p>
+                {lastImport
+                  ? `Cập nhật lần cuối ${ngayGio(lastImport)}`
+                  : "Chưa có dữ liệu upload trong năm này"}
+              </p>
+            </div>
+            <div className="ggtk-toolbar-controls">
+              <div className="ggtk-search-box">
+                <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Tìm theo tên giảng viên..."
+                  aria-label="Tìm theo tên giảng viên"
+                />
+              </div>
+              <div className="ggtk-faculty-filter">
+                <span>Tên Khoa trong TKB</span>
+                <SearchSelect
+                  ariaLabel="Lọc theo tên khoa trong TKB"
+                  name="Khoa"
+                  value={facultyFilter}
+                  onChange={setFacultyFilter}
+                  options={facultyOptions}
+                  placeholder="Tất cả khoa"
+                />
+              </div>
+              <div className="ggtk-mapping-filter">
+                <SearchSelect
+                  value={mappingFilter}
+                  onChange={setMappingFilter}
+                  options={BO_LOC_ANH_XA}
+                />
+              </div>
+            </div>
+          </div>
+
+          {loadError && (
+            <div className="ggtk-load-state is-error" role="alert">
+              <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+              <span>{loadError}</span>
+              <button type="button" onClick={() => fetchData(selectedYear)}>Thử lại</button>
+            </div>
+          )}
+
+          {!loadError && isLoading && (
+            <div className="ggtk-load-state">
+              <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
+              Đang tải dữ liệu giờ giảng...
+            </div>
+          )}
+
+          {!loadError && !isLoading && (
+            <div className="table-scroll">
+              <table className="custom-table ggtk-table">
+                <thead>
+                  <tr>
+                    <th className="ggtk-stt">STT</th>
+                    <th>Giảng viên từ TKB</th>
+                    <th>Khoa</th>
+                    <th className="ggtk-number">Số lớp</th>
+                    <th className="ggtk-number">Tiết trong năm</th>
+                    <th className="ggtk-number">Giờ ĐH</th>
+                    <th className="ggtk-number">Giờ SĐH</th>
+                    <th className="ggtk-number">Giờ chuẩn</th>
+                    <th>Ánh xạ giảng viên</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedItems.map((item, index) => (
+                    <tr key={item.IdGioGiangTkb}>
+                      <td className="ggtk-stt">{(safeCurrentPage - 1) * SO_NGUOI_MOI_TRANG + index + 1}</td>
+                      <td>
+                        <div className="ggtk-person-cell">
+                          <strong>{item.HoTen || "---"}</strong>
+                          <span>Import {ngayGio(item.NgayImport)}</span>
+                        </div>
+                      </td>
+                      <td>{item.TenKhoa || "---"}</td>
+                      <td className="ggtk-number">{so(item.SoLop, 0)}</td>
+                      <td className="ggtk-number">{so(item.SoTietTrongNam, 0)}</td>
+                      <td className="ggtk-number">{item.GioChuanDaiHoc == null ? "-" : so(item.GioChuanDaiHoc)}</td>
+                      <td className="ggtk-number">{item.GioChuanSauDaiHoc == null ? "-" : so(item.GioChuanSauDaiHoc)}</td>
+                      <td className="ggtk-number ggtk-hours">{so(item.GioChuanTrongNam)}</td>
+                      <td>
+                        <TrangThaiAnhXa item={item} />
+                      </td>
+                      <td><div className="ggtk-row-actions">
+                        <button type="button" className="btn-cancel" onClick={() => setDetailItem(item)}>Chi tiết</button>
+                        <button type="button" className="btn-cancel" onClick={() => setMappingItem(item)}>Ánh xạ</button>
+                      </div></td>
+                    </tr>
+                  ))}
+                  {filteredItems.length === 0 && (
+                    <tr>
+                      <td colSpan="10">
+                        <div className="ggtk-empty-state">
+                          <i className="fa-regular fa-calendar-xmark" aria-hidden="true" />
+                          <strong>{items.length === 0 ? "Chưa có dữ liệu thời khóa biểu" : "Không tìm thấy kết quả phù hợp"}</strong>
+                          <span>{items.length === 0 ? "Hãy upload file Excel thời khóa biểu để bắt đầu tổng hợp." : "Thử thay đổi từ khóa hoặc bộ lọc ánh xạ."}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {!isLoading && !loadError && (items.length > 0 || filteredItems.length > 0) && (
+            <div className="table-foot">
+              <span>
+                Hiển thị <strong>{filteredItems.length === 0 ? 0 : (safeCurrentPage - 1) * SO_NGUOI_MOI_TRANG + 1}–{Math.min(safeCurrentPage * SO_NGUOI_MOI_TRANG, filteredItems.length)}</strong> / {filteredItems.length} giảng viên
+              </span>
+              <span>Năm đánh giá <strong>{selectedYear}</strong></span>
+              {totalPages > 1 && (
+                <div className="ggtk-pagination" aria-label="Phân trang danh sách giờ giảng">
+                  <button type="button" className="btn-cancel" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage(safeCurrentPage - 1)}>Trang trước</button>
+                  <span>Trang {safeCurrentPage} / {totalPages}</span>
+                  <button type="button" className="btn-cancel" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage(safeCurrentPage + 1)}>Trang sau</button>
+                </div>
+              )}
+            </div>
           )}
         </div>
-      )}
-
-      <div className="table-card ggtk-table-card">
-        <div className="ggtk-table-toolbar">
-          <div>
-            <h3>Danh sách giờ giảng</h3>
-            <p>
-              {lastImport
-                ? `Cập nhật lần cuối ${ngayGio(lastImport)}`
-                : "Chưa có dữ liệu upload trong năm này"}
-            </p>
-          </div>
-          <div className="ggtk-toolbar-controls">
-            <div className="ggtk-search-box">
-              <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Tìm giảng viên, khoa..."
-                aria-label="Tìm giảng viên hoặc khoa"
-              />
-            </div>
-            <div className="ggtk-mapping-filter">
-              <SearchSelect
-                value={mappingFilter}
-                onChange={setMappingFilter}
-                options={BO_LOC_ANH_XA}
-              />
-            </div>
-          </div>
-        </div>
-
-        {loadError && (
-          <div className="ggtk-load-state is-error" role="alert">
-            <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-            <span>{loadError}</span>
-            <button type="button" onClick={() => fetchData(selectedYear)}>Thử lại</button>
-          </div>
-        )}
-
-        {!loadError && isLoading && (
-          <div className="ggtk-load-state">
-            <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
-            Đang tải dữ liệu giờ giảng...
-          </div>
-        )}
-
-        {!loadError && !isLoading && (
-          <div className="table-scroll">
-            <table className="custom-table ggtk-table">
-              <thead>
-                <tr>
-                  <th className="ggtk-stt">STT</th>
-                  <th>Giảng viên từ TKB</th>
-                  <th>Khoa</th>
-                  <th className="ggtk-number">Số lớp</th>
-                  <th className="ggtk-number">Tiết trong năm</th>
-                  <th className="ggtk-number">Giờ ĐH</th>
-                  <th className="ggtk-number">Giờ SĐH</th>
-                  <th className="ggtk-number">Giờ chuẩn</th>
-                  <th>Ánh xạ nhân viên</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredItems.map((item, index) => (
-                  <tr key={item.IdGioGiangTkb}>
-                    <td className="ggtk-stt">{index + 1}</td>
-                    <td>
-                      <div className="ggtk-person-cell">
-                        <strong>{item.HoTen || "---"}</strong>
-                        <span>Import {ngayGio(item.NgayImport)}</span>
-                      </div>
-                    </td>
-                    <td>{item.TenKhoa || "---"}</td>
-                    <td className="ggtk-number">{so(item.SoLop, 0)}</td>
-                    <td className="ggtk-number">{so(item.SoTietTrongNam, 0)}</td>
-                    <td className="ggtk-number">{item.GioChuanDaiHoc == null ? "—" : so(item.GioChuanDaiHoc)}</td>
-                    <td className="ggtk-number">{item.GioChuanSauDaiHoc == null ? "—" : so(item.GioChuanSauDaiHoc)}</td>
-                    <td className="ggtk-number ggtk-hours">{so(item.GioChuanTrongNam)}</td>
-                    <td>
-                      <TrangThaiAnhXa item={item} />
-                    </td>
-                    <td><div className="ggtk-row-actions">
-                      <button type="button" className="btn-cancel" onClick={() => setDetailItem(item)}>Chi tiết</button>
-                      <button type="button" className="btn-cancel" onClick={() => setMappingItem(item)}>Ánh xạ</button>
-                    </div></td>
-                  </tr>
-                ))}
-                {filteredItems.length === 0 && (
-                  <tr>
-                    <td colSpan="10">
-                      <div className="ggtk-empty-state">
-                        <i className="fa-regular fa-calendar-xmark" aria-hidden="true" />
-                        <strong>{items.length === 0 ? "Chưa có dữ liệu thời khóa biểu" : "Không tìm thấy kết quả phù hợp"}</strong>
-                        <span>{items.length === 0 ? "Hãy upload file Excel thời khóa biểu để bắt đầu tổng hợp." : "Thử thay đổi từ khóa hoặc bộ lọc ánh xạ."}</span>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {!isLoading && !loadError && items.length > 0 && (
-          <div className="table-foot">
-            <span>Hiển thị <strong>{filteredItems.length}</strong> / {items.length} giảng viên</span>
-            <span>Năm đánh giá <strong>{selectedYear}</strong></span>
-          </div>
-        )}
-      </div>
 
       </section>
       <section id="ggtk-panel-tong-hop" role="tabpanel" aria-labelledby="ggtk-tab-tong-hop" hidden={activeTab !== "tong-hop"} tabIndex={0}>
@@ -632,7 +689,7 @@ const QL_GioGiang = () => {
               <div className="modal-body">
                 <div className="ggtk-overwrite-note">
                   <i className="fa-solid fa-circle-info" aria-hidden="true" />
-                  <span>Lần upload mới sẽ ghi đè dữ liệu thời khóa biểu của năm {selectedYear} và tự ánh xạ nhân viên theo họ tên, khoa. Ánh xạ đã có, kể cả đã sửa tay, luôn được giữ nguyên.</span>
+                  <span>Lần upload mới sẽ ghi đè dữ liệu thời khóa biểu của năm {selectedYear} và tự ánh xạ giảng viên theo họ tên, khoa. Ánh xạ đã có, kể cả đã sửa tay, luôn được giữ nguyên.</span>
                 </div>
 
                 <div className="form-group">

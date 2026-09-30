@@ -415,7 +415,7 @@ const DuyetHoSoPhong = () => {
                 fontSize: "14px",
               }}
             >
-              {tenPhong || "—"}
+              {tenPhong || "-"}
             </div>
           )}
         </div>
@@ -573,7 +573,7 @@ const DuyetHoSoPhong = () => {
                               style={{ color: "#94a3b8", fontSize: "13px" }}
                               title="Đơn vị bạn không được giao tiêu chí nào trên hồ sơ này."
                             >
-                              —
+                              -
                             </span>
                           ) : (
                             <span

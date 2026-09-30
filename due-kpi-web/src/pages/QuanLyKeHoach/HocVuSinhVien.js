@@ -37,11 +37,11 @@ const COMMON_STATS = [
 const number = (value) => Number(value ?? 0).toLocaleString("vi-VN");
 const dateTime = (value) => value ? new Date(value).toLocaleString("vi-VN") : "Chưa upload";
 const ratio = (value) => value == null
-  ? <span title="Chưa có dữ liệu">—</span>
+  ? <span title="Chưa có dữ liệu">-</span>
   : `${Number(value).toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 
 const toKhoaHoc = (year) => {
-  if (year == null || isNaN(year)) return "—";
+  if (year == null || isNaN(year)) return "-";
   const num = Number(year);
   return num > 1974 ? String(num - 1974) : String(num);
 };
@@ -551,7 +551,7 @@ export default function HocVuSinhVien() {
                       className="stat-value"
                       title={tyLe.NamNhapHocTotNghiep != null ? `Năm nhập học: ${tyLe.NamNhapHocTotNghiep}` : undefined}
                     >
-                      {tyLe.NamNhapHocTotNghiep != null ? toKhoaHoc(tyLe.NamNhapHocTotNghiep) : "—"}
+                      {tyLe.NamNhapHocTotNghiep != null ? toKhoaHoc(tyLe.NamNhapHocTotNghiep) : "-"}
                     </div>
                   </div>
                 </div>
@@ -572,7 +572,7 @@ export default function HocVuSinhVien() {
                     >
                       {tyLe.NamNhapHocCanhBaoTu != null && tyLe.NamNhapHocCanhBaoDen != null
                         ? `${toKhoaHoc(tyLe.NamNhapHocCanhBaoTu)} - ${toKhoaHoc(tyLe.NamNhapHocCanhBaoDen)}`
-                        : "—"}
+                        : "-"}
                     </div>
                   </div>
                 </div>
@@ -686,14 +686,14 @@ export default function HocVuSinhVien() {
                         <tr key={item.IdDonVi || item.MaDonVi || index}>
                           <td style={{ textAlign: "center", color: "#64748b" }}>{index + 1}</td>
                           <td>
-                            <div className="table-person-name">{item.TenDonVi || "—"}</div>
+                            <div className="table-person-name">{item.TenDonVi || "-"}</div>
                             {item.MaDonVi && <div className="table-person-code">{item.MaDonVi}</div>}
                           </td>
                           <td>
                             {item.MaKhoaDaoTao ? (
                               <span className="code-pill">{item.MaKhoaDaoTao}</span>
                             ) : (
-                              <span className="table-empty-mark">—</span>
+                              <span className="table-empty-mark">-</span>
                             )}
                           </td>
                           <td title={`Thôi học: ${number(item.SoThoiHocKhoaTotNghiep)}`}>
@@ -916,7 +916,7 @@ export default function HocVuSinhVien() {
                           </span>
                         </td>
                         <td>
-                          <span className="table-title-cell">{item.TenKhoa || "—"}</span>
+                          <span className="table-title-cell">{item.TenKhoa || "-"}</span>
                         </td>
                         <td style={{ textAlign: "right" }}>
                           <span className="table-num-strong">{number(item.SoSinhVien)}</span>
@@ -956,7 +956,7 @@ export default function HocVuSinhVien() {
                               </span>
                             ) : (
                               <span className="table-title-cell">
-                                {item.TenDonVi || "—"}
+                                {item.TenDonVi || "-"}
                               </span>
                             )
                           )}

@@ -224,7 +224,24 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
+.ggtk-faculty-filter { width: 270px; }
+.ggtk-faculty-filter > span {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 .ggtk-mapping-filter { width: 210px; }
+.ggtk-pagination {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #475569;
+  white-space: nowrap;
+}
 .ggtk-table { min-width: 900px; }
 .ggtk-table .ggtk-stt { width: 55px; text-align: center; }
 .ggtk-table .ggtk-number { text-align: right; white-space: nowrap; }
@@ -356,8 +373,29 @@
   font-size: 13px;
 }
 
-.ggtk-detail-modal { width: min(1100px, calc(100vw - 28px)); }
-.ggtk-total-card { margin-top: 0; }
+.ggtk-detail-modal {
+  width: min(1250px, calc(100vw - 28px));
+  max-width: 1250px;
+}
+.ggtk-detail-table-wrap { margin-top: 16px; }
+.ggtk-detail-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+.custom-table.ggtk-detail-table th,
+.custom-table.ggtk-detail-table td {
+  padding: 9px 8px;
+}
+.custom-table.ggtk-detail-table thead th:first-child,
+.custom-table.ggtk-detail-table tbody td:first-child { padding-left: 8px; }
+.custom-table.ggtk-detail-table thead th:last-child,
+.custom-table.ggtk-detail-table tbody td:last-child { padding-right: 8px; }
+.ggtk-detail-table td { overflow-wrap: anywhere; }
+.ggtk-detail-table th:nth-child(n+6) { text-align: right; }
+.ggtk-detail-table th:last-child { white-space: nowrap; }
+.ggtk-detail-table .ggtk-number { white-space: normal; }
+.ggtk-total-card { margin-top: 0; overflow: visible; }
 .ggtk-tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid #dce2ec; overflow-x: auto; }
 .ggtk-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #64748b; font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
 .ggtk-tabs button:hover { color: #003399; background: #eff6ff; }
@@ -380,19 +418,23 @@
 .ggtk-error-list li + li { margin-top: 6px; }
 
 @media (max-width: 1050px) {
+  .ggtk-detail-table th:last-child { white-space: normal; }
   .ggtk-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ggtk-table-toolbar { align-items: flex-start; flex-direction: column; }
   .ggtk-toolbar-controls { width: 100%; }
   .ggtk-search-box { width: 100%; }
+  .ggtk-faculty-filter { width: 100%; }
 }
 
 @media (max-width: 720px) {
+  .ggtk-detail-table { min-width: 900px; }
   .ggtk-page { padding: 18px 14px; }
   .ggtk-page-header { align-items: stretch; flex-direction: column; }
   .ggtk-header-actions { align-items: stretch; flex-direction: column; }
   .ggtk-year-field { width: 100%; }
   .ggtk-upload-button { justify-content: center; width: 100%; }
   .ggtk-toolbar-controls { align-items: stretch; flex-direction: column; }
+  .ggtk-faculty-filter { width: 100%; }
   .ggtk-mapping-filter { width: 100%; }
   .ggtk-summary-grid { gap: 10px; }
   .ggtk-summary-card { padding: 14px; }

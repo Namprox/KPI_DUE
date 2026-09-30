@@ -50,6 +50,7 @@ export default function SearchSelect({
   clearable = false,
   required = false,
   name,
+  ariaLabel,
   className = "",
   portal = false,
 }) {
@@ -235,6 +236,7 @@ export default function SearchSelect({
       <div
         className="select-control"
         role="combobox"
+        aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
         tabIndex={disabled ? -1 : 0}

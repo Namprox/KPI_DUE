@@ -21,8 +21,21 @@ const layKetQua = async (url, options) => {
 export const layChiTietGioGiangTkb = (id, signal) =>
   layKetQua(`gio-giang-tkb/${encodeURIComponent(id)}/chi-tiet`, { signal });
 
-export const layTongHopGioGiangTkb = (idNam, signal) =>
-  layKetQua(`gio-giang-tkb/tong-hop?idNam=${encodeURIComponent(idNam)}`, { signal });
+export const layTongHopGioGiangTkb = (idNam, signal, idDonVi) =>
+  layKetQua(
+    `gio-giang-tkb/tong-hop?idNam=${encodeURIComponent(idNam)}` +
+      (idDonVi ? `&idDonVi=${encodeURIComponent(idDonVi)}` : ""),
+    { signal },
+  );
+
+/** @returns {Promise<import('./gioGiangTyLeTypes').GioGiangTkbResponse>} */
+export const layTyLeHoanThanhGioGiang = (idNam, signal, idDonVi, idNhanVien) =>
+  layKetQua(
+    `gio-giang-tkb/ty-le-hoan-thanh?idNam=${encodeURIComponent(idNam)}` +
+      (idDonVi ? `&idDonVi=${encodeURIComponent(idDonVi)}` : "") +
+      (idNhanVien ? `&idNhanVien=${encodeURIComponent(idNhanVien)}` : ""),
+    { signal },
+  );
 
 export const luuAnhXaGioGiangTkb = (item, idNhanVien) =>
   layKetQua("gio-giang-tkb/anh-xa", {
@@ -36,13 +49,13 @@ export const luuAnhXaGioGiangTkb = (item, idNhanVien) =>
 
 export const lyDoChuaAnhXa = (item) => {
   const khopTen = item.SoNguoiKhopTen;
-  if (khopTen === 0) return "Không có nhân viên nào tên này";
+  if (khopTen === 0) return "Không có giảng viên nào tên này";
   if (khopTen >= 2) {
     if (!item.KhoaChuan) return "Trùng tên, file không ghi khoa: cần chọn";
     if (item.SoNguoiKhopKhoa === 0) return "Trùng tên, không ai thuộc khoa này: cần chọn";
     if (item.SoNguoiKhopKhoa >= 2) return "Trùng cả tên lẫn khoa: cần chọn";
   }
-  return "Chưa ánh xạ: quét tự động hoặc chọn nhân viên";
+  return "Chưa ánh xạ: quét tự động hoặc chọn giảng viên";
 };
 
 export const layDanhSachGioGiangTkb = async (idNam, signal) => {

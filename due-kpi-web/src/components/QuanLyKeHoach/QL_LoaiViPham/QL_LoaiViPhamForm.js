@@ -73,7 +73,7 @@ const QL_LoaiViPhamForm = ({
 
   const nhanNhom = (n) =>
     n.TranDiemTru != null
-      ? `${n.TenNhom} — trần ${Number(n.TranDiemTru).toFixed(2)} điểm/năm`
+      ? `${n.TenNhom} - trần ${Number(n.TranDiemTru).toFixed(2)} điểm/năm`
       : n.TenNhom;
 
   return (
@@ -91,7 +91,7 @@ const QL_LoaiViPhamForm = ({
           }}
         >
           <h3 style={{ margin: 0, paddingRight: "20px", lineHeight: "1.4" }}>
-            {isEditing ? "Cập nhật loại vi phạm" : "Thêm loại vi phạm mới"} —{" "}
+            {isEditing ? "Cập nhật loại vi phạm" : "Thêm loại vi phạm mới"} -{" "}
             {tenDoiTuong}
           </h3>
           <button

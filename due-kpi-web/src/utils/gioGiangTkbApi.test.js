@@ -106,7 +106,7 @@ describe("gioGiangTkbApi validation", () => {
   });
 
   test.each([
-    [{ SoNguoiKhopTen: 0 }, "Không có nhân viên"],
+    [{ SoNguoiKhopTen: 0 }, "Không có giảng viên"],
     [{ SoNguoiKhopTen: 2, KhoaChuan: "" }, "file không ghi khoa"],
     [{ SoNguoiKhopTen: 2, KhoaChuan: "KT", SoNguoiKhopKhoa: 0 }, "không ai thuộc khoa"],
     [{ SoNguoiKhopTen: 3, KhoaChuan: "KT", SoNguoiKhopKhoa: 2 }, "Trùng cả tên lẫn khoa"],

@@ -287,6 +287,7 @@ const ChiTietPhieuCuaToi = () => {
           ) : (
             <TongDiemMeta phieu={phieu} tamTinh={tamTinh} />
           )}
+          {laPhieuQuy && Number(phieu.TrangThai) === 5 && phieu.XepLoaiQuyText && <div><div className="cd-meta-label">Xếp loại quý</div><div className="cd-meta-value">{phieu.XepLoaiQuyText}</div></div>}
           {phieu.IdDonVi && (
             <div>
               <div className="cd-meta-label">Đơn vị</div>
@@ -303,6 +304,7 @@ const ChiTietPhieuCuaToi = () => {
               </div>
             </div>
           )}
+          {!laPhieuQuy && Number(phieu.NguonDiemCoBan) === 2 && <div><div className="cd-meta-label">Xếp loại theo điểm (tổng hợp quý)</div><div className="cd-meta-value">{phieu.XepLoaiTongHopQuyText || "-"}</div></div>}
           <div>
             <div className="cd-meta-label">Ngày gửi</div>
             <div className="cd-meta-value">{formatNgayGio(phieu.NgayGui)}</div>

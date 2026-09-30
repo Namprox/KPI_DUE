@@ -359,7 +359,7 @@ const HoSoKpiGiangVien = () => {
                   nhan="Chức danh"
                   giaTri={dinhMuc.data.TenChucDanh || "-"}
                 />
-                <Dong nhan="Chức vụ áp dụng" giaTri={dinhMuc.data.TenChucVuApDung || "—"} />
+                <Dong nhan="Chức vụ áp dụng" giaTri={dinhMuc.data.TenChucVuApDung || "-"} />
                 <Dong nhan="Tỷ lệ giờ giảng theo chức vụ" giaTri={formatDiem(dinhMuc.data.TyLeGiangChucVu)} />
                 {dinhMuc.data.LyDoDieuChinh && (
                   <div className="cd-box" style={{ marginTop: "12px" }}>
@@ -625,9 +625,8 @@ const HoSoKpiGiangVien = () => {
           trangThai={phanHoi}
           moTa={
             phanHoi.dotChot
-              ? `Chốt ngày ${formatNgay(phanHoi.dotChot.NgayChot)} bởi ${
-                  phanHoi.dotChot.NguoiChotHoTen || "-"
-                } · ${phanHoi.dotChot.SoGiangVien} giảng viên`
+              ? `Chốt ngày ${formatNgay(phanHoi.dotChot.NgayChot)} bởi ${phanHoi.dotChot.NguoiChotHoTen || "-"
+              } · ${phanHoi.dotChot.SoGiangVien} giảng viên`
               : undefined
           }
         >

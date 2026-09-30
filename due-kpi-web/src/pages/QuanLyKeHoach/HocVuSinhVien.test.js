@@ -17,10 +17,12 @@ beforeEach(() => {
   jest.clearAllMocks();
   apiFetch.mockImplementation(async (endpoint) => {
     if (endpoint === "namdanhgia") return reply({ Items: [{ IdNam: 2025 }, { IdNam: 2026 }] });
-    if (endpoint === "donvi") return reply({ Items: [
-      { IdDonVi: 5, MaDonVi: "K_CNTT", CapDonVi: 2, TenDonVi: "Khoa Công nghệ thông tin" },
-      { IdDonVi: 9, MaDonVi: "P_DTBDCL", CapDonVi: 2 },
-    ] });
+    if (endpoint === "donvi") return reply({
+      Items: [
+        { IdDonVi: 5, MaDonVi: "K_CNTT", CapDonVi: 2, TenDonVi: "Khoa Công nghệ thông tin" },
+        { IdDonVi: 9, MaDonVi: "P_DTBDCL", CapDonVi: 2 },
+      ]
+    });
     if (endpoint === "hoc-vu/ty-le-khoa?idNam=2026") return reply({
       Success: true,
       XemTatCa: false,
@@ -33,10 +35,12 @@ beforeEach(() => {
         SoSinhVienChuaAnhXa: 1,
         SoMaKhoaChuaAnhXa: 1,
       },
-      Items: [{ IdDonVi: 5, TenDonVi: "Khoa Công nghệ thông tin", MaKhoaDaoTao: "202",
+      Items: [{
+        IdDonVi: 5, TenDonVi: "Khoa Công nghệ thông tin", MaKhoaDaoTao: "202",
         SoTotNghiepDungHan: 0, SoSvKhoaTotNghiep: 0, SoThoiHocKhoaTotNghiep: 0,
         SoSvBiCanhBao: 1, SoSvKhoaCanhBao: 4, SoThoiHocKhoaCanhBao: 0,
-        TyLeCanhBaoHocVu: 25 }],
+        TyLeCanhBaoHocVu: 25
+      }],
     });
     if (endpoint === "hoc-vu/anh-xa-khoa") return reply({ Items: [{ MaKhoa: "202", TenKhoa: "CNTT", SoSinhVien: 10 }] });
     throw new Error(`Unexpected endpoint: ${endpoint}`);
@@ -68,7 +72,7 @@ test("người xem chỉ thấy tỷ lệ, không thể mở upload hoặc ánh 
 
   expect(await screen.findByText("Khoa Công nghệ thông tin")).toBeInTheDocument();
   expect(screen.getByText("25,00%")).toBeInTheDocument();
-  expect(screen.getByTitle("Chưa có dữ liệu")).toHaveTextContent("—");
+  expect(screen.getByTitle("Chưa có dữ liệu")).toHaveTextContent("-");
   expect(screen.getByText("48")).toBeInTheDocument();
   expect(screen.getByText("49 - 52")).toBeInTheDocument();
   expect(screen.queryByRole("tab", { name: "Upload dữ liệu" })).not.toBeInTheDocument();
@@ -97,10 +101,12 @@ test("ADMIN thấy upload và hiển thị Message khi API trả 403", async () 
 });
 
 test.each(["P_DTBDCL", "P_KHHTQT"])("TP của %s thấy đúng quyền quản lý", async (maDonVi) => {
-  useAuth.mockReturnValue({ user: {
-    MaChucVu: "TP",
-    DonVi: [{ IdDonVi: 8, MaDonVi: maDonVi, MaChucVu: "TP" }],
-  } });
+  useAuth.mockReturnValue({
+    user: {
+      MaChucVu: "TP",
+      DonVi: [{ IdDonVi: 8, MaDonVi: maDonVi, MaChucVu: "TP" }],
+    }
+  });
   render(<HocVuSinhVien />);
   await screen.findByText("Khoa Công nghệ thông tin");
   if (maDonVi === "P_DTBDCL") {
@@ -120,14 +126,18 @@ test("cấp Khoa đối chiếu cảnh báo theo trạng thái, không gửi idD
     if (endpoint === "hoc-vu/ty-le-khoa?idNam=2026") return reply({
       Success: true, XemTatCa: false, TongQuan: null,
       NamNhapHocTotNghiep: 2022, NamNhapHocCanhBaoTu: 2023, NamNhapHocCanhBaoDen: 2026,
-      Items: [{ IdDonVi: 5, TenDonVi: "Khoa Công nghệ thông tin", SoSvBiCanhBao: 1,
-        SoSvKhoaCanhBao: 4, SoThoiHocKhoaCanhBao: 0, TyLeCanhBaoHocVu: 25 }],
+      Items: [{
+        IdDonVi: 5, TenDonVi: "Khoa Công nghệ thông tin", SoSvBiCanhBao: 1,
+        SoSvKhoaCanhBao: 4, SoThoiHocKhoaCanhBao: 0, TyLeCanhBaoHocVu: 25
+      }],
     });
     if (endpoint.startsWith("hoc-vu/sinh-vien?")) return reply({
       Success: true, SoTrangThai1: 1, SoTrangThai2: 3, SoTrangThai3: 1,
       Page: 1, PageSize: 20, TotalCount: 5, TotalPages: 1,
-      Items: [{ MaSinhVien: "SV01", HoVaTen: "Nguyễn Văn A", Lop: "K48", NamNhapHoc: 2023,
-        TrangThai: 1, SoDongCanhBao: 2, ChiTietCanhBao: "CB lan 1 - QD 123; CB lan 2 - QD 456" }],
+      Items: [{
+        MaSinhVien: "SV01", HoVaTen: "Nguyễn Văn A", Lop: "K48", NamNhapHoc: 2023,
+        TrangThai: 1, SoDongCanhBao: 2, ChiTietCanhBao: "CB lan 1 - QD 123; CB lan 2 - QD 456"
+      }],
     });
     throw new Error(`Unexpected endpoint: ${endpoint}`);
   });
@@ -179,15 +189,19 @@ test("một nút lưu xử lý mọi dòng đã đổi, giữ dòng lỗi và ch
   useAuth.mockReturnValue({ user: { MaChucVu: "ADMIN" } });
   apiFetch.mockImplementation(async (endpoint) => {
     if (endpoint === "namdanhgia") return reply({ Items: [{ IdNam: 2026 }] });
-    if (endpoint === "donvi") return reply({ Items: [
-      { IdDonVi: 5, MaDonVi: "K_CNTT", CapDonVi: 2, TenDonVi: "Khoa Công nghệ thông tin" },
-      { IdDonVi: 6, MaDonVi: "K_KT", CapDonVi: 2, TenDonVi: "Khoa Kinh tế" },
-    ] });
+    if (endpoint === "donvi") return reply({
+      Items: [
+        { IdDonVi: 5, MaDonVi: "K_CNTT", CapDonVi: 2, TenDonVi: "Khoa Công nghệ thông tin" },
+        { IdDonVi: 6, MaDonVi: "K_KT", CapDonVi: 2, TenDonVi: "Khoa Kinh tế" },
+      ]
+    });
     if (endpoint === "hoc-vu/ty-le-khoa?idNam=2026") return reply({ Success: true, Items: [] });
-    if (endpoint === "hoc-vu/anh-xa-khoa") return reply({ Items: [
-      { MaKhoa: "210", TenKhoa: "Kế toán", SoSinhVien: 10 },
-      { MaKhoa: "211", TenKhoa: "Kinh tế", SoSinhVien: 20 },
-    ] });
+    if (endpoint === "hoc-vu/anh-xa-khoa") return reply({
+      Items: [
+        { MaKhoa: "210", TenKhoa: "Kế toán", SoSinhVien: 10 },
+        { MaKhoa: "211", TenKhoa: "Kinh tế", SoSinhVien: 20 },
+      ]
+    });
     throw new Error(`Unexpected endpoint: ${endpoint}`);
   });
   const postBodies = [];

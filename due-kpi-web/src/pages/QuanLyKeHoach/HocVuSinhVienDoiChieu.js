@@ -3,13 +3,13 @@ import { apiFetch } from "../../utils/api";
 
 const PAGE_SIZE = 20;
 const number = (value) => Number(value ?? 0).toLocaleString("vi-VN");
-const display = (value) => value == null || value === "" ? "—" : value;
+const display = (value) => value == null || value === "" ? "-" : value;
 
 const statusLabel = (loai, status) => ({
   1: loai === "tot-nghiep" ? "Có số hiệu văn bằng" : "Bị cảnh báo",
   2: loai === "tot-nghiep" ? "Chưa có số hiệu văn bằng" : "Không bị cảnh báo",
   3: "Thôi học",
-})[status] || "—";
+})[status] || "-";
 
 export default function HocVuSinhVienDoiChieu({ idNam, tyLe, initialSelection, reload }) {
   const [loai, setLoai] = useState(initialSelection?.loai || "tot-nghiep");
@@ -156,7 +156,7 @@ export default function HocVuSinhVienDoiChieu({ idNam, tyLe, initialSelection, r
       {result && (
         <div className="hoc-vu-detail-summary">
           <span>Tử số <strong>{number(counts[0])}</strong> / mẫu số <strong>{number(denominator)}</strong></span>
-          <span>Tỷ lệ <strong>{denominator ? `${(counts[0] * 100 / denominator).toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : "—"}</strong></span>
+          <span>Tỷ lệ <strong>{denominator ? `${(counts[0] * 100 / denominator).toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : "-"}</strong></span>
           {matchingRate != null && <span>Tỷ lệ trên bảng Khoa <strong>{Number(matchingRate).toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</strong></span>}
           {keyword && <span>Đang lọc theo từ khóa “{keyword}”</span>}
         </div>

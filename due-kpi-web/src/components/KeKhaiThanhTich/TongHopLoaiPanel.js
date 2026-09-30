@@ -88,7 +88,7 @@ const TongHopLoaiPanel = ({ tongHop = [] }) => {
                   {formatDiem(r.DiemDuocTinh)}
                 </span>
                 <span className="kkt-tran-tran">
-                  / {tran > 0 ? formatDiem(tran) : "—"} điểm
+                  / {tran > 0 ? formatDiem(tran) : "-"} điểm
                 </span>
               </div>
 
@@ -123,7 +123,7 @@ const TongHopLoaiPanel = ({ tongHop = [] }) => {
             sp_phieu_danh_gia_tinh_tong_diem mới cộng chứ chưa cắt). Nói rõ ra để
             người dùng không đọc con số này như một giới hạn cứng. */}
         <span style={{ color: "#94a3b8", fontSize: "12.5px" }}>
-          Trần cả nhóm theo bảng KPI là {TRAN_DIEM_NHOM} điểm — con số tham
+          Trần cả nhóm theo bảng KPI là {TRAN_DIEM_NHOM} điểm - con số tham
           khảo, hệ thống hiện không tự cắt ở mức này.
         </span>
       </div>

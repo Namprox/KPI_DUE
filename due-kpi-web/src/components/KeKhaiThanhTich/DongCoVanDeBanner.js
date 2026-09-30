@@ -55,7 +55,7 @@ const DongCoVanDeBanner = ({ mode, dong = [], onChonDong, onDong }) => {
 
       <div>
         {laThieuMc
-          ? "Toàn bộ lần lưu đã bị huỷ — hãy đính kèm PDF cho các dòng dưới đây rồi bấm Lưu lại."
+          ? "Toàn bộ lần lưu đã bị huỷ - hãy đính kèm PDF cho các dòng dưới đây rồi bấm Lưu lại."
           : "Toàn bộ lần lưu đã bị huỷ, chưa có dòng nào được ghi. Hãy bỏ chọn các dòng dưới đây rồi lưu lại phần thuộc đơn vị bạn."}
       </div>
 

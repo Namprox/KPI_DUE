@@ -6,6 +6,7 @@ import QLTieuChiListing from '../../components/QuanLyTieuChi/QL_TieuChi/QL_TieuC
 import QLTieuChiForm from '../../components/QuanLyTieuChi/QL_TieuChi/QL_TieuChiForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
 import { apiFetch } from '../../utils/api';
+import { hasRole, ROLE_SETS } from '../../utils/roles';
 import { Toast } from 'primereact/toast';
 import ObjectTabs, { OBJECT_TYPES } from '../../components/Common/ObjectTabs';
 
@@ -20,6 +21,8 @@ const QL_TieuChi = () => {
         DiemToiDa: '',
         LoaiThangDiem: 1,
         CongThucTinhDiem: '',
+        LoaiNguonDiem: 1,
+        CongThucTongHop: '',
         BatBuocMinhChung: false,
         ThuTuHienThi: 1,
         TrangThai: true,
@@ -43,10 +46,7 @@ const QL_TieuChi = () => {
     const { user } = useAuth();
     const currentUser = user || {};
 
-    const roleCode = currentUser?.MaChucVu || '';
-    const isAdmin = roleCode === 'Admin';
-    const isManager = ['HT', 'PHT', 'TK', 'TBM'].includes(roleCode);
-    const canManage = isAdmin || isManager;
+    const canManage = hasRole(ROLE_SETS.QUAN_LY_TIEU_CHI, currentUser);
 
     useEffect(() => {
         const isTypeEnabled = OBJECT_TYPES.some(t => t.key === currentType && t.enabled);
@@ -118,6 +118,8 @@ const QL_TieuChi = () => {
             TrangThai: !!formData.TrangThai,
             BatBuocMinhChung: !!formData.BatBuocMinhChung,
             CongThucTinhDiem: formData.CongThucTinhDiem || '',
+            LoaiNguonDiem: Number(formData.LoaiNguonDiem) || 1,
+            CongThucTongHop: Number(formData.LoaiNguonDiem) === 2 ? formData.CongThucTongHop : null,
             MoTa: formData.MoTa || '',
             LoaiDoiTuong: parseInt(currentType),
             loaiDoiTuong: parseInt(currentType)

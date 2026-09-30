@@ -232,7 +232,7 @@ const BaoCaoDonVi = () => {
                   {TRANG_THAI_CHUA_LAP_META.label}
                 </div>
                 <div className="stat-value">
-                  {tongQuan?.SoChuaLapPhieu ?? "—"}
+                  {tongQuan?.SoChuaLapPhieu ?? "-"}
                 </div>
               </div>
             </div>
@@ -405,15 +405,15 @@ const BaoCaoDonVi = () => {
                               style={
                                 tre
                                   ? {
-                                      background: "#fef2f2",
-                                      color: "#b91c1c",
-                                      border: "1px solid #fecaca",
-                                    }
+                                    background: "#fef2f2",
+                                    color: "#b91c1c",
+                                    border: "1px solid #fecaca",
+                                  }
                                   : {
-                                      background: "#f1f5f9",
-                                      color: "#475569",
-                                      border: "1px solid #e2e8f0",
-                                    }
+                                    background: "#f1f5f9",
+                                    color: "#475569",
+                                    border: "1px solid #e2e8f0",
+                                  }
                               }
                             >
                               {r.SoNgayTroi} ngày

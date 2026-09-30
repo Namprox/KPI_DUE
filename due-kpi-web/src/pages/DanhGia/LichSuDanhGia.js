@@ -508,6 +508,7 @@ const LichSuDanhGia = () => {
                       Xếp loại
                     </th>
                   )}
+                  {loaiPhieu === "quy" && <th>Xếp loại quý</th>}
                   <th style={{ width: "10%" }}>Ngày gửi</th>
                   <th style={{ width: "10%", textAlign: "center" }}>
                     Thao tác
@@ -567,6 +568,7 @@ const LichSuDanhGia = () => {
                         <XepLoaiBadge xepLoai={p.XepLoai} />
                       </td>
                     )}
+                    {loaiPhieu === "quy" && <td>{Number(p.TrangThai) === 5 ? p.XepLoaiQuyText || "" : ""}</td>}
                     <td style={{ fontSize: "13px" }}>
                       {p.NgayGui ? (
                         formatNgay(p.NgayGui)

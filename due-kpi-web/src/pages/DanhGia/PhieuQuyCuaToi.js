@@ -29,15 +29,17 @@ import DanhGiaPhuLuc2Form from "../../components/DanhGia/DanhGiaPhuLuc2/DanhGiaP
 import "../../css/DanhGia/DanhGiaPhuLuc2.css";
 import "../../css/DanhGia/PhieuQuy.css";
 
+import { formatNgayGio } from "../../utils/phieuApi";
+
 const so = (value) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 };
 
 const formatDiem = (value) => {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "") return "-";
   const n = Number(value);
-  if (!Number.isFinite(n)) return "—";
+  if (!Number.isFinite(n)) return "-";
   return n.toLocaleString("vi-VN", { maximumFractionDigits: 2 });
 };
 
@@ -58,13 +60,14 @@ const TrangThaiQuy = ({ phieu }) => (
   </span>
 );
 
-const TongHopNam = ({ idNam, idDonVi, idNhanVien, idMau, toast }) => {
+export const TongHopNam = ({ idNam, idDonVi, idNhanVien, idMau, toast }) => {
   const [data, setData] = useState(null);
   const [phieuNam, setPhieuNam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [rollupWarning, setRollupWarning] = useState(null);
+  const [rollupResult, setRollupResult] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,6 +103,7 @@ const TongHopNam = ({ idNam, idDonVi, idNhanVien, idMau, toast }) => {
     try {
       const annual = await ensureAnnual();
       const result = await tongHopPhieuNamTuQuy(annual.IdPhieu, annual.RowVersion);
+      setRollupResult(result);
       if (result.CanhBao) {
         toast(`Chỉ tổng hợp từ ${result.SoQuyDaChot} quý (${result.DanhSachQuyDaChot || "chưa có"})`, "warn");
       } else {
@@ -151,7 +155,8 @@ const TongHopNam = ({ idNam, idDonVi, idNhanVien, idMau, toast }) => {
           <div key={q.Quy} className={`pq-quarter-card ${q.DaChot ? "done" : ""}`}>
             <strong>Quý {q.Quy}</strong>
             <span>{q.TrangThaiText || "Chưa tạo phiếu"}</span>
-            <b>{q.DaChot ? `${formatDiem(q.TongDiemTichLuy)} điểm` : "—"}</b>
+            <b>{q.DaChot ? `${formatDiem(q.TongDiemTichLuy)} điểm` : "-"}</b>
+            <span>Xếp loại quý: {q.DaChot ? q.XepLoaiQuyText || "-" : "-"}</span>
           </div>
         ))}
       </div>
@@ -160,6 +165,19 @@ const TongHopNam = ({ idNam, idDonVi, idNhanVien, idMau, toast }) => {
         <div><span>Vi phạm viên chức cả năm</span><strong>{formatDiem(data?.DiemVpvcNam)}</strong><small>3 tiêu chí VPVC trên phiếu năm</small></div>
         <div><span>Điểm vượt trội cộng dồn</span><strong>{formatDiem(data?.DiemVuotTroiTongQuy)}</strong><small>{data?.TranNhomVuotTroi == null ? "Không áp dụng trần nhóm" : `Trần nhóm ${formatDiem(data.TranNhomVuotTroi)}`}</small></div>
         <div className="primary"><span>Điểm tích lũy dự kiến</span><strong>{formatDiem(data?.DiemTichLuyDuKien)}</strong><small>Chỉ là số xem trước</small></div>
+      </div>
+      <div className="pq-annual-card">
+        <h3>Xếp loại theo điểm</h3>
+        {data?.XepLoaiTongHopQuy != null ? (
+          <div><strong>{data.XepLoaiTongHopQuyText || "-"}</strong><p>Tổng hợp lúc {formatNgayGio(data.NgayTongHopQuy)}</p></div>
+        ) : data?.XepLoaiNamDuKien != null ? (
+          <strong>{data.XepLoaiNamDuKienText || "-"} (dự kiến)</strong>
+        ) : <p>Chưa có quý nào được chốt</p>}
+        {data?.XepLoaiTongHopQuy != null && data?.XepLoaiNamDuKien != null && data.XepLoaiTongHopQuy !== data.XepLoaiNamDuKien && (
+          <div className="pq-alert pq-alert-warn" role="alert">
+            <span>Có quý được chốt sau lần tổng hợp gần nhất. Kết quả đã lưu đã cũ, cần chạy lại Tổng hợp từ các quý. <a href="#tong-hop-tu-quy">Tổng hợp từ quý</a></span>
+          </div>
+        )}
       </div>
       {vuotTroi.length > 0 && (
         <section className="pq-section">
@@ -192,7 +210,7 @@ const TongHopNam = ({ idNam, idDonVi, idNhanVien, idMau, toast }) => {
           <h3>Phiếu năm và chốt điểm</h3>
         </div>
         <div className="pq-annual-actions">
-          <button type="button" className="pq-btn pq-btn-primary" disabled={busy || Number(data?.SoQuyDaChot) === 0} onClick={rollup}>
+          <button id="tong-hop-tu-quy" type="button" className="pq-btn pq-btn-primary" disabled={busy || Number(data?.SoQuyDaChot) === 0} onClick={rollup}>
             <i className="fa-solid fa-arrows-rotate"></i> Tổng hợp từ quý
           </button>
           {phieuNam && Number(phieuNam.TrangThai) === 1 && (
@@ -202,6 +220,7 @@ const TongHopNam = ({ idNam, idDonVi, idNhanVien, idMau, toast }) => {
           )}
         </div>
         {Number(data?.SoQuyDaChot) === 0 && <div className="pq-muted">Chưa có quý nào chốt điểm; chưa thể tổng hợp hoặc xếp loại năm.</div>}
+        {rollupResult?.XepLoaiTongHopQuyText && <p role="status">Xếp loại cả năm theo điểm: {rollupResult.XepLoaiTongHopQuyText}</p>}
         {rollupWarning && (
           <div className="pq-alert pq-alert-error pq-annual-warning">
             <i className="fa-solid fa-triangle-exclamation"></i>
@@ -520,8 +539,8 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
     const value =
       Number(row.LoaiNguonDiem) === 2
         ? diemTuDong[row.IdTieuChi]?.DiemTuDong ??
-          row.DiemTuDong ??
-          row.DiemChinhThuc
+        row.DiemTuDong ??
+        row.DiemChinhThuc
         : drafts[row.IdChiTiet]?.Diem ?? row.DiemTuDanhGia;
     return sum + (Number(value) || 0);
   }, 0);
@@ -562,6 +581,7 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
         <>
           <div className="pq-toolbar"><div><TrangThaiQuy phieu={phieu} /><span className="pq-total">Phiếu quý {tab}</span></div></div>
           {phieu.LyDoTraVe && <div className="pq-alert pq-alert-warn"><i className="fa-solid fa-rotate-left"></i><span><b>Phiếu được trả về:</b> {phieu.LyDoTraVe}</span></div>}
+          {Number(phieu.TrangThai) === 5 && phieu.XepLoaiQuyText && <div className="pq-metrics"><div><span>Xếp loại quý</span><strong>{phieu.XepLoaiQuyText}</strong></div></div>}
           <DanhGiaPhuLuc2Form
             criteriaList={criteriaList}
             formData={formData}

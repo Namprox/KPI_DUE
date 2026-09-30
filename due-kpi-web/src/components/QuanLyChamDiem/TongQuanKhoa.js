@@ -316,7 +316,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, reloadKey = 0 }) => {
   const nhomHanNgach = nhomHanNgachHienThi(goi);
   const hanNgachHienTai = nhomHanNgach.length
     ? nhomHanNgach.reduce((sum, n) => sum + Number(n.HanNgach || 0), 0)
-    : "—";
+    : "-";
 
   if (dangTai) {
     return (

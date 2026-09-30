@@ -24,6 +24,7 @@ import ChiTietPhieuCuaToi from "../pages/DanhGia/ChiTietPhieuCuaToi";
 import DuyetToTrinh from "../pages/QuanLyDanhGia/DuyetToTrinh";
 import TheoDoiPhieuTruong from "../pages/QuanLyDanhGia/TheoDoiPhieuTruong";
 import QLGioGiang from "../pages/QuanLyKeHoach/QL_GioGiang";
+import TyLeHoanThanhGioGiang from "../pages/QuanLyKeHoach/TyLeHoanThanhGioGiang";
 import QLViPham from "../pages/QuanLyKeHoach/QL_ViPham";
 import QLLoaiViPham from "../pages/QuanLyKeHoach/QL_LoaiViPham";
 import QLDanhMucThanhTich from "../pages/QuanLyKeHoach/QL_DanhMucThanhTich";
@@ -38,6 +39,7 @@ import QLChucVu from "../pages/QuanLyToChuc/QL_ChucVu";
 import DanhSachThanhVien from "../pages/QuanLyToChuc/DanhSachThanhVien";
 import ThongTinCaNhan from "../pages/ThongTinCaNhan";
 import TongQuanCaNhan from "../pages/CaNhan/TongQuanCaNhan";
+import GioGiangCuaToi from "../pages/CaNhan/GioGiangCuaToi";
 import KhoMinhChungCaNhan from "../pages/CaNhan/KhoMinhChung";
 import KhoMinhChungDonVi from "../pages/DanhGia/KhoMinhChungDonVi";
 import PhanHoiSinhVienCuaToi from "../pages/CaNhan/PhanHoiSinhVienCuaToi";
@@ -92,6 +94,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         }
       >
         <Route path="/" element={<TongQuanCaNhan />} />
+        <Route path="/gio-giang-cua-toi" element={<GioGiangCuaToi />} />
         <Route
           path="/thong-tin-lien-he"
           element={<ThongTinCaNhan setIsPassModalOpen={setIsPassModalOpen} />}
@@ -166,6 +169,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/truong/to-trinh" element={<DuyetToTrinh />} />
         <Route path="/truong/phieu" element={<TheoDoiPhieuTruong />} />
         <Route path="/quan-ly-gio-giang" element={<QLGioGiang />} />
+        <Route path="/ty-le-hoan-thanh-gio-giang" element={<TyLeHoanThanhGioGiang />} />
         <Route path="/quan-ly-vi-pham" element={<QLViPham />} />
         <Route
           path="/ghi-nhan-vi-pham-nhan-vien"

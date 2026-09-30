@@ -70,10 +70,25 @@ theo từng năm — xem §1.3). Hệ quả:
 - Còn lại nhưng **không còn tác dụng**: `ngoai_le_dinh_muc.he_so_nckh /
   he_so_giam_nckh / so_gio_them_nckh / he_so_giam_pvcd / mien_nckh`; `phieu_danh_gia.gio_nckh_dinh_muc_ap_dung /
   gio_pvcd_dinh_muc_ap_dung / he_so_nckh_ap_dung` (phiếu mới lưu NULL).
-- Từ 2026-09-26, `chuc_vu` và `api/chucvu` chỉ còn tỷ lệ giờ giảng
-  (`ty_le_dinh_muc_giang` trong DB, `TyLeDinhMucGiang` trong JSON); cột NCKH và CHECK tương ứng **đã DROP**.
-- `schema.sql` đã cập nhật `chuc_vu`, nhưng **chưa** phản ánh việc DROP `dinh_muc_giang_vien.gio_nckh /
+- `chuc_vu.ty_le_dinh_muc_nckh` (+ CHECK `chk_chuc_vu_tldm_nckh`) **đã DROP** (2026-09-26), cùng field
+  JSON `ty_le_dinh_muc_nckh` của `api/chucvu`. Tỷ lệ định mức theo chức vụ chỉ còn `ty_le_dinh_muc_giang`.
+- `schema.sql` đã bỏ `chuc_vu.ty_le_dinh_muc_nckh`, nhưng **chưa** phản ánh việc DROP `dinh_muc_giang_vien.gio_nckh /
   gio_pvcd` — nguồn sự thật là DB sau `update_database.sql`.
+- **Giảm trừ theo chức vụ** (2026-09-26): `chuc_vu` thêm `loai_giam_tru` + `gio_giam_tru_nam DECIMAL(6,2) NULL`
+  (JSON `LoaiGiamTru` / `GioGiamTruNam` của `api/chucvu`). 2026-09-27: `loai_giam_tru` đổi `VARCHAR(30)` →
+  `BIT NOT NULL DEFAULT 0`, bỏ CHECK `chk_chuc_vu_loai_gt`. **JSON vẫn là chuỗi** — map 2 chiều ở
+  `Helper/LoaiGiamTruChucVu.cs` (gọi từ `ChucVuDal`).
+  - `0` (JSON `dinh_muc_phan_tram`): giảm theo `ty_le_dinh_muc_giang`, `gio_giam_tru_nam` NULL.
+  - `1` (JSON `gio_chuan_co_dinh`): giảm `gio_giam_tru_nam` giờ chuẩn/năm, `ty_le_dinh_muc_giang` NULL (công đoàn:
+    CTCD / PCTCD 44h, CTCDBP / UVBCHCD 22h). CHECK `chk_chuc_vu_gt_nhat_quan` giữ cặp này nhất quán.
+  - `sp_chuc_vu_update` nhận `@loai_giam_tru` NULL → **giữ nguyên cả loại lẫn số giờ** (FE cũ sửa tên / ghi chú không
+    xoá mất 44h).
+  - "Quân nhân dự bị, tự vệ" **không** là chức vụ: dùng `giam_tru_nhan_vien.so_ngay_huan_luyen_qndb` (1 ngày = 2.5 giờ
+    chuẩn, **cộng vào giờ thực hiện** — không trừ định mức; xem §13.10).
+  - Phép trừ số giờ cố định vào định mức: **đã làm** ở `fn_gio_giang_ty_le_hoan_thanh` (§13.10), tỷ lệ theo thời
+    gian giữ chức vụ. `sp_nhan_vien_resolve_chuc_vu_ap_dung` / `DinhMucGiangVienService.TinhDinhMucApDung` (định mức
+    áp dụng trên phiếu) **vẫn** chỉ xét tỷ lệ (NULL = 1.0) — hai đường tính khác nhau, không dùng lẫn.
+  - `schema.sql` đã có 2 cột này + 3 CHECK (`chk_chuc_vu_loai_gt`, `chk_chuc_vu_gio_gt`, `chk_chuc_vu_gt_nhat_quan`).
 
 ### 1.5. `nhan_vien_chuc_vu` — Quan hệ người × đơn vị × chức vụ × thời gian
 Từ Đợt 1 của kế hoạch kiêm nhiệm, bảng này không còn là "lịch sử chức vụ" mà là
@@ -431,7 +446,7 @@ phiếu đánh giá" ở cuối mục này).
 | Cột | Trường API | Ý nghĩa | Khái niệm KPI tương đương |
 |---|---|---|---|
 | `gio_chuan` | `StandardHours` | Giờ chuẩn tổng/năm (vd 720) | — |
-| `ty_le_giam` | `ReductionPercentage` | Tỷ lệ định mức, đơn vị **%** (vd 85) | — (dữ liệu riêng của web NCKH; Chức vụ chỉ còn tỷ lệ giờ giảng, xem §2.2) |
+| `ty_le_giam` | `ReductionPercentage` | Tỷ lệ định mức, đơn vị **%** (vd 85) | — (`chuc_vu.ty_le_dinh_muc_nckh` đã DROP, xem §2.2) |
 | `gio_nckh_dinh_muc` | `RequiredHours` | Định mức giờ NCKH phải đạt (vd 108) | — (`dinh_muc_giang_vien.gio_nckh` đã DROP, xem §2.2) |
 | `gio_nckh_quy_doi` | `ConvertedHours` | Giờ NCKH quy đổi thực tế (vd 100.02) | `gio_thuc_hien_gv.gio_nckh_thuc_te` |
 
@@ -861,6 +876,35 @@ Khoá **không** lọc `da_xoa` — phiếu soft-delete vẫn chiếm chỗ, y n
 `chk_pdg_quy_khong_xep_loai` khiến `sp_to_trinh_khoa_ht_duyet` / `_ht_tra_lai` (khoá trên
 `id_to_trinh`) **về mặt cấu trúc** không thể chạm vào phiếu quý.
 
+#### Xếp loại theo quý — HAI CỘT RIÊNG, tự động theo điểm (đợt 2026-09-29)
+
+Phiếu quý **có** xếp loại, nhưng ở cột riêng — `chk_pdg_quy_khong_xep_loai` giữ nguyên:
+
+| Cột | Phiếu | Ghi ở đâu | Công thức |
+|---|---|---|---|
+| `xep_loai_quy` | QUÝ (1..4), `trang_thai = 5` | `sp_phieu_quy_tp_duyet`, cùng UPDATE lên 5 | `fn_xep_loai_vien_chuc(tong_diem_tich_luy của quý, 1)` |
+| `xep_loai_tong_hop_quy` | NĂM, `nguon_diem_co_ban = 2` | `sp_phieu_nam_tong_hop_tu_quy` (roll-up) | `fn_xep_loai_vien_chuc(tong_diem_tich_luy năm, khong_vi_pham_phap_luat)` |
+
+Luật (`fn_xep_loai_vien_chuc` = bản sao SQL của `XepLoaiCalculator.TinhXepLoaiVienChuc`, hai
+bên **phải khớp**): `< 80` hoặc vi phạm pháp luật → 1; `80 .. < 101` → 2; `>= 101` → 3.
+**Trần 3** — quý không có hạn ngạch 20%; mức 4 cả năm vẫn chỉ do `sp_to_trinh_khoa_dong_goi`
+ghi vào `xep_loai`. Phiếu quý không có cờ vi phạm pháp luật: vi phạm của quý đã trừ điểm qua
+3 dòng `VPVC_*`, nên truyền 1. Cờ của phiếu năm `NULL` = không vi phạm (giống `XemTruocChot`).
+
+**Vì sao không dùng lại `xep_loai`:** đó là kết quả cuối của luồng năm và được các SP báo cáo
+đếm theo năm — ghi xếp loại quý vào đó sẽ làm phình mọi thống kê xếp loại. Hai cột mới có
+CHECK riêng làm lưới an toàn:
+
+| Constraint | Nội dung |
+|---|---|
+| `chk_pdg_xep_loai_quy` | `NULL` hoặc (`quy BETWEEN 1 AND 4` **và** `trang_thai = 5` **và** giá trị 1..3). Nếu sau này có nghiệp vụ mở lại phiếu quý, CHECK buộc SP đó xoá `xep_loai_quy` cùng lúc. |
+| `chk_pdg_xep_loai_tong_hop_quy` | `NULL` hoặc (`quy = 0` **và** `nguon_diem_co_ban = 2` **và** giá trị 1..3) |
+
+`xep_loai_tong_hop_quy` thuộc **nhóm cột vết roll-up** (như `so_quy_da_chot`): chỉ roll-up
+ghi, mở lại phiếu năm **không** xoá. Có quý chốt **sau** lần tổng hợp thì giá trị này cũ cho
+tới khi chạy lại tổng hợp — `sp_phieu_quy_tong_hop_nhan_vien` trả thêm `xep_loai_du_kien`
+(tính lại mỗi lần từ `diem_tich_luy_du_kien`) để FE phát hiện lệch.
+
 #### `nguon_diem_co_ban` — công tắc chuyển mạch của điểm CƠ BẢN
 
 | Giá trị | Hai vế điểm lấy từ đâu |
@@ -912,9 +956,10 @@ chí tự động. Hai hệ quả phải nhớ:
 Khối chống tamper **không bị gỡ**, chỉ **đổi nguồn**: vẫn recompute từ DB, không tin con số
 BLL gửi lên. Nó thêm một cửa chặn mới: `CHUA_TONG_HOP_QUY` khi chưa quý nào chốt.
 
-Sáu cột phục vụ roll-up: `diem_co_ban_tb_quy`, `so_quy_da_chot`, `danh_sach_quy_da_chot`
+Bảy cột phục vụ roll-up: `diem_co_ban_tb_quy`, `so_quy_da_chot`, `danh_sach_quy_da_chot`
 (ví dụ `'1,2,4'` — `so_quy_da_chot = 3` một mình không audit được là những quý nào),
-`ngay_tong_hop_quy`, `id_nguoi_tong_hop_quy`, cộng `nguon_diem_co_ban`.
+`ngay_tong_hop_quy`, `id_nguoi_tong_hop_quy`, `xep_loai_tong_hop_quy` (đợt "Xếp loại theo
+quý"), cộng `nguon_diem_co_ban`.
 
 #### State machine RÚT GỌN của phiếu quý
 
@@ -926,7 +971,7 @@ Dùng lại cột `trang_thai` nhưng **chỉ ba giá trị**, và **đọc giá
 | 2 | Đang thẩm định | **Đã nộp, chờ Trưởng phòng duyệt** |
 | 3 | Chờ Trưởng khoa duyệt | **KHÔNG DÙNG** |
 | 4 | Chờ Hiệu trưởng duyệt | **KHÔNG DÙNG** |
-| 5 | Hoàn tất | TP đã chốt điểm. `xep_loai` **NULL vĩnh viễn** |
+| 5 | Hoàn tất | TP đã chốt điểm + `xep_loai_quy` (tự động). `xep_loai` **NULL vĩnh viễn** |
 
     1 --[nhân viên nộp]-------------> 2
     2 --[TP trả về, LÝ DO bắt buộc]-> 1   (dòng về 1, nguon_tra_ve = 2)
@@ -1139,6 +1184,11 @@ Cán bộ quản lý (nhóm 3) dùng đúng bảng của **loại đối tượn
 | `can_ht_duyet` | Hệ thống (`sp_phieu_khoa_duyet_ho_so`) | TK chốt hồ sơ (GĐ3, 3→4) | 0/1 — snapshot, **không** suy lại về sau |
 | `hang_trong_khoa` | Hệ thống | Đóng gói tờ trình | Thứ hạng **trong nhóm**, trên toàn bộ quần thể nhóm |
 | `nhom_xep_hang` | Hệ thống | Đóng gói tờ trình | 1/2/3 — snapshot, **không** suy lại về sau |
+| `xep_loai_quy` | Hệ thống (`fn_xep_loai_vien_chuc`) | TP chốt phiếu **quý** (2→5) | 1/2/3, chỉ phiếu quý — **không** phải xếp loại năm |
+| `xep_loai_tong_hop_quy` | Hệ thống (`fn_xep_loai_vien_chuc`) | Roll-up phiếu năm từ các quý | 1/2/3, chỉ phiếu năm `nguon_diem_co_ban = 2` — mức **theo điểm**, để đối chiếu |
+
+Hai dòng cuối (đợt "Xếp loại theo quý") là **mức theo điểm**, không ai chọn tay và **không
+tham gia** chuỗi `xep_loai_khoa → xep_loai`. Xem mục 4.1 "Xếp loại theo quý".
 
 Mức 4 KHÔNG ai chọn tay được: nó phụ thuộc thứ hạng trong nhóm của cả đơn vị nên chỉ tính
 được khi 100% hồ sơ của đơn vị đã chốt. `ly_do_xep_loai` bắt buộc khi
@@ -2949,8 +2999,8 @@ khác hẳn cách nhập staging phẳng theo **kỳ học** trước đây, v�
 
 ### 13.1. Phạm vi CỐ Ý chưa làm — đã chốt với người dùng
 
-- **KHÔNG** thêm mã chấm điểm tự động vào `fn_nckh_diem_tu_dong`. Module chỉ lưu và phát
-  API đọc, giống hệt cách module kê khai Phụ lục II dừng lại.
+- ~~**KHÔNG** thêm mã chấm điểm tự động vào `fn_nckh_diem_tu_dong`.~~ **Đã đảo** (2026-09-27): có mã
+  `GIO_GIANG_TY_LE` chấm theo tỷ lệ hoàn thành sau giảm trừ — xem §13.10.
 - **KHÔNG** ghi vào `gio_thuc_hien_gv`. Cùng lý do đã ghi ở 3.6.8 và 9.0: ghi tự động sẽ
   đè số liệu nhập tay mà `sp_dinh_muc_lay_context_ap_dung` và phiếu đánh giá đang đọc.
 - Ánh xạ họ tên → nhân viên: **tự động** khi tên khớp duy nhất một nhân viên, còn lại làm
@@ -3214,6 +3264,217 @@ nhiều đơn vị không bị nhân dòng.
 - `he_dao_tao` (`'DH'` / `'SDH'`, CHECK) ghi sheet nguồn của từng lớp. Dòng trùng
   (`TRUNG_LOP`) chỉ so trong cùng sheet.
 
+
+### 13.10. Tỷ lệ hoàn thành giờ giảng + mã chấm tự động `GIO_GIANG_TY_LE`
+
+```
+ty_le_hoan_thanh (%) = tong_gio × 100 / dinh_muc_ap_dung
+tong_gio             = giờ TKB + giờ kê khai Phụ lục II đã chốt + 2,5 × số ngày QNDB
+dinh_muc_ap_dung     = định mức gốc khoản 3 (270) − miễn theo thời gian − giảm chức vụ
+                       − giảm con nhỏ − công đoàn − giảm đặc biệt do HT (cột Y)
+```
+
+**Nguồn sự thật duy nhất:** hàm lõi `dbo.fn_gio_giang_ty_le_chi_tiet(@id_nhan_vien, @id_nam, @kem_dien_giai)`.
+Hàm này sinh 1 dòng tổng (`loai_dong = 'T'`) và, khi `@kem_dien_giai = 1`, thêm các dòng diễn giải (`'D'`).
+Không gọi trực tiếp hàm lõi mà dùng hai hàm bọc:
+
+- `fn_gio_giang_ty_le_hoan_thanh(@id_nhan_vien, @id_nam)`: dòng tổng, luôn đúng 1 dòng. Không sinh diễn giải
+  nên nhanh như trước.
+- `fn_gio_giang_ty_le_dien_giai(@id_nhan_vien, @id_nam)`: các dòng diễn giải (xem mục "Diễn giải" bên dưới).
+Có ba nơi đọc hàm này, nên không nơi nào lệch nhau:
+
+- nhánh `GIO_GIANG_TY_LE` của `fn_nckh_diem_tu_dong`: chấm khi nộp phiếu, `POST api/phieu/{id}/tong-hop-tu-dong`
+  và preview `GET api/maudanhgia/{id}/diem-tu-dong`;
+- `sp_gio_giang_ty_le_hoan_thanh`, tức `GET api/gio-giang-tkb/ty-le-hoan-thanh`;
+- tử số (C1) đi qua `fn_gio_giang_thuc_hien`, hàm mà `sp_gio_giang_tkb_tong_hop` cũng dùng. Đã đối chiếu: kết quả của SP
+  trước và sau khi tách hàm giống hệt nhau. Phần kê khai của nó đọc từ `fn_gio_giang_ke_khai_dong` (theo từng bản kê
+  và gốc DH / SĐH), cũng là nguồn của dòng diễn giải `GIO_KE_KHAI`.
+
+#### Quy tắc — đã chốt với người dùng (2026-09-27)
+
+| Khoản | Nguồn | Quy tắc |
+|---|---|---|
+| Định mức gốc | `dinh_muc_giang_vien` theo `nhan_vien.id_chuc_danh` + năm | Chưa có chức danh hoặc chưa cấu hình định mức → `ty_le` NULL, 0 điểm |
+| Chức vụ (tỷ lệ) | lịch sử `nhan_vien_chuc_vu` | Mỗi ngày lấy `ty_le_dinh_muc_giang` **thấp nhất** trong các chức vụ đang giữ (NULL = 1). `tu_ngay` được **bù** từ cột I của file khi cùng `id_chuc_vu` và I sớm hơn |
+| Chức vụ (giờ cố định) | `chuc_vu.loai_giam_tru = 1` | Công đoàn 44h / 22h, cộng trên DISTINCT `id_chuc_vu`, **tỷ lệ theo thời gian giữ trên ngày làm việc**, nhân `(12 − E)/12` |
+| a) Tập sự | K | Định mức = 0 trong thời gian tập sự. Chỉ miễn phần tập sự **trong năm** (vd K 01/07/2025–30/06/2026 → miễn 6 tháng 01/01–30/06/2026); phần còn lại tính **bình thường**, không cảnh báo trần 50% (chốt 2026-09-28) |
+| b) Nghỉ | **O** (chuẩn), M–N, P | Xem "Khối miễn" bên dưới |
+| c) Đào tạo | R–S, **mọi dòng**, không xét Q | Đào tạo tiến sĩ. Coi toàn bộ là tập trung → định mức = 0 trong khoảng đó. Q chỉ là trạng thái "còn đang học tại tháng 9". **Khối miễn chứa đào tạo làm tròn tới bội 0,5 gần nhất** (2026-09-28), xem "Làm tròn tháng đào tạo". **Thời gian đào tạo tính hoàn thành 100%**: miễn cả năm mà có đào tạo → `ty_le = 100`, `ly_do = DAO_TAO_TINH_100`, đủ điểm (2026-09-28) |
+| d) Con 13–36 tháng | V | −10% định mức **gốc** (không phải định mức sau chức vụ), mỗi ngày tối đa một lần dù nhiều con |
+| d) Con 7–12 tháng | V | −40 giờ **mỗi con**. Cửa sổ `[sinh + 6 tháng, sinh + 12 tháng − 1 ngày]`; chỉ trừ phần rơi vào **ngày làm việc** của năm, chia theo tháng lịch |
+| d) Giới tính | `nhan_vien.gioi_tinh` | Có ngày ở cột V là áp dụng, trừ khi `gioi_tinh = 1` (Nam). NULL vẫn áp dụng |
+| e) QNDB | X | 2,5 giờ / ngày **cộng vào `tong_gio`**, không trừ định mức |
+| Giảm đặc biệt | Y (`gio_giam_dac_biet`) | Trừ thẳng số giờ |
+| `ngoai_le_dinh_muc` | — | **Không** đọc, tránh trừ trùng với file |
+
+**Đơn vị đo thời gian = tháng lịch** (`fn_so_thang_lich`): mỗi tháng đóng góp *số ngày được phủ / số ngày
+của tháng*, tính **cả ngày cuối**. Ví dụ 01/01–30/06 = 6; 01/02–31/12 = 11.
+
+#### Khối miễn — vì sao không cộng O với tập sự / đào tạo
+
+Cột O của file là công thức Excel `DATEDIF(từ, đến, "m")`: số tháng tròn, **bỏ phần lẻ**, không tính ngày cuối.
+Nó đo đúng **một** thứ: thời gian trước ngày P **hoặc** khoảng M–N trong năm. Kết luận này khớp 38/38 dòng
+có O > 0 của file 23.9.2026. O **không** chứa tập sự, cũng **không** chứa đào tạo.
+
+Ngày miễn = trước P | M–N | K | R–S. Các ngày miễn liên tiếp gộp thành **khối** (gaps-and-islands):
+
+- **Khối chỉ gồm trước P / M–N** → số tháng = **O** (dùng nguyên văn). Ví dụ vào trường 17/07 → 6 tháng, không phải 6,52.
+  Nếu O phải chia cho nhiều khối, chia theo tỷ lệ độ dài ngày. O trống → đo khối theo tháng lịch.
+- **Khối có K hoặc R–S** → đo **cả khối** theo tháng lịch. Phần O nằm trong khối **không cộng thêm**.
+  - Ca đã chốt: vào trường 10/02 (hoặc 24/03), tập sự đến 30/06, O = 1 (hoặc 2) → khối 01/01–30/06 = **6 tháng → 135**.
+    Không cộng O, không nhân hệ số O, không tính theo ngày / 365.
+  - 2140112: đào tạo từ 01/02, nghỉ 21/07–31/12 (O = 5) → khối 01/02–31/12 = **11 tháng**, không phải 16.
+
+Lấy quy ước của O để đo khối có tập sự thì 01/01–30/06 chỉ ra **5** tháng, trái với ca đã chốt. Vì vậy hai quy ước
+**cố ý** khác nhau.
+
+`E` = tổng số tháng miễn; `M` = số tháng của năm (12).
+- `E > M` → `ly_do = DU_LIEU_CAN_KIEM_TRA`, `canh_bao` có `THANG_MIEN_VUOT_NAM`. **Không** ép về 12.
+- Không còn ngày làm việc nào, hoặc `E ≥ M` → `ly_do = MIEN_TOAN_BO`.
+- Miễn cả năm như trên **mà có đào tạo** (còn ngày `D` sau phân bổ ưu tiên) → dòng tổng trả `ty_le_hoan_thanh = 100`,
+  `ly_do = DAO_TAO_TINH_100` (chốt 2026-09-28: thời gian đào tạo tiến sĩ tính hoàn thành 100%). Ví dụ đào tạo
+  01/09/2024–31/08/2028 → năm 2026 miễn 12 tháng → 100% → 20 điểm. Chỉ đổi ở dòng tổng: bên trong hàm vẫn là nhánh
+  `MIEN_TOAN_BO` nên các cột `giam_*`, `dinh_muc_ap_dung = 0` và dòng diễn giải giữ nguyên. Tỷ lệ này **cố định**, không
+  phải `tong_gio / dinh_muc_ap_dung`.
+  - Gồm cả khối gộp (vd tập sự 6 tháng đầu năm rồi đi học 6 tháng cuối): không còn ngày làm việc, phần đào tạo tính 100%.
+  - Miễn cả năm **không** có đào tạo (chỉ tập sự / nghỉ / trước ngày vào trường) vẫn là `MIEN_TOAN_BO`, không chấm tự động.
+  - `DU_LIEU_CAN_KIEM_TRA` giữ nguyên, không chấm tự động.
+
+#### Làm tròn tháng đào tạo (chốt với người dùng 2026-09-28)
+
+R–S liên tục và mọi ngày trong đó đều là ngày miễn, nên toàn bộ đào tạo trong năm nằm trong **một** khối miễn.
+Độ dài khối đó (tháng lịch) được **làm tròn tới bội 0,5 gần nhất**: phần lẻ < 0,25 → bỏ; 0,25–0,74 → 0,5;
+≥ 0,75 → lên tháng tròn. Phần chênh tính vào **đào tạo**.
+
+- Khối chỉ có đào tạo (thường gặp) → chính số tháng đào tạo được làm tròn. Ví dụ 2110223, đào tạo
+  01/11/2022–01/12/2026 → trong năm 01/01–01/12/2026 = 11,03 → **11** → 270 × 11 / 12 = 247,5.
+- Khối gộp đào tạo với tập sự / nghỉ / trước P → **tổng khối** tròn 0,5, đào tạo = khối − phần khác (phần khác đo theo
+  ngày như cũ). Ví dụ 2140112: khối 01/02–31/12 = 11 (ca đã chốt) giữ nguyên; dòng đào tạo 5,65 + nghỉ 5,35. Làm tròn
+  riêng phần đào tạo (5,65 → 5,5) sẽ phá tổng 11 đã chốt, nên **không** làm vậy.
+- Phần làm tròn **lên** chỉ lấy từ thời gian còn lại của năm (`M − E` thô), nên không sinh `THANG_MIEN_VUOT_NAM` giả.
+- `MIEN_TOAN_BO` vì không còn ngày làm việc: phần làm tròn **xuống** được tính lại vào đào tạo (không có ngày làm việc
+  để trả), không rơi sang cột nghỉ / cột O.
+- `DU_LIEU_CAN_KIEM_TRA` xét trên `E` **thô**; khi đó không làm tròn, để thấy số tháng thật vì sao vượt năm.
+- Ngày đào tạo vẫn là ngày miễn: trung bình chức vụ / công đoàn / con 13–36 vẫn tính trên ngày làm việc, số tháng đưa
+  vào công thức quy đổi theo `(M − E) / tháng làm việc` (cùng cơ chế với cột O).
+- Chỉ đào tạo được làm tròn; tập sự / nghỉ / trước ngày vào trường / cột O giữ nguyên quy tắc.
+
+#### Công thức phần còn lại
+
+```
+phan_con = (M − E) / M
+tb       = trung bình (theo tháng lịch, trên NGÀY LÀM VIỆC) của MAX(0, ty_le_cv − 0,10 × co_con_13_36)
+dinh_muc_ap_dung = MAX(0, goc × phan_con × tb − TB(giờ công đoàn) × phan_con − con nhỏ 40h − Y)
+```
+
+**Cột giải trình:** mỗi giờ giảm vào **đúng một** cột. Ngày miễn phân bổ theo ưu tiên
+trước P → tập sự → nghỉ → đào tạo. Các cột là `giam_chua_vao_truong`, `giam_tap_su`, `giam_nghi`, `giam_dao_tao`,
+`giam_chuc_vu`, `giam_con_nho_10`, `giam_cong_doan`, `giam_con_nho_40`, `giam_dac_biet_ht`, `dieu_chinh_san_0`
+(≤ 0, là phần bị cắt khi sàn 0). Bất biến: `goc − Σ giam_* − dieu_chinh_san_0 = dinh_muc_ap_dung`, sai số làm tròn
+≤ 0,01 / cột. `update_database.sql` KT4 kiểm tra bất biến này.
+
+#### Thang điểm (`fn_nckh_diem_tu_dong`, tỷ lệ theo `@diem_toi_da`)
+
+| Tỷ lệ | Điểm | Với 20 |
+|---|---|---|
+| ≥ 100% | `diem_toi_da` | 20 |
+| > 75% và < 100% | × 0,75 | 15 |
+| ≥ 50% và ≤ 75% | × 0,50 | 10 |
+| < 50% | 0 | 0 |
+
+- **Khác `NCKH_GIO_TY_LE` ở biên:** đúng 50% → 10 (NCKH ra 0); đúng 75% → 10.
+- `ly_do` là `MIEN_TOAN_BO` hoặc `DU_LIEU_CAN_KIEM_TRA` → hàm trả **NULL** = không chấm tự động.
+  Engine giữ điểm cũ; dòng chưa từng có điểm sẽ được chốt với điểm trống.
+- `ly_do = DAO_TAO_TINH_100` đi kèm `ty_le = 100` → rơi vào bậc ≥ 100% → `diem_toi_da`. Nhánh chấm **không** phải sửa.
+- `ty_le` NULL vì lý do khác (chưa có chức danh / định mức, định mức = 0) → **0**.
+
+#### `canh_bao` (không chặn tính điểm)
+
+| Mã | Nghĩa / việc phải làm |
+|---|---|
+| `CHUA_CO_DU_LIEU_GIAM_TRU` | Không có dòng file giảm trừ của năm → chỉ tính chức vụ |
+| `CHUC_VU_DOI_TRONG_NAM` | Có chức vụ bắt đầu / kết thúc trong năm. Chức vụ **trước đó** chỉ có ở ghi chú tự do cột AA của file (vd "26/3/2018–27/8/2026: Trưởng khoa") → phải nhập tay qua API `nhanvienchucvu`, nếu không phần đầu năm tính sai |
+| `THANG_MIEN_VUOT_NAM` | Đi kèm `DU_LIEU_CAN_KIEM_TRA` |
+
+`TAP_SU_KIEM_TRA_TRAN_50` **đã bỏ** (2026-09-28): phần tập sự trong năm đã miễn, phần còn lại tính bình thường nên
+không cần kiểm tra trần 50% bằng tay.
+
+#### Hệ quả cần biết (dữ liệu 2026)
+
+- 39 giảng viên đi học **cả năm** (kể cả 2100219 làm tròn lên 12) → `DAO_TAO_TINH_100`: tỷ lệ 100%, **đủ 20 điểm**
+  (trước 2026-09-28 là `MIEN_TOAN_BO`, không chấm tự động). Dữ liệu 2026 không còn ai `MIEN_TOAN_BO`.
+- Người được miễn **gần** trọn năm còn định mức rất nhỏ nên tỷ lệ phình lớn (vd miễn 11,5 tháng → định mức
+  11,25 giờ). Đây là hệ quả đúng của quy tắc, không phải lỗi.
+- Từ khi làm tròn tháng đào tạo: đi học **≥ 11,75 tháng** trong năm (đến khoảng 24/12 trở đi) → 12 tháng →
+  miễn cả năm → `DAO_TAO_TINH_100`, 100%, đủ 20 điểm. Ví dụ 2100219 đi học đến 28/12 (11,90 → 12). Đi học
+  < 0,25 tháng trong năm (kết thúc trước khoảng 08/01) → 0 tháng, không giảm.
+- Tập sự vắt hai năm (vd 01/07/2025–30/06/2026): năm 2026 miễn 6 tháng (135 giờ), 6 tháng còn lại tính định mức bình
+  thường, không còn cảnh báo `TAP_SU_KIEM_TRA_TRAN_50`.
+- Nhân sự chưa có `dinh_muc_giang_vien` (Chuyên viên…, và `HDLD_HUU` năm 2026 chưa tạo định mức) →
+  `CHUA_CAU_HINH_DINH_MUC`. Tiêu chí chỉ gắn cho mẫu giảng viên nên không ảnh hưởng.
+
+#### Diễn giải — vì sao có từng con số
+
+`GET api/gio-giang-tkb/ty-le-hoan-thanh?idNam=&idNhanVien=` trả thêm mảng `DienGiai` (RS3 của SP). **Chỉ** trả khi
+có `idNhanVien`; gọi toàn trường thì không có, giống quy ước `MinhChung` của API xem trước điểm.
+
+Mỗi dòng thuộc **đúng một** cột tổng theo `khoan_muc`:
+
+| `khoan_muc` | Cột tổng | Một dòng là | Cột nguồn đáng chú ý |
+|---|---|---|---|
+| `DINH_MUC_GOC` | `dinh_muc_goc` | định mức theo chức danh | — |
+| `CHUA_VAO_TRUONG` / `TAP_SU` / `NGHI` / `DAO_TAO` | `giam_*` tương ứng | một đoạn ngày liên tiếp cùng khối, cùng nguyên nhân | `nguon_*` = khoảng trong file (P / K / M–N / R–S), `khoi_*` = khối chứa đoạn |
+| `CHUC_VU` | `giam_chuc_vu` | một đoạn liên tiếp cùng chức vụ áp dụng, cùng tỷ lệ | `ty_le`, `ten_nguon`, `nguon_*` = từ–đến giữ chức vụ |
+| `CONG_DOAN` | `giam_cong_doan` | một đoạn giữ chức vụ giờ cố định | `gio_nam` |
+| `CON_NHO_10` | `giam_con_nho_10` | một đoạn của một con trong tháng 13–36 | `ngay_sinh_con`, `nguon_*` = cửa sổ tháng 13–36 |
+| `CON_NHO_40` | `giam_con_nho_40` | một con có cửa sổ tháng 7–12 giao với năm | `nguon_*` = cả cửa sổ, `mau_so` = độ dài cửa sổ |
+| `DAC_BIET_HT` | `giam_dac_biet_ht` | cột Y | — |
+| `DIEU_CHINH_SAN_0` | `dieu_chinh_san_0` | phần bị cắt khi sàn 0 | — |
+| `GIO_TKB` | `gio_tkb` | một dòng `gio_giang_tkb` đã ánh xạ | `id_gio_giang_tkb` (mở `GET api/gio-giang-tkb/{id}/chi-tiet`), `so_lop`, `so_tiet` |
+| `GIO_KE_KHAI` | `gio_ke_khai` | một bản kê × gốc DH / SĐH | `id_ke_khai`, `ten_nguon` = `DH` / `SDH` |
+| `GIO_QNDB` | `gio_qndb` | cột X | `so_ngay` |
+
+- **Bất biến:** tổng `so_gio` các dòng cùng `khoan_muc` = **đúng** cột tổng (phần lẻ làm tròn dồn vào dòng lớn
+  nhất). `update_database.sql` KT5 kiểm tra; trên dữ liệu 2026 ra 0 dòng lệch.
+- **Không tính lại quy tắc:** dòng diễn giải lấy từ chính bảng ngày / khối / biến của lần tính dòng tổng, trong cùng
+  hàm lõi.
+- **`so_thang` của `CHUC_VU` / `CONG_DOAN` / `CON_NHO_10`** là số tháng **đưa vào công thức**. Khi có khối lấy theo
+  cột O (O làm tròn xuống), số tháng này được quy đổi theo O và `ghi_chu` có `QUY_DOI_THEO_COT_O`. Khi số tháng
+  đào tạo đã làm tròn 0,5, `ghi_chu` có `QUY_DOI_THEO_LAM_TRON_DAO_TAO` (có thể có cả hai).
+- **`so_thang` của `DAO_TAO`** là phần đào tạo **sau làm tròn khối**, chia theo độ dài đoạn. Khối chỉ có đào tạo → dòng
+  hiện đúng số đã làm tròn (11). Khối gộp với tập sự / nghỉ (vd 2140112) → `khoi_so_thang` tròn 0,5, còn dòng đào tạo
+  có thể lẻ. `ghi_chu` có `LAM_TRON_NUA_THANG` khi khác độ dài thật; `khoi_so_thang` là độ dài khối đã làm tròn.
+- **`cong_thuc`**: biểu thức hiển thị sẵn, dấu phẩy thập phân (`fn_so_gon`), ví dụ `270 x 20% x 4,129 / 12 = 18,58`.
+- **Các trường hợp đặc biệt:**
+  - `ly_do = DU_LIEU_CAN_KIEM_TRA`: dòng thời gian vẫn có (`so_gio` NULL) để thấy vì sao số tháng miễn vượt năm.
+  - `MIEN_TOAN_BO` (kể cả `DAO_TAO_TINH_100`): không sinh dòng chức vụ / công đoàn / con nhỏ 10% vì chúng đều bằng 0.
+
+Mã `ghi_chu` (nối bằng `;`):
+
+| Mã | Nghĩa |
+|---|---|
+| `DO_THEO_NGAY` | Đo theo ngày thực tế (tháng lịch) |
+| `THEO_COT_O` | Khối chỉ gồm trước ngày vào trường / nghỉ → số tháng lấy từ cột O |
+| `COT_O_KHONG_CONG_THEM` | Khối có tập sự / đào tạo chứa cả phần cột O đã đếm → O không cộng thêm |
+| `COT_O_KHONG_CO_NGAY` | Cột O có giá trị nhưng file không có ngày tương ứng |
+| `MIEN_TOAN_BO` | Phần O được nâng lên cho đủ cả năm (miễn toàn bộ) |
+| `THANG_MIEN_VUOT_NAM` | Đi kèm `DU_LIEU_CAN_KIEM_TRA` |
+| `QUY_DOI_THEO_COT_O` | Số tháng đã quy đổi theo cột O (xem trên) |
+| `LAM_TRON_NUA_THANG` | Dòng `DAO_TAO`: số tháng khác độ dài thật do khối đào tạo đã làm tròn tới bội 0,5 |
+| `QUY_DOI_THEO_LAM_TRON_DAO_TAO` | Số tháng đã quy đổi do làm tròn tháng đào tạo |
+| `TU_NGAY_BU_TU_COT_I` | Ngày bắt đầu chức vụ lấy từ cột I của file (sớm hơn dữ liệu quan hệ) |
+| `KIEM_NHIEM_LAY_TY_LE_THAP_NHAT` | Đang giữ thêm chức vụ khác; áp tỷ lệ thấp nhất |
+| `NHIEU_CON_KHONG_CONG_DON` | Nhiều con cùng trong tháng 13–36; 10% chỉ tính một lần |
+| `CUA_SO_VAT_NAM` | Cửa sổ tháng 7–12 vắt sang năm khác; chỉ trừ phần trong năm |
+| `TRUNG_THOI_GIAN_MIEN` | Một phần cửa sổ trùng thời gian được miễn; phần đó không trừ |
+
+#### Gắn vào tiêu chí KPI
+
+Tạo tiêu chí qua API, **không** seed SQL: `loai_doi_tuong = 1`, `loai_nguon_diem = 2`,
+`cong_thuc_tong_hop = 'GIO_GIANG_TY_LE'`, `diem_toi_da = 20`, `loai_thang_diem = 1` + 4 dòng `thang_diem`
+20 / 15 / 10 / 0 để engine gán được `id_thang_diem_chon`. Phiếu tạo **trước** khi gán tiêu chí phải tạo lại.
+Import lại file giảm trừ / TKB **không** tự sửa điểm đã ghi, phải gọi lại tổng hợp tự động.
+
 ---
 
 ## 14. HỌC VỤ SINH VIÊN — tốt nghiệp đúng hạn + cảnh báo học vụ (`sinh_vien_hoc_vu`, `canh_bao_hoc_vu`)
@@ -3333,7 +3594,8 @@ File Excel "Mẫu giảm trừ" (Phòng TCHC) vừa là **danh sách toàn bộ 
 
 1. **Đồng bộ nhân sự**: tạo `nhan_vien` chưa có (theo `ma_nhan_vien`), cập nhật họ tên, chức danh
    (`nhan_vien_chuc_danh`) và đơn vị chính + chức vụ đang giữ (`nhan_vien_chuc_vu`, `la_chinh = 1`).
-2. **Lưu NGUYÊN dữ liệu giảm trừ** theo (năm × nhân viên). Đợt này **chưa tính** giảm trừ.
+2. **Lưu NGUYÊN dữ liệu giảm trừ** theo (năm × nhân viên). Phép **tính** giảm trừ nằm ở
+   `fn_gio_giang_ty_le_hoan_thanh` (§13.10), đọc thẳng hai bảng này lúc chấm.
 
 ### 15.1. Đọc file (`Helper/GiamTruExcelReader.cs`)
 
@@ -3353,6 +3615,7 @@ File Excel "Mẫu giảm trừ" (Phòng TCHC) vừa là **danh sách toàn bộ 
 | Q / R / S | Đi đào tạo TS (Có/Không) / bắt đầu / kết thúc | `di_dao_tao_tien_si` / `dao_tao_tu_ngay` / `dao_tao_den_ngay` |
 | V | Ngày sinh con nhỏ (nhiều con cách nhau xuống dòng) | `giam_tru_con_nho` (1 dòng / con) |
 | X | Số ngày huấn luyện / diễn tập QNDB, tự vệ | `so_ngay_huan_luyen_qndb` |
+| Y | Giảm đặc biệt do Hiệu trưởng quyết định — giờ giảng (Z = giờ NCKH: **không** đọc) | `gio_giam_dac_biet` (từ 2026-09-27) |
 
 - Ngày: ô ngày, số serial Excel, hoặc text `d/M/yyyy` (một số ô I/J là text do VLOOKUP).
 - **J = "nay" / "đến nay" / "khi hết tuổi quản lý" → NULL = đang giữ, không thời hạn** (không cảnh báo).

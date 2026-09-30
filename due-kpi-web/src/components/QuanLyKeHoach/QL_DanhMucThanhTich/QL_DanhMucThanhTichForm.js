@@ -85,8 +85,8 @@ const QL_DanhMucThanhTichForm = ({
 
   const nhanGoc = (g) =>
     g.TranDiem != null
-      ? `${g.MaMuc} — ${g.TenMuc} (trần ${formatDiem(g.TranDiem)} điểm)`
-      : `${g.MaMuc} — ${g.TenMuc}`;
+      ? `${g.MaMuc} - ${g.TenMuc} (trần ${formatDiem(g.TranDiem)} điểm)`
+      : `${g.MaMuc} - ${g.TenMuc}`;
 
   return (
     <div className="modal-overlay" style={{ zIndex: 10000 }}>
@@ -103,7 +103,7 @@ const QL_DanhMucThanhTichForm = ({
           }}
         >
           <h3 style={{ margin: 0, paddingRight: "20px", lineHeight: "1.4" }}>
-            {isEditing ? "Cập nhật mục danh mục" : "Thêm mục danh mục"} — Thành
+            {isEditing ? "Cập nhật mục danh mục" : "Thêm mục danh mục"} - Thành
             tích vượt trội
           </h3>
           <button
@@ -173,7 +173,7 @@ const QL_DanhMucThanhTichForm = ({
               </div>
               {isEditing && (
                 <div style={hintStyle}>
-                  Không đổi được loại nút sau khi tạo — máy chủ khoá cả `IdCha`
+                  Không đổi được loại nút sau khi tạo - máy chủ khoá cả `IdCha`
                   lẫn `LoaiThanhTich`.
                 </div>
               )}
@@ -195,7 +195,7 @@ const QL_DanhMucThanhTichForm = ({
                     required
                   />
                   <div style={hintStyle}>
-                    Khoá 1-1 với mã công thức TTVT_* phía máy chủ — chọn sai thì
+                    Khoá 1-1 với mã công thức TTVT_* phía máy chủ - chọn sai thì
                     dòng kê khai sẽ không bao giờ thành điểm.
                   </div>
                 </div>
@@ -238,7 +238,7 @@ const QL_DanhMucThanhTichForm = ({
                     <div style={hintStyle}>
                       Kế thừa tiêu chí:{" "}
                       <b>
-                        {LOAI_THANH_TICH_META[cha.LoaiThanhTich]?.label || "—"}
+                        {LOAI_THANH_TICH_META[cha.LoaiThanhTich]?.label || "-"}
                       </b>
                     </div>
                   )}
@@ -258,7 +258,7 @@ const QL_DanhMucThanhTichForm = ({
                     required
                   />
                   <div style={hintStyle}>
-                    Điểm cho MỘT đơn vị. Sửa về sau không làm đổi các dòng đã kê —
+                    Điểm cho MỘT đơn vị. Sửa về sau không làm đổi các dòng đã kê -
                     mỗi dòng giữ ảnh chụp riêng.
                   </div>
                 </div>
@@ -320,13 +320,13 @@ const QL_DanhMucThanhTichForm = ({
                     value={formData.IdDonViDuyet || ""}
                     onChange={handleSelect("IdDonViDuyet")}
                     options={[
-                      { value: "", label: "— Đơn vị quản lý trực tiếp —" },
+                      { value: "", label: "- Đơn vị quản lý trực tiếp -" },
                       ...donViList.map((dv) => ({
                         value: dv.IdDonVi,
-                        label: `${dv.MaDonVi} — ${dv.TenDonVi}`,
+                        label: `${dv.MaDonVi} - ${dv.TenDonVi}`,
                       })),
                     ]}
-                    placeholder="— Đơn vị quản lý trực tiếp —"
+                    placeholder="- Đơn vị quản lý trực tiếp -"
                     searchable
                   />
                   <div
@@ -398,7 +398,7 @@ const QL_DanhMucThanhTichForm = ({
                 </div>
                 <div style={{ ...hintStyle, marginTop: "-12px" }}>
                   Bỏ “cho nhập số lượng” khi mỗi lần đạt được là một dòng riêng
-                  (ví dụ mỗi quyết định khen thưởng) — máy chủ sẽ ép số lượng về 1.
+                  (ví dụ mỗi quyết định khen thưởng) - máy chủ sẽ ép số lượng về 1.
                 </div>
               </>
             )}

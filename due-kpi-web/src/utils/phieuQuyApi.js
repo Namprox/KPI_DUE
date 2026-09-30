@@ -1,6 +1,25 @@
 import { apiFetch } from "./api";
 import { readApiError } from "./apiError";
 
+/**
+ * Các trường bổ sung từ API; field vắng mặt tương đương null.
+ * Nhãn luôn lấy từ backend, không suy ra từ điểm hoặc mã xếp loại.
+ * @typedef {Object} PhieuQuyDto
+ * @property {1|2|3|null} [XepLoaiQuy]
+ * @property {string|null} [XepLoaiQuyText]
+ * @typedef {PhieuQuyDto & {TongDiemCoBan?: number, TongDiemVuotTroi?: number, TongDiemTichLuy?: number}} DuyetPhieuQuyResponse
+ * @typedef {Object} TongHopPhieuQuyResponse
+ * @property {Array<PhieuQuyDto & {Quy: number, DaChot?: boolean}>} [Quy]
+ * @property {1|2|3|null} [XepLoaiNamDuKien]
+ * @property {string|null} [XepLoaiNamDuKienText]
+ * @property {1|2|3|null} [XepLoaiTongHopQuy]
+ * @property {string|null} [XepLoaiTongHopQuyText]
+ * @property {string|null} [NgayTongHopQuy]
+ * @typedef {Object} TongHopPhieuNamTuQuyResponse
+ * @property {1|2|3|null} [XepLoaiTongHopQuy]
+ * @property {string|null} [XepLoaiTongHopQuyText]
+ */
+
 const query = (params = {}) => {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -77,6 +96,7 @@ export const lapTieuChiMauTheoId = (mau = {}) => {
   return result;
 };
 
+/** @returns {Promise<PhieuQuyDto|null>} */
 export const fetchPhieuQuyCuaToi = async ({ idNam, quy, idDonVi }) => {
   const body = await request(
     `phieu-quy/cua-toi${query({ idNam, quy, idDonVi })}`,
@@ -92,6 +112,7 @@ export const fetchPhieuQuyCuaToi = async ({ idNam, quy, idDonVi }) => {
  * Màn lịch sử luôn truyền idNhanVien của người đang đăng nhập để tài khoản có
  * quyền quản lý đơn vị vẫn chỉ nhìn thấy phiếu của chính mình.
  */
+/** @returns {Promise<{items: PhieuQuyDto[], total: number|null}>} */
 export const fetchDanhSachPhieuQuy = async (params = {}) => {
   const body = await request(
     `phieu-quy${query(params)}`,
@@ -106,6 +127,7 @@ export const fetchDanhSachPhieuQuy = async (params = {}) => {
   };
 };
 
+/** @returns {Promise<PhieuQuyDto|null>} */
 export const fetchPhieuQuy = async (idPhieu) => {
   const body = await request(
     `phieu-quy/${idPhieu}`,
@@ -172,6 +194,7 @@ export const huyNopPhieuQuy = async (idPhieu, payload) => {
   return unwrapItem(body) || body;
 };
 
+/** @returns {Promise<{items: PhieuQuyDto[], total: number|null}>} */
 export const fetchPendingPhieuQuy = async (params) => {
   const body = await request(
     `phieu-quy/tp/pending${query(params)}`,
@@ -185,6 +208,7 @@ export const fetchPendingPhieuQuy = async (params) => {
   };
 };
 
+/** @returns {Promise<DuyetPhieuQuyResponse>} */
 export const duyetPhieuQuy = async (idPhieu, payload) =>
   request(
     `phieu-quy/${idPhieu}/tp/duyet`,
@@ -199,6 +223,7 @@ export const traVePhieuQuy = async (idPhieu, payload) =>
     "Không trả được phiếu quý",
   );
 
+/** @returns {Promise<TongHopPhieuQuyResponse>} */
 export const fetchTongHopPhieuQuy = async (params) =>
   request(
     `phieu-quy/tong-hop${query(params)}`,
@@ -206,6 +231,7 @@ export const fetchTongHopPhieuQuy = async (params) =>
     "Không tải được tổng hợp bốn quý",
   );
 
+/** @returns {Promise<TongHopPhieuNamTuQuyResponse>} */
 export const tongHopPhieuNamTuQuy = async (idPhieu, rowVersion) =>
   request(
     `phieu/${idPhieu}/tong-hop-tu-quy`,

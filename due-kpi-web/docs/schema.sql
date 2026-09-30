@@ -24,9 +24,20 @@ CREATE TABLE chuc_vu (
     ty_le_dinh_muc_giang DECIMAL(5,4)  NULL,    -- 0.0000 - 1.0000 (giờ giảng dạy)
     ghi_chu_dieu_kien    NVARCHAR(500) NULL,    -- VD: 'Khoa ≥40 GV hoặc ≥800 SV'
     trang_thai           BIT           DEFAULT 1,
+    -- 0: giảm theo ty_le_dinh_muc_giang, gio_giam_tru_nam NULL.
+    -- 1: giảm gio_giam_tru_nam giờ chuẩn/năm, ty_le_dinh_muc_giang NULL (vd công đoàn 44h / 22h).
+    loai_giam_tru        BIT           NOT NULL CONSTRAINT df_chuc_vu_loai_gt DEFAULT (0),
+    gio_giam_tru_nam     DECIMAL(6,2)  NULL,
     CONSTRAINT uq_ma_chuc_vu         UNIQUE (ma_chuc_vu),
     CONSTRAINT chk_chuc_vu_tldm      CHECK (ty_le_dinh_muc_giang IS NULL
-                                        OR (ty_le_dinh_muc_giang >= 0 AND ty_le_dinh_muc_giang <= 1))
+                                        OR (ty_le_dinh_muc_giang >= 0 AND ty_le_dinh_muc_giang <= 1)),
+    -- (xoa dong chk_chuc_vu_loai_gt)
+    CONSTRAINT chk_chuc_vu_gio_gt    CHECK (gio_giam_tru_nam IS NULL OR gio_giam_tru_nam >= 0),
+    CONSTRAINT chk_chuc_vu_gt_nhat_quan CHECK ((loai_giam_tru = 0 AND gio_giam_tru_nam IS NULL)
+                                        OR (loai_giam_tru = 1
+                                            AND ty_le_dinh_muc_giang IS NULL
+                                            AND gio_giam_tru_nam IS NOT NULL))
+
 );
 GO
 
@@ -1011,6 +1022,17 @@ CREATE TABLE phieu_danh_gia (
     ngay_tong_hop_quy      DATETIME      NULL,
     id_nguoi_tong_hop_quy  INT           NULL,
 
+    -- ── XẾP LOẠI THEO QUÝ (đợt 2026-09-29) ──────────────────────────────────
+    -- Tự động theo điểm bằng dbo.fn_xep_loai_vien_chuc (bản sao SQL của
+    -- XepLoaiCalculator.TinhXepLoaiVienChuc): < 80 → 1; 80..<101 → 2; >= 101 → 3.
+    -- Trần 3, không ai chọn tay. CỘT RIÊNG, KHÔNG dùng lại xep_loai: xep_loai là kết quả
+    -- cuối của luồng năm và được báo cáo đếm theo năm (chk_pdg_quy_khong_xep_loai giữ nguyên).
+    -- DB thật: hai cột nằm cuối bảng (thêm qua ALTER).
+    xep_loai_quy           TINYINT       NULL,  -- phiếu QUÝ: ghi lúc TP chốt (sp_phieu_quy_tp_duyet)
+    xep_loai_tong_hop_quy  TINYINT       NULL,  -- phiếu NĂM nguồn quý: xếp loại cả năm theo điểm,
+                                                -- ghi lúc roll-up (sp_phieu_nam_tong_hop_tu_quy),
+                                                -- thuộc nhóm vết roll-up ở trên — KHÔNG phải kết quả cuối
+
     CONSTRAINT fk_phieu_nam        FOREIGN KEY (id_nam)             REFERENCES nam_danh_gia(id_nam),
     CONSTRAINT fk_phieu_nv         FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_phieu_don_vi     FOREIGN KEY (id_don_vi)          REFERENCES don_vi(id_don_vi),
@@ -1063,6 +1085,17 @@ CREATE TABLE phieu_danh_gia (
            AND ISNULL(uu_tien_xuat_sac, 0) = 0
            AND ISNULL(can_ht_duyet, 0)     = 0)),
     CONSTRAINT chk_pdg_quy_nguon_diem     CHECK (quy = 0 OR nguon_diem_co_ban = 1),
+
+    -- ── Ràng buộc của XẾP LOẠI THEO QUÝ ─────────────────────────────────────
+    -- Xếp loại quý chỉ nằm trên phiếu QUÝ ĐÃ CHỐT. Nếu sau này có nghiệp vụ mở lại phiếu
+    -- quý (5 → 1/2), CHECK này buộc SP đó xoá xep_loai_quy cùng lúc.
+    CONSTRAINT chk_pdg_xep_loai_quy          CHECK (xep_loai_quy IS NULL
+                                                    OR (quy BETWEEN 1 AND 4 AND trang_thai = 5
+                                                        AND xep_loai_quy IN (1, 2, 3))),
+    -- Xếp loại năm theo điểm tổng hợp chỉ có nghĩa với phiếu NĂM lấy điểm cơ bản từ quý.
+    CONSTRAINT chk_pdg_xep_loai_tong_hop_quy CHECK (xep_loai_tong_hop_quy IS NULL
+                                                    OR (quy = 0 AND nguon_diem_co_ban = 2
+                                                        AND xep_loai_tong_hop_quy IN (1, 2, 3))),
 
     -- 1 phiếu / người / ĐƠN VỊ / năm / QUÝ.
     -- Đợt 3 (kiêm nhiệm đa đơn vị) đổi UNIQUE (id_nam, id_nhan_vien)
@@ -2755,6 +2788,7 @@ CREATE TABLE giam_tru_nhan_vien (
     dao_tao_tu_ngay         DATE          NULL,       -- R
     dao_tao_den_ngay        DATE          NULL,       -- S
     so_ngay_huan_luyen_qndb DECIMAL(5,1)  NULL,       -- X
+    gio_giam_dac_biet       DECIMAL(6,2)  NULL,       -- Y
     dong_excel              INT           NULL,
     id_nguoi_import         INT           NULL,
     ngay_import             DATETIME      NOT NULL CONSTRAINT df_gtnv_ngay_import DEFAULT GETDATE(),
@@ -2770,7 +2804,8 @@ CREATE TABLE giam_tru_nhan_vien (
     CONSTRAINT chk_gtnv_nghi       CHECK (nghi_tu_ngay    IS NULL OR nghi_den_ngay    IS NULL OR nghi_den_ngay    >= nghi_tu_ngay),
     CONSTRAINT chk_gtnv_dao_tao    CHECK (dao_tao_tu_ngay IS NULL OR dao_tao_den_ngay IS NULL OR dao_tao_den_ngay >= dao_tao_tu_ngay),
     CONSTRAINT chk_gtnv_so_thang   CHECK (so_thang_khong_lam_viec IS NULL OR so_thang_khong_lam_viec >= 0),
-    CONSTRAINT chk_gtnv_so_ngay    CHECK (so_ngay_huan_luyen_qndb IS NULL OR so_ngay_huan_luyen_qndb >= 0)
+    CONSTRAINT chk_gtnv_so_ngay    CHECK (so_ngay_huan_luyen_qndb IS NULL OR so_ngay_huan_luyen_qndb >= 0),
+    CONSTRAINT chk_gtnv_giam_dac_biet CHECK (gio_giam_dac_biet IS NULL OR gio_giam_dac_biet >= 0)
 );
 GO
 
@@ -2807,7 +2842,8 @@ CREATE TYPE dbo.GiamTruNhanVienRow AS TABLE (
     di_dao_tao_tien_si      BIT           NOT NULL,
     dao_tao_tu_ngay         DATE          NULL,
     dao_tao_den_ngay        DATE          NULL,
-    so_ngay_huan_luyen_qndb DECIMAL(5,1)  NULL
+    so_ngay_huan_luyen_qndb DECIMAL(5,1)  NULL,
+    gio_giam_dac_biet       DECIMAL(6,2)  NULL
 );
 GO
 

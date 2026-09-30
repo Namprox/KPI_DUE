@@ -263,11 +263,10 @@ const MinhChungDongThanhTichBox = ({
                   title="Bỏ tệp này"
                 >
                   <i
-                    className={`fa-solid ${
-                      dangXoaId === mc.IdMinhChungTt
+                    className={`fa-solid ${dangXoaId === mc.IdMinhChungTt
                         ? "fa-spinner fa-spin"
                         : "fa-xmark"
-                    }`}
+                      }`}
                   ></i>
                 </button>
               )}
@@ -289,13 +288,12 @@ const MinhChungDongThanhTichBox = ({
         >
           <span className="kkt-dz-icon">
             <i
-              className={`fa-solid ${
-                dangTai
+              className={`fa-solid ${dangTai
                   ? "fa-spinner fa-spin"
                   : keo
                     ? "fa-file-arrow-down"
                     : "fa-cloud-arrow-up"
-              }`}
+                }`}
             ></i>
           </span>
           <span className="kkt-dz-text">
@@ -312,7 +310,7 @@ const MinhChungDongThanhTichBox = ({
               {thieu ? (
                 <>
                   <i className="fa-solid fa-triangle-exclamation"></i> Bắt buộc
-                  có minh chứng — chưa đính kèm thì không lưu được dòng này
+                  có minh chứng - chưa đính kèm thì không lưu được dòng này
                 </>
               ) : (
                 GIOI_HAN_TEXT

@@ -279,7 +279,7 @@ paths:
         - Auth
       summary: Reset password (admin)
       description: >-
-        Truong (id_chuc_vu 1,7,8) dat lai mat khau cho mot nhan vien khac.
+        Truong (ma_chuc_vu ADMIN/HT/PHT) dat lai mat khau cho mot nhan vien khac.
         Khong can mat khau cu; id_nhan_vien dich nhan tu body. Khi thanh cong,
         refresh token hien tai cua nhan vien do bi thu hoi nen ho phai dang nhap lai.
       operationId: authResetPassword
@@ -6218,7 +6218,7 @@ paths:
         ngoại lệ active. Định mức CHỈ CÒN giờ giảng (bỏ NCKH / PVCĐ).
         Công thức:
         GioGiangApDung = max(0, base × TyLeGiangChucVu − SoGioGiamGiang − (base × TyLeGiangChucVu) × ΣHeSoGiamGiang).
-        GV chỉ xem của chính mình; Admin/BGH (chucVu 1, 7, 8) xem mọi người.
+        GV chỉ xem của chính mình; Admin/BGH (ADMIN/HT/PHT) xem mọi người.
       operationId: dinhMucGiangVienGetApDung
       parameters:
         - name: idNv
@@ -7860,6 +7860,90 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "404":
+          description: NOT_FOUND - khong co nam danh gia
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+  /api/gio-giang-tkb/ty-le-hoan-thanh:
+    get:
+      tags:
+        - GioGiangTkb
+      summary: TY LE HOAN THANH GIO GIANG trong nam (ma KPI GIO_GIANG_TY_LE)
+      description: >-
+        TyLeHoanThanh = TongGio x 100 / DinhMucApDung. Moi giang vien 1 dong; nguon su
+        that duy nhat la dbo.fn_gio_giang_ty_le_hoan_thanh - chinh ham ma tieu chi cham tu
+        dong GIO_GIANG_TY_LE doc, nen DiemDuKien o day khop diem ghi vao phieu.
+
+
+        TongGio = GioTkb + GioKeKhai (Phu luc II, dong da chot) + GioQndb
+        (2.5 gio x so ngay huan luyen QNDB / tu ve - cong vao gio thuc hien).
+
+
+        DinhMucApDung = DinhMucGoc (270) - GiamChuaVaoTruong - GiamTapSu - GiamNghi -
+        GiamDaoTao - GiamChucVu - GiamConNho10 - GiamCongDoan - GiamConNho40 -
+        GiamDacBietHt - DieuChinhSan0. Moi gio giam nam o dung mot cot (sai so lam tron
+        <= 0.01 / cot). Quy tac: schema_ghi_chu.md muc 13.10.
+
+
+        TAP GIANG VIEN = HOP (nhan vien dang hoat dong co dinh muc cho chuc danh o nam do)
+        va (nguoi co gio). Giang vien 0 gio van hien voi 0%.
+
+
+        LyDo khi TyLeHoanThanh null: CHUA_CO_CHUC_DANH / CHUA_CAU_HINH_DINH_MUC /
+        DINH_MUC_BANG_0 (cham 0 diem); MIEN_TOAN_BO / DU_LIEU_CAN_KIEM_TRA (KHONG cham tu
+        dong, DiemDuKien null). Rieng LyDo = DAO_TAO_TINH_100 DI KEM TyLeHoanThanh = 100:
+        mien ca nam ma co dao tao tien si -> tinh hoan thanh 100%, du diem (DinhMucApDung = 0).
+
+
+        Quyen: ADMIN / HT xem toan truong; TK / TKL / TP xem don vi minh giu chuc vu
+        (+ cay don vi cap duoi); moi nguoi xem duoc dong cua CHINH MINH khi truyen
+        idNhanVien = id cua minh.
+
+
+        DIEN GIAI: CHI khi truyen idNhanVien, response co them DienGiai = cac dong giai
+        thich vi sao co tung con so (khoang ngay nguon, doan trong nam, so thang, ty le,
+        cong thuc hien thi san). Moi dong thuoc DUNG MOT cot tong theo KhoanMuc; tong
+        SoGio cac dong cung KhoanMuc = dung cot tong do. Goi toan truong khong co DienGiai.
+      operationId: gioGiangTkbTyLeHoanThanh
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          description: Bo loc hien thi (don vi do hoac mot cap con), khong phai phan quyen.
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          description: Chi lay mot giang vien. Bang id nguoi goi -> tu xem, khong can quyen truong don vi.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK - xem TyLeHoanThanh va SoDongChuaAnhXa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GioGiangTkbResponse"
+        "400":
+          description: INVALID - idNam / idNhanVien khong hop le
           content:
             application/json:
               schema:
@@ -13761,7 +13845,12 @@ components:
             PHSV_DIEM_TB_GTE_3, VPGD_TUAN_THU, NVK_PHAN_CONG_KHOA,
             NCKH_GIO_TY_LE, NCKH_BBQT_DIEM_KPI,
             TTVT_SANG_KIEN, TTVT_KHEN_THUONG, TTVT_DAO_TAO, TTVT_PHONG_TRAO,
-            VPVC_HOAN_THANH_CV, VPVC_NOI_QUY, VPVC_CHINH_TRI.
+            VPVC_HOAN_THANH_CV, VPVC_NOI_QUY, VPVC_CHINH_TRI, GIO_GIANG_TY_LE.
+
+            Riêng GIO_GIANG_TY_LE (tỷ lệ hoàn thành định mức giờ giảng, nguồn
+            GET /api/gio-giang-tkb/ty-le-hoan-thanh): ≥ 100% → DiemToiDa (20);
+            > 75% và < 100% → × 0.75 (15); ≥ 50% và ≤ 75% → × 0.50 (10); < 50% → 0.
+            Miễn định mức cả năm hoặc dữ liệu cần kiểm tra → null (không chấm tự động).
 
             Riêng NCKH_BBQT_DIEM_KPI: điểm KHÔNG do phía KPI tính — phía NCKH đã tính
             sẵn ở nckh_kpi_bai_bao_quoc_te.diem_kpi_cuoi (FinalKpiScore), phía KPI chỉ
@@ -15607,8 +15696,9 @@ components:
       type: object
       description: >
         Phieu danh gia cua MOT quy (vien chuc / NLD). CO Y gon hon PhieuDanhGiaChiTietDto:
-        phieu quy khong co xep loai, khong co to trinh, khong co dinh muc / QD 838.
-        No chi san sinh MOT CON SO: TongDiemCoBan cua quy do.
+        phieu quy khong co to trinh, khong co han ngach 20%, khong co dinh muc / QD 838.
+        No cham CA hai nhom tieu chi, san sinh BA con so cua quy (co ban / vuot troi /
+        tich luy) va XEP LOAI CUA QUY (XepLoaiQuy, tu dong theo diem luc TP chot).
       properties:
         IdPhieu:
           type: integer
@@ -15667,18 +15757,33 @@ components:
           type: number
           format: double
           nullable: true
-          description: Con so duy nhat phieu quy sinh ra — dau vao cua roll-up cuoi nam.
+          description: Tong nhom A cua quy nay. Cuoi nam lay TRUNG BINH cac quy da chot.
         TongDiemVuotTroi:
           type: number
           format: double
           nullable: true
           description: >
-            Luon 0 tren phieu quy. Diem vuot troi duoc cong NGUYEN ca nam o phieu NAM
-            chu khong lay trung binh, nen phieu quy khong seed dong nhom B.
+            Tong nhom B cua quy nay, CHUA kep tran cuoi nam. Cuoi nam cac quy duoc CONG
+            DON, kep theo tung tieu chi roi cat tran nhom — tong nam co the NHO HON tong
+            bon con so nay.
         TongDiemTichLuy:
           type: number
           format: double
           nullable: true
+        XepLoaiQuy:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: >
+            Xep loai CUA QUY NAY, he thong tu tinh luc Truong phong chot (2 -> 5) tu
+            TongDiemTichLuy, cung nguong vien chuc cua nam: < 80 -> 1 Khong hoan thanh;
+            80 .. < 101 -> 2 Hoan thanh; >= 101 -> 3 Hoan thanh tot. Tran 3 (quy khong
+            co han ngach 20%). null khi quy chua chot. KHONG phai xep loai ca nam.
+        XepLoaiQuyText:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Text cua XepLoaiQuy (XepLoaiCalculator.MapText), vd "Hoàn thành tốt nhiệm vụ".
         IdNguoiDgKhoa:
           type: integer
           nullable: true
@@ -15761,6 +15866,17 @@ components:
           format: double
           nullable: true
           description: Nhu tren. = TongDiemCoBan + TongDiemVuotTroi.
+        XepLoaiQuy:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: >
+            Nhu tren (chi tp/duyet chieu) — xep loai cua quy vua chot, tinh tu
+            TongDiemTichLuy. Xem PhieuQuyDto.XepLoaiQuy.
+        XepLoaiQuyText:
+          type: string
+          nullable: true
+          readOnly: true
     PhieuQuyCreateRequest:
       type: object
       required:
@@ -15884,6 +16000,15 @@ components:
           type: number
           format: double
           nullable: true
+        XepLoaiQuy:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: Xep loai cua rieng quy nay (ghi luc TP chot). null = chua chot / chua co phieu.
+        XepLoaiQuyText:
+          type: string
+          nullable: true
+          readOnly: true
         NgayChotKetQua:
           type: string
           format: date-time
@@ -16018,6 +16143,37 @@ components:
             XEM TRUOC tich luy cuoi nam
             = DiemCoBanTbQuy + DiemVpvcNam + DiemVuotTroiTongQuy.
             Con so ghi that do POST /api/phieu/{id}/tong-hop-tu-quy tinh lai.
+        XepLoaiNamDuKien:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: >
+            XEM TRUOC xep loai CA NAM = luat vien chuc ap tren DiemTichLuyDuKien (co vi
+            pham phap luat lay tu phieu nam, chua co = khong vi pham). Tinh lai moi lan
+            goi. null khi SoQuyDaChot = 0.
+        XepLoaiNamDuKienText:
+          type: string
+          nullable: true
+          readOnly: true
+        XepLoaiTongHopQuy:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: >
+            Xep loai CA NAM DA LUU tren phieu nam o lan tong hop gan nhat
+            (POST /api/phieu/{id}/tong-hop-tu-quy). null = chua tong hop. Khac
+            XepLoaiNamDuKien => co quy chot SAU lan tong hop, FE nen nhac chay lai.
+            Ca hai la muc THEO DIEM (tran 3); ket qua CHINH THUC ca nam van la XepLoai
+            cua phieu nam (TK chon + han ngach 20%, co the len 4).
+        XepLoaiTongHopQuyText:
+          type: string
+          nullable: true
+          readOnly: true
+        NgayTongHopQuy:
+          type: string
+          format: date-time
+          nullable: true
+          description: Thoi diem lan tong hop gan nhat da ghi XepLoaiTongHopQuy.
         VuotTroiTheoTieuChi:
           type: array
           description: >
@@ -16109,6 +16265,18 @@ components:
           format: double
           nullable: true
           description: = TongDiemCoBan + TongDiemVuotTroi.
+        XepLoaiTongHopQuy:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: >
+            Xep loai CA NAM theo TongDiemTichLuy vua tong hop (luat vien chuc, tran 3),
+            DA LUU vao phieu nam. Muc theo diem de doi chieu — TK van chon xep loai khi
+            chot ho so, muc 4 do han ngach 20% quyet.
+        XepLoaiTongHopQuyText:
+          type: string
+          nullable: true
+          readOnly: true
         VuotTroiTheoTieuChi:
           type: array
           description: >
@@ -16166,6 +16334,18 @@ components:
         IdNguoiTongHopQuy:
           type: integer
           nullable: true
+        XepLoaiTongHopQuy:
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          description: >
+            Chi co o GET /api/phieu/{id}, chi phieu NguonDiemCoBan = 2. Xep loai CA NAM
+            theo diem tong hop tu cac quy, ghi cung lan roll-up voi DiemCoBanTbQuy /
+            SoQuyDaChot. Muc THEO DIEM de doi chieu — ket qua cuoi van la XepLoai.
+        XepLoaiTongHopQuyText:
+          type: string
+          nullable: true
+          readOnly: true
         TrangThaiText:
           type: string
           nullable: true
@@ -17264,6 +17444,240 @@ components:
           type: number
           format: double
           description: SoTietTrongNam * HeSo, lam tron 2 chu so (AwayFromZero).
+    GioGiangTyLeDienGiaiDto:
+      type: object
+      description: >-
+        Mot dong dien giai ty le hoan thanh gio giang (fn_gio_giang_ty_le_dien_giai). Tong
+        SoGio cac dong cung KhoanMuc = dung cot tong tuong ung cua GioGiangTyLeHoanThanhDto.
+      properties:
+        IdNhanVien:
+          type: integer
+        ThuTu:
+          type: integer
+        KhoanMuc:
+          type: string
+          description: >-
+            DINH_MUC_GOC, CHUA_VAO_TRUONG, TAP_SU, NGHI, DAO_TAO, CHUC_VU, CONG_DOAN,
+            CON_NHO_10, CON_NHO_40, DAC_BIET_HT, DIEU_CHINH_SAN_0, GIO_TKB, GIO_KE_KHAI, GIO_QNDB.
+        TuNgay:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Dau doan TRONG NAM tao ra dong nay."
+        DenNgay:
+          type: string
+          format: date-time
+          nullable: true
+        NguonTuNgay:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Khoang goc trong du lieu nguon (file giam tru / lich su chuc vu / cua so tuoi con)."
+        NguonDenNgay:
+          type: string
+          format: date-time
+          nullable: true
+          description: "CHUA_VAO_TRUONG - ngay bat dau lam viec (cot P). Null o chuc vu = chua ket thuc."
+        KhoiTuNgay:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Khoi mien chua doan nay (chi dong mien theo thoi gian)."
+        KhoiDenNgay:
+          type: string
+          format: date-time
+          nullable: true
+        KhoiSoThang:
+          type: number
+          format: double
+          nullable: true
+        SoThang:
+          type: number
+          format: double
+          nullable: true
+          description: "So thang dua vao cong thuc."
+        TyLe:
+          type: number
+          format: double
+          nullable: true
+          description: "CHUC_VU - ty le dinh muc cua chuc vu (0.7 = giang 70%); CON_NHO_10 - ty le giam (0.1)."
+        GioNam:
+          type: number
+          format: double
+          nullable: true
+          description: "CONG_DOAN - so gio giam / nam."
+        SoNgay:
+          type: number
+          format: double
+          nullable: true
+          description: "GIO_QNDB - so ngay huan luyen."
+        NgaySinhCon:
+          type: string
+          format: date-time
+          nullable: true
+        IdChucVu:
+          type: integer
+          nullable: true
+        TenNguon:
+          type: string
+          nullable: true
+          description: "Ten chuc vu / ho ten + khoa trong file TKB / goc DH - SDH cua ke khai."
+        IdGioGiangTkb:
+          type: integer
+          nullable: true
+          description: "GIO_TKB - mo chi tiet lop qua GET /api/gio-giang-tkb/{id}/chi-tiet."
+        IdKeKhai:
+          type: integer
+          nullable: true
+        SoLop:
+          type: integer
+          nullable: true
+        SoTiet:
+          type: integer
+          nullable: true
+        MauSo:
+          type: number
+          format: double
+          nullable: true
+          description: "CON_NHO_40 - do dai ca cua so thang 7-12 (thang lich)."
+        SoGio:
+          type: number
+          format: double
+          nullable: true
+          description: "Null khi LyDo = DU_LIEU_CAN_KIEM_TRA (dong thoi gian chi de xem)."
+        CongThuc:
+          type: string
+          nullable: true
+          description: "Bieu thuc hien thi san, dau phay thap phan, vd 270 x 20% x 4,129 / 12 = 18,58."
+        GhiChu:
+          type: string
+          nullable: true
+          description: "Ma noi bang dau cham phay - xem schema_ghi_chu.md muc 13.10."
+    GioGiangTyLeHoanThanhDto:
+      type: object
+      description: Ty le hoan thanh gio giang trong nam cua mot giang vien (fn_gio_giang_ty_le_hoan_thanh).
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        IdDonVi:
+          type: integer
+          nullable: true
+        MaDonVi:
+          type: string
+          nullable: true
+        TenDonVi:
+          type: string
+          nullable: true
+        MaChucDanh:
+          type: string
+          nullable: true
+        TenChucDanh:
+          type: string
+          nullable: true
+        IdNam:
+          type: integer
+        DinhMucGoc:
+          type: number
+          format: double
+          nullable: true
+          description: Dinh muc khoan 3 theo chuc danh + nam (270). Null = chua cau hinh.
+        SoThangNam:
+          type: number
+          format: double
+          nullable: true
+          description: So thang cua nam danh gia (12).
+        SoThangMien:
+          type: number
+          format: double
+          nullable: true
+          description: So thang mien dinh muc (tap su, nghi - cot O, dao tao, truoc ngay vao truong).
+        GiamChuaVaoTruong:
+          type: number
+          format: double
+        GiamTapSu:
+          type: number
+          format: double
+        GiamNghi:
+          type: number
+          format: double
+        GiamDaoTao:
+          type: number
+          format: double
+        GiamChucVu:
+          type: number
+          format: double
+          description: Ty le dinh muc thap nhat cua cac chuc vu dang giu, theo thoi gian giu.
+        GiamConNho10:
+          type: number
+          format: double
+          description: "Con thang 13-36: -10% dinh muc goc (khong cong don nhieu con)."
+        GiamCongDoan:
+          type: number
+          format: double
+          description: Chuc vu gio co dinh (cong doan 44h / 22h), theo thoi gian giu.
+        GiamConNho40:
+          type: number
+          format: double
+          description: "Con thang 7-12: -40 gio / con, chia theo thang lich khi vat nam."
+        GiamDacBietHt:
+          type: number
+          format: double
+          description: Cot Y file giam tru - giam dac biet do Hieu truong quyet dinh.
+        DieuChinhSan0:
+          type: number
+          format: double
+          description: "<= 0: phan giam vuot dinh muc bi cat (dinh muc san o 0)."
+        DinhMucApDung:
+          type: number
+          format: double
+          nullable: true
+        GioTkb:
+          type: number
+          format: double
+        GioKeKhai:
+          type: number
+          format: double
+          description: Ke khai Phu luc II - chi dong da chot.
+        GioQndb:
+          type: number
+          format: double
+          description: 2.5 gio x so ngay huan luyen QNDB / tu ve.
+        TongGio:
+          type: number
+          format: double
+        TyLeHoanThanh:
+          type: number
+          format: double
+          nullable: true
+          description: Phan tram (0..). Null -> xem LyDo. LyDo = DAO_TAO_TINH_100 -> co dinh 100.
+        LyDo:
+          type: string
+          nullable: true
+          description: >-
+            Khi TyLeHoanThanh null: CHUA_CO_CHUC_DANH / CHUA_CAU_HINH_DINH_MUC / DINH_MUC_BANG_0 /
+            MIEN_TOAN_BO / DU_LIEU_CAN_KIEM_TRA. Di kem TyLeHoanThanh = 100: DAO_TAO_TINH_100
+            (mien ca nam vi dao tao tien si, tinh hoan thanh 100%).
+        CanhBao:
+          type: string
+          nullable: true
+          description: >-
+            Noi bang ';': CHUA_CO_DU_LIEU_GIAM_TRU, CHUC_VU_DOI_TRONG_NAM (nhap chuc vu truoc
+            do qua API nhanvienchucvu), THANG_MIEN_VUOT_NAM.
+        DiemDuKien:
+          type: number
+          format: double
+          nullable: true
+          description: Diem tieu chi GIO_GIANG_TY_LE du kien (cung ham voi engine cham). Null = khong cham tu dong.
+        DiemToiDa:
+          type: number
+          format: double
+          description: diem_toi_da cua tieu chi GIO_GIANG_TY_LE dang hoat dong (chua co tieu chi -> 20).
     GioGiangTkbTongHopDto:
       type: object
       description: TONG GIO GIANG trong nam = gio file (DH + SDH) + gio ke khai Phu luc II da duyet.
@@ -17400,6 +17814,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GioGiangTkbTongHopDto"
+        TyLeHoanThanh:
+          type: array
+          items:
+            $ref: "#/components/schemas/GioGiangTyLeHoanThanhDto"
+        DienGiai:
+          type: array
+          description: CHI co khi goi ty-le-hoan-thanh voi idNhanVien.
+          items:
+            $ref: "#/components/schemas/GioGiangTyLeDienGiaiDto"
         SoDongDoc:
           type: integer
           nullable: true

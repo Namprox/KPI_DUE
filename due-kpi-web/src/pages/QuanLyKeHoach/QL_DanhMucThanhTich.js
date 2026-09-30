@@ -487,7 +487,7 @@ const QL_DanhMucThanhTich = () => {
             style={{ marginRight: "8px" }}
           ></i>
           <b>{soLaChuaGan}</b> mức đang hoạt động chưa gán đơn vị phụ trách. Các
-          dòng kê khai trỏ vào chúng sẽ rơi về trưởng đơn vị quản lý trực tiếp —
+          dòng kê khai trỏ vào chúng sẽ rơi về trưởng đơn vị quản lý trực tiếp -
           nếu mức thuộc một phòng chuyên trách (khen thưởng → P.TCHC, sáng kiến →
           P.KHHTQT) thì phòng đó sẽ không thấy dòng nào để duyệt.
         </div>

@@ -70,7 +70,7 @@ function UploadForm({ idNam, busy, setBusy }) {
       <section className="hoc-vu-upload-card">
         <div className="hoc-vu-upload-card-header">
           <h3><i className="fa-solid fa-file-excel" aria-hidden="true" /> Upload mẫu giảm trừ</h3>
-          <span className="status-pill pill-blue">Năm {idNam || "—"}</span>
+          <span className="status-pill pill-blue">Năm {idNam || "-"}</span>
         </div>
         <label className="hoc-vu-dropzone" onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => { e.preventDefault(); if (!busy) chooseFile(e.dataTransfer.files[0] || null); }}>
@@ -127,8 +127,8 @@ function UploadForm({ idNam, busy, setBusy }) {
       {result.ChiTiet?.length > 0 && <div className="table-responsive"><table className="custom-table">
         <thead><tr><th>Nội dung</th><th>Giá trị</th><th>Mã nhân viên</th><th>Dòng Excel</th><th>Số dòng</th></tr></thead>
         <tbody>{result.ChiTiet.map((row, index) => <tr key={index}>
-          <td>{LOAI[row.Loai] || row.Loai}</td><td>{row.GiaTri || "—"}</td><td>{row.MaNhanVien || "—"}</td>
-          <td>{row.DongExcel ?? "—"}</td><td>{row.SoDong ?? "—"}</td>
+          <td>{LOAI[row.Loai] || row.Loai}</td><td>{row.GiaTri || "-"}</td><td>{row.MaNhanVien || "-"}</td>
+          <td>{row.DongExcel ?? "-"}</td><td>{row.SoDong ?? "-"}</td>
         </tr>)}</tbody>
       </table></div>}
     </section>}

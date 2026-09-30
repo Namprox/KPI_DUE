@@ -155,15 +155,15 @@ const ToTrinhKhoa = () => {
     try {
       const { message, soHoSoHoanTat, soHoSoChoHt } =
         await dongGoiToTrinh(g.IdToTrinh, {
-        tyLeXuatSac: null,
-        rowVersion: g.RowVersion,
-      });
+          tyLeXuatSac: null,
+          rowVersion: g.RowVersion,
+        });
       await Promise.all([taiChiTiet({ imLang: true }), taiDanhSach()]);
       showToast(
         "success",
         "Đã đóng gói tờ trình",
         message ||
-          `Đóng gói thành công. ${soHoSoHoanTat ?? 0} hồ sơ đã hoàn tất, ${soHoSoChoHt ?? 0} hồ sơ lãnh đạo chờ Hiệu trưởng duyệt.`,
+        `Đóng gói thành công. ${soHoSoHoanTat ?? 0} hồ sơ đã hoàn tất, ${soHoSoChoHt ?? 0} hồ sơ lãnh đạo chờ Hiệu trưởng duyệt.`,
         8000,
       );
     } catch (error) {
@@ -688,7 +688,7 @@ const ToTrinhKhoa = () => {
                 const daChon = n.HoSo.filter((h) => uuTienChon.includes(h.IdPhieu)).length;
                 return <section key={n.Nhom} style={{ marginBottom: 16 }}>
                   <h4>{n.TenNhom} · Đã chọn {daChon}/{n.SoSuatConLai} suất</h4>
-                  <p>Mẫu số: {n.SoMauSo ?? "—"} · {n.SoDongHangDuDk ?? "—"} người đồng hạng đủ điều kiện · Điểm ranh giới: {formatDiem(n.DiemRanhGioi)}</p>
+                  <p>Mẫu số: {n.SoMauSo ?? "-"} · {n.SoDongHangDuDk ?? "-"} người đồng hạng đủ điều kiện · Điểm ranh giới: {formatDiem(n.DiemRanhGioi)}</p>
                   <table className="custom-table">
                     <thead><tr><th>Chỉ định</th><th>Họ tên</th><th>Tổng tích lũy</th><th>Điều kiện</th></tr></thead>
                     <tbody>{n.HoSo.map((h) => <tr key={h.IdPhieu}>

@@ -636,10 +636,10 @@ const ChiTietDuyetThanhTich = () => {
             </div>
             {Math.abs(tongDiemDuKien - (Number(banKe.TongDiemDuyet) || 0)) >
               0.001 && (
-              <div className="cd-hint" style={{ marginTop: 0 }}>
-                dự kiến sau khi lưu: {formatDiem(tongDiemDuKien)}
-              </div>
-            )}
+                <div className="cd-hint" style={{ marginTop: 0 }}>
+                  dự kiến sau khi lưu: {formatDiem(tongDiemDuKien)}
+                </div>
+              )}
           </div>
         </div>
 
@@ -770,7 +770,7 @@ const ChiTietDuyetThanhTich = () => {
                 </div>
                 {!nhom.coTheDuyet && (
                   <div className="kkt-nhom-khoa-note">
-                    Nhóm này do {nhom.ten} xét — bạn xem được nhưng không lưu
+                    Nhóm này do {nhom.ten} xét - bạn xem được nhưng không lưu
                     quyết định được.
                   </div>
                 )}

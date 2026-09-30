@@ -1,4 +1,10 @@
 /**
+ * @typedef {Object} PhieuNamXepLoaiTongHopQuy
+ * @property {1|2|null} [NguonDiemCoBan]
+ * @property {1|2|3|null} [XepLoaiTongHopQuy] Chỉ có khi nguồn điểm cơ bản là 2.
+ * @property {string|null} [XepLoaiTongHopQuyText] Nhãn theo điểm, độc lập XepLoai chính thức.
+ */
+/**
  * Lớp gọi API + hằng số miền cho PHIẾU ĐÁNH GIÁ KPI CÁ NHÂN (phieu_danh_gia).
  *
  * QUY TRÌNH 4 GIAI ĐOẠN - có HAI trục trạng thái song song, đừng trộn lẫn.
@@ -754,6 +760,7 @@ export const fetchKiemTraHopLe = async (idPhieu) => {
 };
 
 /** Chi tiết phiếu: header + ChiTiet[] + PheDuyet[] + RowVersion. */
+/** @returns {Promise<PhieuNamXepLoaiTongHopQuy>} */
 export const fetchPhieuDetail = async (idPhieu) => {
   const data = await getJson(
     `phieu/${idPhieu}`,

@@ -261,13 +261,13 @@ const KeKhaiThanhTich = () => {
     }
     return muc
       ? {
-          TenMuc: muc.TenMuc,
-          DiemQuyDoi: muc.DiemQuyDoi,
-          ChoPhepSoLuong: muc.ChoPhepSoLuong,
-          YeuCauMinhChung: muc.YeuCauMinhChung,
-          TenDonVi: muc.TenDonVi,
-          conTrongDanhMuc: true,
-        }
+        TenMuc: muc.TenMuc,
+        DiemQuyDoi: muc.DiemQuyDoi,
+        ChoPhepSoLuong: muc.ChoPhepSoLuong,
+        YeuCauMinhChung: muc.YeuCauMinhChung,
+        TenDonVi: muc.TenDonVi,
+        conTrongDanhMuc: true,
+      }
       : null;
   };
 
@@ -491,7 +491,7 @@ const KeKhaiThanhTich = () => {
                               <i className="fa-solid fa-comment-dots"></i>{" "}
                               {r.nhanXetDuyet}
                               {r.tenNguoiDuyetDong
-                                ? ` — ${r.tenNguoiDuyetDong}`
+                                ? ` - ${r.tenNguoiDuyetDong}`
                                 : ""}
                               {r.ngayDuyetDong
                                 ? `, ${formatNgayGio(r.ngayDuyetDong)}`
@@ -524,7 +524,7 @@ const KeKhaiThanhTich = () => {
                         value={r.quy}
                         onChange={(v) => capNhatDong(r.key, { quy: v })}
                         options={QUY_OPTIONS}
-                        placeholder="— Chọn quý —"
+                        placeholder="- Chọn quý -"
                         disabled={!dongSuaDuoc}
                         portal
                       />
@@ -1126,17 +1126,17 @@ const KeKhaiThanhTich = () => {
         onChon={
           suaDuoc
             ? (muc) => {
-                setRows((truoc) => [
-                  ...truoc,
-                  { ...dongMoi(), idMuc: String(muc.IdMuc) },
-                ]);
-                setMoDanhMuc(false);
-                showToast(
-                  "info",
-                  "Đã thêm dòng",
-                  `${muc.TenMuc} - nhập tên thành tích và quý rồi bấm Lưu`,
-                );
-              }
+              setRows((truoc) => [
+                ...truoc,
+                { ...dongMoi(), idMuc: String(muc.IdMuc) },
+              ]);
+              setMoDanhMuc(false);
+              showToast(
+                "info",
+                "Đã thêm dòng",
+                `${muc.TenMuc} - nhập tên thành tích và quý rồi bấm Lưu`,
+              );
+            }
             : undefined
         }
       />

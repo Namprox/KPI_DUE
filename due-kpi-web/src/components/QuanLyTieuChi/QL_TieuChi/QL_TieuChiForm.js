@@ -1,5 +1,6 @@
 import React from "react";
 import SearchSelect from "../../Common/SearchSelect";
+import { CONG_THUC_GIO_GIANG, CONG_THUC_TU_DONG_OPTIONS } from "../../../utils/gioGiangTyLe";
 
 const LOAI_THANG_DIEM_OPTIONS = [
   { value: 1, label: "1 - Mức điểm rời rạc (VD: 2đ, 5đ, 10đ)" },
@@ -18,6 +19,12 @@ const QL_TieuChiForm = ({
   tieuChiList = [],
 }) => {
   if (!isOpen) return null;
+  const congThucOptions = [...CONG_THUC_TU_DONG_OPTIONS];
+  [formData, ...tieuChiList].forEach((item) => {
+    if (item.CongThucTongHop && !congThucOptions.some((option) => option.value === item.CongThucTongHop)) {
+      congThucOptions.push({ value: item.CongThucTongHop, label: item.CongThucTongHop });
+    }
+  });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -182,6 +189,7 @@ const QL_TieuChiForm = ({
                   Điểm Tối Đa <span className="text-red">*</span>
                 </label>
                 <input
+                  aria-label="Điểm tối đa"
                   type="number"
                   name="DiemToiDa"
                   className="form-input"
@@ -203,6 +211,18 @@ const QL_TieuChiForm = ({
                 />
               </div>
             </div>
+
+            <div className="form-group">
+              <label>Nguồn điểm</label>
+              <SearchSelect ariaLabel="Nguồn điểm" name="LoaiNguonDiem" value={formData.LoaiNguonDiem || 1}
+                onChange={handleSelect("LoaiNguonDiem")} options={[{ value: 1, label: "Chấm thủ công" }, { value: 2, label: "Chấm tự động" }]} />
+            </div>
+            {Number(formData.LoaiNguonDiem) === 2 && <div className="form-group">
+              <label>Công thức chấm tự động <span className="text-red">*</span></label>
+              <SearchSelect ariaLabel="Công thức chấm tự động" name="CongThucTongHop" value={formData.CongThucTongHop || ""}
+                onChange={handleSelect("CongThucTongHop")} required searchable options={congThucOptions} placeholder="Chọn công thức chấm tự động" />
+              {formData.CongThucTongHop === CONG_THUC_GIO_GIANG && <p className="form-hint">Tỷ lệ hoàn thành định mức giờ giảng. Dùng thang điểm rời rạc và cấu hình các mức 20, 15, 10, 0.</p>}
+            </div>}
 
             {Number(formData.LoaiThangDiem) === 1 && (
               <div

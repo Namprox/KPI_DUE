@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { laCongThucGioGiang } from "../../utils/gioGiangTyLe";
 import {
   fetchMinhChung,
   fetchNhiemVuCongDong,
@@ -204,7 +205,8 @@ const TieuChiChamCard = ({
 
   // Tiêu chí tự động không đi qua ai chấm. Phiếu giảng viên lưu kết quả ở
   // DiemChinhThuc, còn phiếu quý viên chức trả rõ DiemTuDong.
-  const diemTuDong =
+  const laTyLeGioGiang = laCongThucGioGiang(chiTiet);
+  const diemTuDong = laTyLeGioGiang ? chiTiet.DiemChinhThuc :
     chiTiet.DiemTuDong ??
     chiTiet.DiemChinhThuc ??
     chiTiet.DiemKhoa ??
@@ -402,7 +404,7 @@ const TieuChiChamCard = ({
               <div className="cdm-diem-o">
                 <div className="cdm-diem-nhan">Hệ thống tính</div>
                 <div className="cdm-diem-gt cdm-diem-he-thong">
-                  {formatDiem(diemTuDong)}
+                  {laTyLeGioGiang && diemTuDong == null ? "Không chấm tự động" : formatDiem(diemTuDong)}
                 </div>
               </div>
             )}
@@ -562,7 +564,7 @@ const TieuChiChamCard = ({
             <span
               className={`cdm-tu-dong-so${diemTuDong == null ? " cdm-tu-dong-trong" : ""}`}
             >
-              {diemTuDong != null ? formatDiem(diemTuDong) : "Chưa tính"}
+              {diemTuDong != null ? formatDiem(diemTuDong) : laTyLeGioGiang ? "Không chấm tự động" : "Chưa tính"}
             </span>
             <span className="cdm-tu-dong-max">
               / {formatDiem(chiTiet.DiemToiDa)}

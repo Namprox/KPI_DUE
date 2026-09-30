@@ -237,7 +237,7 @@ const DuyetKeKhaiThanhTich = () => {
               { value: "", label: "-- Mọi đơn vị --" },
               ...donViList.map((dv) => ({
                 value: dv.IdDonVi,
-                label: `${dv.MaDonVi} — ${dv.TenDonVi}`,
+                label: `${dv.MaDonVi} - ${dv.TenDonVi}`,
               })),
             ]}
             placeholder="-- Mọi đơn vị --"

@@ -2,10 +2,10 @@ import React from "react";
 import "../../css/HocVuTongQuan.css";
 
 const hienThiSo = (value) =>
-  value == null ? "—" : Number(value).toLocaleString("vi-VN");
+  value == null ? "-" : Number(value).toLocaleString("vi-VN");
 
 const hienThiKhoa = (year) => {
-  if (year == null || Number.isNaN(Number(year))) return "—";
+  if (year == null || Number.isNaN(Number(year))) return "-";
   const nam = Number(year);
   return nam > 1974 ? String(nam - 1974) : String(nam);
 };
@@ -14,9 +14,9 @@ const hienThiTyLe = (value) =>
   value == null
     ? "Chưa có dữ liệu"
     : `${Number(value).toLocaleString("vi-VN", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}%`;
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}%`;
 
 const HocVuTongQuan = ({ hocVu }) => {
   if (!hocVu) return null;

@@ -104,12 +104,12 @@ const DanhMucThanhTichModal = ({
         .concat(
           laTheoGoc.has(null)
             ? [
-                {
-                  key: "g-khac",
-                  title: "Mức chưa rõ tiêu chí",
-                  items: laTheoGoc.get(null).filter(khop),
-                },
-              ]
+              {
+                key: "g-khac",
+                title: "Mức chưa rõ tiêu chí",
+                items: laTheoGoc.get(null).filter(khop),
+              },
+            ]
             : [],
         )
         .filter((g) => g.items.length > 0);
@@ -142,7 +142,7 @@ const DanhMucThanhTichModal = ({
   const phuDePhai = dangTim
     ? "Đang tìm trong toàn bộ danh mục - chọn tiêu chí bên trái để xem lại theo mục."
     : gocDangXem
-      ? `Trần ${gocDangXem.TranDiem != null ? formatDiem(gocDangXem.TranDiem) : "—"} điểm cho cả tiêu chí này trong một năm.`
+      ? `Trần ${gocDangXem.TranDiem != null ? formatDiem(gocDangXem.TranDiem) : "-"} điểm cho cả tiêu chí này trong một năm.`
       : "Danh mục chưa có mức nào đang hoạt động.";
 
   return (
