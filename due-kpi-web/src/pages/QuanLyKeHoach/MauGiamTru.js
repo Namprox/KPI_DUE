@@ -144,7 +144,7 @@ export default function MauGiamTru() {
     </div></div>
     <div className="hoc-vu-toolbar"><div className="hoc-vu-year-control">
       <label htmlFor="giam-tru-nam"><i className="fa-solid fa-calendar" aria-hidden="true" /> Năm đánh giá</label>
-      <select id="giam-tru-nam" className="form-input" value={selectedNam} disabled={busy || dangTaiNam} onChange={(e) => setSelectedNam(e.target.value)}>
+      <select id="giam-tru-nam" className="form-select" value={selectedNam} disabled={busy || dangTaiNam} onChange={(e) => setSelectedNam(e.target.value)}>
         {!namList.length && <option value="">{dangTaiNam ? "Đang tải năm..." : "Chưa có năm đánh giá"}</option>}
         {namList.map((nam) => <option key={nam.IdNam} value={nam.IdNam}>{nam.TenNam || nam.IdNam}</option>)}
       </select>

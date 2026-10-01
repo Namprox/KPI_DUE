@@ -235,35 +235,14 @@ export const ROLE_SETS = {
   NHIEM_VU_KHOA: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON],
 
   /**
-   * Duyệt bản kê giờ quy đổi theo Phụ lục II của giảng viên.
-   *
-   * Khớp đúng `fn_ke_khai_gio_quy_doi_quyen` phía server: TK/TKL/TP duyệt trong
-   * phạm vi đơn vị mình + đơn vị con, HT và Admin thấy toàn trường. Thư ký Khoa
-   * CỐ Ý bị loại - duyệt là thẩm quyền của trưởng đơn vị, giống nhiệm vụ Khoa.
-   *
-   * Rộng hơn TRUONG_DON_VI vì có thêm HT/Admin, nên đừng dùng lẫn hai tập: đổi
-   * một bên không kéo theo bên kia.
-   */
-  DUYET_KE_KHAI_GIO: [
-    ROLE.TRUONG_KHOA,
-    ROLE.TRUONG_KHOA_LON,
-    ...VAI_TRO_TRUONG_PHONG,
-    ROLE.HIEU_TRUONG,
-    ROLE.ADMIN,
-  ],
-
-  /**
    * Duyệt bản kê THÀNH TÍCH VƯỢT TRỘI (Nhóm II) của viên chức / NLĐ.
    *
    * Dành cho trưởng phòng chuyên trách (P.TCHC duyệt khen thưởng,
    * P.KHHTQT duyệt sáng kiến), cộng HT/Admin xem toàn trường. TK/TKL không
    * tham gia luồng duyệt này.
    *
-   * CỐ Ý tách khỏi DUYET_KE_KHAI_GIO dù hiện TRÙNG thành viên, vì luật đằng sau
-   * khác hẳn: giờ quy đổi gác theo phạm vi "đơn vị mình + đơn vị con", còn ở đây
-   * gác theo TỪNG DÒNG qua `danh_muc_thanh_tich.id_don_vi_duyet` - một Trưởng
-   * Phòng của P.TCHC với riêng dòng khen thưởng phủ toàn trường. Trộn hai tập
-   * thì lần đầu ai đó xin mở thêm vai trò cho một bên sẽ lặng lẽ mở cả bên kia.
+   * Quyền gác theo TỪNG DÒNG qua `danh_muc_thanh_tich.id_don_vi_duyet`:
+   * một Trưởng Phòng của P.TCHC duyệt dòng khen thưởng trên toàn trường.
    *
    * TBM bị loại (bộ môn là đơn vị cấp 3, không bao giờ là đơn vị duyệt). TKP
    * cũng bị loại dù thực tế thư ký P.TCHC là người xử lý khen thưởng: server

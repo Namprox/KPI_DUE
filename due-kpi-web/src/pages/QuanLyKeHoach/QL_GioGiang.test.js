@@ -20,7 +20,7 @@ beforeEach(() => {
     if (url === "namdanhgia") return ok({ Items: [{ IdNam: 2026 }] });
     if (url === "donvi") return ok({ Items: [{ IdDonVi: 12, MaDonVi: "K_KT", CapDonVi: 2, TenDonVi: "Khoa Kế toán" }] });
     if (url.startsWith("gio-giang-tkb?idNam=")) return ok({ Items: rows, SoDongChuaAnhXa: 1 });
-    if (url.startsWith("gio-giang-tkb/tong-hop")) return ok({ TongHop: [{ IdNhanVien: 7, HoTen: "Nguyễn Văn An", GioTkbDaiHoc: 10, GioTkbSauDaiHoc: 20, GioTkb: 30, GioDaiHoc: 41, GioSauDaiHoc: 52, TongGio: 123 }], SoDongChuaAnhXa: 1 });
+    if (url.startsWith("gio-giang-tkb/tong-hop")) return ok({ TongHop: [{ IdNhanVien: 7, HoTen: "Nguyễn Văn An", GioTkbDaiHoc: 10, GioTkbSauDaiHoc: 20, GioTkb: 30, TongGio: 30 }], SoDongChuaAnhXa: 1 });
     if (url.startsWith("nhan-vien?")) return ok({ Items: [{ IdNhanVien: 8, HoTen: "Nguyễn Văn An", MaNhanVien: "NV8", TenDonVi: "Khoa Kế toán" }], TotalCount: 1 });
     if (url.endsWith("/chi-tiet")) return ok({ Item: rows[0], ChiTiet: [{ IdChiTiet: 1, HeDaoTao: "SDH", GiangTiengAnh: true, MaLopTinChi: "Lop SDH", HeSo: 2, GioChuanTrongNam: 17 }] });
     if (url === "gio-giang-tkb/anh-xa") return ok({ Success: true });
@@ -28,7 +28,7 @@ beforeEach(() => {
   });
 });
 
-test("hai dòng trùng tên ánh xạ và gỡ đúng khoa; tổng hợp tách riêng giờ Phụ lục II", async () => {
+test("hai dòng trùng tên ánh xạ và gỡ đúng khoa; tổng hợp chỉ còn giờ TKB", async () => {
   render(<QL_GioGiang />);
   const buttons = await screen.findAllByRole("button", { name: "Ánh xạ", exact: true });
   expect(buttons).toHaveLength(2);
@@ -36,8 +36,12 @@ test("hai dòng trùng tên ánh xạ và gỡ đúng khoa; tổng hợp tách r
   fireEvent.click(screen.getByRole("tab", { name: "Tổng hợp giờ giảng" }));
   const summary = await screen.findByRole("columnheader", { name: "Giảng dạy ĐH" });
   const table = summary.closest("table");
-  expect(within(table).getByText("41")).toBeInTheDocument();
-  expect(within(table).getByText("52")).toBeInTheDocument();
+  expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual([
+    "Giảng viên", "Đơn vị chính", "Giảng dạy ĐH", "Giảng dạy SĐH", "Tổng TKB", "Tổng giờ",
+  ]);
+  expect(within(table).getByText("10")).toBeInTheDocument();
+  expect(within(table).getByText("20")).toBeInTheDocument();
+  expect(within(table).getAllByText("30")).toHaveLength(2);
   expect(screen.queryByRole("button", { name: "Ánh xạ", exact: true })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "Dữ liệu TKB" }));
   expect(screen.getByText(/Trùng tên, không ai thuộc khoa này/)).toBeInTheDocument();

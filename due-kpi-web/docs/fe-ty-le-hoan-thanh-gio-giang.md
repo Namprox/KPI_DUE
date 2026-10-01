@@ -33,7 +33,7 @@ Type phía FE phải khai báo field đó là optional (`?:`) và coi `undefined
 
 ```
 TyLeHoanThanh (%) = TongGio × 100 / DinhMucApDung
-TongGio           = GioTkb + GioKeKhai + GioQndb
+TongGio           = GioTkb + GioQndb
 DinhMucApDung     = DinhMucGoc − (tổng các cột Giam*) − DieuChinhSan0
 ```
 
@@ -91,7 +91,7 @@ Response 200 dùng chung bao `GioGiangTkbResponse` như các route `gio-giang-tk
       "GiamChuaVaoTruong": 0.00, "GiamTapSu": 0.00, "GiamNghi": 0.00, "GiamDaoTao": 0.00,
       "GiamChucVu": 0.00, "GiamConNho10": 15.60, "GiamCongDoan": 0.00, "GiamConNho40": 33.77,
       "GiamDacBietHt": 0.00, "DieuChinhSan0": 0.00, "DinhMucApDung": 220.63,
-      "GioTkb": 634.50, "GioKeKhai": 0.00, "GioQndb": 0.00, "TongGio": 634.50,
+      "GioTkb": 634.50, "GioQndb": 0.00, "TongGio": 634.50,
       "TyLeHoanThanh": 287.59,
       "DiemDuKien": 20.00, "DiemToiDa": 20.00
     }
@@ -183,7 +183,6 @@ thập phân), hiện nguyên văn ở cột "Cách tính".
 | `DAC_BIET_HT` | Giảm đặc biệt (Hiệu trưởng) | — |
 | `DIEU_CHINH_SAN_0` | Điều chỉnh (không để định mức âm) | "Tổng giảm vượt định mức; phần vượt không tính" |
 | `GIO_TKB` | Giờ theo TKB | "{TenNguon}: {SoLop} lớp, {SoTiet} tiết". Link tới chi tiết lớp `GET api/gio-giang-tkb/{IdGioGiangTkb}/chi-tiet` nếu FE đã có màn đó |
-| `GIO_KE_KHAI` | Kê khai Phụ lục II | "Bản kê #{IdKeKhai}, phần Đại học" (`TenNguon` = `DH`) hoặc "phần Sau đại học" (`SDH`) |
 | `GIO_QNDB` | Huấn luyện QNDB / tự vệ | "{SoNgay} ngày × 2,5 giờ" |
 
 Với dòng miễn theo thời gian (`CHUA_VAO_TRUONG`, `TAP_SU`, `NGHI`, `DAO_TAO`) có `KhoiTuNgay`: nếu khối rộng
@@ -232,7 +231,7 @@ chính cách màn tổng hợp đang quyết định hiện menu, không tự ch
     cột giờ = `SoGio`, chú thích từ `GhiChu`.
 
   Thứ tự: định mức gốc → các khoản giảm → dòng kết quả `DinhMucGoc − tổng giảm = DinhMucApDung` → nhóm giờ
-  thực hiện (TKB, kê khai, QNDB) → `TongGio`. Khoản có cột tổng bằng 0 và không có dòng nào thì ẩn.
+  thực hiện (TKB, QNDB) → `TongGio`. Khoản có cột tổng bằng 0 và không có dòng nào thì ẩn.
   Không cộng lại `SoGio` để suy ra cột tổng: dùng cột tổng của dòng chính.
 - Sắp xếp / lọc phía client: theo đơn vị, theo tỷ lệ, "chỉ dòng có cảnh báo", "chỉ dòng không chấm tự động".
 - Xuất Excel: nếu màn tổng hợp đã có nút xuất thì làm tương tự với đủ các cột trên.

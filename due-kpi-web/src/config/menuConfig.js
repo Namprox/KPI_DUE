@@ -194,24 +194,13 @@ export const MENU_GROUPS = [
     icon: "fa-folder-open",
     items: [
       {
-        // Kê khai giờ quy đổi theo PHỤ LỤC II - "quy đổi các hoạt động chuyên
-        // môn ra giờ chuẩn giảng dạy". Giảng viên TỰ kê số lượng từng đầu việc,
-        // TK/TKL duyệt từng dòng. Server suy người dùng TỪ TOKEN nên đây chỉ là
-        // lối vào; gate theo NGẠCH vì chỉ giảng viên mới có định mức giờ chuẩn.
-        name: "Kê khai giờ quy đổi",
-        icon: "fa-solid fa-stopwatch",
-        path: "/ke-khai-gio-quy-doi",
-        roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
-      },
-      {
         name: "Giờ giảng của tôi",
         icon: "fa-solid fa-chalkboard-user",
         path: "/gio-giang-cua-toi",
         access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
       },
       {
-        // Song sinh của mục trên cho VIÊN CHỨC / NLĐ: kê khai THÀNH TÍCH VƯỢT
+        // VIÊN CHỨC / NLĐ kê khai THÀNH TÍCH VƯỢT
         // TRỘI (Nhóm II - sáng kiến, khen thưởng, đào tạo, phong trào). Nhân
         // viên TỰ kê từng thành tích, đơn vị phụ trách duyệt từng dòng.
         //
@@ -417,20 +406,6 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-chart-column",
         path: "/ty-le-hoan-thanh-gio-giang",
         roles: ROLE_SETS.TY_LE_GIO_GIANG,
-      },
-      {
-        // Duyệt bản kê giờ quy đổi (Phụ lục II) của giảng viên trong phạm vi
-        // đơn vị. Trục nghiệp vụ RIÊNG, không nằm trong máy trạng thái của phiếu
-        // KPI: module cố ý chưa ghi vào gio_thuc_hien_gv, chỉ lưu và phát API
-        // đọc cho bước cộng với giờ giảng dạy sau này.
-        //
-        // Tập vai trò rộng hơn các mục khác của nhóm (thêm HT/Admin) vì server
-        // cho hai chức vụ đó xem toàn trường - xem ROLE_SETS.DUYET_KE_KHAI_GIO.
-        name: "Duyệt kê khai giờ quy đổi",
-        icon: "fa-solid fa-stopwatch",
-        path: "/quan-ly/ke-khai-gio-quy-doi",
-        roles: ROLE_SETS.DUYET_KE_KHAI_GIO,
-        childPaths: ["/quan-ly/ke-khai-gio-quy-doi/:id"],
       },
       {
         name: "Mẫu giảm trừ",

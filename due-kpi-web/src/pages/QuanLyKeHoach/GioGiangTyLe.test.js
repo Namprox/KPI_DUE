@@ -1,5 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
+import { MemoryRouter } from "react-router-dom";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { TongHopGioGiang } from "./GioGiangTkbPanels";
 import GioGiangNamCard from "../../components/CaNhan/GioGiangNamCard";
@@ -51,8 +52,8 @@ test("thẻ tự xem đào tạo cả năm giữ tỷ lệ và điểm do API tr
 });
 
 test("preview và phiếu đào tạo cả năm có điểm 20 được hiển thị như dòng tự động bình thường", () => {
-  const { unmount } = render(<DanhGiaPhuLuc2Form criteriaList={[{ IdTieuChi: 1, TenTieuChi: "Hoàn thành giờ giảng", DiemToiDa: 20 }]}
-    formData={{}} autoScores={{ 1: { CongThucTongHop: "GIO_GIANG_TY_LE", DiemTuDong: 20 } }} tongDiemCoBan={20} />);
+  const { unmount } = render(<MemoryRouter><DanhGiaPhuLuc2Form criteriaList={[{ IdTieuChi: 1, TenTieuChi: "Hoàn thành giờ giảng", DiemToiDa: 20 }]}
+    formData={{}} autoScores={{ 1: { CongThucTongHop: "GIO_GIANG_TY_LE", DiemTuDong: 20 } }} tongDiemCoBan={20} /></MemoryRouter>);
   expect(screen.getAllByText("20đ").length).toBeGreaterThan(0);
   expect(screen.queryByText("Không chấm tự động")).not.toBeInTheDocument();
   unmount();
@@ -142,8 +143,8 @@ test("chi tiết phiếu đã chốt nhưng điểm trống không lấy điểm
 });
 
 test.each([undefined, null])("preview công thức giờ giảng với điểm %s không hiện chưa hỗ trợ hay 0", (DiemTuDong) => {
-  render(<DanhGiaPhuLuc2Form criteriaList={[{ IdTieuChi: 1, TenTieuChi: "Hoàn thành giờ giảng", DiemToiDa: 20 }]}
-    formData={{}} autoScores={{ 1: { CongThucTongHop: "GIO_GIANG_TY_LE", DiemTuDong } }} tongDiemCoBan={0} />);
+  render(<MemoryRouter><DanhGiaPhuLuc2Form criteriaList={[{ IdTieuChi: 1, TenTieuChi: "Hoàn thành giờ giảng", DiemToiDa: 20 }]}
+    formData={{}} autoScores={{ 1: { CongThucTongHop: "GIO_GIANG_TY_LE", DiemTuDong } }} tongDiemCoBan={0} /></MemoryRouter>);
   expect(screen.getByText("Không chấm tự động")).toBeInTheDocument();
   expect(screen.queryByText("Chưa tính")).not.toBeInTheDocument();
   expect(screen.queryByText("Chưa hỗ trợ")).not.toBeInTheDocument();

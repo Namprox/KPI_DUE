@@ -138,8 +138,8 @@ const mockApi = ({ item = banKe(), danhMuc = danhMucMacDinh(), ghiDe } = {}) =>
   });
 
 /**
- * Chọn quý cho dòng CUỐI bảng. `Quy` là trường bắt buộc của module (khác `KyHoc`
- * của giờ quy đổi), nên dòng mới không chọn quý thì lần lưu bị chặn ngay ở FE.
+ * Chọn quý cho dòng CUỐI bảng. `Quy` là trường bắt buộc của module,
+ * nên dòng mới không chọn quý thì lần lưu bị chặn ngay ở FE.
  */
 const chonQuyDongCuoi = (nhan) => {
   const o = [...document.querySelectorAll(".kkt-cell-kyhoc")].at(-1);

@@ -25,19 +25,19 @@ const GhiNhanViPhamNhanVienMock = () => {
             <div className="cd-toolbar" style={{ display: "flex", gap: "15px", marginBottom: "20px" }}>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Năm đánh giá</label>
-                    <select className="form-input" style={{ width: "100%", padding: "8px" }}><option>Năm học 2026</option></select>
+                    <select className="form-select" style={{ width: "100%" }}><option>Năm học 2026</option></select>
                 </div>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Đơn vị (Phòng/Ban)</label>
-                    <select className="form-input" style={{ width: "100%", padding: "8px" }}><option>-- Tất cả Phòng/Ban --</option></select>
+                    <select className="form-select" style={{ width: "100%" }}><option>-- Tất cả Phòng/Ban --</option></select>
                 </div>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Nhân viên</label>
-                    <select className="form-input" style={{ width: "100%", padding: "8px" }}><option>-- Tất cả nhân viên --</option></select>
+                    <select className="form-select" style={{ width: "100%" }}><option>-- Tất cả nhân viên --</option></select>
                 </div>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Nhóm vi phạm</label>
-                    <select className="form-input" style={{ width: "100%", padding: "8px" }}><option>-- Tất cả nhóm --</option></select>
+                    <select className="form-select" style={{ width: "100%" }}><option>-- Tất cả nhóm --</option></select>
                 </div>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Tìm kiếm từ khóa</label>

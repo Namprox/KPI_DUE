@@ -68,7 +68,7 @@ const DeXuatTangXepLoaiMock = () => {
                         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
                             <div>
                                 <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", marginBottom: "5px", color: "#475569" }}>Chọn Nhân viên <span style={{ color: "red" }}>*</span></label>
-                                <select className="form-input" style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #cbd5e1" }} value={selectedEmp} onChange={e => setSelectedEmp(e.target.value)}>
+                                <select className="form-select" style={{ width: "100%" }} value={selectedEmp} onChange={e => setSelectedEmp(e.target.value)}>
                                     <option value="">-- Chọn nhân viên đang đạt hạng B hoặc A --</option>
                                     {MOCK_EMPLOYEES.map(emp => <option key={emp.id} value={emp.id}>{emp.name} ({emp.currentRank})</option>)}
                                 </select>
@@ -76,7 +76,7 @@ const DeXuatTangXepLoaiMock = () => {
 
                             <div>
                                 <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", marginBottom: "5px", color: "#475569" }}>Hình thức tăng hạng <span style={{ color: "red" }}>*</span></label>
-                                <select className="form-input" style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #cbd5e1" }} value={proposalType} onChange={e => setProposalType(e.target.value)}>
+                                <select className="form-select" style={{ width: "100%" }} value={proposalType} onChange={e => setProposalType(e.target.value)}>
                                     <option value="">-- Chọn hình thức --</option>
                                     <option value="B_to_A">Từ mức B (Hoàn thành NV) lên mức A (Hoàn thành Tốt NV)</option>
                                     <option value="A_to_A_plus">Từ mức A (Hoàn thành Tốt NV) lên mức A+ (Hoàn thành Xuất sắc NV)</option>

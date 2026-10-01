@@ -76,7 +76,7 @@ const BadgeMeta = ({ meta }) => {
 /**
  * Duyệt một bản kê THÀNH TÍCH VƯỢT TRỘI - màn hình thao tác của đơn vị phụ trách.
  *
- * Đây là màn hình khác template giờ quy đổi NHIỀU NHẤT, vì một điểm nghiệp vụ:
+ * Quy tắc nghiệp vụ của màn hình này:
  *
  *   ⚠️ **Quyền xét gác theo TỪNG DÒNG.** Mỗi mức thành tích có `IdDonViDuyet`
  *   riêng, nên một bản kê có thể do nhiều đơn vị cùng xét (P.TCHC xét khen

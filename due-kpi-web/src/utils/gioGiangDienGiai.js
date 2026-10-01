@@ -15,7 +15,6 @@ export const NHOM_DINH_MUC = [
 ];
 export const NHOM_GIO_THUC_HIEN = [
   ["GIO_TKB", "Giờ theo TKB", "GioTkb"],
-  ["GIO_KE_KHAI", "Kê khai Phụ lục II", "GioKeKhai"],
   ["GIO_QNDB", "Huấn luyện QNDB / tự vệ", "GioQndb"],
 ];
 export const GHI_CHU_DIEN_GIAI = {
@@ -89,10 +88,6 @@ export const moTaDienGiai = (item, row) => {
       if (item.TenNguon) parts.push(item.TenNguon);
       if (item.SoLop != null) parts.push(`${so(item.SoLop)} lớp`);
       if (item.SoTiet != null) parts.push(`${so(item.SoTiet)} tiết`);
-      break;
-    case "GIO_KE_KHAI":
-      if (item.IdKeKhai != null) parts.push(`Bản kê #${item.IdKeKhai}`);
-      if (item.TenNguon) parts.push({ DH: "Phần Đại học", SDH: "Phần Sau đại học" }[item.TenNguon] || item.TenNguon);
       break;
     case "GIO_QNDB": if (item.SoNgay != null) parts.push(`${so(item.SoNgay)} ngày × 2,5 giờ`); break;
     default: if (item.TenNguon) parts.push(item.TenNguon);

@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Toast } from "primereact/toast";
+import SearchSelect from "../../components/Common/SearchSelect";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
 import "../../css/CaNhan/TongQuanCaNhan.css";
@@ -234,18 +235,17 @@ const TongQuanCaNhan = () => {
   const boLoc = (
     <label className="db-field">
       Năm đánh giá
-      <select
+      <SearchSelect
         className="db-select"
+        ariaLabel="Năm đánh giá"
         value={selectedNam}
-        onChange={(e) => setSelectedNam(e.target.value)}
+        onChange={setSelectedNam}
         disabled={dangTaiNam}
-      >
-        {namList.map((n) => (
-          <option key={n.IdNam} value={String(n.IdNam)}>
-            {n.IdNam}
-          </option>
-        ))}
-      </select>
+        options={namList.map((n) => ({
+          value: String(n.IdNam),
+          label: String(n.IdNam),
+        }))}
+      />
     </label>
   );
 

@@ -212,8 +212,8 @@ const QL_NhanVien = () => {
                                 Đơn vị phụ trách:
                             </label>
                             <select
-                                className="form-input"
-                                style={{ minWidth: '260px', padding: '6px 12px', borderColor: '#0284c7', fontWeight: 500 }}
+                                className="form-select"
+                                style={{ minWidth: '260px' }}
                                 value={selectedDonViId}
                                 onChange={handleDonViChange}
                             >
@@ -265,8 +265,8 @@ const QL_NhanVien = () => {
                             Lọc theo đơn vị:
                         </label>
                         <select
-                            className="form-input"
-                            style={{ minWidth: '260px', padding: '6px 12px' }}
+                            className="form-select"
+                            style={{ minWidth: '260px' }}
                             value={selectedDonViId}
                             onChange={handleDonViChange}
                         >

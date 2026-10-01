@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import disableDevtool from "disable-devtool";
 import "./index.css";
 import App from "./App";
+import "./css/select.css";
 import reportWebVitals from "./reportWebVitals";
 
 if (

@@ -73,9 +73,33 @@ test("thiếu DienGiai hoặc SoGio an toàn, không gộp số giờ hay trộn
   expect(screen.queryByText("KHONG_HIEN")).not.toBeInTheDocument();
 });
 
-test("ngày chỉ định dạng lịch; kê khai và QNDB không tự tính giờ", () => {
+test("ngày chỉ định dạng lịch; TKB và QNDB chỉ mô tả nguồn", () => {
   expect(ngayDienGiai("2026-01-01T00:00:00")).toBe("01/01/2026");
   expect(ngayDienGiai(undefined)).toBe("");
-  expect(moTaDienGiai({ IdNhanVien: 1, ThuTu: 1, KhoanMuc: "GIO_KE_KHAI", IdKeKhai: 9, TenNguon: "SDH" }, {})).toBe("Bản kê #9; Phần Sau đại học");
+  expect(moTaDienGiai({ IdNhanVien: 1, ThuTu: 1, KhoanMuc: "GIO_TKB", TenNguon: "Giảng viên A - Luật", SoLop: 2, SoTiet: 10 }, {})).toBe("Giảng viên A - Luật; 2 lớp; 10 tiết");
   expect(moTaDienGiai({ IdNhanVien: 1, ThuTu: 1, KhoanMuc: "GIO_QNDB", SoNgay: 4 }, {})).toBe("4 ngày × 2,5 giờ");
+});
+
+test("contract chỉ có TKB và QNDB; tổng giờ, tỷ lệ và điểm lấy nguyên API", async () => {
+  apiFetch.mockResolvedValue(ok({ TyLeHoanThanh: [{
+    ...row, GioTkb: 117, GioQndb: 12.5, TongGio: 129.5,
+    TyLeHoanThanh: 95.93, DiemDuKien: 15, DiemToiDa: 20,
+  }], DienGiai: [...dienGiai, {
+    IdNhanVien: 440, ThuTu: 5, KhoanMuc: "GIO_QNDB", SoNgay: 5, SoGio: 12.5,
+  }] }));
+  render(<TongHopGioGiang idNam={2026} idNhanVien={440} tyLe />);
+  expect(await screen.findByText("95,93%")).toBeInTheDocument();
+  expect(screen.getByText("15 / 20")).toBeInTheDocument();
+  expect(screen.getByText(/Tổng giờ = Giờ TKB \+ Giờ QNDB/)).toBeInTheDocument();
+  const table = screen.getByRole("table");
+  expect(within(table).getByRole("row", { name: "Giờ theo TKB 117" })).toBeInTheDocument();
+  expect(within(table).getByRole("row", { name: "Huấn luyện QNDB / tự vệ 12,5" })).toBeInTheDocument();
+  expect(within(table).getByRole("row", { name: "Tổng giờ thực hiện 129,5" })).toBeInTheDocument();
+  expect(within(table).getAllByRole("rowheader").map((cell) => cell.textContent)).toEqual([
+    "Định mức gốc", "Trước ngày vào Trường", "Tập sự / thử việc", "Giảm theo chức vụ",
+    "Định mức gốc − tổng giảm − điều chỉnh sàn 0 = định mức áp dụng",
+    "Giờ theo TKB", "Huấn luyện QNDB / tự vệ", "Tổng giờ thực hiện",
+  ]);
+  expect(apiFetch).toHaveBeenCalledTimes(1);
+  expect(apiFetch).toHaveBeenCalledWith("gio-giang-tkb/ty-le-hoan-thanh?idNam=2026&idNhanVien=440", expect.anything());
 });

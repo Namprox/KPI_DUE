@@ -28,7 +28,6 @@ export interface TyLeHoanThanhGioGiang {
   GiamDacBietHt: number;
   DieuChinhSan0: number;
   GioTkb: number;
-  GioKeKhai: number;
   GioQndb: number;
   TongGio: number;
 }
@@ -64,7 +63,6 @@ export interface DienGiaiGioGiang {
   IdGioGiangTkb?: number | null;
   SoLop?: number | null;
   SoTiet?: number | null;
-  IdKeKhai?: number | null;
   IdChucVu?: number | null;
   MauSo?: number | null;
   SoNgay?: number | null;

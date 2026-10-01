@@ -78,8 +78,7 @@ const BadgeTrangThai = ({ trangThai }) => {
  * Trang này chỉ là LỐI VÀO: mọi thao tác chốt / trả về / mở lại nằm ở màn hình
  * chi tiết, vì đơn vị nghiệp vụ là TỪNG DÒNG kê khai - không còn chốt cả bản kê.
  *
- * Khác hẳn hàng đợi giờ quy đổi ở phạm vi: ở đó phạm vi là "đơn vị mình + đơn vị
- * con", còn ở đây một bản kê lọt vào danh sách khi người gọi duyệt được ÍT NHẤT
+ * Một bản kê lọt vào danh sách khi người gọi duyệt được ÍT NHẤT
  * MỘT dòng của nó. Hai đường vào:
  *   (a) dòng trỏ tới mức có `IdDonViDuyet` = đơn vị người gọi giữ chức vụ duyệt
  *       → Trưởng Phòng P.TCHC thấy dòng khen thưởng của nhân viên TOÀN TRƯỜNG;
@@ -96,7 +95,7 @@ const BadgeTrangThai = ({ trangThai }) => {
  * Mặc định màn hình mở ở chế độ "còn dòng chờ bạn xét" (`chiConChoDuyet=1`).
  *
  * Bộ lọc đơn vị ở đây CHỈ để thu hẹp hiển thị, không phải phân quyền - server đã
- * quyết phạm vi. Cố ý dựng nó (khác màn hình giờ quy đổi) vì người của phòng
+ * quyết phạm vi. Bộ lọc này giúp người của phòng
  * chuyên trách có thể phải lọc giữa hàng trăm nhân viên toàn trường.
  */
 const DuyetKeKhaiThanhTich = () => {

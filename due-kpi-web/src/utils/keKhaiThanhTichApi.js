@@ -11,8 +11,7 @@
  * Mọi request đi qua apiFetch nên đã có sẵn `credentials: 'include'` và vòng
  * refresh 401 (xem utils/api.js); tuyệt đối không gọi fetch trần ở màn hình.
  *
- * Module này là SONG SINH của kê khai giờ quy đổi (utils/keKhaiGioQuyDoiApi.js):
- * cùng vòng đời, cùng envelope, cùng cách bóc slot. Bốn điểm khác cần nhớ:
+ * Các quy tắc của vòng đời kê khai thành tích:
  *
  *  1. **Duyệt gác HAI TẦNG.** Tầng bản kê (`ChoPhepDuyet` = duyệt được ít nhất
  *     một dòng) mở màn hình. Tầng DÒNG gác `duyet-chi-tiet` theo `IdDonViDuyet`
@@ -333,7 +332,7 @@ const docBody = async (response) => {
 /**
  * Dựng Error đã Việt hoá để đẩy thẳng ra toast.
  *
- * ⚠️ Khác bản giờ quy đổi: PHẢI mang theo `DongCoVanDe`. Hai lỗi quan trọng nhất
+ * PHẢI mang theo `DongCoVanDe`. Hai lỗi quan trọng nhất
  * của module - THIEU_MINH_CHUNG (lúc nộp) và FORBIDDEN_DONG (lúc duyệt) - đều vô
  * dụng nếu thiếu mảng này, vì màn hình sẽ không biết chỉ vào dòng nào.
  */
@@ -728,7 +727,7 @@ export const xoaMinhChung = async (idMinhChungTt) => {
  *
  * Endpoint hỗ trợ cookie nên thẻ `<a href>` cũng xác thực được, nhưng đi qua
  * apiFetch giữ được vòng refresh phiên và đọc được body lỗi JSON khi server trả
- * 403/404 - cùng cách làm với minh chứng của phiếu, vi phạm và giờ quy đổi.
+ * 403/404 - cùng cách làm với minh chứng của phiếu và vi phạm.
  *
  * Quyền đọc rộng hơn quyền sửa: chính chủ HOẶC bất kỳ ai duyệt được ít nhất một
  * dòng của bản kê (người của P.TCHC không phải trưởng đơn vị của nhân viên nhưng

@@ -7,6 +7,7 @@ import {
 import { TRANG_THAI_TO_TRINH_META } from "../../utils/toTrinhApi";
 import { DanhSachChuaLap } from "./BaoCaoBoSung";
 import TongQuanThuKy from "./TongQuanThuKy";
+import SearchSelect from "../Common/SearchSelect";
 import {
   Alert,
   Card,
@@ -155,18 +156,19 @@ const TongQuanCapQuanLy = ({
     !laToanTruong && dsPhong.length > 1 ? (
       <label className="db-field">
         Phòng (khi kiêm nhiệm)
-        <select
+        <SearchSelect
           className="db-select db-select-wide"
+          ariaLabel="Phòng (khi kiêm nhiệm)"
           value={idPhong}
-          onChange={(e) => setIdPhong(e.target.value)}
-        >
-          <option value="">Tất cả Phòng của tôi</option>
-          {dsPhong.map((p) => (
-            <option key={p.IdDonVi} value={p.IdDonVi}>
-              {p.TenDonVi}
-            </option>
-          ))}
-        </select>
+          onChange={setIdPhong}
+          options={[
+            { value: "", label: "Tất cả Phòng của tôi" },
+            ...dsPhong.map((p) => ({
+              value: String(p.IdDonVi),
+              label: p.TenDonVi,
+            })),
+          ]}
+        />
       </label>
     ) : null;
   const boLoc =

@@ -7,7 +7,7 @@ import {
 /**
  * Trạng thái xem trước / tải về minh chứng của module kê khai thành tích.
  *
- * Song song với useMinhChungKeKhaiPreview nhưng khoá theo `IdMinhChungTt` và đi qua
+ * Khoá theo `IdMinhChungTt` và đi qua
  * endpoint riêng của module. Bỏ hẳn nhánh "định dạng không xem trước được":
  * server chỉ nhận PDF (kiểm cả đuôi file lẫn chữ ký `%PDF-`) nên luôn nhúng được
  * vào iframe.

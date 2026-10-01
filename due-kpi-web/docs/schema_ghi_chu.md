@@ -1718,7 +1718,7 @@ Mỗi đơn vị xếp hạng **BA BẢNG ĐỘC LẬP, LOẠI TRỪ NHAU**, kh�
 | Nhóm | Thành viên | **Mẫu số hạn ngạch** | Điều kiện lên mức 4 |
 |---|---|---|---|
 | 1 Giảng viên thường | `loai_doi_tuong = 1`, chức vụ ∉ bộ 6 mã | **số người `xep_loai_khoa = 3`** | trong Top **và** `muc_nckhcn_qd838 = 2` |
-| 2 Viên chức / NLĐ | `loai_doi_tuong = 2`, chức vụ ∉ bộ 6 mã | **TỔNG đầu người của nhóm** | trong Top **và** `xep_loai_khoa = 3` |
+| 2 Viên chức / NLĐ | `loai_doi_tuong = 2`, chức vụ ∉ bộ 6 mã | **số người `xep_loai_khoa = 3`** | trong Top **và** `xep_loai_khoa = 3` |
 | 3 Cán bộ quản lý | chức vụ ∈ `{TK,TKL,PTK,PTKL,TP,PTP}` | **TỔNG số quản lý của đơn vị** | trong Top **và** mức 3 theo loại đối tượng của mình |
 
 ```
@@ -1733,10 +1733,17 @@ Hạn ngạch nhóm 3 tính **riêng trong từng đơn vị**, KHÔNG gộp to�
 
 Năm điểm dễ hiểu sai, đọc kỹ:
 
-1. **MẪU SỐ BẤT ĐỐI XỨNG GIỮA CÁC NHÓM — cố ý, đừng "sửa cho nhất quán".** Nhóm 1 lấy *số
-   người mức 3*; nhóm 2 và 3 lấy *tổng đầu người*. Đây là quyết định nghiệp vụ.
+1. **MẪU SỐ KHÁC NHAU GIỮA CÁC NHÓM — quyết định nghiệp vụ.** Giảng viên / viên chức
+   **không giữ chức vụ quản lý** (nhóm 1 và 2) lấy *số người được chốt mức 3 (Hoàn thành
+   tốt)*; nhóm 3 lấy *tổng số quản lý* của đơn vị.
    Khoa có 30 GV mà chỉ 10 người mức 3 ⇒ hạn ngạch nhóm 1 = `FLOOR(10 × 0.2)` = **2**.
-   Phòng có 8 viên chức mà chỉ 2 người mức 3 ⇒ hạn ngạch nhóm 2 = `FLOOR(8 × 0.2)` = **1**.
+   Phòng có 8 viên chức mà chỉ 2 người mức 3 ⇒ hạn ngạch nhóm 2 = `MAX(1, FLOOR(2 × 0.2))` = **1**.
+   Phòng có 8 viên chức mà **không ai** mức 3 ⇒ mẫu số 0 ⇒ hạn ngạch nhóm 2 = **0**.
+
+   > **Đổi ngày 2026-10-01:** trước đó nhóm 2 lấy *tổng đầu người* của nhóm. Snapshot
+   > `to_trinh_kpi_khoa_nhom` của các gói đóng trước ngày này vẫn mang mẫu số cũ (không
+   > backfill); gói còn đóng gói lại được (trạng thái 1/2/5) sẽ tính lại theo luật mới ở
+   > lần đóng gói kế tiếp, gói đã trình / đã duyệt (3/4) giữ nguyên kết quả cũ.
 2. **Làm tròn XUỐNG, NHƯNG tối thiểu 1 suất** nếu mẫu số > 0. Mẫu số 27 ⇒ 5; mẫu số 3 ⇒
    `FLOOR(0.6) = 0` ⇒ nâng lên **1**. Đây là ngoại lệ nghiệp vụ đã xác nhận: nhóm 1–4
    người sẽ vượt tỷ lệ 20% trên thực tế (nhóm 3 người ⇒ 1 suất = 33%). Chấp nhận.
@@ -1846,13 +1853,13 @@ Phòng ra `{2,3}` và Khoa không có quản lý ra `{1,2}` — không có dòng
 | `nhom` | 1 Giảng viên · 2 Viên chức/NLĐ · 3 Cán bộ quản lý |
 | `so_nguoi` | Tổng đầu người trong nhóm |
 | `so_nguoi_muc3` | Số người `xep_loai_khoa = 3` |
-| **`so_mau_so`** | **Mẫu số thực dùng** — nhóm 1 = `so_nguoi_muc3`; nhóm 2/3 = `so_nguoi` |
+| **`so_mau_so`** | **Mẫu số thực dùng** — nhóm 1/2 = `so_nguoi_muc3`; nhóm 3 = `so_nguoi` (gói đóng trước 2026-10-01: nhóm 2 = `so_nguoi`) |
 | `so_du_dieu_kien` | Số người đủ điều kiện mức 4 trong **toàn** nhóm (không chỉ trong Top) |
 | `han_ngach` | `MAX(1, FLOOR(so_mau_so × ty_le))`, hoặc 0 khi `so_mau_so = 0` |
 | `so_dat` | Thực tế đạt mức 4 — **có thể < `han_ngach`** |
 
 FE **phải** đọc `so_mau_so`, KHÔNG được tự suy mẫu số từ `so_nguoi_muc3` hay `so_nguoi`
-(mẫu số bất đối xứng giữa các nhóm — xem §8.2 điểm 1).
+(mẫu số khác nhau giữa các nhóm và đã đổi luật theo thời gian — xem §8.2 điểm 1).
 
 `chk_ttkkn_so_dat CHECK (so_dat <= han_ngach)` — dưới luật "cắt Top rồi lọc xuống" đây là
 bất biến đúng theo cấu trúc, khác hẳn luật cũ (lấp đầy suất). An toàn vì bảng này không
@@ -1875,7 +1882,21 @@ cha chỉ là số liệu tổng hợp tham khảo; `han_ngach_xuat_sac` / `so_d
 
 ---
 
-## 9. KÊ KHAI GIỜ QUY ĐỔI THEO PHỤ LỤC II
+## 9. KÊ KHAI GIỜ QUY ĐỔI THEO PHỤ LỤC II — ĐÃ GỠ (2026-09-30)
+
+> ⛔ **MODULE ĐÃ GỠ TOÀN BỘ (2026-09-30, chốt với người dùng — dữ liệu kê khai chỉ là test).**
+> Đã xoá: route `api/ke-khai-gio-quy-doi/*` và `api/cong-viec-quy-doi/*`; Controller / BLL / DAL /
+> Model của module; 17 SP / hàm (`fn_ke_khai_gio_quy_doi_quyen`, `sp_danh_muc_cong_viec_quy_doi_*`,
+> `sp_ke_khai_gio_quy_doi_*`, `sp_minh_chung_ke_khai_gio_*`) cùng `fn_gio_giang_ke_khai_dong`;
+> **5 bảng** `danh_muc_cong_viec_quy_doi`, `ke_khai_gio_quy_doi`, `chi_tiet_ke_khai_gio_quy_doi`,
+> `minh_chung_ke_khai_gio_quy_doi`, `lich_su_ke_khai_gio_quy_doi`; 2 TVP `ChiTietKeKhaiGioQuyDoiRow`,
+> `DuyetChiTietKeKhaiRow`. Migration: `update_database.sql` đợt "Gỡ kê khai giờ quy đổi".
+>
+> **Giờ giảng (mục 13) chỉ còn nguồn file TKB** — không còn cộng giờ kê khai.
+>
+> `schema.sql` đã bỏ khối mục 9 (chỉ còn ghi chú "đã gỡ").
+> Phần dưới đây **giữ lại làm tài liệu thiết kế**, vì mục 11 (kê khai thành tích) nhân bản kiến
+> trúc này và tham chiếu tới 9.2 / 9.3 / 9.4. Không có gì bên dưới còn chạy.
 
 "Quy đổi các hoạt động chuyên môn ra giờ chuẩn giảng dạy". Giảng viên **tự kê khai** số
 lượng từng đầu việc; Trưởng khoa/Trưởng khoa liên/Trưởng phòng **chốt hoặc trả về từng
@@ -2209,7 +2230,7 @@ phần tử**, và mọi phép kiểm đi qua `CoChucVuTrongPhamVi(phamVi, set, 
 |---|---|---|
 | 1 | `fn_pham_vi_don_vi` + `fn_co_quyen_don_vi` + `sp_nhan_vien_pham_vi_don_vi` | Xong |
 | 2 | `fn_nhiem_vu_khoa_quyen` + 16 SP module nhiệm vụ Khoa | Xong |
-| 3 | `fn_ke_khai_gio_quy_doi_quyen` + module kê khai giờ quy đổi | Xong |
+| 3 | `fn_ke_khai_gio_quy_doi_quyen` + module kê khai giờ quy đổi | Xong (module đã gỡ 2026-09-30) |
 | 4 | View `v_giang_vien_khoa` → **1 dòng / (GV, Khoa)** + các consumer | Xong |
 | 5 · module 1/6 | Vi phạm giảng dạy (15 SP) | Xong |
 | 5 · module 2/6 | **Phiếu KPI cá nhân (16 SP)** + 2 SP hỗ trợ `sp_tieu_chi_don_vi_cham_check_*` | Xong |
@@ -2443,7 +2464,7 @@ một lần refactor cũ. Đợt 3 xoá hẳn bản rác — nếu sau này th�
 `grep -c "CREATE PROCEDURE dbo.<tên>"` trước khi debug tiếp.
 
 **Ba bảng CỐ Ý giữ 1 dòng / người / năm — đừng tách theo đơn vị:**
-`gio_thuc_hien_gv`, `ke_khai_gio_quy_doi`, `diem_tb_phan_hoi_sinh_vien`. Chúng mô tả **con
+`gio_thuc_hien_gv`, `ke_khai_gio_quy_doi` (đã gỡ 2026-09-30), `diem_tb_phan_hoi_sinh_vien`. Chúng mô tả **con
 người** (giờ đã dạy, giờ đã kê khai, điểm SV chấm), không mô tả quan hệ với đơn vị. Chính vì
 chúng đơn trị mà điểm tự động mới phải chọn đúng một phiếu để ghi vào.
 
@@ -2874,7 +2895,7 @@ không compile được trên bản DB chưa chạy đợt "Vi phạm nhân viê
   trường cũ có thể còn là `DEFAULT 100`. Mục 0 của `update_database.sql` bắt kiểm tra
   trước khi chạy.
 - ~~**Hạn ngạch 20% xuất sắc cho viên chức**~~ — ĐÃ LÀM. Xem §8.2: viên chức / NLĐ nay có
-  bảng xếp hạng riêng (nhóm 2) với mẫu số = tổng đầu người, và cán bộ quản lý có nhóm 3
+  bảng xếp hạng riêng (nhóm 2) với mẫu số = số người mức 3 (từ 2026-10-01), và cán bộ quản lý có nhóm 3
   riêng của từng đơn vị.
 - **Quy tắc "đơn vị đạt HTXS ⇒ người đứng đầu đơn vị được xem xét HTXS".** Xếp loại đơn vị
   (`phieu_danh_gia_don_vi`) và xếp loại cá nhân hiện vẫn hoàn toàn rời nhau. Đợt tách 3 nhóm
@@ -2981,7 +3002,8 @@ Hai ca này chỉ ảnh hưởng tới học vị nên đợt này không đụn
 
 Mục 9.0 ghi "Thời gian thực hiện" của giảng viên có **hai** nguồn, và nguồn (1) — *tiết
 giảng dạy quy đổi* — **CHƯA làm**. Module này **chính là nguồn (1)**, lấy từ file Excel
-thống kê số tiết thay vì chờ hệ thống ngoài gọi sang.
+thống kê số tiết thay vì chờ hệ thống ngoài gọi sang. Từ 2026-09-30 nguồn (2) — kê khai
+Phụ lục II — **đã gỡ** (mục 9), nên đây là **nguồn duy nhất** của giờ giảng.
 
 File có **hai sheet**: `DH` (giảng dạy đại học) và `SDH` (giảng dạy sau đại học) — xem 13.9.
 Bản đầu chỉ đọc một sheet thời khoá biểu đại học; tên bảng / endpoint `gio-giang-tkb` giữ
@@ -2990,8 +3012,10 @@ nguyên để không phá hợp đồng API.
 Kết quả cuối cùng nằm ở `sp_gio_giang_tkb_tong_hop` (`GET api/gio-giang-tkb/tong-hop`):
 
 ```
-TỔNG GIỜ GIẢNG trong năm = giờ theo TKB + giờ kê khai Phụ lục II đã duyệt
+TỔNG GIỜ GIẢNG trong năm = giờ theo TKB
 ```
+
+(Trước 2026-09-30 còn cộng thêm giờ kê khai Phụ lục II đã duyệt — nguồn đó đã gỡ.)
 
 Bảng này khoá theo **năm đánh giá**, tự lọc theo kỳ học, và có đường nối về nhân viên —
 khác hẳn cách nhập staging phẳng theo **kỳ học** trước đây, vốn chỉ nhận các cột tổng giờ
@@ -3211,30 +3235,20 @@ Quyền: **ADMIN / HT** — import ghi đè cả năm nên không mở cho cấp
 TK / TKL / TP, kể cả `sp_gio_giang_tkb_anh_xa_tu_dong`: thủ tục đó chỉ **thêm** ánh xạ, không
 phá dữ liệu nào, nên không cần siết bằng cổng của import.
 
-### 13.8. Tổng hợp — hợp hai nguồn, không phải giao
+### 13.8. Tổng hợp — chỉ còn nguồn TKB
 
-`sp_gio_giang_tkb_tong_hop` lấy tập giảng viên là **HỢP** của:
+`sp_gio_giang_tkb_tong_hop` lấy tập giảng viên là người có dòng giờ giảng (sheet DH hoặc SDH)
+**đã ánh xạ**. Trước 2026-09-30 tập này là HỢP với người có bản kê khai Phụ lục II đã chốt;
+nguồn kê khai đã gỡ (mục 9) nên người chỉ có kê khai không còn xuất hiện.
 
-- người có dòng giờ giảng (sheet DH hoặc SDH) **đã ánh xạ**, và
-- người có `ke_khai_gio_quy_doi` **đã chốt** (`trang_thai = 3`).
-
-Người chỉ có một nguồn vẫn xuất hiện, nguồn còn lại bằng 0. Dùng `INNER JOIN` ở đây sẽ làm
-biến mất người chưa kê khai — đúng nhóm mà bảng này cần nhìn thấy nhất.
-
-RS2 trả giờ file tách sẵn `gio_tkb_dai_hoc` / `gio_tkb_sau_dai_hoc` (tổng = `gio_tkb`).
-⚠️ **Đừng nhầm** với `gio_dai_hoc` / `gio_sau_dai_hoc`: hai cột đó là **Phụ lục II** (hướng
-dẫn, chấm thi… tách theo mục gốc DH / SDH), không phải tiết đứng lớp — hai nguồn không trùng
-nhau nên cộng thẳng vào `tong_gio`.
+RS2 trả giờ file tách sẵn `gio_tkb_dai_hoc` / `gio_tkb_sau_dai_hoc` (tổng = `gio_tkb` =
+`tong_gio`). Ba cột Phụ lục II cũ `gio_ke_khai_duyet` / `gio_dai_hoc` / `gio_sau_dai_hoc` đã bỏ.
 
 Dòng giờ giảng **chưa ánh xạ** không vào được bảng tổng hợp (không biết là ai). Số lượng những
 dòng đó trả về ở `SoDongChuaAnhXa` — còn lớn hơn 0 nghĩa là **tổng hợp chưa đầy đủ**, FE
 phải cảnh báo trước khi ai đó dùng số liệu.
 
-⚠️ **BẤT BIẾN:** mệnh đề lọc "bản kê đã chốt + dòng đã duyệt" và phép tách SĐH / ĐH được
-**nhân bản** từ `sp_ke_khai_gio_quy_doi_tong_hop`. Sửa một bên phải sửa cả bên kia, nếu
-không hai endpoint trả hai con số khác nhau cho cùng một giảng viên.
-
-Cổng quyền **sao y** SP gốc: ADMIN/HT toàn trường; TK/TKL/TP theo đơn vị mình giữ chức vụ
+Cổng quyền: ADMIN/HT toàn trường; TK/TKL/TP theo đơn vị mình giữ chức vụ
 (+ cây con). Dùng `EXISTS` trên tập `DISTINCT` chứ **không** `JOIN`, để người kiêm nhiệm
 nhiều đơn vị không bị nhân dòng.
 
@@ -3269,7 +3283,7 @@ nhiều đơn vị không bị nhân dòng.
 
 ```
 ty_le_hoan_thanh (%) = tong_gio × 100 / dinh_muc_ap_dung
-tong_gio             = giờ TKB + giờ kê khai Phụ lục II đã chốt + 2,5 × số ngày QNDB
+tong_gio             = giờ TKB + 2,5 × số ngày QNDB   (giờ kê khai Phụ lục II đã gỡ 2026-09-30)
 dinh_muc_ap_dung     = định mức gốc khoản 3 (270) − miễn theo thời gian − giảm chức vụ
                        − giảm con nhỏ − công đoàn − giảm đặc biệt do HT (cột Y)
 ```
@@ -3287,8 +3301,8 @@ Có ba nơi đọc hàm này, nên không nơi nào lệch nhau:
   và preview `GET api/maudanhgia/{id}/diem-tu-dong`;
 - `sp_gio_giang_ty_le_hoan_thanh`, tức `GET api/gio-giang-tkb/ty-le-hoan-thanh`;
 - tử số (C1) đi qua `fn_gio_giang_thuc_hien`, hàm mà `sp_gio_giang_tkb_tong_hop` cũng dùng. Đã đối chiếu: kết quả của SP
-  trước và sau khi tách hàm giống hệt nhau. Phần kê khai của nó đọc từ `fn_gio_giang_ke_khai_dong` (theo từng bản kê
-  và gốc DH / SĐH), cũng là nguồn của dòng diễn giải `GIO_KE_KHAI`.
+  trước và sau khi tách hàm giống hệt nhau. Từ 2026-09-30 hàm chỉ còn cộng giờ TKB đã ánh xạ (phần kê khai,
+  `fn_gio_giang_ke_khai_dong` và dòng diễn giải `GIO_KE_KHAI` đã gỡ).
 
 #### Quy tắc — đã chốt với người dùng (2026-09-27)
 
@@ -3431,7 +3445,6 @@ Mỗi dòng thuộc **đúng một** cột tổng theo `khoan_muc`:
 | `DAC_BIET_HT` | `giam_dac_biet_ht` | cột Y | — |
 | `DIEU_CHINH_SAN_0` | `dieu_chinh_san_0` | phần bị cắt khi sàn 0 | — |
 | `GIO_TKB` | `gio_tkb` | một dòng `gio_giang_tkb` đã ánh xạ | `id_gio_giang_tkb` (mở `GET api/gio-giang-tkb/{id}/chi-tiet`), `so_lop`, `so_tiet` |
-| `GIO_KE_KHAI` | `gio_ke_khai` | một bản kê × gốc DH / SĐH | `id_ke_khai`, `ten_nguon` = `DH` / `SDH` |
 | `GIO_QNDB` | `gio_qndb` | cột X | `so_ngay` |
 
 - **Bất biến:** tổng `so_gio` các dòng cùng `khoan_muc` = **đúng** cột tổng (phần lẻ làm tròn dồn vào dòng lớn

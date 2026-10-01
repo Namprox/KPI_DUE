@@ -21,7 +21,7 @@ test.each([
   useAuth.mockReturnValue({ login });
 
   render(<Login />);
-  fireEvent.change(screen.getByRole("textbox", { name: "Mã nhân viên hoặc email" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Mã nhân viên / Email" }), {
     target: { value: identifier },
   });
   fireEvent.change(screen.getByLabelText("Mật khẩu"), {
@@ -41,7 +41,7 @@ test("không gửi định danh chỉ có khoảng trắng", () => {
   useAuth.mockReturnValue({ login });
 
   render(<Login />);
-  fireEvent.change(screen.getByRole("textbox", { name: "Mã nhân viên hoặc email" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Mã nhân viên / Email" }), {
     target: { value: "   " },
   });
   fireEvent.change(screen.getByLabelText("Mật khẩu"), {

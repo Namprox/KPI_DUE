@@ -20,6 +20,7 @@ jest.mock("../../utils/phieuApi", () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  Element.prototype.scrollIntoView = jest.fn();
   fetchBaoCaoTongQuan.mockResolvedValue(null);
 });
 
@@ -80,12 +81,14 @@ test("Trưởng phòng kiêm nhiệm lọc được về một Phòng mà không
   renderIn(<TongQuanCapQuanLy idNam={2026} cap="phong" />);
 
   const loc = await screen.findByLabelText("Phòng (khi kiêm nhiệm)");
-  fireEvent.change(loc, { target: { value: "20" } });
+  fireEvent.click(loc);
+  fireEvent.click(screen.getByRole("option", { name: "Phòng B" }));
 
   expect(await screen.findByRole("heading", { level: 1, name: "Phòng B" })).toBeInTheDocument();
   expect(fetchBaoCaoPhongTongQuan).toHaveBeenLastCalledWith({ idNam: 2026, idDonVi: "20" });
   expect(fetchBaoCaoTongQuan).toHaveBeenLastCalledWith({ idNam: 2026, idDonVi: "20" });
-  expect(within(screen.getByLabelText("Phòng (khi kiêm nhiệm)")).getByText("Phòng A")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("combobox", { name: "Phòng (khi kiêm nhiệm)" }));
+  expect(screen.getByRole("option", { name: "Phòng A" })).toBeInTheDocument();
 });
 
 test("tổng quan Trường hiển thị việc chờ HT, quý và tỷ lệ Khoa từ API", async () => {

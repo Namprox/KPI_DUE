@@ -238,9 +238,9 @@ const DuyetPhieuQuy = () => {
       <header className="pq-header">
         <div><h2>DUYỆT KPI VIÊN CHỨC THEO QUÝ</h2><p>Hàng đợi tại đúng đơn vị bạn phụ trách</p></div>
         <div className="pq-filters">
-          <label>Năm<select value={selectedNam} disabled={dangTaiNam} onChange={(e) => setSelectedNam(e.target.value)}>{namList.map((n) => <option key={n.IdNam} value={n.IdNam}>{n.IdNam}</option>)}</select></label>
-          {donViList.length > 0 && <label>Đơn vị<select value={idDonVi} onChange={(e) => setIdDonVi(e.target.value)}>{donViList.map((d) => <option key={d.IdDonVi} value={d.IdDonVi}>{d.TenDonVi || d.MaDonVi}</option>)}</select></label>}
-          <label>Quý<select value={quy} onChange={(e) => setQuy(e.target.value)}><option value="">Tất cả</option>{[1, 2, 3, 4].map((q) => <option key={q} value={q}>Quý {q}</option>)}</select></label>
+          <label>Năm<select className="form-select" value={selectedNam} disabled={dangTaiNam} onChange={(e) => setSelectedNam(e.target.value)}>{namList.map((n) => <option key={n.IdNam} value={n.IdNam}>{n.IdNam}</option>)}</select></label>
+          {donViList.length > 0 && <label>Đơn vị<select className="form-select" value={idDonVi} onChange={(e) => setIdDonVi(e.target.value)}>{donViList.map((d) => <option key={d.IdDonVi} value={d.IdDonVi}>{d.TenDonVi || d.MaDonVi}</option>)}</select></label>}
+          <label>Quý<select className="form-select" value={quy} onChange={(e) => setQuy(e.target.value)}><option value="">Tất cả</option>{[1, 2, 3, 4].map((q) => <option key={q} value={q}>Quý {q}</option>)}</select></label>
         </div>
       </header>
 

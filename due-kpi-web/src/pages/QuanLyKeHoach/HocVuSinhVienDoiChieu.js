@@ -99,7 +99,7 @@ export default function HocVuSinhVienDoiChieu({ idNam, tyLe, initialSelection, r
               <select
                 id="hoc-vu-khoa-select"
                 aria-label="Khoa"
-                className="form-input hoc-vu-detail-select"
+                className="form-select hoc-vu-detail-select"
                 value={idDonVi}
                 onChange={(event) => setFilter(setIdDonVi, event.target.value)}
               >

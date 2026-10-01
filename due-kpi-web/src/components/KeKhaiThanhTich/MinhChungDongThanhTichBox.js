@@ -20,8 +20,7 @@ const GIOI_HAN_TEXT = `Chỉ nhận PDF · tối đa ${formatKb(
  * lượt. Khi đã có tệp, dropzone tự thu về dạng thanh gọn để danh sách tệp - thứ
  * người dùng thực sự cần đọc - không bị đẩy xuống dưới một khối trống to.
  *
- * Khác bản của giờ quy đổi ở hai điểm, cả hai đều do minh chứng ở đây có thể
- * BẮT BUỘC:
+ * Hai quy tắc khi minh chứng là BẮT BUỘC:
  *
  *  1. Mức có `YeuCauMinhChung` mà chưa có tệp nào sẽ chặn LƯU cả bản kê (422
  *     THIEU_MINH_CHUNG), nên ô trống phải cảnh báo đỏ chứ không im lặng. Cảnh

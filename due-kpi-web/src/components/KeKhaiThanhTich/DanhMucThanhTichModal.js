@@ -23,8 +23,7 @@ const boDau = (s) =>
  *
  * Cây ở đây chỉ có 2 CẤP và ĐỀU: gốc = tiêu chí (4 nút, mang trần điểm), lá =
  * mức quy đổi (mang điểm). Vì vậy bố cục hai cột rất thẳng: cột trái là 4 tiêu
- * chí, cột phải là các mức của tiêu chí đang chọn - KHÔNG cần đệ quy gom nhóm
- * như danh mục giờ quy đổi (cây 4 cấp, độ sâu không đều).
+ * chí, cột phải là các mức của tiêu chí đang chọn.
  *
  * Cột phải cố ý hiện ĐƠN VỊ PHỤ TRÁCH của từng mức. Đó là thứ giải thích được
  * vì sao dòng khen thưởng nằm chờ trong khi các dòng sáng kiến đã duyệt xong -

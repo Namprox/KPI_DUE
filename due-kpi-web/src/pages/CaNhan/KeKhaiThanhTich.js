@@ -138,8 +138,8 @@ const BadgeTrangThai = ({ meta, ghiChu }) => {
  *  - **Không có bước nộp.** Lưu xong là đơn vị phụ trách thấy ngay. Dòng đã chốt
  *    bị khoá RIÊNG nó; bạn vẫn kê thêm thành tích khác và sửa các dòng còn lại.
  *    Dòng bị trả về sửa xong bấm Lưu là tự quay về chờ duyệt, không nộp lại.
- *  - **Minh chứng là BẮT BUỘC** với mức có `YeuCauMinhChung` - khác kê khai giờ
- *    quy đổi, và bị server chặn ngay trong chính request lưu. Vì vậy tệp của
+ *  - **Minh chứng là BẮT BUỘC** với mức có `YeuCauMinhChung`, và bị server
+ *    chặn ngay trong chính request lưu. Vì vậy tệp của
  *    dòng chưa lưu đi thẳng vào KHO TẠM khi chọn, rồi được gắn vào dòng trong
  *    cùng lần lưu qua `IdMinhChung[]`.
  *  - **Vượt trần vẫn lưu được.** Bảng KPI ghi "Điểm tối đa 30" chứ không ghi
@@ -284,8 +284,7 @@ const KeKhaiThanhTich = () => {
    * Chặn sớm những lỗi server sẽ trả 400 và HUỶ TOÀN BỘ lần lưu - rẻ hơn nhiều
    * so với để người dùng mất cả bảng vì một dòng bỏ trống.
    *
-   * `Quy` nằm trong danh sách vì nó BẮT BUỘC ở module này (khác `KyHoc` của giờ
-   * quy đổi vốn cho phép để trống nghĩa là "cả năm").
+   * `Quy` nằm trong danh sách vì nó BẮT BUỘC ở module này.
    */
   const kiemTraTruocKhiLuu = () => {
     const thieuMuc = rowsGuiLen.filter((r) => !r.idMuc).length;

@@ -71,7 +71,7 @@ const AdminMauPhieuMockPage = () => {
 
                         <div style={{ marginBottom: "15px" }}>
                             <label style={{ display: "block", fontWeight: "bold", marginBottom: "5px", fontSize: "13px" }}>Loại nhóm nội bộ *</label>
-                            <select className="form-input" style={{ width: "100%" }}>
+                            <select className="form-select" style={{ width: "100%" }}>
                                 <option>1 - Nhóm Tiêu chí Cơ bản</option>
                                 <option>2 - Nhóm Thành tích Vượt trội</option>
                                 <option>3 - Nhóm Điểm trừ (Vi phạm)</option>

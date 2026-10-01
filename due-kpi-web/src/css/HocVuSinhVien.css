@@ -110,24 +110,9 @@
   color: #0056b3;
 }
 
-.hoc-vu-year-control select.form-input {
+.hoc-vu-year-control .form-select {
   width: auto;
   min-width: 140px;
-  padding: 7px 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background-color: #fff;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.hoc-vu-year-control select.form-input:focus {
-  border-color: #0056b3;
-  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.12);
 }
 
 /* Banner / Message Alerts */
@@ -757,17 +742,7 @@
 }
 
 .hoc-vu-mapping-select {
-  width: 100% !important;
   max-width: 320px;
-  padding: 7px 10px !important;
-  font-size: 13.5px !important;
-  border-radius: 6px !important;
-  border: 1px solid #cbd5e1 !important;
-  background-color: #ffffff !important;
-}
-
-.hoc-vu-mapping-select:focus {
-  border-color: #0056b3 !important;
 }
 
 .hoc-vu-actions-cell {
@@ -935,25 +910,8 @@
 }
 
 .hoc-vu-detail-select {
-  height: 38px !important;
   min-width: 200px;
   max-width: 280px;
-  padding: 0 12px !important;
-  font-size: 13.5px !important;
-  font-weight: 500 !important;
-  color: #1e293b !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 6px !important;
-  background-color: #ffffff !important;
-  cursor: pointer;
-  outline: none;
-  box-sizing: border-box !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.hoc-vu-detail-select:focus {
-  border-color: #0056b3 !important;
-  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.12) !important;
 }
 
 .hoc-vu-detail-search {
@@ -1183,7 +1141,7 @@
     justify-content: space-between;
   }
 
-  .hoc-vu-year-control select.form-input {
+  .hoc-vu-year-control .form-select {
     flex: 1;
   }
 

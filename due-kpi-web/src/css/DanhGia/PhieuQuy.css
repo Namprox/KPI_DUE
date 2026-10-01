@@ -4,7 +4,7 @@
 .pq-header p { margin: 6px 0 0; color: #64748b; }
 .pq-filters { display: flex; gap: 10px; flex-wrap: wrap; }
 .pq-filters label, .pq-review-row label, .pq-review-footer label { display: grid; gap: 5px; color: #475569; font-size: 12px; font-weight: 700; }
-.pq-filters select, .pq-review-row input, .pq-review-row textarea, .pq-review-footer textarea, .pq-evidence-actions input { border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; padding: 8px 10px; color: #1e293b; }
+.pq-review-row input, .pq-review-row textarea, .pq-review-footer textarea, .pq-evidence-actions input { border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; padding: 8px 10px; color: #1e293b; }
 .pq-tabs { display: flex; gap: 4px; border-bottom: 1px solid #cbd5e1; margin-bottom: 18px; overflow-x: auto; }
 .pq-tabs button { border: 0; background: transparent; padding: 10px 16px; color: #64748b; font-weight: 700; white-space: nowrap; border-bottom: 3px solid transparent; cursor: pointer; }
 .pq-tabs button.active { color: #003399; border-bottom-color: #003399; }

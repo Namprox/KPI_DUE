@@ -20,7 +20,6 @@ const cacMucCoTp = [
   "/quan-ly-nguoi-dung",
   "/quan-ly/cho-cham",
   "/ghi-nhan-vi-pham-nhan-vien",
-  "/quan-ly/ke-khai-gio-quy-doi",
   "/quan-ly/ke-khai-thanh-tich",
   "/kho-minh-chung-don-vi",
   "/danh-gia-kpi-phong",

@@ -551,8 +551,8 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
       <header className="pq-header">
         <div><h2>ĐÁNH GIÁ KPI VIÊN CHỨC THEO QUÝ</h2><p>{user?.HoTen || "Người dùng"}{activeDonVi ? ` · ${activeDonVi.TenDonVi || activeDonVi.MaDonVi}` : ""}</p></div>
         <div className="pq-filters">
-          <label>Năm<select value={selectedYear} onChange={(e) => onYearChange(Number(e.target.value))}>{namList.map((n) => <option key={n.IdNam} value={n.IdNam}>{n.IdNam}</option>)}</select></label>
-          {donViList.length > 1 && <label>Đơn vị<select value={idDonVi} onChange={(e) => setIdDonVi(e.target.value)}>{donViList.map((d) => <option key={d.IdDonVi} value={d.IdDonVi}>{d.TenDonVi || d.MaDonVi}</option>)}</select></label>}
+          <label>Năm<select className="form-select" value={selectedYear} onChange={(e) => onYearChange(Number(e.target.value))}>{namList.map((n) => <option key={n.IdNam} value={n.IdNam}>{n.IdNam}</option>)}</select></label>
+          {donViList.length > 1 && <label>Đơn vị<select className="form-select" value={idDonVi} onChange={(e) => setIdDonVi(e.target.value)}>{donViList.map((d) => <option key={d.IdDonVi} value={d.IdDonVi}>{d.TenDonVi || d.MaDonVi}</option>)}</select></label>}
         </div>
       </header>
       <nav className="pq-tabs" aria-label="Phiếu quý và tổng hợp năm">

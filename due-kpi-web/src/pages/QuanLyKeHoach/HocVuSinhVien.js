@@ -473,7 +473,7 @@ export default function HocVuSinhVien() {
             </label>
             <select
               id="hoc-vu-year-select"
-              className="form-input"
+              className="form-select"
               value={idNam}
               disabled={uploading}
               onChange={(event) => setIdNam(event.target.value)}
@@ -925,7 +925,7 @@ export default function HocVuSinhVien() {
                           {canManage ? (
                             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                               <select
-                                className="form-input hoc-vu-mapping-select"
+                                className="form-select hoc-vu-mapping-select"
                                 aria-label={`Khoa trong hệ thống cho mã ${item.MaKhoa}`}
                                 value={drafts[item.MaKhoa] ?? item.IdDonVi ?? ""}
                                 disabled={!!busyMapping}

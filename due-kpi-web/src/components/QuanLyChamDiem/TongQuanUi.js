@@ -191,13 +191,13 @@ export const DashHeader = ({ title, subtitle, quyHienTai, controls, chinh = true
       </div>
       {(controls || quyHienTai) && (
         <div className="db-header-controls">
-          {controls}
           {quyHienTai ? (
             <div className="db-quy-chip">
               <Icon ten="dongHo" mau="#004494" />
               Quý hiện tại: Quý {quyHienTai}
             </div>
           ) : null}
+          {controls}
         </div>
       )}
     </div>

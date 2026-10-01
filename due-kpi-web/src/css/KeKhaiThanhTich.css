@@ -1049,9 +1049,7 @@
 /* ================================================================== */
 /* PHẦN RIÊNG CỦA MODULE THÀNH TÍCH                                    */
 /*                                                                     */
-/* Phần trên là bản chuyển tên cơ học từ KeKhaiGioQuyDoi.css (kkq- →   */
-/* kkt-, các lớp "giờ" đổi thành "điểm"). Từ đây trở xuống là những     */
-/* thứ module giờ quy đổi không có.                                     */
+/* Các panel trần điểm, quý và đơn vị phụ trách của thành tích.         */
 /* ================================================================== */
 
 /* ---- Panel trần điểm theo 4 tiêu chí ---------------------------- */
