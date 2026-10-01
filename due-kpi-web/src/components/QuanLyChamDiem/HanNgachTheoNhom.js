@@ -21,8 +21,14 @@ export default function HanNgachTheoNhom({ goi }) {
       {snapshotHanNgachDaDoi(goi) && <p className="cd-canh-bao">Số liệu đã thay đổi, cần đóng gói lại.</p>}
       <details className="cd-chot-luu-y">
         <summary>Cách xét suất xuất sắc</summary>
-        <p>Giảng viên dùng số người mức 3 làm mẫu số; viên chức / NLĐ và cán bộ quản lý dùng tổng số người của nhóm. Tỷ lệ cố định 20%, mẫu số lớn hơn 0 có tối thiểu 1 suất.</p>
-        <p>Xếp Top trước, xét điều kiện sau. Người trong Top chưa đủ điều kiện để lại suất bỏ trống; suất không dồn xuống người kế tiếp. Đủ điều kiện chưa bảo đảm đạt xuất sắc.</p>
+        <div className="cd-chot-luu-y-than">
+          <ul>
+            <li><strong>Giảng viên:</strong> Đáp ứng các điều kiện Hoàn thành tốt nhiệm vụ; thuộc Top 20% giảng viên Hoàn thành tốt nhiệm vụ có tổng điểm tích lũy cao nhất; đồng thời đáp ứng điều kiện hoàn thành xuất sắc nhiệm vụ khoa học công nghệ theo Quyết định số 838/QĐ-ĐHKT ngày 25/02/2026.</li>
+            <li><strong>Viên chức / người lao động:</strong> Tổng điểm tích lũy từ 101 điểm trở lên và thuộc nhóm 20% có điểm tích lũy cao nhất, xếp theo thứ tự từ cao xuống thấp.</li>
+            <li><strong>Cán bộ quản lý:</strong> Tỷ lệ xếp loại Hoàn thành xuất sắc nhiệm vụ không vượt quá 20% đối với nhóm viên chức quản lý.</li>
+            <li><strong>Người đứng đầu đơn vị:</strong> Được xem xét xếp loại Hoàn thành xuất sắc nhiệm vụ khi đơn vị đạt mức này, trên cơ sở đáp ứng đầy đủ các điều kiện, tiêu chuẩn về giảng dạy, nghiên cứu khoa học và các nhiệm vụ khác được giao.</li>
+          </ul>
+        </div>
       </details>
     </div>
   );

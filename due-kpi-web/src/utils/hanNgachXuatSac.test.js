@@ -17,9 +17,9 @@ test("viên chức không cần NCKH nhưng vẫn bị điều kiện pháp lu�
 });
 
 test("preview đọc đúng vế hiện tại, không suy mẫu số từ đầu người", () => {
-  const goi = { Nhom: [{ Nhom: 2, SoNguoiHienTai: 8, SoNguoiMuc3HienTai: 2, SoMauSoHienTai: 8, HanNgachHienTai: 1 }] };
+  const goi = { Nhom: [{ Nhom: 2, SoNguoiHienTai: 8, SoNguoiMuc3HienTai: 2, SoMauSoHienTai: 2, HanNgachHienTai: 1 }] };
   expect(laGoiLegacy(goi)).toBe(false);
-  expect(nhomHanNgachHienThi(goi)[0]).toMatchObject({ SoMauSo: 8, HanNgach: 1, SoDat: undefined });
+  expect(nhomHanNgachHienThi(goi)[0]).toMatchObject({ SoMauSo: 2, HanNgach: 1, SoDat: undefined });
   expect(snapshotHanNgachDaDoi(goi)).toBe(false);
 });
 
@@ -31,6 +31,38 @@ test("snapshot giữ suất bỏ trống, phát hiện thay đổi và nhóm xu�
   expect(snapshotHanNgachDaDoi({ ...goi, Nhom: [{ ...n, SoMauSoHienTai: 11 }] })).toBe(true);
   expect(snapshotHanNgachDaDoi({ ...goi, Nhom: [{ Nhom: 3, SoMauSoHienTai: 3 }] })).toBe(true);
   expect(snapshotHanNgachDaDoi({ ...goi, Nhom: [{ Nhom: 3, SoMauSo: 3 }] })).toBe(true);
+});
+
+test.each([
+  [15, 4, 15, 3, 4, 1],
+  [8, 2, 8, 1, 2, 1],
+  [8, 0, 8, 1, 0, 0],
+])("gói nhóm 2 trước 01/10: tổng %s, mức 3 %s không đổi vẫn cần đóng gói lại", (soNguoi, soMuc3, mauCu, hanCu, mauMoi, hanMoi) => {
+  const n = {
+    Nhom: 2,
+    SoNguoi: soNguoi, SoNguoiHienTai: soNguoi,
+    SoNguoiMuc3: soMuc3, SoNguoiMuc3HienTai: soMuc3,
+    SoMauSo: mauCu, SoMauSoHienTai: mauMoi,
+    HanNgach: hanCu, HanNgachHienTai: hanMoi,
+    SoDat: 0,
+  };
+  const goi = { NgayDongGoi: "2026-09-30", SoNguoiMuc3: soMuc3, Nhom: [n] };
+  expect(nhomHanNgachHienThi(goi)[0]).toMatchObject({ SoMauSo: mauCu, HanNgach: hanCu, SoDat: 0 });
+  expect(snapshotHanNgachDaDoi(goi)).toBe(true);
+  expect(snapshotHanNgachDaDoi({ ...goi, Nhom: [{ ...n, SoMauSo: mauMoi, HanNgach: hanMoi }] })).toBe(false);
+});
+
+test("chỉ hạn ngạch đổi cũng làm snapshot cũ", () => {
+  expect(snapshotHanNgachDaDoi({ NgayDongGoi: "2026-09-30", SoNguoiMuc3: 4, Nhom: [
+    { Nhom: 2, SoMauSo: 4, SoMauSoHienTai: 4, HanNgach: 3, HanNgachHienTai: 1 },
+  ] })).toBe(true);
+});
+
+test("key mẫu số / hạn ngạch vắng không được suy từ số người, mức 3 hay alias", () => {
+  const n = { Nhom: 2, SoNguoi: 15, SoNguoiMuc3: 4, SoNguoiHienTai: 15, SoNguoiMuc3HienTai: 4, SoGiangVien: 99 };
+  for (const goi of [{ Nhom: [n] }, { NgayDongGoi: "2026-10-01", SoNguoiMuc3: 4, Nhom: [n] }]) {
+    expect(nhomHanNgachHienThi(goi)[0]).toMatchObject({ SoMauSo: undefined, HanNgach: undefined, SoDat: undefined });
+  }
 });
 
 test.each([{ NgayDongGoi: "old", Nhom: [{ Nhom: 1 }] }, { SoNguoiMuc3: 3, Nhom: [] }, {}])("legacy không dựng nhóm từ chức vụ hiện tại", (goi) => {

@@ -509,8 +509,8 @@ const ToTrinhKhoa = () => {
                   flex: "1 1 260px",
                 }}
               >
-                Hạn ngạch được backend tính riêng theo từng nhóm. Xếp Top trước,
-                xét điều kiện sau; suất bỏ trống không dồn xuống người kế tiếp.
+                Xét Hoàn thành xuất sắc nhiệm vụ theo điều kiện và tỷ lệ quy định
+                cho từng nhóm đối tượng. Xem chi tiết tại “Cách xét suất xuất sắc”.
               </div>
 
               <button
