@@ -7,9 +7,8 @@ export const VI_PHAM_ERROR_MESSAGES = {
     "Chỉ trưởng đơn vị (TP/TK/TKL) hoặc Admin mới được ghi nhận vi phạm",
   FORBIDDEN_DON_VI:
     "Đơn vị của bạn không được phân quyền ghi nhận loại vi phạm này",
-  NOT_GIANG_VIEN_KHOA: "Chỉ được ghi nhận vi phạm cho giảng viên thuộc Khoa",
-  NOT_VIEN_CHUC:
-    "Loại vi phạm này chỉ áp dụng cho viên chức / người lao động đang hoạt động",
+  NOT_GIANG_VIEN_KHOA: null, // Nội dung loại trừ do server xác định.
+  NOT_VIEN_CHUC: null,
   DIEM_TRU_DUOI_TOI_THIEU:
     "Điểm trừ thấp hơn mức tối thiểu của loại vi phạm này",
   THIEU_LY_DO_DIEU_CHINH:
@@ -82,7 +81,7 @@ export const PHIEU_ERROR_MESSAGES = {
   DA_CHAM: "Đơn vị đã bắt đầu thẩm định nên không hủy nộp được nữa",
   KHONG_AP_DUNG_PHIEU_QUY: "Năm đánh giá này chưa áp dụng phiếu KPI theo quý",
   NAM_KHONG_MO: "Năm đánh giá đã đóng, phiếu chỉ còn chế độ xem",
-  SAI_LOAI_DOI_TUONG: "Mẫu đánh giá không dành cho viên chức / người lao động",
+  SAI_LOAI_DOI_TUONG: null, // Dùng cho cả giảng viên và người không thuộc diện KPI.
   PHIEU_QUY_DA_TON_TAI: "Phiếu quý này đã được tạo",
   QUY_KHONG_HOP_LE: "Quý phải là một số từ 1 đến 4",
   MAU_KHONG_HOP_LE: "Mẫu đánh giá không hợp lệ",

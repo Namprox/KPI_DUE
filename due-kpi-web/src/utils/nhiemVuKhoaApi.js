@@ -110,8 +110,7 @@ export const NVK_ERROR_MESSAGES = {
   INVALID: null,
   KHONG_PHAI_KHOA:
     "Đơn vị này không phải Khoa - module nhiệm vụ chỉ áp dụng cho Khoa",
-  GV_NGOAI_KHOA:
-    "Có người trong danh sách không thuộc Khoa. Toàn bộ thay đổi đã bị huỷ, chưa lưu dòng nào.",
+  GV_NGOAI_KHOA: null, // Có thể là người không thuộc diện KPI; giữ Message của server.
   FORBIDDEN: "Bạn không có quyền thực hiện thao tác này",
   NOT_FOUND: "Không tìm thấy dữ liệu",
   KY_DA_CHOT:

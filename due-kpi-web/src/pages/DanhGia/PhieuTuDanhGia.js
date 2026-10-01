@@ -741,6 +741,10 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
     // "Phiếu đã tồn tại" KHÔNG phải hỏng: điều kiện để đi tiếp (đã có phiếu) thực
     // ra đã thỏa. Xảy ra khi GET phieu/me lúc mở trang lỗi/hết phiên, hoặc phiếu
     // vừa được tạo ở tab khác. Lấy lại phiếu sẵn có thay vì hủy cả thao tác.
+    const message = result.Message || result.message || "Không thể tạo phiếu đánh giá";
+    if (res.status !== 409 || !/đã tồn tại|da ton tai/i.test(message)) {
+      throw new Error(message);
+    }
     const daCo = await refreshPhieu();
     if (daCo) {
       setTrangThaiPhieu(daCo.TrangThai ?? 1);

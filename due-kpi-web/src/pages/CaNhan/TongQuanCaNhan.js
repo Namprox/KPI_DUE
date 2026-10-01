@@ -34,6 +34,7 @@ import {
   ROLE,
   ROLE_SETS,
   coLoaiDoiTuong,
+  coDanhGiaKpiCaNhan,
   LOAI_DOI_TUONG_KPI,
   VAI_TRO_TRUONG_PHONG,
 } from "../../utils/roles";
@@ -97,6 +98,7 @@ const TongQuanCaNhan = () => {
   const laThuKyPhong =
     coTongQuanPhong && !hasRole(VAI_TRO_TRUONG_PHONG, currentUser);
   const coDashboard = coTongQuanKhoa || coTongQuanTruong || coTongQuanPhong;
+  const coKpiCaNhan = coDanhGiaKpiCaNhan(currentUser);
 
   const dsDonVi = useMemo(
     () => (Array.isArray(currentUser.DonVi) ? currentUser.DonVi : []),
@@ -128,6 +130,12 @@ const TongQuanCaNhan = () => {
   const duongDanPhieu = duongDanPhieuTuDanhGia(currentUser, selectedNam);
 
   const taiDuLieu = useCallback(async () => {
+    if (!coKpiCaNhan) {
+      setPhieu(null);
+      setKiemTra(null);
+      setIsLoading(false);
+      return;
+    }
     if (!selectedNam) return;
     setIsLoading(true);
     setKiemTra(null);
@@ -149,7 +157,7 @@ const TongQuanCaNhan = () => {
     }
 
     setIsLoading(false);
-  }, [selectedNam]);
+  }, [selectedNam, coKpiCaNhan]);
 
   useEffect(() => {
     if (!dangTaiNam) taiDuLieu();
@@ -538,7 +546,7 @@ const TongQuanCaNhan = () => {
         />
       )}
 
-      {coDashboard ? (
+      {coKpiCaNhan && (coDashboard ? (
         <h2 className="db-section-title" style={{ fontSize: 20, marginTop: 8 }}>
           Phiếu KPI của bạn
         </h2>
@@ -550,9 +558,15 @@ const TongQuanCaNhan = () => {
             .join(" · ")}
           controls={boLoc}
         />
-      )}
+      ))}
 
-      {phanCaNhan}
+      {coKpiCaNhan ? phanCaNhan : (
+        <Card title="KPI cá nhân">
+          <p>{dsDonVi.some((dv) => dv?.LoaiDoiTuong === 0)
+            ? "Bạn không thuộc diện đánh giá KPI"
+            : "Chưa có phân loại đối tượng KPI. Vui lòng liên hệ quản trị viên."}</p>
+        </Card>
+      )}
     </div>
   );
 };

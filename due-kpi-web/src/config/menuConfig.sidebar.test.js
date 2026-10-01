@@ -25,8 +25,8 @@ const duLieuGiangVienPaths = [
   "/vi-pham-cua-toi",
 ];
 
-test.each(["GV", "GVC", "GVCC", "HDLD_GV", "HDLD_HUU", " hdld_huu "])(
-  "%s được vào cả menu và URL dữ liệu giảng viên bằng mã, không phụ thuộc id",
+test.each(["GV", "GVC", "GVCC", "CV", "", null, undefined])(
+  "loại 1 được vào menu và URL dữ liệu giảng viên dù mã chức danh là %s",
   (MaChucDanh) => {
     const user = { MaChucDanh, IdChucDanh: 999, DonVi: [donVi("GV", 1)] };
     const visible = visibleGroups(user).flatMap((group) => group.items.map((item) => item.path));
@@ -38,7 +38,7 @@ test.each(["GV", "GVC", "GVCC", "HDLD_GV", "HDLD_HUU", " hdld_huu "])(
 );
 
 test.each(["HDLD_LX", "HDLD_NVCX", "HDLD_NVPV", "HDLD_NVKT", "CV", "", null, undefined])(
-  "%s không vào dữ liệu giảng viên dù mang id cũ",
+  "loại 2 không vào dữ liệu giảng viên dù mã chức danh là %s và mang id cũ",
   (MaChucDanh) => {
     const user = { MaChucDanh, IdChucDanh: 3, DonVi: [donVi("NV", 2)] };
     const visible = visibleGroups(user).flatMap((group) => group.items.map((item) => item.path));
@@ -52,7 +52,7 @@ test.each(["HDLD_LX", "HDLD_NVCX", "HDLD_NVPV", "HDLD_NVKT", "CV", "", null, und
 );
 
 test("giảng viên kiêm nhiệm giữ các loại phiếu do backend phân loại", () => {
-  const user = { MaChucDanh: "HDLD_HUU", DonVi: [donVi("GV", 1), donVi("TP", 2)] };
+  const user = { MaChucDanh: "GV", DonVi: [donVi("TP", 2), donVi("GV", 1)] };
   const visible = visibleGroups(user).flatMap((group) => group.items.map((item) => item.path));
   [...duLieuGiangVienPaths, "/danh-gia-phu-luc-2", "/danh-gia-kpi-nhan-vien", "/ke-khai-thanh-tich"].forEach((path) => {
     expect(visible).toContain(path);
@@ -61,9 +61,9 @@ test("giảng viên kiêm nhiệm giữ các loại phiếu do backend phân lo�
 });
 
 test("mã chức danh không ghi đè phân loại phiếu KPI hoặc tự cấp quyền khi thiếu phân loại", () => {
-  expect(canAccessPath("/danh-gia-phu-luc-2", { MaChucDanh: "HDLD_HUU" })).toBe(false);
-  expect(canAccessPath("/danh-gia-phu-luc-2", { MaChucDanh: "HDLD_HUU", DonVi: [donVi("NV", 2)] })).toBe(false);
-  expect(canAccessPath("/danh-gia-kpi-nhan-vien", { MaChucDanh: "HDLD_HUU", DonVi: [donVi("NV", 2)] })).toBe(true);
+  expect(canAccessPath("/danh-gia-phu-luc-2", { MaChucDanh: "GV" })).toBe(false);
+  expect(canAccessPath("/danh-gia-phu-luc-2", { MaChucDanh: "GV", DonVi: [donVi("NV", 2)] })).toBe(false);
+  expect(canAccessPath("/danh-gia-kpi-nhan-vien", { MaChucDanh: "GV", DonVi: [donVi("NV", 2)] })).toBe(true);
 });
 
 test("nhóm và mục sidebar theo đúng thứ tự công việc", () => {

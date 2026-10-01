@@ -372,6 +372,8 @@ const NhiemVuKhoaFormModal = ({
                 const canhBaoTran =
                   duKien != null && vuotTran(duKien, tranDiem);
                 const trungNguoi = nguoiTrungLap.has(row.idNhanVien);
+                const nguoiDaRaKhoiDanhSach = row.idNhanVien && !gvById.has(row.idNhanVien);
+                const phanCongCu = nhiemVu?.PhanCong?.find((pc) => String(pc.IdNhanVien) === row.idNhanVien);
 
                 return (
                   <div
@@ -394,6 +396,12 @@ const NhiemVuKhoaFormModal = ({
                         invalid={trungNguoi}
                         disabled={!choPhepSua || dangLuu}
                       />
+                      {nguoiDaRaKhoiDanhSach && (
+                        <div className="cd-hint cd-hint-warn nvk-pc-hint">
+                          {phanCongCu?.HoTen || `Nhân viên #${row.idNhanVien}`} không còn trong danh sách giảng viên của Khoa.
+                          Hãy gỡ người này hoặc chọn người khác trước khi lưu.
+                        </div>
+                      )}
                       {canhBaoTran && (
                         <div className="cd-hint cd-hint-warn nvk-pc-hint">
                           <i className="fa-solid fa-circle-exclamation"></i>{" "}

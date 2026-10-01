@@ -1,9 +1,10 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { canAccessPath } from "../config/menuConfig";
+import { canAccessPath, findRouteRule } from "../config/menuConfig";
+import { coDanhGiaKpiCaNhan } from "../utils/roles";
 
-const KhongCoQuyen = () => (
+const KhongCoQuyen = ({ khongDanhGia }) => (
   <div className="page-container">
     <div
       className="modern-table-card"
@@ -14,7 +15,7 @@ const KhongCoQuyen = () => (
         style={{ fontSize: "56px", color: "#bdc3c7", marginBottom: "15px" }}
       ></i>
       <h3 style={{ color: "#7f8c8d", margin: "0 0 8px 0" }}>
-        Bạn không có quyền truy cập trang này
+        {khongDanhGia ? "Bạn không thuộc diện đánh giá KPI" : "Bạn không có quyền truy cập trang này"}
       </h3>
       <p style={{ margin: 0, fontSize: "14px" }}>
         Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ quản trị viên.
@@ -24,10 +25,16 @@ const KhongCoQuyen = () => (
 );
 
 const RequireRole = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (!canAccessPath(location.pathname, user)) return <KhongCoQuyen />;
+  if (loading) return <div className="page-container">Đang tải thông tin tài khoản...</div>;
+  if (!canAccessPath(location.pathname, user)) {
+    const khongDanhGia = findRouteRule(location.pathname)?.personalKpi &&
+      Array.isArray(user?.DonVi) && user.DonVi.some((dv) => dv?.LoaiDoiTuong === 0) &&
+      !coDanhGiaKpiCaNhan(user);
+    return <KhongCoQuyen khongDanhGia={khongDanhGia} />;
+  }
   return children;
 };
 

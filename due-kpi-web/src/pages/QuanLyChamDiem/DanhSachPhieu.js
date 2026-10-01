@@ -60,7 +60,7 @@ const MOI_TRANG_THAI = [
  * Trưởng phòng không thấy lối đi này: giai đoạn 3 trả 403 với họ.
  *
  * Bảng này ghép HAI nguồn: phiếu từ GET /phieu, và người chưa lập phiếu do
- * useChuaTuCham đối chiếu danh bạ ở client. "Chưa lập phiếu" là một chip trạng
+ * useChuaTuCham lấy từ báo cáo backend. "Chưa lập phiếu" là một chip trạng
  * thái bình thường (sentinel TRANG_THAI_CHUA_LAP), và "Tất cả" bao gồm cả họ -
  * đó mới là toàn cảnh của đơn vị, không phải toàn cảnh của bảng phiếu.
  *

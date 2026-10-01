@@ -64,7 +64,7 @@ const TEN_LOAI_DOI_TUONG = {
  *
  *  - "Chưa tự chấm"    KHÔNG lấy từ nhóm API phiếu. Người chưa bấm lưu lần nào
  *    không có dòng nào trong `phieu_danh_gia` nên mọi endpoint phiếu đều không
- *    thấy họ; tab này ghép danh bạ nhân viên với danh sách phiếu ở client
+ *    thấy họ; tab này dùng báo cáo chưa lập từ backend và API phiếu nháp
  *    (useChuaTuCham). Gồm cả người đã lưu nháp nhưng chưa nộp - dưới góc nhìn
  *    Trưởng khoa cả hai đều là hồ sơ chưa khởi động.
  *

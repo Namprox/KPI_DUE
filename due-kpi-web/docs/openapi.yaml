@@ -12528,12 +12528,13 @@ components:
           description: true = don vi chinh (nguon cua claim id_don_vi trong JWT).
         LoaiDoiTuong:
           type: integer
-          enum: [1, 2]
+          enum: [0, 1, 2]
           description: >-
-            Loai phieu ca nhan cua nguoi dung TAI DON VI nay. 1 = Giang vien (Khoa + chuc danh
-            ngach giang day GV/GVC/GVCC/HDLD_GV/HDLD_HUU), 2 = Vien chuc / NLD (moi truong
-            hop con lai, ke ca nhan vien van phong Khoa khong co chuc danh va moi chuc danh
-            phi giang day: CV/CVC/NCV/KTV/HDLD_CNTT...). FE bat menu "Danh gia KPI Nhan vien" khi co it nhat mot don vi
+            Loai phieu ca nhan cua nguoi dung TAI DON VI nay. 0 = Khong thuoc dien danh gia
+            KPI (chuc danh HDLD_GV / HDLD_HUU, moi don vi - an moi menu danh gia ca nhan),
+            1 = Giang vien (Khoa + chuc danh ngach giang day GV/GVC/GVCC), 2 = Vien chuc / NLD
+            (moi truong hop con lai, ke ca nhan vien van phong Khoa khong co chuc danh va moi
+            chuc danh phi giang day: CV/CVC/NCV/KTV/HDLD_CNTT...). FE bat menu "Danh gia KPI Nhan vien" khi co it nhat mot don vi
             LoaiDoiTuong = 2; khong tu suy tu IdChucDanh / MaDonVi. Vang mat chi khi DB chua
             chay migration.
     AuthResponse:

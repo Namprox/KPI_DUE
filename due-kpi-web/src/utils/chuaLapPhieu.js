@@ -1,13 +1,5 @@
 /**
- * "Ai trong đơn vị chưa tự chấm KPI?" - câu hỏi mà nhóm API phiếu KHÔNG trả lời được.
- *
- * Phiếu chỉ được tạo khi giảng viên bấm lưu lần đầu (xem fetchPhieuCuaToi trong
- * phieuApi.js), nên người chưa mở phiếu bao giờ không có dòng nào trong
- * `phieu_danh_gia`. Mọi endpoint ở đây - /phieu, /phieu/khoa/pending,
- * /bao-cao/chua-hoan-tat - đều đọc từ bảng đó, vì vậy họ VÔ HÌNH với Trưởng khoa.
- *
- * Server không có endpoint nào liệt kê "người chưa lập phiếu", nên chỗ này ghép
- * ở client: lấy danh bạ nhân viên của đơn vị rồi trừ đi những người đã có phiếu.
+ * Người chưa lập phiếu lấy từ báo cáo backend, không đối chiếu danh bạ nhân viên.
  *
  * Hai rổ trả về khác nhau và đừng gộp:
  *  - `chuaLapPhieu` - chưa có dòng phiếu nào, không mở được màn hình phiếu.
@@ -16,8 +8,7 @@
  * tiếp theo với từng rổ hoàn toàn khác nhau.
  */
 
-import { fetchAllNhanVien } from "./nhanVienApi";
-import { LOAI_DOI_TUONG, TRANG_THAI } from "./phieuApi";
+import { fetchBaoCaoChuaLapPhieu, LOAI_DOI_TUONG, TRANG_THAI } from "./phieuApi";
 
 /**
  * Trạng thái ẢO cho người chưa lập phiếu.
@@ -49,29 +40,34 @@ export const loaiDoiTuongNhanVien = (nhanVien) =>
     : null;
 
 /**
- * Danh bạ những người PHẢI nộp phiếu KPI trong một phạm vi đơn vị.
- *
- * @param {boolean} baoGomDonViCon true khi phạm vi là cả cây đơn vị (khớp với
- *   phạm vi mặc định của GET /phieu ở cấp Khoa); false khi người dùng đã chọn
- *   đích danh một đơn vị, vì bộ lọc idDonVi của GET /phieu khớp chính xác.
+ * Báo cáo phân trang, idDonVi có phạm vi cây đơn vị do backend quyết định.
+ * Bộ lọc idDonViLoc trên màn phiếu chọn chính xác đơn vị, nên thu hẹp các dòng
+ * báo cáo đã được server cho phép xem theo IdDonVi, không suy phân loại người.
  */
-export const fetchNhanVienPhaiNopKpi = async ({
-  idDonVi,
-  baoGomDonViCon = true,
+export const fetchDanhSachChuaLapPhieu = async ({
+  idNam, idDonVi, idDonViLoc,
 } = {}) => {
-  if (!idDonVi) return [];
-  const list = await fetchAllNhanVien({
-    idDonVi,
-    baoGomDonViCon,
-    trangThai: true,
-  });
-  return list.filter(
-    (nv) => nv.IdNhanVien != null && loaiDoiTuongNhanVien(nv) != null,
-  );
+  if (!idNam) return [];
+  const list = [];
+  let page = 1;
+  let totalCount;
+  do {
+    const data = await fetchBaoCaoChuaLapPhieu({ idNam, idDonVi, quy: 0, page, pageSize: 100 });
+    list.push(...data.Items);
+    totalCount = data.TotalCount;
+    if (data.Items.length === 0 && list.length < totalCount) {
+      throw new Error("Danh sách chưa lập phiếu đã thay đổi. Vui lòng tải lại.");
+    }
+    page += 1;
+  } while (list.length < totalCount);
+  return idDonViLoc
+    ? list.filter((row) => Number(row.IdDonVi) === Number(idDonViLoc))
+    : list;
 };
 
 /** Dòng hiển thị chung cho cả hai rổ, để các bảng dùng đúng một bộ trường. */
 const dungDong = (nhanVien, phieu) => ({
+  ...nhanVien,
   key: phieu ? `phieu-${phieu.IdPhieu}` : `nv-${nhanVien.IdNhanVien}`,
   IdNhanVien: Number(nhanVien.IdNhanVien),
   IdPhieu: phieu?.IdPhieu ?? null,
@@ -88,30 +84,13 @@ const theoHoTen = (a, b) =>
   String(a.HoTen).localeCompare(String(b.HoTen), "vi");
 
 /**
- * Ghép danh bạ với danh sách phiếu.
- *
- * Đối chiếu theo IdNhanVien chứ không theo đơn vị của phiếu: một người có thể
- * vừa chuyển đơn vị sau khi đã nộp, phiếu cũ vẫn là phiếu của họ.
+ * Giữ danh sách chưa lập của server; phiếu nháp lấy trực tiếp từ API phiếu.
  */
-export const tinhChuaTuCham = ({ nhanVienList = [], phieuList = [] } = {}) => {
-  const phieuTheoNguoi = new Map();
-  phieuList.forEach((p) => {
-    if (p?.IdNhanVien != null) phieuTheoNguoi.set(Number(p.IdNhanVien), p);
-  });
-
-  const chuaLapPhieu = [];
-  const phieuNhap = [];
-
-  nhanVienList.forEach((nv) => {
-    const phieu = phieuTheoNguoi.get(Number(nv.IdNhanVien));
-    if (!phieu) {
-      chuaLapPhieu.push(dungDong(nv, null));
-      return;
-    }
-    if (Number(phieu.TrangThai) === TRANG_THAI.NHAP) {
-      phieuNhap.push(dungDong(nv, phieu));
-    }
-  });
+export const tinhChuaTuCham = ({ chuaLapList = [], phieuList = [] } = {}) => {
+  const chuaLapPhieu = chuaLapList.map((row) => dungDong(row, null));
+  const phieuNhap = phieuList
+    .filter((p) => Number(p.TrangThai) === TRANG_THAI.NHAP)
+    .map((p) => dungDong(p, p));
 
   chuaLapPhieu.sort(theoHoTen);
   phieuNhap.sort(theoHoTen);

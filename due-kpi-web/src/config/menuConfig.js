@@ -2,14 +2,13 @@ import { matchPath } from "react-router-dom";
 import {
   ROLE_SETS,
   VAI_TRO_TRUONG_PHONG,
-  CHUC_DANH_SETS,
   LOAI_DOI_TUONG_KPI,
   DON_VI_SETS,
   MOI_NGUOI,
   hasRole,
-  hasChucDanh,
   hasDonVi,
   coLoaiDoiTuong,
+  coDanhGiaKpiCaNhan,
   canViewHocVu,
 } from "../utils/roles";
 
@@ -47,6 +46,7 @@ export const MENU_GROUPS = [
         path: "/lich-su-danh-gia",
         childPaths: ["/lich-su-danh-gia/:id"],
         roles: MOI_NGUOI,
+        personalKpi: true,
       },
       {
         // Phiếu KPI của cả ĐƠN VỊ (Khoa/Phòng), chạy trên bộ API riêng
@@ -223,7 +223,7 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-flask",
         path: "/thanh-tich-nckh",
         roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+        access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
       },
       {
         // Kết quả khảo sát ý kiến sinh viên của chính mình. Gate theo NGẠCH chứ
@@ -233,7 +233,7 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-star-half-stroke",
         path: "/phan-hoi-sinh-vien-cua-toi",
         roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+        access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
       },
       {
         // KPI Nhóm III: phục vụ cộng đồng và các nhiệm vụ khác, theo phân công
@@ -244,7 +244,7 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-hands-holding-circle",
         path: "/nhiem-vu-khoa-cua-toi",
         roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+        access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
       },
       {
         // Vi phạm giảng dạy do đơn vị ghi nhận cho chính mình (điểm trừ KPI).
@@ -254,7 +254,7 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-triangle-exclamation",
         path: "/vi-pham-cua-toi",
         roles: MOI_NGUOI,
-        chucDanh: CHUC_DANH_SETS.GIANG_VIEN,
+        access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
       },
     ],
   },
@@ -603,7 +603,7 @@ const buildRouteRules = () => {
     group.items.forEach((item) => {
       const rule = {
         roles: item.roles,
-        chucDanh: item.chucDanh,
+        personalKpi: item.personalKpi || Object.prototype.hasOwnProperty.call(LOAI_DOI_TUONG_THEO_DUONG_DAN, item.path),
         donVi: item.donVi,
         access: item.access,
       };
@@ -618,23 +618,30 @@ const buildRouteRules = () => {
   );
 };
 
-export const ROUTE_RULES = buildRouteRules();
-
-export const findRouteRule = (pathname) =>
-  ROUTE_RULES.find((rule) => matchPath(rule.path, pathname)) || null;
-
 /**
- * Các trang dùng mẫu phiếu viên chức / người lao động.
+ * Các trang KPI cá nhân và dữ liệu gắn với loại đối tượng tương ứng.
  * Backend xác định LoaiDoiTuong riêng trên từng User.DonVi.
  */
 const LOAI_DOI_TUONG_THEO_DUONG_DAN = {
   "/danh-gia-phu-luc-2": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
   "/danh-gia-kpi-nhan-vien": LOAI_DOI_TUONG_KPI.VIEN_CHUC,
   "/ke-khai-thanh-tich": LOAI_DOI_TUONG_KPI.VIEN_CHUC,
+  "/gio-giang-cua-toi": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
+  "/thanh-tich-nckh": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
+  "/phan-hoi-sinh-vien-cua-toi": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
+  "/nhiem-vu-khoa-cua-toi": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
+  "/vi-pham-cua-toi": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
 };
+
+export const ROUTE_RULES = buildRouteRules();
+
+export const findRouteRule = (pathname) =>
+  ROUTE_RULES.find((rule) => matchPath(rule.path, pathname)) || null;
 
 export const canAccessRule = (rule, user) => {
   if (!user) return false;
+
+  if (rule.personalKpi && !coDanhGiaKpiCaNhan(user)) return false;
 
   if (rule.access) return rule.access(user);
 
@@ -667,7 +674,6 @@ export const canAccessRule = (rule, user) => {
 
   return (
     hasRole(rule.roles, user) &&
-    hasChucDanh(rule.chucDanh, user) &&
     hasDonVi(rule.donVi, user)
   );
 };

@@ -8,8 +8,8 @@
  * Hệ thống có HAI trục phân quyền độc lập, đừng trộn lẫn:
  *  - CHỨC VỤ (`nhan_vien.MaChucVu`: ADMIN/HT/TK/TKK/...) - "đang giữ vị trí gì".
  *  - CHỨC DANH nghề nghiệp (`nhan_vien.IdChucDanh`: GV/GVC/CV/...) - "ngạch gì".
- * Phiếu KPI Giảng viên / KPI Nhân viên là hai biểu mẫu khác nhau nên chia theo
- * chức danh; các màn hình quản trị chia theo chức vụ.
+ * Phân loại KPI cá nhân lấy từ DonVi[].LoaiDoiTuong do backend trả về;
+ * các màn hình quản trị chia theo chức vụ.
  *
  * Lưu ý dữ liệu: `nhan_vien.MaChucVu` trả về không thống nhất hoa/thường
  * ('Admin' vs 'ADMIN'), nên MỌI so sánh vai trò phải đi qua normalizeRole().
@@ -469,13 +469,8 @@ export const donViTheoVaiTro = (roles, user) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Chức danh nghề nghiệp (User.MaChucDanh từ auth/me)                  */
+/* Quyền học vụ và phân loại KPI cá nhân từ auth/me                   */
 /* ------------------------------------------------------------------ */
-
-/** Tập mã chức danh dùng cho các màn dữ liệu cá nhân của giảng viên. */
-export const CHUC_DANH_SETS = {
-  GIANG_VIEN: ["GV", "GVC", "GVCC", "HDLD_GV", "HDLD_HUU"],
-};
 
 /** Quyền xem học vụ: cấp Khoa hoặc tài khoản xem toàn trường. */
 export const canManageHocVu = (user) =>
@@ -490,28 +485,20 @@ export const canManageHocVu = (user) =>
 export const canViewHocVu = (user) =>
   canManageHocVu(user) || hasRole(ROLE_SETS.KPI_KHOA, user);
 
-/** Chuẩn hóa mã chức danh; không suy mã từ id hoặc tên hiển thị. */
-export const normalizeChucDanh = (user) => {
-  const ma = String(user?.MaChucDanh || "").trim().toUpperCase();
-  return ma || null;
-};
-
-/**
- * @param {string[]|undefined|null} chucDanh tập mã được phép.
- *   Không khai (undefined/null) = trang không xét chức danh → cho qua.
- * @param {object} user
- */
-export const hasChucDanh = (chucDanh, user) => {
-  if (chucDanh == null) return true;
-  if (!Array.isArray(chucDanh) || chucDanh.length === 0) return false; // fail closed
-  const ma = normalizeChucDanh(user);
-  return ma != null && chucDanh.includes(ma);
-};
-
 /** Các loại đối tượng KPI được backend gán theo từng đơn vị của người dùng. */
 export const LOAI_DOI_TUONG_KPI = {
+  KHONG_DANH_GIA: 0,
   GIANG_VIEN: 1,
   VIEN_CHUC: 2,
+};
+
+export const tenLoaiDoiTuongKpi = (loai) => {
+  switch (loai) {
+    case 0: return "Không thuộc diện đánh giá KPI";
+    case 1: return "Giảng viên";
+    case 2: return "Viên chức / NLĐ";
+    default: return "Chưa có phân loại đối tượng KPI";
+  }
 };
 
 /** Trả về các đơn vị có loại phiếu được backend xác định tương ứng. */
@@ -522,6 +509,10 @@ export const donViTheoLoaiDoiTuong = (user, loaiDoiTuong) =>
 
 export const coLoaiDoiTuong = (user, loaiDoiTuong) =>
   donViTheoLoaiDoiTuong(user, loaiDoiTuong).length > 0;
+
+export const coDanhGiaKpiCaNhan = (user) =>
+  coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN) ||
+  coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.VIEN_CHUC);
 
 /**
  * Đường dẫn form tự đánh giá đúng ngạch của người dùng.

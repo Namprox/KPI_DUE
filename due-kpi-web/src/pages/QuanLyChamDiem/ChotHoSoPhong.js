@@ -233,16 +233,11 @@ const ChotHoSoPhong = () => {
   const soDaChot = chiTietList.length - chuaChot.length;
 
   /**
-   * Loại đối tượng - PhieuDanhGiaChiTietDto KHÔNG khai trường này nên
-   * fetchPhieuDetail có thể trả undefined; xem-truoc-chot mới là nguồn chuẩn.
-   *
-   * Mặc định cuối cùng là VIEN_CHUC, và nó an toàn RIÊNG ở trang này: trang chỉ
-   * tới được từ hàng đợi của một Phòng, mà phiếu ở Phòng luôn mang
-   * loai_doi_tuong = 2 (suy từ ĐƠN VỊ, không từ chức danh - xem schema_ghi_chu).
+   * Loại của phiếu lấy từ preview hoặc chi tiết API; không suy từ đơn vị.
    */
   const laVienChuc =
     Number(
-      preview?.LoaiDoiTuong ?? phieu?.LoaiDoiTuong ?? LOAI_DOI_TUONG.VIEN_CHUC,
+      preview?.LoaiDoiTuong ?? phieu?.LoaiDoiTuong,
     ) === LOAI_DOI_TUONG.VIEN_CHUC;
 
   // Mở nhầm hồ sơ giảng viên ở đây là lỗi điều hướng, không phải lỗi người dùng.

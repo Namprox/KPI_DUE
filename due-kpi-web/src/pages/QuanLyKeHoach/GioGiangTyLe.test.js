@@ -103,6 +103,11 @@ test.each([400, 403, 404])("hiện lỗi API %s và cho thử lại", async (sta
   expect(await screen.findByText("Người miễn")).toBeInTheDocument();
 });
 
+test.each([0, null, undefined])("thẻ tự xem không gọi API giờ giảng khi auth phân loại %s", (LoaiDoiTuong) => {
+  render(<GioGiangNamCard idNam={2026} user={{ IdNhanVien: 1, DonVi: [{ LoaiDoiTuong }] }} />);
+  expect(apiFetch).not.toHaveBeenCalled();
+});
+
 test("tự xem lấy ID từ auth/me và xét LoaiDoiTuong tại mọi đơn vị", async () => {
   apiFetch.mockResolvedValue(ok({ Success: true, TyLeHoanThanh: [rows[0]] }));
   const { rerender } = render(<GioGiangNamCard idNam={2026} user={{ IdNhanVien: 1, DonVi: [{ LoaiDoiTuong: 2 }] }} />);

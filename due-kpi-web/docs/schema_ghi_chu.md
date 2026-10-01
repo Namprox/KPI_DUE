@@ -24,6 +24,8 @@ chỉ còn 2 tiền tố (không còn `TT_`, `V_`, `TO_`):
 | `K_` | Khoa | GV (ngạch giảng dạy) → loại đối tượng 1 (`fn_loai_doi_tuong_ca_nhan`); vào `v_giang_vien_khoa`; có điểm trừ tập thể, nhiệm vụ Khoa, NCKH Khoa; phiếu đơn vị mẫu loại 3 |
 | `P_` | Phòng / Trung tâm / Viện / Tổ | Mọi người → loại 2 (viên chức); phiếu đơn vị mẫu loại 4 |
 
+Ở **mọi** tiền tố, người có chức danh miễn KPI (`HDLD_GV`, `HDLD_HUU`) → loại 0, không đánh giá (xem §1.3).
+
 Mã đơn vị duy nhất còn viết cứng trong SP: `N'P_DTBDCL'` (Phòng Đào tạo và Bảo đảm chất lượng, gộp từ
 `P_DT` + `P_QLCL`) — TP của đơn vị này được chốt / xem toàn trường điểm TB phản hồi SV
 (`sp_diem_tb_phan_hoi_sv_chot`, `_get_chi_tiet`). Đổi mã này phải sửa cả 2 SP.
@@ -34,37 +36,47 @@ Mã đơn vị duy nhất còn viết cứng trong SP: `N'P_DTBDCL'` (Phòng Đ�
 Từ đợt "Chức danh chính thức": danh mục = **23 chức danh theo danh sách nhân sự thực tế + `HDLD_GV`**
 (24 mã). Tên lưu **nguyên văn** danh sách (kể cả khoảng trắng sau "HĐLĐ/").
 
-| Mã | Tên | Ngạch giảng dạy |
-|---|---|---|
-| `GV` / `GVC` / `GVCC` | Giảng viên / Giảng viên chính / Giảng viên cao cấp | ✅ |
-| `HDLD_GV` | HĐLĐ/Giảng viên | ✅ |
-| `HDLD_HUU` | HĐLĐ/ Hưu trí | ✅ (từ đợt "Thêm HDLD_HUU vào ngạch giảng dạy") |
-| `CV`, `CVC`, `NCV`, `KS`, `TVV`, `YS` | Chuyên viên, Chuyên viên chính, Nghiên cứu viên, Kỹ sư, Thư viện viên, Y sĩ | — |
-| `KTV`, `KTV_C`, `KTV_TC` | Kế toán viên, Kế toán viên chính, Kế toán viên trung cấp | — |
-| `NV_PV68`, `NV_BV68`, `NV_KT68` | Nhân viên phục vụ/68, bảo vệ/68, kỹ thuật/68 | — |
-| `HDLD_BV`, `HDLD_DC` | HĐLĐ/ Nhân viên bảo vệ, HĐLĐ dùng chung | — |
-| `HDLD_CTVP`, `HDLD_CNTT`, `HDLD_CTDT`, `HDLD_KNST`, `HDLD_CTD` | HĐLĐ/ Hỗ trợ CTVP, CNTT, CTĐT, công tác khởi nghiệp và đổi mới sáng tạo, CT Đảng | — |
+| Mã | Tên | Ngạch giảng dạy | Miễn KPI |
+|---|---|---|---|
+| `GV` / `GVC` / `GVCC` | Giảng viên / Giảng viên chính / Giảng viên cao cấp | ✅ | — |
+| `HDLD_GV` | HĐLĐ/Giảng viên | — | ✅ (đợt "Miễn KPI HDLD") |
+| `HDLD_HUU` | HĐLĐ/ Hưu trí | — | ✅ (đợt "Miễn KPI HDLD") |
+| `CV`, `CVC`, `NCV`, `KS`, `TVV`, `YS` | Chuyên viên, Chuyên viên chính, Nghiên cứu viên, Kỹ sư, Thư viện viên, Y sĩ | — | — |
+| `KTV`, `KTV_C`, `KTV_TC` | Kế toán viên, Kế toán viên chính, Kế toán viên trung cấp | — | — |
+| `NV_PV68`, `NV_BV68`, `NV_KT68` | Nhân viên phục vụ/68, bảo vệ/68, kỹ thuật/68 | — | — |
+| `HDLD_BV`, `HDLD_DC` | HĐLĐ/ Nhân viên bảo vệ, HĐLĐ dùng chung | — | — |
+| `HDLD_CTVP`, `HDLD_CNTT`, `HDLD_CTDT`, `HDLD_KNST`, `HDLD_CTD` | HĐLĐ/ Hỗ trợ CTVP, CNTT, CTĐT, công tác khởi nghiệp và đổi mới sáng tạo, CT Đảng | — | — |
 
-**Ngạch giảng dạy = `GV, GVC, GVCC, HDLD_GV, HDLD_HUU`**, khai báo ở **đúng 3 chỗ** phải khớp nhau:
-`fn_loai_doi_tuong_ca_nhan`, `v_giang_vien_khoa`, `v_vien_chuc_don_vi`. Thêm ngạch giảng dạy mới = sửa cả ba
-+ tạo định mức giờ giảng cho nó. Thông điệp lỗi `NOT_GIANG_VIEN_KHOA` của `sp_vi_pham_kiem_tra_quyen_ghi`
-cũng liệt kê cứng danh sách này — sửa kèm.
+**Ngạch giảng dạy = `GV, GVC, GVCC`**, khai báo **một chỗ duy nhất**: inline TVF `fn_chuc_danh_giang_day()`.
+`fn_loai_doi_tuong_ca_nhan`, `v_giang_vien_khoa`, `v_vien_chuc_don_vi` đều đọc hàm này (trước đợt "Miễn KPI HDLD"
+danh sách viết cứng ở cả ba chỗ). Thêm ngạch giảng dạy mới = thêm mã vào hàm + tạo định mức giờ giảng cho nó.
+Thông điệp lỗi `NOT_GIANG_VIEN_KHOA` của `sp_vi_pham_kiem_tra_quyen_ghi` còn liệt kê cứng danh sách — sửa kèm.
 
-Đợt "Thêm HDLD_HUU vào ngạch giảng dạy" (chỉ SQL, không đổi schema / C#):
-- Người `HDLD_HUU` ở **Khoa** chuyển từ loại 2 sang loại 1: phiếu **mới** theo mẫu giảng viên, không tạo được
-  phiếu quý, tính vào `N` của điểm trừ tập thể, chỉ nhận vi phạm loại 1. Ở Phòng / Trung tâm vẫn là loại 2.
-- Phiếu **đã tạo** trước đợt giữ nguyên `loai_doi_tuong = 2` (snapshot lúc tạo). Script không tự chuyển —
-  truy vấn KT5 trong `update_database.sql` của đợt liệt kê phiếu lệch để xoá / tạo lại từng phiếu.
-- `HDLD_HUU` phải có dòng `dinh_muc_giang_vien` cho từng năm (KT3 liệt kê năm còn thiếu), nếu không bước
-  duyệt hồ sơ trả 400.
+**Chức danh miễn KPI = `HDLD_GV, HDLD_HUU`**, khai báo một chỗ: inline TVF `fn_chuc_danh_mien_kpi()`.
+Đợt "Miễn KPI HDLD" (2026-10-01): giảng viên chỉ xét 3 ngạch; hai mã HĐLĐ trên **không thuộc diện đánh giá KPI
+ở bất kỳ đơn vị nào**:
+- `fn_loai_doi_tuong_ca_nhan` trả **0**. `sp_phieu_danh_gia_create` / `sp_phieu_quy_create` chặn tạo phiếu (kể cả
+  khi BLL truyền override `@loai_doi_tuong`). `GET api/auth/me` trả `DonVi[].LoaiDoiTuong = 0`, FE ẩn menu đánh
+  giá cá nhân.
+- Không nằm trong `v_giang_vien_khoa` lẫn `v_vien_chuc_don_vi` ⇒ không vào `N` điểm trừ tập thể, chỉ số KPI Khoa
+  (phản hồi SV, NCKH, WoS/Scopus), giao nhiệm vụ Khoa, không ghi được vi phạm.
+- Không được đếm ở báo cáo tiến độ lập phiếu (`sp_bao_cao_tong_quan`, `sp_bao_cao_chua_lap_phieu`,
+  `fn_bao_cao_phieu_nam_don_vi`, `fn_bao_cao_phieu_quy_don_vi`).
+- Phiếu của họ trong năm đang mở bị **xoá hẳn** (dữ liệu test) bởi `update_database.sql` của đợt; năm đã đóng giữ
+  nguyên. Dòng `dinh_muc_giang_vien` của `HDLD_HUU` / `HDLD_GV` giữ nguyên nhưng không còn được dùng.
+- Sửa kèm: `v_vien_chuc_don_vi` viết lại vế loại trừ bằng `EXISTS` — bản cũ `NOT (Khoa AND ma_chuc_danh IN (...))`
+  ra UNKNOWN khi chức danh NULL nên nhân viên văn phòng Khoa không chức danh bị loại nhầm khỏi view.
+
+> Lịch sử: đợt "Thêm HDLD_HUU vào ngạch giảng dạy" từng đưa `HDLD_HUU` ở Khoa từ loại 2 sang loại 1. Đợt
+> "Miễn KPI HDLD" thay thế hoàn toàn quyết định đó.
 
 Các mã cũ `TROGIANG, TAPSU, GS, PGS, NV, KHAC` đã **xoá hẳn** (người mang PGS/GS chuyển tạm sang `GVCC`,
 NV → `HDLD_CNTT` — dữ liệu dev). GS/PGS là **học hàm**, không phải chức danh nghề nghiệp.
 
 ### 2.2. `dinh_muc_giang_vien` — chỉ còn giờ giảng
 Từ đợt "Chức danh chính thức": cột `gio_nckh`, `gio_pvcd` đã **DROP**. Định mức = `gio_giang_ly_thuyet`
-(270 cho 4 ngạch `GV, GVC, GVCC, HDLD_GV`; `HDLD_HUU` vào ngạch sau nên định mức của nó phải tạo riêng
-theo từng năm — xem §1.3). Hệ quả:
+(270 cho 3 ngạch giảng dạy `GV, GVC, GVCC`; dòng định mức của `HDLD_GV` / `HDLD_HUU` còn trong bảng nhưng không
+dùng nữa vì hai mã này miễn KPI — xem §1.3). Hệ quả:
 - Điều kiện "đủ định mức giờ NCKH" khi duyệt hồ sơ do **Trưởng khoa tick tay**; hệ thống không còn gợi ý.
 - Điểm tự động NCKH (`NCKH_GIO_TY_LE`) **không đổi** — dùng `nckh_gio_nckh.gio_nckh_dinh_muc` của web NCKH.
 - Còn lại nhưng **không còn tác dụng**: `ngoai_le_dinh_muc.he_so_nckh /
@@ -268,8 +280,9 @@ Mirror `tieu_chi_don_vi_cham`: chỉ trưởng (`ma_chuc_vu` TK/TKL/TP) của đ
 Lưu các vi phạm quy định giảng dạy trong năm để tính điểm trừ KPI.
 
 - CHỈ áp dụng cho GIẢNG VIÊN thuộc KHOA (`ma_don_vi LIKE 'K_%'`).
-  Giảng viên = `chuc_danh_nghe_nghiep.ma_chuc_danh IN ('GV','GVC','GVCC','HDLD_GV','HDLD_HUU')`
-  — xem view `v_giang_vien_khoa` trong procedure.sql.
+  Giảng viên = chức danh thuộc `fn_chuc_danh_giang_day()` (`GV, GVC, GVCC`)
+  — xem view `v_giang_vien_khoa` trong procedure.sql. Người có chức danh miễn KPI (`HDLD_GV`, `HDLD_HUU`)
+  không ghi được vi phạm loại 1 lẫn loại 2.
 - KHÔNG bao gồm vi phạm pháp luật (xử lý qua `phieu_danh_gia.khong_vi_pham_phap_luat`).
 - Điểm trừ cá nhân = `MIN(SUM(diem_tru) trong năm, 15)`.
 - Điểm trừ tập thể của Khoa = `MIN(7.5 * T / (0.2 * 15 * N), 7.5)` — công thức nằm ở **inline TVF
@@ -1095,9 +1108,10 @@ và `sp_chi_tiet_danh_gia_update_tu_danh_gia` ghi **thẳng** `@diem` vào bản
 
 | Đơn vị của phiếu | Chức danh (`nhan_vien.id_chuc_danh`) | `loai_doi_tuong` | Mẫu dùng |
 |---|---|---|---|
-| Khoa (`ma_don_vi LIKE 'K_%'`) | ngạch giảng dạy: `GV, GVC, GVCC, HDLD_GV, HDLD_HUU` | **1** | Giảng viên |
+| bất kỳ | miễn KPI: `HDLD_GV, HDLD_HUU` (`fn_chuc_danh_mien_kpi`) | **0** | — không tạo phiếu (chỉ có ở hàm / `auth/me`, không bao giờ ghi xuống `phieu_danh_gia`) |
+| Khoa (`ma_don_vi LIKE 'K_%'`) | ngạch giảng dạy: `GV, GVC, GVCC` (`fn_chuc_danh_giang_day`) | **1** | Giảng viên |
 | Khoa | NULL, hoặc mọi mã còn lại (`CV, CVC, NCV, KTV, HDLD_CNTT, ...`) | **2** | Viên chức / NLĐ — nhân viên văn phòng Khoa |
-| Phòng / Trung tâm / Trường | bất kỳ | **2** | Viên chức / NLĐ |
+| Phòng / Trung tâm / Trường | mọi mã trừ mã miễn KPI | **2** | Viên chức / NLĐ |
 
 Luật này khai báo **một nơi duy nhất**: inline TVF `dbo.fn_loai_doi_tuong_ca_nhan(@id_nhan_vien,
 @id_don_vi)`, dùng bởi `sp_phieu_danh_gia_create`, `sp_phieu_quy_create` (chặn tạo phiếu quý
@@ -1113,6 +1127,9 @@ cho người loại 1) và `sp_auth_get_user_by_id` RS2 → `GET api/auth/me` tr
 > dùng 5 mã). Sửa danh sách ở một nơi phải sửa cả ba — xem §1.3.
 >
 > ✅ Đợt "Thêm HDLD_HUU vào ngạch giảng dạy": cả ba nâng lên **5 ngạch** (+ `HDLD_HUU`).
+>
+> ✅ Đợt "Miễn KPI HDLD": còn **3 ngạch** `GV, GVC, GVCC`, khai báo một chỗ ở `fn_chuc_danh_giang_day()`;
+> `HDLD_GV, HDLD_HUU` → loại 0 (`fn_chuc_danh_mien_kpi()`), xem §1.3.
 
 Đây là hiện thực của quyết định "KPI Phòng khác KPI Khoa": một PGS làm Trưởng phòng chấm
 theo **mẫu viên chức** trên phiếu Phòng và theo **mẫu giảng viên** trên phiếu Khoa.

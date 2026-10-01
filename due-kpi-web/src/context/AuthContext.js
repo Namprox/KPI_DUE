@@ -12,12 +12,13 @@ const AuthContext = createContext(null);
 const extractUser = (data) => (data && data.User != null ? data.User : data);
 
 export const AuthProvider = ({ children }) => {
+  /** @type {[import('../utils/authTypes').AuthUser|null, Function]} */
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
     try {
-      const res = await apiFetch("auth/me");
+      const res = await apiFetch("auth/me", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setUser(extractUser(data) || null);
@@ -44,6 +45,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(
     async (credentials) => {
+      setUser(null);
       const res = await apiFetch("auth/login", {
         method: "POST",
         body: JSON.stringify(credentials),
@@ -58,8 +60,10 @@ export const AuthProvider = ({ children }) => {
 
       if (res.ok && result.Success) {
         // Nạp đầy đủ thông tin User kèm mảng DonVi[] từ GET /api/auth/me
-        await refreshUser();
-        return { success: true };
+        const refreshed = await refreshUser();
+        return refreshed
+          ? { success: true }
+          : { success: false, message: "Không tải được thông tin tài khoản. Vui lòng đăng nhập lại." };
       }
 
       const msg =

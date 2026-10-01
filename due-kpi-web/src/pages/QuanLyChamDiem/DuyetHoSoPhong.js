@@ -62,24 +62,13 @@ const TAB = {
  * dùng CHUNG một endpoint (POST phieu/{id}/khoa/duyet-ho-so mở cho cả TK/TKL/TP),
  * nên đây là tách MÀN HÌNH chứ không phải tách thẩm quyền.
  *
- * MỌI hồ sơ ở đây đều là loai_doi_tuong = 2, và điều đó suy từ ĐƠN VỊ chứ không
- * từ chức danh: phiếu ở Phòng / Trung tâm luôn là viên chức, kể cả phiếu của một
- * PGS kiêm nhiệm làm Trưởng phòng. Vì vậy mọi lời gọi danh sách đều GHIM
- * idDonVi = Phòng đang chọn, và KHÔNG có cột / bộ lọc "Loại đối tượng" - câu trả
- * lời là hằng số, nó thuộc về phụ đề trang.
- *
- * PhieuDanhGiaChiTietDto KHÔNG khai trường LoaiDoiTuong (xem docs/openapi.yaml),
- * nên đừng bao giờ lọc theo nó mà không có đường lùi: `Number(undefined) !== 2`
- * luôn đúng và sẽ lọc sạch bảng. Ở đây nó chỉ dùng để ASSERT - xem locTheoPhong().
+ * Màn viên chức chỉ lấy hồ sơ LoaiDoiTuong = 2 do API trả về, cùng idDonVi
+ * của Phòng được chọn; không suy phân loại từ mã đơn vị hoặc chức danh.
  *
  * NGUỒN DỮ LIỆU TỪNG TAB - KHÁC NHAU, đừng gộp:
  *
- *  - "Chưa tự chấm"   ghép ở client (useChuaTuCham). Người chưa bấm lưu lần nào
- *    không có dòng nào trong `phieu_danh_gia` nên mọi endpoint phiếu đều không
- *    thấy họ. PHẢI truyền idDonViLoc (không chỉ idDonViGoc): nó ép cả danh bạ lẫn
- *    danh sách phiếu về ĐÚNG một đơn vị. Bỏ trống thì tinhChuaTuCham ghép theo
- *    IdNhanVien trên tập phiếu rộng hơn và sẽ nhận nhầm phiếu Khoa của người kiêm
- *    nhiệm là phiếu Phòng, khiến họ biến mất khỏi tab này.
+ *  - "Chưa tự chấm"   báo cáo chưa lập từ backend và phiếu nháp từ API phiếu
+ *    (useChuaTuCham). idDonViLoc giữ cả hai nguồn tại đúng Phòng được chọn.
  *
  *  - "Đang thẩm định" GET /api/phieu?idDonVi={phong}&trangThai=2.
  *    KHÔNG dùng /api/phieu/khoa/pending làm NGUỒN DÒNG: endpoint đó không có tham
@@ -178,24 +167,13 @@ const DuyetHoSoPhong = () => {
    * 1. Server đã ghim idDonVi (khớp CHÍNH XÁC một đơn vị) - lớp chính.
    * 2. Lọc lại ở client: một dòng, sống sót nếu sau này server đổi idDonVi thành
    *    lọc cả cây đơn vị.
-   * 3. ASSERT chứ không phải filter. Guard `!= null` là BẮT BUỘC vì DTO không khai
-   *    LoaiDoiTuong; dính nhánh này nghĩa là giả định "Phòng luôn cho ra loại 2"
-   *    đã sai và cần đọc lại schema, chứ không phải im lặng bỏ dòng.
+   * 3. Chỉ nhận loại phiếu viên chức do backend xác định.
    */
   const locTheoPhong = useCallback(
     (rows, idDonVi) =>
       (rows || []).filter((p) => {
         if (Number(p.IdDonVi) !== Number(idDonVi)) return false;
-        if (
-          p.LoaiDoiTuong != null &&
-          Number(p.LoaiDoiTuong) === LOAI_DOI_TUONG.GIANG_VIEN
-        ) {
-          console.warn(
-            `[DuyetHoSoPhong] Phiếu #${p.IdPhieu} ở đơn vị ${idDonVi} mang LoaiDoiTuong = 1 (giảng viên). Giả định "phiếu ở Phòng luôn là viên chức" không còn đúng.`,
-          );
-          return false;
-        }
-        return true;
+        return Number(p.LoaiDoiTuong) === LOAI_DOI_TUONG.VIEN_CHUC;
       }),
     [],
   );
