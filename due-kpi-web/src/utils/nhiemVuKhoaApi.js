@@ -6,10 +6,8 @@
  * nhiệm vụ theo phân công của Khoa" (trần 20 điểm), điểm cộng dồn từ mức quy đổi
  * của từng vai trò trong `danh_muc_vai_tro_pvcd`.
  *
- * Nghiệp vụ: **Khoa nhập liệu, giảng viên phản hồi.** Giảng viên KHÔNG tự kê khai
- * nhiệm vụ, vì vai trò chủ trì / phối hợp là quan hệ tương đối giữa nhiều người
- * trong CÙNG một nhiệm vụ - chỉ Khoa mới phân định được. (Luồng cũ để giảng viên
- * tự kê khai qua `nhiem_vu_cong_dong` đã bị khoá.)
+ * Chủ trì tự kê khai người phối hợp; Trưởng khoa xét từng nhiệm vụ.
+ * Chỉ nhiệm vụ đã duyệt được tính điểm. Quyền thao tác lấy từ cờ server.
  *
  * Mọi request đi qua apiFetch nên đã có sẵn `credentials: 'include'` và vòng
  * refresh 401 (xem utils/api.js); tuyệt đối không gọi fetch trần ở màn hình.
@@ -27,7 +25,7 @@
  *     bản ghi (diem_snapshot). Điểm ở FE chỉ để hiển thị dự kiến.
  *
  * Nguồn chuẩn: docs/openapi.yaml (tag NhiemVuKhoa),
- * docs/frontend-nhiem-vu-khoa.md, docs/schema_ghi_chu.md mục 7.
+ * docs/schema_ghi_chu.md mục 7.
  */
 
 import { apiFetch } from "./api";
@@ -42,20 +40,11 @@ export const TRANG_THAI_KY = { DANG_MO: 1, DA_CHOT: 2 };
 /** 1 = sai vai trò (bắt buộc trỏ tới một nhiệm vụ), 2 = thiếu nhiệm vụ. */
 export const LOAI_PHAN_HOI = { SAI_VAI_TRO: 1, THIEU_NHIEM_VU: 2 };
 
-/** Phản hồi còn "chờ xử lý" là một trong ba điều kiện CHẶN chốt kỳ. */
+/** Trạng thái phản hồi lưu trữ từ luồng cũ, chỉ đọc. */
 export const TRANG_THAI_PHAN_HOI = { CHO_XU_LY: 1, DA_XU_LY: 2 };
 
 /** Minh chứng hai cấp dùng chung một bảng: 1 = cấp nhiệm vụ, 2 = cấp phản hồi. */
 export const CAP_MINH_CHUNG = { NHIEM_VU: 1, PHAN_HOI: 2 };
-
-/** Vấn đề khi kiểm tra chốt. 1/2/3 chặn, 4/5 chỉ cảnh báo. */
-export const LOAI_VAN_DE = {
-  THIEU_CHU_TRI: 1,
-  CHUA_PHAN_CONG: 2,
-  PHAN_HOI_CHUA_XU_LY: 3,
-  VUOT_TRAN: 4,
-  LECH_CAU_HINH: 5,
-};
 
 /** Hành động trong nhật ký (lich_su_nhiem_vu_khoa.hanh_dong). */
 export const HANH_DONG = {
@@ -68,6 +57,9 @@ export const HANH_DONG = {
   CHOT_KY: 7,
   MO_LAI_KY: 8,
   XU_LY_PHAN_HOI: 9,
+  DUYET_NHIEM_VU: 10,
+  TRA_VE_NHIEM_VU: 11,
+  MO_LAI_NHIEM_VU: 12,
 };
 
 export const TEN_LOAI_PHAN_HOI = {
@@ -84,7 +76,10 @@ export const TEN_HANH_DONG = {
   [HANH_DONG.GO_PHAN_CONG]: "Gỡ phân công",
   [HANH_DONG.CHOT_KY]: "Chốt kỳ",
   [HANH_DONG.MO_LAI_KY]: "Mở lại kỳ",
-  [HANH_DONG.XU_LY_PHAN_HOI]: "Xử lý phản hồi",
+  [HANH_DONG.XU_LY_PHAN_HOI]: "Xử lý phản hồi (cũ)",
+  [HANH_DONG.DUYET_NHIEM_VU]: "Duyệt nhiệm vụ",
+  [HANH_DONG.TRA_VE_NHIEM_VU]: "Trả về nhiệm vụ",
+  [HANH_DONG.MO_LAI_NHIEM_VU]: "Mở lại nhiệm vụ",
 };
 
 /**
@@ -116,9 +111,15 @@ export const NVK_ERROR_MESSAGES = {
   KY_DA_CHOT:
     "Kỳ đã chốt nên không ghi được. Cần mở lại kỳ trước khi chỉnh sửa.",
   TRUNG_CHU_TRI:
-    "Mỗi nhiệm vụ chỉ được có một chủ trì - hãy đổi vai trò của người còn lại",
-  CHOT_KHONG_HOP_LE:
-    "Vẫn còn vấn đề chặn nên chưa chốt được kỳ. Hãy mở lại màn hình kiểm tra chốt.",
+    "Người kê khai là chủ trì; người phối hợp chỉ chọn vai trò phối hợp chính hoặc phối hợp",
+  THIEU_LY_DO: "Vui lòng nhập lý do trả về hoặc mở lại nhiệm vụ",
+  NHIEM_VU_DA_DUYET:
+    "Nhiệm vụ đã duyệt. Cần nhờ Trưởng khoa mở lại để chỉnh sửa.",
+  TRANG_THAI_KHONG_HOP_LE:
+    "Trạng thái nhiệm vụ đã thay đổi. Dữ liệu sẽ được tải lại.",
+  DUYET_KHONG_HOP_LE:
+    "Nhiệm vụ cũ chưa có chủ trì. Hãy xoá nhiệm vụ và nhờ chủ trì thực tế kê khai lại.",
+  LUONG_DA_NGUNG: "Luồng thao tác cũ đã ngừng. Vui lòng tải lại trang.",
   SQL_ERROR: "Lỗi hệ thống khi truy cập dữ liệu, vui lòng thử lại",
 };
 
@@ -247,7 +248,7 @@ export const layKy = async ({ idNam, idDonVi }) => {
  *
  * Hạn phản hồi chỉ là NHÃN hiển thị - hết hạn không khoá gì ("không lên tiếng =
  * đồng ý"). `xoaHan` ưu tiên hơn `hanPhanHoi`. Mở lại bắt buộc có `lyDo` và chỉ
- * người có `CanChot` mới làm được (TLGVK cố ý bị loại).
+ * người có `CanDuyet` mới làm được (TLGVK cố ý bị loại).
  */
 export const capNhatKy = async ({
   idNam,
@@ -288,9 +289,15 @@ export const capNhatKy = async ({
  * Danh sách nhiệm vụ của kỳ. Mỗi dòng ĐÃ KÈM SẴN `PhanCong[]` và `MinhChung[]`
  * (SP trả 3 result set, C# ghép sẵn) - đừng gọi thêm gì cho từng dòng.
  */
-export const layDanhSachNhiemVu = ({ idNam, idDonVi, idNhomNv, tuKhoa } = {}) =>
+export const layDanhSachNhiemVu = ({
+  idNam,
+  idDonVi,
+  idNhomNv,
+  tuKhoa,
+  trangThai,
+} = {}) =>
   layItems(
-    `nhiem-vu-khoa${buildQuery({ idNam, idDonVi, idNhomNv, tuKhoa })}`,
+    `nhiem-vu-khoa${buildQuery({ idNam, idDonVi, idNhomNv, tuKhoa, trangThai })}`,
     undefined,
     "Không tải được danh sách nhiệm vụ",
   );
@@ -307,7 +314,7 @@ export const layNhiemVu = (id) =>
  */
 const chuanBiPhanCong = (danhSach) =>
   (danhSach || [])
-    .filter((d) => d && d.IdNhanVien && d.IdVaiTro)
+    .filter((d) => d && !d.LaChuTri && d.IdNhanVien && d.IdVaiTro)
     .map((d) => ({
       IdNhanVien: Number(d.IdNhanVien),
       IdVaiTro: Number(d.IdVaiTro),
@@ -322,13 +329,12 @@ const chuanBiPhanCong = (danhSach) =>
  * đổi IdVaiTro = đổi vai trò + re-snapshot điểm, dòng mới = thêm.
  * **Xoá một người khỏi nhiệm vụ = đơn giản là không gửi dòng đó nữa.**
  *
- * `phanCong` rỗng vẫn lưu được (Khoa nhập dở nhiệm vụ trước, gán người sau), và
- * nhiệm vụ chưa có chủ trì cũng lưu được - chỉ chặn ở bước CHỐT kỳ.
+ * Chỉ gửi người phối hợp (PHC/PH); chủ trì được server tự thêm.
+ * Danh sách rỗng hợp lệ khi nhiệm vụ chỉ có chủ trì.
  *
  * `idNam` / `idDonVi` bị BỎ QUA khi sửa (server lấy từ chính nhiệm vụ).
  *
- * @returns {Promise<object>} nhiệm vụ đầy đủ kèm PhanCong[] với DiemSnapshot
- *   server vừa tính - DÙNG NÓ để cập nhật state, đừng tự đoán điểm ở FE.
+ * Trả envelope với Item và Message để giữ nguyên trạng thái khi không có thay đổi.
  */
 export const luuNhiemVu = async ({
   id,
@@ -348,12 +354,40 @@ export const luuNhiemVu = async ({
     PhanCong: chuanBiPhanCong(phanCong),
   };
 
-  return layItem(
+  return goiApi(
     id ? `nhiem-vu-khoa/${id}` : "nhiem-vu-khoa",
     { method: id ? "PUT" : "POST", body: JSON.stringify(body) },
     id ? "Lưu nhiệm vụ thất bại" : "Tạo nhiệm vụ thất bại",
   );
 };
+
+/** Xét từng nhiệm vụ; trả về trạng thái và quyền mới từ server. */
+export const xetNhiemVu = (id, { trangThai, lyDo } = {}) =>
+  layItem(
+    `nhiem-vu-khoa/${id}/xet`,
+    jsonBody({
+      TrangThai: Number(trangThai),
+      ...(Number(trangThai) === 3 ? { LyDo: lyDo?.trim() } : {}),
+    }),
+    "Xét nhiệm vụ thất bại",
+  );
+
+export const TEN_TRANG_THAI_NHIEM_VU = {
+  1: "Chờ duyệt",
+  2: "Đã duyệt",
+  3: "Trả về",
+};
+export const canKeKhaiNhiemVu = (header) =>
+  header?.CanKeKhai === true && !laKyDaChot(header);
+export const canSuaNhiemVu = (nv) => nv?.ChoPhepSua === true;
+export const canXetNhiemVu = (nv) => nv?.ChoPhepXet === true;
+export const canDuyetKy = (ky) => ky?.CanDuyet === true;
+export const canXoaNhiemVu = (nv, ky) =>
+  !laKyDaChot(ky) && (canSuaNhiemVu(nv) || canDuyetKy(ky));
+
+/** Những lỗi do dữ liệu/quyền thay đổi cần đọc lại server trước thao tác tiếp. */
+export const canTaiLaiNhiemVu = (error) =>
+  error?.status === 409 || error?.status === 403;
 
 /** Xoá mềm nhiệm vụ - kéo theo cả phân công nên màn hình phải hỏi xác nhận. */
 export const xoaNhiemVu = async (id) => {
@@ -404,7 +438,7 @@ export const layNhiemVuCuaToi = async (idNam) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Tổng hợp / chốt kỳ                                                  */
+/* Tổng hợp nhiệm vụ đã duyệt                                          */
 /* ------------------------------------------------------------------ */
 
 /**
@@ -425,32 +459,6 @@ export const layTongHop = async ({ idNam, idDonVi }) => {
     Items: Array.isArray(item?.Items) ? item.Items : [],
     Nhom: Array.isArray(item?.Nhom) ? item.Nhom : [],
   };
-};
-
-/**
- * Kiểm tra điều kiện trước khi chốt.
- * Chia hai nhóm trong UI: `LaChan = true` (đỏ, "Cần xử lý") và `false` (vàng,
- * "Lưu ý"). Nút Chốt chỉ bật khi `CoTheChot === true`.
- */
-export const kiemTraChot = ({ idNam, idDonVi }) =>
-  layItem(
-    `nhiem-vu-khoa/kiem-tra-chot${buildQuery({ idNam, idDonVi })}`,
-    undefined,
-    "Không kiểm tra được điều kiện chốt kỳ",
-  );
-
-/**
- * Chốt kỳ. Server TỰ TÍNH LẠI điều kiện chặn, không tin kết quả màn hình
- * kiểm-tra-chốt mà client vừa xem - nên vẫn phải xử lý 422 CHOT_KHONG_HOP_LE
- * (dữ liệu có thể đổi giữa hai lần gọi).
- */
-export const chotKy = async ({ idNam, idDonVi, ghiChu }) => {
-  const envelope = await goiApi(
-    "nhiem-vu-khoa/chot",
-    jsonBody({ IdNam: idNam, IdDonVi: idDonVi, GhiChu: ghiChu ?? null }),
-    "Chốt kỳ thất bại",
-  );
-  return envelope.Item ?? null;
 };
 
 /**
@@ -483,61 +491,6 @@ export const taiExcelTongHop = async ({ idNam, idDonVi, maDonVi }) => {
 /* ------------------------------------------------------------------ */
 
 /**
- * Giảng viên gửi phản hồi, có thể kèm PDF trong cùng request.
- *
- * ⚠️ Endpoint này CHỈ nhận `multipart/form-data`, KỂ CẢ KHI KHÔNG ĐÍNH KÈM FILE.
- * Gửi JSON sẽ nhận 415. Đây là đánh đổi có chủ đích để "một endpoint gửi phản
- * hồi kèm file" đúng nghĩa trên .NET 4.0.
- *
- * Tên field bắt buộc là `file`, và KHÔNG tự đặt Content-Type - apiFetch đã bỏ
- * header khi body là FormData để trình duyệt tự sinh boundary.
- *
- * File được đính kèm SAU KHI phản hồi đã lưu: upload lỗi thì phản hồi vẫn được
- * tạo, `Message` chỉ thêm đoạn "(Dinh kem file that bai: ...)". Vì vậy hàm trả
- * về `canhBaoDinhKem` để màn hình hiện cảnh báo NHẸ thay vì báo thất bại toàn bộ.
- *
- * @returns {Promise<{item: object|null, canhBaoDinhKem: string}>}
- */
-export const guiPhanHoi = async ({
-  idNam,
-  loaiPhanHoi,
-  idNhiemVuKhoa,
-  idNhomNv,
-  noiDung,
-  file,
-  tenHienThi,
-}) => {
-  const fd = new FormData();
-  fd.append("idNam", String(idNam));
-  fd.append("loaiPhanHoi", String(loaiPhanHoi));
-  fd.append("noiDung", noiDung ?? "");
-
-  // Trường tuỳ theo loại: loại 1 bắt buộc trỏ tới nhiệm vụ, loại 2 chỉ gợi ý nhóm
-  if (Number(loaiPhanHoi) === LOAI_PHAN_HOI.SAI_VAI_TRO && idNhiemVuKhoa) {
-    fd.append("idNhiemVuKhoa", String(idNhiemVuKhoa));
-  }
-  if (Number(loaiPhanHoi) === LOAI_PHAN_HOI.THIEU_NHIEM_VU && idNhomNv) {
-    fd.append("idNhomNv", String(idNhomNv));
-  }
-  if (file) {
-    fd.append("file", file);
-    if (tenHienThi?.trim()) fd.append("tenHienThi", tenHienThi.trim());
-  }
-
-  const envelope = await goiApi(
-    "nhiem-vu-khoa/phan-hoi",
-    { method: "POST", body: fd },
-    "Gửi phản hồi thất bại",
-  );
-
-  const message = envelope.Message || "";
-  return {
-    item: envelope.Item ?? null,
-    canhBaoDinhKem: /dinh kem file that bai/i.test(message) ? message : "",
-  };
-};
-
-/**
  * Danh sách phản hồi của kỳ (phía Khoa). Mỗi dòng đã kèm sẵn `MinhChung[]`.
  * `trangThai` bỏ trống = tất cả.
  */
@@ -546,14 +499,6 @@ export const layDanhSachPhanHoi = ({ idNam, idDonVi, trangThai } = {}) =>
     `nhiem-vu-khoa/phan-hoi${buildQuery({ idNam, idDonVi, trangThai })}`,
     undefined,
     "Không tải được danh sách phản hồi",
-  );
-
-/** Đánh dấu đã xử lý; `moLai = true` trả phản hồi về trạng thái chờ. */
-export const xuLyPhanHoi = (idPhanHoi, { ghiChuXuLy, moLai } = {}) =>
-  layItem(
-    `nhiem-vu-khoa/phan-hoi/${idPhanHoi}/xu-ly`,
-    jsonBody({ GhiChuXuLy: ghiChuXuLy ?? null, MoLai: !!moLai }),
-    "Cập nhật trạng thái phản hồi thất bại",
   );
 
 /* ------------------------------------------------------------------ */
@@ -616,15 +561,6 @@ const uploadMinhChung = async (endpoint, file, tenHienThi, cauHinh) => {
 export const themMinhChungNhiemVu = (idNhiemVu, file, tenHienThi, cauHinh) =>
   uploadMinhChung(
     `nhiem-vu-khoa/${idNhiemVu}/minh-chung`,
-    file,
-    tenHienThi,
-    cauHinh,
-  );
-
-/** Minh chứng CẤP PHẢN HỒI (cấp 2): file giảng viên tự gửi kèm. */
-export const themMinhChungPhanHoi = (idPhanHoi, file, tenHienThi, cauHinh) =>
-  uploadMinhChung(
-    `nhiem-vu-khoa/phan-hoi/${idPhanHoi}/minh-chung`,
     file,
     tenHienThi,
     cauHinh,
@@ -728,17 +664,6 @@ export const layLichSuNhiemVu = (idNhiemVu) =>
 /** Kỳ đã chốt ⇒ read-only TOÀN BỘ, kể cả upload minh chứng và gửi phản hồi. */
 export const laKyDaChot = (kyHoacHeader) =>
   Number(kyHoacHeader?.TrangThai) === TRANG_THAI_KY.DA_CHOT;
-
-/**
- * Được nhập liệu hay không.
- *
- * Dùng cờ `CanNhap` do server trả, KHÔNG tự suy từ `MaChucVu`: server còn xét cả
- * phạm vi đơn vị và trạng thái kỳ. Thiếu cờ (endpoint không trả) ⇒ fail-closed.
- */
-export const coTheNhap = (ky) => ky?.CanNhap === true && !laKyDaChot(ky);
-
-/** Được chốt / mở lại kỳ hay không. TLGVK nhập được nhưng KHÔNG chốt được. */
-export const coTheChot = (ky) => ky?.CanChot === true;
 
 /**
  * Vượt trần chỉ là CẢNH BÁO - tuyệt đối không dùng để chặn nút Lưu.

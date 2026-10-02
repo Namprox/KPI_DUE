@@ -8620,12 +8620,12 @@ paths:
         - NhiemVuKhoa
       summary: Ky nhiem vu cua (nam x Khoa) + tong quan + 7 nhom
       description: |
-        Ky chi co 2 trang thai: 1 dang mo (Khoa sua tu do, GV phan hoi tu do),
-        2 da chot (khoa ghi toan bo). Trang thai duyet gan vao KY chu khong gan vao
-        tung ban ghi phan cong.
-        Ky duoc TAO LUOI: endpoint nay tu tao neu chua co, Khoa khong phai bam "mo ky".
-        HanPhanHoi het han KHONG khoa gi - chi la nhan hien thi ("khong len tieng =
-        dong y"); chi TrangThai = 2 moi khoa ghi.
+        Tu 2026-10-02 ky chi con la CONTAINER cua cac nhiem vu: trang thai duyet nam o
+        TUNG nhiem vu (NhiemVuKhoaDto.TrangThai). TrangThai = 2 cua ky chi con sinh ra
+        tu luong cu (chot ky da ngung) va van khoa ghi cho toi khi mo lai.
+        Ky duoc TAO LUOI: endpoint nay tu tao neu chua co.
+        CanDuyet = nguoi goi duyet duoc (TK/TKL/TP/ADMIN); CanKeKhai = nguoi goi la
+        giang vien cua Khoa. SoChoDuyet / SoTraVe / SoDaDuyet dem nhiem vu theo trang thai.
       operationId: nhiemVuKhoaGetKy
       parameters:
         - name: idNam
@@ -8666,10 +8666,11 @@ paths:
     put:
       tags:
         - NhiemVuKhoa
-      summary: Dat han phan hoi / ghi chu, hoac mo lai ky da chot
+      summary: Dat han / ghi chu, hoac mo lai ky da chot theo luong cu
       description: |
-        MoLai = true dua ky tu 2 ve 1, bat buoc co LyDo, va chi TK/TKL/TP/ADMIN duoc
-        thuc hien (TLGVK khong duoc). Ky da chot thi thao tac duy nhat hop le la mo lai.
+        Moi thao tac chi TK/TKL/TP trong pham vi don vi hoac ADMIN (TLGVK chi xem).
+        MoLai = true dua ky da chot (luong cu) tu 2 ve 1, bat buoc co LyDo. Ky da chot
+        thi thao tac duy nhat hop le la mo lai.
         XoaHan = true uu tien hon HanPhanHoi (go han ve khong gioi han).
       operationId: nhiemVuKhoaSetKy
       requestBody:
@@ -8692,7 +8693,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "403":
-          description: Khong co quyen (mo lai doi TK/TKL/TP/ADMIN)
+          description: Khong co quyen (chi TK/TKL/TP/ADMIN)
           content:
             application/json:
               schema:
@@ -8708,13 +8709,15 @@ paths:
     get:
       tags:
         - NhiemVuKhoa
-      summary: Bang diem nhiem vu cua chinh giang vien dang dang nhap
+      summary: Bang nhiem vu cua chinh giang vien dang dang nhap
       description: >
         Khong gate vai tro - id lay tu token, ai cung xem duoc cua minh.
-        Tra header (trang thai ky, han phan hoi, TongDiemThucTe + TongDiemQuyDoi),
-        danh sach nhiem vu duoc gan kem vai tro / diem / minh chung cap nhiem vu,
-        va cac phan hoi da gui cua chinh GV.
-        Khoa chua mo ky thi van tra header voi Items rong.
+        Header.IdDonVi = Khoa de KE KHAI (Khoa chinh cua GV) - luon co ke ca khi Khoa
+        chua co ky; FE gui lai trong IdDonVi khi POST api/nhiem-vu-khoa.
+        Items = MOI nhiem vu GV tham gia trong nam (chu tri hoac phoi hop, moi Khoa) kem
+        TrangThai / LyDoTraVe / ChoPhepSua. TongDiemThucTe / TongDiemQuyDoi CHI tinh
+        nhiem vu da duyet (khop diem cham vao phieu); TongDiemChoDuyet la phan chua tinh.
+        PhanHoi = phan hoi cu cua GV (luong phan hoi da ngung, chi doc).
       operationId: nhiemVuKhoaCuaToi
       parameters:
         - name: idNam
@@ -8746,12 +8749,13 @@ paths:
     get:
       tags:
         - NhiemVuKhoa
-      summary: Giang vien cua Khoa kem san tong diem hien tai
+      summary: Giang vien cua Khoa (o chon nguoi phoi hop) kem tong diem
       description: >
-        Dung cho o chon nguoi khi phan cong - FE thay ngay ai sap cham tran ma khong
-        phai goi them API cho tung nguoi. Mot truy van duy nhat (LEFT JOIN bang tong
-        hop), khong N+1.
-        Moi dong tra CA HAI con so: TongDiemThucTe va TongDiemQuyDoi = MIN(thuc te, tran).
+        Mo cho nguoi cua Khoa (TK/TKL/TP/TLGVK, HT, ADMIN) VA giang vien cua chinh Khoa
+        do (chu tri can chon nguoi phoi hop). Voi giang vien, cac cot diem / dem tra
+        null - khong lo diem cua dong nghiep.
+        Diem / dem CHI tinh nhiem vu da duyet; TongDiemChoDuyet la phan chua duyet.
+        Mot truy van duy nhat, khong N+1.
       operationId: nhiemVuKhoaGiangVien
       parameters:
         - name: idNam
@@ -8778,7 +8782,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GiangVienDiemResponse"
         "403":
-          description: Khong co quyen xem Khoa nay
+          description: Khong phai nguoi cua Khoa va khong phai giang vien cua Khoa
           content:
             application/json:
               schema:
@@ -8788,11 +8792,12 @@ paths:
     get:
       tags:
         - NhiemVuKhoa
-      summary: Bang tong hop toan Khoa (man hinh chot + nguon cho Excel)
+      summary: Bang tong hop toan Khoa (nguon cho Excel)
       description: >
-        Gom CA giang vien chua duoc phan cong nhiem vu nao, de Khoa thay cho trong.
-        SoNhiemVuTheoNhom la map id_nhom_nv -> so luong (server tra dang long, C# pivot).
-        VuotTran chi la canh bao hien thi, khong chan luu va khong chan chot.
+        Gom CA giang vien chua co nhiem vu nao. Moi so dem / diem / SoNhiemVuTheoNhom
+        CHI tinh nhiem vu DA DUYET (khop diem cham vao phieu); SoNhiemVuChoDuyet /
+        TongDiemChoDuyet la phan chua duyet. SoNhiemVuTheoNhom la map id_nhom_nv ->
+        so luong (server tra dang long, C# pivot). VuotTran chi la canh bao hien thi.
       operationId: nhiemVuKhoaTongHop
       parameters:
         - name: idNam
@@ -8823,8 +8828,12 @@ paths:
     get:
       tags:
         - NhiemVuKhoa
-      summary: Kiem tra dieu kien truoc khi chot ky
+      summary: "DA NGUNG - Kiem tra dieu kien truoc khi chot ky"
+      deprecated: true
       description: |
+        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG. Truong khoa duyet TUNG nhiem
+        vu (POST api/nhiem-vu-khoa/{id}/xet); hang doi: GET api/nhiem-vu-khoa?trangThai=1.
+        Mo ta cu:
         Tra danh sach chi tiet tung van de con ton. LoaiVanDe:
           1 CHAN - nhiem vu co phan cong nhung thieu chu tri
           2 CHAN - nhiem vu chua phan cong cho ai
@@ -8851,6 +8860,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/KiemTraChotResponse"
+        "409":
+          description: LUONG_DA_NGUNG
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "403":
           description: Khong co quyen xem Khoa nay
           content:
@@ -8868,8 +8883,11 @@ paths:
     post:
       tags:
         - NhiemVuKhoa
-      summary: Chot ky nhiem vu cua Khoa
+      summary: "DA NGUNG - Chot ky nhiem vu cua Khoa"
+      deprecated: true
       description: >
+        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG - duyet tung nhiem vu la chot
+        du lieu. Mo ta cu:
         Chi TK/TKL/TP trong pham vi don vi hoac ADMIN (TLGVK KHONG duoc chot).
         SP tu tinh lai dieu kien chan, khong tin ket qua man hinh kiem-tra-chot ma
         client vua xem (du lieu co the doi giua hai lan goi).
@@ -8902,7 +8920,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "409":
-          description: KY_DA_CHOT - ky da duoc chot truoc do
+          description: LUONG_DA_NGUNG (luon tra ma nay)
           content:
             application/json:
               schema:
@@ -8920,7 +8938,8 @@ paths:
         - NhiemVuKhoa
       summary: Xuat bang tong hop toan Khoa ra Excel de ky
       description: >
-        File .xlsx mot sheet, cot dong theo 7 nhom cong tac. Bao cao dung cot
+        File .xlsx mot sheet, cot dong theo 7 nhom cong tac. Moi so lieu CHI tinh
+        nhiem vu da duyet; cot "Ghi chu" bao so nhiem vu / diem con cho duyet. Bao cao dung cot
         "Tong diem quy doi" = MIN(thuc te, tran); cot "Tong diem thuc te" van hien
         de nguoi ky thay ai bi cat bao nhieu.
         Ten file: NhiemVuKhoa_{maDonVi}_{idNam}.xlsx
@@ -8990,8 +9009,11 @@ paths:
     post:
       tags:
         - NhiemVuKhoa
-      summary: Giang vien gui phan hoi (co the kem file PDF trong cung request)
+      summary: "DA NGUNG - Giang vien gui phan hoi"
+      deprecated: true
       description: |
+        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG (khong doc multipart). GV thieu
+        nhiem vu thi tu ke khai (neu chu tri) hoac bao chu tri them vao. Mo ta cu:
         multipart/form-data - CO Y khong dung JSON de "mot endpoint gui phan hoi co kem
         file" dung nghia (.NET 4.0 khong co duong nao khac de vua nhan truong text vua
         nhan file trong cung mot request). FE luon dung FormData ke ca khi khong co file.
@@ -9052,13 +9074,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "409":
-          description: KY_DA_CHOT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "415":
-          description: Yeu cau phai la multipart/form-data
+          description: LUONG_DA_NGUNG (luon tra ma nay)
           content:
             application/json:
               schema:
@@ -9066,7 +9082,7 @@ paths:
     get:
       tags:
         - NhiemVuKhoa
-      summary: Danh sach phan hoi cua ky (phia Khoa)
+      summary: Danh sach phan hoi cu cua ky (phia Khoa, chi doc)
       operationId: nhiemVuKhoaGetPhanHoi
       parameters:
         - name: idNam
@@ -9103,10 +9119,10 @@ paths:
     post:
       tags:
         - NhiemVuKhoa
-      summary: Khoa danh dau phan hoi da xu ly (hoac mo lai)
+      summary: "DA NGUNG - Khoa danh dau phan hoi da xu ly"
+      deprecated: true
       description: >
-        Phan hoi con o trang thai "cho xu ly" la MOT TRONG BA dieu kien CHAN chot ky.
-        MoLai = true tra phan hoi ve trang thai cho xu ly.
+        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG.
       operationId: nhiemVuKhoaXuLyPhanHoi
       parameters:
         - name: idPhanHoi
@@ -9127,20 +9143,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhanHoiNhiemVuKhoaResponse"
-        "403":
-          description: Khong co quyen xu ly phan hoi cua Khoa nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay phan hoi
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "409":
-          description: KY_DA_CHOT
+          description: LUONG_DA_NGUNG (luon tra ma nay)
           content:
             application/json:
               schema:
@@ -9150,10 +9154,10 @@ paths:
     post:
       tags:
         - NhiemVuKhoa
-      summary: Bo sung minh chung cho mot phan hoi (cap 2)
+      summary: "DA NGUNG - Bo sung minh chung cho mot phan hoi (cap 2)"
+      deprecated: true
       description: >
-        Chu nhan phan hoi tu bo sung file bat cu luc nao khi ky con mo; nguoi nhap
-        cua Khoa cung them duoc. Chi nhan PDF, kiem 2 lop (duoi file + chu ky '%PDF-').
+        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG, khong luu file.
       operationId: nhiemVuKhoaUploadMinhChungPhanHoi
       parameters:
         - name: idPhanHoi
@@ -9188,14 +9192,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Khong phai chu nhan phan hoi va khong co quyen nhap
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "409":
-          description: KY_DA_CHOT
+          description: LUONG_DA_NGUNG (luon tra ma nay)
           content:
             application/json:
               schema:
@@ -9246,9 +9244,9 @@ paths:
       summary: Tai len minh chung CAP NHIEM VU (cap 1, dung chung cho ca nhom)
       description: >
         Quyet dinh phan cong / ke hoach / bien ban - tai len MOT lan, moi giang vien
-        trong nhiem vu deu xem duoc. Chi nguoi nhap cua Khoa (TK/TKL/TP/TLGVK/ADMIN).
-        Chi nhan PDF, kiem 2 lop (duoi file + chu ky '%PDF-'). Cho phep nhieu file va
-        bo sung bat cu luc nao khi ky con mo.
+        trong nhiem vu deu xem duoc. CHI CHU TRI cua nhiem vu, va chi khi nhiem vu chua
+        duoc duyet (da duyet -> 409 NHIEM_VU_DA_DUYET).
+        Chi nhan PDF, kiem 2 lop (duoi file + chu ky '%PDF-'). Cho phep nhieu file.
       operationId: nhiemVuKhoaUploadMinhChung
       parameters:
         - name: id
@@ -9284,7 +9282,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "403":
-          description: Khong co quyen them minh chung cho nhiem vu nay
+          description: Khong phai chu tri cua nhiem vu
           content:
             application/json:
               schema:
@@ -9296,7 +9294,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "409":
-          description: KY_DA_CHOT
+          description: NHIEM_VU_DA_DUYET hoac KY_DA_CHOT (ky cu)
           content:
             application/json:
               schema:
@@ -9342,9 +9340,9 @@ paths:
     get:
       tags:
         - NhiemVuKhoa
-      summary: Danh sach nhiem vu cua ky (kem phan cong va minh chung)
+      summary: Danh sach nhiem vu cua ky (phia Khoa - kem phan cong va minh chung)
       description: >
-        Mot lan goi tra day du nhiem vu -> phan cong -> minh chung (SP tra 3 result set,
+        Chi nguoi cua Khoa (TK/TKL/TP/TLGVK, HT, ADMIN). Mot lan goi tra day du nhiem vu -> phan cong -> minh chung (SP tra 3 result set,
         C# ghep bang Dictionary) nen khong co N+1.
       operationId: nhiemVuKhoaList
       parameters:
@@ -9370,6 +9368,13 @@ paths:
           description: Loc theo ten nhiem vu hoac mo ta
           schema:
             type: string
+        - name: trangThai
+          in: query
+          required: false
+          description: "1 = cho duyet (hang doi cua Truong khoa), 2 = da duyet, 3 = tra ve. Bo trong = tat ca."
+          schema:
+            type: integer
+            enum: [1, 2, 3]
       responses:
         "200":
           description: OK
@@ -9386,14 +9391,16 @@ paths:
     post:
       tags:
         - NhiemVuKhoa
-      summary: Tao nhiem vu + toan bo danh sach phan cong trong MOT request
+      summary: Chu tri ke khai nhiem vu + danh sach nguoi phoi hop trong MOT request
       description: |
-        Mot form, mot lan luu - KHONG co endpoint rieng cho phan cong.
+        Nguoi goi phai la giang vien cua Khoa IdDonVi va TU DONG la chu tri (CT) cua
+        nhiem vu. PhanCong CHI chua nguoi phoi hop chinh (PHC) / phoi hop (PH):
+        gui vai tro CT -> 422 TRUNG_CHU_TRI; gui chinh minh / trung nguoi -> 400 INVALID.
+        Nhiem vu moi o TrangThai = 1 (cho Truong khoa duyet) - CHUA tinh diem.
         Client KHONG gui diem: server resolve tu danh_muc_vai_tro_pvcd theo thu tu uu tien
         (don_vi,nam) > (don_vi,NULL) > (NULL,nam) > (NULL,NULL) roi GHI CUNG vao ban ghi.
         Moi nguoi trong danh sach phai la giang vien cua chinh Khoa do; sai mot dong thi
         hong ca request (khong luu mot phan).
-        Nhiem vu chua co chu tri VAN LUU DUOC - chi chan khi CHOT ky.
       operationId: nhiemVuKhoaCreate
       requestBody:
         required: true
@@ -9409,13 +9416,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaItemResponse"
         "400":
-          description: Thieu ten / nhom, hoac GV_NGOAI_KHOA, hoac vai tro khong kha dung
+          description: Thieu ten / nhom, GV_NGOAI_KHOA, vai tro khong kha dung, hoac danh sach chua chinh minh / trung nguoi
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "403":
-          description: Khong co quyen nhap cho Khoa nay
+          description: Nguoi goi khong phai giang vien cua Khoa nay
           content:
             application/json:
               schema:
@@ -9427,7 +9434,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "422":
-          description: TRUNG_CHU_TRI - moi nhiem vu chi duoc co mot chu tri
+          description: TRUNG_CHU_TRI - chu tri luon la nguoi ke khai, nguoi phoi hop khong nhan vai tro CT
           content:
             application/json:
               schema:
@@ -9438,6 +9445,10 @@ paths:
       tags:
         - NhiemVuKhoa
       summary: Chi tiet mot nhiem vu (kem phan cong va minh chung)
+      description: >
+        Nguoi cua Khoa (can_xem) HOAC thanh vien cua chinh nhiem vu (chu tri mo form sua,
+        nguoi phoi hop xem minh duoc ghi vai tro gi). ChoPhepSua / ChoPhepXet tinh san
+        cho nguoi goi.
       operationId: nhiemVuKhoaGetById
       parameters:
         - name: id
@@ -9467,8 +9478,12 @@ paths:
     put:
       tags:
         - NhiemVuKhoa
-      summary: Sua nhiem vu - gui TOAN BO danh sach phan cong, server tu tinh diff
+      summary: Chu tri sua nhiem vu - gui TOAN BO danh sach phoi hop, server tu tinh diff
       description: |
+        Chi CHU TRI hien tai, va chi khi nhiem vu chua duyet (da duyet -> 409
+        NHIEM_VU_DA_DUYET; can Truong khoa mo lai). Nhiem vu dang TRA VE (3) tu quay ve
+        CHO DUYET (1) khi noi dung THAT SU doi; luu ma khong doi gi thi giu 3 va ly do.
+        Dong CT cua chu tri server tu giu nguyen (khong gui trong PhanCong).
         Gui len toan bo danh sach sau khi sua; server tinh diff:
           - dong khong con trong danh sach -> GO (nhat ky hanh dong 6)
           - dong DOI VAI TRO -> re-snapshot diem theo muc hien hanh (nhat ky hanh dong 5,
@@ -9498,13 +9513,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaItemResponse"
         "400":
-          description: Thieu ten / nhom, hoac GV_NGOAI_KHOA
+          description: Thieu ten / nhom, GV_NGOAI_KHOA, hoac danh sach chua chinh minh / trung nguoi
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "403":
-          description: Khong co quyen nhap cho Khoa nay
+          description: Khong phai chu tri cua nhiem vu
           content:
             application/json:
               schema:
@@ -9516,7 +9531,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "409":
-          description: KY_DA_CHOT
+          description: NHIEM_VU_DA_DUYET hoac KY_DA_CHOT (ky cu)
           content:
             application/json:
               schema:
@@ -9531,6 +9546,9 @@ paths:
       tags:
         - NhiemVuKhoa
       summary: Xoa mem mot nhiem vu
+      description: >
+        Chu tri: chi khi nhiem vu chua duyet. Truong khoa (TK/TKL/TP/ADMIN): moi trang
+        thai (vd xoa nhiem vu ke khai trung, nhiem vu cu thieu chu tri).
       operationId: nhiemVuKhoaDelete
       parameters:
         - name: id
@@ -9546,7 +9564,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "403":
-          description: Khong co quyen xoa nhiem vu cua Khoa nay
+          description: Khong phai chu tri va khong phai Truong khoa
           content:
             application/json:
               schema:
@@ -9558,7 +9576,71 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhiemVuKhoaResponse"
         "409":
-          description: KY_DA_CHOT
+          description: NHIEM_VU_DA_DUYET (chu tri xoa nhiem vu da duyet), TRANG_THAI_KHONG_HOP_LE (vua bi doi) hoac KY_DA_CHOT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuKhoaResponse"
+
+  /api/nhiem-vu-khoa/{id}/xet:
+    post:
+      tags:
+        - NhiemVuKhoa
+      summary: Truong khoa duyet / tra ve / mo lai mot nhiem vu
+      description: |
+        Chi TK/TKL/TP trong pham vi don vi hoac ADMIN (TLGVK KHONG duoc). Duyet = chot du
+        lieu cua nhiem vu: khoa voi chu tri va bat dau tinh diem.
+          TrangThai = 2: duyet (tu 1 cho duyet hoac 3 tra ve). Can co chu tri.
+          TrangThai = 3: tra ve (tu 1) hoac mo lai nhiem vu da duyet (tu 2) - BAT BUOC LyDo.
+        Truong khoa tu duyet nhiem vu minh chu tri la hop le.
+        Diem tren phieu KPI chi doi sau khi chay lai POST api/phieu/{id}/tong-hop-tu-dong.
+        Tra ve nhiem vu day du sau khi xet (giong GET api/nhiem-vu-khoa/{id}).
+      operationId: nhiemVuKhoaXet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhiemVuKhoaXetRequest"
+      responses:
+        "200":
+          description: OK - nhiem vu sau khi xet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuKhoaItemResponse"
+        "400":
+          description: INVALID (TrangThai khong phai 2/3) hoac THIEU_LY_DO
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuKhoaResponse"
+        "403":
+          description: Khong phai Truong khoa / Admin cua Khoa nay
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuKhoaResponse"
+        "404":
+          description: Khong tim thay nhiem vu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuKhoaResponse"
+        "409":
+          description: TRANG_THAI_KHONG_HOP_LE (da o trang thai dich / vua bi nguoi khac doi) hoac KY_DA_CHOT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhiemVuKhoaResponse"
+        "422":
+          description: DUYET_KHONG_HOP_LE - nhiem vu (du lieu cu) chua co chu tri
           content:
             application/json:
               schema:
@@ -11034,7 +11116,7 @@ components:
   schemas:
     KyNhiemVuKhoaDto:
       type: object
-      description: "Ky nhiem vu cua mot (nam x Khoa). Trang thai duyet gan vao KY, khong gan vao tung ban ghi phan cong."
+      description: "Ky nhiem vu cua mot (nam x Khoa) - container. Tu 2026-10-02 trang thai duyet nam o TUNG nhiem vu."
       properties:
         IdKy:
           type: integer
@@ -11048,7 +11130,7 @@ components:
           type: string
         TrangThai:
           type: integer
-          description: "1 = Dang mo (sua tu do), 2 = Da chot (khoa ghi toan bo)"
+          description: "1 = Dang mo, 2 = Da chot theo LUONG CU (khoa ghi toan ky cho toi khi mo lai)"
         HanPhanHoi:
           type: string
           format: date
@@ -11072,12 +11154,32 @@ components:
         CanNhap:
           type: boolean
           nullable: true
-          description: "Nguoi dang dang nhap co duoc nhap nhiem vu / phan cong khong"
+          deprecated: true
+          description: "VET TICH luong Khoa nhap lieu - khong con cap quyen ghi nao. Dung CanDuyet / CanKeKhai."
         CanChot:
           type: boolean
           nullable: true
-          description: "Co duoc chot / mo lai ky khong (TLGVK = false)"
+          deprecated: true
+          description: "VET TICH - trung gia tri voi CanDuyet"
+        CanDuyet:
+          type: boolean
+          nullable: true
+          description: "Duyet / tra ve / mo lai / xoa nhiem vu cua Khoa (TK/TKL/TP/ADMIN)"
+        CanKeKhai:
+          type: boolean
+          nullable: true
+          description: "Nguoi goi la giang vien cua Khoa - ke khai duoc nhiem vu (lam chu tri)"
         SoNhiemVu:
+          type: integer
+          nullable: true
+        SoChoDuyet:
+          type: integer
+          nullable: true
+          description: "So nhiem vu trang thai 1 - hang doi cua Truong khoa"
+        SoTraVe:
+          type: integer
+          nullable: true
+        SoDaDuyet:
           type: integer
           nullable: true
         SoGiangVien:
@@ -11207,7 +11309,32 @@ components:
           type: integer
         CoChuTri:
           type: boolean
-          description: "Thieu chu tri VAN LUU DUOC, chi chan khi CHOT ky"
+          description: "Nhiem vu ke khai moi luon co; chi du lieu cu moi co the thieu - khi do khong duyet duoc"
+        TrangThai:
+          type: integer
+          enum: [1, 2, 3]
+          description: "1 = Cho duyet (chu tri sua/xoa duoc), 2 = Da duyet (khoa, tinh diem), 3 = Tra ve (xem LyDoTraVe)"
+        IdNguoiDuyet:
+          type: integer
+          nullable: true
+          description: "Nguoi xet GAN NHAT (duyet hoac tra ve / mo lai)"
+        TenNguoiDuyet:
+          type: string
+          nullable: true
+        NgayDuyet:
+          type: string
+          format: date-time
+          nullable: true
+        LyDoTraVe:
+          type: string
+          nullable: true
+          description: "Chi co khi TrangThai = 3"
+        ChoPhepSua:
+          type: boolean
+          description: "Nguoi goi la chu tri + nhiem vu chua duyet + ky con mo"
+        ChoPhepXet:
+          type: boolean
+          description: "Nguoi goi duyet / tra ve / mo lai duoc (FE chon nut theo TrangThai)"
         PhanCong:
           type: array
           items:
@@ -11277,7 +11404,7 @@ components:
 
     GiangVienDiemDto:
       type: object
-      description: "Giang vien kem tong diem hien tai - dung cho o chon nguoi khi phan cong"
+      description: "Giang vien cua Khoa - o chon nguoi phoi hop. Cot diem / dem chi tinh nhiem vu da duyet va la null khi nguoi goi la giang vien."
       properties:
         IdNhanVien:
           type: integer
@@ -11291,19 +11418,28 @@ components:
         TongDiemThucTe:
           type: number
           format: double
-          description: "Tong cong don that su, CO THE vuot tran"
+          nullable: true
+          description: "Tong cong don that su (da duyet), CO THE vuot tran"
         TongDiemQuyDoi:
           type: number
           format: double
+          nullable: true
           description: "MIN(thuc te, tran). Bao cao dung con so nay."
+        TongDiemChoDuyet:
+          type: number
+          format: double
+          nullable: true
+          description: "Diem nhiem vu chua duyet (cho duyet + tra ve) - chua tinh"
         SoNhiemVu:
           type: integer
+          nullable: true
         SoChuTri:
           type: integer
+          nullable: true
 
     NhiemVuKhoaTongHopDto:
       type: object
-      description: "Mot dong bang tong hop = mot giang vien cua Khoa"
+      description: "Mot dong bang tong hop = mot giang vien cua Khoa. Moi so dem / diem CHI tinh nhiem vu da duyet."
       properties:
         IdNhanVien:
           type: integer
@@ -11330,7 +11466,14 @@ components:
           format: double
         VuotTran:
           type: boolean
-          description: "Chi la CANH BAO hien thi, khong chan luu va khong chan chot"
+          description: "Chi la CANH BAO hien thi, khong chan luu va khong chan duyet"
+        SoNhiemVuChoDuyet:
+          type: integer
+          description: "So nhiem vu chua duyet (cho duyet + tra ve) nguoi nay tham gia"
+        TongDiemChoDuyet:
+          type: number
+          format: double
+          description: "Diem nhiem vu chua duyet - CHUA tinh vao tong"
         SoNhiemVuTheoNhom:
           type: object
           additionalProperties:
@@ -11368,6 +11511,13 @@ components:
         SoGiangVien:
           type: integer
         SoNhiemVu:
+          type: integer
+          description: "Tong so nhiem vu cua ky (moi trang thai)"
+        SoChoDuyet:
+          type: integer
+        SoTraVe:
+          type: integer
+        SoDaDuyet:
           type: integer
 
     NhiemVuKhoaTongHopResult:
@@ -11452,7 +11602,7 @@ components:
           nullable: true
         HanhDong:
           type: integer
-          description: "1 Tao NV, 2 Sua NV, 3 Xoa NV, 4 Them phan cong, 5 Doi vai tro/diem, 6 Go phan cong, 7 Chot ky, 8 Mo lai ky, 9 Xu ly phan hoi"
+          description: "1 Ke khai NV, 2 Sua NV, 3 Xoa NV, 4 Them phan cong, 5 Doi vai tro/diem, 6 Go phan cong, 7 Chot ky (luong cu), 8 Mo lai ky, 9 Xu ly phan hoi (luong cu), 10 Duyet NV, 11 Tra ve NV, 12 Mo lai NV da duyet"
         VaiTroTruoc:
           type: string
           nullable: true
@@ -11490,6 +11640,7 @@ components:
         IdDonVi:
           type: integer
           nullable: true
+          description: "Khoa de KE KHAI (Khoa chinh cua GV) - co ca khi chua co ky; null chi khi khong phai GV cua Khoa nao"
         MaDonVi:
           type: string
           nullable: true
@@ -11511,14 +11662,27 @@ components:
         TongDiemThucTe:
           type: number
           format: double
+          description: "Tong diem nhiem vu DA DUYET trong nam (moi Khoa) - dung tap cham vao phieu"
         TongDiemQuyDoi:
           type: number
           format: double
+        TongDiemChoDuyet:
+          type: number
+          format: double
+          description: "Diem nhiem vu chua duyet (cho duyet + tra ve) - CHUA tinh"
         TranDiem:
           type: number
           format: double
         SoNhiemVu:
           type: integer
+          description: "So nhiem vu da duyet"
+        SoChoDuyet:
+          type: integer
+        SoTraVe:
+          type: integer
+        CanKeKhai:
+          type: boolean
+          description: "Ke khai duoc nhiem vu moi (la GV cua Khoa + ky khong bi chot theo luong cu)"
 
     NhiemVuKhoaCuaToiItemDto:
       type: object
@@ -11554,6 +11718,16 @@ components:
           nullable: true
         SoMinhChung:
           type: integer
+        TrangThai:
+          type: integer
+          enum: [1, 2, 3]
+          description: "1 = Cho duyet, 2 = Da duyet (tinh diem), 3 = Tra ve"
+        LyDoTraVe:
+          type: string
+          nullable: true
+        ChoPhepSua:
+          type: boolean
+          description: "Nguoi nay la chu tri + nhiem vu chua duyet + ky con mo"
         MinhChung:
           type: array
           items:
@@ -11575,7 +11749,7 @@ components:
 
     PhanCongItemRequest:
       type: object
-      description: "Mot dong phan cong gui len tu form. Client KHONG gui diem - server tu resolve."
+      description: "Mot NGUOI PHOI HOP (PHC / PH) gui len tu form. Client KHONG gui diem va KHONG gui dong chu tri - server tu them dong CT cho nguoi ke khai."
       properties:
         IdNhanVien:
           type: integer
@@ -11591,9 +11765,10 @@ components:
     NhiemVuKhoaSaveRequest:
       type: object
       description: >
-        Tao / sua nhiem vu VA toan bo danh sach phan cong trong MOT request.
+        Chu tri ke khai / sua nhiem vu VA toan bo danh sach nguoi phoi hop trong MOT request.
         Khi SUA thi gui len TOAN BO danh sach, server tu tinh diff them / doi / xoa.
-        IdNam va IdDonVi chi dung khi TAO (khi sua thi lay tu chinh nhiem vu).
+        IdNam va IdDonVi chi dung khi TAO (IdDonVi = Header.IdDonVi cua cua-toi; khi sua
+        thi lay tu chinh nhiem vu).
       properties:
         IdNam:
           type: integer
@@ -11610,7 +11785,7 @@ components:
           nullable: true
         PhanCong:
           type: array
-          description: "Rong = go het nguoi khoi nhiem vu (van luu duoc)"
+          description: "CHI nguoi phoi hop, KHONG gom chu tri. Rong = nhiem vu chi co chu tri."
           items:
             $ref: "#/components/schemas/PhanCongItemRequest"
       required:
@@ -11647,8 +11822,25 @@ components:
         - IdNam
         - IdDonVi
 
+    NhiemVuKhoaXetRequest:
+      type: object
+      description: "Truong khoa xet mot nhiem vu. TrangThai la trang thai DICH."
+      properties:
+        TrangThai:
+          type: integer
+          enum: [2, 3]
+          description: "2 = duyet (tu 1 hoac 3); 3 = tra ve (tu 1) / mo lai nhiem vu da duyet (tu 2)"
+        LyDo:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: "BAT BUOC khi TrangThai = 3; tuy chon (ghi chu) khi duyet"
+      required:
+        - TrangThai
+
     NhiemVuKhoaChotRequest:
       type: object
+      description: "DA NGUNG - endpoint chot tra 409 LUONG_DA_NGUNG"
       properties:
         IdNam:
           type: integer

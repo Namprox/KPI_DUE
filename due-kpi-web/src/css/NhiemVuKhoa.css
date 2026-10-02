@@ -2,24 +2,70 @@
     margin-bottom: 10px;
 }
 
-.nvk-mc-form {
+.nvk-mc-box .nvk-mc-list {
+    align-items: stretch;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.nvk-mc-box .cd-mc-row {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.nvk-mc-box .cd-mc-main {
+    overflow: hidden;
+}
+
+.nvk-actions {
     display: flex;
     flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.nvk-status {
+    margin-top: 8px;
+}
+.nvk-status-1 {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+}
+.nvk-status-2 {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+.nvk-status-3 {
+    background: #fff1f2;
+    color: #be123c;
+    border-color: #fecdd3;
+}
+.nvk-ly-do {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #fff1f2;
+    color: #9f1239;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.nvk-pending-points {
+    color: #b45309;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.nvk-mc-form {
+    display: flex;
     gap: 10px;
     align-items: center;
     margin-top: 10px;
 }
 
 .nvk-mc-file {
-    flex: 1 1 240px;
-    padding: 8px 10px;
-    font-size: 13px;
-}
-
-.nvk-mc-form .form-input:not(.nvk-mc-file) {
-    flex: 1 1 200px;
-    padding: 9px 10px;
-    font-size: 13px;
+    display: none;
 }
 
 .nvk-mc-xoa {
@@ -32,20 +78,29 @@
 }
 
 .nvk-mc-chon {
-    width: 100%;
-    padding: 16px;
-    border: 1px dashed #cbd5e1;
-    border-radius: 8px;
-    background: #f8fafc;
-    color: #475569;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 14px 16px;
+    border: 1.5px dashed #93c5fd;
+    border-radius: 10px;
+    background: #f8fbff;
     font-family: inherit;
-    font-size: 14px;
+    text-align: left;
     cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
 }
 
 .nvk-mc-chon:hover:not(:disabled) {
     border-color: #3b82f6;
-    color: #1d4ed8;
+    background: #eff6ff;
+}
+
+.nvk-mc-chon:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
 }
 
 .nvk-mc-chon:disabled {
@@ -53,13 +108,41 @@
     cursor: not-allowed;
 }
 
-.nvk-mc-chon i {
-    margin-right: 8px;
+.nvk-mc-chon-icon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid #bfdbfe;
+    border-radius: 50%;
+    background: #fff;
     color: #2563eb;
+    font-size: 16px;
 }
 
-.nvk-mc-ten {
-    margin-top: 8px;
+.nvk-mc-chon-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.nvk-mc-chon-ten {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.nvk-mc-chon-meta {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #64748b;
 }
 
 .nvk-mc-cho-ten {

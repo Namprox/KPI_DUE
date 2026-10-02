@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import SearchSelect from "../Common/SearchSelect";
 import MinhChungNhiemVuBox from "./MinhChungNhiemVuBox";
+import NhiemVuKhoaStatus from "../Common/NhiemVuKhoaStatus";
 import { formatDiem } from "../../utils/phieuApi";
 import {
   luuNhiemVu,
   themMinhChungNhiemVu,
-  vuotTran,
+  canSuaNhiemVu,
+  canTaiLaiNhiemVu,
 } from "../../utils/nhiemVuKhoaApi";
 
 const MA_CHU_TRI = "CT";
@@ -18,32 +20,7 @@ const dongMoi = () => ({
   ghiChu: "",
 });
 
-/**
- * Form tạo / sửa nhiệm vụ phục vụ cộng đồng của Khoa.
- *
- * **MỘT form, MỘT lần lưu.** Nhiệm vụ và toàn bộ danh sách phân công đi trong
- * một request duy nhất - không có endpoint riêng để thêm/xoá từng dòng phân
- * công. Khi sửa, hàm lưu gửi lên TOÀN BỘ danh sách sau khi sửa và server tự tính
- * diff (gỡ / đổi vai trò / thêm), nên "xoá một người khỏi nhiệm vụ" ở đây đơn
- * giản là bấm nút gỡ dòng rồi Lưu.
- *
- * Điểm KHÔNG được gửi lên: server tự tra mức từ danh mục vai trò rồi ghi cứng
- * vào bản ghi. Cột "Điểm dự kiến" trong bảng chỉ để người nhập ước lượng, và
- * state sau khi lưu luôn lấy từ response chứ không tự suy.
- *
- * Hai ràng buộc được chặn ngay tại form vì server sẽ trả lỗi và KHÔNG lưu gì:
- *  - mỗi nhiệm vụ tối đa MỘT chủ trì (422 TRUNG_CHU_TRI);
- *  - một người chỉ xuất hiện một lần trong cùng nhiệm vụ (UNIQUE uq_pcnvk).
- *
- * Ngược lại, hai tình huống sau CỐ Ý không chặn:
- *  - nhiệm vụ chưa có chủ trì vẫn lưu được (Khoa nhập dở), chỉ chặn khi chốt kỳ;
- *  - giảng viên vượt trần điểm chỉ cảnh báo mềm - chặn là SAI nghiệp vụ.
- *
- * Minh chứng vẫn đi bằng endpoint riêng cần `IdNhiemVuKhoa`, nhưng khi TẠO MỚI
- * form không bắt người nhập lưu rồi mở lại: file được xếp hàng chờ, lưu xong thì
- * form tự tải lên bằng id vừa nhận. Upload lỗi KHÔNG huỷ nhiệm vụ đã tạo - cùng
- * quy ước "đính kèm thất bại chỉ cảnh báo nhẹ" với luồng gửi phản hồi.
- */
+/** Chủ trì tự kê khai; chỉ gửi toàn bộ người phối hợp, điểm do server tính. */
 const NhiemVuKhoaFormModal = ({
   isOpen,
   nhiemVu,
@@ -52,7 +29,9 @@ const NhiemVuKhoaFormModal = ({
   giangVien = [],
   idNam,
   idDonVi,
-  choPhepSua,
+  choPhepSua: choPhepTao,
+  idNhanVien,
+  onConflict,
   onClose,
   onSaved,
   onMinhChungChanged,
@@ -62,6 +41,7 @@ const NhiemVuKhoaFormModal = ({
   onSuccess,
 }) => {
   const laSua = !!nhiemVu?.IdNhiemVuKhoa;
+  const choPhepSua = laSua ? canSuaNhiemVu(nhiemVu) : choPhepTao === true;
 
   const [idNhomNv, setIdNhomNv] = useState("");
   const [tenNhiemVu, setTenNhiemVu] = useState("");
@@ -74,7 +54,6 @@ const NhiemVuKhoaFormModal = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    // Tạo mới từ một phản hồi "thiếu nhiệm vụ": điền sẵn nhóm giảng viên gợi ý
     setIdNhomNv(
       nhiemVu?.IdNhomNv != null
         ? String(nhiemVu.IdNhomNv)
@@ -87,18 +66,38 @@ const NhiemVuKhoaFormModal = ({
     setMinhChung(nhiemVu?.MinhChung || []);
     setHangCho([]);
     setRows(
-      (nhiemVu?.PhanCong || []).map((pc) => ({
-        key: `pc-${pc.IdPhanCong}`,
-        idNhanVien: String(pc.IdNhanVien),
-        idVaiTro: String(pc.IdVaiTro),
-        ghiChu: pc.GhiChu ?? "",
-      })),
+      (nhiemVu?.PhanCong || [])
+        .filter((pc) => !pc.LaChuTri && pc.MaVaiTroSnapshot !== MA_CHU_TRI)
+        .map((pc) => ({
+          key: `pc-${pc.IdPhanCong}`,
+          idNhanVien: String(pc.IdNhanVien),
+          idVaiTro: String(pc.IdVaiTro),
+          ghiChu: pc.GhiChu ?? "",
+        })),
     );
     setLoiForm("");
     setDangLuu(false);
-  }, [isOpen, nhiemVu, nhomGoiY]);
+  }, [isOpen, nhiemVu, nhomGoiY, idNhanVien]);
 
-  const vaiTroList = useMemo(() => cauHinh?.VaiTro || [], [cauHinh]);
+  const vaiTroList = useMemo(
+    () =>
+      (cauHinh?.VaiTro || []).filter((vt) =>
+        ["PHC", "PH"].includes(vt.MaVaiTro),
+      ),
+    [cauHinh],
+  );
+  const nguoiPhoiHop = useMemo(
+    () =>
+      giangVien.filter(
+        (gv) =>
+          String(gv.IdNhanVien) !== String(idNhanVien) &&
+          !(nhiemVu?.PhanCong || []).some(
+            (pc) =>
+              pc.LaChuTri && String(pc.IdNhanVien) === String(gv.IdNhanVien),
+          ),
+      ),
+    [giangVien, idNhanVien, nhiemVu],
+  );
   const nhomList = useMemo(() => cauHinh?.Nhom || [], [cauHinh]);
 
   const vaiTroById = useMemo(() => {
@@ -109,28 +108,9 @@ const NhiemVuKhoaFormModal = ({
 
   const gvById = useMemo(() => {
     const map = new Map();
-    giangVien.forEach((gv) => map.set(String(gv.IdNhanVien), gv));
+    nguoiPhoiHop.forEach((gv) => map.set(String(gv.IdNhanVien), gv));
     return map;
-  }, [giangVien]);
-
-  /**
-   * Điểm người này ĐANG có trong chính nhiệm vụ đang sửa.
-   * Phải trừ đi trước khi cộng điểm vai trò mới, nếu không tổng dự kiến sẽ đếm
-   * hai lần cho người vốn đã nằm trong nhiệm vụ.
-   */
-  const diemGocTrongNhiemVu = useMemo(() => {
-    const map = new Map();
-    (nhiemVu?.PhanCong || []).forEach((pc) =>
-      map.set(String(pc.IdNhanVien), Number(pc.DiemSnapshot) || 0),
-    );
-    return map;
-  }, [nhiemVu]);
-
-  const tranDiem = cauHinh?.TranDiem;
-
-  const soChuTri = rows.filter(
-    (r) => vaiTroById.get(r.idVaiTro)?.MaVaiTro === MA_CHU_TRI,
-  ).length;
+  }, [nguoiPhoiHop]);
 
   const nguoiTrungLap = useMemo(() => {
     const dem = new Map();
@@ -159,15 +139,6 @@ const NhiemVuKhoaFormModal = ({
     }
   };
 
-  /** Tổng điểm của một người SAU khi lưu form này (ước lượng để cảnh báo trần). */
-  const tinhDuKien = (row) => {
-    const gv = gvById.get(row.idNhanVien);
-    if (!gv) return null;
-    const diemMoi = Number(vaiTroById.get(row.idVaiTro)?.DiemQuyDoi) || 0;
-    const diemCu = diemGocTrongNhiemVu.get(row.idNhanVien) || 0;
-    return (Number(gv.TongDiemThucTe) || 0) - diemCu + diemMoi;
-  };
-
   const kiemTra = () => {
     if (!tenNhiemVu.trim()) return "Chưa nhập tên nhiệm vụ";
     if (!idNhomNv) return "Chưa chọn nhóm nhiệm vụ";
@@ -177,8 +148,14 @@ const NhiemVuKhoaFormModal = ({
     if (nguoiTrungLap.size > 0) {
       return "Một giảng viên chỉ được xuất hiện một lần trong cùng nhiệm vụ";
     }
-    if (soChuTri > 1) {
-      return "Mỗi nhiệm vụ chỉ được có một chủ trì - hãy đổi vai trò của những người còn lại";
+    if (
+      rows.some(
+        (r) =>
+          String(r.idNhanVien) === String(idNhanVien) ||
+          !vaiTroById.has(r.idVaiTro),
+      )
+    ) {
+      return "Chỉ chọn người phối hợp khác bạn với vai trò phối hợp chính hoặc phối hợp";
     }
     return "";
   };
@@ -199,19 +176,20 @@ const NhiemVuKhoaFormModal = ({
         const moi = await themMinhChungNhiemVu(
           idNhiemVu,
           cho.file,
-          cho.tenHienThi,
+          "",
           cauHinh,
         );
         if (moi) daTai.push(moi);
       } catch (error) {
         console.error("Lỗi tải minh chứng sau khi tạo nhiệm vụ:", error);
-        loi.push(cho.tenHienThi || cho.file.name);
+        loi.push(cho.file.name);
       }
     }
     return { daTai, loi };
   };
 
   const luu = async () => {
+    if (!choPhepSua) return;
     const loi = kiemTra();
     setLoiForm(loi);
     if (loi) return;
@@ -220,7 +198,7 @@ const NhiemVuKhoaFormModal = ({
     try {
       // Gửi TOÀN BỘ danh sách sau khi sửa: dòng đã gỡ khỏi `rows` chính là dòng
       // server sẽ xoá khi tính diff.
-      const item = await luuNhiemVu({
+      const envelope = await luuNhiemVu({
         id: nhiemVu?.IdNhiemVuKhoa,
         idNam,
         idDonVi,
@@ -233,6 +211,7 @@ const NhiemVuKhoaFormModal = ({
           GhiChu: r.ghiChu,
         })),
       });
+      const item = envelope.Item;
       let ketQua = item;
       let soTepDaTai = 0;
 
@@ -251,7 +230,10 @@ const NhiemVuKhoaFormModal = ({
 
       const nhanTep = soTepDaTai > 0 ? ` kèm ${soTepDaTai} minh chứng` : "";
       onSuccess(
-        laSua ? `Đã lưu nhiệm vụ${nhanTep}` : `Đã tạo nhiệm vụ${nhanTep}`,
+        envelope.Message ||
+          (laSua
+            ? `Đã lưu nhiệm vụ${nhanTep}`
+            : `Đã kê khai nhiệm vụ${nhanTep}`),
       );
       // Response mang PhanCong[] kèm DiemSnapshot server vừa tính - dùng nó để
       // cập nhật state thay vì tự đoán điểm ở FE.
@@ -260,6 +242,10 @@ const NhiemVuKhoaFormModal = ({
       console.error("Lỗi lưu nhiệm vụ phục vụ cộng đồng:", error);
       setLoiForm(error.message);
       onError(error.message);
+      if (canTaiLaiNhiemVu(error)) {
+        onClose();
+        onConflict?.();
+      }
     }
     setDangLuu(false);
   };
@@ -269,10 +255,10 @@ const NhiemVuKhoaFormModal = ({
   const nhanVaiTro = (vt) =>
     `${vt.TenVaiTro} - ${formatDiem(vt.DiemQuyDoi, 1)} điểm`;
 
-  const nhanGiangVien = (gv) => {
-    const canhBao = vuotTran(gv.TongDiemThucTe, tranDiem) ? " ⚠" : "";
-    return `${gv.HoTen} (${gv.MaNhanVien}) - ${formatDiem(gv.TongDiemThucTe, 1)}đ / ${gv.SoNhiemVu} nhiệm vụ${canhBao}`;
-  };
+  const nhanGiangVien = (gv) => `${gv.HoTen} (${gv.MaNhanVien})`;
+  const chuTri = nhiemVu?.PhanCong?.find(
+    (pc) => pc.LaChuTri || pc.MaVaiTroSnapshot === MA_CHU_TRI,
+  );
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -286,7 +272,11 @@ const NhiemVuKhoaFormModal = ({
               className="fa-solid fa-clipboard-list"
               style={{ marginRight: "8px" }}
             ></i>
-            {laSua ? "Sửa nhiệm vụ" : "Thêm nhiệm vụ"}
+            {laSua
+              ? choPhepSua
+                ? "Sửa nhiệm vụ"
+                : "Chi tiết nhiệm vụ"
+              : "Kê khai nhiệm vụ"}
           </h3>
           <button className="close-btn" onClick={onClose}>
             &times;
@@ -294,12 +284,14 @@ const NhiemVuKhoaFormModal = ({
         </div>
 
         <div className="modal-body">
+          {laSua && <NhiemVuKhoaStatus nhiemVu={nhiemVu} />}
           <div className="form-grid-2">
             <div className="form-group">
               <label>
                 Nhóm nhiệm vụ <span className="text-red">*</span>
               </label>
               <SearchSelect
+                ariaLabel="Nhóm nhiệm vụ"
                 value={idNhomNv}
                 onChange={(v) => setIdNhomNv(v)}
                 options={nhomList.map((n) => ({
@@ -328,7 +320,7 @@ const NhiemVuKhoaFormModal = ({
             </div>
           </div>
 
-          <div className="form-group" style={{ marginBottom: "18px" }}>
+          <div className="form-group nvk-form-mo-ta">
             <label>Mô tả</label>
             <textarea
               className="form-input cd-textarea"
@@ -343,8 +335,8 @@ const NhiemVuKhoaFormModal = ({
 
           <div className="nvk-pc-head">
             <div className="cd-box-title" style={{ marginBottom: 0 }}>
-              <i className="fa-solid fa-users"></i> Phân công ({rows.length}{" "}
-              người)
+              <i className="fa-solid fa-users"></i> Người phối hợp (
+              {rows.length} người)
             </div>
             {choPhepSua && (
               <button
@@ -360,20 +352,18 @@ const NhiemVuKhoaFormModal = ({
 
           {rows.length === 0 ? (
             <div className="cd-hint nvk-pc-trong">
-              Chưa gán ai. Nhiệm vụ không có người vẫn lưu được - nhưng sẽ chặn
-              khi chốt kỳ.
+              Chưa chọn người phối hợp.
             </div>
           ) : (
             <div className="nvk-pc-list">
               {rows.map((row) => {
                 const vt = vaiTroById.get(row.idVaiTro);
-                const laChuTri = vt?.MaVaiTro === MA_CHU_TRI;
-                const duKien = tinhDuKien(row);
-                const canhBaoTran =
-                  duKien != null && vuotTran(duKien, tranDiem);
                 const trungNguoi = nguoiTrungLap.has(row.idNhanVien);
-                const nguoiDaRaKhoiDanhSach = row.idNhanVien && !gvById.has(row.idNhanVien);
-                const phanCongCu = nhiemVu?.PhanCong?.find((pc) => String(pc.IdNhanVien) === row.idNhanVien);
+                const nguoiDaRaKhoiDanhSach =
+                  row.idNhanVien && !gvById.has(row.idNhanVien);
+                const phanCongCu = nhiemVu?.PhanCong?.find(
+                  (pc) => String(pc.IdNhanVien) === row.idNhanVien,
+                );
 
                 return (
                   <div
@@ -381,33 +371,35 @@ const NhiemVuKhoaFormModal = ({
                     className={`nvk-pc-row${trungNguoi ? " nvk-pc-loi" : ""}`}
                   >
                     <div className="nvk-pc-gv">
-                      <SearchSelect
-                        value={row.idNhanVien}
-                        onChange={(v) =>
-                          capNhatDong(row.key, { idNhanVien: v })
-                        }
-                        options={giangVien.map((gv) => ({
-                          value: gv.IdNhanVien,
-                          label: nhanGiangVien(gv),
-                        }))}
-                        placeholder="-- Chọn giảng viên --"
-                        searchable
-                        searchPlaceholder="Tìm theo tên hoặc mã..."
-                        invalid={trungNguoi}
-                        disabled={!choPhepSua || dangLuu}
-                      />
-                      {nguoiDaRaKhoiDanhSach && (
-                        <div className="cd-hint cd-hint-warn nvk-pc-hint">
-                          {phanCongCu?.HoTen || `Nhân viên #${row.idNhanVien}`} không còn trong danh sách giảng viên của Khoa.
-                          Hãy gỡ người này hoặc chọn người khác trước khi lưu.
-                        </div>
+                      {choPhepSua ? (
+                        <SearchSelect
+                          ariaLabel="Người phối hợp"
+                          value={row.idNhanVien}
+                          onChange={(v) =>
+                            capNhatDong(row.key, {
+                              idNhanVien: String(v ?? ""),
+                            })
+                          }
+                          options={nguoiPhoiHop.map((gv) => ({
+                            value: gv.IdNhanVien,
+                            label: nhanGiangVien(gv),
+                          }))}
+                          placeholder="-- Chọn giảng viên --"
+                          searchable
+                          searchPlaceholder="Tìm theo tên hoặc mã..."
+                          invalid={trungNguoi}
+                          disabled={!choPhepSua || dangLuu}
+                        />
+                      ) : (
+                        <span>
+                          {phanCongCu?.HoTen || `Nhân viên #${row.idNhanVien}`}
+                        </span>
                       )}
-                      {canhBaoTran && (
+                      {choPhepSua && nguoiDaRaKhoiDanhSach && (
                         <div className="cd-hint cd-hint-warn nvk-pc-hint">
-                          <i className="fa-solid fa-circle-exclamation"></i>{" "}
-                          Tổng dự kiến {formatDiem(duKien, 1)}đ vượt trần{" "}
-                          {formatDiem(tranDiem, 1)}đ - sẽ được quy đổi về{" "}
-                          {formatDiem(tranDiem, 1)}đ khi báo cáo.
+                          {phanCongCu?.HoTen || `Nhân viên #${row.idNhanVien}`}{" "}
+                          không còn trong danh sách giảng viên của Khoa. Hãy gỡ
+                          người này hoặc chọn người khác trước khi lưu.
                         </div>
                       )}
                       {trungNguoi && (
@@ -419,22 +411,22 @@ const NhiemVuKhoaFormModal = ({
                     </div>
 
                     <div className="nvk-pc-vt">
-                      <SearchSelect
-                        value={row.idVaiTro}
-                        onChange={(v) => capNhatDong(row.key, { idVaiTro: v })}
-                        options={vaiTroList.map((vaiTro) => ({
-                          value: vaiTro.IdVaiTro,
-                          label: nhanVaiTro(vaiTro),
-                        }))}
-                        placeholder="-- Vai trò --"
-                        invalid={laChuTri && soChuTri > 1}
-                        disabled={!choPhepSua || dangLuu}
-                      />
-                      {laChuTri && soChuTri > 1 && (
-                        <div className="cd-hint cd-hint-error nvk-pc-hint">
-                          <i className="fa-solid fa-triangle-exclamation"></i>{" "}
-                          Đang có {soChuTri} chủ trì.
-                        </div>
+                      {choPhepSua ? (
+                        <SearchSelect
+                          ariaLabel="Vai trò phối hợp"
+                          value={row.idVaiTro}
+                          onChange={(v) =>
+                            capNhatDong(row.key, { idVaiTro: String(v ?? "") })
+                          }
+                          options={vaiTroList.map((vaiTro) => ({
+                            value: vaiTro.IdVaiTro,
+                            label: nhanVaiTro(vaiTro),
+                          }))}
+                          placeholder="-- Vai trò --"
+                          disabled={!choPhepSua || dangLuu}
+                        />
+                      ) : (
+                        <span>{phanCongCu?.TenVaiTroSnapshot || "—"}</span>
                       )}
                     </div>
 
@@ -451,7 +443,14 @@ const NhiemVuKhoaFormModal = ({
                     />
 
                     <div className="nvk-pc-diem">
-                      {vt ? `${formatDiem(vt.DiemQuyDoi, 1)}đ` : "-"}
+                      {formatDiem(
+                        phanCongCu &&
+                          String(phanCongCu.IdVaiTro) === row.idVaiTro
+                          ? phanCongCu.DiemSnapshot
+                          : vt?.DiemQuyDoi,
+                        1,
+                      )}
+                      đ
                     </div>
 
                     {choPhepSua && (
@@ -471,19 +470,16 @@ const NhiemVuKhoaFormModal = ({
             </div>
           )}
 
-          {rows.length > 0 && soChuTri === 0 && (
-            <div className="cd-hint cd-hint-warn nvk-pc-hint">
-              <i className="fa-solid fa-circle-exclamation"></i> Nhiệm vụ chưa
-              có chủ trì. Vẫn lưu được, nhưng phải bổ sung trước khi chốt kỳ.
-            </div>
-          )}
-
           <MinhChungNhiemVuBox
             idNhiemVu={nhiemVu?.IdNhiemVuKhoa || null}
             danhSach={minhChung}
             hangCho={hangCho}
             cauHinh={cauHinh}
-            choPhepSua={choPhepSua}
+            choPhepSua={choPhepSua && !dangLuu}
+            onConflict={() => {
+              onClose();
+              onConflict?.();
+            }}
             onChange={capNhatMinhChung}
             onHangChoChange={setHangCho}
             onXem={onXemMinhChung}
@@ -497,6 +493,25 @@ const NhiemVuKhoaFormModal = ({
               <i className="fa-solid fa-triangle-exclamation"></i> {loiForm}
             </div>
           )}
+          <div className="nvk-form-note">
+            <i className="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <div>
+              <p>
+                Chủ trì:{" "}
+                {laSua
+                  ? chuTri
+                    ? chuTri.HoTen || `Nhân viên #${chuTri.IdNhanVien}`
+                    : "Chưa có chủ trì"
+                  : "Bạn (người kê khai)"}
+                .{!laSua && " Người chủ trì được hệ thống ghi nhận tự động."}
+                {choPhepSua && " Nhiệm vụ chỉ có chủ trì vẫn kê khai được."}
+              </p>
+              <p>
+                Quyết định phân công, kế hoạch, biên bản đính kèm là minh chứng
+                chung cho mọi giảng viên trong nhiệm vụ.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="modal-footer">

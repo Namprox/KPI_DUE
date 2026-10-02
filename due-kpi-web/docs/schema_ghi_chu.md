@@ -1530,155 +1530,238 @@ phiếu** nên phiếu tạo trước khi gán tiêu chí sẽ không nhận mã
 
 ---
 
-## 7. NHIỆM VỤ THEO PHÂN CÔNG CỦA KHOA (KPI Nhóm III)
+## 7. NHIỆM VỤ KHOA — CHỦ TRÌ KÊ KHAI, TRƯỞNG KHOA DUYỆT (KPI Nhóm III)
 
-### Vì sao đảo chiều nhập liệu
+Tên bảng vẫn là `nhiem_vu_khoa` / `phan_cong_nhiem_vu_khoa` (giữ nguyên để không phá dữ liệu
+và FE), nhưng từ **2026-10-02** người nhập liệu là **chủ trì nhiệm vụ**, không còn là Khoa.
 
-Nhóm III trước đây dự kiến để **giảng viên tự kê khai** (bảng `nhiem_vu_cong_dong`).
-Cách đó sai nghiệp vụ: vai trò *chủ trì* / *phối hợp chính* / *phối hợp* là **quan hệ
-tương đối giữa nhiều người trong CÙNG một nhiệm vụ**, chỉ Khoa mới có thẩm quyền phân
-định. Mô hình cũ gắn mỗi dòng vào phiếu của một người nên nhiều GV cùng khai "chủ trì"
-cho một việc mà hệ thống không phát hiện được.
+### Vì sao đổi người nhập liệu — lần thứ ba
 
-Module này: **Khoa nhập liệu, giảng viên phản hồi.** Không có bước "xác nhận" của giảng
-viên — thay bằng hạn phản hồi: hết hạn mà không lên tiếng thì hiểu là đồng ý.
+1. **Ban đầu: giảng viên tự kê khai vào phiếu của mình** (bảng `nhiem_vu_cong_dong`, mục 4.4).
+   Sai vì vai trò *chủ trì* / *phối hợp chính* / *phối hợp* là **quan hệ tương đối giữa nhiều
+   người trong CÙNG một nhiệm vụ**, mà mỗi dòng lại gắn vào phiếu của một người — nhiều GV cùng
+   khai "chủ trì" cho một việc mà hệ thống không phát hiện được. Luồng này đã khoá
+   (`NVCD_DA_NGUNG`, HTTP 409).
+2. **Sau đó: "Khoa nhập liệu, GV phản hồi, Trưởng khoa chốt cả kỳ".** Đúng mô hình dữ liệu
+   (một nhiệm vụ, nhiều người, tối đa một chủ trì) nhưng dồn việc gõ dữ liệu cho Khoa, trong
+   khi người biết rõ nhất ai làm gì là **chủ trì**.
+3. **Hiện tại (chốt với người dùng 2026-10-02): chủ trì kê khai, Trưởng khoa duyệt.** Giữ
+   nguyên mô hình dữ liệu của bước 2 — một nhiệm vụ, danh sách phân công, tối đa một CT — chỉ
+   đổi **ai** được ghi:
+   - Giảng viên của Khoa tạo nhiệm vụ ⇒ **tự động là chủ trì (CT)**, tự chọn người phối hợp
+     chính (PHC) / phối hợp (PH) trong Khoa. Một người không thể ghi mình là PHC rồi gán CT
+     cho người khác: "người khai = chủ trì" là bất biến cứng.
+   - Trưởng khoa **duyệt từng nhiệm vụ**; **duyệt = chốt dữ liệu** của nhiệm vụ đó. Không
+     còn bước chốt cả kỳ.
+   - TK / TKL / TP **chỉ duyệt** (và xoá nhiệm vụ sai / trùng), không nhập thay. **TLGVK chỉ
+     xem.**
+   - **Bỏ luồng phản hồi**: GV thiếu nhiệm vụ thì tự kê khai (nếu là chủ trì) hoặc báo chủ
+     trì thêm vào; sai vai trò thì báo chủ trì sửa trước khi Trưởng khoa duyệt.
 
-Luồng cũ đã KHOÁ: `sp_nhiem_vu_cong_dong_create/_update/_soft_delete` trả
-`NVCD_DA_NGUNG`, và `NhiemVuCongDongService` chặn sớm hơn (HTTP 409). Các endpoint
-GET và dữ liệu năm cũ vẫn đọc bình thường.
+Hai GV cùng kê khai **trùng một việc** (mỗi người tự nhận chủ trì một bản) là rủi ro còn lại
+của mô hình — hệ thống không tự phát hiện vì tên nhiệm vụ là văn bản tự do. Trưởng khoa là
+chốt chặn: trả về hoặc xoá bản trùng khi duyệt.
+
+### State machine — `nhiem_vu_khoa.trang_thai`
+
+```
+          ┌──── chủ trì sửa (THẬT SỰ đổi) ────┐
+          v                                   │
+1 CHO_DUYET ──TK duyệt──> 2 DA_DUYET ──TK mở lại (lý do)──> 3 TRA_VE
+     │                        ^                                 │
+     └──TK trả về (lý do)──> 3 TRA_VE ──────TK duyệt────────────┘
+```
+
+| | Ý nghĩa |
+|---|---|
+| **1 CHO_DUYET** | Chủ trì sửa / xoá / thêm minh chứng được; nằm trong hàng đợi của Trưởng khoa. **Không tính điểm.** |
+| **2 DA_DUYET** | Khoá với chủ trì (`NHIEM_VU_DA_DUYET` 409 khi sửa / xoá / thêm-gỡ minh chứng). **Tính điểm.** |
+| **3 TRA_VE** | Kèm `ly_do_tra_ve` (bắt buộc — `THIEU_LY_DO`). Chủ trì sửa thì **tự quay về 1**. Trưởng khoa vẫn duyệt thẳng 3 → 2 được. **Không tính điểm.** |
+
+- Chỉ quay 3 → 1 khi nội dung **thật sự đổi** (nhóm / tên / mô tả / thêm-gỡ-đổi vai trò /
+  ghi chú người phối hợp; so sánh `COLLATE Latin1_General_BIN` nên sửa hoa-thường cũng tính).
+  Mở form rồi bấm lưu mà không sửa gì thì **giữ 3** — không được âm thầm nuốt lý do trả về
+  (cùng quy ước mục 9.3). SP trả message *"Không có thay đổi nào được ghi nhận"*.
+- `id_nguoi_duyet` / `ngay_duyet` = người và thời điểm **xét gần nhất** (duyệt hoặc trả về /
+  mở lại), chỉ để hiển thị. Lịch sử đầy đủ ở `lich_su_nhiem_vu_khoa`.
+- **Điều kiện duyệt**: có chủ trì. Nhiệm vụ kê khai theo luồng mới luôn có; chỉ dữ liệu cũ do
+  Khoa nhập mới có thể thiếu ⇒ `DUYET_KHONG_HOP_LE` (422).
+- **Chống ghi đè dựa vào trạng thái, không có row-version** (giống 9.6): `sp_nhiem_vu_khoa_xet`
+  `UPDATE ... WHERE trang_thai = @cu`, `_save` đọc lại trạng thái dưới `UPDLOCK, HOLDLOCK`
+  trong transaction, `_delete` của chủ trì kèm `trang_thai <> 2` ngay trong câu `UPDATE`. Hai
+  người đụng cùng nhiệm vụ thì người sau nhận `TRANG_THAI_KHONG_HOP_LE` / `NHIEM_VU_DA_DUYET`.
+  Rủi ro chấp nhận được: chủ trì sửa (vẫn ở 1) ngay trước khi TK bấm duyệt ⇒ TK duyệt bản mới
+  mà màn hình chưa tải lại.
+- **Trưởng khoa tự duyệt nhiệm vụ mình chủ trì là HỢP LỆ** (giống 9.4): chặn thì không ai trong
+  Khoa duyệt được việc của Trưởng khoa.
 
 ### Năm quy tắc bất biến
 
-1. **Điểm ghi cứng vào bản ghi phân công** (`phan_cong_nhiem_vu_khoa.diem_snapshot`)
-   tại thời điểm gán, KHÔNG tính động từ vai trò mỗi lần đọc. `sp_nhiem_vu_khoa_save`
-   chỉ re-snapshot điểm khi `id_vai_tro` THAY ĐỔI — sửa nhiệm vụ mà không đổi vai trò
-   ai thì điểm giữ nguyên, kể cả khi `danh_muc_vai_tro_pvcd` đã đổi mức. Nhờ vậy dữ
-   liệu kỳ cũ luôn khớp bản báo cáo đã ký.
-2. **Mỗi nhiệm vụ tối đa một chủ trì** — chặn hai lớp: filtered unique index
-   `ux_pcnvk_chu_tri` và kiểm tường minh trong SP (trả `TRUNG_CHU_TRI` → HTTP 422).
-   Nhiệm vụ CHƯA có chủ trì vẫn lưu được (Khoa nhập dở), chỉ chặn khi CHỐT kỳ.
-3. **Trần 20 điểm KHÔNG chặn việc gán.** Mọi API trả tổng điểm đều có hai con số:
-   `TongDiemThucTe` và `TongDiemQuyDoi` = `MIN(thực tế, trần)`. Báo cáo và Excel dùng
-   điểm quy đổi. Đây là khác biệt CÓ CHỦ ĐÍCH so với `nhiem_vu_cong_dong` cũ (vốn chặn
-   cứng bằng `PVCD_CAP_EXCEEDED`).
-4. **Điều kiện chốt kỳ**: không còn nhiệm vụ thiếu chủ trì, không còn nhiệm vụ chưa
-   phân công ai, không còn phản hồi chưa xử lý. Vượt trần chỉ là CẢNH BÁO hiển thị.
-   `sp_nhiem_vu_khoa_chot` tự tính lại điều kiện, không tin kết quả màn hình
-   `kiem-tra-chot` mà client vừa xem.
-5. **Ghi nhật ký mọi thay đổi vai trò, điểm và thao tác chốt kỳ** vào
-   `lich_su_nhiem_vu_khoa`, trong CÙNG transaction với thao tác.
+1. **Điểm ghi cứng vào bản ghi phân công** (`phan_cong_nhiem_vu_khoa.diem_snapshot`) tại thời
+   điểm gán, KHÔNG tính động từ vai trò mỗi lần đọc. `sp_nhiem_vu_khoa_save` chỉ re-snapshot
+   điểm khi `id_vai_tro` THAY ĐỔI. Dòng **CT của chủ trì** khi sửa được chép nguyên từ dòng
+   đang có (form không gửi dòng này) — nếu resolve lại từ danh mục thì một mức override mới cho
+   (Khoa, năm) sẽ âm thầm đổi điểm CT. Nhờ vậy dữ liệu kỳ cũ luôn khớp bản báo cáo đã ký.
+2. **Mỗi nhiệm vụ đúng một chủ trì = người kê khai.** Request chỉ chứa người phối hợp; gửi vai
+   trò CT ⇒ `TRUNG_CHU_TRI` (422), gửi chính mình ⇒ `INVALID`. Filtered unique index
+   `ux_pcnvk_chu_tri` vẫn là lớp chặn cuối.
+3. **Trần 20 điểm KHÔNG chặn việc kê khai / duyệt.** Mọi API trả tổng điểm đều có hai con số:
+   `TongDiemThucTe` và `TongDiemQuyDoi` = `MIN(thực tế, trần)`. Báo cáo và Excel dùng điểm quy
+   đổi.
+4. **Chỉ nhiệm vụ DA_DUYET mới là số liệu chính thức**: điểm vào phiếu, tổng điểm, đếm theo vai
+   trò / nhóm, Excel. Phần chưa duyệt (1 + 3) luôn tách riêng (`TongDiemChoDuyet`,
+   `SoNhiemVuChoDuyet`) — không bao giờ cộng lẫn.
+5. **Ghi nhật ký mọi thay đổi vai trò, điểm và mọi lần xét** vào `lich_su_nhiem_vu_khoa`, trong
+   CÙNG transaction với thao tác.
 
 ### 7.1. `ky_nhiem_vu_khoa`
 
-Trạng thái duyệt gắn vào KỲ, không gắn vào từng bản ghi — không có state machine cho
-từng dòng phân công. Chỉ 2 trạng thái: `1` đang mở (Khoa sửa tự do, GV phản hồi tự do),
-`2` đã chốt (khoá ghi toàn bộ).
+Từ 2026-10-02 kỳ chỉ còn là **container** (năm × Khoa) của các nhiệm vụ — trạng thái duyệt
+nằm ở **từng nhiệm vụ**. Kỳ được **tạo lười**: `sp_nhiem_vu_khoa_ky_get` và `_save` tự INSERT
+nếu chưa có.
 
-Kỳ được **tạo lười**: `sp_nhiem_vu_khoa_ky_get` và `_save` tự INSERT nếu chưa có, nên
-Khoa không phải bấm "mở kỳ".
-
-`han_phan_hoi` **hết hạn KHÔNG khoá gì** — chỉ là nhãn hiển thị ("không lên tiếng =
-đồng ý"). Khác hẳn `ngay_dong_tu_danh_gia` của luồng phiếu (mục 2.9) vốn khoá ghi.
+`trang_thai = 2` (đã chốt) chỉ còn sinh ra từ **luồng cũ**: kỳ đó vẫn khoá ghi toàn bộ
+(`KY_DA_CHOT`) cho tới khi Trưởng khoa mở lại qua `PUT api/nhiem-vu-khoa/ky` (`MoLai` + lý do).
+`sp_nhiem_vu_khoa_chot` / `_kiem_tra_chot` trả `LUONG_DA_NGUNG` nên không sinh thêm kỳ chốt mới.
+`han_phan_hoi` là vết tích của luồng phản hồi — vẫn đọc / ghi được, không còn ý nghĩa nghiệp vụ.
 
 ### 7.2 – 7.3. `nhiem_vu_khoa`, `phan_cong_nhiem_vu_khoa`
 
 Danh mục dùng lại (KHÔNG tạo bảng mới):
 - **`danh_muc_nhom_nhiem_vu`** — seed 7 nhóm công tác cố định, `loai_doi_tuong = 1`.
-- **`danh_muc_vai_tro_pvcd`** — đã seed CT = 10, PHC = 7, PH = 4; giữ nguyên cơ chế
-  override theo `(id_don_vi, id_nam)`. `sp_nhiem_vu_khoa_save` resolve theo đúng thứ tự
-  ưu tiên `(đơn vị,năm) > (đơn vị,NULL) > (NULL,năm) > (NULL,NULL)`.
+- **`danh_muc_vai_tro_pvcd`** — đã seed CT = 10, PHC = 7, PH = 4; giữ nguyên cơ chế override theo
+  `(id_don_vi, id_nam)`. `sp_nhiem_vu_khoa_save` resolve theo đúng thứ tự ưu tiên
+  `(đơn vị,năm) > (đơn vị,NULL) > (NULL,năm) > (NULL,NULL)`.
+
+4 cột mới trên `nhiem_vu_khoa` (đợt 2026-10-02): `trang_thai` (`DEFAULT 1`, CHECK 1/2/3),
+`id_nguoi_duyet` (FK `nhan_vien`), `ngay_duyet`, `ly_do_tra_ve`; filtered index
+`ix_nvk_ky_trang_thai (id_ky, trang_thai) WHERE da_xoa = 0` cho hàng đợi duyệt.
+`id_nguoi_tao` = người kê khai (= chủ trì với dữ liệu mới; với dữ liệu cũ là TK / TLGVK).
 
 Client **không gửi điểm** — server tự resolve từ danh mục rồi mới snapshot.
 
-Lưu theo lô: `sp_nhiem_vu_khoa_save` nhận TVP `dbo.PhanCongNhiemVuKhoaRow` chứa TOÀN BỘ
-danh sách sau khi sửa, tự tính diff DELETE / UPDATE / INSERT trong một transaction.
-Một form, một lần lưu — KHÔNG có endpoint riêng cho phân công.
+Lưu theo lô: `sp_nhiem_vu_khoa_save` nhận TVP `dbo.PhanCongNhiemVuKhoaRow` chứa TOÀN BỘ danh
+sách **người phối hợp** sau khi sửa, tự thêm dòng CT cho người gọi, tự tính diff DELETE /
+UPDATE / INSERT trong một transaction. Một form, một lần lưu — KHÔNG có endpoint riêng cho
+phân công. TVP **không đổi** so với luồng cũ.
 
-### 7.4. `phan_hoi_nhiem_vu_khoa`
+### 7.4. `phan_hoi_nhiem_vu_khoa` — LUỒNG ĐÃ NGỪNG
 
-Hai loại: `1` sai vai trò (bắt buộc trỏ tới một nhiệm vụ của chính kỳ đó), `2` thiếu
-nhiệm vụ (thường rơi vào nhóm 7). **Giảng viên chỉ tạo được PHẢN HỒI, không tự tạo được
-nhiệm vụ** — đây là điểm chốt của thiết kế.
+Hai loại: `1` sai vai trò, `2` thiếu nhiệm vụ. Từ 2026-10-02 `sp_phan_hoi_nhiem_vu_khoa_create`
+/ `_xu_ly` và upload minh chứng cấp 2 trả `LUONG_DA_NGUNG` (409; controller trả ngay, không đọc
+multipart). `sp_phan_hoi_nhiem_vu_khoa_list` và RS5 của `_cua_toi` vẫn đọc dữ liệu cũ.
+Phản hồi cũ còn "chờ xử lý" không chặn gì nữa — `update_database.sql` KT4 liệt kê để Trưởng
+khoa đọc và xử lý ngoài hệ thống.
 
 ### 7.5. `minh_chung_nhiem_vu_khoa` — minh chứng HAI CẤP
 
-- `cap_gan = 1` → cấp **nhiệm vụ**: quyết định phân công, kế hoạch, biên bản — dùng
-  chung cho cả nhóm, tải lên một lần.
-- `cap_gan = 2` → cấp **phản hồi**: file giảng viên tự gửi kèm.
+- `cap_gan = 1` → cấp **nhiệm vụ**: quyết định phân công, kế hoạch, biên bản — dùng chung cho cả
+  nhóm, tải lên một lần. **Chỉ chủ trì** thêm được, và chỉ khi nhiệm vụ **chưa duyệt**.
+- `cap_gan = 2` → cấp **phản hồi** (luồng đã ngừng): chỉ còn đọc / gỡ dữ liệu cũ.
 
-Nếu chỉ cho tải ở cấp cá nhân thì cùng một quyết định bị tải lên nhiều lần và không biết
-bản nào chuẩn; nếu chỉ cho ở cấp nhiệm vụ thì giảng viên không gửi bổ sung được khi Khoa
-bỏ sót. Một bảng với XOR hai FK (`chk_mcnvk_cap`) thay vì hai bảng, vì cùng module và
-cùng luồng upload/download.
+Một bảng với XOR hai FK (`chk_mcnvk_cap`) thay vì hai bảng, vì cùng module và cùng luồng
+upload/download.
 
 Chỉ nhận **PDF**, kiểm HAI LỚP: đuôi file + chữ ký `%PDF-` (chặn đổi đuôi). File nằm ở
 `App_Data/uploads/nhiem-vu-khoa/{nhiem-vu|phan-hoi}/{id}/{guid}.pdf` (ngoài webroot, đã
 gitignore); DB chỉ giữ metadata. Tải xuống kiểm quyền và chặn path traversal.
 
-Quyền đọc: người của Khoa (theo `fn_nhiem_vu_khoa_quyen`) | GV được phân công nhiệm vụ
-đó | chủ nhân phản hồi. Quyền xoá: người nhập của Khoa | người tự tải file lên — và kỳ
-phải còn mở.
+Quyền đọc: người của Khoa (`can_xem`) | thành viên nhiệm vụ đó | chủ nhân phản hồi.
+Quyền gỡ (kỳ phải còn mở): cấp 1 = (người tự tải lên | chủ trì) **và** nhiệm vụ chưa duyệt;
+cấp 2 = người tự tải lên | Trưởng khoa.
 
 ### 7.6. `lich_su_nhiem_vu_khoa`
 
 Dùng bảng `lich_su_*` riêng theo convention dự án (`lich_su_cham_diem`,
-`lich_su_trang_thai_phieu`) — **KHÔNG** dùng bảng `nhat_ky`: bảng đó khai báo trong
-schema từ đầu nhưng chưa từng có dòng nào ghi vào.
+`lich_su_trang_thai_phieu`) — **KHÔNG** dùng bảng `nhat_ky`: bảng đó khai báo trong schema từ
+đầu nhưng chưa từng có dòng nào ghi vào.
+
+`hanh_dong`: 1 Kê khai nhiệm vụ · 2 Sửa nhiệm vụ (mô tả thêm *"(gửi duyệt lại)"* khi 3 → 1) ·
+3 Xoá · 4 Thêm phân công · 5 Đổi vai trò / điểm · 6 Gỡ phân công · **10 Duyệt** · **11 Trả
+về** · **12 Mở lại nhiệm vụ đã duyệt**. 7 (Chốt kỳ) · 8 (Mở lại kỳ) · 9 (Xử lý phản hồi) là
+của luồng cũ — 8 vẫn sinh ra khi mở lại kỳ cũ; 7 / 9 không còn sinh ra nhưng **vẫn nằm trong
+`chk_lsnvk_hd`** vì dòng lịch sử cũ mang các giá trị đó.
+
+Hành động 2 chỉ ghi khi nội dung nhiệm vụ / danh sách thật sự đổi (trước đây ghi mỗi lần lưu).
 
 ### Phân quyền
 
-Tập trung ở inline TVF **`fn_nhiem_vu_khoa_quyen(@id_don_vi, @chuc_vu, @don_vi)`** —
-một nơi duy nhất, fail-closed (chức vụ không tồn tại ⇒ tất cả cờ = 0). BLL
-(`NhiemVuKhoaService`) gate lại lần nữa bằng `ma_chuc_vu` resolve qua `ChucVuDal`.
+Hai loại quyền, đặt ở hai chỗ khác nhau:
 
-| Cờ | Ai | Làm gì |
+- **Theo chức vụ** — inline TVF **`fn_nhiem_vu_khoa_quyen(@id_don_vi, @user, @chuc_vu, @don_vi)`**,
+  fail-closed, đọc tập cặp (đơn vị, chức vụ) qua `fn_pham_vi_don_vi` (mục 10.6).
+- **Theo dữ liệu** — chủ trì / thành viên là quan hệ trên `phan_cong_nhiem_vu_khoa`, từng SP tự
+  kiểm. Không đưa vào UDF vì UDF tính theo đơn vị, không theo nhiệm vụ.
+
+| Ai | Làm gì | Kiểm ở |
 |---|---|---|
-| `can_nhap` | `TK` `TKL` `TP` **`TLGVK`** trong phạm vi đơn vị, hoặc `ADMIN` | Tạo/sửa/xoá nhiệm vụ, phân công, xử lý phản hồi, minh chứng cấp nhiệm vụ |
-| `can_chot` | `TK` `TKL` `TP` trong phạm vi đơn vị, hoặc `ADMIN` | Chốt kỳ / mở lại kỳ — **`TLGVK` CỐ Ý bị loại** |
-| `can_xem`  | `can_nhap`, hoặc `HT` / `ADMIN` | Xem toàn bộ |
+| **GV của Khoa** (`v_giang_vien_khoa.id_khoa`) | Kê khai nhiệm vụ mới (trở thành CT); xem DS giảng viên Khoa để chọn người phối hợp (không kèm điểm) | `_save`, `_giang_vien_list` |
+| **Chủ trì** (`pc.la_chu_tri = 1`) | Sửa / xoá / thêm-gỡ minh chứng — khi nhiệm vụ chưa duyệt | `_save`, `_delete`, `sp_minh_chung_nvk_*` |
+| **Thành viên** (có dòng phân công) | Xem chi tiết nhiệm vụ + minh chứng | `_get_by_id`, `sp_minh_chung_nvk_get_by_id` |
+| `can_duyet`: `TK` `TKL` `TP` trong phạm vi đơn vị, hoặc `ADMIN` | Duyệt / trả về / mở lại; xoá ở mọi trạng thái; sửa hạn / ghi chú / mở lại kỳ cũ | `_xet`, `_delete`, `_ky_set` |
+| `can_xem`: `can_duyet` ∪ `TLGVK` trong phạm vi ∪ `HT` / `ADMIN` | Xem toàn bộ, tổng hợp, Excel, lịch sử | các SP đọc |
 
-`TLGVK` (trợ lý giáo vụ khoa) được nhập liệu vì thực tế họ là người gõ dữ liệu, nhưng
-chốt kỳ là thẩm quyền của trưởng đơn vị.
+`can_nhap` / `can_chot` của UDF là **vết tích**: giữ cột để SP chỉ đọc `can_xem` không phải
+sửa, nhưng không SP ghi nào còn gate bằng `can_nhap` (TLGVK vì thế mất mọi quyền ghi).
 
-Module chỉ áp dụng cho **Khoa** (`ma_don_vi LIKE 'K_%'`); đơn vị khác trả
-`KHONG_PHAI_KHOA`. Giảng viên của Khoa xác định qua view `v_giang_vien_khoa`.
+**BLL không gate thêm bằng `ma_chuc_vu` của JWT** (khác trước đây): quyền duyệt là CẶP (đơn vị,
+chức vụ), người chỉ làm TK ở đơn vị **kiêm nhiệm** mang JWT chức vụ khác và sẽ bị 403 GIẢ —
+cùng lý do `PhanHoiNhiemVuKhoaService` đã bỏ gate ở Đợt 2. `NhiemVuKhoaService` chỉ kiểm hình
+dạng request; SP là nguồn sự thật duy nhất.
+
+Module chỉ áp dụng cho **Khoa** (`ma_don_vi LIKE 'K_%'`); đơn vị khác trả `KHONG_PHAI_KHOA`.
 
 ### Điểm đi vào phiếu đánh giá
 
-Dùng lại **khung chấm điểm tự động** đã có, không viết đường mới (xem mục 4.2):
+Dùng lại **khung chấm điểm tự động** đã có (xem mục 4.2):
 
 - Tiêu chí `Thực hiện nhiệm vụ theo phân công của Khoa` (nhóm 4, `diem_toi_da` 20) đặt
-  `loai_nguon_diem = 2`, `cong_thuc_tong_hop = N'NVK_PHAN_CONG_KHOA'`.
-- `fn_nckh_diem_tu_dong` thêm một nhánh khoá theo `@id_nhan_vien` + `@id_nam`: tổng
-  `diem_snapshot` của các phân công trong năm, cap ở `@diem_toi_da`. Nhờ đó **cả ba
-  luồng có ngay**: chấm khi GV nộp phiếu (`sp_phieu_cham_tu_dong_apply`), endpoint
+  `loai_nguon_diem = 2`, `cong_thuc_tong_hop = N'NVK_PHAN_CONG_KHOA'` (giữ tên mã cũ).
+- `fn_nckh_diem_tu_dong` nhánh khoá theo `@id_nhan_vien` + `@id_nam`: tổng `diem_snapshot` của
+  các phân công thuộc nhiệm vụ **`trang_thai = 2`** trong năm (mọi Khoa), cap ở `@diem_toi_da`.
+  Cả ba luồng có ngay: chấm khi GV nộp phiếu (`sp_phieu_cham_tu_dong_apply`), endpoint
   `POST api/phieu/{id}/tong-hop-tu-dong`, và preview `GET api/maudanhgia/{id}/diem-tu-dong`.
-- `fn_nckh_minh_chung_tu_dong` thêm nhánh `loai_nguon = 6` liệt kê từng nhiệm vụ kèm vai
-  trò và điểm ⇒ điểm và minh chứng không thể lệch nhau.
-- `loai_thang_diem = 2` (Liên tục), KHÔNG có dòng `thang_diem` ⇒ `id_thang_diem_chon`
-  luôn NULL — giống `VPGD_TUAN_THU`, vì điểm là tổng cộng dồn chứ không phải một mức
-  rời rạc.
+- `fn_nckh_minh_chung_tu_dong` nhánh `loai_nguon = 6` liệt kê từng nhiệm vụ **đã duyệt** kèm vai
+  trò và điểm. **BẤT BIẾN: vị từ lọc (`da_xoa = 0` + `trang_thai = 2` + cùng năm) phải giống
+  hệt ở hai hàm** — lệch nhau thì FE hiển thị minh chứng khác tập dòng đã sinh ra điểm.
+- `loai_thang_diem = 2` (Liên tục), KHÔNG có dòng `thang_diem` ⇒ `id_thang_diem_chon` luôn NULL.
 
-**CÓ Ý không lọc theo trạng thái kỳ**: GV thường nộp phiếu TRƯỚC khi Khoa chốt kỳ; nếu
-đợi chốt mới tính thì điểm sẽ là 0 lúc nộp. Khoa chốt xong, chạy lại
-`POST api/phieu/{id}/tong-hop-tu-dong` để refresh.
+**Chưa duyệt ⇒ 0 điểm** (giống `TTVT_*`, mục 11.6). GV thường nộp phiếu trước khi Trưởng khoa
+duyệt hết; duyệt xong chạy lại `POST api/phieu/{id}/tong-hop-tu-dong` để làm mới. **Không lọc
+theo trạng thái kỳ** — kỳ không còn bước chốt.
 
-**Trần điểm định nghĩa MỘT nơi**: scalar UDF `fn_nhiem_vu_khoa_tran_diem()` (= 20). Đổi
-trần = sửa hàm này VÀ `diem_toi_da` của tiêu chí. `sp_nhiem_vu_khoa_kiem_tra_chot` phát
-cảnh báo `loai_van_de = 5` nếu hai con số lệch nhau, và
-`GET api/cau-hinh/nhiem-vu-khoa` trả cờ `LechCauHinh`.
+`sp_nhiem_vu_khoa_cua_toi` cộng **mọi Khoa** trong năm cho khớp hàm chấm (trước đây chỉ một
+kỳ — GV kiêm nhiệm có thể thấy tổng nhỏ hơn điểm thật trên phiếu). Header luôn có `id_don_vi`
+= Khoa chính của GV (ưu tiên `la_chinh = 1`) **kể cả khi Khoa chưa có kỳ** — đó là Khoa FE gửi
+lên khi kê khai.
+
+**Trần điểm định nghĩa MỘT nơi**: scalar UDF `fn_nhiem_vu_khoa_tran_diem()` (= 20). Đổi trần =
+sửa hàm này VÀ `diem_toi_da` của tiêu chí. `GET api/cau-hinh/nhiem-vu-khoa` trả cờ
+`LechCauHinh` khi hai con số lệch nhau.
+
+### Di trú dữ liệu cũ (đợt 2026-10-02)
+
+- Nhiệm vụ thuộc kỳ **đã chốt** ⇒ `DA_DUYET`, người / ngày duyệt = người / ngày chốt kỳ, kèm
+  dòng lịch sử `hanh_dong = 10`.
+- Nhiệm vụ ở kỳ **đang mở** ⇒ `CHO_DUYET` — **thôi được tính điểm** cho tới khi Trưởng khoa
+  duyệt (Trưởng khoa chưa từng xác nhận chúng). KT2 của script liệt kê GV bị ảnh hưởng.
+- Nhiệm vụ cũ **thiếu chủ trì** (KT3): không ai sửa được, không duyệt được ⇒ Trưởng khoa xoá,
+  chủ trì thật kê khai lại.
+- Nhiệm vụ cũ do Khoa nhập: người đang là CT trở thành người sửa được nhiệm vụ.
 
 ### Mã lỗi của module
 
-`FORBIDDEN` → 403 · `NOT_FOUND` → 404 · `INVALID` / `KHONG_PHAI_KHOA` /
-`GV_NGOAI_KHOA` → 400 · `KY_DA_CHOT` → 409 · `TRUNG_CHU_TRI` /
-`CHOT_KHONG_HOP_LE` → 422 · `SQL_ERROR` → 500.
+`FORBIDDEN` → 403 · `NOT_FOUND` → 404 · `INVALID` / `KHONG_PHAI_KHOA` / `GV_NGOAI_KHOA` /
+`THIEU_LY_DO` → 400 · `KY_DA_CHOT` / `NHIEM_VU_DA_DUYET` / `TRANG_THAI_KHONG_HOP_LE` /
+`LUONG_DA_NGUNG` → 409 · `TRUNG_CHU_TRI` / `DUYET_KHONG_HOP_LE` / `CHOT_KHONG_HOP_LE` (luồng
+cũ) → 422 · `SQL_ERROR` → 500.
 
 ### Hợp đồng result set
 
-Mọi SP của module: **RS1** = `success` / `message` / `error_code`; **RS2..** = dữ liệu,
-chỉ phát khi `success = 1`. Nhờ vậy không nhánh lỗi nào phải NULL-pad danh sách cột
-(khác `sp_nhiem_vu_cong_dong_create` cũ vốn lặp khối NULL 5 lần).
+Mọi SP của module: **RS1** = `success` / `message` / `error_code`; **RS2..** = dữ liệu, chỉ phát
+khi `success = 1`. `_save` và `_xet` chỉ trả id / RS1 — BLL đọc lại chi tiết qua `_get_by_id` để
+mọi endpoint ghi trả cùng một hình dạng. RS nhiệm vụ có sẵn `cho_phep_sua` / `cho_phep_xet` để
+FE không phải tự suy từ trạng thái.
 ---
 
 ## 8. TỜ TRÌNH KPI KHOA & HẠN NGẠCH XUẤT SẮC

@@ -1,83 +1,43 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { formatDiem, formatNgay } from "../../utils/phieuApi";
+import { formatDiem } from "../../utils/phieuApi";
 import {
   capNhatKy,
-  chotKy,
-  coTheChot,
-  kiemTraChot,
+  canDuyetKy,
   laKyDaChot,
   layTongHop,
-  LOAI_VAN_DE,
   taiExcelTongHop,
 } from "../../utils/nhiemVuKhoaApi";
 
-/** Ngày thuần từ API ("2026-12-31T00:00:00") → giá trị cho <input type="date">. */
-const sangInputDate = (value) => (value ? String(value).slice(0, 10) : "");
-
-/**
- * Tab "Tổng hợp & chốt kỳ".
- *
- * Ba khối theo đúng thứ tự người dùng cần: xem số liệu → soát vấn đề → chốt.
- *
- * Hai điểm nghiệp vụ dễ làm sai được xử lý ở đây:
- *  - **Luôn hiển thị cả hai cột điểm.** `TongDiemQuyDoi` = MIN(thực tế, trần) là
- *    con số dùng để báo cáo; `TongDiemThucTe` để người ký thấy ai bị cắt bao
- *    nhiêu. Vượt trần chỉ tô cảnh báo, KHÔNG chặn chốt.
- *  - **Server tự kiểm tra lại điều kiện khi chốt**, không tin kết quả màn hình
- *    kiểm tra mà client vừa xem - nên vẫn phải xử lý 422 CHOT_KHONG_HOP_LE vì
- *    dữ liệu có thể đổi giữa hai lần gọi.
- */
+/** Điểm tổng hợp chỉ gồm nhiệm vụ đã duyệt; giữ mở lại kỳ cũ cho Trưởng khoa. */
 const NvkPanelTongHop = ({
   idNam,
   idDonVi,
   ky,
-  choPhepSua,
-  onMoNhiemVu,
-  onSangPhanHoi,
+  revision,
   onLamMoiKy,
   onError,
   onSuccess,
 }) => {
   const [duLieu, setDuLieu] = useState(null);
-  const [kiemTra, setKiemTra] = useState(null);
   const [dangTai, setDangTai] = useState(true);
   const [dangXuLy, setDangXuLy] = useState(false);
-
-  const [hanPhanHoi, setHanPhanHoi] = useState("");
-  const [ghiChuChot, setGhiChuChot] = useState("");
   const [lyDoMoLai, setLyDoMoLai] = useState("");
-
   const daChot = laKyDaChot(ky);
-  const duocChot = coTheChot(ky);
-
   const tai = useCallback(async () => {
     if (!idNam || !idDonVi) return;
     setDangTai(true);
     try {
-      const [th, kt] = await Promise.all([
-        layTongHop({ idNam, idDonVi }),
-        kiemTraChot({ idNam, idDonVi }).catch((error) => {
-          // Kỳ chưa mở thì endpoint này trả 404 - bảng tổng hợp vẫn xem được
-          if (error.status === 404) return null;
-          throw error;
-        }),
-      ]);
-      setDuLieu(th);
-      setKiemTra(kt);
+      setDuLieu(await layTongHop({ idNam, idDonVi }));
     } catch (error) {
-      console.error("Lỗi tải bảng tổng hợp:", error);
+      setDuLieu(null);
       onError(error.message);
+    } finally {
+      setDangTai(false);
     }
-    setDangTai(false);
   }, [idNam, idDonVi, onError]);
-
   useEffect(() => {
     tai();
-  }, [tai]);
-
-  useEffect(() => {
-    setHanPhanHoi(sangInputDate(ky?.HanPhanHoi));
-  }, [ky]);
+  }, [tai, revision]);
 
   const xuatExcel = async () => {
     try {
@@ -90,41 +50,6 @@ const NvkPanelTongHop = ({
       console.error("Lỗi xuất Excel tổng hợp:", error);
       onError(error.message);
     }
-  };
-
-  const luuHan = async (xoa) => {
-    setDangXuLy(true);
-    try {
-      await capNhatKy({
-        idNam,
-        idDonVi,
-        hanPhanHoi: xoa ? null : hanPhanHoi || null,
-        xoaHan: xoa,
-      });
-      onSuccess(xoa ? "Đã gỡ hạn phản hồi" : "Đã cập nhật hạn phản hồi");
-      onLamMoiKy();
-    } catch (error) {
-      console.error("Lỗi cập nhật hạn phản hồi:", error);
-      onError(error.message);
-    }
-    setDangXuLy(false);
-  };
-
-  const chot = async () => {
-    setDangXuLy(true);
-    try {
-      await chotKy({ idNam, idDonVi, ghiChu: ghiChuChot });
-      onSuccess("Đã chốt kỳ nhiệm vụ");
-      setGhiChuChot("");
-      onLamMoiKy();
-      tai();
-    } catch (error) {
-      console.error("Lỗi chốt kỳ:", error);
-      onError(error.message);
-      // 422 nghĩa là dữ liệu đã đổi sau lần kiểm tra vừa rồi - soát lại ngay
-      if (error.status === 422) tai();
-    }
-    setDangXuLy(false);
   };
 
   const moLai = async () => {
@@ -150,26 +75,13 @@ const NvkPanelTongHop = ({
   const rows = duLieu?.Items || [];
   const nhom = duLieu?.Nhom || [];
 
-  const vanDe = kiemTra?.VanDe || [];
-  const vanDeChan = vanDe.filter((v) => v.LaChan);
-  const canhBao = vanDe.filter((v) => !v.LaChan);
-
-  const dieuHuongVanDe = (v) => {
-    if (v.LoaiVanDe === LOAI_VAN_DE.PHAN_HOI_CHUA_XU_LY) return onSangPhanHoi();
-    if (v.IdNhiemVuKhoa) return onMoNhiemVu(v.IdNhiemVuKhoa);
-    return undefined;
-  };
-
-  const coDieuHuong = (v) =>
-    v.LoaiVanDe === LOAI_VAN_DE.PHAN_HOI_CHUA_XU_LY || !!v.IdNhiemVuKhoa;
-
   return (
     <div
       style={{ opacity: dangTai ? 0.55 : 1, transition: "opacity 0.15s ease" }}
     >
       <div className="nvk-th-actions">
         <p className="sub-title" style={{ margin: 0 }}>
-          BẢNG TỔNG HỢP TOÀN KHOA
+          BẢNG TỔNG HỢP NHIỆM VỤ ĐÃ DUYỆT
         </p>
         <button
           type="button"
@@ -181,6 +93,11 @@ const NvkPanelTongHop = ({
         </button>
       </div>
 
+      <p className="cd-hint">
+        {header?.SoChoDuyet ?? "—"} chờ duyệt · {header?.SoTraVe ?? "—"} trả về
+        · {header?.SoDaDuyet ?? "—"} đã duyệt. Điểm chờ duyệt được hiển thị
+        riêng và chưa tính vào KPI.
+      </p>
       <div className="modern-table-card" style={{ marginBottom: "20px" }}>
         {rows.length === 0 ? (
           <div className="cd-empty">
@@ -215,6 +132,7 @@ const NvkPanelTongHop = ({
                   <th style={{ width: "110px", textAlign: "right" }}>
                     Điểm quy đổi
                   </th>
+                  <th>Chờ duyệt (chưa tính)</th>
                 </tr>
               </thead>
               <tbody>
@@ -228,7 +146,9 @@ const NvkPanelTongHop = ({
                       <div className="nvk-ql-ten">{r.HoTen}</div>
                       <div className="nvk-ql-mo-ta">
                         {r.MaNhanVien}
-                        {r.SoNhiemVu === 0 ? " · chưa được phân công" : ""}
+                        {r.SoNhiemVu === 0
+                          ? " · chưa có nhiệm vụ đã duyệt"
+                          : ""}
                       </div>
                     </td>
                     {nhom.map((n) => (
@@ -258,6 +178,12 @@ const NvkPanelTongHop = ({
                     <td className="nvk-th-quy-doi">
                       {formatDiem(r.TongDiemQuyDoi, 1)}
                     </td>
+                    <td>
+                      <div>{r.SoNhiemVuChoDuyet ?? "—"} nhiệm vụ</div>
+                      <div className="nvk-pending-points">
+                        +{formatDiem(r.TongDiemChoDuyet, 1)} điểm chờ duyệt
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -276,185 +202,35 @@ const NvkPanelTongHop = ({
         </div>
       )}
 
-      <p className="sub-title" style={{ margin: "24px 0 10px 0" }}>
-        KIỂM TRA TRƯỚC KHI CHỐT
-      </p>
-
-      {!kiemTra ? (
-        <div className="modern-table-card">
-          <div className="cd-empty">
-            <i className="fa-solid fa-circle-info"></i>
-            Kỳ chưa được mở nên chưa kiểm tra được điều kiện chốt.
-          </div>
-        </div>
-      ) : (
-        <div className="nvk-chot-box">
-          {vanDeChan.length === 0 && canhBao.length === 0 ? (
-            <div className="nvk-vd-ok">
-              <i className="fa-solid fa-circle-check"></i> Không còn vấn đề nào
-              - kỳ đã sẵn sàng để chốt.
-            </div>
-          ) : (
-            <>
-              {vanDeChan.length > 0 && (
-                <div className="nvk-vd-nhom">
-                  <div className="nvk-vd-tieu-de nvk-vd-chan">
-                    <i className="fa-solid fa-circle-xmark"></i> Cần xử lý (
-                    {vanDeChan.length}) - chặn chốt kỳ
-                  </div>
-                  {vanDeChan.map((v, i) => (
-                    <div key={`chan-${i}`} className="nvk-vd-dong">
-                      <span className="nvk-vd-noi-dung">
-                        {v.TenNhiemVu || v.HoTen ? (
-                          <b>{v.TenNhiemVu || v.HoTen}: </b>
-                        ) : null}
-                        {v.MoTa}
-                      </span>
-                      {coDieuHuong(v) && (
-                        <button
-                          type="button"
-                          className="cd-link-btn"
-                          onClick={() => dieuHuongVanDe(v)}
-                        >
-                          <i className="fa-solid fa-arrow-right"></i> Xử lý
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {canhBao.length > 0 && (
-                <div className="nvk-vd-nhom">
-                  <div className="nvk-vd-tieu-de nvk-vd-luu-y">
-                    <i className="fa-solid fa-circle-exclamation"></i> Lưu ý (
-                    {canhBao.length}) - không chặn chốt
-                  </div>
-                  {canhBao.map((v, i) => (
-                    <div key={`luuy-${i}`} className="nvk-vd-dong">
-                      <span className="nvk-vd-noi-dung">
-                        {v.HoTen ? <b>{v.HoTen}: </b> : null}
-                        {v.MoTa}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          <div className="nvk-chot-thao-tac">
-            {daChot ? (
-              <>
-                <div className="nvk-chot-thong-tin">
-                  <i className="fa-solid fa-lock"></i> Kỳ đã chốt
-                  {ky?.NgayChot ? ` ngày ${formatNgay(ky.NgayChot)}` : ""}
-                  {ky?.TenNguoiChot ? ` bởi ${ky.TenNguoiChot}` : ""}.
-                  {duocChot
-                    ? " Muốn sửa tiếp thì phải mở lại kỳ."
-                    : " Chỉ trưởng đơn vị mới mở lại được."}
-                </div>
-                {duocChot && (
-                  <div className="nvk-chot-hang">
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={lyDoMoLai}
-                      maxLength={1000}
-                      placeholder="Lý do mở lại (bắt buộc)"
-                      onChange={(e) => setLyDoMoLai(e.target.value)}
-                      disabled={dangXuLy}
-                    />
-                    <button
-                      type="button"
-                      className="btn-submit"
-                      onClick={moLai}
-                      disabled={dangXuLy || !lyDoMoLai.trim()}
-                    >
-                      <i className="fa-solid fa-lock-open"></i> Mở lại kỳ
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : !duocChot ? (
-              <div className="nvk-chot-thong-tin">
-                <i className="fa-solid fa-circle-info"></i> Bạn nhập được dữ
-                liệu nhưng không có quyền chốt kỳ - thẩm quyền này thuộc trưởng
-                đơn vị.
-              </div>
-            ) : (
-              <div className="nvk-chot-hang">
-                <input
-                  type="text"
-                  className="form-input"
-                  value={ghiChuChot}
-                  maxLength={500}
-                  placeholder="Ghi chú khi chốt (tuỳ chọn)"
-                  onChange={(e) => setGhiChuChot(e.target.value)}
-                  disabled={dangXuLy}
-                />
-                <button
-                  type="button"
-                  className="btn-submit"
-                  onClick={chot}
-                  disabled={dangXuLy || !kiemTra.CoTheChot}
-                  title={
-                    kiemTra.CoTheChot
-                      ? "Chốt kỳ nhiệm vụ"
-                      : "Còn vấn đề chặn, chưa chốt được"
-                  }
-                >
-                  <i
-                    className={`fa-solid ${dangXuLy ? "fa-spinner fa-spin" : "fa-lock"}`}
-                  ></i>{" "}
-                  Chốt kỳ
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {choPhepSua && (
-        <>
-          <p className="sub-title" style={{ margin: "24px 0 10px 0" }}>
-            HẠN PHẢN HỒI
+      {daChot && (
+        <div className="cd-box">
+          <p>
+            Kỳ đã chốt theo luồng cũ. Cần mở lại kỳ để kê khai và xét từng nhiệm
+            vụ.
           </p>
-          <div className="nvk-chot-box">
-            <div className="cd-hint" style={{ marginTop: 0 }}>
-              Hết hạn KHÔNG khoá gì - đây chỉ là mốc nhắc việc, giảng viên không
-              lên tiếng thì hiểu là đồng ý với phân công.
-            </div>
-            <div className="nvk-chot-hang">
-              <input
-                type="date"
-                className="form-input nvk-o-ngay"
-                value={hanPhanHoi}
-                onChange={(e) => setHanPhanHoi(e.target.value)}
+          {canDuyetKy(ky) && (
+            <>
+              <label htmlFor="nvk-mo-ky">Lý do mở lại kỳ (bắt buộc)</label>
+              <textarea
+                id="nvk-mo-ky"
+                className="form-input"
+                maxLength={1000}
+                value={lyDoMoLai}
+                onChange={(e) => setLyDoMoLai(e.target.value)}
                 disabled={dangXuLy}
               />
               <button
-                type="button"
                 className="btn-submit"
-                onClick={() => luuHan(false)}
-                disabled={dangXuLy || !hanPhanHoi}
+                onClick={moLai}
+                disabled={dangXuLy}
               >
-                <i className="fa-solid fa-floppy-disk"></i> Lưu hạn
+                Mở lại kỳ cũ
               </button>
-              <button
-                type="button"
-                className="btn-cancel"
-                onClick={() => luuHan(true)}
-                disabled={dangXuLy || !ky?.HanPhanHoi}
-              >
-                <i className="fa-solid fa-eraser"></i> Gỡ hạn
-              </button>
-            </div>
-          </div>
-        </>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
 };
-
 export default NvkPanelTongHop;

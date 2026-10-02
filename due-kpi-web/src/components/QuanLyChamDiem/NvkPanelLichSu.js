@@ -17,6 +17,9 @@ const MAU_HANH_DONG = {
   [HANH_DONG.CHOT_KY]: "nvk-ls-chot",
   [HANH_DONG.MO_LAI_KY]: "nvk-ls-chot",
   [HANH_DONG.XU_LY_PHAN_HOI]: "nvk-ls-phan-hoi",
+  [HANH_DONG.DUYET_NHIEM_VU]: "nvk-ls-chot",
+  [HANH_DONG.TRA_VE_NHIEM_VU]: "nvk-ls-xoa",
+  [HANH_DONG.MO_LAI_NHIEM_VU]: "nvk-ls-sua",
 };
 
 /**

@@ -442,9 +442,7 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.QUAN_TRI,
       },
       {
-        // Khoa nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò cho giảng
-        // viên (KPI Nhóm III). Chỉ TK/TKL được vào; nút Chốt kỳ trên màn hình
-        // vẫn phụ thuộc cờ CanChot của server.
+        // TK/TKL xét từng nhiệm vụ; TLGVK chỉ xem. Quyền ghi lấy từ BE.
         name: "Ghi nhận phục vụ cộng đồng",
         icon: "fa-solid fa-hands-holding-circle",
         path: "/quan-ly/nhiem-vu-khoa",

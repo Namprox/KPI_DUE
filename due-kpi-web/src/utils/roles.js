@@ -36,6 +36,7 @@ export const ROLE = {
   PHO_TRUONG_PHONG: "PTP",
   TRUONG_BO_MON: "TBM",
   THU_KY_KHOA: "TKK",
+  TRO_LY_GIAO_VU_KHOA: "TLGVK",
   THU_KY_PHONG: "TKP",
 };
 
@@ -225,15 +226,10 @@ export const ROLE_SETS = {
   ],
 
   /**
-   * Nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò (KPI Nhóm III).
-   *
-   * Module chỉ áp dụng cho KHOA (`ma_don_vi LIKE 'K_%'`) nên Trưởng Phòng bị
-   * loại - gọi với đơn vị khác server trả `KHONG_PHAI_KHOA`. Chỉ Trưởng Khoa /
-   * Trưởng Khoa lớn được truy cập trang quản lý này. Quyền thao tác trên từng
-   * kỳ vẫn được xác định theo cờ `CanNhap` / `CanChot`
-   * do endpoint `/nhiem-vu-khoa/ky` trả về.
+   * Trưởng khoa xét nhiệm vụ; TLGVK chỉ xem. TKK không được cấp quyền tại đây.
+   * Quyền ghi lấy từ CanKeKhai / CanDuyet và ChoPhepSua / ChoPhepXet của BE.
    */
-  NHIEM_VU_KHOA: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON],
+  NHIEM_VU_KHOA: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRO_LY_GIAO_VU_KHOA],
 
   /**
    * Duyệt bản kê THÀNH TÍCH VƯỢT TRỘI (Nhóm II) của viên chức / NLĐ.

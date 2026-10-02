@@ -25,232 +25,156 @@ import {
   laDonViKhoa,
   resolveKhoaCuaNhanVien,
 } from "../../utils/viPhamPermissions";
-import { coTheNhap, layCauHinh, layKy } from "../../utils/nhiemVuKhoaApi";
+import {
+  canKeKhaiNhiemVu,
+  laKyDaChot,
+  layCauHinh,
+  layKy,
+} from "../../utils/nhiemVuKhoaApi";
 
-const TAB = {
-  NHIEM_VU: "nhiem-vu",
-  PHAN_HOI: "phan-hoi",
-  TONG_HOP: "tong-hop",
-  LICH_SU: "lich-su",
-};
-
-const NHOM_TAT_CA = "";
-
-/**
- * Khoa nhập nhiệm vụ phục vụ cộng đồng và phân công vai trò cho giảng viên.
- *
- * Trang này là KHUNG của cả phân hệ phía Khoa: bốn tab (nhiệm vụ · phản hồi ·
- * tổng hợp & chốt · nhật ký) dùng chung một lần nạp cấu hình và kỳ, thay vì bốn
- * màn hình rời cùng gọi lại `/cau-hinh` và `/ky`. Nhờ vậy badge "phản hồi chờ
- * xử lý" bấm được, và màn hình kiểm tra chốt nhảy thẳng sang đúng nhiệm vụ /
- * phản hồi đang gây chặn.
- *
- * Nghiệp vụ đảo chiều so với mô hình cũ: **Khoa nhập, giảng viên phản hồi.** Vai
- * trò chủ trì / phối hợp chính / phối hợp là quan hệ tương đối giữa nhiều người
- * trong CÙNG một nhiệm vụ, chỉ Khoa mới có thẩm quyền phân định.
- *
- * Phạm vi dữ liệu: đúng Khoa của người đăng nhập, suy từ `IdDonVi` rồi roll-up
- * lên cấp Khoa (thư ký có thể nằm ở Bộ môn con). Không có dropdown chọn Khoa
- * khác - server cũng chặn lại theo token.
- *
- * Quyền thao tác lấy từ cờ `CanNhap` / `CanChot` do endpoint `/ky` trả về, KHÔNG
- * suy từ `MaChucVu`: server còn xét cả phạm vi đơn vị lẫn trạng thái kỳ. Thư ký
- * Khoa nhập được nhưng không chốt được.
- *
- * Kỳ được tạo LƯỜI - endpoint `/ky` tự tạo nếu chưa có, nên không có nút "mở kỳ".
- */
-const PhanCongNhiemVuKhoa = () => {
+export default function PhanCongNhiemVuKhoa() {
   const toast = useRef(null);
   const { user } = useAuth();
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
-
   const [donViList, setDonViList] = useState([]);
   const [dangTaiDonVi, setDangTaiDonVi] = useState(true);
-
+  const [khoaChon, setKhoaChon] = useState("");
   const [cauHinh, setCauHinh] = useState(null);
   const [ky, setKy] = useState(null);
   const [nhomKy, setNhomKy] = useState([]);
-
-  const [tab, setTab] = useState(TAB.NHIEM_VU);
-  const [nhomLoc, setNhomLoc] = useState(NHOM_TAT_CA);
+  const [tab, setTab] = useState("nhiem-vu");
+  const [nhomLoc, setNhomLoc] = useState("");
+  const [trangThai, setTrangThai] = useState("1");
   const [tuKhoa, setTuKhoa] = useState("");
   const [tuKhoaApDung, setTuKhoaApDung] = useState("");
-
-  const [isLoading, setIsLoading] = useState(true);
+  const [dangTai, setDangTai] = useState(false);
   const [loi, setLoi] = useState("");
+  const [revision, setRevision] = useState(0);
   const [yeuCauForm, setYeuCauForm] = useState(null);
-
-  const showToast = useCallback((severity, summary, detail) => {
-    toast.current?.show({ severity, summary, detail, life: 3500 });
-  }, []);
-
+  const request = useRef(0);
   const baoLoi = useCallback(
-    (message) => showToast("error", "Lỗi", message),
-    [showToast],
+    (detail) =>
+      toast.current?.show({
+        severity: "error",
+        summary: "Lỗi",
+        detail,
+        life: 5000,
+      }),
+    [],
   );
   const baoThanhCong = useCallback(
-    (message) => showToast("success", "Thành công", message),
-    [showToast],
+    (detail) =>
+      toast.current?.show({
+        severity: "success",
+        summary: "Thành công",
+        detail,
+        life: 6000,
+      }),
+    [],
   );
-
   const { preview, openPreview, closePreview, downloadMinhChung } =
     useMinhChungNvkPreview(baoLoi);
-
   useEffect(() => {
     let huy = false;
-    const tai = async () => {
-      try {
-        const res = await apiFetch("donvi");
+    apiFetch("donvi")
+      .then(async (res) => {
         if (!res.ok) throw new Error("Không tải được danh sách đơn vị");
         const result = await res.json();
-        if (!huy) {
+        if (!huy)
           setDonViList(result.Items || (Array.isArray(result) ? result : []));
-        }
-      } catch (error) {
-        console.error("Lỗi tải danh sách đơn vị:", error);
+      })
+      .catch((error) => {
         if (!huy) baoLoi(error.message);
-      } finally {
+      })
+      .finally(() => {
         if (!huy) setDangTaiDonVi(false);
-      }
-    };
-    tai();
+      });
     return () => {
       huy = true;
     };
   }, [baoLoi]);
-
-  /** Khoa chủ quản của người đăng nhập - phạm vi dữ liệu của cả màn hình. */
-  const khoaCuaToi = useMemo(() => {
-    const donViIndex = buildDonViIndex(donViList);
-    if (user?.DonVi && Array.isArray(user.DonVi)) {
-      for (const d of user.DonVi) {
-        const k = resolveKhoaCuaNhanVien(d.IdDonVi, donViIndex);
-        if (laDonViKhoa(k)) return k;
-      }
-    }
-    const khoa = resolveKhoaCuaNhanVien(user?.IdDonVi, donViIndex);
-    return laDonViKhoa(khoa) ? khoa : null;
+  // Phạm vi xem gồm các Khoa trong hồ sơ kiêm nhiệm. Quyền ghi do BE quyết định.
+  const khoaList = useMemo(() => {
+    const index = buildDonViIndex(donViList);
+    const appointments = [...(user?.DonVi || [])].sort(
+      (a, b) =>
+        Number(["TK", "TKL"].includes(String(b.MaChucVu).toUpperCase())) -
+        Number(["TK", "TKL"].includes(String(a.MaChucVu).toUpperCase())),
+    );
+    const ids = [...appointments.map((d) => d.IdDonVi), user?.IdDonVi];
+    const map = new Map();
+    ids.forEach((id) => {
+      const k = resolveKhoaCuaNhanVien(id, index);
+      if (laDonViKhoa(k)) map.set(String(k.IdDonVi), k);
+    });
+    return [...map.values()];
   }, [user, donViList]);
-
-  const idDonVi = khoaCuaToi?.IdDonVi;
-  const sanSang = !!selectedNam && !!idDonVi;
-
-  // Gõ tới đâu lọc tới đó nhưng chỉ gọi API khi người dùng ngừng gõ
+  const khoa =
+    khoaList.find((k) => String(k.IdDonVi) === khoaChon) || khoaList[0];
+  const idDonVi = khoa?.IdDonVi;
   useEffect(() => {
     const timer = setTimeout(() => setTuKhoaApDung(tuKhoa.trim()), 400);
     return () => clearTimeout(timer);
   }, [tuKhoa]);
-
-  /**
-   * Cấu hình + kỳ: chỉ phụ thuộc (năm × Khoa), nạp một lần cho cả bốn tab.
-   * Mọi thao tác ghi đều gọi lại hàm này để badge đếm và trạng thái kỳ khớp lại.
-   */
   const taiTongQuan = useCallback(async () => {
-    if (!sanSang) return;
-    setIsLoading(true);
+    if (!selectedNam || !idDonVi) return;
+    const seq = ++request.current;
+    setDangTai(true);
     setLoi("");
     try {
       const [ch, kq] = await Promise.all([
         layCauHinh({ idDonVi, idNam: selectedNam }),
         layKy({ idNam: selectedNam, idDonVi }),
       ]);
-      setCauHinh(ch);
-      setKy(kq.ky);
-      setNhomKy(kq.nhom);
+      if (seq === request.current) {
+        setCauHinh(ch);
+        setKy(kq.ky);
+        setNhomKy(kq.nhom);
+        setRevision((v) => v + 1);
+      }
     } catch (error) {
-      console.error("Lỗi tải tổng quan kỳ nhiệm vụ Khoa:", error);
-      setLoi(error.message);
+      if (seq === request.current) {
+        setKy(null);
+        setLoi(error.message);
+      }
+    } finally {
+      if (seq === request.current) setDangTai(false);
     }
-    setIsLoading(false);
-  }, [sanSang, idDonVi, selectedNam]);
-
+  }, [selectedNam, idDonVi]);
   useEffect(() => {
+    setKy(null);
+    setYeuCauForm(null);
     if (!dangTaiNam && !dangTaiDonVi) taiTongQuan();
+    return () => {
+      request.current += 1;
+    };
   }, [dangTaiNam, dangTaiDonVi, taiTongQuan]);
-
-  const choPhepSua = coTheNhap(ky);
-
-  /** Từ tab Phản hồi / Kiểm tra chốt nhảy sang form nhiệm vụ tương ứng. */
-  const moNhiemVu = (idNhiemVuKhoa) => {
-    setTab(TAB.NHIEM_VU);
-    setYeuCauForm({ nonce: Date.now(), idNhiemVuKhoa });
-  };
-
-  const taoNhiemVuTrongNhom = (idNhomNv) => {
-    setTab(TAB.NHIEM_VU);
-    setYeuCauForm({ nonce: Date.now(), idNhomNv });
-  };
-
-  const soPhanHoiCho = ky?.SoPhanHoiCho ?? 0;
-  const thieuKhoa = !dangTaiDonVi && !khoaCuaToi;
-  const dangTaiLanDau = (isLoading || dangTaiNam || dangTaiDonVi) && !ky;
-
-  const chungChoPanel = {
+  const chung = {
     idNam: selectedNam,
     idDonVi,
+    ky,
+    revision,
     onLamMoiKy: taiTongQuan,
-    onXemMinhChung: openPreview,
-    onTaiMinhChung: downloadMinhChung,
     onError: baoLoi,
     onSuccess: baoThanhCong,
+    onXemMinhChung: openPreview,
+    onTaiMinhChung: downloadMinhChung,
   };
-
-  const renderPanel = () => {
-    if (tab === TAB.PHAN_HOI) {
-      return (
-        <NvkPanelPhanHoi
-          {...chungChoPanel}
-          choPhepSua={choPhepSua}
-          onMoNhiemVu={moNhiemVu}
-          onTaoNhiemVu={taoNhiemVuTrongNhom}
-        />
-      );
-    }
-    if (tab === TAB.TONG_HOP) {
-      return (
-        <NvkPanelTongHop
-          {...chungChoPanel}
-          ky={ky}
-          choPhepSua={choPhepSua}
-          onMoNhiemVu={moNhiemVu}
-          onSangPhanHoi={() => setTab(TAB.PHAN_HOI)}
-        />
-      );
-    }
-    if (tab === TAB.LICH_SU) {
-      return <NvkPanelLichSu {...chungChoPanel} />;
-    }
-    return (
-      <NvkPanelNhiemVu
-        {...chungChoPanel}
-        cauHinh={cauHinh}
-        choPhepSua={choPhepSua}
-        nhomLoc={nhomLoc}
-        tuKhoa={tuKhoaApDung}
-        yeuCauForm={yeuCauForm}
-        onYeuCauXong={() => setYeuCauForm(null)}
-      />
-    );
-  };
-
   return (
     <div className="page-container">
       <Toast ref={toast} position="top-right" />
-
       <div className="page-header">
         <h2 className="nvk-title">Ghi nhận phục vụ cộng đồng</h2>
         <span className="breadcrumb">
-          Khoa nhập nhiệm vụ và phân định vai trò - nguồn điểm KPI Nhóm III của
-          giảng viên
+          Chủ trì tự kê khai · Trưởng khoa duyệt từng nhiệm vụ
         </span>
       </div>
-
       <div className="cd-toolbar">
         <div className="cd-field">
           <label className="cd-label">Năm đánh giá</label>
           <SearchSelect
             value={selectedNam}
-            onChange={(v) => setSelectedNam(v)}
+            onChange={setSelectedNam}
             options={namList.map((n) => ({
               value: n.IdNam,
               label: `Năm học ${n.IdNam}`,
@@ -258,166 +182,164 @@ const PhanCongNhiemVuKhoa = () => {
             disabled={dangTaiNam}
           />
         </div>
-
-        {/* Hai ô lọc chỉ có nghĩa với tab Nhiệm vụ nên ẩn ở các tab khác */}
-        {tab === TAB.NHIEM_VU && (
+        {khoaList.length > 1 && (
+          <div className="cd-field">
+            <label className="cd-label">Khoa</label>
+            <SearchSelect
+              value={idDonVi}
+              onChange={(v) => setKhoaChon(String(v))}
+              options={khoaList.map((k) => ({
+                value: k.IdDonVi,
+                label: k.TenDonVi,
+              }))}
+            />
+          </div>
+        )}
+        {tab === "nhiem-vu" && (
           <>
+            <div className="cd-field">
+              <label className="cd-label">Trạng thái</label>
+              <SearchSelect
+                ariaLabel="Trạng thái nhiệm vụ"
+                value={trangThai}
+                onChange={setTrangThai}
+                options={[
+                  { value: "1", label: "Chờ duyệt" },
+                  { value: "2", label: "Đã duyệt" },
+                  { value: "3", label: "Trả về" },
+                  { value: "", label: "Tất cả" },
+                ]}
+              />
+            </div>
             <div className="cd-field nvk-o-nhom">
               <label className="cd-label">Nhóm nhiệm vụ</label>
               <SearchSelect
                 value={nhomLoc}
-                onChange={(v) => setNhomLoc(String(v ?? NHOM_TAT_CA))}
+                onChange={setNhomLoc}
                 options={[
-                  {
-                    value: NHOM_TAT_CA,
-                    label: `Tất cả (${ky?.SoNhiemVu ?? 0})`,
-                  },
+                  { value: "", label: "Tất cả nhóm" },
                   ...nhomKy.map((n) => ({
                     value: n.IdNhomNv,
-                    label: `${n.TenNhom} (${n.SoNhiemVu ?? 0})`,
+                    label: n.TenNhom,
                   })),
                 ]}
-                placeholder="Tất cả nhóm"
                 searchable
-                searchPlaceholder="Tìm nhóm..."
-                disabled={!sanSang}
               />
             </div>
-
             <div className="cd-field nvk-o-tim">
               <label className="cd-label">Tìm nhiệm vụ</label>
               <input
-                type="text"
                 className="form-input"
                 value={tuKhoa}
                 onChange={(e) => setTuKhoa(e.target.value)}
                 placeholder="Tên hoặc mô tả nhiệm vụ..."
-                disabled={!sanSang}
               />
             </div>
           </>
         )}
-
         <button
           className="btn-cancel"
+          disabled={dangTai || !idDonVi}
           onClick={taiTongQuan}
-          disabled={isLoading || !sanSang}
         >
-          <i className={`fa-solid fa-rotate${isLoading ? " fa-spin" : ""}`}></i>{" "}
           Làm mới
         </button>
-
-        {choPhepSua && tab === TAB.NHIEM_VU && (
+        {canKeKhaiNhiemVu(ky) && tab === "nhiem-vu" && (
           <button
             className="btn-add-new"
-            onClick={() => setYeuCauForm({ nonce: Date.now(), idNhomNv: "" })}
+            disabled={dangTai}
+            onClick={() => setYeuCauForm({ nonce: Date.now() })}
           >
-            <i className="fa-solid fa-plus"></i> Thêm nhiệm vụ
+            Kê khai nhiệm vụ
           </button>
         )}
       </div>
-
-      {thieuKhoa ? (
-        <div className="modern-table-card">
-          <div className="cd-empty">
-            <i className="fa-solid fa-building-circle-exclamation"></i>
-            <h3 style={{ color: "#334155", margin: "0 0 6px 0" }}>
-              Không xác định được Khoa của bạn
-            </h3>
-            <p style={{ margin: 0 }}>
-              Module này chỉ áp dụng cho Khoa. Đơn vị trong hồ sơ của bạn không
-              thuộc Khoa nào - liên hệ quản trị viên để cập nhật lại đơn vị.
-            </p>
-          </div>
-        </div>
-      ) : dangTaiLanDau ? (
-        <div className="modern-table-card">
-          <div className="cd-empty">
-            <i className="fa-solid fa-spinner fa-spin"></i>
-            Đang tải dữ liệu của Khoa...
-          </div>
-        </div>
+      {dangTaiDonVi || dangTaiNam || (!ky && dangTai) ? (
+        <div className="cd-empty">Đang tải dữ liệu của Khoa...</div>
+      ) : !idDonVi ? (
+        <div className="cd-empty">Không xác định được Khoa của bạn.</div>
       ) : loi ? (
-        <div className="modern-table-card">
-          <div className="cd-empty">
-            <i className="fa-solid fa-triangle-exclamation"></i>
-            <h3 style={{ color: "#334155", margin: "0 0 6px 0" }}>
-              Không tải được dữ liệu
-            </h3>
-            <p style={{ margin: 0 }}>{loi}</p>
-          </div>
+        <div className="cd-empty" role="alert">
+          {loi}
         </div>
       ) : (
-        <>
-          <div className="nvk-ky-banner">
-            <div className="nvk-ky-info">
-              <div className="nvk-ky-don-vi">
-                <i className="fa-solid fa-building-columns"></i>{" "}
-                {ky?.TenDonVi || khoaCuaToi?.TenDonVi}
-              </div>
-              <div className="nvk-ky-meta">
-                <span className="nvk-han">
-                  <i className="fa-solid fa-list-check"></i>{" "}
-                  <b>{ky?.SoNhiemVu ?? 0}</b> nhiệm vụ
-                </span>
-                {soPhanHoiCho > 0 && (
-                  <button
-                    type="button"
-                    className="cd-status-badge nvk-badge-cho nvk-badge-nut"
-                    onClick={() => setTab(TAB.PHAN_HOI)}
-                  >
-                    <i className="fa-solid fa-comment-dots"></i> {soPhanHoiCho}{" "}
-                    phản hồi chờ xử lý
-                  </button>
-                )}
+        ky && (
+          <>
+            <div className="nvk-ky-banner">
+              <div>
+                <div className="nvk-ky-don-vi">
+                  {ky.TenDonVi || khoa.TenDonVi}
+                </div>
+                <div className="nvk-actions">
+                  {[
+                    ["1", "SoChoDuyet", "chờ duyệt"],
+                    ["2", "SoDaDuyet", "đã duyệt"],
+                    ["3", "SoTraVe", "trả về"],
+                  ].map(([value, field, text]) => (
+                    <button
+                      key={value}
+                      className={`cd-status-badge nvk-status-${value}`}
+                      onClick={() => {
+                        setTab("nhiem-vu");
+                        setTrangThai(value);
+                      }}
+                    >
+                      {ky[field] ?? "—"} {text}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-
-          {cauHinh?.LechCauHinh && (
-            <div className="cd-hint cd-hint-warn nvk-canh-bao">
-              <i className="fa-solid fa-circle-exclamation"></i> Trần điểm của
-              module ({formatDiem(cauHinh.TranDiem, 1)}) khác điểm tối đa của
-              tiêu chí trên phiếu KPI ({formatDiem(cauHinh.DiemToiDaTieuChi, 1)}
-              ). Điểm chấm vào phiếu sẽ lệch với bảng tổng hợp - báo quản trị
-              viên rà lại cấu hình.
+            {laKyDaChot(ky) && (
+              <p className="cd-hint cd-hint-warn">
+                Kỳ đã chốt theo luồng cũ. Mở tab Tổng hợp để mở lại kỳ.
+              </p>
+            )}
+            {cauHinh?.LechCauHinh && (
+              <p className="cd-hint cd-hint-warn">
+                Trần điểm module ({formatDiem(cauHinh.TranDiem, 1)}) khác điểm
+                tối đa tiêu chí ({formatDiem(cauHinh.DiemToiDaTieuChi, 1)}). Báo
+                quản trị viên rà lại cấu hình.
+              </p>
+            )}
+            <div className="cd-tabs nvk-tabs">
+              {[
+                ["nhiem-vu", "Nhiệm vụ"],
+                ["tong-hop", "Tổng hợp"],
+                ["phan-hoi", "Lưu trữ phản hồi"],
+                ["lich-su", "Nhật ký"],
+              ].map(([value, text]) => (
+                <button
+                  key={value}
+                  className={`cd-tab${tab === value ? " cd-tab-active" : ""}`}
+                  onClick={() => setTab(value)}
+                >
+                  {text}
+                </button>
+              ))}
             </div>
-          )}
-
-          <div className="cd-tabs nvk-tabs">
-            <button
-              className={`cd-tab${tab === TAB.NHIEM_VU ? " cd-tab-active" : ""}`}
-              onClick={() => setTab(TAB.NHIEM_VU)}
-            >
-              <i className="fa-solid fa-clipboard-list"></i> Nhiệm vụ
-            </button>
-            <button
-              className={`cd-tab${tab === TAB.PHAN_HOI ? " cd-tab-active" : ""}`}
-              onClick={() => setTab(TAB.PHAN_HOI)}
-            >
-              <i className="fa-solid fa-comment-dots"></i> Phản hồi
-              {soPhanHoiCho > 0 && (
-                <span className="nvk-tab-dem">{soPhanHoiCho}</span>
-              )}
-            </button>
-            <button
-              className={`cd-tab${tab === TAB.TONG_HOP ? " cd-tab-active" : ""}`}
-              onClick={() => setTab(TAB.TONG_HOP)}
-            >
-              <i className="fa-solid fa-table-list"></i> Tổng hợp &amp; chốt kỳ
-            </button>
-            <button
-              className={`cd-tab${tab === TAB.LICH_SU ? " cd-tab-active" : ""}`}
-              onClick={() => setTab(TAB.LICH_SU)}
-            >
-              <i className="fa-solid fa-clock-rotate-left"></i> Nhật ký
-            </button>
-          </div>
-
-          {renderPanel()}
-        </>
+            {tab === "nhiem-vu" && (
+              <NvkPanelNhiemVu
+                {...chung}
+                nhomLoc={nhomLoc}
+                tuKhoa={tuKhoaApDung}
+                trangThai={trangThai}
+                yeuCauForm={yeuCauForm}
+                onYeuCauXong={() => setYeuCauForm(null)}
+              />
+            )}
+            {tab === "tong-hop" && (
+              <NvkPanelTongHop key={`${selectedNam}:${idDonVi}`} {...chung} />
+            )}
+            {tab === "phan-hoi" && (
+              <NvkPanelPhanHoi key={`${selectedNam}:${idDonVi}`} {...chung} />
+            )}
+            {tab === "lich-su" && (
+              <NvkPanelLichSu key={`${selectedNam}:${idDonVi}`} {...chung} />
+            )}
+          </>
+        )
       )}
-
       <FilePreviewModal
         isOpen={preview.isOpen}
         fileName={preview.mc?.TenHienThi || preview.mc?.TenFileGoc}
@@ -430,6 +352,4 @@ const PhanCongNhiemVuKhoa = () => {
       />
     </div>
   );
-};
-
-export default PhanCongNhiemVuKhoa;
+}
