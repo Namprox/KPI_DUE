@@ -938,8 +938,9 @@ CREATE TABLE phieu_danh_gia (
     tong_diem_tich_luy    DECIMAL(6,2)   NULL,   -- = co_ban + vuot_troi
 
     -- Xếp loại & các điều kiện kết luận ────────
-    -- xep_loai = KẾT QUẢ CUỐI CÙNG, chỉ ghi ở bước đóng gói tờ trình Khoa.
-    -- Trưởng khoa chọn xep_loai_khoa (1/2/3); mức 4 do hạn ngạch 20% nâng lên.
+    -- xep_loai = KẾT QUẢ CUỐI CÙNG, ghi ở bước đóng gói tờ trình Khoa.
+    -- Trưởng khoa chọn xep_loai_khoa (1/2/3); mức 4 do hạn ngạch 20% nâng lên —
+    -- riêng viên chức Khoa: HT / ADMIN xét chọn cấp Trường ghi 3/4 (mục 8.5).
     xep_loai              TINYINT        NULL,   -- 1/2/3/4 (xem chú thích trên)
     ghi_chu_xep_loai      NVARCHAR(1000) NULL,
     id_to_trinh           INT            NULL,   -- Gói KPI Khoa, gán lúc đóng gói
@@ -1854,7 +1855,8 @@ GO
 
 -- =============================================================================
 -- 8. TỜ TRÌNH KPI KHOA (gói hồ sơ Khoa trình Hiệu trưởng)
---    Nơi DUY NHẤT tính hạn ngạch 20% và nâng xếp loại lên mức 4.
+--    Nơi DUY NHẤT tính hạn ngạch 20% và nâng xếp loại lên mức 4 — trừ viên chức
+--    Khoa: mức 4 của họ do HT / ADMIN xét chọn cấp Trường (mục 8.5).
 --    Mô tả nghiệp vụ + luật hạn ngạch: xem schema_ghi_chu.md mục 8.
 -- =============================================================================
 
@@ -1995,6 +1997,37 @@ GO
 -- 8.4. Index của module
 CREATE INDEX ix_ttkk_trang_thai ON to_trinh_kpi_khoa(trang_thai, id_nam);
 CREATE INDEX ix_lsttkk_to_trinh ON lich_su_to_trinh_kpi_khoa(id_to_trinh, ngay_thuc_hien DESC);
+GO
+
+-- 8.5. Xét chọn "Hoàn thành xuất sắc" CẤP TRƯỜNG cho viên chức Khoa (đợt 2026-10-01).
+--
+-- Viên chức / NLĐ ở Khoa KHÔNG tranh hạn ngạch 20% trong Khoa. TK chốt tối đa mức 3;
+-- người mức 3 của TẤT CẢ các Khoa được HT / ADMIN tự chọn ai đạt mức 4 (không hạn
+-- ngạch) qua sp_xet_xuat_sac_vc_khoa_chot. Tập phiếu: dbo.fn_phieu_vc_khoa_xet_truong.
+--
+-- 1 dòng / năm, giữ LẦN CHỐT GẦN NHẤT. KHÔNG có cột cờ trên phieu_danh_gia: lựa chọn
+-- của HT CHÍNH LÀ xep_loai = 4 trên ứng viên ở trạng thái 5. Vết từng phiếu nằm ở
+-- lich_su_trang_thai_phieu (hanh_dong = 4, cap_thuc_hien = 3).
+-- so_ung_vien / so_xuat_sac là SNAPSHOT lúc chốt — số hiện tại đọc qua
+-- sp_xet_xuat_sac_vc_khoa_get (lệch nếu có ứng viên mới sau lần chốt).
+-- row_version: từ lần chốt thứ hai bắt buộc gửi lại, chống hai người ghi đè nhau.
+-- Xem schema_ghi_chu.md mục 8.7.
+CREATE TABLE xet_xuat_sac_vien_chuc_khoa (
+    id_nam         INT            NOT NULL,
+    lan_chot       INT            NOT NULL,   -- số lần đã chốt (≥ 1)
+    so_ung_vien    INT            NOT NULL,   -- snapshot: số người mức 3 lúc chốt
+    so_xuat_sac    INT            NOT NULL,   -- snapshot: số người được chọn mức 4
+    id_nguoi_chot  INT            NOT NULL,
+    ngay_chot      DATETIME       NOT NULL CONSTRAINT df_xxsvck_ngay_chot DEFAULT (GETDATE()),
+    ghi_chu        NVARCHAR(1000) NULL,
+    row_version    ROWVERSION     NOT NULL,
+
+    CONSTRAINT pk_xet_xuat_sac_vien_chuc_khoa PRIMARY KEY (id_nam),
+    CONSTRAINT fk_xxsvck_nam        FOREIGN KEY (id_nam)        REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_xxsvck_nguoi_chot FOREIGN KEY (id_nguoi_chot) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_xxsvck_lan_chot  CHECK (lan_chot >= 1),
+    CONSTRAINT chk_xxsvck_so_luong  CHECK (so_ung_vien >= 0 AND so_xuat_sac BETWEEN 0 AND so_ung_vien)
+);
 GO
 
 -- =============================================================================

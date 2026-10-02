@@ -383,6 +383,12 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.CAP_TRUONG,
       },
       {
+        name: "Xét xuất sắc viên chức Khoa",
+        icon: "fa-solid fa-award",
+        path: "/truong/xet-xuat-sac-vien-chuc-khoa",
+        roles: ROLE_SETS.XET_XUAT_SAC_VIEN_CHUC_KHOA,
+      },
+      {
         name: "Theo dõi phiếu toàn trường",
         icon: "fa-solid fa-binoculars",
         path: "/truong/phieu",

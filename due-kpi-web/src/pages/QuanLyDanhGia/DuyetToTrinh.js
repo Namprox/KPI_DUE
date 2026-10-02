@@ -105,7 +105,7 @@ const DuyetToTrinh = () => {
 
   const choDuyet = goi?.TrangThai === TRANG_THAI_TO_TRINH.DA_TRINH;
   const hoSoLanhDaoChoDuyet = (goi?.HoSo || []).filter(
-    (h) => Number(h.TrangThai) === 4 && h.CanHtDuyet === true,
+    (h) => Number(h.TrangThai) === 4 && h.CanHtDuyet === true && h.ChoXetXuatSacTruong !== true,
   );
 
   const handleDuyet = async ({ lyDo }) => {
@@ -138,7 +138,7 @@ const DuyetToTrinh = () => {
     setDangXuLy(true);
     try {
       const { hoSo } = await htTraLaiToTrinh(goi.IdToTrinh, {
-        idPhieuList: chonTraVe,
+        idPhieuList: hoSoLanhDaoChoDuyet.filter((h) => chonTraVe.includes(h.IdPhieu)).map((h) => h.IdPhieu),
         lyDo,
         rowVersion: goi.RowVersion,
       });
@@ -161,7 +161,7 @@ const DuyetToTrinh = () => {
 
   const doiChon = (idPhieu) => {
     const hoSo = (goi?.HoSo || []).find((h) => h.IdPhieu === idPhieu);
-    if (Number(hoSo?.TrangThai) !== 4) return;
+    if (Number(hoSo?.TrangThai) !== 4 || hoSo?.CanHtDuyet !== true || hoSo?.ChoXetXuatSacTruong === true) return;
     setChonTraVe((truoc) =>
       truoc.includes(idPhieu)
         ? truoc.filter((x) => x !== idPhieu)
@@ -390,7 +390,7 @@ const DuyetToTrinh = () => {
                 </button>
                 <span style={{ fontSize: "13px", color: "#64748b" }}>
                   Chỉ hồ sơ lãnh đạo đang chờ duyệt mới chọn để trả về được. Hồ
-                  sơ thường đã hoàn tất và chỉ đọc.
+                  sơ đã hoàn tất và viên chức chờ xét xuất sắc cấp Trường chỉ đọc.
                 </span>
               </div>
             </div>
@@ -460,7 +460,7 @@ const DuyetToTrinh = () => {
       {moDuyet && (
         <LyDoModal
           tieuDe="Duyệt hồ sơ lãnh đạo của Khoa"
-          moTa={`${hoSoLanhDaoChoDuyet.length} hồ sơ lãnh đạo của ${goi?.TenDonVi} sẽ chuyển sang HOÀN TẤT. Hồ sơ thường đã hoàn tất ở bước đóng gói.`}
+          moTa={`${hoSoLanhDaoChoDuyet.length} hồ sơ lãnh đạo của ${goi?.TenDonVi} sẽ chuyển sang HOÀN TẤT. Viên chức chờ xét xuất sắc cấp Trường được xử lý ở màn hình riêng.`}
           canhBao="Sau khi duyệt, muốn sửa một hồ sơ lãnh đạo thì phải mở lại từng phiếu riêng lẻ."
           nhanLyDo="Nhận xét phê duyệt"
           goiYLyDo="VD: Phê duyệt kết quả KPI Khoa CNTT năm học 2025-2026."

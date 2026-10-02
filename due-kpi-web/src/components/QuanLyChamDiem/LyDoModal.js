@@ -22,6 +22,7 @@ const LyDoModal = ({
   nhanLyDo = "Lý do",
   goiYLyDo = "",
   batBuocLyDo = true,
+  maxLengthLyDo,
   hienNhanXet = false,
   nhanXacNhan = "Xác nhận",
   iconXacNhan = "fa-rotate-left",
@@ -86,6 +87,7 @@ const LyDoModal = ({
             <textarea
               className="cd-textarea"
               rows={3}
+              maxLength={maxLengthLyDo}
               value={lyDo}
               disabled={dangGui}
               placeholder={goiYLyDo}

@@ -32,6 +32,7 @@ test("hai nhóm đồng hạng: chặn chọn lệch nhóm, khóa người thi�
     { IdPhieu: 2, HoTen: "B", NhomXepHang: 2, DuDieuKienXuatSac: true, RowVersion: "b" },
     { IdPhieu: 3, HoTen: "C", NhomXepHang: 3, DuDieuKienXuatSac: false, RowVersion: "c" },
     { IdPhieu: 4, HoTen: "D", NhomXepHang: 3, DuDieuKienXuatSac: true, RowVersion: "d" },
+    { IdPhieu: 5, HoTen: "Xét tại Trường", NhomXepHang: 2, DuDieuKienXuatSac: true, XetXuatSacCapTruong: true, UuTienXuatSac: true, RowVersion: "e" },
   ];
   dongGoiToTrinh.mockRejectedValueOnce(Object.assign(new Error("Đồng hạng hai nhóm"), {
     errorCode: "DONG_HANG", hoSo,
@@ -43,6 +44,7 @@ test("hai nhóm đồng hạng: chặn chọn lệch nhóm, khóa người thi�
   fireEvent.click(await screen.findByRole("button", { name: "Đóng gói tờ trình" }));
   const a = await screen.findByLabelText("Ưu tiên A");
   const b = screen.getByLabelText("Ưu tiên B");
+  expect(screen.queryByLabelText("Ưu tiên Xét tại Trường")).toBeNull();
   expect(screen.getByLabelText("Ưu tiên C").disabled).toBe(true);
   fireEvent.click(a); fireEvent.click(b);
   const confirm = screen.getByRole("button", { name: "Xác nhận & đóng gói lại" });

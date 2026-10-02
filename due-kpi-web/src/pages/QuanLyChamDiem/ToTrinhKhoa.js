@@ -153,7 +153,7 @@ const ToTrinhKhoa = () => {
     setDangXuLy(true);
     xoaKetQuaLoi();
     try {
-      const { message, soHoSoHoanTat, soHoSoChoHt } =
+      const { message, soHoSoHoanTat, soHoSoChoHt, soHoSoChoXetTruong } =
         await dongGoiToTrinh(g.IdToTrinh, {
           tyLeXuatSac: null,
           rowVersion: g.RowVersion,
@@ -163,7 +163,7 @@ const ToTrinhKhoa = () => {
         "success",
         "Đã đóng gói tờ trình",
         message ||
-        `Đóng gói thành công. ${soHoSoHoanTat ?? 0} hồ sơ đã hoàn tất, ${soHoSoChoHt ?? 0} hồ sơ lãnh đạo chờ Hiệu trưởng duyệt.`,
+        `Đóng gói thành công. ${soHoSoHoanTat ?? 0} hồ sơ đã hoàn tất, ${soHoSoChoHt ?? 0} hồ sơ lãnh đạo chờ Hiệu trưởng duyệt. ${soHoSoChoXetTruong ?? 0} viên chức Hoàn thành tốt chờ Hiệu trưởng xét xuất sắc cấp Trường.`,
         8000,
       );
     } catch (error) {
@@ -171,10 +171,11 @@ const ToTrinhKhoa = () => {
       if (error.errorCode === "CHUA_DU_HO_SO") {
         setHoSoThieu(error.hoSo || []);
       } else if (error.errorCode === "DONG_HANG") {
-        setDongHang({ nhom: nhomDongHang(error), hoSo: error.hoSo || [] });
+        const hoSo = (error.hoSo || []).filter((h) => h.XetXuatSacCapTruong !== true);
+        setDongHang({ nhom: nhomDongHang({ ...error, hoSo }), hoSo });
         // Người server đã ghi nhận ưu tiên từ trước vẫn nên được tick sẵn.
         setUuTienChon(
-          (error.hoSo || [])
+          hoSo
             .filter((h) => h.UuTienXuatSac && h.DuDieuKienXuatSac === true)
             .map((h) => h.IdPhieu),
         );
@@ -230,6 +231,7 @@ const ToTrinhKhoa = () => {
    */
   const luuUuTien = async () => {
     for (const h of dongHang?.hoSo || []) {
+      if (h.XetXuatSacCapTruong === true) continue;
       if (!coQuyenTaiDonVi(ROLE_SETS.TO_TRINH_DON_VI, h.IdDonVi ?? goi.IdDonVi, user)) throw new Error("Bạn không có quyền chỉ định ưu tiên tại đơn vị này.");
       const muonUuTien = uuTienChon.includes(h.IdPhieu);
       if (!!h.UuTienXuatSac === muonUuTien) continue;
@@ -285,8 +287,8 @@ const ToTrinhKhoa = () => {
           Tờ trình KPI đơn vị
         </h2>
         <span className="breadcrumb">
-          Đóng gói kết quả toàn đơn vị; hồ sơ thường hoàn tất tại đây, hồ sơ lãnh
-          đạo mới trình Hiệu trưởng phê duyệt
+          Đóng gói kết quả toàn đơn vị; hồ sơ lãnh đạo trình Hiệu trưởng phê duyệt,
+          viên chức Khoa Hoàn thành tốt chờ xét xuất sắc cấp Trường
         </span>
       </div>
 
@@ -489,7 +491,7 @@ const ToTrinhKhoa = () => {
                   dùng chỉnh: luôn 20%. Hiển thị để biết mẫu số đang dùng là gì,
                   không cho sửa. */}
               <div className="cd-field" style={{ flex: "0 1 160px" }}>
-                <label className="cd-label">Tỷ lệ xuất sắc</label>
+                <label className="cd-label">Tỷ lệ xuất sắc của nhóm áp dụng hạn ngạch</label>
                 <div
                   className="cd-meta-value"
                   style={{
@@ -750,7 +752,7 @@ const ToTrinhKhoa = () => {
       {moTrinh && (
         <LyDoModal
           tieuDe="Trình gói KPI lên Hiệu trưởng"
-          moTa={`${(goi?.HoSo || []).filter((h) => Number(h.TrangThai) === 4 && h.CanHtDuyet === true).length} hồ sơ lãnh đạo của ${goi?.TenDonVi} sẽ được trình lên Hiệu trưởng phê duyệt. Hồ sơ thường đã hoàn tất ở bước đóng gói.`}
+          moTa={`${(goi?.HoSo || []).filter((h) => Number(h.TrangThai) === 4 && h.CanHtDuyet === true && h.ChoXetXuatSacTruong !== true).length} hồ sơ lãnh đạo của ${goi?.TenDonVi} sẽ được trình lên Hiệu trưởng phê duyệt. Viên chức Khoa Hoàn thành tốt được xét xuất sắc cấp Trường ở màn hình riêng.`}
           nhanLyDo="Nội dung trình"
           goiYLyDo="VD: Kính trình Hiệu trưởng phê duyệt kết quả KPI năm học 2025-2026."
           batBuocLyDo={false}

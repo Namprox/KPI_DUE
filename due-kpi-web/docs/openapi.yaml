@@ -3734,7 +3734,8 @@ paths:
         "409":
           description: >-
             Conflict - ho so khong o trang thai 4 (INVALID_STATE), goi da trinh HT
-            (TO_TRINH_DA_TRINH), hoac concurrency conflict.
+            (TO_TRINH_DA_TRINH), phieu vien chuc Khoa (XET_XUAT_SAC_CAP_TRUONG - khong
+            tranh han ngach Khoa), hoac concurrency conflict.
           content:
             application/json:
               schema:
@@ -9823,7 +9824,12 @@ paths:
         - ToTrinhKhoa
       summary: Dong goi to trinh - tinh han ngach 20%, nang muc Xuat sac, HOAN TAT ho so thuong
       description: |
-        GIAI DOAN 4. DAY LA NOI DUY NHAT ghi phieu_danh_gia.xep_loai = 4.
+        GIAI DOAN 4. Noi ghi phieu_danh_gia.xep_loai = 4 cho moi nhom TRU vien chuc Khoa.
+
+        VIEN CHUC KHOA (2026-10-01): khong co han ngach Khoa (Nhom[] cua Khoa khong con
+        dong nhom 2). Muc 1/2 HOAN TAT nhu ho so thuong; muc 3 O LAI trang thai 4 cho
+        Hieu truong / ADMIN xet chon cap Truong (/api/xet-xuat-sac-vien-chuc-khoa) -
+        dem o SoHoSoChoXetTruong, HoSo[].ChoXetXuatSacTruong = true.
 
         LUONG DUYET TACH DOI — BUOC NAY NAY LA MOC HOAN TAT CUA HO SO THUONG.
         KPI cua nhan vien / giang vien chi can Truong khoa (TK/TKL) hoac Truong phong (TP)
@@ -10130,12 +10136,126 @@ paths:
         "409":
           description: >-
             Conflict - goi khong o trang thai 3 (INVALID_STATE), danh sach chua ho so
-            khong thuoc goi hoac khong o trang thai 4 (HO_SO_KHONG_HOP_LE, kem HoSo[]),
-            hoac concurrency conflict.
+            khong thuoc goi, khong o trang thai 4, hoac la vien chuc Khoa dang cho xet
+            xuat sac cap Truong (HO_SO_KHONG_HOP_LE, kem HoSo[]), hoac concurrency conflict.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ToTrinhKhoaResponse"
+
+  /api/xet-xuat-sac-vien-chuc-khoa:
+    get:
+      tags:
+        - XetXuatSacVienChuc
+      summary: Danh sach xet chon xuat sac CAP TRUONG cho vien chuc Khoa (HT / ADMIN)
+      description: |
+        Vien chuc / NLD o KHOA (LoaiDoiTuong = 2, khong giu chuc vu quan ly, don vi K_*)
+        KHONG con tranh han ngach 20% trong Khoa. Truong khoa chot toi muc 3; nguoi duoc
+        chot muc 3 (ung vien) cua TAT CA cac Khoa duoc gom o day, xep theo tong diem tich
+        luy giam dan. Hieu truong / ADMIN tu chon ai dat muc 4 qua POST .../chot.
+        KHONG han ngach, KHONG goi y.
+
+        Tra ve: TongHop (so lieu hien tai + header lan chot gan nhat), Khoa[] (tien do
+        tung Khoa), UngVien[] (xep hang toan truong, RANK - bang diem cung hang),
+        HoSoChuaDuyet[] (phieu vien chuc Khoa chua duoc TK duyet - dang chan chot).
+
+        Chi HT / ADMIN. Xem Docs/fe-xet-xuat-sac-vien-chuc-khoa.md.
+      operationId: xetXuatSacVienChucKhoaGet
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 2026
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XetXuatSacResponse"
+        "400":
+          description: Thieu / sai idNam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XetXuatSacResponse"
+        "403":
+          description: Khong phai HT / ADMIN (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XetXuatSacResponse"
+        "404":
+          description: Nam danh gia khong ton tai (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XetXuatSacResponse"
+
+  /api/xet-xuat-sac-vien-chuc-khoa/chot:
+    post:
+      tags:
+        - XetXuatSacVienChuc
+      summary: HT / ADMIN chot danh sach xuat sac cap Truong cua vien chuc Khoa
+      description: |
+        IdPhieuList = nhung ung vien DUOC CHON muc 4 (Hoan thanh xuat sac). Moi ung vien
+        KHONG nam trong danh sach giu muc 3. Moi ung vien chuyen sang HOAN TAT (5).
+        Danh sach RONG ([]) la hop le = khong ai xuat sac; THIEU field -> 400
+        THIEU_DANH_SACH.
+
+        Chi chot duoc khi 100% phieu vien chuc Khoa cua nam da duoc Truong khoa duyet
+        (trang thai 4/5), nguoc lai 409 CHUA_DU_HO_SO kem HoSoChuaDuyet[].
+
+        Chot duoc NHIEU LAN - moi lan tinh lai TOAN BO ung vien, nen FE phai gui day du
+        nguoi duoc chon, khong chi phan thay doi. Tu lan chot thu hai bat buoc gui
+        RowVersion (TongHop.RowVersion cua GET), thieu / lech -> 409 CONCURRENCY_CONFLICT.
+
+        Thanh cong tra DUNG hinh dang GET (doc lai sau khi chot) + TongHop.SoHoSoHoanTat /
+        SoHoSoDoiMuc.
+      operationId: xetXuatSacVienChucKhoaChot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/XetXuatSacChotRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XetXuatSacResponse"
+        "400":
+          description: >-
+            Du lieu khong hop le (IdNam, id <= 0, GhiChu > 1000 ky tu, RowVersion sai dinh
+            dang) hoac thieu IdPhieuList (THIEU_DANH_SACH).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XetXuatSacResponse"
+        "403":
+          description: Khong phai HT / ADMIN (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XetXuatSacResponse"
+        "404":
+          description: Nam danh gia khong ton tai (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XetXuatSacResponse"
+        "409":
+          description: >-
+            NAM_DA_DONG; CHUA_DU_HO_SO (kem HoSoChuaDuyet[]); KHONG_CO_UNG_VIEN;
+            HO_SO_KHONG_HOP_LE (kem HoSoKhongHopLe[] co LyDo); CONCURRENCY_CONFLICT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XetXuatSacResponse"
 
   /api/danh-muc-thanh-tich:
     get:
@@ -19823,6 +19943,19 @@ components:
           description: >-
             loai_doi_tuong = 1 AND xep_loai_khoa = 3 AND muc_nckhcn_qd838 = 2. Chi nhung
             nguoi nay moi tranh han ngach 20%.
+        XetXuatSacCapTruong:
+          type: boolean
+          nullable: true
+          description: >-
+            true = vien chuc / NLD cua Khoa (khong giu chuc vu quan ly). KHONG tranh han
+            ngach Khoa - muc 4 do HT / ADMIN chon o /api/xet-xuat-sac-vien-chuc-khoa. FE an
+            nut chi dinh uu tien. Chi o get_detail / dong-goi.
+        ChoXetXuatSacTruong:
+          type: boolean
+          nullable: true
+          description: >-
+            true = muc 3, dang o trang thai 4 cho HT chot danh sach xuat sac cap Truong
+            (khong thuoc dien HT duyet goi / tra ve). Chi o get_detail / dong-goi.
         RowVersion:
           type: string
           format: byte
@@ -20083,6 +20216,13 @@ components:
             * > 0  => Item.TrangThai = 2 (DA_DONG_GOI), FE hien nut "Trinh Hieu truong".
             * = 0  => Item.TrangThai = 4 (goi TU DONG HOAN TAT), FE PHAI AN nut do —
                       bam vao se nhan 409 KHONG_CO_HO_SO_LANH_DAO.
+            Vien chuc Khoa muc 3 cho HT xet cap Truong KHONG tinh vao day.
+        SoHoSoChoXetTruong:
+          type: integer
+          nullable: true
+          description: >-
+            CHI co o dong-goi. So vien chuc Khoa muc 3 o lai trang thai 4 cho HT xet xuat
+            sac cap Truong (/api/xet-xuat-sac-vien-chuc-khoa). Khong giu goi lai.
     ToTrinhKhoaDongGoiRequest:
       type: object
       required:
@@ -20142,6 +20282,227 @@ components:
           type: string
           format: byte
 
+
+    XetXuatSacTongHopDto:
+      type: object
+      description: >-
+        Tong hop xet chon xuat sac cap Truong cua mot nam. Cac field header (LanChot ..
+        RowVersion) VANG khi chua chot lan nao.
+      properties:
+        IdNam:
+          type: integer
+        SoVienChuc:
+          type: integer
+          nullable: true
+          description: Tong phieu nam cua vien chuc Khoa (hien tai)
+        SoChuaDuyet:
+          type: integer
+          nullable: true
+          description: So phieu chua duoc TK duyet (trang thai 1..3). > 0 thi chua chot duoc
+        SoUngVien:
+          type: integer
+          nullable: true
+          description: So nguoi TK chot muc 3 (hien tai)
+        SoChoXet:
+          type: integer
+          nullable: true
+          description: Ung vien con o trang thai 4 (chua duoc HT chot lan nao)
+        SoDaChon:
+          type: integer
+          nullable: true
+          description: Ung vien da hoan tat o muc 4
+        DuDieuKienChot:
+          type: boolean
+          nullable: true
+          description: SoChuaDuyet = 0 va SoUngVien > 0 - bat nut Chot
+        LanChot:
+          type: integer
+          nullable: true
+        SoUngVienLanChot:
+          type: integer
+          nullable: true
+          description: Snapshot luc chot gan nhat
+        SoXuatSacLanChot:
+          type: integer
+          nullable: true
+          description: Snapshot luc chot gan nhat
+        IdNguoiChot:
+          type: integer
+          nullable: true
+        HoTenNguoiChot:
+          type: string
+          nullable: true
+        NgayChot:
+          type: string
+          format: date-time
+          nullable: true
+        GhiChu:
+          type: string
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+          nullable: true
+          description: Gui lai khi chot; vang = chua chot lan nao
+        SoHoSoHoanTat:
+          type: integer
+          nullable: true
+          description: Chi o POST .../chot - so ung vien vua chuyen 4 -> 5
+        SoHoSoDoiMuc:
+          type: integer
+          nullable: true
+          description: Chi o POST .../chot - so ung vien da hoan tat bi doi muc (3 <-> 4)
+    XetXuatSacKhoaDto:
+      type: object
+      description: Tien do xet chon cua mot Khoa
+      properties:
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        SoVienChuc:
+          type: integer
+        SoChuaDuyet:
+          type: integer
+        SoUngVien:
+          type: integer
+        SoDaChon:
+          type: integer
+    XetXuatSacHoSoDto:
+      type: object
+      description: >-
+        Mot phieu vien chuc Khoa. UngVien[]: day du cot; HoSoChuaDuyet[]: den TrangThai;
+        HoSoKhongHopLe[]: kem LyDo.
+      properties:
+        IdPhieu:
+          type: integer
+        HangToanTruong:
+          type: integer
+          nullable: true
+          description: RANK theo tong diem tich luy giam dan - bang diem cung hang
+        IdNhanVien:
+          type: integer
+          nullable: true
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        IdDonVi:
+          type: integer
+          nullable: true
+        MaDonVi:
+          type: string
+          nullable: true
+        TenDonVi:
+          type: string
+          nullable: true
+        TongDiemCoBan:
+          type: number
+          nullable: true
+        TongDiemVuotTroi:
+          type: number
+          nullable: true
+        TongDiemTichLuy:
+          type: number
+          nullable: true
+        XepLoaiKhoa:
+          type: integer
+          nullable: true
+        XepLoai:
+          type: integer
+          nullable: true
+          description: Ket qua cuoi; chi co nghia chot khi TrangThai = 5
+        XepLoaiText:
+          type: string
+          nullable: true
+          readOnly: true
+        TrangThai:
+          type: integer
+          nullable: true
+        TrangThaiText:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Ung vien o trang thai 4 hien "Cho Hieu truong xet xuat sac"
+        HangTrongKhoa:
+          type: integer
+          nullable: true
+        NgayXepLoai:
+          type: string
+          format: date-time
+          nullable: true
+        DaChon:
+          type: boolean
+          nullable: true
+          description: TrangThai = 5 va XepLoai = 4 - gia tri mac dinh cua o tich chon
+        LyDo:
+          type: string
+          nullable: true
+          description: Chi o HoSoKhongHopLe[]
+    XetXuatSacChotRequest:
+      type: object
+      required:
+        - IdNam
+        - IdPhieuList
+      properties:
+        IdNam:
+          type: integer
+          example: 2026
+        IdPhieuList:
+          type: array
+          description: >-
+            Nhung ung vien DUOC CHON muc 4. BAT BUOC co mat; [] = khong chon ai. Gui DAY DU
+            moi lan chot.
+          items:
+            type: integer
+        GhiChu:
+          type: string
+          nullable: true
+          maxLength: 1000
+        RowVersion:
+          type: string
+          format: byte
+          nullable: true
+          description: TongHop.RowVersion cua GET. Lan chot dau de trong.
+    XetXuatSacResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          description: >-
+            FORBIDDEN / NOT_FOUND / NAM_DA_DONG / CHUA_DU_HO_SO / KHONG_CO_UNG_VIEN /
+            HO_SO_KHONG_HOP_LE / CONCURRENCY_CONFLICT / THIEU_DANH_SACH
+        TongHop:
+          $ref: "#/components/schemas/XetXuatSacTongHopDto"
+        Khoa:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/XetXuatSacKhoaDto"
+        UngVien:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/XetXuatSacHoSoDto"
+        HoSoChuaDuyet:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/XetXuatSacHoSoDto"
+        HoSoKhongHopLe:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/XetXuatSacHoSoDto"
 
     DanhMucThanhTichDto:
       type: object

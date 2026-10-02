@@ -22,6 +22,7 @@ import LichSuDanhGia from "../pages/DanhGia/LichSuDanhGia";
 import LichSuKpiDonVi from "../pages/DanhGia/LichSuKpiDonVi";
 import ChiTietPhieuCuaToi from "../pages/DanhGia/ChiTietPhieuCuaToi";
 import DuyetToTrinh from "../pages/QuanLyDanhGia/DuyetToTrinh";
+import XetXuatSacVienChucKhoa from "../pages/QuanLyDanhGia/XetXuatSacVienChucKhoa";
 import TheoDoiPhieuTruong from "../pages/QuanLyDanhGia/TheoDoiPhieuTruong";
 import QLGioGiang from "../pages/QuanLyKeHoach/QL_GioGiang";
 import TyLeHoanThanhGioGiang from "../pages/QuanLyKeHoach/TyLeHoanThanhGioGiang";
@@ -168,6 +169,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/quan-ly-chuc-danh" element={<QLChucDanh />} />
         <Route path="/quan-ly-chuc-vu" element={<QLChucVu />} />
         <Route path="/truong/to-trinh" element={<DuyetToTrinh />} />
+        <Route path="/truong/xet-xuat-sac-vien-chuc-khoa" element={<XetXuatSacVienChucKhoa />} />
         <Route path="/truong/phieu" element={<TheoDoiPhieuTruong />} />
         <Route path="/quan-ly-gio-giang" element={<QLGioGiang />} />
         <Route path="/ty-le-hoan-thanh-gio-giang" element={<TyLeHoanThanhGioGiang />} />

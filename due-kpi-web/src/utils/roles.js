@@ -148,6 +148,7 @@ export const ROLE_SETS = {
    * phiếu server chỉ chấp nhận đúng mã chức vụ HT.
    */
   CAP_TRUONG: [ROLE.HIEU_TRUONG, ROLE.ADMIN],
+  XET_XUAT_SAC_VIEN_CHUC_KHOA: [ROLE.HIEU_TRUONG, ROLE.ADMIN],
 
   /**
    * Thiết lập kỳ đánh giá của toàn trường: mở/đóng năm, chốt mốc thời gian.

@@ -186,9 +186,8 @@ export const fetchToTrinhDetail = async (idToTrinh) => {
 /**
  * Đóng gói tờ trình (gói 1 hoặc 5 → 2).
  *
- * Đây là nơi DUY NHẤT ghi XepLoai = 4: chạy thuật toán hạn ngạch, xếp hạng theo
- * tổng điểm tích lũy rồi nâng những người trúng suất lên mức xuất sắc. Đóng gói
- * lại được nhiều lần trước khi trình.
+ * Áp dụng hạn ngạch cho các nhóm của đơn vị. Viên chức Khoa thuộc luồng xét
+ * cấp Trường giữ mức 3 và chờ HT/ADMIN xét tại màn hình riêng.
  *
  * `tyLeXuatSac` để trống = tỷ lệ cố định 0.2.
  *
@@ -215,6 +214,7 @@ export const dongGoiToTrinh = async (
     message: data.Message || "",
     soHoSoHoanTat: data.SoHoSoHoanTat ?? null,
     soHoSoChoHt: data.SoHoSoChoHt ?? null,
+    soHoSoChoXetTruong: data.SoHoSoChoXetTruong ?? null,
   };
 };
 

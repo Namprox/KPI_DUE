@@ -131,6 +131,8 @@ export const readApiError = async (
     message: mapped || body?.Message || body?.message || fallback,
     // Payload phụ đi kèm lỗi - bên gọi cần để dựng UI, không chỉ để báo đỏ.
     hoSo: body?.HoSo || null,
+    hoSoChuaDuyet: body?.HoSoChuaDuyet || [],
+    hoSoKhongHopLe: body?.HoSoKhongHopLe || [],
     dongHang: body?.DongHang || null,
     dongHangNhom: body?.DongHangNhom || [],
     missingItems: body?.missingItems || null,

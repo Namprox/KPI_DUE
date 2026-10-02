@@ -681,6 +681,7 @@ tạo phiếu ──────────────────────
 4 ──[TK trả 1 dòng về thẩm định]──────────────────► 2
 4 ──[TK đóng gói — hồ sơ THƯỜNG, can_ht_duyet=0]──► 5
 4 ──[HT duyệt gói — hồ sơ LÃNH ĐẠO, =1]───────────► 5
+4 ──[HT/ADMIN chốt xét chọn cấp Trường — viên chức Khoa mức 3]──► 5   (§8.7)
 4 ──[HT trả riêng hồ sơ này về TK]────────────────► 3
 2 ──[GV hủy nộp — chỉ khi chưa dòng nào DA_CHOT]──► 1
 5 ──[HT mở lại]───────────────────────────────────► 1/2/3
@@ -781,7 +782,8 @@ quyền. Sửa một chỗ thì sửa cả hai.
 |---|---|---|
 | `sp_chi_tiet_khoa_tra_tham_dinh` | TK trả 1 dòng về thẩm định, dòng 3→2 (`nguon_tra_ve = 3`) | `THIEU_LY_DO`, `TO_TRINH_DA_TRINH` |
 | `sp_phieu_khoa_duyet_ho_so` | TK chốt hồ sơ, phiếu 3→4, chọn `xep_loai_khoa` | `CAM_CHON_XUAT_SAC`, `XEP_LOAI_KHONG_HOP_LE`, `DIEM_KHONG_DU`, `THIEU_LY_DO`, `CHUA_CHOT_HET` |
-| `sp_phieu_khoa_uu_tien_xuat_sac` | TK/TKL/TP chỉ định ai được suất cuối khi đồng hạng | `TO_TRINH_DA_TRINH`, `FORBIDDEN`, `FORBIDDEN_DON_VI` |
+| `sp_phieu_khoa_uu_tien_xuat_sac` | TK/TKL/TP chỉ định ai được suất cuối khi đồng hạng | `TO_TRINH_DA_TRINH`, `FORBIDDEN`, `FORBIDDEN_DON_VI`, `XET_XUAT_SAC_CAP_TRUONG` (viên chức Khoa) |
+| `sp_xet_xuat_sac_vc_khoa_get` / `_chot` | HT / ADMIN xem + chốt danh sách xuất sắc cấp Trường của viên chức Khoa (§8.7) | `FORBIDDEN`, `NOT_FOUND`, `NAM_DA_DONG`, `CHUA_DU_HO_SO`, `KHONG_CO_UNG_VIEN`, `HO_SO_KHONG_HOP_LE`, `CONCURRENCY_CONFLICT` |
 
 > `VUOT_MUC_VIEN_CHUC` **đã bị gỡ bỏ khỏi cả hai SP** (đợt tách 3 nhóm): viên chức / NLĐ nay
 > lên được mức 3/4 và có tham gia hạn ngạch. Ngưỡng điểm của họ do `DIEM_KHONG_DU` cưỡng chế
@@ -803,6 +805,7 @@ Sau khi luồng duyệt tách đôi, đọc bảng này cho **đủ hai bước*
 | Hồ sơ của | Bước GĐ3 (chốt hồ sơ + chọn xếp loại) | Bước GĐ4 (HOÀN TẤT) |
 |---|---|---|
 | Nhân viên / giảng viên | TK/TKL của Khoa, hoặc TP của Phòng | TK đóng gói tờ trình — **hết, không qua HT** |
+| Viên chức **Khoa** được chốt mức 3 | TK/TKL của Khoa | **HT / ADMIN chốt danh sách xuất sắc cấp Trường** (§8.7) — không qua gói |
 | PTK / PTKL / PTP | TK/TKL/TP của chính đơn vị đó | HT duyệt gói |
 | TK / TKL / TP | **Chính họ tự chốt** (giữ nguyên gate hiện tại) | HT duyệt gói |
 
@@ -833,8 +836,11 @@ Kiểm được bằng query ở mục 7 của `update_database.sql`:
    `sp_chi_tiet_tham_dinh_tra_ve`, `sp_chi_tiet_khoa_tra_tham_dinh` và `sp_phieu_huy_nop`
    đều xóa `diem_chinh_thuc` khi kéo dòng ra khỏi trạng thái chốt.
 3. `xep_loai = 4` ⟹ `id_to_trinh IS NOT NULL`; và phiếu ở trạng thái 4/5 phải có
-   `xep_loai_khoa`. Mức 4 không có đường ghi nào khác ngoài `sp_to_trinh_khoa_dong_goi`.
-4. **(Luồng tách đôi)** Phiếu ở trạng thái 4 ⟹ `can_ht_duyet = 1`. Hồ sơ thường không bao giờ
+   `xep_loai_khoa`. Mức 4 chỉ có **hai** đường ghi: `sp_to_trinh_khoa_dong_goi` (hạn ngạch theo
+   đơn vị) và `sp_xet_xuat_sac_vc_khoa_chot` (viên chức Khoa, §8.7) — viên chức Khoa mức 4 thì
+   `xep_loai_khoa = 3`.
+4. **(Luồng tách đôi)** Phiếu ở trạng thái 4 ⟹ `can_ht_duyet = 1` **hoặc** là ứng viên xét
+   xuất sắc cấp Trường (viên chức Khoa mức 3, §8.7). Hồ sơ thường không bao giờ
    đọng ở 4 sau khi đơn vị đã đóng gói — nó đi thẳng 4→5 ngay trong `sp_to_trinh_khoa_dong_goi`.
    Bất biến này chỉ đúng **sau khi đơn vị được đóng gói lại**; hồ sơ tồn từ quy trình cũ vi
    phạm nó một cách hợp lệ cho tới lúc đó (xem query (b) và (e) của `update_database.sql`).
@@ -1678,7 +1684,9 @@ chỉ phát khi `success = 1`. Nhờ vậy không nhánh lỗi nào phải NULL-
 ## 8. TỜ TRÌNH KPI KHOA & HẠN NGẠCH XUẤT SẮC
 
 Gói hồ sơ KPI của 1 Khoa trong 1 năm. Đây là nơi **DUY NHẤT** tính hạn ngạch 20% và nâng
-`xep_loai` lên mức 4 — không SP nào khác được ghi mức 4 vào `phieu_danh_gia.xep_loai`.
+`xep_loai` lên mức 4 — **trừ viên chức Khoa**: từ 2026-10-01 họ không có hạn ngạch Khoa, mức 4
+do Hiệu trưởng / ADMIN chọn ở `sp_xet_xuat_sac_vc_khoa_chot` (§8.7). Không SP nào khác được ghi
+mức 4 vào `phieu_danh_gia.xep_loai`.
 
 ### 8.1. `to_trinh_kpi_khoa` — trạng thái gói
 
@@ -1735,7 +1743,7 @@ Mỗi đơn vị xếp hạng **BA BẢNG ĐỘC LẬP, LOẠI TRỪ NHAU**, kh�
 | Nhóm | Thành viên | **Mẫu số hạn ngạch** | Điều kiện lên mức 4 |
 |---|---|---|---|
 | 1 Giảng viên thường | `loai_doi_tuong = 1`, chức vụ ∉ bộ 6 mã | **số người `xep_loai_khoa = 3`** | trong Top **và** `muc_nckhcn_qd838 = 2` |
-| 2 Viên chức / NLĐ | `loai_doi_tuong = 2`, chức vụ ∉ bộ 6 mã | **số người `xep_loai_khoa = 3`** | trong Top **và** `xep_loai_khoa = 3` |
+| 2 Viên chức / NLĐ | `loai_doi_tuong = 2`, chức vụ ∉ bộ 6 mã — **chỉ Phòng / Trung tâm** (viên chức Khoa: §8.7) | **số người `xep_loai_khoa = 3`** | trong Top **và** `xep_loai_khoa = 3` |
 | 3 Cán bộ quản lý | chức vụ ∈ `{TK,TKL,PTK,PTKL,TP,PTP}` | **TỔNG số quản lý của đơn vị** | trong Top **và** mức 3 theo loại đối tượng của mình |
 
 ```
@@ -1764,8 +1772,9 @@ Năm điểm dễ hiểu sai, đọc kỹ:
 2. **Làm tròn XUỐNG, NHƯNG tối thiểu 1 suất** nếu mẫu số > 0. Mẫu số 27 ⇒ 5; mẫu số 3 ⇒
    `FLOOR(0.6) = 0` ⇒ nâng lên **1**. Đây là ngoại lệ nghiệp vụ đã xác nhận: nhóm 1–4
    người sẽ vượt tỷ lệ 20% trên thực tế (nhóm 3 người ⇒ 1 suất = 33%). Chấp nhận.
-3. **Viên chức/NLĐ CÓ tranh hạn ngạch** và lên được mức 3 (từ 101 điểm) lẫn mức 4 — ở bảng
-   riêng của mình. Trần mức 2 cũ (`VUOT_MUC_VIEN_CHUC`) đã bị gỡ bỏ.
+3. **Viên chức/NLĐ Phòng / Trung tâm CÓ tranh hạn ngạch** và lên được mức 3 (từ 101 điểm) lẫn
+   mức 4 — ở bảng riêng của mình. Trần mức 2 cũ (`VUOT_MUC_VIEN_CHUC`) đã bị gỡ bỏ.
+   **Viên chức Khoa** (từ 2026-10-01) không còn hạn ngạch Khoa — xem §8.7.
 4. ⚠ **XÁC ĐỊNH TOP TRƯỚC, XÉT ĐIỀU KIỆN SAU — SUẤT BỎ TRỐNG, KHÔNG DỒN XUỐNG.**
    Xếp hạng trên **TOÀN BỘ** quần thể của nhóm → cắt Top đúng bằng hạn ngạch → *rồi mới*
    lọc điều kiện mức 4. Người trong Top mà thiếu điều kiện thì **giữ mức 3 và suất đó bỏ
@@ -1895,6 +1904,92 @@ vào file đó**:
 hiển thị (`COUNT(loai_doi_tuong = 1)`), **không còn là mẫu số**. `so_nguoi_muc3` trên bảng
 cha chỉ là số liệu tổng hợp tham khảo; `han_ngach_xuat_sac` / `so_dat_xuat_sac` là roll-up
 `SUM` của ba nhóm.
+
+### 8.7. Xét chọn xuất sắc CẤP TRƯỜNG cho viên chức Khoa (đợt 2026-10-01)
+
+**Chốt với người dùng:** viên chức / NLĐ ở **Khoa** không còn tranh hạn ngạch 20% trong Khoa
+mình. Trưởng khoa chốt tối đa mức 3; những người được chốt **mức 3 (Hoàn thành tốt = đủ điều
+kiện lên xuất sắc)** của **tất cả các Khoa** được gom thành một danh sách xếp theo tổng điểm
+tích lũy giảm dần, **Hiệu trưởng hoặc ADMIN tự chốt** ai đạt mức 4. **Không hạn ngạch, không gợi
+ý.** Giảng viên, cán bộ quản lý và viên chức Phòng / Trung tâm **giữ nguyên** §8.2.
+
+```
+1 Tự đánh giá  →  2 Đơn vị phụ trách thẩm định từng tiêu chí  →  3 TK chốt hồ sơ (≤ mức 3)
+   →  4 TK đóng gói tờ trình:  mức 1/2 → HOÀN TẤT (5)  ·  mức 3 → Ở LẠI 4 "chờ HT xét"
+   →  5 HT / ADMIN chốt danh sách toàn trường:  được chọn → 4  ·  còn lại → 3  ·  tất cả → 5
+```
+
+**Hai tập phiếu, khai báo ở MỘT nơi** — inline TVF `dbo.fn_phieu_vc_khoa_xet_truong(@id_nam)`:
+
+| Tập | Điều kiện | Dùng cho |
+|---|---|---|
+| Viên chức Khoa (mọi dòng hàm trả) | phiếu năm, chưa xoá, `loai_doi_tuong = 2`, `ma_don_vi LIKE 'K[_]%'`, `id_chuc_vu` ∉ `fn_chuc_vu_can_ht_duyet()` — đúng "nhóm 2 tại Khoa" | loại khỏi hạn ngạch Khoa; điều kiện 100%; chặn chỉ định ưu tiên |
+| Ứng viên (`la_ung_vien = 1`) | thêm `trang_thai IN (4,5)` và `xep_loai_khoa = 3` | giữ ở trạng thái 4; danh sách HT; phạm vi ghi khi chốt; loại khỏi HT duyệt gói |
+
+**Không có cột cờ mới trên `phieu_danh_gia`.** Lựa chọn của HT **chính là** `xep_loai = 4` trên
+ứng viên ở trạng thái 5. `sp_phieu_truong_mo_lai` vốn xoá `xep_loai` / `xep_loai_khoa` nên mở
+lại phiếu tự huỷ lựa chọn; phiếu phải qua TK chốt lại rồi HT chốt lại.
+
+**Bảng `xet_xuat_sac_vien_chuc_khoa`** (`schema.sql` mục 8.5; tạo ở `update_database.sql` đợt này)
+— 1 dòng / năm, giữ **lần chốt gần nhất**:
+
+| Cột | Nghĩa |
+|---|---|
+| `id_nam` | PK, FK → `nam_danh_gia` |
+| `lan_chot` | Số lần đã chốt (≥ 1) |
+| `so_ung_vien`, `so_xuat_sac` | **Snapshot lúc chốt** — số hiện tại đọc qua `sp_xet_xuat_sac_vc_khoa_get` |
+| `id_nguoi_chot`, `ngay_chot`, `ghi_chu` | Người / lúc / ghi chú lần chốt gần nhất |
+| `row_version` | Chống ghi đè: từ lần chốt thứ hai **bắt buộc** gửi row_version của lần đọc |
+
+Vết từng phiếu nằm ở `lich_su_trang_thai_phieu` (`hanh_dong = 4`, `cap_thuc_hien = 3`), cho
+mọi ứng viên vừa 4→5 **và** mọi ứng viên đã 5 bị đổi mức; ứng viên 4→5 còn có snapshot
+`lich_su_cham_diem` (cap 3, hanh_dong 3) — đối xứng `sp_to_trinh_khoa_ht_duyet`.
+
+**Luật của `sp_xet_xuat_sac_vc_khoa_chot`** (thứ tự kiểm = thứ tự mã lỗi):
+
+| Mã lỗi | Khi nào |
+|---|---|
+| `FORBIDDEN` | không phải HT / ADMIN (luôn kiểm, không có nhánh bỏ qua) |
+| `NOT_FOUND` / `NAM_DA_DONG` | năm không tồn tại / `nam_danh_gia.trang_thai = 3` |
+| `CONCURRENCY_CONFLICT` | đã có header mà `row_version` NULL / lệch (RAISERROR ngoài transaction, hoặc dòng lỗi cùng mã khi đọc lại có khoá trong transaction) |
+| `CHUA_DU_HO_SO` | còn viên chức Khoa ở trạng thái 1–3 (**chốt với người dùng: chỉ chốt khi 100% đã được TK duyệt** — phiếu chưa duyệt vẫn có thể thành ứng viên). RS2 liệt kê ai đang chặn |
+| `KHONG_CO_UNG_VIEN` | không ai được chốt mức 3 |
+| `HO_SO_KHONG_HOP_LE` | id gửi lên không phải ứng viên; RS2 kèm `ly_do` |
+
+Danh sách **rỗng là hợp lệ** (không ai xuất sắc). Chốt được **nhiều lần** — mỗi lần tính lại
+**toàn bộ** ứng viên, nên ứng viên mới được TK duyệt sau lần chốt trước (đang ở 4) chỉ cần HT
+chốt lại. Viên chức mức 1/2 không bao giờ bị SP này chạm tới.
+
+**Thay đổi ở các SP tờ trình:**
+
+| SP | Thay đổi |
+|---|---|
+| `sp_to_trinh_khoa_dong_goi` | Viên chức Khoa vẫn được xếp `hang_trong_khoa` trong nhóm 2, nhưng `@nhom` **không** sinh dòng nhóm 2 cho họ ⇒ Khoa không còn hạn ngạch / DONG_HANG / dòng `to_trinh_kpi_khoa_nhom` nhóm 2. Ứng viên **ở lại 4**, không tính vào `so_ho_so_cho_ht`; ứng viên **đã được HT chốt (5) giữ nguyên `xep_loai`** khi đóng gói lại. RS1 thêm `so_ho_so_cho_xet_truong` |
+| `sp_to_trinh_khoa_get_detail` | CTE `live` loại viên chức Khoa (khớp `@nhom`); RS2 thêm `xet_xuat_sac_cap_truong`, `cho_xet_xuat_sac_truong` |
+| `sp_to_trinh_khoa_ht_duyet` | HT duyệt gói **không** hoàn tất ứng viên |
+| `sp_to_trinh_khoa_ht_tra_lai` | ứng viên → `HO_SO_KHONG_HOP_LE` |
+| `sp_to_trinh_khoa_trinh` | đếm hồ sơ lãnh đạo loại ứng viên |
+| `sp_phieu_khoa_uu_tien_xuat_sac` | viên chức Khoa → 409 `XET_XUAT_SAC_CAP_TRUONG` |
+
+> ⚠ **Bất biến 3 và 4 ở §4 đổi theo:** mức 4 nay có **hai** đường ghi (`sp_to_trinh_khoa_dong_goi`
+> cho mọi nhóm trừ viên chức Khoa; `sp_xet_xuat_sac_vc_khoa_chot` cho viên chức Khoa). Phiếu ở
+> trạng thái 4 sau đóng gói ⟹ `can_ht_duyet = 1` **hoặc** là ứng viên cấp Trường.
+
+> ⚠ **Gói Khoa đã HT duyệt thật (4, `id_nguoi_duyet` NOT NULL) hoặc đang trình (3)** thì TK không
+> trả thẩm định được ứng viên đang chờ HT xét — hành vi cũ của `sp_chi_tiet_khoa_tra_tham_dinh`,
+> không đổi. HT xử lý bằng cách chốt (mức 3) rồi mở lại phiếu nếu cần.
+>
+> ⚠ **Luật 100% có thể bị một phiếu kẹt chặn cả trường.** Phiếu viên chức bỏ ở Nháp, hoặc
+> phiếu nộp muộn ở Khoa có gói đã được HT duyệt thật (TK chốt sẽ gặp `TO_TRINH_DA_TRINH`, và
+> chưa có SP mở lại gói), sẽ giữ `CHUA_DU_HO_SO` cho toàn trường. RS4 của
+> `sp_xet_xuat_sac_vc_khoa_get` chỉ đúng phiếu đang chặn; xử lý bằng soft-delete phiếu của người
+> không thuộc diện đánh giá. Đây là hệ quả trực tiếp của quyết định "chỉ chốt khi 100%".
+
+**Dữ liệu cũ — cố ý không migrate.** Ứng viên của gói Khoa đóng trước đợt này đang ở 5, một số
+mang mức 4 của hạn ngạch Khoa cũ. Họ vẫn là ứng viên nên hiện trong danh sách HT; lần HT chốt
+**đầu tiên** tính lại mức 3/4 cho toàn bộ. Trước đó `xep_loai` cũ giữ nguyên (kể cả khi TK đóng
+gói lại). Snapshot nhóm 2 của gói cũ khiến vế hiện tại lệch vế snapshot ⇒ FE báo "cần đóng gói
+lại" — **đúng**.
 
 
 ---

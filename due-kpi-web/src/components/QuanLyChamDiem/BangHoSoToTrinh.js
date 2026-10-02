@@ -39,23 +39,34 @@ const BangHoSoToTrinh = ({
   if (goi && !laGoiLegacy(goi)) {
     const nhom = nhomHanNgachHienThi(goi);
     const cotNhom = goi.NgayDongGoi == null ? "NhomHienTai" : "NhomXepHang";
-    const ids = [...new Set(hoSo.map((h) => h[cotNhom] == null ? "unknown" : Number(h[cotNhom])))];
-    return ids.sort((a, b) => a - b).map((id) => {
+    const hoSoDonVi = hoSo.filter((h) => h.XetXuatSacCapTruong !== true);
+    const hoSoCapTruong = hoSo.filter((h) => h.XetXuatSacCapTruong === true);
+    const ids = [...new Set(hoSoDonVi.map((h) => h[cotNhom] == null ? "unknown" : Number(h[cotNhom])))];
+    return <>{ids.sort((a, b) => a - b).map((id) => {
       const n = nhom.find((x) => Number(x.Nhom) === id);
       return <section key={id}>
         <h4 style={{ padding: "12px 20px", margin: 0 }}>{n?.TenNhom || TEN_NHOM_XEP_HANG[id] || "Chưa có thông tin nhóm"}</h4>
         <BangHoSoToTrinh
-          hoSo={hoSo.filter((h) => (h[cotNhom] == null ? "unknown" : Number(h[cotNhom])) === id)
+          hoSo={hoSoDonVi.filter((h) => (h[cotNhom] == null ? "unknown" : Number(h[cotNhom])) === id)
             .sort((a, b) => (a.HangTrongKhoa ?? Infinity) - (b.HangTrongKhoa ?? Infinity))}
           hanNgach={n?.HanNgach ?? null} hangTheoNhom
           chonDuoc={chonDuoc} daChon={daChon} onDoiChon={onDoiChon} ghiChuCot={ghiChuCot}
         />
       </section>;
-    });
+    })}{hoSoCapTruong.length > 0 && <section>
+      <h4 style={{ padding: "12px 20px", margin: 0 }}>Viên chức Khoa — xét xuất sắc cấp Trường</h4>
+      <BangHoSoToTrinh hoSo={hoSoCapTruong} chonDuoc={chonDuoc} daChon={daChon} onDoiChon={onDoiChon} ghiChuCot={ghiChuCot} />
+    </section>}</>;
   }
 
   const trangThaiHoSo = (h) => {
     const trangThai = Number(h.TrangThai);
+    if (h.ChoXetXuatSacTruong === true) {
+      return { nhan: "Chờ Hiệu trưởng xét xuất sắc", mau: "#1d4ed8", icon: "fa-hourglass-half" };
+    }
+    if (h.XetXuatSacCapTruong === true && trangThai === 5) {
+      return { nhan: h.TrangThaiText || "Hoàn tất", mau: "#047857", icon: "fa-circle-check" };
+    }
     if (trangThai === 5 && h.CanHtDuyet === false) {
       return { nhan: "Hoàn tất (TK duyệt)", mau: "#047857", icon: "fa-circle-check" };
     }
@@ -102,7 +113,7 @@ const BangHoSoToTrinh = ({
             const laVachHanNgach = hangTheoNhom && Number(hanNgach) > 0 && Number(h.HangTrongKhoa) === Number(hanNgach);
             const daNangXuatSac = Number(h.XepLoai) === 4;
             const trangThai = trangThaiHoSo(h);
-            const duocChonTraVe = Number(h.TrangThai) === 4;
+            const duocChonTraVe = Number(h.TrangThai) === 4 && h.CanHtDuyet === true && h.ChoXetXuatSacTruong !== true;
 
             return (
               <tr
@@ -123,7 +134,7 @@ const BangHoSoToTrinh = ({
                       title={
                         duocChonTraVe
                           ? "Chọn hồ sơ để trả về"
-                          : "Hồ sơ đã hoàn tất; muốn sửa phải dùng chức năng mở lại"
+                          : h.ChoXetXuatSacTruong === true ? "Hồ sơ được xét xuất sắc cấp Trường ở màn hình riêng" : "Hồ sơ không thuộc diện trả về qua tờ trình"
                       }
                       onChange={() => onDoiChon(h.IdPhieu)}
                     />
@@ -153,7 +164,7 @@ const BangHoSoToTrinh = ({
                       Viên chức / NLĐ
                     </span>
                   )}
-                  {h.UuTienXuatSac && (
+                  {h.UuTienXuatSac && h.XetXuatSacCapTruong !== true && (
                     <span
                       className="tag-badge"
                       style={{ background: "#fef3c7", color: "#92400e" }}
@@ -181,7 +192,7 @@ const BangHoSoToTrinh = ({
                   <XepLoaiKhoaBadge xepLoaiKhoa={h.XepLoaiKhoa} />
                 </td>
                 <td>
-                  <XepLoaiBadge xepLoai={h.XepLoai} />
+                  {h.ChoXetXuatSacTruong === true ? <span className="xxsk-muted">Chưa chốt</span> : <XepLoaiBadge xepLoai={h.XepLoai} />}
                 </td>
                 <td>
                   <span
