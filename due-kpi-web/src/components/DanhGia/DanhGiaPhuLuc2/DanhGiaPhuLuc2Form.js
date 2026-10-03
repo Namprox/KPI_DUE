@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { laCongThucGioGiang } from "../../../utils/gioGiangTyLe";
+import { laThanhTichDoanThe } from "../../../utils/diemTuDongPhieu";
 import {
   chuanHoaFileMinhChung,
   ACCEPT_PDF,
@@ -336,6 +337,8 @@ const DanhGiaPhuLuc2Form = ({
                           const isVpgd = congThuc.startsWith("VPGD");
                           const isTtvt = congThuc.startsWith("TTVT");
                           const isVpvc = congThuc.startsWith("VPVC");
+                          const isTtdt = laThanhTichDoanThe(autoInfo);
+                          const isDaoTao = congThuc.startsWith("CTDT_");
                           const autoNote = laCongThucGioGiang(autoInfo)
                             ? "Điểm dựa trên tỷ lệ hoàn thành định mức giờ giảng do hệ thống cung cấp"
                             : isNckh
@@ -348,7 +351,9 @@ const DanhGiaPhuLuc2Form = ({
                                   ? "Điểm được tính tự động từ thành tích đã ghi nhận"
                                   : isVpvc
                                     ? "Điểm được tính tự động từ dữ liệu chấp hành, vi phạm đã ghi nhận"
-                                    : "Không chỉnh sửa";
+                                    : isTtdt
+                                      ? "Điểm được tính tự động từ thành tích đoàn thể do Tổ trưởng P_TCTD ghi nhận"
+                                      : isDaoTao ? "Điểm được tính tự động từ hoạt động đào tạo đã ghi nhận" : "Không chỉnh sửa";
                           const phamViDiem =
                             Number(autoInfo.Quy) > 0
                               ? autoInfo.ApDungQuy === false
@@ -455,6 +460,9 @@ const DanhGiaPhuLuc2Form = ({
                                 </div>
                               </div>
 
+                              {coDiemTuDong && Number(autoInfo.DiemTuDong) === 0 && autoInfo.LyDoDiemTuDong && (
+                                <p className="pl2-auto-note">{autoInfo.LyDoDiemTuDong}</p>
+                              )}
                               {thangDiemAuto.length > 0 && (
                                 <ul className="pl2-auto-thang-diem-list">
                                   {thangDiemAuto.map((td) => {
@@ -501,7 +509,7 @@ const DanhGiaPhuLuc2Form = ({
                                 </div>
                               )}
 
-                              {(isNckh || isVpgd || isTtvt || isVpvc) &&
+                              {(isNckh || isVpgd || isTtvt || isVpvc || isTtdt || isDaoTao) &&
                                 minhChungList.length > 0 && (
                                   <div
                                     className={`pl2-nckh-mc-box ${isVpgd ? "pl2-mc-box-vpgd" : ""}`}
@@ -512,11 +520,13 @@ const DanhGiaPhuLuc2Form = ({
                                           <i className="fa-solid fa-triangle-exclamation"></i>{" "}
                                           Vi phạm đã ghi nhận
                                         </>
-                                      ) : isTtvt ? (
+                                      ) : isTtvt || isTtdt ? (
                                         <>
                                           <i className="fa-solid fa-award"></i>{" "}
                                           Thành tích đã ghi nhận
                                         </>
+                                      ) : isDaoTao ? (
+                                        <>Hoạt động đào tạo đã ghi nhận</>
                                       ) : (
                                         <>
                                           <i className="fa-solid fa-book-open"></i>{" "}
@@ -536,10 +546,12 @@ const DanhGiaPhuLuc2Form = ({
                                             className="pl2-nckh-mc-item"
                                           >
                                             <div className="pl2-nckh-mc-item-main">
-                                              <span className="pl2-nckh-mc-name">
+                                              {Number(mc.LoaiNguon) === 10 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/thanh-tich-doan-the/${encodeURIComponent(mc.MaNguon)}`}>
+                                                {mc.TieuDe || "Chi tiết thành tích đoàn thể"}
+                                              </Link> : <span className="pl2-nckh-mc-name">
                                                 {mc.TieuDe ||
                                                   "(Không có tiêu đề)"}
-                                              </span>
+                                              </span>}
                                             </div>
                                             {(mc.MoTa || ngay) && (
                                               <div className="pl2-nckh-mc-meta">

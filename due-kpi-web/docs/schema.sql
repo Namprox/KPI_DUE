@@ -2833,3 +2833,125 @@ CREATE UNIQUE INDEX ux_hddtnn_nv ON hoat_dong_dao_tao_nguoi_nhap(id_nhan_vien) W
 GO
 CREATE INDEX ix_lshddt_hd        ON lich_su_hoat_dong_dao_tao(id_hoat_dong);
 GO
+
+-- =============================================================================
+-- 17. THÀNH TÍCH ĐOÀN THỂ — TT P_TCTD ghi nhận (nguồn 2 tiêu chí chấm tự động của GV)
+-- =============================================================================
+-- Tổ trưởng (TT) của P_TCTD nhập theo năm danh sách GIẢNG VIÊN đạt huy chương Đồng trở lên
+-- (thể thao, văn nghệ, Đoàn thể cấp ĐHĐN trở lên) hoặc được tổ chức / cơ quan ngoài DUE và UD
+-- ghi nhận thành tích xã hội, đoàn thể, cộng đồng. Mỗi dòng = 1 GV × 1 thành tích. Quy tắc
+-- chấm: có ≥ 1 dòng còn hiệu lực của (GV, năm, loại) → đủ diem_toi_da của tiêu chí; nhiều
+-- dòng KHÔNG cộng thêm ⇒ bảng KHÔNG lưu điểm. Quyền: fn_thanh_tich_doan_the_quyen
+-- (procedure.sql mục 17) — ADMIN / TT@P_TCTD, không có ủy quyền.
+-- Xem schema_ghi_chu.md mục 17.
+-- =============================================================================
+
+-- 17.1. Danh mục loại thành tích — CỐ ĐỊNH 2 dòng (seed trong update_database.sql).
+--       ma_loai đặt TRÙNG mã cong_thuc_tong_hop của tiêu chí chấm tự động tương ứng
+--       (giống loai_hoat_dong_dao_tao) → không cần bảng ánh xạ.
+CREATE TABLE loai_thanh_tich_doan_the (
+    id_loai        TINYINT       NOT NULL,
+    ma_loai        NVARCHAR(50)  NOT NULL,
+    ten_loai       NVARCHAR(255) NOT NULL,
+    nhan_noi_dung  NVARCHAR(100) NOT NULL,   -- nhãn ô "nội dung" trên form
+    thu_tu         TINYINT       NOT NULL,
+    CONSTRAINT pk_lttdt    PRIMARY KEY (id_loai),
+    CONSTRAINT uq_lttdt_ma UNIQUE (ma_loai)
+);
+GO
+
+INSERT INTO loai_thanh_tich_doan_the (id_loai, ma_loai, ten_loai, nhan_noi_dung, thu_tu) VALUES
+    (1, N'TTDT_HUY_CHUONG',     N'Đạt huy chương Đồng trở lên trong các chương trình thể thao, văn nghệ, Đoàn thể cấp ĐHĐN trở lên',
+                                N'Huy chương – nội dung – tên giải / hội thi',  1),
+    (2, N'TTDT_GHI_NHAN_NGOAI', N'Được tổ chức, cơ quan ngoài DUE và UD ghi nhận thành tích trong hoạt động xã hội, đoàn thể, cộng đồng',
+                                N'Nội dung thành tích được ghi nhận',           2);
+GO
+
+-- 17.2. Bản ghi thành tích — 1 dòng = 1 GV × 1 thành tích (1 đội 5 GV đạt HC Đồng = 5 dòng).
+--       Năm do người nhập chọn (id_nam), không suy từ ngay_quyet_dinh. Xoá MỀM (da_xoa) để
+--       giữ vết; mọi thao tác ghi lich_su_thanh_tich_doan_the.
+--       co_quan_ghi_nhan: cấp / cơ quan khen (vd "ĐHĐN", "UBND phường Hòa Khánh Bắc") — cả
+--       2 tiêu chí đều xét theo cấp khen nên tách riêng khỏi noi_dung.
+--       Chống trùng nằm trong SP (không có unique index): không cho 2 dòng còn hiệu lực cùng
+--       (id_nam, id_loai, id_nhan_vien, noi_dung đã trim) — so sánh theo collation CSDL.
+CREATE TABLE thanh_tich_doan_the (
+    id_thanh_tich     INT            IDENTITY(1,1) NOT NULL,
+    id_nam            INT            NOT NULL,
+    id_loai           TINYINT        NOT NULL,
+    id_nhan_vien      INT            NOT NULL,   -- giảng viên được ghi nhận
+    noi_dung          NVARCHAR(500)  NOT NULL,   -- huy chương – nội dung – giải / thành tích được ghi nhận
+    co_quan_ghi_nhan  NVARCHAR(255)  NULL,       -- cấp / cơ quan khen
+    so_quyet_dinh     NVARCHAR(100)  NULL,
+    ngay_quyet_dinh   DATE           NULL,
+    ghi_chu           NVARCHAR(1000) NULL,
+    nguon             TINYINT        NOT NULL CONSTRAINT df_ttdt_nguon    DEFAULT 1,  -- 1 form, 2 import Excel
+    id_nguoi_tao      INT            NOT NULL,
+    ngay_tao          DATETIME       NOT NULL CONSTRAINT df_ttdt_ngay_tao DEFAULT GETDATE(),
+    id_nguoi_cap_nhat INT            NULL,
+    ngay_cap_nhat     DATETIME       NULL,
+    da_xoa            BIT            NOT NULL CONSTRAINT df_ttdt_da_xoa   DEFAULT 0,
+    id_nguoi_xoa      INT            NULL,
+    ngay_xoa          DATETIME       NULL,
+    CONSTRAINT pk_ttdt              PRIMARY KEY (id_thanh_tich),
+    CONSTRAINT fk_ttdt_nam          FOREIGN KEY (id_nam)            REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_ttdt_loai         FOREIGN KEY (id_loai)           REFERENCES loai_thanh_tich_doan_the(id_loai),
+    CONSTRAINT fk_ttdt_nv           FOREIGN KEY (id_nhan_vien)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ttdt_nguoi_tao    FOREIGN KEY (id_nguoi_tao)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ttdt_nguoi_cn     FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ttdt_nguoi_xoa    FOREIGN KEY (id_nguoi_xoa)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_ttdt_nguon       CHECK (nguon IN (1, 2)),
+    CONSTRAINT chk_ttdt_noi_dung    CHECK (LEN(LTRIM(RTRIM(noi_dung))) > 0),
+    CONSTRAINT chk_ttdt_xoa         CHECK ((da_xoa = 0 AND ngay_xoa IS NULL) OR (da_xoa = 1 AND ngay_xoa IS NOT NULL))
+);
+GO
+
+-- 17.3. Nhật ký module (convention lich_su_*; KHÔNG dùng bảng nhat_ky).
+--       hanh_dong: 1 Ghi nhận · 2 Sửa (chỉ ghi khi thật sự đổi) · 3 Xoá · 4 Import Excel.
+--       Không có ủy quyền nên mọi dòng đều gắn 1 bản ghi (id_thanh_tich NOT NULL).
+CREATE TABLE lich_su_thanh_tich_doan_the (
+    id                 BIGINT         IDENTITY(1,1) NOT NULL,
+    id_thanh_tich      INT            NOT NULL,
+    id_nhan_vien       INT            NOT NULL,   -- GV của bản ghi (sau thao tác)
+    hanh_dong          TINYINT        NOT NULL,
+    mo_ta              NVARCHAR(1000) NULL,
+    id_nguoi_thuc_hien INT            NOT NULL,
+    ngay_thuc_hien     DATETIME       NOT NULL CONSTRAINT df_lsttdt_ngay DEFAULT GETDATE(),
+    CONSTRAINT pk_lsttdt       PRIMARY KEY (id),
+    CONSTRAINT fk_lsttdt_tt    FOREIGN KEY (id_thanh_tich)      REFERENCES thanh_tich_doan_the(id_thanh_tich),
+    CONSTRAINT fk_lsttdt_nv    FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_lsttdt_nguoi FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_lsttdt_hd   CHECK (hanh_dong IN (1, 2, 3, 4))
+);
+GO
+
+-- 17.4. TVP
+--   ThanhTichDoanTheGiangVienRow: danh sách GV khi ghi nhận 1 thành tích cho nhiều người.
+--   ThanhTichDoanTheImportRow   : dòng Excel đã đọc ở C# (ThanhTichDoanTheExcelReader); lỗi
+--                                 định dạng đặt ở loi_dinh_dang để SP báo chung một bảng kết quả.
+CREATE TYPE dbo.ThanhTichDoanTheGiangVienRow AS TABLE (
+    id_nhan_vien INT NOT NULL PRIMARY KEY
+);
+GO
+
+CREATE TYPE dbo.ThanhTichDoanTheImportRow AS TABLE (
+    dong_excel       INT            NOT NULL PRIMARY KEY,
+    loai             NVARCHAR(50)   NULL,   -- 1..2 hoặc ma_loai
+    ma_nhan_vien     NVARCHAR(20)   NULL,
+    ho_ten           NVARCHAR(100)  NULL,   -- chỉ để đối chiếu, lệch → cảnh báo
+    noi_dung         NVARCHAR(500)  NULL,
+    co_quan_ghi_nhan NVARCHAR(255)  NULL,
+    so_quyet_dinh    NVARCHAR(100)  NULL,
+    ngay_quyet_dinh  DATE           NULL,
+    ghi_chu          NVARCHAR(1000) NULL,
+    loi_dinh_dang    NVARCHAR(500)  NULL
+);
+GO
+
+-- 17.5. Index của module (filtered → bắt buộc SET QUOTED_IDENTIFIER ON, xem §10.2).
+--   ix_ttdt_nv_nam_loai: phục vụ EXISTS (GV, năm, loại) của engine chấm tự động.
+CREATE INDEX ix_ttdt_nv_nam_loai ON thanh_tich_doan_the(id_nhan_vien, id_nam, id_loai) WHERE da_xoa = 0;
+GO
+CREATE INDEX ix_ttdt_nam_loai    ON thanh_tich_doan_the(id_nam, id_loai) INCLUDE (id_nhan_vien) WHERE da_xoa = 0;
+GO
+CREATE INDEX ix_lsttdt_tt        ON lich_su_thanh_tich_doan_the(id_thanh_tich);
+GO

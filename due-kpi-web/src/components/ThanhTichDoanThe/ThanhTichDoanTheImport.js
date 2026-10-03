@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Dialog } from "primereact/dialog";
-import { importDaoTao } from "../../utils/hoatDongDaoTaoApi";
+import { importDoanThe } from "../../utils/thanhTichDoanTheApi";
 
-export default function HoatDongDaoTaoImport({ idNam, onClose, onImported }) {
+export default function ThanhTichDoanTheImport({ idNam, onClose, onImported }) {
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -11,7 +11,7 @@ export default function HoatDongDaoTaoImport({ idNam, onClose, onImported }) {
     if (!file || busy) return;
     setBusy(true); setError("");
     try {
-      const data = await importDaoTao(file, idNam, preview);
+      const data = await importDoanThe(file, idNam, preview);
       setResult(data);
       if (!preview) onImported(data);
     } catch (e) { setError(e.message); if (preview) setResult(null); }
@@ -23,7 +23,7 @@ export default function HoatDongDaoTaoImport({ idNam, onClose, onImported }) {
     <button className="btn-submit" onClick={() => run(true)} disabled={!file || busy}><i className={`fa-solid ${busy ? "fa-spinner fa-spin" : "fa-file-circle-check"}`} aria-hidden="true" />{busy ? "Đang xử lý..." : "Kiểm tra file"}</button>
     <button className="btn-submit" onClick={() => run(false)} disabled={!canConfirm || busy}><i className="fa-solid fa-file-import" aria-hidden="true" />Xác nhận import</button>
   </>;
-  return <Dialog visible header={`Import hoạt động đào tạo · Năm ${idNam}`} onHide={onClose} modal maskClassName="hddt-dialog-mask"
+  return <Dialog visible header={`Import thành tích đoàn thể · Năm ${idNam}`} onHide={onClose} modal maskClassName="hddt-dialog-mask"
     className="hddt-dialog" style={{ width: "1050px" }} breakpoints={{ "1100px": "95vw" }} closable={!busy} closeOnEscape={!busy}
     closeIcon={<span aria-hidden="true">×</span>} footer={footer}
     pt={{ header: { className: "modal-header" }, content: { className: "modal-body" }, footer: { className: "modal-footer" } }}>

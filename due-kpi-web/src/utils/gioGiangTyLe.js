@@ -2,6 +2,8 @@ export const CONG_THUC_GIO_GIANG = "GIO_GIANG_TY_LE";
 export const CONG_THUC_TU_DONG_OPTIONS = [
   { value: "GIO_GIANG_TY_LE", label: "Tỷ lệ hoàn thành định mức giờ giảng" },
   { value: "NCKH_GIO_TY_LE", label: "Tỷ lệ hoàn thành giờ nghiên cứu khoa học" },
+  { value: "TTDT_HUY_CHUONG", label: "Thành tích đoàn thể: Huy chương Đồng trở lên" },
+  { value: "TTDT_GHI_NHAN_NGOAI", label: "Thành tích đoàn thể: Ghi nhận từ cơ quan ngoài DUE và UD" },
 ];
 /** @param {{ CongThucSnapshot?: string, CongThucTongHop?: string }} row */
 export const laCongThucGioGiang = (row) =>

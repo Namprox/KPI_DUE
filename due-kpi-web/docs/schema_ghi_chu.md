@@ -32,6 +32,8 @@ Mã đơn vị duy nhất còn viết cứng trong SP: `N'P_DTBDCL'` (Phòng Đ�
 Từ đợt "Hoạt động đào tạo" (§16) mã này còn viết cứng ở `fn_hoat_dong_dao_tao_thuoc_phong`,
 `fn_hoat_dong_dao_tao_quyen` và `sp_hoat_dong_dao_tao_nguoi_nhap_ung_vien` (module học vụ §14 cũng
 dùng qua `fn_hoc_vu_co_quyen_quan_ly`) — đổi mã phải sửa cả các chỗ này.
+Từ đợt "Thành tích đoàn thể" (§17) có thêm cặp mã viết cứng `N'P_TCTD'` (đơn vị) + `N'TT'` (chức vụ Tổ trưởng), chỉ
+ở **một** chỗ: `fn_thanh_tich_doan_the_quyen`. Đổi mã tổ / mã chức vụ thì chỉ sửa hàm này.
 Đơn vị mới thuộc nhóm Phòng/TT/Viện **không được** đặt mã `K_…`, kể cả khi danh sách tổ chức xếp nó cạnh các Khoa
 (vd Viện Đào tạo quốc tế = `P_DTQT`).
 
@@ -3893,7 +3895,8 @@ Bốn tiêu chí của mẫu đánh giá **giảng viên** đang do GV **tự nh
 
 Người nắm số liệu gốc là **P_DTBDCL**, nên P_DTBDCL nhập danh sách GV tham gia theo năm, làm nguồn chấm tự động.
 
-**Phạm vi đợt 2026-10-02: CHỈ module nhập liệu.** Chưa có tiêu chí nào đọc bảng này. Phần nối vào engine ở §16.6.
+Đợt 2026-10-02 làm module nhập liệu (§16.1–16.5). Đợt 2026-10-02 #2 nối 4 tiêu chí vào engine chấm tự động và
+chuyển các phiếu năm đã tạo (§16.6).
 
 ### 16.1. Bảng
 
@@ -3921,7 +3924,7 @@ Người nắm số liệu gốc là **P_DTBDCL**, nên P_DTBDCL nhập danh sá
 
 ### 16.2. Quy tắc nghiệp vụ — đã chốt với người dùng (2026-10-02)
 
-1. **Chỉ tính 1 lần / năm**: có ≥ 1 dòng còn hiệu lực của (GV, năm, loại) → đủ `diem_toi_da` của tiêu chí; nhiều dòng **không** cộng thêm. Áp dụng ở session sau, xem §16.6.
+1. **Chỉ tính 1 lần / năm**: có ≥ 1 dòng còn hiệu lực của (GV, năm, loại) → đủ `diem_toi_da` của tiêu chí; nhiều dòng **không** cộng thêm. Hiện thực ở §16.6.
 2. **Chỉ ghi nhận cho giảng viên đang công tác tại Khoa** (`v_giang_vien_khoa`: GV / GVC / GVCC).
    - Khi **sửa** mà giữ nguyên GV thì không kiểm lại, nên GV đã nghỉ vẫn sửa được nội dung bản ghi cũ.
    - Đổi sang GV khác thì người mới phải đạt điều kiện này.
@@ -3993,27 +3996,181 @@ Người nắm số liệu gốc là **P_DTBDCL**, nên P_DTBDCL nhập danh sá
   - `DB_ERROR` → 500
 - POST tạo mới trả 201.
 
-### 16.6. Nối vào chấm tự động — SESSION SAU (chưa làm)
+### 16.6. Nối vào chấm tự động (đợt 2026-10-02 #2)
 
-Dùng lại **khung chấm điểm tự động** (§4.2), cùng checklist với `NVK_PHAN_CONG_KHOA` (§7):
+Dùng lại **khung chấm điểm tự động** (§4.2), cùng checklist với `NVK_PHAN_CONG_KHOA` (§7). Cả ba luồng có ngay:
+chấm khi GV nộp phiếu, `POST api/phieu/{id}/tong-hop-tu-dong`, và preview `GET api/maudanhgia/{id}/diem-tu-dong`.
 
-1. `fn_nckh_diem_tu_dong`: thêm 4 mã vào whitelist `IN (...)`, cộng **một** nhánh chung:
-   ```sql
-   IF (@cong_thuc IN (N'CTDT_HOI_DONG', N'CTDT_TO_GIUP_VIEC', N'NCS_SP_TRUNG_GIAN', N'NCS_BAO_VE_LA'))
-       RETURN CASE WHEN EXISTS (SELECT 1 FROM dbo.hoat_dong_dao_tao h
-                                INNER JOIN dbo.loai_hoat_dong_dao_tao l ON l.id_loai = h.id_loai
-                                WHERE h.id_nhan_vien = @id_nhan_vien AND h.id_nam = @id_nam
-                                  AND h.da_xoa = 0 AND l.ma_loai = @cong_thuc)
-                   THEN @diem_toi_da ELSE 0 END;
-   ```
-   Chưa có dòng → **0** (không phải NULL; NULL = "mã chưa hỗ trợ"). Khoá theo `@id_nhan_vien`, bỏ qua `@quy` (phiếu GV theo năm).
-2. `fn_nckh_minh_chung_tu_dong`: nhánh `loai_nguon = 9` liệt kê từng bản ghi. **Vị từ lọc phải giống hệt** nhánh chấm điểm.
-3. `sp_mau_danh_gia_diem_tu_dong`: cờ `@co_tieu_chi_hddt` mở rộng tập GV có dòng trong năm. Không thêm result set mới.
-4. Sửa 4 tiêu chí qua API tiêu chí:
-   - `loai_nguon_diem = 2`, `cong_thuc_tong_hop = ma_loai`.
-   - `loai_thang_diem = 1` + 2 dòng `thang_diem` (`diem_toi_da` / 0) để engine ánh xạ được nhãn.
-5. **Phiếu đã tạo** giữ snapshot `loai_nguon_diem = 1` của 4 dòng này, vì engine không đồng bộ lại phiếu cũ (§4.2). Phải chọn một trong hai cách:
-   - script chuyển 4 dòng của phiếu chưa chốt sang tự động;
-   - hoặc xoá / tạo lại phiếu (tiền lệ `GIO_GIANG_TY_LE`).
-6. P_DTBDCL thường nhập **sau** khi GV nộp phiếu ⇒ nhập xong phải chạy lại `POST api/phieu/{id}/tong-hop-tu-dong` (cùng quy ước NVK / TTVT).
-   - Cân nhắc một endpoint tổng hợp lại hàng loạt.
+#### Engine và minh chứng — hai hàm, một vị từ
+
+| Nơi | Thay đổi |
+|---|---|
+| `fn_nckh_diem_tu_dong` | 4 mã vào whitelist + **một** nhánh chung: `EXISTS` bản ghi `da_xoa = 0` của (`@id_nhan_vien`, `@id_nam`, `ma_loai = @cong_thuc`) → `@diem_toi_da`, không có → **0** |
+| `fn_nckh_minh_chung_tu_dong` | Nhánh `loai_nguon = 9` ("Hoạt động đào tạo"): mỗi bản ghi một dòng |
+| `sp_mau_danh_gia_diem_tu_dong` | Cờ `@co_tieu_chi_hddt`: gọi toàn trường thì mở rộng tập GV ra người có bản ghi trong năm. Không thêm result set |
+| `MauDanhGiaService` (C#) | `LyDoDiemTuDong` khi điểm 0: "P_DTBDCL chưa ghi nhận… chạy lại tổng hợp tự động" |
+
+- Chưa có bản ghi → **0**, không phải NULL. NULL ở hàm này nghĩa là "mã chưa hỗ trợ", khi đó engine giữ điểm cũ.
+- Khoá theo `@id_nhan_vien`, **không đọc `@quy`**: giảng viên chỉ có phiếu năm. `ApDungQuy` của 4 mã = false.
+- **Bất biến:** vị từ lọc (`id_nhan_vien` + `id_nam` + `da_xoa = 0` + `ma_loai`) giống hệt nhau ở hai hàm. Lệch nhau thì FE thấy
+  minh chứng mà điểm 0, hoặc ngược lại.
+- Dòng minh chứng 9:
+  - `ma_nguon` = `id_hoat_dong`, FE mở bằng `GET api/hoat-dong-dao-tao/{id}`.
+  - `tieu_de` = `noi_dung`.
+  - `mo_ta` = tên loại + số / ngày QĐ + ghi chú.
+  - `ngay` = `ngay_quyet_dinh`, **có thể NULL**.
+  - Nhiều dòng vẫn chỉ đủ điểm một lần.
+- Phiếu GV kiêm nhiệm 2 Khoa: áp quy tắc "phiếu nhận điểm tự động" như mọi mã khác (§4.1).
+
+#### Tiêu chí
+
+- 4 tiêu chí đặt `loai_nguon_diem = 2`, `cong_thuc_tong_hop = ma_loai`, `loai_thang_diem = 1`.
+- `thang_diem` phải có mức `= diem_toi_da` và mức `= 0`, để engine gán được nhãn (`id_thang_diem_chon`).
+  - Script chỉ **thêm** mức còn thiếu, nối tiếp `MAX(thu_tu_hien_thi)`.
+  - Mức cũ giữ nguyên, vì có thể đang được `chi_tiet_danh_gia` cũ tham chiếu. Engine không bao giờ gán mức khác hai giá trị trên.
+- Không có cột mã trên `tieu_chi_danh_gia`, nên `update_database.sql` (PHẦN 1) xác định tiêu chí theo thứ tự:
+  1. Id điền tay trong `#hddt_cau_hinh`.
+  2. Tiêu chí đã chấm tự động với mã đó (admin sửa qua API, hoặc lần chạy trước).
+  3. Dò theo **tên**, trong các tiêu chí GV đang hoạt động và còn chấm tay. Phải khớp **đúng 1**.
+  - Không xác định được thì script in danh sách tiêu chí GV rồi **dừng trước khi đổi gì**.
+
+#### Phiếu đã tạo — chuyển 4 dòng sang tự động
+
+`chi_tiet_danh_gia` snapshot `loai_nguon_diem` / `cong_thuc_snapshot` lúc tạo phiếu, và engine **không** đồng bộ lại phiếu cũ.
+Đã chọn cách **script chuyển dòng**, không xoá / tạo lại phiếu: tạo lại thì GV mất điểm tự chấm của mọi tiêu chí khác.
+
+| Phạm vi | Xử lý |
+|---|---|
+| Phiếu năm, chưa xoá, năm **chưa đóng** (`nam_danh_gia.trang_thai <> 3`), phiếu **1 / 2**, dòng **1 / 2** | **Chuyển** |
+| Dòng `DA_CHOT` (đơn vị thẩm định đã chốt) | Giữ chấm tay — không lật quyết định đã có |
+| Phiếu 3 / 4 / 5 | Giữ chấm tay |
+| Năm đã đóng | Giữ chấm tay |
+
+- Mọi dòng giữ chấm tay ở năm chưa đóng được liệt kê ở KT3 để xử lý tay (TK trả dòng về thẩm định / mở lại phiếu).
+- Dòng được chuyển có hình dạng như dòng tự động vừa seed:
+  - `loai_nguon_diem = 2`, `cong_thuc_snapshot = ma_loai`, `trang_thai_dong = 1`.
+  - Xoá sạch cột cấp 1 / 2 / 3, `diem_chinh_thuc`, yêu cầu trả về đang mở và `id_don_vi_tham_dinh`.
+  - Xoá cả `diem_truong*`: công thức tổng `COALESCE(diem_chinh_thuc, diem_truong, …)` sẽ nhặt lại số cũ nếu để sót.
+  - `so_lan_tra_ve` giữ nguyên (cộng dồn cả vòng đời).
+- Vết audit: dòng có điểm cũ được ghi `lich_su_cham_diem` (cap 1, `hanh_dong = 2`, `diem` NULL, `nhan_xet` chứa điểm tự chấm / thẩm định cũ).
+- **Minh chứng GV đã đính kèm giữ nguyên.** Không xoá file của người dùng; dòng tự động không đọc chúng.
+- Phiếu được chuyển cập nhật `ngay_cap_nhat`, nên ai đang mở phiếu phải tải lại.
+- Phiếu 2 vẫn ở 2, vì còn dòng chưa chốt. Bất biến 2 ↔ 3 (§4) giữ nguyên.
+- KT2b liệt kê GV **đã tự chấm > 0 mà P_DTBDCL chưa có bản ghi**: gửi danh sách này cho P_DTBDCL đối chiếu.
+
+#### Chấm ngay hay chờ — mặc định CHỜ (`cham_ngay = 0`)
+
+- Bẫy nếu chấm ngay:
+  - Chấm ngay lúc P_DTBDCL chưa nhập xong sẽ cho 0.
+  - Nếu mọi dòng khác của phiếu đã chốt, phiếu nhảy 2 → 3.
+  - `sp_phieu_tong_hop_tu_dong` chỉ nhận phiếu 1 / 2, nên điểm 0 bị **đóng băng**.
+- Vì vậy mặc định chỉ chuyển dòng. Dòng tự động của phiếu 2 nằm ở `trang_thai_dong = 1` chờ engine.
+  - Phiếu không lên 3 được, nên TK không chốt nhầm điểm 0.
+  - Nộp lại / hàng đợi thẩm định / huỷ nộp đều đã loại dòng `loai_nguon_diem = 2`, không ai chạm tới chúng.
+- P_DTBDCL nhập xong thì làm **một trong hai**:
+  - Đặt `cham_ngay = 1` rồi chạy lại cả `update_database.sql`. PHẦN 5 chấm mọi phiếu 2 có 4 mã, mỗi phiếu một transaction,
+    kết quả ở KT4. Đây cũng là đường **tổng hợp lại hàng loạt** cho các lần nhập bổ sung sau.
+  - Khoa bấm `POST api/phieu/{id}/tong-hop-tu-dong` từng phiếu.
+- Phiếu 1 không cần làm gì: engine tự chấm khi GV nộp.
+- **Còn mở:**
+  - Chưa có endpoint tổng hợp lại hàng loạt.
+  - Phiếu GV nộp **sau** đợt này vẫn chấm ngay lúc nộp, theo hành vi chung của engine. Nếu P_DTBDCL chưa nhập thì cùng bẫy
+    đóng băng ở trạng thái 3 như NVK / TTVT.
+
+---
+
+## 17. THÀNH TÍCH ĐOÀN THỂ — TT P_TCTD GHI NHẬN (`thanh_tich_doan_the`) → nguồn 2 tiêu chí chấm tự động của GV
+
+### 17.0. Vì sao có module này
+
+Hai tiêu chí của mẫu đánh giá **giảng viên** đang do GV **tự nhập điểm**. Mỗi nội dung là **1 tiêu chí riêng**,
+điểm = `diem_toi_da` của tiêu chí:
+
+| Loại | `ma_loai` | Nội dung |
+|---|---|---|
+| 1 | `TTDT_HUY_CHUONG` | Đạt huy chương Đồng trở lên trong các chương trình thể thao, văn nghệ, Đoàn thể cấp ĐHĐN trở lên |
+| 2 | `TTDT_GHI_NHAN_NGOAI` | Được tổ chức, cơ quan ngoài DUE và UD ghi nhận thành tích trong hoạt động xã hội, đoàn thể, cộng đồng (minh chứng: bằng khen / giấy khen UBND cấp xã, phường trở lên và tương đương) |
+
+Người nắm số liệu gốc là **Tổ trưởng (TT) của P_TCTD**, nên TT nhập danh sách GV đạt thành tích theo năm, làm nguồn
+chấm tự động. Đợt 2026-10-03 làm cả module nhập liệu lẫn phần nối engine. Thiết kế **nhân bản §16** (Hoạt động đào tạo),
+bỏ phần ủy quyền. Tiền tố `TTDT_` = **T**hành **T**ích **Đ**oàn **T**hể.
+
+### 17.1. Bảng
+
+- **`loai_thanh_tich_doan_the`** — danh mục **cố định 2 dòng**.
+  - `ma_loai` đặt **trùng mã `cong_thuc_tong_hop`** (cùng mẹo §16.1) → không cần bảng ánh xạ.
+- **`thanh_tich_doan_the`** — **1 dòng = 1 GV × 1 thành tích**. Một đội 5 GV đạt HC Đồng = 5 dòng.
+  - Cột giống `hoat_dong_dao_tao`, thêm **`co_quan_ghi_nhan`** (cấp / cơ quan khen, vd "ĐHĐN", "UBND phường …"), vì cả
+    hai tiêu chí đều xét theo cấp khen. Không bắt buộc.
+  - `id_nam` do người nhập chọn, không suy từ `ngay_quyet_dinh`. `nguon`: 1 form, 2 import Excel. **Không lưu điểm.**
+  - Xoá **mềm**; CHECK `chk_ttdt_xoa` giữ cặp `da_xoa` / `ngay_xoa` nhất quán.
+- **`lich_su_thanh_tich_doan_the`** — `hanh_dong`: 1 Ghi nhận · 2 Sửa (chỉ ghi khi thật sự đổi) · 3 Xoá · 4 Import Excel.
+  Không có ủy quyền nên `id_thanh_tich` **NOT NULL**.
+- Index lọc `WHERE da_xoa = 0`: `ix_ttdt_nv_nam_loai` (EXISTS của engine), `ix_ttdt_nam_loai` (màn danh sách) — bắt buộc
+  `SET QUOTED_IDENTIFIER ON` (§10.2).
+- TVP: `ThanhTichDoanTheGiangVienRow`, `ThanhTichDoanTheImportRow` (có `co_quan_ghi_nhan`).
+
+### 17.2. Quy tắc nghiệp vụ — đã chốt với người dùng (2026-10-03)
+
+1. **Chỉ giảng viên** (phiếu năm, loại đối tượng 1). Không có chiều quý; `ApDungQuy = false`.
+2. **Chỉ tính 1 lần / năm**: có ≥ 1 dòng còn hiệu lực của (GV, năm, loại) → đủ `diem_toi_da`; nhiều dòng không cộng thêm.
+3. Còn lại **giống hệt §16.2 mục 2–6**: chỉ GV đang công tác tại Khoa (`v_giang_vien_khoa`); chống trùng trong SP theo
+   (`id_nam`, `id_loai`, `id_nhan_vien`, `LTRIM(RTRIM(noi_dung))`) dưới `UPDLOCK, HOLDLOCK`; bản ghi có hiệu lực ngay;
+   ghi nhận nhiều GV all-or-nothing; PUT thay toàn bộ, không đổi gì (`Latin1_General_BIN`) → `co_thay_doi = 0`.
+4. **Tiêu chí không do script sửa**: 2 tiêu chí đã có trong mẫu GV, người dùng tự đặt `loai_nguon_diem = 2` +
+   `cong_thuc_tong_hop = ma_loai` trong DB. Script cũng **không** chuyển dòng của phiếu đã tạo (khác §16.6).
+
+### 17.3. Phân quyền — `fn_thanh_tich_doan_the_quyen` (inline TVF, luôn 1 dòng, fail-closed)
+
+| Cột | Điều kiện | Được làm |
+|---|---|---|
+| `duoc_nhap` | ADMIN, hoặc chức vụ `TT` **tại** `P_TCTD` | Thêm / sửa / xoá / import, picker GV, file mẫu |
+| `xem_tat_ca` | `duoc_nhap`, hoặc HT | Xem toàn trường |
+
+- Đọc tập (đơn vị, chức vụ) qua `fn_pham_vi_don_vi` (§10.6): người kiêm nhiệm TT P_TCTD mà đơn vị chính khác vẫn được
+  nhận đúng. Rời tổ (dòng `nhan_vien_chuc_vu` hết hiệu lực) → tự mất quyền.
+- **Không có ủy quyền** (khác §16.3) — chốt với người dùng.
+- `N'TT'` / `N'P_TCTD'` viết cứng ở **một** chỗ duy nhất: hàm này. `update_database.sql` KT1 / KT2 báo nếu hai mã chưa có
+  trong `chuc_vu` / `don_vi` hoặc chưa ai giữ chức vụ — khi đó chỉ ADMIN nhập được.
+- Phạm vi xem (`_list`, `_get_by_id`) giống §16.3: TK / TKL / TKK xem GV thuộc Khoa mình
+  (`fn_thanh_tich_doan_the_khoa_duoc_xem` — **chép** chứ không gọi hàm của §16); người khác chỉ xem bản ghi của mình.
+- BLL **không** gate bằng `ma_chuc_vu` của JWT: SP là nguồn sự thật.
+
+### 17.4. Import Excel — `POST api/thanh-tich-doan-the/import`
+
+Giống §16.4, khác ở:
+- `Helper/ThanhTichDoanTheExcelReader.cs`: thêm cột **tuỳ chọn** "Cơ quan ghi nhận" (alias: "Cơ quan khen (thưởng)",
+  "Cấp khen (thưởng)"), tối đa 255 ký tự.
+- Cột "Loại" nhận số thứ tự (**1..2**) hoặc `ma_loai`.
+- File mẫu `GET api/thanh-tich-doan-the/mau-import` (`ExcelHelper.WriteThanhTichDoanTheMau`), tên cột lấy từ
+  `ThanhTichDoanTheExcelReader.TenCotMau`.
+- Kết quả từng dòng: LOI / TRUNG / THEM, cùng bộ mã lỗi §16.4.
+
+### 17.5. Mã lỗi + HTTP
+
+`FORBIDDEN` 403 · `NOT_FOUND` 404 · `INVALID` 400 · `KHONG_PHAI_GIANG_VIEN` 422 · `TRUNG_BAN_GHI` 409 · `DB_ERROR` 500.
+POST tạo mới trả 201. Hợp đồng result set như §16.5.
+
+### 17.6. Nối vào chấm tự động
+
+| Nơi | Thay đổi |
+|---|---|
+| `fn_nckh_diem_tu_dong` | 2 mã vào whitelist + **một** nhánh: `EXISTS` bản ghi `da_xoa = 0` của (`@id_nhan_vien`, `@id_nam`, `ma_loai = @cong_thuc`) → `@diem_toi_da`, không có → **0** |
+| `fn_nckh_minh_chung_tu_dong` | Nhánh `loai_nguon = 10` ("Thành tích đoàn thể"): mỗi bản ghi một dòng; `ma_nguon` = `id_thanh_tich`, `tieu_de` = `noi_dung`, `mo_ta` = tên loại + cơ quan ghi nhận + số / ngày QĐ + ghi chú, `ngay` = `ngay_quyet_dinh` (có thể NULL) |
+| `sp_mau_danh_gia_diem_tu_dong` | Cờ `@co_tieu_chi_ttdt`: gọi toàn trường thì mở rộng tập GV ra người có bản ghi trong năm |
+| `MauDanhGiaService` (C#) | `LyDoDiemTuDong` khi điểm 0: "Tổ trưởng P_TCTD chưa ghi nhận… chạy lại tổng hợp tự động" |
+
+- **Bất biến:** vị từ lọc (`id_nhan_vien` + `id_nam` + `da_xoa = 0` + `ma_loai`) giống hệt nhau ở hai hàm.
+- Không đọc `@quy`. `sp_phieu_quy_create` / tripwire phiếu năm VC **không** mở cổng cho 2 mã (chỉ dùng cho GV).
+- Cả ba luồng có ngay khi tiêu chí mang mã: chấm khi GV nộp phiếu, `POST api/phieu/{id}/tong-hop-tu-dong`, preview
+  `GET api/maudanhgia/{id}/diem-tu-dong`.
+
+#### Việc người dùng tự làm với tiêu chí
+
+- Đặt `loai_nguon_diem = 2`, `cong_thuc_tong_hop = N'TTDT_HUY_CHUONG'` / `N'TTDT_GHI_NHAN_NGOAI'` cho 2 tiêu chí GV.
+- `loai_thang_diem = 1` → `thang_diem` phải có mức `= diem_toi_da` và mức `= 0` để engine gán được `id_thang_diem_chon`
+  (KT4 của `update_database.sql` báo mức thiếu).
+- **Phiếu đã tạo không nhận mã mới** (`chi_tiet_danh_gia` snapshot `loai_nguon_diem` / `cong_thuc_snapshot`). KT5 liệt kê
+  các dòng còn chấm tay ở năm chưa đóng; muốn chuyển thì tạo lại phiếu hoặc dùng cách §16.6 PHẦN 4.
+- Thêm / sửa / xoá bản ghi **không** tự chấm lại phiếu: gọi `POST api/phieu/{id}/tong-hop-tu-dong`. Phiếu GV nộp trước khi
+  TT nhập xong cùng bẫy "đóng băng điểm 0 ở trạng thái 3" như §16.6.

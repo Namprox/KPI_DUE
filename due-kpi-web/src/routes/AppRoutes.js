@@ -36,6 +36,8 @@ import QLDiemTbDanhGiaSinhVien from "../pages/QuanLyKeHoach/QL_DiemTbDanhGiaSinh
 import HocVuSinhVien from "../pages/QuanLyKeHoach/HocVuSinhVien";
 import HoatDongDaoTao from "../pages/QuanLyKeHoach/HoatDongDaoTao";
 import HoatDongDaoTaoUyQuyen from "../pages/QuanLyKeHoach/HoatDongDaoTaoUyQuyen";
+import ThanhTichDoanThe from "../pages/QuanLyKeHoach/ThanhTichDoanThe";
+import ThanhTichDoanTheDetailPage from "../pages/QuanLyKeHoach/ThanhTichDoanTheDetailPage";
 import MauGiamTru from "../pages/QuanLyKeHoach/MauGiamTru";
 import QLChucDanh from "../pages/QuanLyToChuc/QL_ChucDanh";
 import QLChucVu from "../pages/QuanLyToChuc/QL_ChucVu";
@@ -206,6 +208,8 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/hoc-vu-sinh-vien" element={<HocVuSinhVien />} />
         <Route path="/hoat-dong-dao-tao" element={<HoatDongDaoTao />} />
         <Route path="/hoat-dong-dao-tao/uy-quyen" element={<HoatDongDaoTaoUyQuyen />} />
+        <Route path="/thanh-tich-doan-the" element={<ThanhTichDoanThe />} />
+        <Route path="/thanh-tich-doan-the/:id" element={<ThanhTichDoanTheDetailPage />} />
         <Route path="/mau-giam-tru" element={<MauGiamTru />} />
 
         <Route path="/quan-ly/cho-cham" element={<ChoCham />} />

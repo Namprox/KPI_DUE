@@ -28,6 +28,7 @@ import {
 } from "../../utils/phieuApi";
 import SearchSelect from "../../components/Common/SearchSelect";
 import ThieuTieuChiChecklist from "../../components/DanhGia/ThieuTieuChiChecklist";
+import { ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
 
 // Flatten the template groups (Nhom -> NhomCon -> TieuChi) into a flat criteria list
 const flattenTemplate = (itemDetail) => {
@@ -115,7 +116,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({});
-  const [autoScores, setAutoScores] = useState({}); // IdTieuChi -> { DiemTuDong, ... }
+  const [autoScorePreview, setAutoScores] = useState({}); // IdTieuChi -> { DiemTuDong, ... }
   const [tongDiemCoBan, setTongDiemCoBan] = useState(0);
 
   const [trangThaiPhieu, setTrangThaiPhieu] = useState(0);
@@ -127,6 +128,9 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   // Dòng chi tiết theo IdTieuChi. Đây là nguồn sự thật cho việc mở hay khóa ô
   // nhập - trạng thái phiếu chỉ quyết định nút nào hiện ở header.
   const [chiTietMap, setChiTietMap] = useState({});
+  const autoScores = useMemo(() => ghepDiemTuDongPhieu(
+    autoScorePreview, Object.values(chiTietMap), criteriaList,
+  ), [autoScorePreview, chiTietMap, criteriaList]);
   // PhieuKiemTraHopLeDto: nguồn sự thật DUY NHẤT cho hạn (HanNop / QuaHan) và
   // cho SoTieuChiThieu. Hạn được server chọn theo GIAI ĐOẠN nên giá trị đổi khi
   // phiếu chuyển 1 -> 2 - phải tải lại sau mỗi thao tác ghi, không được cache.
@@ -405,7 +409,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         setCriteriaList(flattenTemplate(itemDetail));
 
         // 4. Auto-computed scores for LoaiNguonDiem = 2 criteria (read-only)
-        const autoMap = {};
+        let autoMap = {};
         try {
           const resAuto = await apiFetch(
             `maudanhgia/${idMau}/diem-tu-dong?idNhanVien=${currentUser.IdNhanVien}`,
@@ -424,6 +428,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           console.error("Lỗi khi tải điểm tự động:", e);
         }
 
+        autoMap = ghepDiemTuDongPhieu(autoMap, chiTiet || [], flattenTemplate(itemDetail));
         setAutoScores(autoMap);
         autoScoresRef.current = autoMap;
 

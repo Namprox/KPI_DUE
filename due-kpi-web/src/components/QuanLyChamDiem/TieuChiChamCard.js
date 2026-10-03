@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { laCongThucGioGiang } from "../../utils/gioGiangTyLe";
+import { laThanhTichDoanThe } from "../../utils/diemTuDongPhieu";
 import {
   fetchMinhChung,
   fetchNhiemVuCongDong,
@@ -206,7 +207,7 @@ const TieuChiChamCard = ({
   // Tiêu chí tự động không đi qua ai chấm. Phiếu giảng viên lưu kết quả ở
   // DiemChinhThuc, còn phiếu quý viên chức trả rõ DiemTuDong.
   const laTyLeGioGiang = laCongThucGioGiang(chiTiet);
-  const diemTuDong = laTyLeGioGiang ? chiTiet.DiemChinhThuc :
+  const diemTuDong = laTyLeGioGiang || laThanhTichDoanThe(chiTiet) ? chiTiet.DiemChinhThuc :
     chiTiet.DiemTuDong ??
     chiTiet.DiemChinhThuc ??
     chiTiet.DiemKhoa ??
@@ -575,6 +576,9 @@ const TieuChiChamCard = ({
             <i className="fa-solid fa-robot"></i> Hệ thống tự tính từ dữ liệu đã
             ghi nhận.
           </div>
+          {diemTuDong != null && Number(diemTuDong) === 0 && chiTiet.LyDoDiemTuDong && (
+            <p className="cdm-tu-dong-chu-thich">{chiTiet.LyDoDiemTuDong}</p>
+          )}
         </div>
       )}
     </div>

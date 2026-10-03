@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { normalizeRole } from "../utils/roles";
 import { visibleGroups } from "../config/menuConfig";
 import { useQuyenDaoTao } from "../context/HoatDongDaoTaoContext";
+import { useQuyenDoanThe } from "../context/ThanhTichDoanTheContext";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   const { user: authUser } = useAuth();
@@ -20,7 +21,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
 
   const myRole = normalizeRole(user);
   const { quyen } = useQuyenDaoTao();
-  const groups = useMemo(() => visibleGroups(authUser, quyen), [authUser, quyen]);
+  const { quyen: quyenDoanThe } = useQuyenDoanThe();
+  const groups = useMemo(() => visibleGroups(authUser, quyen, quyenDoanThe), [authUser, quyen, quyenDoanThe]);
 
   useEffect(() => {
     const currentPath = location.pathname;

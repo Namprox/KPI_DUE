@@ -43,20 +43,20 @@ export default function HoatDongDaoTaoUyQuyen() {
   };
   if (quyen?.LaQuanLy !== true) return <div className="page-container">Bạn không có quyền ủy quyền nhập liệu.</div>;
   return <div className="page-container hddt">
-    <div className="page-header hddt-heading"><div><h2>Ủy quyền nhập liệu đào tạo</h2><span className="breadcrumb">Cấp quyền ghi nhận cho nhân sự Phòng Đào tạo và Bảo đảm chất lượng</span></div><Link className="hddt-button" to="/hoat-dong-dao-tao">Về danh sách hoạt động</Link></div>
+    <div className="page-header hddt-heading"><div className="header-title"><h2>Ủy quyền nhập liệu đào tạo</h2><span className="breadcrumb">Cấp quyền ghi nhận cho nhân sự Phòng Đào tạo và Bảo đảm chất lượng</span></div><Link className="hddt-button" to="/hoat-dong-dao-tao">Về danh sách hoạt động</Link></div>
     {message && <p role="status" className="hddt-notice">{message}</p>}
     {error && <div role="alert" className="hddt-error">{error} <button onClick={() => setRevision((v) => v + 1)}>Thử lại</button></div>}
     <div className="hddt-heading"><h3>Danh sách ủy quyền</h3><label className="hddt-check"><input type="checkbox" checked={history} onChange={(e) => setHistory(e.target.checked)} />Bao gồm đã thu hồi</label></div>
-    <div className="modern-table-card hddt-table-scroll"><table aria-label="Danh sách ủy quyền"><thead><tr><th>Nhân sự</th><th>Người cấp / Ngày cấp</th><th>Ghi chú</th><th>Hiệu lực</th><th>Thao tác</th></tr></thead><tbody>
+    <div className="modern-table-card hddt-table-scroll"><table className="custom-table" aria-label="Danh sách ủy quyền"><thead><tr><th>Nhân sự</th><th>Người cấp / Ngày cấp</th><th>Ghi chú</th><th>Hiệu lực</th><th>Thao tác</th></tr></thead><tbody>
       {loading ? <tr><td colSpan={5} className="hddt-empty">Đang tải...</td></tr> : rows.length === 0 ? <tr><td colSpan={5} className="hddt-empty">{error ? "Không tải được dữ liệu." : "Chưa có ủy quyền."}</td></tr> : rows.map((r, i) => <tr key={`${r.IdNhanVien}-${r.NgayCap}-${i}`}>
-        <td><strong>{r.HoTen}</strong><small>{r.MaNhanVien} · {r.Email || "—"}</small></td><td>{r.TenNguoiCap || "—"}<small>{ngayDaoTao(r.NgayCap, true)}</small></td><td>{r.GhiChu || "—"}</td>
+        <td><span className="table-person-name">{r.HoTen}</span><small>{r.MaNhanVien} · {r.Email || "—"}</small></td><td>{r.TenNguoiCap || "—"}<small>{ngayDaoTao(r.NgayCap, true)}</small></td><td>{r.GhiChu || "—"}</td>
         <td>{r.DaThuHoi === true ? <><span className="hddt-badge hddt-TRUNG">Đã thu hồi</span><small>{ngayDaoTao(r.NgayThuHoi, true)}</small></> : r.ConThuocPhong === false ? <span className="hddt-warning">Đã rời phòng – không còn hiệu lực</span> : r.ConThuocPhong === true ? <span className="hddt-badge hddt-THEM">Đang có hiệu lực</span> : "—"}</td>
         <td>{r.DaThuHoi === false && <button className="hddt-danger" onClick={() => open(r, true)}>Thu hồi</button>}</td>
       </tr>)}
     </tbody></table></div>
     <h3>Nhân sự của phòng</h3><p className="hddt-muted">Người được ủy quyền được thêm, sửa, xoá và import. Quyền tự mất hiệu lực khi rời phòng.</p>
-    <div className="modern-table-card hddt-table-scroll"><table aria-label="Ứng viên nhập liệu"><thead><tr><th>Nhân sự</th><th>Chức vụ</th><th>Quyền nhập liệu</th></tr></thead><tbody>
-      {loading ? <tr><td colSpan={3} className="hddt-empty">Đang tải...</td></tr> : candidates.length === 0 ? <tr><td colSpan={3} className="hddt-empty">Chưa có nhân sự để hiển thị.</td></tr> : candidates.map((p) => <tr key={p.IdNhanVien}><td><strong>{p.HoTen}</strong><small>{p.MaNhanVien}</small></td><td>{p.TenChucVu || "—"}</td><td>
+    <div className="modern-table-card hddt-table-scroll"><table className="custom-table" aria-label="Ứng viên nhập liệu"><thead><tr><th>Nhân sự</th><th>Chức vụ</th><th>Quyền nhập liệu</th></tr></thead><tbody>
+      {loading ? <tr><td colSpan={3} className="hddt-empty">Đang tải...</td></tr> : candidates.length === 0 ? <tr><td colSpan={3} className="hddt-empty">Chưa có nhân sự để hiển thị.</td></tr> : candidates.map((p) => <tr key={p.IdNhanVien}><td><span className="table-person-name">{p.HoTen}</span><small>{p.MaNhanVien}</small></td><td>{p.TenChucVu || "—"}</td><td>
         {p.LaQuanLy === true ? <button disabled>Đã có toàn quyền</button> : p.DaDuocCap === true ? <button className="hddt-danger" onClick={() => open(p, true)}>Thu hồi</button> : <button className="hddt-primary" onClick={() => open(p, false)}>Cấp quyền</button>}
       </td></tr>)}
     </tbody></table></div>

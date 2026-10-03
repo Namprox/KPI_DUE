@@ -438,6 +438,14 @@ export const MENU_GROUPS = [
         serverPermission: "LaQuanLy",
       },
       {
+        // Server giới hạn dữ liệu; mọi tài khoản đều có lối vào danh sách cá nhân.
+        name: "Thành tích đoàn thể",
+        icon: "fa-solid fa-medal",
+        path: "/thanh-tich-doan-the",
+        childPaths: ["/thanh-tich-doan-the/:id"],
+        roles: MOI_NGUOI,
+      },
+      {
         // Hai điều kiện phải cùng đúng: chức vụ Trưởng Phòng VÀ thuộc đúng phòng
         // giám sát giảng dạy. Đây là màn hình nghiệp vụ của riêng phòng đó,
         // không phải màn hình quản trị dữ liệu chung.
@@ -716,14 +724,17 @@ export const canAccessPath = (pathname, user, quyenDaoTao) => {
  */
 const laMucMock = (item) => String(item?.name || "").startsWith("[Mock]");
 
-export const visibleItems = (group, user, quyenDaoTao) =>
+export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe) =>
   group.items.filter((item) => !laMucMock(item) && canAccessRule(item, user, quyenDaoTao))
     .map((item) => item.path === "/hoat-dong-dao-tao" && quyenDaoTao &&
       quyenDaoTao.XemTatCa !== true && quyenDaoTao.XemTheoKhoa !== true
-      ? { ...item, name: "Hoạt động đào tạo của tôi" } : item);
+      ? { ...item, name: "Hoạt động đào tạo của tôi" }
+      : item.path === "/thanh-tich-doan-the" &&
+        quyenDoanThe?.XemTatCa !== true && quyenDoanThe?.XemTheoKhoa !== true
+      ? { ...item, name: "Thành tích đoàn thể của tôi" } : item);
 
-export const visibleGroups = (user, quyenDaoTao) =>
+export const visibleGroups = (user, quyenDaoTao, quyenDoanThe) =>
   MENU_GROUPS.map((group) => ({
     ...group,
-    items: visibleItems(group, user, quyenDaoTao),
+    items: visibleItems(group, user, quyenDaoTao, quyenDoanThe),
   })).filter((group) => group.items.length > 0);
