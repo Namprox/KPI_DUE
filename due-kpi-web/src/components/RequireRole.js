@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { canAccessPath, findRouteRule } from "../config/menuConfig";
 import { coDanhGiaKpiCaNhan } from "../utils/roles";
+import { useQuyenDaoTao } from "../context/HoatDongDaoTaoContext";
 
 const KhongCoQuyen = ({ khongDanhGia }) => (
   <div className="page-container">
@@ -27,9 +28,14 @@ const KhongCoQuyen = ({ khongDanhGia }) => (
 const RequireRole = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const daoTao = useQuyenDaoTao();
 
   if (loading) return <div className="page-container">Đang tải thông tin tài khoản...</div>;
-  if (!canAccessPath(location.pathname, user)) {
+  if (findRouteRule(location.pathname)?.serverPermission) {
+    if (daoTao.loading) return <div className="page-container">Đang tải quyền truy cập...</div>;
+    if (daoTao.error) return <div className="page-container"><p role="alert">{daoTao.error}</p><button onClick={daoTao.refresh}>Thử lại</button></div>;
+  }
+  if (!canAccessPath(location.pathname, user, daoTao.quyen)) {
     const khongDanhGia = findRouteRule(location.pathname)?.personalKpi &&
       Array.isArray(user?.DonVi) && user.DonVi.some((dv) => dv?.LoaiDoiTuong === 0) &&
       !coDanhGiaKpiCaNhan(user);

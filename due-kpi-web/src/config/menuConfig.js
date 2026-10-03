@@ -426,6 +426,18 @@ export const MENU_GROUPS = [
         access: canViewHocVu,
       },
       {
+        name: "Hoạt động đào tạo",
+        icon: "fa-solid fa-book-open",
+        path: "/hoat-dong-dao-tao",
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "Ủy quyền nhập liệu đào tạo",
+        icon: "fa-solid fa-user-shield",
+        path: "/hoat-dong-dao-tao/uy-quyen",
+        serverPermission: "LaQuanLy",
+      },
+      {
         // Hai điều kiện phải cùng đúng: chức vụ Trưởng Phòng VÀ thuộc đúng phòng
         // giám sát giảng dạy. Đây là màn hình nghiệp vụ của riêng phòng đó,
         // không phải màn hình quản trị dữ liệu chung.
@@ -610,6 +622,7 @@ const buildRouteRules = () => {
         personalKpi: item.personalKpi || Object.prototype.hasOwnProperty.call(LOAI_DOI_TUONG_THEO_DUONG_DAN, item.path),
         donVi: item.donVi,
         access: item.access,
+        serverPermission: item.serverPermission,
       };
       rules.push({ path: item.path, ...rule });
       (item.childPaths || []).forEach((child) => {
@@ -642,8 +655,9 @@ export const ROUTE_RULES = buildRouteRules();
 export const findRouteRule = (pathname) =>
   ROUTE_RULES.find((rule) => matchPath(rule.path, pathname)) || null;
 
-export const canAccessRule = (rule, user) => {
+export const canAccessRule = (rule, user, quyenDaoTao) => {
   if (!user) return false;
+  if (rule.serverPermission) return quyenDaoTao?.[rule.serverPermission] === true;
 
   if (rule.personalKpi && !coDanhGiaKpiCaNhan(user)) return false;
 
@@ -682,7 +696,7 @@ export const canAccessRule = (rule, user) => {
   );
 };
 
-export const canAccessPath = (pathname, user) => {
+export const canAccessPath = (pathname, user, quyenDaoTao) => {
   const rule = findRouteRule(pathname);
   if (!rule) {
     if (process.env.NODE_ENV !== "production") {
@@ -693,7 +707,7 @@ export const canAccessPath = (pathname, user) => {
     }
     return false;
   }
-  return canAccessRule(rule, user);
+  return canAccessRule(rule, user, quyenDaoTao);
 };
 
 /**
@@ -702,11 +716,14 @@ export const canAccessPath = (pathname, user) => {
  */
 const laMucMock = (item) => String(item?.name || "").startsWith("[Mock]");
 
-export const visibleItems = (group, user) =>
-  group.items.filter((item) => !laMucMock(item) && canAccessRule(item, user));
+export const visibleItems = (group, user, quyenDaoTao) =>
+  group.items.filter((item) => !laMucMock(item) && canAccessRule(item, user, quyenDaoTao))
+    .map((item) => item.path === "/hoat-dong-dao-tao" && quyenDaoTao &&
+      quyenDaoTao.XemTatCa !== true && quyenDaoTao.XemTheoKhoa !== true
+      ? { ...item, name: "Hoạt động đào tạo của tôi" } : item);
 
-export const visibleGroups = (user) =>
+export const visibleGroups = (user, quyenDaoTao) =>
   MENU_GROUPS.map((group) => ({
     ...group,
-    items: visibleItems(group, user),
+    items: visibleItems(group, user, quyenDaoTao),
   })).filter((group) => group.items.length > 0);

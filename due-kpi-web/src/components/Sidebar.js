@@ -5,6 +5,7 @@ import logoImage from "../images/logo.png";
 import { useAuth } from "../context/AuthContext";
 import { normalizeRole } from "../utils/roles";
 import { visibleGroups } from "../config/menuConfig";
+import { useQuyenDaoTao } from "../context/HoatDongDaoTaoContext";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   const { user: authUser } = useAuth();
@@ -18,7 +19,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   const isExpanded = !isCollapsed || isHovered;
 
   const myRole = normalizeRole(user);
-  const groups = useMemo(() => visibleGroups(authUser), [authUser]);
+  const { quyen } = useQuyenDaoTao();
+  const groups = useMemo(() => visibleGroups(authUser, quyen), [authUser, quyen]);
 
   useEffect(() => {
     const currentPath = location.pathname;
@@ -34,7 +36,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         break;
       }
     }
-  }, [location.pathname, myRole]);
+  }, [location.pathname, myRole, groups]);
 
   const toggleSubMenu = (menuKey) => {
     if (!isExpanded) return;

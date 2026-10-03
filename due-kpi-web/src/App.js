@@ -23,6 +23,7 @@ import AppRoutes from "./routes/AppRoutes";
 import ChangePasswordDialog from "./modals/ChangePasswordDialog";
 import { useConfirmLogoutDialog } from "./hooks/useConfirmLogoutDialog";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { HoatDongDaoTaoProvider } from "./context/HoatDongDaoTaoContext";
 
 const FullScreenLoader = () => (
   <div
@@ -167,7 +168,7 @@ export default function App() {
         <Router
           future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
-          <AppContent />
+          <HoatDongDaoTaoProvider><AppContent /></HoatDongDaoTaoProvider>
         </Router>
       </AuthProvider>
     </PrimeReactProvider>

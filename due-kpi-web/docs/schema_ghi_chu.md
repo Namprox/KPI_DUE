@@ -29,6 +29,9 @@ chỉ còn 2 tiền tố (không còn `TT_`, `V_`, `TO_`):
 Mã đơn vị duy nhất còn viết cứng trong SP: `N'P_DTBDCL'` (Phòng Đào tạo và Bảo đảm chất lượng, gộp từ
 `P_DT` + `P_QLCL`) — TP của đơn vị này được chốt / xem toàn trường điểm TB phản hồi SV
 (`sp_diem_tb_phan_hoi_sv_chot`, `_get_chi_tiet`). Đổi mã này phải sửa cả 2 SP.
+Từ đợt "Hoạt động đào tạo" (§16) mã này còn viết cứng ở `fn_hoat_dong_dao_tao_thuoc_phong`,
+`fn_hoat_dong_dao_tao_quyen` và `sp_hoat_dong_dao_tao_nguoi_nhap_ung_vien` (module học vụ §14 cũng
+dùng qua `fn_hoc_vu_co_quyen_quan_ly`) — đổi mã phải sửa cả các chỗ này.
 Đơn vị mới thuộc nhóm Phòng/TT/Viện **không được** đặt mã `K_…`, kể cả khi danh sách tổ chức xếp nó cạnh các Khoa
 (vd Viện Đào tạo quốc tế = `P_DTQT`).
 
@@ -3871,3 +3874,146 @@ sửa `@ten_db_test` trong script reset rồi chạy trong SSMS, sau đó mới 
 - Lưới an toàn: quét mọi FK trỏ vào `nhan_vien`; còn dòng tham chiếu người sắp xoá (bảng mới chưa có trong
   script) → ROLLBACK và báo tên bảng. **Thêm bảng mới có FK tới `nhan_vien` thì bổ sung vào script này.**
 - Sau reset: chốt lại điểm TB phản hồi SV; chạy lại tự ánh xạ giờ giảng TKB sau khi import nhân viên.
+
+---
+
+## 16. HOẠT ĐỘNG ĐÀO TẠO — P_DTBDCL GHI NHẬN (`hoat_dong_dao_tao`) → nguồn 4 tiêu chí chấm tự động của GV
+
+### 16.0. Vì sao có module này
+
+Bốn tiêu chí của mẫu đánh giá **giảng viên** đang do GV **tự nhập điểm**. Mỗi nội dung là **1 tiêu chí riêng**,
+điểm = `diem_toi_da` của tiêu chí:
+
+| Loại | `ma_loai` | Nội dung | Điểm |
+|---|---|---|---|
+| 1 | `CTDT_HOI_DONG` | Thành viên hội đồng xây dựng và rà soát CTĐT | 5 |
+| 2 | `CTDT_TO_GIUP_VIEC` | Thành viên tổ giúp việc / tổ soạn thảo xây dựng CTĐT | 3 |
+| 3 | `NCS_SP_TRUNG_GIAN` | Hướng dẫn NCS có các sản phẩm trung gian đạt yêu cầu | 5 |
+| 4 | `NCS_BAO_VE_LA` | Hướng dẫn NCS bảo vệ thành công luận án tiến sĩ | 10 |
+
+Người nắm số liệu gốc là **P_DTBDCL**, nên P_DTBDCL nhập danh sách GV tham gia theo năm, làm nguồn chấm tự động.
+
+**Phạm vi đợt 2026-10-02: CHỈ module nhập liệu.** Chưa có tiêu chí nào đọc bảng này. Phần nối vào engine ở §16.6.
+
+### 16.1. Bảng
+
+- **`loai_hoat_dong_dao_tao`** — danh mục **cố định 4 dòng** (seed trong `schema.sql` / `update_database.sql`).
+  - `ma_loai` đặt **trùng mã `cong_thuc_tong_hop`** của tiêu chí tương ứng, cùng mẹo với `nhom_vi_pham.ma_nhom` (§3.2.a) → không cần bảng ánh xạ.
+  - `nhan_noi_dung` là nhãn của ô "Nội dung" trên form ("Tên chương trình đào tạo" / "Họ tên NCS – tên đề tài luận án").
+- **`hoat_dong_dao_tao`** — **1 dòng = 1 GV × 1 hoạt động**. Một hội đồng 9 thành viên = 9 dòng; hai người cùng hướng dẫn 1 NCS = 2 dòng.
+  - `id_nam` do người nhập chọn, **không** suy từ `ngay_quyet_dinh`. Ngày QĐ không bắt buộc và không bị chặn theo khoảng năm.
+  - `nguon`: 1 = form, 2 = import Excel.
+  - **Không lưu điểm.**
+  - Xoá **mềm** (`da_xoa`, `id_nguoi_xoa`, `ngay_xoa`); CHECK `chk_hddt_xoa` giữ cặp `da_xoa` / `ngay_xoa` nhất quán.
+- **`hoat_dong_dao_tao_nguoi_nhap`** — ủy quyền nhập liệu.
+  - Filtered unique `ux_hddtnn_nv (id_nhan_vien) WHERE da_thu_hoi = 0`: mỗi người tối đa 1 ủy quyền còn hiệu lực.
+  - Thu hồi = `da_thu_hoi = 1`, giữ dòng làm lịch sử; cấp lại = thêm dòng mới.
+- **`lich_su_hoat_dong_dao_tao`** — theo convention `lich_su_*`, **không** dùng `nhat_ky`.
+  - `hanh_dong`: 1 Ghi nhận · 2 Sửa (chỉ ghi khi thật sự đổi) · 3 Xoá · 4 Import Excel · 5 Cấp quyền nhập · 6 Thu hồi quyền nhập.
+  - Với 5 / 6 thì `id_hoat_dong` NULL.
+- Index:
+  - `ix_hddt_nv_nam_loai (id_nhan_vien, id_nam, id_loai) WHERE da_xoa = 0` phục vụ `EXISTS` của engine (§16.6).
+  - `ix_hddt_nam_loai` phục vụ màn danh sách.
+  - Cả hai là filtered index ⇒ bắt buộc `SET QUOTED_IDENTIFIER ON` (§10.2).
+- TVP:
+  - `HoatDongDaoTaoGiangVienRow (id_nhan_vien PK)` — ghi nhận 1 hoạt động cho nhiều GV.
+  - `HoatDongDaoTaoImportRow` — dòng Excel; cột `loi_dinh_dang` do C# điền.
+
+### 16.2. Quy tắc nghiệp vụ — đã chốt với người dùng (2026-10-02)
+
+1. **Chỉ tính 1 lần / năm**: có ≥ 1 dòng còn hiệu lực của (GV, năm, loại) → đủ `diem_toi_da` của tiêu chí; nhiều dòng **không** cộng thêm. Áp dụng ở session sau, xem §16.6.
+2. **Chỉ ghi nhận cho giảng viên đang công tác tại Khoa** (`v_giang_vien_khoa`: GV / GVC / GVCC).
+   - Khi **sửa** mà giữ nguyên GV thì không kiểm lại, nên GV đã nghỉ vẫn sửa được nội dung bản ghi cũ.
+   - Đổi sang GV khác thì người mới phải đạt điều kiện này.
+3. **Chống trùng trong SP** (không có unique index): không cho 2 dòng còn hiệu lực cùng (`id_nam`, `id_loai`, `id_nhan_vien`, `LTRIM(RTRIM(noi_dung))`).
+   - So sánh theo **collation CSDL** (không phân biệt hoa / thường).
+   - SP đọc dưới `UPDLOCK, HOLDLOCK` để hai request cùng lúc không cùng lọt.
+4. **Bản ghi có hiệu lực ngay**, không có bước duyệt: P_DTBDCL là nơi nắm số liệu gốc.
+5. **Ghi nhận nhiều GV = all-or-nothing** (`sp_hoat_dong_dao_tao_create`): một người không hợp lệ hoặc trùng thì không ghi ai. Message liệt kê tên.
+6. **Sửa = thay toàn bộ** (PUT): trường tuỳ chọn bỏ trống = xoá giá trị.
+   - Không có gì đổi (so `Latin1_General_BIN`, nên sửa hoa / thường cũng tính là đổi) → không UPDATE, không ghi lịch sử, `co_thay_doi = 0`. Cùng quy ước §7 / §9.3.
+
+### 16.3. Phân quyền — `fn_hoat_dong_dao_tao_quyen` (inline TVF, luôn 1 dòng, fail-closed)
+
+| Cột | Điều kiện | Được làm |
+|---|---|---|
+| `la_quan_ly` | ADMIN, hoặc TP / QTP **tại** `P_DTBDCL` | Toàn quyền + cấp / thu hồi ủy quyền |
+| `duoc_nhap` | `la_quan_ly`, **hoặc** có ủy quyền chưa thu hồi **và** hôm nay vẫn thuộc P_DTBDCL | Thêm / sửa / xoá / import, picker GV, file mẫu |
+| `xem_tat_ca` | `duoc_nhap`, hoặc HT | Xem toàn trường |
+
+- Đọc tập (đơn vị, chức vụ) qua `fn_pham_vi_don_vi` (§10.6): người kiêm nhiệm TP P_DTBDCL mà đơn vị **chính** là Khoa vẫn được nhận đúng.
+  - Luật `la_quan_ly` **chép** từ `fn_hoc_vu_co_quyen_quan_ly` chứ không gọi hàm đó, để hai module độc lập.
+- **"Thuộc P_DTBDCL"** = `fn_hoat_dong_dao_tao_thuoc_phong`: có dòng `nhan_vien_chuc_vu` hiệu lực hôm nay tại P_DTBDCL (có hay không có chức vụ) và nhân viên đang hoạt động.
+  - **Rời phòng ⇒ tự mất quyền**, không cần thu hồi.
+  - Danh sách ủy quyền trả cờ `con_thuoc_phong` để TP thấy các ủy quyền đã "chết".
+- Cấp quyền:
+  - Người nhận phải đang thuộc phòng (`KHONG_THUOC_PHONG`).
+  - Người đã có toàn quyền (TP / QTP / ADMIN) → `INVALID`.
+  - Người được ủy quyền **không** cấp tiếp được (gate `la_quan_ly`).
+- Gọi hàm quyền cho **người khác** thì truyền `@chuc_vu_jwt` / `@don_vi_jwt` = NULL, để bỏ nhánh tương thích JWT của `fn_pham_vi_don_vi`.
+- **Phạm vi xem** (`_list`, `_get_by_id`):
+  - `xem_tat_ca` → toàn trường.
+  - TK / TKL / TKK → GV thuộc Khoa mình (`fn_hoat_dong_dao_tao_khoa_duoc_xem`, cùng luật nhánh hai của `fn_hoc_vu_khoa_duoc_xem`), tính mọi Khoa GV thuộc, kể cả kiêm nhiệm.
+  - Người khác → chỉ bản ghi của chính mình. Danh sách không trả 403.
+  - Bản ghi đã xoá chỉ người `xem_tat_ca` mở được.
+- BLL **không** gate bằng `ma_chuc_vu` của JWT (cùng lý do §7): SP là nguồn sự thật.
+
+### 16.4. Import Excel — `POST api/hoat-dong-dao-tao/import`
+
+- C# (`Helper/HoatDongDaoTaoExcelReader.cs`, ExcelDataReader) đọc **sheet đầu tiên**.
+  - Cột tìm **theo tên header** đã chuẩn hoá (bỏ dấu, chữ thường), dò trong 10 dòng đầu.
+  - Cột bắt buộc: Loại, Mã nhân viên (hoặc "Mã NV" / "Mã CBVC"), Nội dung.
+  - Cột tuỳ chọn: Họ tên, Số QĐ, Ngày QĐ (ô ngày, số serial hoặc `dd/MM/yyyy`), Ghi chú.
+  - Tối đa 5000 dòng; bỏ dòng trống hoàn toàn.
+  - Lỗi **định dạng** (ngày sai, chuỗi quá dài) **không bỏ dòng**: ghi vào `loi_dinh_dang` rồi vẫn gửi xuống SP, để có **một** bảng kết quả theo từng dòng.
+- `sp_hoat_dong_dao_tao_import` **chỉ thêm, không ghi đè**. Import lại cùng file thì toàn bộ ra TRUNG, an toàn.
+  - Mỗi dòng ra đúng một trong ba kết quả:
+    - **LOI**: `DINH_DANG` · `LOAI_KHONG_HOP_LE` · `THIEU_MA_NHAN_VIEN` · `NHAN_VIEN_KHONG_TON_TAI` · `KHONG_PHAI_GIANG_VIEN` · `THIEU_NOI_DUNG`. Dòng giữ lỗi **đầu tiên** theo thứ tự này.
+    - **TRUNG**: `TRUNG_DU_LIEU_CU` (trùng bản ghi còn hiệu lực) · `TRUNG_TRONG_FILE` (giữ dòng đầu tiên).
+    - **THEM**.
+  - Cột "Loại" nhận số thứ tự (1..4) hoặc `ma_loai`. GV khớp theo `ma_nhan_vien`.
+  - Họ tên trong file lệch hệ thống → `canh_bao`, dòng **vẫn được thêm**.
+  - `@chi_kiem_tra = 1` → chỉ trả báo cáo, không ghi.
+- File mẫu: `GET api/hoat-dong-dao-tao/mau-import` (`ExcelHelper.WriteHoatDongDaoTaoMau`).
+  - Sheet 1 chỉ có dòng tiêu đề; mã loại và dòng ví dụ ở sheet 2, để không bị import nhầm.
+  - Tên cột lấy từ `HoatDongDaoTaoExcelReader.TenCotMau` ⇒ mẫu và reader không lệch nhau.
+
+### 16.5. Mã lỗi + hợp đồng result set
+
+- Mọi SP: **RS1** = `success` / `message` / `error_code` (+ cột đếm); dữ liệu chỉ phát khi `success = 1`.
+- `_get_by_id`: RS2 bản ghi, RS3 lịch sử.
+- `_import`: RS2 từng dòng.
+- `_create`: RS2 id vừa tạo.
+- HTTP:
+  - `FORBIDDEN` → 403
+  - `NOT_FOUND` → 404
+  - `INVALID` → 400
+  - `KHONG_PHAI_GIANG_VIEN` / `KHONG_THUOC_PHONG` → 422
+  - `TRUNG_BAN_GHI` / `DA_DUOC_CAP` → 409
+  - `DB_ERROR` → 500
+- POST tạo mới trả 201.
+
+### 16.6. Nối vào chấm tự động — SESSION SAU (chưa làm)
+
+Dùng lại **khung chấm điểm tự động** (§4.2), cùng checklist với `NVK_PHAN_CONG_KHOA` (§7):
+
+1. `fn_nckh_diem_tu_dong`: thêm 4 mã vào whitelist `IN (...)`, cộng **một** nhánh chung:
+   ```sql
+   IF (@cong_thuc IN (N'CTDT_HOI_DONG', N'CTDT_TO_GIUP_VIEC', N'NCS_SP_TRUNG_GIAN', N'NCS_BAO_VE_LA'))
+       RETURN CASE WHEN EXISTS (SELECT 1 FROM dbo.hoat_dong_dao_tao h
+                                INNER JOIN dbo.loai_hoat_dong_dao_tao l ON l.id_loai = h.id_loai
+                                WHERE h.id_nhan_vien = @id_nhan_vien AND h.id_nam = @id_nam
+                                  AND h.da_xoa = 0 AND l.ma_loai = @cong_thuc)
+                   THEN @diem_toi_da ELSE 0 END;
+   ```
+   Chưa có dòng → **0** (không phải NULL; NULL = "mã chưa hỗ trợ"). Khoá theo `@id_nhan_vien`, bỏ qua `@quy` (phiếu GV theo năm).
+2. `fn_nckh_minh_chung_tu_dong`: nhánh `loai_nguon = 9` liệt kê từng bản ghi. **Vị từ lọc phải giống hệt** nhánh chấm điểm.
+3. `sp_mau_danh_gia_diem_tu_dong`: cờ `@co_tieu_chi_hddt` mở rộng tập GV có dòng trong năm. Không thêm result set mới.
+4. Sửa 4 tiêu chí qua API tiêu chí:
+   - `loai_nguon_diem = 2`, `cong_thuc_tong_hop = ma_loai`.
+   - `loai_thang_diem = 1` + 2 dòng `thang_diem` (`diem_toi_da` / 0) để engine ánh xạ được nhãn.
+5. **Phiếu đã tạo** giữ snapshot `loai_nguon_diem = 1` của 4 dòng này, vì engine không đồng bộ lại phiếu cũ (§4.2). Phải chọn một trong hai cách:
+   - script chuyển 4 dòng của phiếu chưa chốt sang tự động;
+   - hoặc xoá / tạo lại phiếu (tiền lệ `GIO_GIANG_TY_LE`).
+6. P_DTBDCL thường nhập **sau** khi GV nộp phiếu ⇒ nhập xong phải chạy lại `POST api/phieu/{id}/tong-hop-tu-dong` (cùng quy ước NVK / TTVT).
+   - Cân nhắc một endpoint tổng hợp lại hàng loạt.

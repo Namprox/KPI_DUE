@@ -2692,3 +2692,144 @@ GO
 -- 15.4. Index của module
 CREATE INDEX ix_gtnv_nv ON giam_tru_nhan_vien(id_nhan_vien);
 GO
+
+-- =============================================================================
+-- 16. HOẠT ĐỘNG ĐÀO TẠO — P_DTBDCL ghi nhận (nguồn 4 tiêu chí chấm tự động của GV)
+-- =============================================================================
+-- P_DTBDCL nhập theo năm danh sách GIẢNG VIÊN tham gia hội đồng / tổ giúp việc CTĐT và
+-- hướng dẫn NCS. Mỗi dòng = 1 GV × 1 hoạt động. Quy tắc chấm (session sau): có ≥ 1 dòng
+-- còn hiệu lực của (GV, năm, loại) → đủ diem_toi_da của tiêu chí; nhiều dòng KHÔNG cộng
+-- thêm ⇒ bảng KHÔNG lưu điểm. Quyền: fn_hoat_dong_dao_tao_quyen (procedure.sql mục 16).
+-- Xem schema_ghi_chu.md mục 16.
+-- =============================================================================
+
+-- 16.1. Danh mục loại hoạt động — CỐ ĐỊNH 4 dòng (seed trong update_database.sql).
+--       ma_loai đặt TRÙNG mã cong_thuc_tong_hop của tiêu chí chấm tự động tương ứng
+--       (giống nhom_vi_pham.ma_nhom) → không cần bảng ánh xạ.
+CREATE TABLE loai_hoat_dong_dao_tao (
+    id_loai        TINYINT       NOT NULL,
+    ma_loai        NVARCHAR(50)  NOT NULL,
+    ten_loai       NVARCHAR(255) NOT NULL,
+    nhan_noi_dung  NVARCHAR(100) NOT NULL,   -- nhãn ô "nội dung" trên form (vd 'Tên CTĐT')
+    thu_tu         TINYINT       NOT NULL,
+    CONSTRAINT pk_lhddt    PRIMARY KEY (id_loai),
+    CONSTRAINT uq_lhddt_ma UNIQUE (ma_loai)
+);
+GO
+
+INSERT INTO loai_hoat_dong_dao_tao (id_loai, ma_loai, ten_loai, nhan_noi_dung, thu_tu) VALUES
+    (1, N'CTDT_HOI_DONG',     N'Thành viên hội đồng xây dựng và rà soát CTĐT',          N'Tên chương trình đào tạo',          1),
+    (2, N'CTDT_TO_GIUP_VIEC', N'Thành viên tổ giúp việc / tổ soạn thảo xây dựng CTĐT',  N'Tên chương trình đào tạo',          2),
+    (3, N'NCS_SP_TRUNG_GIAN', N'Hướng dẫn NCS có các sản phẩm trung gian đạt yêu cầu',  N'Họ tên NCS – tên đề tài luận án',  3),
+    (4, N'NCS_BAO_VE_LA',     N'Hướng dẫn NCS bảo vệ thành công luận án tiến sĩ',       N'Họ tên NCS – tên đề tài luận án',  4);
+GO
+
+-- 16.2. Bản ghi hoạt động — 1 dòng = 1 GV × 1 hoạt động (1 hội đồng 9 thành viên = 9 dòng;
+--       2 người cùng hướng dẫn 1 NCS = 2 dòng). Năm do người nhập chọn (id_nam), không suy
+--       từ ngay_quyet_dinh. Xoá MỀM (da_xoa) để giữ vết; mọi thao tác ghi lich_su_hoat_dong_dao_tao.
+--       Chống trùng nằm trong SP (không có unique index): không cho 2 dòng còn hiệu lực cùng
+--       (id_nam, id_loai, id_nhan_vien, noi_dung đã trim) — so sánh theo collation CSDL.
+CREATE TABLE hoat_dong_dao_tao (
+    id_hoat_dong      INT            IDENTITY(1,1) NOT NULL,
+    id_nam            INT            NOT NULL,
+    id_loai           TINYINT        NOT NULL,
+    id_nhan_vien      INT            NOT NULL,   -- giảng viên được ghi nhận
+    noi_dung          NVARCHAR(500)  NOT NULL,   -- tên CTĐT / họ tên NCS – tên luận án
+    so_quyet_dinh     NVARCHAR(100)  NULL,
+    ngay_quyet_dinh   DATE           NULL,
+    ghi_chu           NVARCHAR(1000) NULL,
+    nguon             TINYINT        NOT NULL CONSTRAINT df_hddt_nguon    DEFAULT 1,  -- 1 form, 2 import Excel
+    id_nguoi_tao      INT            NOT NULL,
+    ngay_tao          DATETIME       NOT NULL CONSTRAINT df_hddt_ngay_tao DEFAULT GETDATE(),
+    id_nguoi_cap_nhat INT            NULL,
+    ngay_cap_nhat     DATETIME       NULL,
+    da_xoa            BIT            NOT NULL CONSTRAINT df_hddt_da_xoa   DEFAULT 0,
+    id_nguoi_xoa      INT            NULL,
+    ngay_xoa          DATETIME       NULL,
+    CONSTRAINT pk_hddt              PRIMARY KEY (id_hoat_dong),
+    CONSTRAINT fk_hddt_nam          FOREIGN KEY (id_nam)            REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_hddt_loai         FOREIGN KEY (id_loai)           REFERENCES loai_hoat_dong_dao_tao(id_loai),
+    CONSTRAINT fk_hddt_nv           FOREIGN KEY (id_nhan_vien)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_hddt_nguoi_tao    FOREIGN KEY (id_nguoi_tao)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_hddt_nguoi_cn     FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_hddt_nguoi_xoa    FOREIGN KEY (id_nguoi_xoa)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_hddt_nguon       CHECK (nguon IN (1, 2)),
+    CONSTRAINT chk_hddt_noi_dung    CHECK (LEN(LTRIM(RTRIM(noi_dung))) > 0),
+    CONSTRAINT chk_hddt_xoa         CHECK ((da_xoa = 0 AND ngay_xoa IS NULL) OR (da_xoa = 1 AND ngay_xoa IS NOT NULL))
+);
+GO
+
+-- 16.3. Ủy quyền nhập liệu — TP / QTP của P_DTBDCL cấp cho nhân sự của phòng.
+--       Quyền chỉ có hiệu lực khi người được cấp HÔM NAY vẫn thuộc P_DTBDCL
+--       (fn_hoat_dong_dao_tao_thuoc_phong) → rời phòng thì tự mất quyền, không cần thu hồi.
+--       Thu hồi = da_thu_hoi = 1 (giữ dòng làm lịch sử); cấp lại = dòng mới.
+CREATE TABLE hoat_dong_dao_tao_nguoi_nhap (
+    id               INT           IDENTITY(1,1) NOT NULL,
+    id_nhan_vien     INT           NOT NULL,
+    id_nguoi_cap     INT           NOT NULL,
+    ngay_cap         DATETIME      NOT NULL CONSTRAINT df_hddtnn_ngay_cap DEFAULT GETDATE(),
+    ghi_chu          NVARCHAR(500) NULL,
+    da_thu_hoi       BIT           NOT NULL CONSTRAINT df_hddtnn_thu_hoi  DEFAULT 0,
+    id_nguoi_thu_hoi INT           NULL,
+    ngay_thu_hoi     DATETIME      NULL,
+    CONSTRAINT pk_hddtnn            PRIMARY KEY (id),
+    CONSTRAINT fk_hddtnn_nv         FOREIGN KEY (id_nhan_vien)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_hddtnn_nguoi_cap  FOREIGN KEY (id_nguoi_cap)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_hddtnn_nguoi_th   FOREIGN KEY (id_nguoi_thu_hoi) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_hddtnn_thu_hoi   CHECK ((da_thu_hoi = 0 AND ngay_thu_hoi IS NULL) OR (da_thu_hoi = 1 AND ngay_thu_hoi IS NOT NULL))
+);
+GO
+
+-- 16.4. Nhật ký module (convention lich_su_*; KHÔNG dùng bảng nhat_ky).
+--       hanh_dong: 1 Ghi nhận · 2 Sửa (chỉ ghi khi thật sự đổi) · 3 Xoá · 4 Import Excel
+--                  · 5 Cấp quyền nhập · 6 Thu hồi quyền nhập.
+--       id_hoat_dong NULL với 5 / 6; id_nhan_vien = người bị ảnh hưởng (GV / người được cấp).
+CREATE TABLE lich_su_hoat_dong_dao_tao (
+    id                 BIGINT         IDENTITY(1,1) NOT NULL,
+    id_hoat_dong       INT            NULL,
+    id_nhan_vien       INT            NULL,
+    hanh_dong          TINYINT        NOT NULL,
+    mo_ta              NVARCHAR(1000) NULL,
+    id_nguoi_thuc_hien INT            NOT NULL,
+    ngay_thuc_hien     DATETIME       NOT NULL CONSTRAINT df_lshddt_ngay DEFAULT GETDATE(),
+    CONSTRAINT pk_lshddt       PRIMARY KEY (id),
+    CONSTRAINT fk_lshddt_hd    FOREIGN KEY (id_hoat_dong)       REFERENCES hoat_dong_dao_tao(id_hoat_dong),
+    CONSTRAINT fk_lshddt_nv    FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_lshddt_nguoi FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_lshddt_hd   CHECK (hanh_dong IN (1, 2, 3, 4, 5, 6))
+);
+GO
+
+-- 16.5. TVP
+--   HoatDongDaoTaoGiangVienRow: danh sách GV khi ghi nhận 1 hoạt động cho nhiều người.
+--   HoatDongDaoTaoImportRow   : dòng Excel đã đọc ở C# (HoatDongDaoTaoExcelReader); lỗi định
+--                               dạng (ngày sai, chuỗi quá dài) đặt ở loi_dinh_dang để SP báo
+--                               chung một bảng kết quả.
+CREATE TYPE dbo.HoatDongDaoTaoGiangVienRow AS TABLE (
+    id_nhan_vien INT NOT NULL PRIMARY KEY
+);
+GO
+
+CREATE TYPE dbo.HoatDongDaoTaoImportRow AS TABLE (
+    dong_excel      INT            NOT NULL PRIMARY KEY,
+    loai            NVARCHAR(50)   NULL,   -- 1..4 hoặc ma_loai
+    ma_nhan_vien    NVARCHAR(20)   NULL,
+    ho_ten          NVARCHAR(100)  NULL,   -- chỉ để đối chiếu, lệch → cảnh báo
+    noi_dung        NVARCHAR(500)  NULL,
+    so_quyet_dinh   NVARCHAR(100)  NULL,
+    ngay_quyet_dinh DATE           NULL,
+    ghi_chu         NVARCHAR(1000) NULL,
+    loi_dinh_dang   NVARCHAR(500)  NULL
+);
+GO
+
+-- 16.6. Index của module (filtered → bắt buộc SET QUOTED_IDENTIFIER ON, xem §10.2).
+--   ix_hddt_nv_nam_loai: phục vụ EXISTS (GV, năm, loại) của engine chấm tự động (session sau).
+CREATE INDEX ix_hddt_nv_nam_loai ON hoat_dong_dao_tao(id_nhan_vien, id_nam, id_loai) WHERE da_xoa = 0;
+GO
+CREATE INDEX ix_hddt_nam_loai    ON hoat_dong_dao_tao(id_nam, id_loai) INCLUDE (id_nhan_vien) WHERE da_xoa = 0;
+GO
+CREATE UNIQUE INDEX ux_hddtnn_nv ON hoat_dong_dao_tao_nguoi_nhap(id_nhan_vien) WHERE da_thu_hoi = 0;
+GO
+CREATE INDEX ix_lshddt_hd        ON lich_su_hoat_dong_dao_tao(id_hoat_dong);
+GO
