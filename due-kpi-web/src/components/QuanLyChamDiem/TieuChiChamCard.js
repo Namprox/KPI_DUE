@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { laCongThucGioGiang } from "../../utils/gioGiangTyLe";
-import { laThanhTichDoanThe } from "../../utils/diemTuDongPhieu";
+import { laThanhTichDoanThe, laPhatTrienDoiNgu } from "../../utils/diemTuDongPhieu";
 import {
   fetchMinhChung,
   fetchNhiemVuCongDong,
@@ -27,6 +28,10 @@ import {
  */
 const MinhChungRow = ({ mc, onXem, onTai }) => {
   const nhan = mc.TenHienThi || mc.TenFileGoc || mc.DuongDan;
+  if (Number(mc.LoaiNguon) === 11) return <div className="cd-mc-row"><i className="fa-solid fa-user-graduate cd-mc-icon" /><div className="cd-mc-main">
+    {mc.MaNguon != null ? <Link className="cd-mc-name" to={`/phat-trien-doi-ngu/${encodeURIComponent(mc.MaNguon)}`}>{mc.TieuDe || "Chi tiết phát triển đội ngũ"}</Link> : <span className="cd-mc-name">{mc.TieuDe || "Phát triển đội ngũ"}</span>}
+    <div className="cd-mc-meta">{mc.MoTa}{mc.Ngay && <> · {formatNgayGio(mc.Ngay)}</>}</div>
+  </div></div>;
 
   if (!laMinhChungFile(mc)) {
     return (
@@ -207,7 +212,7 @@ const TieuChiChamCard = ({
   // Tiêu chí tự động không đi qua ai chấm. Phiếu giảng viên lưu kết quả ở
   // DiemChinhThuc, còn phiếu quý viên chức trả rõ DiemTuDong.
   const laTyLeGioGiang = laCongThucGioGiang(chiTiet);
-  const diemTuDong = laTyLeGioGiang || laThanhTichDoanThe(chiTiet) ? chiTiet.DiemChinhThuc :
+  const diemTuDong = laTyLeGioGiang || laThanhTichDoanThe(chiTiet) || laPhatTrienDoiNgu(chiTiet) ? chiTiet.DiemChinhThuc :
     chiTiet.DiemTuDong ??
     chiTiet.DiemChinhThuc ??
     chiTiet.DiemKhoa ??
@@ -259,7 +264,7 @@ const TieuChiChamCard = ({
           <div>
             {minhChung.map((mc) => (
               <MinhChungRow
-                key={mc.IdMinhChung}
+                key={mc.IdMinhChung ?? `${mc.LoaiNguon}-${mc.MaNguon}`}
                 mc={mc}
                 onXem={onXemMinhChung}
                 onTai={onTaiMinhChung}

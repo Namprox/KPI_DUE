@@ -34,6 +34,9 @@ Từ đợt "Hoạt động đào tạo" (§16) mã này còn viết cứng ở 
 dùng qua `fn_hoc_vu_co_quyen_quan_ly`) — đổi mã phải sửa cả các chỗ này.
 Từ đợt "Thành tích đoàn thể" (§17) có thêm cặp mã viết cứng `N'P_TCTD'` (đơn vị) + `N'TT'` (chức vụ Tổ trưởng), chỉ
 ở **một** chỗ: `fn_thanh_tich_doan_the_quyen`. Đổi mã tổ / mã chức vụ thì chỉ sửa hàm này.
+Từ đợt "Phát triển đội ngũ" (§18) có thêm mã `N'P_TCHC'` (Phòng Tổ chức – Hành chính), viết cứng ở
+`fn_phat_trien_doi_ngu_thuoc_phong`, `fn_phat_trien_doi_ngu_quyen` và `sp_phat_trien_doi_ngu_nguoi_nhap_ung_vien`
+(cùng khuôn §16) — đổi mã phải sửa cả 3 chỗ.
 Đơn vị mới thuộc nhóm Phòng/TT/Viện **không được** đặt mã `K_…`, kể cả khi danh sách tổ chức xếp nó cạnh các Khoa
 (vd Viện Đào tạo quốc tế = `P_DTQT`).
 
@@ -4174,3 +4177,133 @@ POST tạo mới trả 201. Hợp đồng result set như §16.5.
   các dòng còn chấm tay ở năm chưa đóng; muốn chuyển thì tạo lại phiếu hoặc dùng cách §16.6 PHẦN 4.
 - Thêm / sửa / xoá bản ghi **không** tự chấm lại phiếu: gọi `POST api/phieu/{id}/tong-hop-tu-dong`. Phiếu GV nộp trước khi
   TT nhập xong cùng bẫy "đóng băng điểm 0 ở trạng thái 3" như §16.6.
+
+---
+
+## 18. PHÁT TRIỂN ĐỘI NGŨ — P_TCHC GHI NHẬN (`phat_trien_doi_ngu`) → nguồn 3 tiêu chí chấm tự động của GV
+
+### 18.0. Vì sao có module này
+
+Ba tiêu chí của mẫu đánh giá **giảng viên** đang do GV **tự nhập điểm**. Mỗi nội dung là **1 tiêu chí riêng**; đạt thì
+được **trọn** `diem_toi_da` của tiêu chí:
+
+| Loại | `ma_loai` = mã công thức | Nội dung |
+|---|---|---|
+| 1 | `PTDN_DANH_HIEU_NHA_GIAO` | Được phong tặng danh hiệu Nhà giáo Nhân dân, Nhà giáo Ưu tú |
+| 2 | `PTDN_NGACH_HOC_HAM_HOC_VI` | Được bổ nhiệm ngạch / học hàm, học vị (GVC, GVCC, TS, PGS, GS) |
+| 3 | `PTDN_BOI_DUONG` | Hoàn thành các khoá học bồi dưỡng phát triển đội ngũ quan trọng (theo danh mục đính kèm, vd trung cấp / cao cấp lý luận chính trị) |
+
+Người nắm số liệu gốc là **P_TCHC**, nên P_TCHC (và người được TP / QTP ủy quyền) nhập danh sách GV theo năm, làm nguồn
+chấm tự động. Đợt 2026-10-03 #2 làm cả module nhập liệu lẫn phần nối engine. Thiết kế **nhân bản §16** (Hoạt động đào
+tạo, **có** ủy quyền), thêm **danh mục hạng mục**. Tiền tố `PTDN_` = **P**hát **T**riển **Đ**ội **N**gũ.
+
+Vì sao không suy từ dữ liệu sẵn có: `nhan_vien_chuc_danh` có lịch sử GV / GVC / GVCC nhưng **không** có học vị / học hàm
+(§12.1 — chưa có bảng nào lưu), danh hiệu nhà giáo và khoá bồi dưỡng cũng không có nguồn. Nhập tay một chỗ cho cả ba loại
+nhất quán hơn.
+
+### 18.1. Bảng
+
+- **`loai_phat_trien_doi_ngu`** — danh mục **cố định 3 dòng**.
+  - `ma_loai` đặt **trùng mã `cong_thuc_tong_hop`** (cùng mẹo §16.1) → không cần bảng ánh xạ.
+  - `nhan_noi_dung` = nhãn ô "Chi tiết" (tuỳ chọn) trên form.
+  - `cho_them_hang_muc = 1` chỉ ở loại 3: TP / QTP P_TCHC được thêm / sửa / ngừng dùng hạng mục.
+- **`hang_muc_phat_trien_doi_ngu`** — danh mục hạng mục của từng loại.
+  - Seed 9 dòng: loại 1 `NGND`, `NGUT`; loại 2 `NGACH_GVC`, `NGACH_GVCC`, `HOC_VI_TS`, `HOC_HAM_PGS`, `HOC_HAM_GS`
+    (`la_co_dinh = 1` — nêu đích danh trong câu chữ tiêu chí, không sửa / ngừng dùng được); loại 3 `LLCT_TRUNG_CAP`,
+    `LLCT_CAO_CAP` (`la_co_dinh = 0`).
+  - `ma_hang_muc` **tuỳ chọn** (filtered unique `ux_hmptdn_ma`), chỉ chữ không dấu / số / `_`, lưu IN HOA; dùng cho cột
+    "Hạng mục" khi import. Tên không trùng trong cùng loại — kiểm trong SP theo collation CSDL dưới `UPDLOCK, HOLDLOCK`.
+  - `dang_su_dung = 0`: không chọn được cho bản ghi mới; bản ghi cũ giữ nguyên và **vẫn tính điểm**. **Không xoá cứng.**
+  - `uq_hmptdn_id_loai (id_hang_muc, id_loai)` là đích của **FK kép** từ `phat_trien_doi_ngu`.
+- **`phat_trien_doi_ngu`** — **1 dòng = 1 GV × 1 hạng mục**.
+  - `id_loai` lưu denormalize; FK kép `(id_hang_muc, id_loai)` giữ nó luôn khớp hạng mục ⇒ `EXISTS` của engine và index
+    giống hệt §16 (`id_nhan_vien, id_nam, id_loai`).
+  - `noi_dung` **NULL được** (khác §16): hạng mục đã nói đạt cái gì; ô này chỉ ghi thêm đợt / chuyên ngành / khoá / cơ sở
+    đào tạo. CHECK `chk_ptdn_noi_dung` cấm chuỗi rỗng.
+  - `id_nam` do người nhập chọn, không suy từ `ngay_quyet_dinh`. `nguon`: 1 form, 2 import Excel. **Không lưu điểm.**
+  - Xoá **mềm**; CHECK `chk_ptdn_xoa`.
+- **`phat_trien_doi_ngu_nguoi_nhap`** — ủy quyền nhập liệu, clone `hoat_dong_dao_tao_nguoi_nhap` (filtered unique
+  `ux_ptdnnn_nv WHERE da_thu_hoi = 0`; thu hồi giữ dòng; cấp lại = dòng mới).
+- **`lich_su_phat_trien_doi_ngu`** — `hanh_dong`: 1 Ghi nhận · 2 Sửa · 3 Xoá · 4 Import · 5 Cấp quyền nhập · 6 Thu hồi quyền
+  nhập · 7 Thêm hạng mục · 8 Sửa hạng mục.
+  - 1..4: `id_ban_ghi` + `id_hang_muc` (sau thao tác) + `id_nhan_vien` (GV).
+  - 5 / 6: chỉ `id_nhan_vien` (người được cấp). 7 / 8: chỉ `id_hang_muc`.
+- Index lọc `WHERE da_xoa = 0`: `ix_ptdn_nv_nam_loai` (EXISTS của engine), `ix_ptdn_nam_loai` (màn danh sách) — bắt buộc
+  `SET QUOTED_IDENTIFIER ON` (§10.2). Thêm `ux_ptdnnn_nv`, `ux_hmptdn_ma`, `ix_lsptdn_bg`.
+- TVP: `PhatTrienDoiNguGiangVienRow`, `PhatTrienDoiNguImportRow` (cột `hang_muc` = mã hoặc tên hạng mục).
+
+### 18.2. Quy tắc nghiệp vụ — đã chốt với người dùng (2026-10-03)
+
+1. **Chỉ giảng viên** (phiếu năm, loại đối tượng 1), GV đang công tác tại Khoa (`v_giang_vien_khoa`). Không có chiều quý;
+   `ApDungQuy = false`. `sp_phieu_quy_create` / tripwire phiếu năm VC **không** mở cổng cho 3 mã.
+2. **Chỉ tính 1 lần / năm cho mỗi loại**: có ≥ 1 dòng còn hiệu lực của (GV, năm, loại) → đủ `diem_toi_da`; nhiều dòng (kể
+   cả khác hạng mục, vd GVC + TS cùng năm) **không** cộng thêm. Hạng mục cụ thể không ảnh hưởng điểm.
+3. **Chống trùng trong SP** theo (`id_nam`, `id_nhan_vien`, `id_hang_muc`) dưới `UPDLOCK, HOLDLOCK` — **chỉ trong cùng
+   năm**. Nhập nhầm cùng danh hiệu ở hai năm khác nhau thì cả hai năm đều đủ điểm (người dùng được báo, chưa yêu cầu chặn).
+4. Còn lại **giống §16.2 mục 2–6**: sửa giữ nguyên GV không kiểm lại; bản ghi có hiệu lực ngay; ghi nhận nhiều GV
+   all-or-nothing; PUT thay toàn bộ, không đổi gì (`Latin1_General_BIN`) → `co_thay_doi = 0`.
+5. **Hạng mục ngừng dùng**: chọn cho bản ghi mới / đổi sang ở PUT → `HANG_MUC_NGUNG_DUNG`; giữ nguyên hạng mục cũ khi sửa
+   thì được.
+6. **Danh mục**: đọc — mọi người đã đăng nhập; thêm / sửa / ngừng dùng — `la_quan_ly`, chỉ loại `cho_them_hang_muc = 1`.
+   Đổi tên hạng mục = đổi hiển thị của mọi bản ghi đang trỏ tới (bản ghi lưu id).
+7. **Tiêu chí không do script sửa** (cùng cách §17): người dùng tự đặt `loai_nguon_diem = 2` + `cong_thuc_tong_hop = ma_loai`
+   cho 3 tiêu chí trong DB. Script cũng **không** chuyển dòng của phiếu đã tạo.
+
+### 18.3. Phân quyền — `fn_phat_trien_doi_ngu_quyen` (inline TVF, luôn 1 dòng, fail-closed)
+
+| Cột | Điều kiện | Được làm |
+|---|---|---|
+| `la_quan_ly` | ADMIN, hoặc TP / QTP **tại** `P_TCHC` | Toàn quyền + cấp / thu hồi ủy quyền + quản lý danh mục hạng mục |
+| `duoc_nhap` | `la_quan_ly`, **hoặc** có ủy quyền chưa thu hồi **và** hôm nay vẫn thuộc P_TCHC | Thêm / sửa / xoá / import, picker GV, file mẫu |
+| `xem_tat_ca` | `duoc_nhap`, hoặc HT | Xem toàn trường |
+
+- **Chép** luật của `fn_hoat_dong_dao_tao_quyen` (không gọi) để hai module độc lập; đọc (đơn vị, chức vụ) qua
+  `fn_pham_vi_don_vi` (§10.6).
+- "Thuộc P_TCHC" = `fn_phat_trien_doi_ngu_thuoc_phong` (dòng `nhan_vien_chuc_vu` hiệu lực hôm nay tại P_TCHC, có hay không
+  có chức vụ). Rời phòng ⇒ tự mất quyền; danh sách ủy quyền trả `con_thuoc_phong`.
+- Cấp quyền: người nhận phải thuộc phòng (`KHONG_THUOC_PHONG`); đã có toàn quyền → `INVALID`; đã được cấp → `DA_DUOC_CAP`;
+  người được ủy quyền không cấp tiếp được.
+- `N'P_TCHC'` viết cứng ở 3 chỗ (§1.1). `update_database.sql` KT1 / KT2 báo nếu mã chưa có trong `don_vi` hoặc chưa ai là
+  TP / QTP — khi đó chỉ ADMIN quản lý / nhập được.
+- Phạm vi xem (`_list`, `_get_by_id`) giống §16.3 (`fn_phat_trien_doi_ngu_khoa_duoc_xem` — chép, không gọi).
+- BLL **không** gate bằng `ma_chuc_vu` của JWT: SP là nguồn sự thật.
+
+### 18.4. Import Excel — `POST api/phat-trien-doi-ngu/import`
+
+Giống §16.4, khác ở:
+- `Helper/PhatTrienDoiNguExcelReader.cs`: cột bắt buộc **Hạng mục** (alias "Mã hạng mục", "Tên hạng mục") + **Mã nhân viên**;
+  cột "Chi tiết" (alias "Nội dung") **tuỳ chọn**.
+- `sp_phat_trien_doi_ngu_import` khớp hạng mục theo `ma_hang_muc` trước, rồi `ten_hang_muc` (chỉ nhận khi khớp **đúng 1**).
+- Thứ tự lỗi: `DINH_DANG` · `HANG_MUC_KHONG_HOP_LE` · `HANG_MUC_NGUNG_DUNG` · `THIEU_MA_NHAN_VIEN` · `NHAN_VIEN_KHONG_TON_TAI` ·
+  `KHONG_PHAI_GIANG_VIEN`. Trùng: `TRUNG_DU_LIEU_CU` / `TRUNG_TRONG_FILE` theo (năm, hạng mục, GV).
+- File mẫu `GET api/phat-trien-doi-ngu/mau-import` (`ExcelHelper.WritePhatTrienDoiNguMau`): sheet 2 liệt kê **hạng mục đang
+  dùng** đọc từ DB; tên cột lấy từ `PhatTrienDoiNguExcelReader.TenCotMau`.
+
+### 18.5. Mã lỗi + HTTP
+
+`FORBIDDEN` 403 · `NOT_FOUND` 404 · `INVALID` / `HANG_MUC_KHONG_HOP_LE` 400 · `KHONG_PHAI_GIANG_VIEN` / `KHONG_THUOC_PHONG` /
+`HANG_MUC_NGUNG_DUNG` 422 · `TRUNG_BAN_GHI` / `TRUNG_HANG_MUC` / `DA_DUOC_CAP` 409 · `DB_ERROR` 500. POST tạo mới (bản ghi,
+hạng mục) trả 201. Hợp đồng result set như §16.5.
+
+### 18.6. Nối vào chấm tự động
+
+| Nơi | Thay đổi |
+|---|---|
+| `fn_nckh_diem_tu_dong` | 3 mã vào whitelist + **một** nhánh: `EXISTS` bản ghi `da_xoa = 0` của (`@id_nhan_vien`, `@id_nam`, `ma_loai = @cong_thuc`) → `@diem_toi_da`, không có → **0** |
+| `fn_nckh_minh_chung_tu_dong` | Nhánh `loai_nguon = 11` ("Phát triển đội ngũ"): mỗi bản ghi một dòng; `ma_nguon` = `id_ban_ghi`, `tieu_de` = tên hạng mục (+ chi tiết), `mo_ta` = tên loại + số / ngày QĐ + ghi chú, `ngay` = `ngay_quyet_dinh` (có thể NULL) |
+| `sp_mau_danh_gia_diem_tu_dong` | Cờ `@co_tieu_chi_ptdn`: gọi toàn trường thì mở rộng tập GV ra người có bản ghi trong năm |
+| `MauDanhGiaService` (C#) | `GanLyDoDiemPhatTrienDoiNgu`: `LyDoDiemTuDong` khi điểm 0 — "Phong To chuc - Hanh chinh chua ghi nhan… chay lai tong hop tu dong" |
+
+- **Bất biến:** vị từ lọc (`id_nhan_vien` + `id_nam` + `da_xoa = 0` + `ma_loai`) giống hệt nhau ở hai hàm. Hạng mục ngừng
+  dùng không bị lọc ở cả hai.
+- Cả ba luồng có ngay khi tiêu chí mang mã: chấm khi GV nộp phiếu, `POST api/phieu/{id}/tong-hop-tu-dong`, preview
+  `GET api/maudanhgia/{id}/diem-tu-dong`.
+
+#### Việc người dùng tự làm với tiêu chí
+
+- Đặt `loai_nguon_diem = 2`, `cong_thuc_tong_hop = N'PTDN_DANH_HIEU_NHA_GIAO'` / `N'PTDN_NGACH_HOC_HAM_HOC_VI'` /
+  `N'PTDN_BOI_DUONG'` cho 3 tiêu chí GV.
+- `loai_thang_diem = 1` → `thang_diem` phải có mức `= diem_toi_da` và mức `= 0` (KT4 của `update_database.sql` báo mức thiếu).
+- **Phiếu đã tạo không nhận mã mới** (snapshot). KT5 liệt kê các dòng còn chấm tay ở năm chưa đóng.
+- Thêm / sửa / xoá bản ghi **không** tự chấm lại phiếu: gọi `POST api/phieu/{id}/tong-hop-tu-dong`. Phiếu GV nộp trước khi
+  P_TCHC nhập xong cùng bẫy "đóng băng điểm 0 ở trạng thái 3" như §16.6.

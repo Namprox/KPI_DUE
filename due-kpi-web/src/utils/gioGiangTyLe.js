@@ -4,6 +4,9 @@ export const CONG_THUC_TU_DONG_OPTIONS = [
   { value: "NCKH_GIO_TY_LE", label: "Tỷ lệ hoàn thành giờ nghiên cứu khoa học" },
   { value: "TTDT_HUY_CHUONG", label: "Thành tích đoàn thể: Huy chương Đồng trở lên" },
   { value: "TTDT_GHI_NHAN_NGOAI", label: "Thành tích đoàn thể: Ghi nhận từ cơ quan ngoài DUE và UD" },
+  { value: "PTDN_DANH_HIEU_NHA_GIAO", label: "Phát triển đội ngũ: Danh hiệu Nhà giáo Nhân dân, Nhà giáo Ưu tú" },
+  { value: "PTDN_NGACH_HOC_HAM_HOC_VI", label: "Phát triển đội ngũ: Bổ nhiệm ngạch / học hàm, học vị" },
+  { value: "PTDN_BOI_DUONG", label: "Phát triển đội ngũ: Hoàn thành khoá bồi dưỡng" },
 ];
 /** @param {{ CongThucSnapshot?: string, CongThucTongHop?: string }} row */
 export const laCongThucGioGiang = (row) =>

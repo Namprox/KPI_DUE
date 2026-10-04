@@ -3801,6 +3801,676 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ThanhTichDoanTheResponse"
+  /api/phat-trien-doi-ngu/loai:
+    get:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Danh muc 3 loai phat trien doi ngu (co dinh)
+      description: >
+        1 PTDN_DANH_HIEU_NHA_GIAO (danh hieu Nha giao Nhan dan / Nha giao Uu tu),
+        2 PTDN_NGACH_HOC_HAM_HOC_VI (bo nhiem ngach / hoc ham, hoc vi GVC, GVCC, TS, PGS, GS),
+        3 PTDN_BOI_DUONG (hoan thanh khoa boi duong phat trien doi ngu quan trong). MaLoai trung ma
+        cong thuc cham tu dong cua 3 tieu chi tuong ung tren phieu giang vien. NhanNoiDung = nhan o
+        "Chi tiet" tren form. ChoThemHangMuc = true chi o loai 3. Moi nguoi da dang nhap.
+      operationId: phatTrienDoiNguGetLoai
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoaiPhatTrienDoiNguListResponse"
+  /api/phat-trien-doi-ngu/hang-muc:
+    get:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Danh muc hang muc cua cac loai
+      description: >
+        Loai 1, 2: hang muc CO DINH theo cau chu tieu chi (LaCoDinh = true) - NGND / NGUT;
+        NGACH_GVC / NGACH_GVCC / HOC_VI_TS / HOC_HAM_PGS / HOC_HAM_GS. Loai 3: danh muc khoa hoc do
+        TP / QTP P_TCHC them / sua / ngung dung (seed LLCT_TRUNG_CAP, LLCT_CAO_CAP).
+        Mac dinh chi tra hang muc dang dung (cho form ghi nhan). Moi nguoi da dang nhap.
+      operationId: phatTrienDoiNguGetHangMuc
+      parameters:
+        - name: idLoai
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+        - name: baoGomNgungDung
+          in: query
+          required: false
+          description: true = kem ca hang muc da ngung dung (man quan ly danh muc)
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguListResponse"
+        "400":
+          description: Loai khong hop le (INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguListResponse"
+    post:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Them hang muc (chi loai cho them hang muc - loai 3)
+      description: >
+        MaHangMuc tuy chon (chu khong dau / so / _, luu IN HOA, duy nhat toan danh muc); TenHangMuc
+        bat buoc, khong trung trong cung loai (khong phan biet hoa / thuong). ThuTu bo trong = cuoi
+        danh sach. Quyen: LaQuanLy (ADMIN / TP / QTP P_TCHC).
+      operationId: phatTrienDoiNguCreateHangMuc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HangMucPhatTrienDoiNguCreateRequest"
+      responses:
+        "201":
+          description: Da tao - IdHangMuc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguResponse"
+        "400":
+          description: Thieu / sai truong, ma sai ky tu, loai co danh muc co dinh (INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguResponse"
+        "409":
+          description: Ma da ton tai / ten trung trong cung loai (TRUNG_HANG_MUC)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguResponse"
+  /api/phat-trien-doi-ngu/hang-muc/{idHangMuc}:
+    put:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Sua / ngung dung 1 hang muc (thay toan bo)
+      description: >
+        Gui DAY DU MaHangMuc (bo trong = xoa ma), TenHangMuc, ThuTu, DangSuDung. Hang muc co dinh
+        (loai 1, 2) -> 400 INVALID. Ngung dung KHONG anh huong ban ghi cu (van tinh diem). Doi ten =
+        doi hien thi cua moi ban ghi dang dung hang muc. Khong co gi thay doi -> CoThayDoi = false.
+        Quyen: LaQuanLy.
+      operationId: phatTrienDoiNguUpdateHangMuc
+      parameters:
+        - name: idHangMuc
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HangMucPhatTrienDoiNguUpdateRequest"
+      responses:
+        "200":
+          description: OK - CoThayDoi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguResponse"
+        "400":
+          description: Thieu / sai truong, hang muc co dinh (INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguResponse"
+        "404":
+          description: Khong tim thay hang muc (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguResponse"
+        "409":
+          description: Ma da ton tai / ten trung trong cung loai (TRUNG_HANG_MUC)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HangMucPhatTrienDoiNguResponse"
+  /api/phat-trien-doi-ngu/quyen:
+    get:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Quyen cua nguoi dang nhap tren module phat trien doi ngu (de bat / tat menu)
+      description: >
+        LaQuanLy = ADMIN hoac TP / QTP TAI P_TCHC (toan quyen + uy quyen + danh muc hang muc).
+        DuocNhap = LaQuanLy, hoac duoc uy quyen VA hom nay van thuoc P_TCHC.
+        XemTatCa = DuocNhap hoac HT. XemTheoKhoa = la TK / TKL / TKK cua it nhat 1 Khoa.
+        DuocUyQuyen = co uy quyen chua thu hoi (true ma DuocNhap = false: da roi phong).
+      operationId: phatTrienDoiNguGetQuyen
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguQuyenResponse"
+  /api/phat-trien-doi-ngu/giang-vien:
+    get:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Picker giang vien toan truong cho form ghi nhan
+      description: >
+        1 dong / giang vien dang cong tac tai Khoa (GV / GVC / GVCC, v_giang_vien_khoa); Khoa hien
+        thi uu tien Khoa chinh. Quyen: DuocNhap.
+      operationId: phatTrienDoiNguGetGiangVien
+      parameters:
+        - name: tuKhoa
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: idDonVi
+          in: query
+          required: false
+          description: Loc theo Khoa
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguGiangVienListResponse"
+        "403":
+          description: Khong co quyen nhap lieu (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguGiangVienListResponse"
+  /api/phat-trien-doi-ngu/mau-import:
+    get:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Tai file Excel mau de import
+      description: >
+        File .xlsx: sheet 1 "Danh sach" chi co dong tieu de (Hang muc, Ma nhan vien, Ho ten, Chi tiet,
+        So quyet dinh, Ngay quyet dinh, Ghi chu); sheet 2 "Huong dan" liet ke hang muc DANG DUNG (ma +
+        ten + loai) va 2 dong vi du. Quyen: DuocNhap (loi quyen tra JSON).
+      operationId: phatTrienDoiNguGetMauImport
+      responses:
+        "200":
+          description: File Excel mau
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "403":
+          description: Khong co quyen nhap lieu (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+  /api/phat-trien-doi-ngu/import:
+    post:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Import danh sach phat trien doi ngu tu Excel cho 1 nam danh gia
+      description: >
+        multipart/form-data: file Excel (doc SHEET DAU TIEN) + 'idNam' + 'chiKiemTra'. Cot tim THEO TEN
+        header: Hang muc (bat buoc - ma hang muc hoac ten dung nhu danh muc; ten khac: Ma hang muc,
+        Ten hang muc), Ma nhan vien (bat buoc; Ma NV, Ma CBVC), Ho ten (doi chieu), Chi tiet / Noi dung
+        (tuy chon), So quyet dinh, Ngay quyet dinh, Ghi chu. Toi da 5000 dong.
+        CHI THEM, KHONG GHI DE: KetQua THEM / TRUNG / LOI. TRUNG = trung (nam, hang muc, giang vien)
+        voi du lieu cu hoac dong truoc trong file. LOI: DINH_DANG, HANG_MUC_KHONG_HOP_LE,
+        HANG_MUC_NGUNG_DUNG, THIEU_MA_NHAN_VIEN, NHAN_VIEN_KHONG_TON_TAI, KHONG_PHAI_GIANG_VIEN.
+        chiKiemTra = true -> chi tra bao cao. Quyen: DuocNhap.
+      operationId: phatTrienDoiNguImport
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - idNam
+              properties:
+                file:
+                  type: string
+                  format: binary
+                idNam:
+                  type: integer
+                  example: 2026
+                chiKiemTra:
+                  type: boolean
+                  default: false
+      responses:
+        "200":
+          description: OK (ke ca khi co dong TRUNG / LOI - xem Dong[])
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguImportResponse"
+        "400":
+          description: Thieu file / idNam, sai dinh dang, thieu cot bat buoc, file rong, nam khong ton tai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguImportResponse"
+        "403":
+          description: Khong co quyen nhap lieu (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguImportResponse"
+        "415":
+          description: Khong phai multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguImportResponse"
+  /api/phat-trien-doi-ngu/nguoi-nhap:
+    get:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Danh sach nguoi duoc uy quyen nhap lieu
+      description: >
+        ConThuocPhong = false -> uy quyen con nhung KHONG con hieu luc (nguoi da roi P_TCHC).
+        Quyen: LaQuanLy (ADMIN / TP / QTP P_TCHC).
+      operationId: phatTrienDoiNguGetNguoiNhap
+      parameters:
+        - name: baoGomDaThuHoi
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguNguoiNhapListResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguNguoiNhapListResponse"
+    post:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Cap quyen nhap lieu cho 1 nhan su cua P_TCHC
+      description: >
+        Nguoi nhan phai DANG thuoc P_TCHC; roi phong thi tu mat quyen. Nguoi duoc uy quyen KHONG cap
+        tiep duoc. Quyen: LaQuanLy.
+      operationId: phatTrienDoiNguCapNguoiNhap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhatTrienDoiNguNguoiNhapCapRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "400":
+          description: Thieu IdNhanVien, ghi chu qua dai, hoac nguoi nay da co toan quyen (INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "404":
+          description: Khong tim thay nhan vien dang hoat dong (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "409":
+          description: Da duoc cap quyen (DA_DUOC_CAP)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "422":
+          description: Nguoi nay hien khong thuoc P_TCHC (KHONG_THUOC_PHONG)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+  /api/phat-trien-doi-ngu/nguoi-nhap/ung-vien:
+    get:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Nhan su dang thuoc P_TCHC (de chon cap quyen nhap lieu)
+      description: >
+        LaQuanLy = dang la TP / QTP cua phong (da co toan quyen). DaDuocCap = dang co uy quyen chua
+        thu hoi. Quyen: LaQuanLy.
+      operationId: phatTrienDoiNguGetUngVien
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguUngVienListResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguUngVienListResponse"
+  /api/phat-trien-doi-ngu/nguoi-nhap/{idNhanVien}:
+    delete:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Thu hoi quyen nhap lieu cua 1 nguoi
+      description: Giu dong uy quyen (da_thu_hoi = 1) lam lich su. Quyen LaQuanLy.
+      operationId: phatTrienDoiNguThuHoiNguoiNhap
+      parameters:
+        - name: idNhanVien
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "404":
+          description: Nguoi nay chua duoc cap quyen (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+  /api/phat-trien-doi-ngu:
+    get:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Danh sach ban ghi phat trien doi ngu con hieu luc cua 1 nam (phan trang)
+      description: >
+        Pham vi xem: XemTatCa (P_TCHC co quyen nhap lieu, ADMIN, HT) -> toan truong; TK / TKL / TKK ->
+        giang vien thuoc Khoa minh; nguoi khac -> chi ban ghi cua chinh minh (khong 403).
+        Sap xep: loai, hang muc, ho ten.
+      operationId: phatTrienDoiNguGetList
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 2026
+        - name: idLoai
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+        - name: idHangMuc
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          description: Loc theo Khoa cua giang vien
+          schema:
+            type: integer
+        - name: idNhanVien
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: tuKhoa
+          in: query
+          required: false
+          description: Tim theo ho ten, ma nhan vien, ten hang muc, chi tiet, so quyet dinh
+          schema:
+            type: string
+            maxLength: 100
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 500
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguListResponse"
+        "400":
+          description: Thieu / sai idNam, idLoai, idHangMuc, tu khoa qua dai (INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguListResponse"
+    post:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Ghi nhan 1 hang muc cho nhieu giang vien
+      description: >
+        Tao 1 ban ghi / giang vien; loai suy tu hang muc. ALL-OR-NOTHING: co 1 nguoi khong phai giang
+        vien dang cong tac tai Khoa -> 422 KHONG_PHAI_GIANG_VIEN; co 1 nguoi da co ban ghi cung (nam,
+        hang muc) -> 409 TRUNG_BAN_GHI. Hang muc ngung dung -> 422 HANG_MUC_NGUNG_DUNG.
+        Quyen: DuocNhap.
+      operationId: phatTrienDoiNguCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhatTrienDoiNguCreateRequest"
+      responses:
+        "201":
+          description: Da tao - SoBanGhi + IdBanGhis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "400":
+          description: Thieu / sai truong, nam khong ton tai (INVALID), hang muc khong ton tai (HANG_MUC_KHONG_HOP_LE)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "403":
+          description: Khong co quyen nhap lieu (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "409":
+          description: Trung ban ghi (TRUNG_BAN_GHI)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "422":
+          description: Khong phai giang vien dang cong tac tai Khoa (KHONG_PHAI_GIANG_VIEN) / hang muc ngung dung (HANG_MUC_NGUNG_DUNG)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+  /api/phat-trien-doi-ngu/{id}:
+    get:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Chi tiet 1 ban ghi + lich su
+      description: >
+        Cung pham vi xem voi danh sach. Ban ghi da xoa chi nguoi XemTatCa thay (DaXoa = true).
+        LichSu.HanhDong: 1 Ghi nhan, 2 Sua, 3 Xoa, 4 Import Excel.
+      operationId: phatTrienDoiNguGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "403":
+          description: Ngoai pham vi xem (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "404":
+          description: Khong tim thay (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+    put:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Sua 1 ban ghi (thay toan bo)
+      description: >
+        Gui DAY DU cac truong; truong tuy chon bo trong = xoa gia tri. Doi sang hang muc KHAC dang ngung
+        dung -> 422 HANG_MUC_NGUNG_DUNG (giu nguyen hang muc cu thi duoc). Doi giang vien -> nguoi moi
+        phai la giang vien dang cong tac tai Khoa. Khong co gi thay doi -> CoThayDoi = false.
+        Tra Item sau khi sua. Quyen: DuocNhap.
+      operationId: phatTrienDoiNguUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhatTrienDoiNguUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "400":
+          description: Thieu / sai truong (INVALID), hang muc khong ton tai (HANG_MUC_KHONG_HOP_LE)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "403":
+          description: Khong co quyen nhap lieu (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "404":
+          description: Khong tim thay ban ghi con hieu luc (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "409":
+          description: Trung ban ghi khac (TRUNG_BAN_GHI)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "422":
+          description: Giang vien moi khong hop le (KHONG_PHAI_GIANG_VIEN) / hang muc ngung dung (HANG_MUC_NGUNG_DUNG)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+    delete:
+      tags:
+        - PhatTrienDoiNgu
+      summary: Xoa mem 1 ban ghi
+      description: Ban ghi giu lai (DaXoa = true) kem lich su. Quyen DuocNhap.
+      operationId: phatTrienDoiNguDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: lyDo
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 500
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "403":
+          description: Khong co quyen nhap lieu (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+        "404":
+          description: Khong tim thay ban ghi con hieu luc (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhatTrienDoiNguResponse"
   /api/phieu:
     get:
       tags:
@@ -14367,7 +15037,8 @@ components:
             TTVT_SANG_KIEN, TTVT_KHEN_THUONG, TTVT_DAO_TAO, TTVT_PHONG_TRAO,
             VPVC_HOAN_THANH_CV, VPVC_NOI_QUY, VPVC_CHINH_TRI, GIO_GIANG_TY_LE,
             CTDT_HOI_DONG, CTDT_TO_GIUP_VIEC, NCS_SP_TRUNG_GIAN, NCS_BAO_VE_LA,
-            TTDT_HUY_CHUONG, TTDT_GHI_NHAN_NGOAI.
+            TTDT_HUY_CHUONG, TTDT_GHI_NHAN_NGOAI,
+            PTDN_DANH_HIEU_NHA_GIAO, PTDN_NGACH_HOC_HAM_HOC_VI, PTDN_BOI_DUONG.
 
             Riêng 4 mã CTDT_* / NCS_* (hoạt động đào tạo do P_DTBDCL ghi nhận, nguồn
             /api/hoat-dong-dao-tao): có ≥ 1 bản ghi còn hiệu lực của giảng viên cho đúng
@@ -14375,6 +15046,11 @@ components:
 
             Riêng 2 mã TTDT_* (thành tích đoàn thể do Tổ trưởng P_TCTD ghi nhận, nguồn
             /api/thanh-tich-doan-the): cùng quy tắc có / không như CTDT_* / NCS_*.
+
+            Riêng 3 mã PTDN_* (phát triển đội ngũ do P_TCHC ghi nhận, nguồn
+            /api/phat-trien-doi-ngu — danh hiệu NGND / NGƯT; bổ nhiệm ngạch / học hàm, học vị;
+            khoá bồi dưỡng): cùng quy tắc có / không như CTDT_* / NCS_*; hạng mục cụ thể
+            trong loại không ảnh hưởng điểm.
 
             Riêng GIO_GIANG_TY_LE (tỷ lệ hoàn thành định mức giờ giảng, nguồn
             GET /api/gio-giang-tkb/ty-le-hoan-thanh): ≥ 100% → DiemToiDa (20);
@@ -14523,6 +15199,11 @@ components:
             thành tích nào của giảng viên cho loại đó trong năm. Ghi nhận xong
             (/api/thanh-tich-doan-the) phải chạy lại POST /api/phieu/{id}/tong-hop-tu-dong.
 
+            Lý do với PTDN_DANH_HIEU_NHA_GIAO / PTDN_NGACH_HOC_HAM_HOC_VI / PTDN_BOI_DUONG:
+            Phòng Tổ chức – Hành chính (P_TCHC) chưa ghi nhận bản ghi nào của giảng viên cho
+            loại đó trong năm. Ghi nhận xong (/api/phat-trien-doi-ngu) phải chạy lại
+            POST /api/phieu/{id}/tong-hop-tu-dong.
+
             VẮNG MẶT khi đủ dữ liệu để tính — khi đó FE tự diễn giải từ
             DuLieuGioNckh.TyLeHoanThanh / DuLieuBaiBaoQuocTe.DiemKpiCuoi.
     MauDanhGiaThangDiemMucDto:
@@ -14565,10 +15246,13 @@ components:
             1 bản ghi; MaNguon = id thành tích (GET /api/thanh-tich-doan-the/{id}),
             TieuDe = nội dung, MoTa = loại + cơ quan ghi nhận + số / ngày QĐ + ghi chú.
             Có ≥ 1 dòng là đủ điểm, nhiều dòng KHÔNG cộng thêm.
+            11: Phát triển đội ngũ do P_TCHC ghi nhận (3 mã PTDN_*) — mỗi dòng 1 bản ghi;
+            MaNguon = id bản ghi (GET /api/phat-trien-doi-ngu/{id}), TieuDe = tên hạng mục
+            (+ chi tiết), MoTa = loại + số / ngày QĐ + ghi chú. Có ≥ 1 dòng là đủ điểm.
             Lưu ý với 5 và 8: danh sách rỗng KHÔNG có nghĩa là không đạt — không có
             vi phạm nào tức là trọn điểm. Riêng 8, tổng các dòng có thể LỚN HƠN phần
             điểm thực sự bị trừ khi tổng vượt trần trừ của nhóm (70 / 30).
-          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         TenLoaiNguon:
           type: string
           example: Bài báo
@@ -23295,6 +23979,577 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ThanhTichDoanTheImportDongDto"
+    LoaiPhatTrienDoiNguDto:
+      type: object
+      properties:
+        IdLoai:
+          type: integer
+          example: 1
+        MaLoai:
+          type: string
+          description: Trung ma cong thuc cham tu dong cua tieu chi tuong ung
+          enum: [PTDN_DANH_HIEU_NHA_GIAO, PTDN_NGACH_HOC_HAM_HOC_VI, PTDN_BOI_DUONG]
+        TenLoai:
+          type: string
+          example: Được phong tặng danh hiệu Nhà giáo Nhân dân, Nhà giáo Ưu tú
+        NhanNoiDung:
+          type: string
+          example: Đợt phong tặng / chi tiết
+        ChoThemHangMuc:
+          type: boolean
+          description: true = TP / QTP P_TCHC duoc them / sua / ngung dung hang muc (chi loai 3)
+        ThuTu:
+          type: integer
+    LoaiPhatTrienDoiNguListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoaiPhatTrienDoiNguDto"
+    HangMucPhatTrienDoiNguDto:
+      type: object
+      properties:
+        IdHangMuc:
+          type: integer
+        IdLoai:
+          type: integer
+        MaLoai:
+          type: string
+        TenLoai:
+          type: string
+        MaHangMuc:
+          type: string
+          nullable: true
+          example: NGUT
+        TenHangMuc:
+          type: string
+          example: Nhà giáo Ưu tú
+        ThuTu:
+          type: integer
+        DangSuDung:
+          type: boolean
+          description: false = ngung dung (khong chon duoc cho ban ghi moi; ban ghi cu van tinh diem)
+        LaCoDinh:
+          type: boolean
+          description: true = hang muc neu dich danh trong tieu chi (loai 1, 2), khong sua duoc
+        CoTheSua:
+          type: boolean
+          description: Thuoc loai cho them hang muc va khong co dinh (ket hop voi LaQuanLy)
+        SoBanGhi:
+          type: integer
+          description: So ban ghi con hieu luc dang dung hang muc
+        NgayTao:
+          type: string
+          format: date-time
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+    HangMucPhatTrienDoiNguListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HangMucPhatTrienDoiNguDto"
+    HangMucPhatTrienDoiNguCreateRequest:
+      type: object
+      required:
+        - IdLoai
+        - TenHangMuc
+      properties:
+        IdLoai:
+          type: integer
+          example: 3
+        MaHangMuc:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: Chu khong dau / so / _ (luu IN HOA)
+          example: BD_GVC
+        TenHangMuc:
+          type: string
+          maxLength: 255
+          example: Bồi dưỡng chức danh giảng viên chính
+        ThuTu:
+          type: integer
+          nullable: true
+    HangMucPhatTrienDoiNguUpdateRequest:
+      type: object
+      required:
+        - TenHangMuc
+        - ThuTu
+        - DangSuDung
+      properties:
+        MaHangMuc:
+          type: string
+          maxLength: 50
+          nullable: true
+        TenHangMuc:
+          type: string
+          maxLength: 255
+        ThuTu:
+          type: integer
+        DangSuDung:
+          type: boolean
+    HangMucPhatTrienDoiNguResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          enum: [FORBIDDEN, NOT_FOUND, INVALID, TRUNG_HANG_MUC, DB_ERROR]
+        IdHangMuc:
+          type: integer
+          description: POST - id hang muc vua tao
+        CoThayDoi:
+          type: boolean
+          description: PUT - false = khong co gi thay doi
+    PhatTrienDoiNguQuyenResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        LaQuanLy:
+          type: boolean
+          description: ADMIN hoac TP / QTP cua P_TCHC
+        DuocNhap:
+          type: boolean
+          description: Them / sua / xoa / import
+        XemTatCa:
+          type: boolean
+          description: Xem toan truong (DuocNhap hoac HT)
+        XemTheoKhoa:
+          type: boolean
+          description: La TK / TKL / TKK cua it nhat 1 Khoa
+        DuocUyQuyen:
+          type: boolean
+          description: Co uy quyen chua thu hoi (ke ca khi da roi phong)
+    PhatTrienDoiNguGiangVienListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HoatDongDaoTaoGiangVienDto"
+    PhatTrienDoiNguDto:
+      type: object
+      properties:
+        IdBanGhi:
+          type: integer
+        IdNam:
+          type: integer
+          example: 2026
+        IdLoai:
+          type: integer
+        MaLoai:
+          type: string
+        TenLoai:
+          type: string
+        IdHangMuc:
+          type: integer
+        MaHangMuc:
+          type: string
+          nullable: true
+        TenHangMuc:
+          type: string
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        IdKhoa:
+          type: integer
+          nullable: true
+        MaKhoa:
+          type: string
+          nullable: true
+        TenKhoa:
+          type: string
+          nullable: true
+        NoiDung:
+          type: string
+          nullable: true
+          description: Chi tiet tuy chon (dot, chuyen nganh, khoa, co so dao tao...)
+        SoQuyetDinh:
+          type: string
+          nullable: true
+        NgayQuyetDinh:
+          type: string
+          format: date-time
+          nullable: true
+        GhiChu:
+          type: string
+          nullable: true
+        Nguon:
+          type: integer
+          enum: [1, 2]
+          description: 1 = form, 2 = import Excel
+        DaXoa:
+          type: boolean
+        IdNguoiTao:
+          type: integer
+        TenNguoiTao:
+          type: string
+        NgayTao:
+          type: string
+          format: date-time
+        IdNguoiCapNhat:
+          type: integer
+          nullable: true
+        TenNguoiCapNhat:
+          type: string
+          nullable: true
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+        ChoPhepSua:
+          type: boolean
+    PhatTrienDoiNguListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        DuocNhap:
+          type: boolean
+        XemTatCa:
+          type: boolean
+        Page:
+          type: integer
+        PageSize:
+          type: integer
+        TotalCount:
+          type: integer
+        TotalPages:
+          type: integer
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhatTrienDoiNguDto"
+    PhatTrienDoiNguResponse:
+      type: object
+      description: Dung chung cho GET {id}, POST, PUT, DELETE, cap / thu hoi uy quyen; truong khong dung bi an.
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          enum: [FORBIDDEN, NOT_FOUND, INVALID, HANG_MUC_KHONG_HOP_LE, HANG_MUC_NGUNG_DUNG, KHONG_PHAI_GIANG_VIEN, KHONG_THUOC_PHONG, TRUNG_BAN_GHI, DA_DUOC_CAP, DB_ERROR]
+        Item:
+          $ref: "#/components/schemas/PhatTrienDoiNguDto"
+        LichSu:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhatTrienDoiNguLichSuDto"
+        SoBanGhi:
+          type: integer
+          description: POST - so ban ghi vua tao
+        IdBanGhis:
+          type: array
+          items:
+            type: integer
+          description: POST - id vua tao (moi giang vien 1 ban ghi)
+        CoThayDoi:
+          type: boolean
+          description: PUT - false = khong co gi thay doi
+    PhatTrienDoiNguCreateRequest:
+      type: object
+      required:
+        - IdNam
+        - IdHangMuc
+        - IdNhanViens
+      properties:
+        IdNam:
+          type: integer
+          example: 2026
+        IdHangMuc:
+          type: integer
+          example: 3
+        NoiDung:
+          type: string
+          maxLength: 500
+          nullable: true
+        SoQuyetDinh:
+          type: string
+          maxLength: 100
+          nullable: true
+        NgayQuyetDinh:
+          type: string
+          format: date
+          nullable: true
+        GhiChu:
+          type: string
+          maxLength: 1000
+          nullable: true
+        IdNhanViens:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            type: integer
+    PhatTrienDoiNguUpdateRequest:
+      type: object
+      required:
+        - IdNam
+        - IdHangMuc
+        - IdNhanVien
+      properties:
+        IdNam:
+          type: integer
+        IdHangMuc:
+          type: integer
+        IdNhanVien:
+          type: integer
+        NoiDung:
+          type: string
+          maxLength: 500
+          nullable: true
+        SoQuyetDinh:
+          type: string
+          maxLength: 100
+          nullable: true
+        NgayQuyetDinh:
+          type: string
+          format: date
+          nullable: true
+        GhiChu:
+          type: string
+          maxLength: 1000
+          nullable: true
+    PhatTrienDoiNguImportDongDto:
+      type: object
+      properties:
+        DongExcel:
+          type: integer
+        KetQua:
+          type: string
+          enum: [THEM, TRUNG, LOI]
+        MaLoi:
+          type: string
+          nullable: true
+          enum: [DINH_DANG, HANG_MUC_KHONG_HOP_LE, HANG_MUC_NGUNG_DUNG, THIEU_MA_NHAN_VIEN, NHAN_VIEN_KHONG_TON_TAI, KHONG_PHAI_GIANG_VIEN, TRUNG_DU_LIEU_CU, TRUNG_TRONG_FILE]
+        ThongBao:
+          type: string
+          nullable: true
+        CanhBao:
+          type: string
+          nullable: true
+        IdLoai:
+          type: integer
+          nullable: true
+        MaLoai:
+          type: string
+          nullable: true
+        IdHangMuc:
+          type: integer
+          nullable: true
+        MaHangMuc:
+          type: string
+          nullable: true
+        TenHangMuc:
+          type: string
+          nullable: true
+        MaNhanVien:
+          type: string
+          nullable: true
+        IdNhanVien:
+          type: integer
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        NoiDung:
+          type: string
+          nullable: true
+    PhatTrienDoiNguImportResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        ChiKiemTra:
+          type: boolean
+        TongDong:
+          type: integer
+        SoThem:
+          type: integer
+        SoTrung:
+          type: integer
+        SoLoi:
+          type: integer
+        SoCanhBao:
+          type: integer
+        Warnings:
+          type: array
+          nullable: true
+          items:
+            type: string
+        Dong:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhatTrienDoiNguImportDongDto"
+    PhatTrienDoiNguNguoiNhapListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhatTrienDoiNguNguoiNhapDto"
+    PhatTrienDoiNguNguoiNhapCapRequest:
+      type: object
+      required:
+        - IdNhanVien
+      properties:
+        IdNhanVien:
+          type: integer
+        GhiChu:
+          type: string
+          maxLength: 500
+          nullable: true
+    PhatTrienDoiNguUngVienListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhatTrienDoiNguUngVienDto"
+    PhatTrienDoiNguLichSuDto:
+      type: object
+      properties:
+        Id:
+          type: integer
+          format: int64
+        HanhDong:
+          type: integer
+          description: 1 Ghi nhan, 2 Sua, 3 Xoa, 4 Import Excel
+        MoTa:
+          type: string
+        IdNguoiThucHien:
+          type: integer
+        TenNguoiThucHien:
+          type: string
+        NgayThucHien:
+          type: string
+          format: date-time
+    PhatTrienDoiNguNguoiNhapDto:
+      type: object
+      properties:
+        Id:
+          type: integer
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        Email:
+          type: string
+          nullable: true
+        IdNguoiCap:
+          type: integer
+        TenNguoiCap:
+          type: string
+        NgayCap:
+          type: string
+          format: date-time
+        GhiChu:
+          type: string
+          nullable: true
+        DaThuHoi:
+          type: boolean
+        IdNguoiThuHoi:
+          type: integer
+          nullable: true
+        TenNguoiThuHoi:
+          type: string
+          nullable: true
+        NgayThuHoi:
+          type: string
+          format: date-time
+          nullable: true
+        ConThuocPhong:
+          type: boolean
+          description: false = da roi P_TCHC, uy quyen khong con hieu luc
+    PhatTrienDoiNguUngVienDto:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        Email:
+          type: string
+          nullable: true
+        TenChucVu:
+          type: string
+          nullable: true
+          description: Chuc vu tai P_TCHC (null = chi la thanh vien)
+        LaQuanLy:
+          type: boolean
+          description: Dang la TP / QTP cua phong - da co toan quyen
+        DaDuocCap:
+          type: boolean
   securitySchemes:
     bearerAuth:
       type: http

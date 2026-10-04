@@ -25,6 +25,7 @@ import { useConfirmLogoutDialog } from "./hooks/useConfirmLogoutDialog";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { HoatDongDaoTaoProvider } from "./context/HoatDongDaoTaoContext";
 import { ThanhTichDoanTheProvider } from "./context/ThanhTichDoanTheContext";
+import { PhatTrienDoiNguProvider } from "./context/PhatTrienDoiNguContext";
 
 const FullScreenLoader = () => (
   <div
@@ -169,7 +170,7 @@ export default function App() {
         <Router
           future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
-          <HoatDongDaoTaoProvider><ThanhTichDoanTheProvider><AppContent /></ThanhTichDoanTheProvider></HoatDongDaoTaoProvider>
+          <HoatDongDaoTaoProvider><ThanhTichDoanTheProvider><PhatTrienDoiNguProvider><AppContent /></PhatTrienDoiNguProvider></ThanhTichDoanTheProvider></HoatDongDaoTaoProvider>
         </Router>
       </AuthProvider>
     </PrimeReactProvider>

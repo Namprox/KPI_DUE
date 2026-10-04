@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { canAccessPath, findRouteRule } from "../config/menuConfig";
 import { coDanhGiaKpiCaNhan } from "../utils/roles";
 import { useQuyenDaoTao } from "../context/HoatDongDaoTaoContext";
+import { useQuyenDoiNgu } from "../context/PhatTrienDoiNguContext";
 
 const KhongCoQuyen = ({ khongDanhGia }) => (
   <div className="page-container">
@@ -29,13 +30,16 @@ const RequireRole = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const daoTao = useQuyenDaoTao();
+  const doiNgu = useQuyenDoiNgu();
+  const rule = findRouteRule(location.pathname);
 
   if (loading) return <div className="page-container">Đang tải thông tin tài khoản...</div>;
-  if (findRouteRule(location.pathname)?.serverPermission) {
-    if (daoTao.loading) return <div className="page-container">Đang tải quyền truy cập...</div>;
-    if (daoTao.error) return <div className="page-container"><p role="alert">{daoTao.error}</p><button onClick={daoTao.refresh}>Thử lại</button></div>;
+  if (rule?.serverPermission) {
+    const permission = rule.serverPermissionSource === "doiNgu" ? doiNgu : daoTao;
+    if (permission.loading) return <div className="page-container">Đang tải quyền truy cập...</div>;
+    if (permission.error) return <div className="page-container"><p role="alert">{permission.error}</p><button onClick={permission.refresh}>Thử lại</button></div>;
   }
-  if (!canAccessPath(location.pathname, user, daoTao.quyen)) {
+  if (!canAccessPath(location.pathname, user, daoTao.quyen, doiNgu.quyen)) {
     const khongDanhGia = findRouteRule(location.pathname)?.personalKpi &&
       Array.isArray(user?.DonVi) && user.DonVi.some((dv) => dv?.LoaiDoiTuong === 0) &&
       !coDanhGiaKpiCaNhan(user);

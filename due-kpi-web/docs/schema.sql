@@ -2955,3 +2955,198 @@ CREATE INDEX ix_ttdt_nam_loai    ON thanh_tich_doan_the(id_nam, id_loai) INCLUDE
 GO
 CREATE INDEX ix_lsttdt_tt        ON lich_su_thanh_tich_doan_the(id_thanh_tich);
 GO
+
+-- =============================================================================
+-- 18. PHÁT TRIỂN ĐỘI NGŨ — P_TCHC ghi nhận (nguồn 3 tiêu chí chấm tự động của GV)
+-- =============================================================================
+-- P_TCHC (và người được TP / QTP P_TCHC ủy quyền) nhập theo năm danh sách GIẢNG VIÊN:
+--   1 PTDN_DANH_HIEU_NHA_GIAO    được phong tặng danh hiệu Nhà giáo Nhân dân / Nhà giáo Ưu tú
+--   2 PTDN_NGACH_HOC_HAM_HOC_VI  được bổ nhiệm ngạch / học hàm, học vị (GVC, GVCC, TS, PGS, GS)
+--   3 PTDN_BOI_DUONG             hoàn thành khoá bồi dưỡng phát triển đội ngũ quan trọng
+-- Khác §16 (Hoạt động đào tạo): mỗi bản ghi CHỌN 1 HẠNG MỤC trong danh mục của loại (loại 1, 2
+-- cố định theo câu chữ tiêu chí; loại 3 = danh mục khoá học do P_TCHC quản lý). Quy tắc chấm:
+-- có ≥ 1 dòng còn hiệu lực của (GV, năm, loại) → đủ diem_toi_da; nhiều dòng KHÔNG cộng thêm
+-- ⇒ bảng KHÔNG lưu điểm. Quyền: fn_phat_trien_doi_ngu_quyen (procedure.sql mục 18).
+-- Xem schema_ghi_chu.md mục 18.
+-- =============================================================================
+
+-- 18.1. Danh mục loại — CỐ ĐỊNH 3 dòng. ma_loai đặt TRÙNG mã cong_thuc_tong_hop của tiêu chí
+--       chấm tự động tương ứng (giống loai_hoat_dong_dao_tao) → không cần bảng ánh xạ.
+--       cho_them_hang_muc = 1: TP / QTP P_TCHC được thêm / sửa / ngừng dùng hạng mục của loại.
+CREATE TABLE loai_phat_trien_doi_ngu (
+    id_loai           TINYINT       NOT NULL,
+    ma_loai           NVARCHAR(50)  NOT NULL,
+    ten_loai          NVARCHAR(255) NOT NULL,
+    nhan_noi_dung     NVARCHAR(100) NOT NULL,   -- nhãn ô "chi tiết" (tuỳ chọn) trên form
+    cho_them_hang_muc BIT           NOT NULL CONSTRAINT df_lptdn_cho_them DEFAULT 0,
+    thu_tu            TINYINT       NOT NULL,
+    CONSTRAINT pk_lptdn    PRIMARY KEY (id_loai),
+    CONSTRAINT uq_lptdn_ma UNIQUE (ma_loai)
+);
+GO
+
+INSERT INTO loai_phat_trien_doi_ngu (id_loai, ma_loai, ten_loai, nhan_noi_dung, cho_them_hang_muc, thu_tu) VALUES
+    (1, N'PTDN_DANH_HIEU_NHA_GIAO',   N'Được phong tặng danh hiệu Nhà giáo Nhân dân, Nhà giáo Ưu tú',
+                                      N'Đợt phong tặng / chi tiết',               0, 1),
+    (2, N'PTDN_NGACH_HOC_HAM_HOC_VI', N'Được bổ nhiệm ngạch / học hàm, học vị (GVC, GVCC, TS, PGS, GS)',
+                                      N'Chuyên ngành / cơ sở đào tạo / chi tiết', 0, 2),
+    (3, N'PTDN_BOI_DUONG',            N'Hoàn thành các khoá học bồi dưỡng phát triển đội ngũ quan trọng',
+                                      N'Khoá / cơ sở đào tạo / chi tiết',         1, 3);
+GO
+
+-- 18.2. Danh mục hạng mục của từng loại.
+--       la_co_dinh = 1: hạng mục nêu đích danh trong tiêu chí (loại 1, 2) — không sửa / ngừng dùng.
+--       dang_su_dung = 0: không chọn được cho bản ghi mới; bản ghi cũ giữ nguyên và VẪN tính điểm.
+--       Không xoá cứng. Tên không trùng trong cùng loại: kiểm trong SP (collation CSDL).
+--       uq_hmptdn_id_loai là đích của FK kép (id_hang_muc, id_loai) ở phat_trien_doi_ngu
+--       → id_loai của bản ghi luôn khớp hạng mục.
+CREATE TABLE hang_muc_phat_trien_doi_ngu (
+    id_hang_muc       INT           IDENTITY(1,1) NOT NULL,
+    id_loai           TINYINT       NOT NULL,
+    ma_hang_muc       NVARCHAR(50)  NULL,       -- tuỳ chọn; dùng cho cột "Hạng mục" khi import
+    ten_hang_muc      NVARCHAR(255) NOT NULL,
+    thu_tu            INT           NOT NULL CONSTRAINT df_hmptdn_thu_tu   DEFAULT 0,
+    dang_su_dung      BIT           NOT NULL CONSTRAINT df_hmptdn_dang_sd  DEFAULT 1,
+    la_co_dinh        BIT           NOT NULL CONSTRAINT df_hmptdn_co_dinh  DEFAULT 0,
+    id_nguoi_tao      INT           NULL,       -- NULL = dòng seed
+    ngay_tao          DATETIME      NOT NULL CONSTRAINT df_hmptdn_ngay_tao DEFAULT GETDATE(),
+    id_nguoi_cap_nhat INT           NULL,
+    ngay_cap_nhat     DATETIME      NULL,
+    CONSTRAINT pk_hmptdn            PRIMARY KEY (id_hang_muc),
+    CONSTRAINT uq_hmptdn_id_loai    UNIQUE (id_hang_muc, id_loai),
+    CONSTRAINT fk_hmptdn_loai       FOREIGN KEY (id_loai)           REFERENCES loai_phat_trien_doi_ngu(id_loai),
+    CONSTRAINT fk_hmptdn_nguoi_tao  FOREIGN KEY (id_nguoi_tao)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_hmptdn_nguoi_cn   FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_hmptdn_ten       CHECK (LEN(LTRIM(RTRIM(ten_hang_muc))) > 0),
+    CONSTRAINT chk_hmptdn_ma        CHECK (ma_hang_muc IS NULL OR LEN(LTRIM(RTRIM(ma_hang_muc))) > 0)
+);
+GO
+
+INSERT INTO hang_muc_phat_trien_doi_ngu (id_loai, ma_hang_muc, ten_hang_muc, thu_tu, la_co_dinh) VALUES
+    (1, N'NGND',           N'Nhà giáo Nhân dân',                        1, 1),
+    (1, N'NGUT',           N'Nhà giáo Ưu tú',                           2, 1),
+    (2, N'NGACH_GVC',      N'Bổ nhiệm ngạch Giảng viên chính (GVC)',    1, 1),
+    (2, N'NGACH_GVCC',     N'Bổ nhiệm ngạch Giảng viên cao cấp (GVCC)', 2, 1),
+    (2, N'HOC_VI_TS',      N'Học vị Tiến sĩ (TS)',                      3, 1),
+    (2, N'HOC_HAM_PGS',    N'Học hàm Phó Giáo sư (PGS)',                4, 1),
+    (2, N'HOC_HAM_GS',     N'Học hàm Giáo sư (GS)',                     5, 1),
+    (3, N'LLCT_TRUNG_CAP', N'Trung cấp lý luận chính trị',              1, 0),
+    (3, N'LLCT_CAO_CAP',   N'Cao cấp lý luận chính trị',                2, 0);
+GO
+
+-- 18.3. Bản ghi — 1 dòng = 1 GV × 1 hạng mục. Năm do người nhập chọn (id_nam), không suy từ
+--       ngay_quyet_dinh. id_loai lưu denormalize (FK kép giữ khớp hạng mục) để EXISTS của
+--       engine và index giống hệt §16. Xoá MỀM (da_xoa); mọi thao tác ghi lich_su_phat_trien_doi_ngu.
+--       Chống trùng nằm trong SP (không có unique index): không cho 2 dòng còn hiệu lực cùng
+--       (id_nam, id_nhan_vien, id_hang_muc).
+CREATE TABLE phat_trien_doi_ngu (
+    id_ban_ghi        INT            IDENTITY(1,1) NOT NULL,
+    id_nam            INT            NOT NULL,
+    id_loai           TINYINT        NOT NULL,
+    id_hang_muc       INT            NOT NULL,
+    id_nhan_vien      INT            NOT NULL,   -- giảng viên được ghi nhận
+    noi_dung          NVARCHAR(500)  NULL,       -- chi tiết tuỳ chọn (đợt, chuyên ngành, khoá, cơ sở đào tạo...)
+    so_quyet_dinh     NVARCHAR(100)  NULL,
+    ngay_quyet_dinh   DATE           NULL,
+    ghi_chu           NVARCHAR(1000) NULL,
+    nguon             TINYINT        NOT NULL CONSTRAINT df_ptdn_nguon    DEFAULT 1,  -- 1 form, 2 import Excel
+    id_nguoi_tao      INT            NOT NULL,
+    ngay_tao          DATETIME       NOT NULL CONSTRAINT df_ptdn_ngay_tao DEFAULT GETDATE(),
+    id_nguoi_cap_nhat INT            NULL,
+    ngay_cap_nhat     DATETIME       NULL,
+    da_xoa            BIT            NOT NULL CONSTRAINT df_ptdn_da_xoa   DEFAULT 0,
+    id_nguoi_xoa      INT            NULL,
+    ngay_xoa          DATETIME       NULL,
+    CONSTRAINT pk_ptdn              PRIMARY KEY (id_ban_ghi),
+    CONSTRAINT fk_ptdn_nam          FOREIGN KEY (id_nam)                REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT fk_ptdn_loai         FOREIGN KEY (id_loai)               REFERENCES loai_phat_trien_doi_ngu(id_loai),
+    CONSTRAINT fk_ptdn_hang_muc     FOREIGN KEY (id_hang_muc, id_loai)  REFERENCES hang_muc_phat_trien_doi_ngu(id_hang_muc, id_loai),
+    CONSTRAINT fk_ptdn_nv           FOREIGN KEY (id_nhan_vien)          REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ptdn_nguoi_tao    FOREIGN KEY (id_nguoi_tao)          REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ptdn_nguoi_cn     FOREIGN KEY (id_nguoi_cap_nhat)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ptdn_nguoi_xoa    FOREIGN KEY (id_nguoi_xoa)          REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_ptdn_nguon       CHECK (nguon IN (1, 2)),
+    CONSTRAINT chk_ptdn_noi_dung    CHECK (noi_dung IS NULL OR LEN(LTRIM(RTRIM(noi_dung))) > 0),
+    CONSTRAINT chk_ptdn_xoa         CHECK ((da_xoa = 0 AND ngay_xoa IS NULL) OR (da_xoa = 1 AND ngay_xoa IS NOT NULL))
+);
+GO
+
+-- 18.4. Ủy quyền nhập liệu — TP / QTP của P_TCHC cấp cho nhân sự của phòng (clone §16.3).
+--       Quyền chỉ có hiệu lực khi người được cấp HÔM NAY vẫn thuộc P_TCHC
+--       (fn_phat_trien_doi_ngu_thuoc_phong) → rời phòng thì tự mất quyền, không cần thu hồi.
+--       Thu hồi = da_thu_hoi = 1 (giữ dòng làm lịch sử); cấp lại = dòng mới.
+CREATE TABLE phat_trien_doi_ngu_nguoi_nhap (
+    id               INT           IDENTITY(1,1) NOT NULL,
+    id_nhan_vien     INT           NOT NULL,
+    id_nguoi_cap     INT           NOT NULL,
+    ngay_cap         DATETIME      NOT NULL CONSTRAINT df_ptdnnn_ngay_cap DEFAULT GETDATE(),
+    ghi_chu          NVARCHAR(500) NULL,
+    da_thu_hoi       BIT           NOT NULL CONSTRAINT df_ptdnnn_thu_hoi  DEFAULT 0,
+    id_nguoi_thu_hoi INT           NULL,
+    ngay_thu_hoi     DATETIME      NULL,
+    CONSTRAINT pk_ptdnnn            PRIMARY KEY (id),
+    CONSTRAINT fk_ptdnnn_nv         FOREIGN KEY (id_nhan_vien)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ptdnnn_nguoi_cap  FOREIGN KEY (id_nguoi_cap)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_ptdnnn_nguoi_th   FOREIGN KEY (id_nguoi_thu_hoi) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_ptdnnn_thu_hoi   CHECK ((da_thu_hoi = 0 AND ngay_thu_hoi IS NULL) OR (da_thu_hoi = 1 AND ngay_thu_hoi IS NOT NULL))
+);
+GO
+
+-- 18.5. Nhật ký module (convention lich_su_*; KHÔNG dùng bảng nhat_ky).
+--       hanh_dong: 1 Ghi nhận · 2 Sửa (chỉ ghi khi thật sự đổi) · 3 Xoá · 4 Import Excel
+--                  · 5 Cấp quyền nhập · 6 Thu hồi quyền nhập · 7 Thêm hạng mục · 8 Sửa hạng mục.
+--       id_ban_ghi NULL với 5..8; id_hang_muc có với 1..4 (hạng mục sau thao tác) và 7 / 8;
+--       id_nhan_vien = người bị ảnh hưởng (GV / người được cấp), NULL với 7 / 8.
+CREATE TABLE lich_su_phat_trien_doi_ngu (
+    id                 BIGINT         IDENTITY(1,1) NOT NULL,
+    id_ban_ghi         INT            NULL,
+    id_hang_muc        INT            NULL,
+    id_nhan_vien       INT            NULL,
+    hanh_dong          TINYINT        NOT NULL,
+    mo_ta              NVARCHAR(1000) NULL,
+    id_nguoi_thuc_hien INT            NOT NULL,
+    ngay_thuc_hien     DATETIME       NOT NULL CONSTRAINT df_lsptdn_ngay DEFAULT GETDATE(),
+    CONSTRAINT pk_lsptdn       PRIMARY KEY (id),
+    CONSTRAINT fk_lsptdn_bg    FOREIGN KEY (id_ban_ghi)         REFERENCES phat_trien_doi_ngu(id_ban_ghi),
+    CONSTRAINT fk_lsptdn_hm    FOREIGN KEY (id_hang_muc)        REFERENCES hang_muc_phat_trien_doi_ngu(id_hang_muc),
+    CONSTRAINT fk_lsptdn_nv    FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_lsptdn_nguoi FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_lsptdn_hd   CHECK (hanh_dong BETWEEN 1 AND 8)
+);
+GO
+
+-- 18.6. TVP
+--   PhatTrienDoiNguGiangVienRow: danh sách GV khi ghi nhận 1 hạng mục cho nhiều người.
+--   PhatTrienDoiNguImportRow   : dòng Excel đã đọc ở C# (PhatTrienDoiNguExcelReader). Cột
+--                                hang_muc = mã hạng mục hoặc tên hạng mục; lỗi định dạng đặt
+--                                ở loi_dinh_dang để SP báo chung một bảng kết quả.
+CREATE TYPE dbo.PhatTrienDoiNguGiangVienRow AS TABLE (
+    id_nhan_vien INT NOT NULL PRIMARY KEY
+);
+GO
+
+CREATE TYPE dbo.PhatTrienDoiNguImportRow AS TABLE (
+    dong_excel      INT            NOT NULL PRIMARY KEY,
+    hang_muc        NVARCHAR(255)  NULL,   -- ma_hang_muc hoặc ten_hang_muc
+    ma_nhan_vien    NVARCHAR(20)   NULL,
+    ho_ten          NVARCHAR(100)  NULL,   -- chỉ để đối chiếu, lệch → cảnh báo
+    noi_dung        NVARCHAR(500)  NULL,
+    so_quyet_dinh   NVARCHAR(100)  NULL,
+    ngay_quyet_dinh DATE           NULL,
+    ghi_chu         NVARCHAR(1000) NULL,
+    loi_dinh_dang   NVARCHAR(500)  NULL
+);
+GO
+
+-- 18.7. Index của module (filtered → bắt buộc SET QUOTED_IDENTIFIER ON, xem §10.2).
+--   ix_ptdn_nv_nam_loai: phục vụ EXISTS (GV, năm, loại) của engine chấm tự động.
+CREATE INDEX ix_ptdn_nv_nam_loai ON phat_trien_doi_ngu(id_nhan_vien, id_nam, id_loai) WHERE da_xoa = 0;
+GO
+CREATE INDEX ix_ptdn_nam_loai    ON phat_trien_doi_ngu(id_nam, id_loai) INCLUDE (id_nhan_vien, id_hang_muc) WHERE da_xoa = 0;
+GO
+CREATE UNIQUE INDEX ux_ptdnnn_nv ON phat_trien_doi_ngu_nguoi_nhap(id_nhan_vien) WHERE da_thu_hoi = 0;
+GO
+CREATE UNIQUE INDEX ux_hmptdn_ma ON hang_muc_phat_trien_doi_ngu(ma_hang_muc) WHERE ma_hang_muc IS NOT NULL;
+GO
+CREATE INDEX ix_lsptdn_bg        ON lich_su_phat_trien_doi_ngu(id_ban_ghi);
+GO

@@ -339,6 +339,7 @@ const DanhGiaPhuLuc2Form = ({
                           const isVpvc = congThuc.startsWith("VPVC");
                           const isTtdt = laThanhTichDoanThe(autoInfo);
                           const isDaoTao = congThuc.startsWith("CTDT_");
+                          const isDoiNgu = congThuc.startsWith("PTDN_");
                           const autoNote = laCongThucGioGiang(autoInfo)
                             ? "Điểm dựa trên tỷ lệ hoàn thành định mức giờ giảng do hệ thống cung cấp"
                             : isNckh
@@ -353,6 +354,7 @@ const DanhGiaPhuLuc2Form = ({
                                     ? "Điểm được tính tự động từ dữ liệu chấp hành, vi phạm đã ghi nhận"
                                     : isTtdt
                                       ? "Điểm được tính tự động từ thành tích đoàn thể do Tổ trưởng P_TCTD ghi nhận"
+                                      : isDoiNgu ? "Điểm được tính tự động từ phát triển đội ngũ do Phòng Tổ chức – Hành chính ghi nhận"
                                       : isDaoTao ? "Điểm được tính tự động từ hoạt động đào tạo đã ghi nhận" : "Không chỉnh sửa";
                           const phamViDiem =
                             Number(autoInfo.Quy) > 0
@@ -509,7 +511,7 @@ const DanhGiaPhuLuc2Form = ({
                                 </div>
                               )}
 
-                              {(isNckh || isVpgd || isTtvt || isVpvc || isTtdt || isDaoTao) &&
+                              {(isNckh || isVpgd || isTtvt || isVpvc || isTtdt || isDaoTao || isDoiNgu) &&
                                 minhChungList.length > 0 && (
                                   <div
                                     className={`pl2-nckh-mc-box ${isVpgd ? "pl2-mc-box-vpgd" : ""}`}
@@ -525,6 +527,8 @@ const DanhGiaPhuLuc2Form = ({
                                           <i className="fa-solid fa-award"></i>{" "}
                                           Thành tích đã ghi nhận
                                         </>
+                                      ) : isDoiNgu ? (
+                                        <>Phát triển đội ngũ đã ghi nhận</>
                                       ) : isDaoTao ? (
                                         <>Hoạt động đào tạo đã ghi nhận</>
                                       ) : (
@@ -548,6 +552,8 @@ const DanhGiaPhuLuc2Form = ({
                                             <div className="pl2-nckh-mc-item-main">
                                               {Number(mc.LoaiNguon) === 10 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/thanh-tich-doan-the/${encodeURIComponent(mc.MaNguon)}`}>
                                                 {mc.TieuDe || "Chi tiết thành tích đoàn thể"}
+                                              </Link> : Number(mc.LoaiNguon) === 11 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/phat-trien-doi-ngu/${encodeURIComponent(mc.MaNguon)}`}>
+                                                {mc.TieuDe || "Chi tiết phát triển đội ngũ"}
                                               </Link> : <span className="pl2-nckh-mc-name">
                                                 {mc.TieuDe ||
                                                   "(Không có tiêu đề)"}
