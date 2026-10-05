@@ -2217,6 +2217,9 @@ paths:
         ho_lot | ten | cau_hoi | danh_gia | nganh | hoc_ky) + field 'namHoc' (vd 26)
         + field 'maDonVi'. Doc file streaming va INSERT cac dong THO qua TVP; ghi de
         toan bo du lieu tho cu cung (nam_hoc, don_vi). Diem trung binh tinh sau.
+        QUYEN: chi ADMIN hoac TP / QTP tai P_DTBDCL (Phong Dao tao va Bao dam chat luong),
+        tinh ca chuc vu kiem nhiem. Quyen duoc hoi TRUOC khi doc file (nguoi khong co quyen
+        nhan 403, file khong bi doc) va SP import kiem lai (fn_phan_hoi_sinh_vien_co_quyen_import).
       operationId: phanHoiSinhVienImport
       requestBody:
         required: true
@@ -2252,6 +2255,12 @@ paths:
           description: >-
             Thieu file/tham so, tep rong, sai dinh dang (chi nhan .xls/.xlsx), noi dung
             khong khop chu ky, vuot 100 MB, file khong doc duoc, hoac khong co dong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhanHoiSinhVienImportResponse"
+        "403":
+          description: Forbidden — khong phai ADMIN hoac TP / QTP Phong Dao tao va Bao dam chat luong (P_DTBDCL)
           content:
             application/json:
               schema:
@@ -2318,24 +2327,6 @@ paths:
                 $ref: "#/components/schemas/PhanHoiSinhVienResponse"
         "404":
           description: Khong tim thay phan hoi sinh vien
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PhanHoiSinhVienResponse"
-    delete:
-      tags:
-        - PhanHoiSinhVien
-      summary: Delete
-      operationId: phanHoiSinhVienDelete
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
           content:
             application/json:
               schema:
@@ -4471,6 +4462,541 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhatTrienDoiNguResponse"
+  /api/sang-kien/quyen:
+    get:
+      tags:
+        - SangKien
+      summary: Quyen cua nguoi dang nhap tren module sang kien (de bat / tat menu)
+      description: >
+        LaQuanLy = ADMIN hoac TP / QTP TAI P_KH (toan quyen + uy quyen).
+        DuocNhap = LaQuanLy, hoac duoc uy quyen VA hom nay van thuoc P_KH (dong bo, nhap tay vien chuc,
+        sua / xoa, xet doi moi giang day). XemTatCa = DuocNhap hoac HT. XemTheoDonVi = la truong don vi
+        o it nhat 1 don vi. DuocUyQuyen = co uy quyen chua thu hoi.
+      operationId: sangKienGetQuyen
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienQuyenResponse"
+  /api/sang-kien/danh-muc:
+    get:
+      tags:
+        - SangKien
+      summary: Danh muc 4 cap sang kien + 7 loai giai phap
+      description: >
+        Cap: CAP_DHDN 10, CAP_TRUONG 10, CAP_BO 20, CAI_TIEN_CONG_VIEC 5 (DiemVienChuc = diem / sang kien
+        cua tieu chi vien chuc TTVT_SANG_KIEN). ChiNhapTay = true: cap khong co tren NCKH.
+      operationId: sangKienGetDanhMuc
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienDanhMucResponse"
+  /api/sang-kien/vien-chuc:
+    get:
+      tags:
+        - SangKien
+      summary: Picker vien chuc (tac gia khi P_KH nhap tay)
+      description: 1 dong / vien chuc (v_vien_chuc_don_vi), don vi hien thi = don vi chinh. Quyen DuocNhap.
+      operationId: sangKienGetVienChuc
+      parameters:
+        - name: tuKhoa
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: idDonVi
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienVienChucListResponse"
+        "403":
+          description: Khong co quyen nhap lieu (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienVienChucListResponse"
+  /api/sang-kien/dong-bo:
+    post:
+      tags:
+        - SangKien
+      summary: Dong bo sang kien tu NCKH (GET {NckhApiUrl}/api/kpiinitiative)
+      description: >
+        Keo TOAN BO sang kien (toan thoi gian, moi nguoi dung NCKH) - khong co tham so nam; nam / quy
+        suy tu ngay cong nhan. MERGE theo InitiativeId, KHONG ghi de ket qua xet doi moi giang day;
+        sang kien vang mat -> ConONguon = false (khong tinh diem). Tac gia ghep sang nhan vien theo email;
+        email khong khop thi TAM ghep theo ho ten khi khop dung 1 nhan vien dang hoat dong (CachGhep = 2).
+        Quyen DuocNhap (hoi truoc khi goi NCKH). NCKH tra rong -> 502 va KHONG ghi gi.
+      operationId: sangKienDongBo
+      responses:
+        "200":
+          description: Dong bo thanh cong
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienDongBoResult"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienDongBoResult"
+        "409":
+          description: DANG_DONG_BO - dang co lan dong bo khac
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienDongBoResult"
+        "502":
+          description: NCKH_API_ERROR / NCKH_API_RONG
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienDongBoResult"
+  /api/sang-kien/xet-giang-day:
+    post:
+      tags:
+        - SangKien
+      summary: Danh dau hang loat sang kien dong bo co thuoc "Doi moi, sang tao trong giang day"
+      description: >
+        Nguon tieu chi giang vien SK_DOI_MOI_GIANG_DAY. LaDoiMoiGiangDay true / false / null (null = bo xet;
+        thieu field cung la null). Chi sang kien DONG BO (dong nhap tay -> 422 DONG_NHAP_TAY). Toi da 1000
+        dong, khong lap IdSangKien, all-or-nothing. Quyen DuocNhap.
+      operationId: sangKienXetGiangDay
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SangKienXetGiangDayRequest"
+      responses:
+        "200":
+          description: OK (SoCapNhat = so dong thuc su doi)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "400":
+          description: INVALID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "404":
+          description: NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "422":
+          description: DONG_NHAP_TAY
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+  /api/sang-kien/nguoi-nhap:
+    get:
+      tags:
+        - SangKien
+      summary: Danh sach uy quyen nhap lieu (LaQuanLy)
+      operationId: sangKienGetNguoiNhap
+      parameters:
+        - name: baoGomDaThuHoi
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienNguoiNhapListResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienNguoiNhapListResponse"
+    post:
+      tags:
+        - SangKien
+      summary: Cap quyen nhap lieu cho 1 nhan su cua P_KH (LaQuanLy)
+      operationId: sangKienCapNguoiNhap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SangKienNguoiNhapCapRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "409":
+          description: DA_DUOC_CAP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "422":
+          description: KHONG_THUOC_PHONG
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+  /api/sang-kien/nguoi-nhap/ung-vien:
+    get:
+      tags:
+        - SangKien
+      summary: Nhan su dang thuoc P_KH (ung vien cap quyen nhap lieu, LaQuanLy)
+      operationId: sangKienGetUngVien
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienUngVienListResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienUngVienListResponse"
+  /api/sang-kien/nguoi-nhap/{idNhanVien}:
+    delete:
+      tags:
+        - SangKien
+      summary: Thu hoi uy quyen nhap lieu (LaQuanLy)
+      operationId: sangKienThuHoiNguoiNhap
+      parameters:
+        - name: idNhanVien
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "404":
+          description: NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+  /api/sang-kien:
+    get:
+      tags:
+        - SangKien
+      summary: Danh sach sang kien (phan trang)
+      description: >
+        Pham vi xem: XemTatCa -> toan truong; con lai -> sang kien co tac gia la chinh minh hoac nhan su
+        don vi minh lam truong. Mac dinh an sang kien dong bo khong con tren NCKH.
+      operationId: sangKienGetList
+      parameters:
+        - name: idNam
+          in: query
+          required: false
+          description: Nam danh gia - loc NgayCongNhan trong khoang ngay cua nam
+          schema:
+            type: integer
+        - name: nguon
+          in: query
+          required: false
+          description: 1 dong bo NCKH, 2 P_KH nhap tay
+          schema:
+            type: integer
+            enum: [1, 2]
+        - name: idCap
+          in: query
+          required: false
+          description: 1..4; 0 = chua nhan dien cap
+          schema:
+            type: integer
+        - name: trangThaiXet
+          in: query
+          required: false
+          description: 0 chua xet, 1 doi moi giang day, 2 khong phai (ngam nguon = 1)
+          schema:
+            type: integer
+            enum: [0, 1, 2]
+        - name: doiTuong
+          in: query
+          required: false
+          description: 1 co tac gia giang vien, 2 co tac gia vien chuc
+          schema:
+            type: integer
+            enum: [1, 2]
+        - name: idNhanVien
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: chuaKhopTacGia
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: ghepTheoHoTen
+          in: query
+          required: false
+          description: true = co tac gia TAM ghep theo ho ten (CachGhep = 2, can ra soat)
+          schema:
+            type: boolean
+            default: false
+        - name: baoGomKhongCon
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: tuKhoa
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 500
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienListResponse"
+        "400":
+          description: INVALID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienListResponse"
+    post:
+      tags:
+        - SangKien
+      summary: P_KH nhap tay 1 sang kien - CHI vien chuc
+      description: >
+        Tac gia phai la vien chuc (422 KHONG_PHAI_VIEN_CHUC). NgayCongNhan phai thuoc 1 nam danh gia.
+        Trung (cung tac gia + cung ten hoac cung so chung nhan, ke ca sang kien dong bo) -> 409
+        TRUNG_SANG_KIEN. Quyen DuocNhap.
+      operationId: sangKienCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SangKienCreateRequest"
+      responses:
+        "201":
+          description: Da tao (IdSangKien + Item)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "400":
+          description: INVALID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "409":
+          description: TRUNG_SANG_KIEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "422":
+          description: KHONG_PHAI_VIEN_CHUC
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+  /api/sang-kien/{id}:
+    get:
+      tags:
+        - SangKien
+      summary: Chi tiet sang kien (kem tac gia + lich su) - link tu minh chung LoaiNguon = 12
+      operationId: sangKienGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "404":
+          description: NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+    put:
+      tags:
+        - SangKien
+      summary: Sua sang kien NHAP TAY (thay toan bo, ke ca tac gia)
+      description: Dong dong bo -> 422 DONG_DONG_BO. Tac gia MOI phai la vien chuc.
+      operationId: sangKienUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SangKienUpdateRequest"
+      responses:
+        "200":
+          description: OK (CoThayDoi + Item)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "400":
+          description: INVALID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "404":
+          description: NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "409":
+          description: TRUNG_SANG_KIEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "422":
+          description: DONG_DONG_BO / KHONG_PHAI_VIEN_CHUC
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+    delete:
+      tags:
+        - SangKien
+      summary: Xoa mem sang kien NHAP TAY
+      operationId: sangKienDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: lyDo
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 500
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "403":
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "404":
+          description: NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "422":
+          description: DONG_DONG_BO
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
   /api/phieu:
     get:
       tags:
@@ -9752,6 +10278,9 @@ paths:
         Du lieu cac nam khac GIU NGUYEN -> moi nam can cham phai duoc dong bo it nhat 1 lan.
         Anh xa ve nhan vien KPI qua EMAIL (LOWER+TRIM nhan_vien.email = nckh_ho_so.email).
         Neu API tra ve rong -> KHONG xoa du lieu cu (tranh mat du lieu khi API loi).
+        QUYEN: chi ADMIN hoac TP / QTP tai P_KH (Phong Khoa hoc), tinh ca chuc vu kiem nhiem.
+        Quyen duoc hoi TRUOC khi goi API NCKH (nguoi khong co quyen nhan 403 ngay) va SP
+        dong bo kiem lai (fn_nckh_co_quyen_dong_bo).
       operationId: nckhDongBo
       parameters:
         - name: id_nam
@@ -9769,6 +10298,12 @@ paths:
                 $ref: "#/components/schemas/NckhSyncResult"
         "400":
           description: Bad Request (thieu/sai id_nam, hoac id_nam khong ton tai)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhSyncResult"
+        "403":
+          description: Forbidden — khong phai ADMIN hoac TP / QTP Phong Khoa hoc (P_KH)
           content:
             application/json:
               schema:
@@ -9801,10 +10336,19 @@ paths:
         gio NCKH (RequiredHours), gio NCKH quy doi (ConvertedHours).
         Neu API tra ve rong -> KHONG xoa du lieu cu (tranh mat du lieu khi API loi).
         Du lieu nay chi phuc vu DOI CHIEU khi danh gia - KHONG tu dong ghi vao gio_thuc_hien_gv.
+        QUYEN: chi ADMIN hoac TP / QTP tai P_KH (Phong Khoa hoc), tinh ca chuc vu kiem nhiem.
+        Quyen duoc hoi TRUOC khi goi API NCKH (nguoi khong co quyen nhan 403 ngay) va SP
+        dong bo kiem lai (fn_nckh_co_quyen_dong_bo).
       operationId: nckhGioNckhDongBo
       responses:
         "200":
           description: OK — dong bo thanh cong; tra tong so dong da ghi.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhGioNckhSyncResult"
+        "403":
+          description: Forbidden — khong phai ADMIN hoac TP / QTP Phong Khoa hoc (P_KH)
           content:
             application/json:
               schema:
@@ -9840,6 +10384,9 @@ paths:
         Neu API tra ve rong -> KHONG xoa du lieu cu cua nam do (tranh mat du lieu khi API loi).
         Du lieu nay hien CHI de LUU TRU/DOI CHIEU - chua co API doc va khong tu dong ghi
         vao bang diem/phieu danh gia nao.
+        QUYEN: chi ADMIN hoac TP / QTP tai P_KH (Phong Khoa hoc), tinh ca chuc vu kiem nhiem.
+        Quyen duoc hoi TRUOC khi goi API NCKH (nguoi khong co quyen nhan 403 ngay) va SP
+        dong bo kiem lai (fn_nckh_co_quyen_dong_bo).
       operationId: nckhBaiBaoQuocTeDongBo
       parameters:
         - name: id_nam
@@ -9857,6 +10404,12 @@ paths:
                 $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
         "400":
           description: Bad Request — thieu hoac sai tham so 'id_nam'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
+        "403":
+          description: Forbidden — khong phai ADMIN hoac TP / QTP Phong Khoa hoc (P_KH)
           content:
             application/json:
               schema:
@@ -24832,6 +25385,463 @@ components:
           description: Dang la TP / QTP cua phong - da co toan quyen
         DaDuocCap:
           type: boolean
+    SangKienQuyenResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        LaQuanLy:
+          type: boolean
+        DuocNhap:
+          type: boolean
+        XemTatCa:
+          type: boolean
+        XemTheoDonVi:
+          type: boolean
+        DuocUyQuyen:
+          type: boolean
+    CapSangKienDto:
+      type: object
+      properties:
+        IdCap:
+          type: integer
+        MaCap:
+          type: string
+        TenCap:
+          type: string
+        TenNguon:
+          type: string
+          nullable: true
+          description: Text InitiativeLevel cua NCKH (null = chi nhap tay)
+        DiemVienChuc:
+          type: number
+        ChiNhapTay:
+          type: boolean
+        ThuTu:
+          type: integer
+    LoaiGiaiPhapSangKienDto:
+      type: object
+      properties:
+        IdLoai:
+          type: integer
+        MaLoai:
+          type: string
+        TenLoai:
+          type: string
+        ThuTu:
+          type: integer
+    SangKienDanhMucResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Cap:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapSangKienDto"
+        LoaiGiaiPhap:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoaiGiaiPhapSangKienDto"
+    SangKienVienChucDto:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+    SangKienVienChucListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SangKienVienChucDto"
+    SangKienDongBoResult:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        SoNguoiDungNguon:
+          type: integer
+        SoSangKien:
+          type: integer
+        SoMoi:
+          type: integer
+        SoDaCo:
+          type: integer
+        SoKhongConONguon:
+          type: integer
+          description: Sang kien truoc day co, nay NCKH khong con -> khong tinh diem
+        SoTacGia:
+          type: integer
+        SoTacGiaChuaKhop:
+          type: integer
+          description: Khong khop email lan ho ten (hoac trung ten) -> tac gia khong duoc tinh
+        SoTacGiaGhepHoTen:
+          type: integer
+          description: Email khong khop, TAM ghep theo ho ten (khop dung 1 nhan vien dang hoat dong) -> co tinh, can ra soat
+        SoCapKhongNhanDien:
+          type: integer
+          description: InitiativeLevel khong khop danh muc cap -> khong tinh diem vien chuc
+        SoThieuNgayCongNhan:
+          type: integer
+          description: Thieu / sai ApprovalDate -> khong thuoc nam nao
+    SangKienTacGiaDto:
+      type: object
+      properties:
+        Id:
+          type: integer
+        IdSangKien:
+          type: integer
+        IdNhanVien:
+          type: integer
+          nullable: true
+          description: null = tac gia dong bo chua ghep duoc nhan su
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        MaNguoiDungNckh:
+          type: integer
+          nullable: true
+        HoTenNguon:
+          type: string
+          nullable: true
+        EmailNguon:
+          type: string
+          nullable: true
+        CachGhep:
+          type: integer
+          nullable: true
+          description: 1 email, 2 ho ten (tam - can ra soat), 3 P_KH nhap tay, null = chua khop
+        LaGiangVien:
+          type: boolean
+        LaVienChuc:
+          type: boolean
+    SangKienDto:
+      type: object
+      properties:
+        IdSangKien:
+          type: integer
+        Nguon:
+          type: integer
+          description: 1 dong bo NCKH, 2 P_KH nhap tay (chi vien chuc)
+        MaSangKienNguon:
+          type: integer
+          nullable: true
+          description: InitiativeId ben NCKH
+        TenSangKien:
+          type: string
+        IdCap:
+          type: integer
+          nullable: true
+        MaCap:
+          type: string
+          nullable: true
+        TenCap:
+          type: string
+          nullable: true
+        DiemVienChuc:
+          type: number
+          nullable: true
+        CapTextNguon:
+          type: string
+          nullable: true
+        IdLoaiGiaiPhap:
+          type: integer
+          nullable: true
+        MaLoaiGiaiPhap:
+          type: string
+          nullable: true
+        TenLoaiGiaiPhap:
+          type: string
+          nullable: true
+        LoaiGiaiPhapTextNguon:
+          type: string
+          nullable: true
+        DonViChuTri:
+          type: string
+          nullable: true
+        NgayCongNhan:
+          type: string
+          format: date-time
+          nullable: true
+        IdNamDanhGia:
+          type: integer
+          nullable: true
+          description: Nam danh gia chua NgayCongNhan (null = khong thuoc nam nao, khong tinh)
+        SoChungNhan:
+          type: string
+          nullable: true
+        GhiChu:
+          type: string
+          nullable: true
+        LaDoiMoiGiangDay:
+          type: boolean
+          nullable: true
+          description: null chua xet, true / false - chi dong dong bo
+        IdNguoiXet:
+          type: integer
+          nullable: true
+        TenNguoiXet:
+          type: string
+          nullable: true
+        NgayXet:
+          type: string
+          format: date-time
+          nullable: true
+        GhiChuXet:
+          type: string
+          nullable: true
+        ConONguon:
+          type: boolean
+        ThoiGianDongBo:
+          type: string
+          format: date-time
+          nullable: true
+        IdNguoiTao:
+          type: integer
+          nullable: true
+        TenNguoiTao:
+          type: string
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+        IdNguoiCapNhat:
+          type: integer
+          nullable: true
+        TenNguoiCapNhat:
+          type: string
+          nullable: true
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+        DaXoa:
+          type: boolean
+        CoTacGiaGiangVien:
+          type: boolean
+        CoTacGiaVienChuc:
+          type: boolean
+        ChoPhepSua:
+          type: boolean
+          description: Chi dong nhap tay
+        ChoPhepXet:
+          type: boolean
+          description: Chi dong dong bo
+        TacGia:
+          type: array
+          items:
+            $ref: "#/components/schemas/SangKienTacGiaDto"
+    SangKienLichSuDto:
+      type: object
+      properties:
+        Id:
+          type: integer
+          format: int64
+        HanhDong:
+          type: integer
+          description: 1 Ghi nhan, 2 Sua, 3 Xoa, 4 Xet doi moi giang day
+        MoTa:
+          type: string
+        IdNguoiThucHien:
+          type: integer
+        TenNguoiThucHien:
+          type: string
+        NgayThucHien:
+          type: string
+          format: date-time
+    SangKienListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        DuocNhap:
+          type: boolean
+        XemTatCa:
+          type: boolean
+        Page:
+          type: integer
+        PageSize:
+          type: integer
+        TotalCount:
+          type: integer
+        TotalPages:
+          type: integer
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SangKienDto"
+    SangKienResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Item:
+          $ref: "#/components/schemas/SangKienDto"
+        LichSu:
+          type: array
+          items:
+            $ref: "#/components/schemas/SangKienLichSuDto"
+        IdSangKien:
+          type: integer
+          nullable: true
+        CoThayDoi:
+          type: boolean
+          nullable: true
+        SoCapNhat:
+          type: integer
+          nullable: true
+    SangKienCreateRequest:
+      type: object
+      required:
+        - TenSangKien
+        - IdCap
+        - NgayCongNhan
+        - IdNhanViens
+      properties:
+        TenSangKien:
+          type: string
+          maxLength: 1000
+        IdCap:
+          type: integer
+          description: 1 cap DHDN, 2 cap Truong, 3 cap Bo tro len, 4 cai tien cong viec
+        IdLoaiGiaiPhap:
+          type: integer
+          nullable: true
+        DonViChuTri:
+          type: string
+          maxLength: 500
+          nullable: true
+        NgayCongNhan:
+          type: string
+          format: date
+        SoChungNhan:
+          type: string
+          maxLength: 500
+          nullable: true
+        GhiChu:
+          type: string
+          maxLength: 1000
+          nullable: true
+        IdNhanViens:
+          type: array
+          description: Tac gia - chi vien chuc, toi da 100
+          items:
+            type: integer
+    SangKienUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/SangKienCreateRequest"
+    SangKienXetGiangDayItem:
+      type: object
+      required:
+        - IdSangKien
+      properties:
+        IdSangKien:
+          type: integer
+        LaDoiMoiGiangDay:
+          type: boolean
+          nullable: true
+          description: true / false; null hoac thieu = bo xet
+        GhiChuXet:
+          type: string
+          maxLength: 500
+          nullable: true
+    SangKienXetGiangDayRequest:
+      type: object
+      required:
+        - Items
+      properties:
+        Items:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/SangKienXetGiangDayItem"
+    SangKienNguoiNhapCapRequest:
+      type: object
+      required:
+        - IdNhanVien
+      properties:
+        IdNhanVien:
+          type: integer
+        GhiChu:
+          type: string
+          maxLength: 500
+          nullable: true
+    SangKienNguoiNhapListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhatTrienDoiNguNguoiNhapDto"
+          description: Cung hinh dang PhatTrienDoiNguNguoiNhapDto (ConThuocPhong = con thuoc P_KH)
+    SangKienUngVienListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhatTrienDoiNguUngVienDto"
+          description: Cung hinh dang PhatTrienDoiNguUngVienDto (nhan su dang thuoc P_KH)
   securitySchemes:
     bearerAuth:
       type: http

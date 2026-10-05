@@ -1,7 +1,7 @@
 /**
- * Dữ liệu NCKH đồng bộ từ hệ thống nghiên cứu khoa học - lớp đọc dùng chung.
+ * Đọc dữ liệu NCKH và chạy đồng bộ từ hệ thống nghiên cứu khoa học.
  *
- * Toàn bộ endpoint /api/nckh/* là CHỈ ĐỌC: dữ liệu do sp_nckh_dong_bo kéo về
+ * Các endpoint GET /api/nckh/* là chỉ đọc: dữ liệu do sp_nckh_dong_bo kéo về
  * theo năm và ánh xạ sang nhân viên KPI qua email (nhan_vien.science_user_id).
  * Vì vậy màn hình cá nhân không có thao tác sửa/xóa, chỉ chọn năm và xem.
  *
@@ -39,6 +39,29 @@ const nemLoi = async (response, fallback) => {
   error.status = response.status;
   return error;
 };
+
+const dongBo = async (endpoint) => {
+  const response = await apiFetch(endpoint, { method: "POST" });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || result?.Success !== true) {
+    throw Object.assign(new Error(result?.Message || "Không đồng bộ được dữ liệu NCKH."), {
+      status: response.status,
+      errorCode: result?.ErrorCode,
+    });
+  }
+  return result;
+};
+
+const namDongBo = (idNam) => {
+  if (!Number.isInteger(Number(idNam)) || Number(idNam) <= 0) {
+    throw new Error("Vui lòng chọn năm đánh giá cần đồng bộ.");
+  }
+  return buildQuery({ id_nam: idNam });
+};
+
+export const dongBoNckh = (idNam) => dongBo(`nckh/dong-bo${namDongBo(idNam)}`);
+export const dongBoGioNckh = () => dongBo("nckh/gio-nckh/dong-bo");
+export const dongBoBaiBaoQuocTe = (idNam) => dongBo(`nckh/bai-bao-quoc-te/dong-bo${namDongBo(idNam)}`);
 
 /**
  * Hồ sơ + tổng hợp năm của một giảng viên.

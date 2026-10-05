@@ -3150,3 +3150,239 @@ CREATE UNIQUE INDEX ux_hmptdn_ma ON hang_muc_phat_trien_doi_ngu(ma_hang_muc) WHE
 GO
 CREATE INDEX ix_lsptdn_bg        ON lich_su_phat_trien_doi_ngu(id_ban_ghi);
 GO
+
+-- =============================================================================
+-- 19. SÁNG KIẾN — đồng bộ NCKH (giảng viên + viên chức) + P_KH nhập tay (CHỈ viên chức)
+-- =============================================================================
+-- MỘT bảng chung cho mọi sáng kiến, 2 nguồn:
+--   nguon = 1  ĐỒNG BỘ từ GET {NckhApiUrl}/api/kpiinitiative (toàn thời gian, mọi người
+--              có tài khoản NCKH). Cùng InitiativeId lặp lại dưới nhiều UserId (đồng tác
+--              giả) → 1 dòng sang_kien + N dòng sang_kien_tac_gia.
+--   nguon = 2  P_KH (TP / QTP + người được ủy quyền) NHẬP TAY — chỉ cho VIÊN CHỨC
+--              (tác giả phải thuộc v_vien_chuc_don_vi). Giảng viên KHÔNG nhập tay.
+-- Nguồn cho 2 tiêu chí chấm tự động:
+--   SK_DOI_MOI_GIANG_DAY (GV, có / không): có ≥ 1 sáng kiến hợp lệ trong năm được P_KH
+--       đánh dấu la_doi_moi_giang_day = 1 → đủ diem_toi_da. Chỉ dòng đồng bộ được đánh dấu.
+--   TTVT_SANG_KIEN (VC, cộng dồn, trần 30): SUM(cap_sang_kien.diem_vien_chuc) các sáng
+--       kiến hợp lệ (cả 2 nguồn) — THAY nguồn cũ là kê khai thành tích vượt trội loại 1.
+-- "Hợp lệ" = dbo.fn_sang_kien_hop_le (procedure.sql) — vị từ DUY NHẤT dùng chung cho điểm
+-- và minh chứng. Năm / quý KHÔNG lưu: suy từ ngay_cong_nhan lúc đọc (khoảng ngày của
+-- nam_danh_gia; quý = DATEPART(QUARTER, ...)).
+-- Xem schema_ghi_chu.md mục 19.
+-- =============================================================================
+
+-- 19.1. Cấp sáng kiến — CỐ ĐỊNH 4 dòng. ten_nguon = text InitiativeLevel của API NCKH dùng
+--       để ánh xạ khi đồng bộ (NULL = chỉ nhập tay). diem_vien_chuc = điểm / sáng kiến của
+--       tiêu chí viên chức (trần thật nằm ở tieu_chi_danh_gia.diem_toi_da).
+CREATE TABLE cap_sang_kien (
+    id_cap          TINYINT       NOT NULL,
+    ma_cap          NVARCHAR(50)  NOT NULL,
+    ten_cap         NVARCHAR(255) NOT NULL,
+    ten_nguon       NVARCHAR(200) NULL,
+    diem_vien_chuc  DECIMAL(5,2)  NOT NULL,
+    thu_tu          TINYINT       NOT NULL,
+    CONSTRAINT pk_cap_sk       PRIMARY KEY (id_cap),
+    CONSTRAINT uq_cap_sk_ma    UNIQUE (ma_cap),
+    CONSTRAINT chk_cap_sk_diem CHECK (diem_vien_chuc >= 0)
+);
+GO
+
+INSERT INTO cap_sang_kien (id_cap, ma_cap, ten_cap, ten_nguon, diem_vien_chuc, thu_tu) VALUES
+    (1, N'CAP_DHDN',           N'Cấp cơ sở (ĐHĐN)',   N'Cấp cơ sở (ĐHĐN)',   10, 1),
+    (2, N'CAP_TRUONG',         N'Cấp cơ sở (Trường)', N'Cấp cơ sở (Trường)', 10, 2),
+    (3, N'CAP_BO',             N'Cấp Bộ trở lên',     N'Cấp Bộ',             20, 3),
+    (4, N'CAI_TIEN_CONG_VIEC', N'Cải tiến công việc, tham mưu chính trong việc ban hành quy định, giải quyết công việc tại đơn vị',
+                               NULL,                                         5,  4);
+GO
+
+-- 19.2. Loại giải pháp — CỐ ĐỊNH 7 dòng; ten_loai = đúng text SolutionType của API NCKH.
+CREATE TABLE loai_giai_phap_sang_kien (
+    id_loai   TINYINT       NOT NULL,
+    ma_loai   NVARCHAR(50)  NOT NULL,
+    ten_loai  NVARCHAR(200) NOT NULL,
+    thu_tu    TINYINT       NOT NULL,
+    CONSTRAINT pk_lgpsk    PRIMARY KEY (id_loai),
+    CONSTRAINT uq_lgpsk_ma UNIQUE (ma_loai)
+);
+GO
+
+INSERT INTO loai_giai_phap_sang_kien (id_loai, ma_loai, ten_loai, thu_tu) VALUES
+    (1, N'KH_TU_NHIEN',    N'Khoa học tự nhiên',              1),
+    (2, N'KH_KY_THUAT_CN', N'Khoa học kỹ thuật và công nghệ', 2),
+    (3, N'KH_Y_DUOC',      N'Khoa học y, dược',               3),
+    (4, N'KH_NONG_NGHIEP', N'Khoa học nông nghiệp',           4),
+    (5, N'KH_XA_HOI',      N'Khoa học xã hội',                5),
+    (6, N'KH_NHAN_VAN',    N'Khoa học nhân văn',              6),
+    (7, N'KHAC',           N'Khác',                           7);
+GO
+
+-- 19.3. Sáng kiến — 1 dòng = 1 sáng kiến (đồng bộ hoặc nhập tay).
+--   Dòng đồng bộ: khoá nghiệp vụ ma_sang_kien_nguon (= InitiativeId, unique filtered).
+--     id_cap / id_loai_giai_phap NULL khi text API không nhận diện được (giữ text gốc ở
+--     *_text_nguon). con_o_nguon = 0 khi lần đồng bộ gần nhất KHÔNG còn thấy sáng kiến →
+--     giữ dòng (kèm kết quả xét) nhưng KHÔNG tính điểm. Không sửa / xoá được qua API.
+--   Dòng nhập tay: bắt buộc id_cap + ngay_cong_nhan + id_nguoi_tao; xoá MỀM (da_xoa).
+--   Xét "đổi mới giảng dạy" (la_doi_moi_giang_day: NULL chưa xét / 1 có / 0 không) CHỈ
+--     cho dòng đồng bộ; đồng bộ lại KHÔNG ghi đè các cột xét.
+CREATE TABLE sang_kien (
+    id_sang_kien              INT            IDENTITY(1,1) NOT NULL,
+    nguon                     TINYINT        NOT NULL,   -- 1 đồng bộ NCKH, 2 P_KH nhập tay
+    ma_sang_kien_nguon        INT            NULL,       -- InitiativeId (chỉ nguon = 1)
+    ten_sang_kien             NVARCHAR(1000) NOT NULL,   -- Name
+    id_cap                    TINYINT        NULL,
+    cap_text_nguon            NVARCHAR(200)  NULL,       -- InitiativeLevel gốc
+    id_loai_giai_phap         TINYINT        NULL,
+    loai_giai_phap_text_nguon NVARCHAR(200)  NULL,       -- SolutionType gốc
+    don_vi_chu_tri            NVARCHAR(500)  NULL,       -- HostInstitution
+    ngay_cong_nhan            DATE           NULL,       -- ApprovalDate
+    so_chung_nhan             NVARCHAR(500)  NULL,       -- CertificateNumber / số QĐ
+    ghi_chu                   NVARCHAR(1000) NULL,
+    la_doi_moi_giang_day      BIT            NULL,
+    id_nguoi_xet              INT            NULL,
+    ngay_xet                  DATETIME       NULL,
+    ghi_chu_xet               NVARCHAR(500)  NULL,
+    con_o_nguon               BIT            NOT NULL CONSTRAINT df_sk_con_o_nguon DEFAULT 1,
+    id_nguoi_dong_bo          INT            NULL,
+    thoi_gian_dong_bo         DATETIME       NULL,
+    id_nguoi_tao              INT            NULL,       -- NULL được với dòng đồng bộ
+    ngay_tao                  DATETIME       NOT NULL CONSTRAINT df_sk_ngay_tao DEFAULT GETDATE(),
+    id_nguoi_cap_nhat         INT            NULL,
+    ngay_cap_nhat             DATETIME       NULL,
+    da_xoa                    BIT            NOT NULL CONSTRAINT df_sk_da_xoa DEFAULT 0,
+    id_nguoi_xoa              INT            NULL,
+    ngay_xoa                  DATETIME       NULL,
+    CONSTRAINT pk_sk               PRIMARY KEY (id_sang_kien),
+    CONSTRAINT fk_sk_cap           FOREIGN KEY (id_cap)            REFERENCES cap_sang_kien(id_cap),
+    CONSTRAINT fk_sk_loai_gp       FOREIGN KEY (id_loai_giai_phap) REFERENCES loai_giai_phap_sang_kien(id_loai),
+    CONSTRAINT fk_sk_nguoi_xet     FOREIGN KEY (id_nguoi_xet)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_sk_nguoi_dong_bo FOREIGN KEY (id_nguoi_dong_bo)  REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_sk_nguoi_tao     FOREIGN KEY (id_nguoi_tao)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_sk_nguoi_cn      FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_sk_nguoi_xoa     FOREIGN KEY (id_nguoi_xoa)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_sk_nguon        CHECK (nguon IN (1, 2)),
+    CONSTRAINT chk_sk_ma_nguon     CHECK ((nguon = 1 AND ma_sang_kien_nguon IS NOT NULL)
+                                       OR (nguon = 2 AND ma_sang_kien_nguon IS NULL)),
+    CONSTRAINT chk_sk_nhap_tay     CHECK (nguon = 1
+                                       OR (id_cap IS NOT NULL AND ngay_cong_nhan IS NOT NULL AND id_nguoi_tao IS NOT NULL)),
+    CONSTRAINT chk_sk_xet_nguon    CHECK (nguon = 1 OR la_doi_moi_giang_day IS NULL),
+    CONSTRAINT chk_sk_xet          CHECK (la_doi_moi_giang_day IS NULL OR ngay_xet IS NOT NULL),
+    CONSTRAINT chk_sk_ten          CHECK (LEN(LTRIM(RTRIM(ten_sang_kien))) > 0),
+    CONSTRAINT chk_sk_xoa          CHECK ((da_xoa = 0 AND ngay_xoa IS NULL) OR (da_xoa = 1 AND ngay_xoa IS NOT NULL)),
+    CONSTRAINT chk_sk_xoa_nguon    CHECK (da_xoa = 0 OR nguon = 2)
+);
+GO
+
+-- 19.4. Tác giả — 1 dòng = 1 tác giả của 1 sáng kiến. KHÔNG có "tác giả chính": mọi tác giả
+--       đều được tính. Dòng đồng bộ: ma_nguoi_dung_nckh + ho_ten / email từ API, id_nhan_vien
+--       ghép lúc đồng bộ theo EMAIL; không khớp email thì TẠM ghép theo HỌ TÊN khi họ tên khớp
+--       đúng 1 nhân viên đang hoạt động (trùng tên → không ghép). Không khớp → NULL, vẫn lưu để
+--       báo "chưa khớp nhân sự"; đồng bộ lại sẽ ghép lại. Dòng nhập tay: chỉ id_nhan_vien (viên chức).
+--       cach_ghep: 1 email · 2 họ tên (TẠM, cần rà soát) · 3 nhập tay · NULL chưa khớp.
+CREATE TABLE sang_kien_tac_gia (
+    id                  INT           IDENTITY(1,1) NOT NULL,
+    id_sang_kien        INT           NOT NULL,
+    id_nhan_vien        INT           NULL,
+    ma_nguoi_dung_nckh  INT           NULL,       -- UserId của API NCKH
+    ho_ten              NVARCHAR(255) NULL,       -- FullName (nguồn NCKH)
+    email               NVARCHAR(255) NULL,       -- Email (nguồn NCKH)
+    cach_ghep           TINYINT       NULL,       -- 1 email, 2 họ tên (tạm), 3 nhập tay
+    CONSTRAINT pk_skt            PRIMARY KEY (id),
+    CONSTRAINT fk_skt_sk         FOREIGN KEY (id_sang_kien) REFERENCES sang_kien(id_sang_kien),
+    CONSTRAINT fk_skt_nv         FOREIGN KEY (id_nhan_vien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_skt_dinh_danh CHECK (id_nhan_vien IS NOT NULL OR ma_nguoi_dung_nckh IS NOT NULL),
+    CONSTRAINT chk_skt_cach_ghep CHECK (cach_ghep IS NULL OR cach_ghep IN (1, 2, 3))
+);
+GO
+
+-- 19.5. Ủy quyền nhập liệu — TP / QTP của P_KH cấp cho nhân sự của phòng (clone §18.4).
+--       Hiệu lực chỉ khi người được cấp HÔM NAY vẫn thuộc P_KH (fn_sang_kien_thuoc_phong).
+CREATE TABLE sang_kien_nguoi_nhap (
+    id               INT           IDENTITY(1,1) NOT NULL,
+    id_nhan_vien     INT           NOT NULL,
+    id_nguoi_cap     INT           NOT NULL,
+    ngay_cap         DATETIME      NOT NULL CONSTRAINT df_sknn_ngay_cap DEFAULT GETDATE(),
+    ghi_chu          NVARCHAR(500) NULL,
+    da_thu_hoi       BIT           NOT NULL CONSTRAINT df_sknn_thu_hoi  DEFAULT 0,
+    id_nguoi_thu_hoi INT           NULL,
+    ngay_thu_hoi     DATETIME      NULL,
+    CONSTRAINT pk_sknn           PRIMARY KEY (id),
+    CONSTRAINT fk_sknn_nv        FOREIGN KEY (id_nhan_vien)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_sknn_nguoi_cap FOREIGN KEY (id_nguoi_cap)     REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_sknn_nguoi_th  FOREIGN KEY (id_nguoi_thu_hoi) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_sknn_thu_hoi  CHECK ((da_thu_hoi = 0 AND ngay_thu_hoi IS NULL) OR (da_thu_hoi = 1 AND ngay_thu_hoi IS NOT NULL))
+);
+GO
+
+-- 19.6. Nhật ký module (convention lich_su_*).
+--       hanh_dong: 1 Tạo (nhập tay) · 2 Sửa · 3 Xoá · 4 Xét đổi mới giảng dạy · 5 Đồng bộ NCKH
+--                  (1 dòng tóm tắt / lần, id_sang_kien NULL) · 6 Cấp quyền nhập · 7 Thu hồi quyền nhập.
+--       id_nhan_vien = người được cấp / thu hồi quyền (6, 7); NULL với các hành động khác.
+CREATE TABLE lich_su_sang_kien (
+    id                 BIGINT         IDENTITY(1,1) NOT NULL,
+    id_sang_kien       INT            NULL,
+    id_nhan_vien       INT            NULL,
+    hanh_dong          TINYINT        NOT NULL,
+    mo_ta              NVARCHAR(1000) NULL,
+    id_nguoi_thuc_hien INT            NOT NULL,
+    ngay_thuc_hien     DATETIME       NOT NULL CONSTRAINT df_lssk_ngay DEFAULT GETDATE(),
+    CONSTRAINT pk_lssk       PRIMARY KEY (id),
+    CONSTRAINT fk_lssk_sk    FOREIGN KEY (id_sang_kien)       REFERENCES sang_kien(id_sang_kien),
+    CONSTRAINT fk_lssk_nv    FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_lssk_nguoi FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT chk_lssk_hd   CHECK (hanh_dong BETWEEN 1 AND 7)
+);
+GO
+
+-- 19.7. TVP
+--   SangKienNckhRow  : payload /api/kpiinitiative đã làm PHẲNG ở C# — 1 dòng = 1 (UserId ×
+--                      InitiativeId); thông tin sáng kiến lặp lại theo từng tác giả.
+--   SangKienTacGiaRow: danh sách tác giả (viên chức) khi P_KH nhập tay.
+--   SangKienXetRow   : xét "đổi mới giảng dạy" hàng loạt (la_doi_moi_giang_day NULL = bỏ xét).
+--   Định nghĩa cũng nằm ở procedure.sql (CREATE nếu chưa có) — sửa một bên phải sửa cả bên kia.
+CREATE TYPE dbo.SangKienNckhRow AS TABLE (
+    ma_nguoi_dung_nckh  INT            NOT NULL,
+    ho_ten              NVARCHAR(255)  NULL,
+    email               NVARCHAR(255)  NULL,
+    ma_sang_kien_nguon  INT            NOT NULL,
+    ten_sang_kien       NVARCHAR(1000) NULL,
+    cap_text            NVARCHAR(200)  NULL,
+    loai_giai_phap_text NVARCHAR(200)  NULL,
+    don_vi_chu_tri      NVARCHAR(500)  NULL,
+    ngay_cong_nhan      DATE           NULL,
+    so_chung_nhan       NVARCHAR(500)  NULL,
+    PRIMARY KEY (ma_nguoi_dung_nckh, ma_sang_kien_nguon)
+);
+GO
+
+CREATE TYPE dbo.SangKienTacGiaRow AS TABLE (
+    id_nhan_vien INT NOT NULL PRIMARY KEY
+);
+GO
+
+CREATE TYPE dbo.SangKienXetRow AS TABLE (
+    id_sang_kien         INT           NOT NULL PRIMARY KEY,
+    la_doi_moi_giang_day BIT           NULL,
+    ghi_chu_xet          NVARCHAR(500) NULL
+);
+GO
+
+-- 19.8. Index của module (filtered → bắt buộc SET QUOTED_IDENTIFIER ON, xem §10.2).
+--   ux_sk_ma_nguon : khoá MERGE của đồng bộ (1 InitiativeId = 1 dòng).
+--   ix_skt_nv      : phục vụ fn_sang_kien_hop_le (tác giả → sáng kiến).
+CREATE UNIQUE INDEX ux_sk_ma_nguon      ON sang_kien(ma_sang_kien_nguon) WHERE ma_sang_kien_nguon IS NOT NULL;
+GO
+CREATE INDEX ix_sk_ngay_cong_nhan       ON sang_kien(ngay_cong_nhan) INCLUDE (nguon, id_cap, la_doi_moi_giang_day, con_o_nguon)
+    WHERE da_xoa = 0;
+GO
+CREATE UNIQUE INDEX ux_skt_sk_nv        ON sang_kien_tac_gia(id_sang_kien, id_nhan_vien) WHERE id_nhan_vien IS NOT NULL;
+GO
+CREATE UNIQUE INDEX ux_skt_sk_nckh      ON sang_kien_tac_gia(id_sang_kien, ma_nguoi_dung_nckh) WHERE ma_nguoi_dung_nckh IS NOT NULL;
+GO
+CREATE INDEX ix_skt_nv                  ON sang_kien_tac_gia(id_nhan_vien, id_sang_kien) WHERE id_nhan_vien IS NOT NULL;
+GO
+CREATE UNIQUE INDEX ux_sknn_nv          ON sang_kien_nguoi_nhap(id_nhan_vien) WHERE da_thu_hoi = 0;
+GO
+CREATE UNIQUE INDEX ux_cap_sk_ten_nguon ON cap_sang_kien(ten_nguon) WHERE ten_nguon IS NOT NULL;
+GO
+CREATE INDEX ix_lssk_sk                 ON lich_su_sang_kien(id_sang_kien);
+GO

@@ -42,6 +42,7 @@ import ThieuTieuChiChecklist from "../../components/DanhGia/ThieuTieuChiChecklis
 import TongQuanKhoa from "../../components/QuanLyChamDiem/TongQuanKhoa";
 import TongQuanCapQuanLy from "../../components/QuanLyChamDiem/TongQuanCapQuanLy";
 import TongQuanVienChucCaNhan from "../../components/QuanLyChamDiem/TongQuanVienChucCaNhan";
+import DongBoNckh from "../../components/QuanLyChamDiem/DongBoNckh";
 import {
   Card,
   DangTai,
@@ -241,20 +242,23 @@ const TongQuanCaNhan = () => {
   };
 
   const boLoc = (
-    <label className="db-field">
-      Năm đánh giá
-      <SearchSelect
-        className="db-select"
-        ariaLabel="Năm đánh giá"
-        value={selectedNam}
-        onChange={setSelectedNam}
-        disabled={dangTaiNam}
-        options={namList.map((n) => ({
-          value: String(n.IdNam),
-          label: String(n.IdNam),
-        }))}
-      />
-    </label>
+    <>
+      <DongBoNckh idNam={selectedNam} namList={namList} dangTaiNam={dangTaiNam} />
+      <label className="db-field">
+        Năm đánh giá
+        <SearchSelect
+          className="db-select"
+          ariaLabel="Năm đánh giá"
+          value={selectedNam}
+          onChange={setSelectedNam}
+          disabled={dangTaiNam}
+          options={namList.map((n) => ({
+            value: String(n.IdNam),
+            label: String(n.IdNam),
+          }))}
+        />
+      </label>
+    </>
   );
 
   /* -------------------------------------------------------------- */

@@ -484,6 +484,18 @@ export const canManageHocVu = (user) =>
 export const canViewHocVu = (user) =>
   canManageHocVu(user) || hasRole(ROLE_SETS.KPI_KHOA, user);
 
+/** Đồng bộ NCKH: ADMIN hoặc TP/QTP tại đúng P_KH, kể cả kiêm nhiệm. */
+export const canSyncNckh = (user) => {
+  if (hasRole(ROLE_SETS.ADMIN, user)) return true;
+  const appointments = Array.isArray(user?.DonVi) && user.DonVi.length > 0
+    ? user.DonVi
+    : [user];
+  return appointments.some((dv) =>
+    [ROLE.TRUONG_PHONG, ROLE.QUYEN_TRUONG_PHONG].includes(normalizeRole(dv)) &&
+    String(dv?.MaDonVi || "").trim().toUpperCase() === "P_KH"
+  );
+};
+
 /** Các loại đối tượng KPI được backend gán theo từng đơn vị của người dùng. */
 export const LOAI_DOI_TUONG_KPI = {
   KHONG_DANH_GIA: 0,
