@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { fetchPhieuDonViList } from "../../utils/phieuDonViApi";
 import useKpiDonViFilters from "../../hooks/useKpiDonViFilters";
 import { TrangThaiDonViBadge } from "../../components/QuanLyChamDiem/TrangThaiBadge";
-import ChiTietPhieuDonVi from "./ChiTietPhieuDonVi";
+import ChiTietPhieuDonViChoCham from "./ChiTietPhieuDonViChoCham";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
 import "../../css/DanhGia/PhieuDonViChoCham.css";
@@ -71,7 +71,7 @@ export default function PhieuDonViChoCham() {
             Về danh sách phiếu đơn vị
           </Link>
         </div>
-        <ChiTietPhieuDonVi key={id} idPhieu={id} embedded backTo={PATH} />
+        <ChiTietPhieuDonViChoCham key={id} idPhieu={id} backTo={PATH} />
       </div>
     );
 

@@ -45,7 +45,7 @@ beforeEach(() => {
 
 test("menu và URL quản lý dùng quyền module, không nhận quyền đào tạo hoặc suy từ chức vụ", () => {
   const user = { MaChucVu: "ADMIN", DonVi: [{ MaChucVu: "TP", MaDonVi: "P_TCHC" }] };
-  for (const path of ["/phat-trien-doi-ngu/uy-quyen", "/phat-trien-doi-ngu/hang-muc"]) {
+  for (const path of ["/phat-trien-doi-ngu/uy-quyen"]) {
     expect(canAccessPath(path, user, { LaQuanLy: true })).toBe(false);
     expect(canAccessPath(path, { MaChucVu: "GV" }, null, { LaQuanLy: true })).toBe(true);
   }
@@ -53,9 +53,11 @@ test("menu và URL quản lý dùng quyền module, không nhận quyền đào 
   const menu = (p) => visibleGroups(user, null, null, p).flatMap((g) => g.items);
   expect(menu({ XemTatCa: false }).find((i) => i.path === "/phat-trien-doi-ngu").name).toBe("Phát triển đội ngũ của tôi");
   expect(menu({ LaQuanLy: false }).some((i) => i.path === "/phat-trien-doi-ngu/hang-muc")).toBe(false);
+  expect(menu({ LaQuanLy: true }).some((i) => i.path === "/phat-trien-doi-ngu/hang-muc")).toBe(false);
+  expect(canAccessPath("/phat-trien-doi-ngu/hang-muc", user, null, { LaQuanLy: true })).toBe(false);
 });
-test.each(["hang-muc", "uy-quyen"])("guard chặn URL %s khi thiếu quyền quản lý", (path) => {
-  useQuyenDoiNgu.mockReturnValue({ quyen: { LaQuanLy: false } });
+test.each([["hang-muc", false], ["hang-muc", true], ["hang-muc/", true], ["uy-quyen", false]])("guard chặn URL %s với LaQuanLy=%s", (path, LaQuanLy) => {
+  useQuyenDoiNgu.mockReturnValue({ quyen: { LaQuanLy } });
   render(<MemoryRouter initialEntries={[`/phat-trien-doi-ngu/${path}`]}><RequireRole><div>Nội dung quản lý</div></RequireRole></MemoryRouter>);
   expect(screen.getByText("Bạn không có quyền truy cập trang này")).toBeInTheDocument();
   expect(screen.queryByText("Nội dung quản lý")).not.toBeInTheDocument();
@@ -65,6 +67,8 @@ test("danh sách lọc hạng mục, phân trang, nút theo ChoPhepSua và chi t
   const table = await screen.findByRole("table", { name: "Danh sách phát triển đội ngũ" });
   await screen.findByText("Người chỉ xem");
   expect(within(table).getAllByRole("button", { name: "Sửa" })).toHaveLength(1);
+  expect(screen.queryByRole("link", { name: "Danh mục hạng mục" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Ủy quyền nhập liệu" })).toHaveAttribute("href", "/phat-trien-doi-ngu/uy-quyen");
   select("Lọc hạng mục", category.TenHangMuc);
   await waitFor(() => expect(api.layPhatTrienDoiNgu).toHaveBeenLastCalledWith(expect.objectContaining({ idHangMuc: 8, page: 1 }), expect.anything()));
   select("Lọc loại ghi nhận", "Bồi dưỡng");

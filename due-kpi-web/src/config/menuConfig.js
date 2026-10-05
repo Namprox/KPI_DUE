@@ -445,13 +445,6 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
       },
       {
-        name: "Danh mục hạng mục phát triển đội ngũ",
-        icon: "fa-solid fa-list-check",
-        path: "/phat-trien-doi-ngu/hang-muc",
-        serverPermission: "LaQuanLy",
-        serverPermissionSource: "doiNgu",
-      },
-      {
         name: "Ủy quyền nhập liệu phát triển đội ngũ",
         icon: "fa-solid fa-user-shield",
         path: "/phat-trien-doi-ngu/uy-quyen",
@@ -643,7 +636,11 @@ export const MENU_GROUPS = [
 ];
 
 const buildRouteRules = () => {
-  const rules = [...PUBLIC_ROUTES];
+  const rules = [
+    ...PUBLIC_ROUTES,
+    // Trang hạng mục đã ẩn; chặn trước rule chi tiết /phat-trien-doi-ngu/:id.
+    { path: "/phat-trien-doi-ngu/hang-muc", access: () => false },
+  ];
   MENU_GROUPS.forEach((group) => {
     group.items.forEach((item) => {
       const rule = {

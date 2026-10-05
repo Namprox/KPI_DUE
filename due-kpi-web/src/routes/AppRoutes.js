@@ -38,7 +38,6 @@ import HoatDongDaoTao from "../pages/QuanLyKeHoach/HoatDongDaoTao";
 import HoatDongDaoTaoUyQuyen from "../pages/QuanLyKeHoach/HoatDongDaoTaoUyQuyen";
 import PhatTrienDoiNgu from "../pages/QuanLyKeHoach/PhatTrienDoiNgu";
 import PhatTrienDoiNguUyQuyen from "../pages/QuanLyKeHoach/PhatTrienDoiNguUyQuyen";
-import PhatTrienDoiNguHangMuc from "../pages/QuanLyKeHoach/PhatTrienDoiNguHangMuc";
 import PhatTrienDoiNguDetailPage from "../pages/QuanLyKeHoach/PhatTrienDoiNguDetailPage";
 import ThanhTichDoanThe from "../pages/QuanLyKeHoach/ThanhTichDoanThe";
 import ThanhTichDoanTheDetailPage from "../pages/QuanLyKeHoach/ThanhTichDoanTheDetailPage";
@@ -214,7 +213,6 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/hoat-dong-dao-tao/uy-quyen" element={<HoatDongDaoTaoUyQuyen />} />
         <Route path="/phat-trien-doi-ngu" element={<PhatTrienDoiNgu />} />
         <Route path="/phat-trien-doi-ngu/uy-quyen" element={<PhatTrienDoiNguUyQuyen />} />
-        <Route path="/phat-trien-doi-ngu/hang-muc" element={<PhatTrienDoiNguHangMuc />} />
         <Route path="/phat-trien-doi-ngu/:id" element={<PhatTrienDoiNguDetailPage />} />
         <Route path="/thanh-tich-doan-the" element={<ThanhTichDoanThe />} />
         <Route path="/thanh-tich-doan-the/:id" element={<ThanhTichDoanTheDetailPage />} />

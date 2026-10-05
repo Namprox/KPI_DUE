@@ -100,7 +100,7 @@ const HAM_GHI_DIEM = {
  * xuống cấp dưới - đường lùi duy nhất là cấp Trường "Mở lại" sau khi phiếu đã
  * hoàn tất. Trưởng đơn vị thấy điểm chưa đúng thì chấm đè chứ không trả lại.
  */
-const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = false, backTo = "/danh-gia-kpi-don-vi" }) => {
+const ChiTietPhieuDonVi = ({ idPhieu, phieuBanDau, readOnly = false, editorRef, embedded = false, backTo = "/danh-gia-kpi-don-vi" }) => {
   const { id: routeId } = useParams();
   const id = idPhieu ?? routeId;
   const { user } = useAuth();
@@ -195,10 +195,10 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
   }, []);
 
   const taiPhieu = useCallback(
-    async ({ imLang = false } = {}) => {
+    async ({ imLang = false, itemBanDau } = {}) => {
       if (!imLang) setIsLoading(true);
       try {
-        const item = await fetchPhieuDonViDetail(id);
+        const item = itemBanDau ?? await fetchPhieuDonViDetail(id);
         if (!item) {
           setLoiTai(
             "Không tìm thấy phiếu này, hoặc phiếu nằm ngoài phạm vi bạn được xem.",
@@ -232,8 +232,8 @@ const ChiTietPhieuDonVi = ({ idPhieu, readOnly = false, editorRef, embedded = fa
   );
 
   useEffect(() => {
-    taiPhieu();
-  }, [taiPhieu]);
+    taiPhieu({ itemBanDau: phieuBanDau });
+  }, [taiPhieu, phieuBanDau]);
 
   /** Bản nháp thuộc về một lớp điểm cụ thể - đổi trạng thái là phải bỏ hết. */
   useEffect(() => {

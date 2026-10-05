@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import ChiTietPhieuPhong from "./ChiTietPhieuPhong";
 import ChiTietPhieuDonVi from "./ChiTietPhieuDonVi";
+import ChiTietPhieuDonViChoCham from "./ChiTietPhieuDonViChoCham";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch } from "../../utils/api";
 
@@ -75,7 +76,7 @@ const chiTietMau = {
 };
 
 /** Mọi GET trả về `item`; các lệnh ghi trả rỗng để trang tự đọc lại phiếu. */
-const mockApi = (item) =>
+const mockApi = (item, LoaiDoiTuong = 3) =>
   apiFetch.mockImplementation(async (url, options) => ({
     ok: true,
     json: async () =>
@@ -84,6 +85,8 @@ const mockApi = (item) =>
             Item:
               url === "phieu-don-vi/7"
                 ? item
+                : url === "maudanhgia/99"
+                  ? { IdMau: 99, LoaiDoiTuong }
                 : url === "maudanhgia/99/chi-tiet"
                   ? chiTietMau
                   : {},
@@ -159,6 +162,45 @@ test("thư ký Khoa xem bước duyệt ở chế độ chỉ đọc, không t�
   expect(
     apiFetch.mock.calls.every(([, options]) => !options?.method || options.method === "GET"),
   ).toBe(true);
+});
+
+describe("chi tiết hàng đợi theo loại phiếu", () => {
+  const open = () => render(<MemoryRouter><ChiTietPhieuDonViChoCham idPhieu={7} backTo="/phieu-don-vi-cho-cham" /></MemoryRouter>);
+  test.each(["TP", "QTP", "GD", "VT"])("%s tại đúng Phòng duyệt được cả phiếu ngay ở hàng đợi", async (MaChucVu) => {
+    useAuth.mockReturnValue({ user: { MaChucVu, DonVi: [{ IdDonVi: 10, MaChucVu }] } });
+    mockApi(phieu(2), 4);
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: "Duyệt phiếu" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Duyệt phiếu" }).pop());
+    await waitFor(() => expect(ghiVao("phieu-don-vi/7/duyet-dv")).toBeTruthy());
+    expect(JSON.parse(ghiVao("phieu-don-vi/7/duyet-dv")[1].body).RowVersion).toBe("AAAA");
+    expect(apiFetch.mock.calls.filter(([url]) => url === "phieu-don-vi/7")).toHaveLength(2);
+  });
+  test("TP ở đơn vị khác chỉ chấm dòng được giao, không duyệt cả phiếu Phòng", async () => {
+    useAuth.mockReturnValue({ user: { MaChucVu: "TP", DonVi: [{ IdDonVi: 20, MaChucVu: "TP" }] } });
+    const item = phieu(2); item.ChiTiet = [item.ChiTiet[1]];
+    mockApi(item, 4);
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: /Duyệt giữ nguyên/ }));
+    await waitFor(() => expect(ghiVao("chi-tiet-don-vi/2/diem-duyet-dv")).toBeTruthy());
+    expect(screen.queryByRole("button", { name: "Duyệt phiếu" })).toBeNull();
+  });
+  test.each([[3, "Duyệt cấp Trường"], [4, "Chốt phiếu"], [5, "Mở lại phiếu"]])("ADMIN xem phiếu Phòng trạng thái %s ở hàng đợi không có thao tác cấp Trường", async (TrangThai, action) => {
+    useAuth.mockReturnValue({ user: { MaChucVu: "ADMIN" } });
+    mockApi(phieu(TrangThai), 4);
+    open();
+    await screen.findByText("Điểm thủ công", { exact: false });
+    expect(screen.queryByRole("button", { name: action })).toBeNull();
+    expect(apiFetch.mock.calls.filter(([url]) => url === "phieu-don-vi/7")).toHaveLength(1);
+    expect(apiFetch.mock.calls.every(([, options]) => !options?.method || options.method === "GET")).toBe(true);
+  });
+  test("mẫu Khoa vẫn cho TK duyệt đúng đơn vị", async () => {
+    useAuth.mockReturnValue({ user: truongKhoa });
+    mockApi(phieu(2), 3);
+    open();
+    await screen.findByRole("button", { name: "Duyệt phiếu" });
+    expect(apiFetch.mock.calls.filter(([url]) => url === "phieu-don-vi/7")).toHaveLength(1);
+  });
 });
 
 test("Trưởng Khoa ở trạng thái 1 chỉ xem, phần việc nhập vẫn là của thư ký", async () => {

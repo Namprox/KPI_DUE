@@ -120,14 +120,13 @@ export default function PhatTrienDoiNgu() {
         <button onClick={download} disabled={busy}>Tải file mẫu</button>
         <button onClick={() => setImportOpen(true)} disabled={!selectedNam || busy}>Import Excel</button>
         <button className="ptdn-primary" onClick={() => setForm({ item: null })} disabled={!selectedNam || loaiList.length === 0}>+ Thêm ghi nhận</button>
-      </>}{quyen?.LaQuanLy === true && <><Link className="ptdn-button" to="/phat-trien-doi-ngu/hang-muc">Danh mục hạng mục</Link><Link className="ptdn-button" to="/phat-trien-doi-ngu/uy-quyen">Ủy quyền nhập liệu</Link></>}</div>
+      </>}{quyen?.LaQuanLy === true && <Link className="ptdn-button" to="/phat-trien-doi-ngu/uy-quyen">Ủy quyền nhập liệu</Link>}</div>
     </div>
     {permissionLoading && <p role="status">Đang tải quyền truy cập...</p>}
     {permissionError && <div role="alert" className="ptdn-error">{permissionError} <button onClick={refresh}>Thử lại</button></div>}
     {catalogError && <div role="alert" className="ptdn-error">{catalogError} <button onClick={() => setCatalogRetry((v) => v + 1)}>Tải lại danh mục</button></div>}
     {quyen?.DuocUyQuyen === true && !canWrite && <p className="ptdn-warning">Quyền nhập liệu không còn hiệu lực do bạn đã rời Phòng Tổ chức – Hành chính.</p>}
     {message && <p role="status" className="ptdn-notice">{message}</p>}
-    {canWrite && <p className="ptdn-warning">Ghi nhận, sửa hoặc xoá không tự cập nhật điểm phiếu đã nộp. Phiếu đang thẩm định cần tổng hợp lại điểm tự động; phiếu Nháp được chấm khi giảng viên nộp.</p>}
     <div className="ptdn-filters">
       <div className="ptdn-field"><label>Năm đánh giá</label><SearchSelect ariaLabel="Năm đánh giá" value={selectedNam} disabled={dangTaiNam}
         onChange={(v) => { setSelectedNam(String(v)); changeFilter("page", 1); }} options={namList.map((n) => ({ value: n.IdNam, label: String(n.IdNam) }))} /></div>

@@ -99,7 +99,7 @@ const giaTriO = (nhap, goc) =>
  * `loai_nguon_diem = 1` (chấm tay), không dòng nào tổng hợp từ KPI cá nhân - gọi
  * endpoint đó cũng không đổi gì.
  */
-const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = false, backTo = "/danh-gia-kpi-phong" }) => {
+const ChiTietPhieuPhong = ({ idPhieu, phieuBanDau, chiChamDonVi = false, readOnly = false, editorRef, embedded = false, backTo = "/danh-gia-kpi-phong" }) => {
   const { id: routeId } = useParams();
   const id = idPhieu ?? routeId;
   const navigate = useNavigate();
@@ -167,10 +167,10 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
   }, []);
 
   const taiPhieu = useCallback(
-    async ({ imLang = false } = {}) => {
+    async ({ imLang = false, itemBanDau } = {}) => {
       if (!imLang) setIsLoading(true);
       try {
-        const item = await fetchPhieuDonViDetail(id);
+        const item = itemBanDau ?? await fetchPhieuDonViDetail(id);
         if (!item) {
           setLoiTai(
             "Không tìm thấy phiếu này, hoặc phiếu nằm ngoài phạm vi bạn được xem.",
@@ -203,8 +203,8 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
   );
 
   useEffect(() => {
-    taiPhieu();
-  }, [taiPhieu]);
+    taiPhieu({ itemBanDau: phieuBanDau });
+  }, [taiPhieu, phieuBanDau]);
 
   /** Bản nháp thuộc về một lớp điểm cụ thể - đổi trạng thái là phải bỏ hết. */
   useEffect(() => {
@@ -217,9 +217,19 @@ const ChiTietPhieuPhong = ({ idPhieu, readOnly = false, editorRef, embedded = fa
   const cap = useMemo(() => capChamTheoTrangThai(phieu?.TrangThai), [phieu]);
   const truongCuaCap = cap ? TRUONG_DIEM_CUA_CAP[cap] : null;
   const quyenGoc = useMemo(() => quyenPhieuPhong(phieu, user), [phieu, user]);
-  const quyen = useMemo(() => readOnly
-    ? Object.fromEntries(Object.entries(quyenGoc).map(([k, v]) => [k, k.startsWith("coThe") ? false : v]))
-    : quyenGoc, [quyenGoc, readOnly]);
+  const quyen = useMemo(() => {
+    // Hàng đợi thẩm định chỉ xử lý cấp đơn vị; thao tác cấp Trường ở màn hình riêng.
+    const quyenHienTai = chiChamDonVi ? {
+      ...quyenGoc,
+      coTheChamTruong: false,
+      coTheDuyetTruong: false,
+      coTheChot: false,
+      coTheMoLai: false,
+    } : quyenGoc;
+    return readOnly
+      ? Object.fromEntries(Object.entries(quyenHienTai).map(([k, v]) => [k, k.startsWith("coThe") ? false : v]))
+      : quyenHienTai;
+  }, [quyenGoc, readOnly, chiChamDonVi]);
 
   /**
    * Trạng thái 2 đổi hẳn sang bố cục duyệt (thẻ cdm-*), kể cả với người chỉ xem:

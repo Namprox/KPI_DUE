@@ -3,16 +3,47 @@ import "@testing-library/jest-dom";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { apiFetch } from "../../utils/api";
 import BaoCaoDonVi from "./BaoCaoDonVi";
+import { useAuth } from "../../context/AuthContext";
 import { fetchBaoCaoTongQuan, fetchBaoCaoChuaHoanTat, fetchBaoCaoDiemTrungBinh, fetchBaoCaoChuaLapPhieu } from "../../utils/phieuApi";
 jest.mock("primereact/toast", () => ({ Toast: () => null }));
-jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn() }));
+const mockNavigate = jest.fn();
+jest.mock("react-router-dom", () => ({ ...jest.requireActual("react-router-dom"), useNavigate: () => mockNavigate }));
+jest.mock("../../context/AuthContext", () => ({ useAuth: jest.fn() }));
 jest.mock("../../hooks/useNamDanhGia", () => ({ useNamDanhGia: () => ({ namList: [{ IdNam: 2026 }], selectedNam: 2026, setSelectedNam: jest.fn(), dangTaiNam: false }) }));
 jest.mock("../../utils/api", () => ({ apiFetch: jest.fn().mockResolvedValue({ ok: true, json: async () => ({ Items: [] }) }) }));
 jest.mock("../../utils/phieuApi", () => ({ ...jest.requireActual("../../utils/phieuApi"), fetchBaoCaoTongQuan: jest.fn(), fetchBaoCaoChuaHoanTat: jest.fn(), fetchBaoCaoDiemTrungBinh: jest.fn(), fetchBaoCaoChuaLapPhieu: jest.fn() }));
 beforeEach(() => {
   jest.clearAllMocks();
+  useAuth.mockReturnValue({ user: { MaChucVu: "TK", DonVi: [{ IdDonVi: 10, MaChucVu: "TK" }] } });
   apiFetch.mockResolvedValue({ ok: true, json: async () => ({ Items: [] }) });
   fetchBaoCaoDiemTrungBinh.mockResolvedValue([{ IdDonVi: 10, TenDonVi: "Khoa A", LaTrucThuoc: true, SoPhieuGiangVien: 1, SoPhieuVienChuc: 0, DiemTrungBinhGiangVien: 0 }]);
+});
+
+test.each(["HT", "ADMIN", "TKK", "TKP"])("%s thấy danh sách được BE cấp nhưng không có nút mở route bị chặn", async (MaChucVu) => {
+  useAuth.mockReturnValue({ user: { MaChucVu, DonVi: [{ IdDonVi: 10, MaChucVu }] } });
+  fetchBaoCaoTongQuan.mockResolvedValue({ CoQuyenXemDanhSach: true });
+  fetchBaoCaoChuaHoanTat.mockResolvedValue([{ IdPhieu: 5, HoTen: "Nhân viên A" }]);
+  render(<BaoCaoDonVi />);
+  await screen.findByText("Nhân viên A");
+  expect(screen.queryByRole("button", { name: "Mở phiếu" })).not.toBeInTheDocument();
+});
+
+test.each(["TK", "TKL", "TP", "QTP", "GD", "VT"])("%s mở được đúng phiếu từ báo cáo", async (MaChucVu) => {
+  useAuth.mockReturnValue({ user: { MaChucVu, DonVi: [{ IdDonVi: 10, MaChucVu }] } });
+  fetchBaoCaoTongQuan.mockResolvedValue({ CoQuyenXemDanhSach: true });
+  fetchBaoCaoChuaHoanTat.mockResolvedValue([{ IdPhieu: 5, HoTen: "Nhân viên A" }]);
+  render(<BaoCaoDonVi />);
+  fireEvent.click(await screen.findByRole("button", { name: "Mở phiếu" }));
+  expect(mockNavigate).toHaveBeenCalledWith("/quan-ly/phieu/5");
+});
+
+test("ADMIN kiêm nhiệm TP vẫn mở được phiếu", async () => {
+  useAuth.mockReturnValue({ user: { MaChucVu: "ADMIN", DonVi: [{ IdDonVi: 10, MaChucVu: "TP" }] } });
+  fetchBaoCaoTongQuan.mockResolvedValue({ CoQuyenXemDanhSach: true });
+  fetchBaoCaoChuaHoanTat.mockResolvedValue([{ IdPhieu: 5, HoTen: "Nhân viên A" }]);
+  render(<BaoCaoDonVi />);
+  fireEvent.click(await screen.findByRole("button", { name: "Mở phiếu" }));
+  expect(mockNavigate).toHaveBeenCalledWith("/quan-ly/phieu/5");
 });
 
 test("TKK/TKP chỉ xem tổng hợp khi API không cấp quyền danh sách", async () => {

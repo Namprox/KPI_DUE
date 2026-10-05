@@ -23,6 +23,8 @@ import BaoCaoBoSung, { DanhSachChuaLap } from "../../components/QuanLyChamDiem/B
 import HocVuTongQuan from "../../components/QuanLyChamDiem/HocVuTongQuan";
 import { TRANG_THAI_CHUA_LAP_META } from "../../utils/chuaLapPhieu";
 import SearchSelect from "../../components/Common/SearchSelect";
+import { useAuth } from "../../context/AuthContext";
+import { canAccessPath } from "../../config/menuConfig";
 
 /** Ngày ở trạng thái mà một phiếu chưa hoàn tất bị coi là "để quá lâu". */
 const NGUONG_TRE = 30;
@@ -30,6 +32,7 @@ const NGUONG_TRE = 30;
 const BaoCaoDonVi = () => {
   const toast = useRef(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
 
   const [donViList, setDonViList] = useState([]);
@@ -396,15 +399,16 @@ const BaoCaoDonVi = () => {
                           </td>
                           <td>
                             <div className="table-actions">
-                              <button
+                              {canAccessPath(`/quan-ly/phieu/${r.IdPhieu}`, user) && <button
                                 className="action-btn view-btn"
                                 title="Mở phiếu"
+                                aria-label="Mở phiếu"
                                 onClick={() =>
                                   navigate(`/quan-ly/phieu/${r.IdPhieu}`)
                                 }
                               >
                                 <i className="fa-solid fa-eye"></i>
-                              </button>
+                              </button>}
                             </div>
                           </td>
                         </tr>

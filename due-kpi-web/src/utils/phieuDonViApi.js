@@ -561,6 +561,19 @@ export const fetchPhieuDonViDetail = async (idPhieuDv) => {
   return data.Item || null;
 };
 
+/** Chọn màn hình theo loại mẫu của server, kể cả khi mở URL chi tiết trực tiếp. */
+export const fetchPhieuDonViKemLoai = async (idPhieuDv) => {
+  const phieu = await fetchPhieuDonViDetail(idPhieuDv);
+  if (!phieu) throw new Error("Không tìm thấy phiếu này, hoặc phiếu nằm ngoài phạm vi bạn được xem.");
+  if (!phieu.IdMau) throw new Error("Phiếu chưa có mẫu đánh giá nên chưa xác định được màn hình chấm.");
+  const data = await getJson(`maudanhgia/${phieu.IdMau}`, "Không tải được loại mẫu đánh giá");
+  const loaiDoiTuong = Number(data.Item?.LoaiDoiTuong);
+  if (![3, 4].includes(loaiDoiTuong)) {
+    throw new Error("Mẫu đánh giá không thuộc loại KPI Khoa hoặc Phòng/Trung tâm.");
+  }
+  return { phieu, loai: loaiDoiTuong === 4 ? "phong" : "khoa" };
+};
+
 /* ------------------------------------------------------------------ */
 /* Ghi cấp DÒNG - ba lớp điểm của ba cấp chấm                          */
 /* ------------------------------------------------------------------ */

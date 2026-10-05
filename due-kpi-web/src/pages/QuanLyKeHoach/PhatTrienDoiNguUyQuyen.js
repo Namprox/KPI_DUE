@@ -50,11 +50,11 @@ export default function PhatTrienDoiNguUyQuyen() {
     <div className="modern-table-card ptdn-table-scroll"><table className="custom-table" aria-label="Danh sách ủy quyền"><thead><tr><th>Nhân sự</th><th>Người cấp / Ngày cấp</th><th>Ghi chú</th><th>Hiệu lực</th><th>Thao tác</th></tr></thead><tbody>
       {loading ? <tr><td colSpan={5} className="ptdn-empty">Đang tải...</td></tr> : rows.length === 0 ? <tr><td colSpan={5} className="ptdn-empty">{error ? "Không tải được dữ liệu." : "Chưa có ủy quyền."}</td></tr> : rows.map((r, i) => <tr key={`${r.IdNhanVien}-${r.NgayCap}-${i}`}>
         <td><span className="table-person-name">{r.HoTen}</span><small>{r.MaNhanVien} · {r.Email || "—"}</small></td><td>{r.TenNguoiCap || "—"}<small>{ngayDoiNgu(r.NgayCap, true)}</small></td><td>{r.GhiChu || "—"}</td>
-        <td>{r.DaThuHoi === true ? <><span className="ptdn-badge ptdn-TRUNG">Đã thu hồi</span><small>{ngayDoiNgu(r.NgayThuHoi, true)}</small></> : r.ConThuocPhong === false ? <span className="ptdn-warning">Đã rời phòng – không còn hiệu lực</span> : r.ConThuocPhong === true ? <span className="ptdn-badge ptdn-THEM">Đang có hiệu lực</span> : "—"}</td>
+        <td>{r.DaThuHoi === true ? <><span className="ptdn-badge ptdn-TRUNG">Đã thu hồi</span><small>{ngayDoiNgu(r.NgayThuHoi, true)}</small></> : r.ConThuocPhong === false ? <span className="ptdn-badge ptdn-warning">Đã rời phòng – không còn hiệu lực</span> : r.ConThuocPhong === true ? <span className="ptdn-badge ptdn-THEM">Đang có hiệu lực</span> : "—"}</td>
         <td>{r.DaThuHoi === false && <button className="ptdn-danger" onClick={() => open(r, true)}>Thu hồi</button>}</td>
       </tr>)}
     </tbody></table></div>
-    <h3>Nhân sự của phòng</h3><p className="ptdn-muted">Người được ủy quyền được thêm, sửa, xoá và import. Quyền tự mất hiệu lực khi rời phòng.</p>
+    <h3>Nhân sự của phòng</h3>
     <div className="modern-table-card ptdn-table-scroll"><table className="custom-table" aria-label="Ứng viên nhập liệu"><thead><tr><th>Nhân sự</th><th>Chức vụ</th><th>Quyền nhập liệu</th></tr></thead><tbody>
       {loading ? <tr><td colSpan={3} className="ptdn-empty">Đang tải...</td></tr> : candidates.length === 0 ? <tr><td colSpan={3} className="ptdn-empty">Chưa có nhân sự để hiển thị.</td></tr> : candidates.map((p) => <tr key={p.IdNhanVien}><td><span className="table-person-name">{p.HoTen}</span><small>{p.MaNhanVien}</small></td><td>{p.TenChucVu || "—"}</td><td>
         {p.LaQuanLy === true ? <button disabled>Đã có toàn quyền</button> : p.DaDuocCap === true ? <button className="ptdn-danger" onClick={() => open(p, true)}>Thu hồi</button> : <button className="ptdn-primary" onClick={() => open(p, false)}>Cấp quyền</button>}

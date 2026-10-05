@@ -25,6 +25,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   const { quyen: quyenDoanThe } = useQuyenDoanThe();
   const { quyen: quyenDoiNgu } = useQuyenDoiNgu();
   const groups = useMemo(() => visibleGroups(authUser, quyen, quyenDoanThe, quyenDoiNgu), [authUser, quyen, quyenDoanThe, quyenDoiNgu]);
+  const activePath = useMemo(() => groups.flatMap((group) => group.items).reduce((active, item) => {
+    const matches = location.pathname === item.path ||
+      (item.path !== "/" && location.pathname.startsWith(item.path + "/"));
+    return matches && item.path.length > (active?.length || 0) ? item.path : active;
+  }, null), [groups, location.pathname]);
 
   useEffect(() => {
     const currentPath = location.pathname;
@@ -62,7 +67,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         {items.map((item, index) => (
           <li
             key={index}
-            className={`sub-menu-item ${location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path + "/")) ? "active" : ""}`}
+            className={`sub-menu-item ${activePath === item.path ? "active" : ""}`}
             onClick={(e) => {
               e.stopPropagation();
               if (item.path) {
