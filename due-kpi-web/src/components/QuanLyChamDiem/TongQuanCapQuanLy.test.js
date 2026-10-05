@@ -1,6 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import TongQuanCapQuanLy from "./TongQuanCapQuanLy";
 import {
@@ -93,12 +93,16 @@ test("Trưởng phòng kiêm nhiệm lọc được về một Phòng mà không
 
 test("tổng quan Trường hiển thị việc chờ HT, quý và tỷ lệ Khoa từ API", async () => {
   fetchBaoCaoToanTruong.mockResolvedValue({
-    TongHop: tongHop,
+    TongHop: { ...tongHop, SoChoHtDuyet: 8 },
     ApDungPhieuQuy: true,
     QuyHienTai: 2,
     ChoHieuTruong: {
       SoToTrinhChoDuyet: 2,
-      SoHoSoLanhDaoChoDuyet: 1,
+      SoHoSoLanhDaoChoDuyet: 5,
+      SoHoSoLanhDaoChuaTrinh: 3,
+      SoUngVienChoXetXuatSac: 12,
+      SoVienChucKhoaChuaDuyet: 4,
+      DuDieuKienChotXetXuatSac: false,
       SoPhieuDonViChoDuyet: 3,
       SoPhieuDonViChoChot: 1,
     },
@@ -116,7 +120,9 @@ test("tổng quan Trường hiển thị việc chờ HT, quý và tỷ lệ Kho
       { Quy: 2, DaDenQuy: true, SoNhanVien: 10, SoChuaLapPhieu: 5, SoDangChamDiem: 5, SoChoDuyet: 0, SoDaChot: 0 },
     ],
     DonVi: [{ IdDonVi: 30, TenDonVi: "Khoa C", LoaiDonVi: "KHOA", SoNhanVien: 10, SoChuaLapPhieu: 2, TrangThaiPhieuDv: 3,
-      PhieuQuy: [{ Quy: 2, SoNhanVien: 10, SoDaChot: 0 }], XepLoaiPhieuDv: 2, XepLoaiPhieuDvText: "Hoàn thành", TyLeTotNghiepDungHan: 82.5, TyLeCanhBaoHocVu: 5 }],
+      TrangThaiToTrinh: 3, SoChoHtDuyet: 5,
+      PhieuQuy: [{ Quy: 2, SoNhanVien: 10, SoDaChot: 0 }], XepLoaiPhieuDv: 2, XepLoaiPhieuDvText: "Hoàn thành", TyLeTotNghiepDungHan: 82.5, TyLeCanhBaoHocVu: 5 },
+      { IdDonVi: 40, TenDonVi: "Phòng D", LoaiDonVi: "PHONG", TrangThaiToTrinh: 2, SoChoHtDuyet: 3 }],
   });
 
   renderIn(<TongQuanCapQuanLy idNam={2026} cap="truong" />);
@@ -126,9 +132,16 @@ test("tổng quan Trường hiển thị việc chờ HT, quý và tỷ lệ Kho
 
   const viec = screen.getByRole("region", { name: "Việc đang chờ Hiệu trưởng" });
   expect(within(viec).getByRole("link", { name: /Tờ trình KPI chờ duyệt/ })).toHaveAttribute("href", "/truong/to-trinh");
+  expect(within(viec).getByRole("link", { name: /Tờ trình KPI chờ duyệt/ })).toHaveTextContent("2 gói");
+  expect(within(viec).getByRole("link", { name: /Tờ trình KPI chờ duyệt/ })).toHaveTextContent("5 hồ sơ lãnh đạo trong gói đã trình");
+  expect(within(viec).getByRole("link", { name: /Tờ trình KPI chờ duyệt/ })).toHaveTextContent("3 hồ sơ chưa trình");
+  expect(within(viec).getByRole("link", { name: /Xét xuất sắc viên chức Khoa/ })).toHaveAttribute("href", "/truong/xet-xuat-sac-vien-chuc-khoa");
+  expect(within(viec).getByText("Chưa chốt được — còn 4 phiếu viên chức Khoa chưa duyệt")).toBeInTheDocument();
+  expect(within(viec).queryByText("Mở danh sách để chốt")).not.toBeInTheDocument();
   // Chưa có màn hình duyệt phiếu đơn vị cấp Trường: thẻ đếm không giả vờ bấm được.
-  expect(within(viec).queryByRole("link", { name: /Phiếu đánh giá đơn vị chờ duyệt/ })).not.toBeInTheDocument();
-  expect(within(viec).getByText("Phiếu đánh giá đơn vị chờ duyệt")).toBeInTheDocument();
+  expect(within(viec).queryByRole("link", { name: /Phiếu đánh giá đơn vị/ })).not.toBeInTheDocument();
+  expect(within(viec).getByText("Phiếu đánh giá đơn vị")).toBeInTheDocument();
+  expect(within(viec).getByText("1 phiếu chờ chốt")).toBeInTheDocument();
 
   expect(screen.getByText("Quý hiện tại: Quý 2")).toBeInTheDocument();
   expect(screen.getByText("2 người chưa lập, 7 phiếu chưa chốt dù quý đã qua")).toBeInTheDocument();
@@ -137,10 +150,55 @@ test("tổng quan Trường hiển thị việc chờ HT, quý và tỷ lệ Kho
   expect(within(hang).getByText("82,5%")).toBeInTheDocument();
   expect(within(hang).getByText("Chờ Trường duyệt · Hoàn thành")).toBeInTheDocument();
   expect(within(hang).getByText("0 / 10")).toBeInTheDocument();
+  expect(within(hang).getByText("5 chờ HT")).toBeInTheDocument();
+  expect(within(screen.getByRole("row", { name: /Phòng D/ })).getByText("3 chưa trình")).toBeInTheDocument();
 
   const xepLoai = screen.getByRole("region", { name: "Xếp loại năm" });
   expect(within(xepLoai).getByText("Hoàn thành xuất sắc")).toBeInTheDocument();
   expect(screen.getAllByText("Chưa có dữ liệu")).toHaveLength(2);
+});
+
+test.each([
+  [true, "Đủ điều kiện chốt danh sách", "Mở danh sách để chốt"],
+  [false, "Chưa đủ điều kiện chốt danh sách", "Xem danh sách xét xuất sắc"],
+])("điều kiện chốt xét xuất sắc lấy từ backend (%s), kể cả khi không còn phiếu chưa duyệt", async (duDieuKien, nhan, cta) => {
+  fetchBaoCaoToanTruong.mockResolvedValue({
+    TongHop: tongHop,
+    DonVi: [],
+    ChoHieuTruong: {
+      SoToTrinhChoDuyet: 0, SoHoSoLanhDaoChoDuyet: 0, SoHoSoLanhDaoChuaTrinh: 0,
+      SoUngVienChoXetXuatSac: 0, SoVienChucKhoaChuaDuyet: 0,
+      DuDieuKienChotXetXuatSac: duDieuKien,
+      SoPhieuDonViChoDuyet: 0, SoPhieuDonViChoChot: 0,
+    },
+  });
+  renderIn(<TongQuanCapQuanLy idNam={2026} cap="truong" />);
+  const viec = await screen.findByRole("region", { name: "Việc đang chờ Hiệu trưởng" });
+  expect(within(viec).getByText(nhan)).toBeInTheDocument();
+  expect(within(viec).getByRole("link", { name: /Xét xuất sắc viên chức Khoa/ })).toHaveTextContent("0 ứng viên");
+  expect(within(viec).getByText(cta)).toBeInTheDocument();
+});
+
+test("đổi năm ẩn số liệu cũ trong khi đang tải, năm chưa bắt đầu không cảnh báo các quý", async () => {
+  let resolveNamMoi;
+  fetchBaoCaoToanTruong.mockResolvedValueOnce({ TongHop: tongHop, DonVi: [] })
+    .mockReturnValueOnce(new Promise((resolve) => { resolveNamMoi = resolve; }));
+  const { rerender } = renderIn(<TongQuanCapQuanLy idNam={2026} cap="truong" />);
+  await screen.findByText("70%");
+  rerender(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><TongQuanCapQuanLy idNam={2027} cap="truong" /></MemoryRouter>);
+  expect(screen.getByRole("status")).toHaveTextContent("Đang tổng hợp số liệu KPI");
+  expect(screen.queryByText("70%")).not.toBeInTheDocument();
+  await act(async () => resolveNamMoi({
+    TongHop: { ...tongHop, SoNhanVien: 10, SoChuaLapPhieu: 10, TongSoPhieu: 0 },
+    DonVi: [{ IdDonVi: 30, TenDonVi: "Khoa tương lai" }],
+    ApDungPhieuQuy: true,
+    QuyHienTai: 0,
+    PhieuQuy: [1, 2, 3, 4].map((Quy) => ({ Quy, DaDenQuy: false, SoNhanVien: 10, SoChuaLapPhieu: 10 })),
+  }));
+  expect(await screen.findByText("Khoa tương lai")).toBeInTheDocument();
+  expect(screen.getAllByText("Chưa đến")).toHaveLength(4);
+  expect(screen.queryByText(/dù quý đã qua/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("columnheader", { name: /Quý 0/ })).not.toBeInTheDocument();
 });
 
 test("ẩn thẻ thống kê tiến độ khi tài khoản kiêm nhiệm Trưởng khoa", async () => {

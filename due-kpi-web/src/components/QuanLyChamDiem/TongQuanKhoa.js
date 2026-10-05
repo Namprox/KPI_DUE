@@ -77,10 +77,8 @@ const soNgayTu = (ngay) => {
  * Tổng quan KPI cấp Khoa trên trang chủ của TK / TKL (Trưởng khoa) và TKK (Thư
  * ký khoa - chỉ số tổng hợp, xem TongQuanThuKy).
  *
- * Báo cáo tổng quan tự giới hạn phạm vi theo chức vụ trong JWT (TK/TKL/TKK chỉ
- * thấy cây đơn vị mình), nên không truyền idDonVi: với Trưởng khoa lớn, bộ lọc
- * còn cắt mất các Khoa con. idDonVi dùng để chọn gói tờ trình và phiếu đánh giá
- * của đúng đơn vị mình.
+ * Bộ lọc idDonVi của báo cáo gồm cả cây con. Dùng cùng bộ lọc cho số gộp và
+ * danh sách để tài khoản kiêm nhiệm không trộn số liệu các đơn vị khác vào Khoa.
  *
  * Phân bố xếp loại ưu tiên HoSo[] của tờ trình thay vì `DemTheoXepLoai`: cái sau
  * chỉ đếm phiếu trang_thai = 5 (sau khi Hiệu trưởng duyệt cả gói) nên suốt mùa
@@ -103,13 +101,14 @@ const TongQuanKhoa = ({ idNam, idDonVi, tenDonVi, reloadKey = 0, controls, chinh
     setDangTai(true);
     setLoi("");
     setDrill(null);
+    const phamVi = { idNam, idDonVi };
 
     const [tq, td, ds, tb, pdv] = await Promise.allSettled([
-      fetchBaoCaoTongQuan({ idNam }),
+      fetchBaoCaoTongQuan(phamVi),
       // Chỉ cần TongSoDong nên lấy trang nhỏ nhất - không dòng nào được dùng tới.
       duocThamDinh ? fetchThamDinhPending({ idNam, pageSize: 1 }) : Promise.resolve(null),
       fetchToTrinhList({ idNam }),
-      fetchBaoCaoDiemTrungBinh({ idNam }),
+      fetchBaoCaoDiemTrungBinh(phamVi),
       laTruongKhoaTaiDonVi
         ? Promise.resolve(null)
         : fetchPhieuDonViList({ idNam, idDonVi, pageSize: 5 }),
@@ -127,9 +126,9 @@ const TongQuanKhoa = ({ idNam, idDonVi, tenDonVi, reloadKey = 0, controls, chinh
       goiTomTat && laTruongKhoaTaiDonVi
         ? fetchToTrinhDetail(goiTomTat.IdToTrinh)
         : Promise.resolve(goiTomTat),
-      coQuyenDs ? fetchBaoCaoChuaHoanTat({ idNam }) : Promise.resolve(null),
+      coQuyenDs ? fetchBaoCaoChuaHoanTat(phamVi) : Promise.resolve(null),
       coQuyenDs
-        ? fetchBaoCaoChuaLapPhieu({ idNam, page: 1, pageSize: SO_DONG_DANH_SACH })
+        ? fetchBaoCaoChuaLapPhieu({ ...phamVi, page: 1, pageSize: SO_DONG_DANH_SACH })
         : Promise.resolve(null),
     ]);
     if (lan !== lanTai.current) return;
@@ -170,7 +169,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, tenDonVi, reloadKey = 0, controls, chinh
   const apDungQuy = tongQuan?.ApDungPhieuQuy === true && (tongQuan?.PhieuQuy || []).length > 0;
   const quyHienTai = apDungQuy ? tongQuan?.QuyHienTai : null;
 
-  if (!duLieu) {
+  if (dangTai || !duLieu) {
     return (
       <>
         <DashHeader title={tieuDe} controls={controls} chinh={chinh} />
@@ -202,6 +201,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, tenDonVi, reloadKey = 0, controls, chinh
   return (
     <TruongKhoa
       idNam={idNam}
+      idDonVi={idDonVi}
       tieuDe={tieuDe}
       controls={controls}
       chinh={chinh}
@@ -218,6 +218,7 @@ const TongQuanKhoa = ({ idNam, idDonVi, tenDonVi, reloadKey = 0, controls, chinh
 
 const TruongKhoa = ({
   idNam,
+  idDonVi,
   tieuDe,
   controls,
   chinh,
@@ -234,8 +235,7 @@ const TruongKhoa = ({
   const nhanTrangThai = taoNhanTrangThai(tongQuan?.DemTheoTrangThai, NHAN_TRANG_THAI_NAM);
   const tongSoPhieu = Number(tongQuan?.TongSoPhieu) || 0;
   const soChuaLap = Number(tongQuan?.SoChuaLapPhieu) || 0;
-  const soNhanVien =
-    tongQuan?.SoNhanVien != null ? Number(tongQuan.SoNhanVien) : tongSoPhieu + soChuaLap;
+  const soNhanVien = tongQuan?.SoNhanVien;
   const coQuyenDs = tongQuan?.CoQuyenXemDanhSach === true;
   const moDrill = coQuyenDs ? setDrill : undefined;
   const phieuNamVc = tongQuan?.PhieuNamVienChuc;
@@ -275,13 +275,13 @@ const TruongKhoa = ({
       }))
     : hangXepLoaiNam(tongQuan?.DemTheoXepLoai);
 
-  const drillKey = JSON.stringify([idNam, reloadKey, drill]);
+  const drillKey = JSON.stringify([idNam, idDonVi, reloadKey, drill]);
   const khoiDrill = (theoQuy) =>
     coQuyenDs &&
     drill &&
     Boolean(drill.quy) === theoQuy && (
       <div className="db-drill">
-        <DanhSachChuaLap key={drillKey} idNam={idNam} {...drill} onClose={() => setDrill(null)} />
+        <DanhSachChuaLap key={drillKey} idNam={idNam} idDonVi={idDonVi} {...drill} onClose={() => setDrill(null)} />
       </div>
     );
 
@@ -374,7 +374,7 @@ const TruongKhoa = ({
         hero={
           <HeroKpi
             nhan="Nhân sự đã lập phiếu năm"
-            xong={Math.max(soNhanVien - soChuaLap, 0)}
+            xong={soNhanVien == null ? null : Math.max(Number(soNhanVien) - soChuaLap, 0)}
             tong={soNhanVien}
           >
             {soChuaLap > 0 &&
@@ -487,7 +487,7 @@ const TruongKhoa = ({
               }
             >
               {hoSoCho.length === 0 ? (
-                <p className="db-empty" style={{ padding: "0 24px 20px" }}>
+                <p className="db-empty">
                   Mọi phiếu trong phạm vi của bạn đã hoàn tất.
                 </p>
               ) : (
@@ -567,7 +567,7 @@ const TruongKhoa = ({
               }
             >
               {chuaLap.Items.length === 0 ? (
-                <p className="db-empty" style={{ padding: "0 24px 20px" }}>
+                <p className="db-empty">
                   Mọi người đã lập phiếu năm.
                 </p>
               ) : (

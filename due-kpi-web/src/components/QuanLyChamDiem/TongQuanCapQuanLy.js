@@ -185,7 +185,7 @@ const TongQuanCapQuanLy = ({
       ? donVi[0].TenDonVi
       : "Tổng quan KPI Phòng";
 
-  if (!baoCao) {
+  if (dangTai || !baoCao) {
     return (
       <>
         <DashHeader title={tieuDe} controls={boLoc} chinh={chinh} />
@@ -306,7 +306,16 @@ const ToanTruong = ({
       String(a.TenDonVi).localeCompare(String(b.TenDonVi), "vi"),
   );
   const donViHien = xemTatCa ? donViSapXep : donViSapXep.slice(0, SO_DON_VI_MAC_DINH);
-  const coCotQuy = apDungQuy && quyHienTai;
+  const coCotQuy = apDungQuy && Number(quyHienTai) > 0;
+  const duDieuKienXet = cho?.DuDieuKienChotXetXuatSac === true;
+  const soChuaDuyetXet = Number(cho?.SoVienChucKhoaChuaDuyet) || 0;
+  const dieuKienXet = duDieuKienXet
+    ? "Đủ điều kiện chốt danh sách"
+    : soChuaDuyetXet > 0
+      ? `Chưa chốt được — còn ${so(soChuaDuyetXet)} phiếu viên chức Khoa chưa duyệt`
+      : cho?.DuDieuKienChotXetXuatSac === false
+        ? "Chưa đủ điều kiện chốt danh sách"
+        : "Chưa có thông tin điều kiện chốt danh sách";
 
   return (
     <>
@@ -315,23 +324,29 @@ const ToanTruong = ({
           <div className="db-task-grid">
             <TaskCard
               nhan="Tờ trình KPI chờ duyệt"
-              giaTri={so(cho.SoToTrinhChoDuyet)}
+              giaTri={<>{so(cho.SoToTrinhChoDuyet)} <span className="db-task-unit">gói</span></>}
+              phu={
+                <span>
+                  {so(cho.SoHoSoLanhDaoChoDuyet)} hồ sơ lãnh đạo trong gói đã trình
+                  <br />
+                  {so(cho.SoHoSoLanhDaoChuaTrinh)} hồ sơ chưa trình
+                </span>
+              }
               cta="Mở tờ trình"
               to="/truong/to-trinh"
             />
             <TaskCard
-              nhan="Hồ sơ lãnh đạo đơn vị chờ duyệt"
-              giaTri={so(cho.SoHoSoLanhDaoChoDuyet)}
-              cta="Xem hồ sơ"
-              to="/truong/to-trinh"
+              nhan="Xét xuất sắc viên chức Khoa"
+              giaTri={<>{so(cho.SoUngVienChoXetXuatSac)} <span className="db-task-unit">ứng viên</span></>}
+              phu={dieuKienXet}
+              phuIcon={!duDieuKienXet && soChuaDuyetXet > 0 ? "chan" : undefined}
+              cta={duDieuKienXet ? "Mở danh sách để chốt" : "Xem danh sách xét xuất sắc"}
+              to="/truong/xet-xuat-sac-vien-chuc-khoa"
             />
             <TaskCard
-              nhan="Phiếu đánh giá đơn vị chờ duyệt"
-              giaTri={so(cho.SoPhieuDonViChoDuyet)}
-            />
-            <TaskCard
-              nhan="Phiếu đánh giá đơn vị chờ chốt"
-              giaTri={so(cho.SoPhieuDonViChoChot)}
+              nhan="Phiếu đánh giá đơn vị"
+              giaTri={<>{so(cho.SoPhieuDonViChoDuyet)} <span className="db-task-unit">chờ duyệt</span></>}
+              phu={`${so(cho.SoPhieuDonViChoChot)} phiếu chờ chốt`}
             />
           </div>
         </Section>
@@ -408,7 +423,7 @@ const ToanTruong = ({
         meta={`Sắp theo số người chưa lập phiếu năm · ${so(donViHien.length)} / ${so(donVi.length)} đơn vị`}
       >
         {donVi.length === 0 ? (
-          <p className="db-empty" style={{ padding: "0 24px 20px" }}>
+          <p className="db-empty">
             Chưa có đơn vị trong phạm vi báo cáo.
           </p>
         ) : (
@@ -425,6 +440,7 @@ const ToanTruong = ({
                     {coCotQuy && <th className="is-num">Quý {quyHienTai} đã chốt</th>}
                     <th>Phiếu đơn vị</th>
                     <th>Tờ trình KPI</th>
+                    <th>Hồ sơ lãnh đạo</th>
                     <th className="is-num">TN đúng hạn</th>
                   </tr>
                 </thead>
@@ -479,6 +495,11 @@ const ToanTruong = ({
                           {r.XepLoaiPhieuDvText ? ` · ${r.XepLoaiPhieuDvText}` : ""}
                         </td>
                         <td className="is-muted">{tenToTrinh(r)}</td>
+                        <td className="is-muted">
+                          {Number(r.SoChoHtDuyet) > 0
+                            ? `${so(r.SoChoHtDuyet)} ${Number(r.TrangThaiToTrinh) === 3 ? "chờ HT" : "chưa trình"}`
+                            : "—"}
+                        </td>
                         <td className="is-num">
                           {r.LoaiDonVi === "KHOA" ? tyLe(r.TyLeTotNghiepDungHan) : "—"}
                         </td>

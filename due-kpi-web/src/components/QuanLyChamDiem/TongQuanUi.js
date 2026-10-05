@@ -54,7 +54,7 @@ export const hienThiKhoa = (nam) => {
   return n > 1974 ? String(n - 1974) : String(n);
 };
 
-/** DemTheoTrangThai (chỉ có phần tử cho trạng thái có phiếu) → Map đủ 1..5. */
+/** DemTheoTrangThai từ API → Map theo mã trạng thái. */
 export const demTrangThai = (rows) => {
   const map = new Map();
   (rows || []).forEach((r) =>
@@ -570,10 +570,10 @@ export const TienDoPhieuNam = ({
  */
 export const giaiDoanQuy = (row, quyHienTai) => {
   const q = Number(row.Quy);
-  const hienTai = Number(quyHienTai) || null;
-  if (row.DaDenQuy === false || (hienTai && q > hienTai)) return "chua-den";
-  if (hienTai && q === hienTai) return "hien-tai";
-  if (hienTai && q < hienTai) return "da-qua";
+  const hienTai = quyHienTai == null ? null : Number(quyHienTai);
+  if (row.DaDenQuy === false || (hienTai != null && q > hienTai)) return "chua-den";
+  if (hienTai != null && q === hienTai) return "hien-tai";
+  if (hienTai != null && q < hienTai) return "da-qua";
   return "khong-ro";
 };
 
@@ -819,6 +819,7 @@ const THANG_DIEM = 120;
 
 export const DiemTrungBinhCard = ({ rows }) => (
   <Card
+    flush
     title="Điểm trung bình phiếu hoàn tất"
     meta='Theo đơn vị con; phiếu gắn thẳng vào Khoa nằm ở dòng "Trực thuộc"'
     actions={
@@ -841,7 +842,7 @@ export const DiemTrungBinhCard = ({ rows }) => (
             <tr>
               <th>Đơn vị</th>
               <th className="is-num">Số phiếu</th>
-              <th className="is-num">TB chung</th>
+              <th className="is-num">TB chung (tham khảo)</th>
               <th className="is-num">Thấp – cao</th>
               <th>Điểm TB tách nhóm (thang 0–{THANG_DIEM})</th>
             </tr>
@@ -898,10 +899,12 @@ export const DiemTrungBinhCard = ({ rows }) => (
         </table>
       </div>
     )}
-    <Alert muc="info" icon="thongTin" nho>
-      Hai nhóm chấm theo hai bảng tiêu chí khác nhau (ngưỡng Hoàn thành tốt:
-      giảng viên &gt; 100, viên chức ≥ 101) — không so sánh trực tiếp hai con số.
-    </Alert>
+    <div className="db-card-note">
+      <Alert muc="info" icon="thongTin" nho>
+        Hai nhóm chấm theo hai bảng tiêu chí khác nhau (ngưỡng Hoàn thành tốt:
+        giảng viên &gt; 100, viên chức ≥ 101) — không so sánh trực tiếp hai con số.
+      </Alert>
+    </div>
   </Card>
 );
 

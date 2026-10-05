@@ -157,16 +157,18 @@ const TongQuanThuKy = ({
           giaTri={so(dem.get(5) || 0)}
           phu={`trên ${so(tongSoPhieu)} phiếu đã lập`}
         />
-        {diemGop && (
+        {diemGop?.giangVien != null && (
           <KpiCard
-            nhan="Điểm TB phiếu hoàn tất"
-            giaTri={diem(diemGop.chung)}
-            phu={[
-              diemGop.giangVien != null && `GV ${diem(diemGop.giangVien)}`,
-              diemGop.vienChuc != null && `VC ${diem(diemGop.vienChuc)}`,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+            nhan="Điểm TB giảng viên"
+            giaTri={diem(diemGop.giangVien)}
+            phu="Phiếu năm hoàn tất"
+          />
+        )}
+        {diemGop?.vienChuc != null && (
+          <KpiCard
+            nhan="Điểm TB viên chức / NLĐ"
+            giaTri={diem(diemGop.vienChuc)}
+            phu="Phiếu năm hoàn tất"
           />
         )}
         {hocVu && (

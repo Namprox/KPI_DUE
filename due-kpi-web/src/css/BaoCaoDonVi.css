@@ -1,0 +1,126 @@
+.bc-report-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.bc-report .bc-report-content > * {
+  margin: 0;
+  min-width: 0;
+}
+
+.bc-report-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bc-report-section > .sub-title {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.bc-report-section > .stat-card-grid {
+  margin: 0;
+}
+
+.bc-report .cd-phieu-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+}
+
+.bc-report .cd-phieu-header > h3,
+.bc-report .cd-phieu-header > h4,
+.bc-report .cd-phieu-header > p,
+.bc-report .cd-phieu-header > .bc-metrics,
+.bc-report .cd-phieu-header > .tqk-xl-list {
+  margin: 0;
+}
+
+.bc-report .cd-phieu-header > p,
+.bc-report .cd-phieu-header > h3,
+.bc-report .cd-phieu-header > h4 {
+  line-height: 1.5;
+}
+
+.bc-report .cd-phieu-header > .btn-cancel {
+  align-self: flex-start;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.bc-report .bc-bo-sung:not(.cd-phieu-header) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bc-report .bc-bo-sung > h3 {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.bc-report .bc-quarter-grid {
+  gap: 16px;
+  margin: 0;
+}
+
+.bc-report .bc-quarter-grid .bc-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.bc-report .bc-metrics > div {
+  min-width: 0;
+}
+
+.bc-report .bc-metrics span {
+  line-height: 1.5;
+}
+
+.bc-report .tqk-xl-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bc-report .cd-progress-head {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.bc-report-person-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 6px;
+}
+
+.bc-report .bc-report-unit {
+  flex: 2 1 240px;
+}
+
+@media (max-width: 700px) {
+  .bc-report-content {
+    gap: 20px;
+  }
+
+  .bc-report .cd-phieu-header {
+    padding: 16px;
+  }
+
+  .bc-report .cd-toolbar {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .bc-report .cd-toolbar > .cd-field {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+}

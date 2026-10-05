@@ -35,6 +35,7 @@
   --db-danger-bg: #fef2f2;
   --db-danger-border: #fecaca;
   --db-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --db-card-padding: 24px;
 
   color: var(--db-text);
   display: flex;
@@ -248,7 +249,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 24px;
+  padding: var(--db-card-padding);
   border-radius: 12px;
   background: var(--db-surface);
   border: 1px solid var(--db-border);
@@ -270,7 +271,15 @@
 }
 
 .db-card-flush .db-card-head {
-  padding: 20px 24px;
+  padding: 20px var(--db-card-padding);
+}
+
+.db-card-flush > .db-empty {
+  padding: 0 var(--db-card-padding) 20px;
+}
+
+.db-card-note {
+  padding: 16px var(--db-card-padding) 20px;
 }
 
 .db-card-head-text {
@@ -326,7 +335,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 24px;
+  padding: var(--db-card-padding);
   border-radius: 12px;
   background: var(--db-surface);
   border: 1px solid var(--db-border);
@@ -342,7 +351,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 20px;
+  padding: var(--db-card-padding);
   border-radius: 12px;
   background: var(--db-surface);
   border: 1px solid var(--db-border);
@@ -383,6 +392,12 @@ button.db-task:hover {
   line-height: 1.5;
 }
 
+.db-task-unit {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--db-muted);
+}
+
 .db-task-phu {
   display: flex;
   align-items: center;
@@ -398,6 +413,7 @@ button.db-task:hover {
   font-size: 13px;
   font-weight: 600;
   color: var(--db-accent);
+  margin-top: auto;
 }
 
 .db-thu-ky-task {
@@ -422,7 +438,7 @@ button.db-task:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 24px;
+  padding: var(--db-card-padding);
   border-radius: 12px;
   background: var(--db-surface);
   border: 1px solid var(--db-border);
@@ -947,7 +963,7 @@ button.db-task:hover {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 20px;
+  padding: 16px var(--db-card-padding);
   border-radius: 12px;
   background: var(--db-info-bg);
   border: 1px solid var(--db-info-border);
@@ -1076,12 +1092,12 @@ button.db-task:hover {
 
 .db-table th:first-child,
 .db-table td:first-child {
-  padding-left: 24px;
+  padding-left: var(--db-card-padding);
 }
 
 .db-table th:last-child,
 .db-table td:last-child {
-  padding-right: 24px;
+  padding-right: var(--db-card-padding);
 }
 
 .db-table .is-num {
@@ -1120,7 +1136,7 @@ button.db-task:hover {
 .db-table-foot {
   display: flex;
   justify-content: center;
-  padding: 12px 24px 16px;
+  padding: 12px var(--db-card-padding) 16px;
 }
 
 .db-tt-cell {
@@ -1153,7 +1169,7 @@ button.db-task:hover {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 12px 24px;
+  padding: 12px var(--db-card-padding);
   border-top: 1px solid var(--db-row);
 }
 
@@ -1372,13 +1388,39 @@ button.db-task:hover {
 }
 
 .db-drill {
-  border-radius: 12px;
-  background: var(--db-surface);
-  border: 1px solid var(--db-border);
+  min-width: 0;
 }
 
 .db-drill .bc-bo-sung {
   margin: 0;
+}
+
+.db .bc-danh-sach {
+  padding: var(--db-card-padding);
+}
+
+.db-card .db-drill .bc-danh-sach {
+  padding: 16px;
+  box-shadow: none;
+}
+
+.db .bc-danh-sach-head h3 {
+  color: var(--db-heading);
+}
+
+.db .bc-danh-sach .btn-cancel {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--db-border-strong);
+  border-radius: 8px;
+  background: var(--db-surface);
+  color: var(--db-text);
+  font-family: inherit;
+}
+
+.db .bc-danh-sach .btn-cancel:hover:not(:disabled) {
+  background: var(--db-surface-2);
+  border-color: #94a3b8;
 }
 
 /* ---------------------------------------------------------------- */
@@ -1429,6 +1471,7 @@ button.db-task:hover {
 @media (max-width: 720px) {
   .db {
     gap: 20px;
+    --db-card-padding: 18px;
   }
 
   .db-header h1,
@@ -1440,8 +1483,17 @@ button.db-task:hover {
     font-size: 32px;
   }
 
-  .db-card {
-    padding: 18px;
+  .db-loai-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .db-loai-row > .db-loai-ten {
+    grid-column: 1 / -1;
+  }
+
+  .db-loai-row > .db-loai-bar {
+    grid-row: auto;
   }
 
   .db-kpi-row.db-has-hero,

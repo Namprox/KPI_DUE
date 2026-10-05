@@ -88,7 +88,8 @@ test("TKK xem số tổng hợp của Khoa nhưng không có thao tác dành cho
   expect(screen.getByRole("link", { name: "Tiếp tục nhập điểm" })).toHaveAttribute("href", "/danh-gia-kpi-don-vi");
   expect(screen.getByText("Khóa 48 · cảnh báo học vụ 10%")).toBeInTheDocument();
 
-  expect(fetchBaoCaoTongQuan).toHaveBeenCalledWith({ idNam: 2026 });
+  expect(fetchBaoCaoTongQuan).toHaveBeenCalledWith({ idNam: 2026, idDonVi: 10 });
+  expect(fetchBaoCaoDiemTrungBinh).toHaveBeenCalledWith({ idNam: 2026, idDonVi: 10 });
   expect(fetchPhieuDonViList).toHaveBeenCalledWith(expect.objectContaining({ idNam: 2026, idDonVi: 10 }));
   expect(fetchThamDinhPending).not.toHaveBeenCalled();
   expect(fetchToTrinhDetail).not.toHaveBeenCalled();
@@ -165,10 +166,40 @@ test("Trưởng khoa thấy danh sách hồ sơ chưa hoàn tất và người c
   expect(dong[1]).toHaveTextContent("Người để lâu");
   expect(within(dong[1]).getByRole("img", { name: "Quá 30 ngày" })).toBeInTheDocument();
   expect(within(bang).getByRole("link", { name: "Người để lâu" })).toHaveAttribute("href", "/quan-ly/phieu/2");
-  expect(fetchBaoCaoChuaLapPhieu).toHaveBeenCalledWith({ idNam: 2026, page: 1, pageSize: 6 });
+  expect(fetchBaoCaoChuaHoanTat).toHaveBeenCalledWith({ idNam: 2026, idDonVi: 10 });
+  expect(fetchBaoCaoChuaLapPhieu).toHaveBeenCalledWith({ idNam: 2026, idDonVi: 10, page: 1, pageSize: 6 });
 
   const chuaLap = screen.getByRole("region", { name: "Chưa lập phiếu năm" });
   expect(within(chuaLap).getByText("Người chưa lập")).toBeInTheDocument();
   fireEvent.click(within(chuaLap).getByRole("button", { name: "Xem tất cả" }));
   expect(await screen.findByRole("button", { name: "Đóng danh sách" })).toBeInTheDocument();
+  expect(fetchBaoCaoChuaLapPhieu).toHaveBeenLastCalledWith({ idNam: 2026, idDonVi: 10, quy: 0, page: 1, pageSize: 20 });
+});
+
+test("thư ký thấy điểm trung bình tách nhóm, giữ điểm 0 và dòng phiếu trực thuộc Khoa", async () => {
+  useAuth.mockReturnValue({ user: { MaChucVu: "TKK", IdDonVi: 10, DonVi: [{ IdDonVi: 10, MaChucVu: "TKK" }] } });
+  fetchBaoCaoDiemTrungBinh.mockResolvedValue([
+    { IdDonVi: 10, TenDonVi: "Khoa A", LaTrucThuoc: true, SoPhieuGiangVien: 2, DiemTrungBinhGiangVien: 92.5,
+      SoPhieuVienChuc: 1, DiemTrungBinhVienChuc: 0, DiemTrungBinh: 61.67 },
+  ]);
+  renderIn(<TongQuanKhoa idNam={2026} idDonVi={10} />);
+  expect(await screen.findByText("Điểm TB giảng viên")).toBeInTheDocument();
+  expect(screen.getByText("92,5")).toBeInTheDocument();
+  expect(screen.getByText("Điểm TB viên chức / NLĐ")).toBeInTheDocument();
+  expect(screen.getByText("0,0")).toBeInTheDocument();
+  expect(screen.queryByText("61,67")).not.toBeInTheDocument();
+  expect(screen.queryByText("Điểm TB phiếu hoàn tất")).not.toBeInTheDocument();
+});
+
+test("Khoa dùng bộ lọc thống nhất cho tài khoản kiêm nhiệm và không suy mẫu số từ tổng phiếu", async () => {
+  useAuth.mockReturnValue({ user: { MaChucVu: "TK", IdDonVi: 10, DonVi: [
+    { IdDonVi: 10, MaChucVu: "TK" }, { IdDonVi: 20, MaChucVu: "TP" },
+  ] } });
+  fetchBaoCaoTongQuan.mockResolvedValue({ TongSoPhieu: 15, SoChuaLapPhieu: 5, CoQuyenXemDanhSach: true });
+  renderIn(<TongQuanKhoa idNam={2026} idDonVi={10} />);
+  await screen.findByRole("region", { name: "Hồ sơ chưa hoàn tất" });
+  expect(fetchBaoCaoTongQuan).toHaveBeenCalledWith({ idNam: 2026, idDonVi: 10 });
+  expect(fetchBaoCaoChuaLapPhieu).toHaveBeenCalledWith({ idNam: 2026, idDonVi: 10, page: 1, pageSize: 6 });
+  expect(screen.queryByText("75%")).not.toBeInTheDocument();
+  expect(screen.getByText("— / — nhân sự")).toBeInTheDocument();
 });

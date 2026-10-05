@@ -23,7 +23,7 @@ const viTri = (v) => `${Math.round((Math.min(Math.max(v, 0), THANG_DIEM) * 1000)
  * vị duyệt, 5 đã chốt.
  */
 const moTaQuyChuaChot = (q, quyHienTai) => {
-  const tuongLai = quyHienTai && Number(q.Quy) > quyHienTai;
+  const tuongLai = quyHienTai != null && Number(q.Quy) > quyHienTai;
   if (q.IdPhieu == null) {
     return tuongLai
       ? { chip: "Chưa đến", ghiChu: "Chưa đến quý." }
@@ -107,7 +107,7 @@ export default function TongQuanVienChucCaNhan({
   }
 
   const { summary, soViPham } = state;
-  const quyHienTai = Number(state.overview.QuyHienTai) || null;
+  const quyHienTai = state.overview.QuyHienTai == null ? null : Number(state.overview.QuyHienTai);
   const dsQuy = summary.Quy || [];
   const quyNay = dsQuy.find((q) => Number(q.Quy) === quyHienTai) || null;
   const soQuyChot = Number(summary.SoQuyDaChot) || 0;
@@ -169,7 +169,7 @@ export default function TongQuanVienChucCaNhan({
         <div className="db-quy-grid">
           {dsQuy.map((q) => {
             const laHienTai = Number(q.Quy) === quyHienTai;
-            const tuongLai = quyHienTai && Number(q.Quy) > quyHienTai;
+            const tuongLai = quyHienTai != null && Number(q.Quy) > quyHienTai;
             const moTa = q.DaChot ? null : moTaQuyChuaChot(q, quyHienTai);
             return (
               <article

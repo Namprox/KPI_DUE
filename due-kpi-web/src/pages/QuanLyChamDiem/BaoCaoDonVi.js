@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
+import "../../css/BaoCaoDonVi.css";
 import { apiFetch } from "../../utils/api";
 import {
   fetchBaoCaoChuaHoanTat,
@@ -116,7 +117,7 @@ const BaoCaoDonVi = () => {
   );
 
   return (
-    <div className="page-container">
+    <div className="page-container bc-report">
       <Toast ref={toast} position="top-right" />
 
       <div className="page-header">
@@ -150,7 +151,7 @@ const BaoCaoDonVi = () => {
           />
         </div>
 
-        <div className="cd-field" style={{ flex: "2 1 240px" }}>
+        <div className="cd-field bc-report-unit">
           <label className="cd-label">Đơn vị</label>
           <SearchSelect
             value={idDonVi}
@@ -186,55 +187,57 @@ const BaoCaoDonVi = () => {
           </div>
         </div>
       ) : (
-        <>
-          <p className="sub-title" style={{ marginBottom: "10px" }}>
-            TIẾN ĐỘ PHIẾU ({tongQuan?.TongSoPhieu ?? 0} phiếu đã lập)
-          </p>
-          <div className="stat-card-grid">
-            <div className="stat-card">
-              <div
-                className="stat-icon-box"
-                style={{
-                  background: TRANG_THAI_CHUA_LAP_META.bg,
-                  color: TRANG_THAI_CHUA_LAP_META.color,
-                }}
-              >
-                <i className={`fa-solid ${TRANG_THAI_CHUA_LAP_META.icon}`}></i>
-              </div>
-              <div>
-                <div className="stat-label">
-                  {TRANG_THAI_CHUA_LAP_META.label}
-                </div>
-                <div className="stat-value">
-                  {tongQuan?.SoChuaLapPhieu ?? "-"}
-                </div>
-              </div>
-            </div>
-            {Object.entries(TRANG_THAI_META).map(([tt, meta]) => (
-              <div className="stat-card" key={tt}>
+        <div className="bc-report-content">
+          <section className="bc-report-section">
+            <p className="sub-title">
+              TIẾN ĐỘ PHIẾU ({tongQuan?.TongSoPhieu ?? 0} phiếu đã lập)
+            </p>
+            <div className="stat-card-grid">
+              <div className="stat-card">
                 <div
                   className="stat-icon-box"
-                  style={{ background: meta.bg, color: meta.color }}
+                  style={{
+                    background: TRANG_THAI_CHUA_LAP_META.bg,
+                    color: TRANG_THAI_CHUA_LAP_META.color,
+                  }}
                 >
-                  <i className={`fa-solid ${meta.icon}`}></i>
+                  <i className={`fa-solid ${TRANG_THAI_CHUA_LAP_META.icon}`}></i>
                 </div>
                 <div>
-                  <div className="stat-label">{tongQuan?.DemTheoTrangThai?.find((r) => Number(r.TrangThai) === Number(tt))?.TrangThaiText || meta.label}</div>
+                  <div className="stat-label">
+                    {TRANG_THAI_CHUA_LAP_META.label}
+                  </div>
                   <div className="stat-value">
-                    {demTheoTrangThai.get(Number(tt)) || 0}
+                    {tongQuan?.SoChuaLapPhieu ?? "-"}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+              {Object.entries(TRANG_THAI_META).map(([tt, meta]) => (
+                <div className="stat-card" key={tt}>
+                  <div
+                    className="stat-icon-box"
+                    style={{ background: meta.bg, color: meta.color }}
+                  >
+                    <i className={`fa-solid ${meta.icon}`}></i>
+                  </div>
+                  <div>
+                    <div className="stat-label">{tongQuan?.DemTheoTrangThai?.find((r) => Number(r.TrangThai) === Number(tt))?.TrangThaiText || meta.label}</div>
+                    <div className="stat-value">
+                      {demTheoTrangThai.get(Number(tt)) || 0}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <BaoCaoBoSung data={tongQuan} onChuaLap={tongQuan?.CoQuyenXemDanhSach === true ? setDrill : undefined} />
           {tongQuan?.CoQuyenXemDanhSach === true && drill && <DanhSachChuaLap key={JSON.stringify([selectedNam, idDonVi, drill])} idNam={selectedNam} idDonVi={idDonVi || undefined} {...drill} onClose={() => setDrill(null)} />}
           <HocVuTongQuan hocVu={tongQuan?.HocVu} />
 
           {(tongQuan?.DemTheoXepLoai || []).length > 0 && (
-            <>
-              <p className="sub-title" style={{ marginBottom: "10px" }}>
+            <section className="bc-report-section">
+              <p className="sub-title">
                 XẾP LOẠI (CHỈ TÍNH PHIẾU ĐÃ HOÀN TẤT)
               </p>
               <div className="stat-card-grid">
@@ -250,81 +253,83 @@ const BaoCaoDonVi = () => {
                   </div>
                 ))}
               </div>
-            </>
+            </section>
           )}
 
-          <p className="sub-title" style={{ marginBottom: "10px" }}>
-            ĐIỂM TRUNG BÌNH THEO ĐƠN VỊ TRỰC THUỘC
-          </p>
-          <div className="modern-table-card" style={{ marginBottom: "24px" }}>
-            {diemTb.length === 0 ? (
-              <div className="cd-empty">
-                <i className="fa-solid fa-chart-column"></i>
-                Chưa có phiếu nào hoàn tất trong năm này nên chưa tính được điểm
-                trung bình.
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table className="custom-table" style={{ minWidth: "700px" }}>
-                  <thead>
-                    <tr>
-                      <th>Đơn vị</th>
-                      <th style={{ width: "110px", textAlign: "center" }}>
-                        Phiếu GV / VC
-                      </th>
-                      <th style={{ width: "130px", textAlign: "right" }}>
-                        TB giảng viên
-                      </th>
-                      <th style={{ width: "120px", textAlign: "right" }}>
-                        TB viên chức
-                      </th>
-                      <th style={{ width: "120px", textAlign: "right" }}>
-                        TB chung (tham khảo)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {diemTb.map((r) => (
-                      <tr key={r.IdDonVi}>
-                        <td>
-                          <b style={{ color: "#0f172a" }}>
-                            {r.LaTrucThuoc && "Trực thuộc "}{r.TenDonVi || `Đơn vị #${r.IdDonVi}`}
-                          </b>
-                          {r.MaDonVi && (
-                            <span
-                              className="code-pill"
-                              style={{ marginLeft: "8px" }}
-                            >
-                              {r.MaDonVi}
-                            </span>
-                          )}
-                        </td>
-                        <td style={{ textAlign: "center" }}>{r.SoPhieuGiangVien ?? "—"} / {r.SoPhieuVienChuc ?? "—"}</td>
-                        <td
-                          style={{
-                            textAlign: "right",
-                            fontWeight: 700,
-                            color: "#1d4ed8",
-                          }}
-                        >
-                          {formatDiem(r.DiemTrungBinhGiangVien)}
-                        </td>
-                        <td style={{ textAlign: "right" }}>
-                          {formatDiem(r.DiemTrungBinhVienChuc)}
-                        </td>
-                        <td style={{ textAlign: "right" }}>
-                          {formatDiem(r.DiemTrungBinh)}
-                        </td>
+          <section className="bc-report-section">
+            <p className="sub-title">
+              ĐIỂM TRUNG BÌNH THEO ĐƠN VỊ TRỰC THUỘC
+            </p>
+            <div className="modern-table-card">
+              {diemTb.length === 0 ? (
+                <div className="cd-empty">
+                  <i className="fa-solid fa-chart-column"></i>
+                  Chưa có phiếu nào hoàn tất trong năm này nên chưa tính được điểm
+                  trung bình.
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table className="custom-table" style={{ minWidth: "700px" }}>
+                    <thead>
+                      <tr>
+                        <th>Đơn vị</th>
+                        <th style={{ width: "110px", textAlign: "center" }}>
+                          Phiếu GV / VC
+                        </th>
+                        <th style={{ width: "130px", textAlign: "right" }}>
+                          TB giảng viên
+                        </th>
+                        <th style={{ width: "120px", textAlign: "right" }}>
+                          TB viên chức
+                        </th>
+                        <th style={{ width: "120px", textAlign: "right" }}>
+                          TB chung (tham khảo)
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                    </thead>
+                    <tbody>
+                      {diemTb.map((r) => (
+                        <tr key={r.IdDonVi}>
+                          <td>
+                            <b style={{ color: "#0f172a" }}>
+                              {r.LaTrucThuoc && "Trực thuộc "}{r.TenDonVi || `Đơn vị #${r.IdDonVi}`}
+                            </b>
+                            {r.MaDonVi && (
+                              <span
+                                className="code-pill"
+                                style={{ marginLeft: "8px" }}
+                              >
+                                {r.MaDonVi}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: "center" }}>{r.SoPhieuGiangVien ?? "—"} / {r.SoPhieuVienChuc ?? "—"}</td>
+                          <td
+                            style={{
+                              textAlign: "right",
+                              fontWeight: 700,
+                              color: "#1d4ed8",
+                            }}
+                          >
+                            {formatDiem(r.DiemTrungBinhGiangVien)}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            {formatDiem(r.DiemTrungBinhVienChuc)}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            {formatDiem(r.DiemTrungBinh)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </section>
 
-          {tongQuan?.CoQuyenXemDanhSach === true && <>
-          <p className="sub-title" style={{ marginBottom: "10px" }}>
+          {tongQuan?.CoQuyenXemDanhSach === true && <section className="bc-report-section">
+          <p className="sub-title">
             PHIẾU CHƯA HOÀN TẤT ({chuaHoanTat.length}
             {soTre > 0 ? `, ${soTre} phiếu quá ${NGUONG_TRE} ngày` : ""})
           </p>
@@ -363,10 +368,12 @@ const BaoCaoDonVi = () => {
                             <b style={{ color: "#0f172a", display: "block" }}>
                               {r.HoTen || `#${r.IdNhanVien}`}
                             </b>
-                            <small>{r.LoaiDoiTuongText}</small>
-                            {r.MaNhanVien && (
-                              <span className="code-pill">{r.MaNhanVien}</span>
-                            )}
+                            <div className="bc-report-person-meta">
+                              <small>{r.LoaiDoiTuongText}</small>
+                              {r.MaNhanVien && (
+                                <span className="code-pill">{r.MaNhanVien}</span>
+                              )}
+                            </div>
                           </td>
                           <td style={{ fontSize: "13px", color: "#475569" }}>
                             {r.TenDonVi || "-"}
@@ -420,8 +427,8 @@ const BaoCaoDonVi = () => {
             )}
           </div>
 
-          </>}
-        </>
+          </section>}
+        </div>
       )}
     </div>
   );

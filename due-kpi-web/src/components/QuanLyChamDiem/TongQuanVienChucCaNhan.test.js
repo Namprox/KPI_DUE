@@ -70,3 +70,15 @@ test("giữ điểm 0 từ tổng hợp cá nhân và nói rõ quý hiện tại
   expect(screen.getByText((_, el) => el.className === "db-kv" && el.textContent === "Vi phạm đã ghi nhận1")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /Xem người/ })).not.toBeInTheDocument();
 });
+
+test("năm chưa bắt đầu (QuyHienTai = 0) hiển thị cả bốn quý chưa đến", async () => {
+  fetchBaoCaoTongQuan.mockResolvedValue({ ApDungPhieuQuy: true, QuyHienTai: 0 });
+  fetchTongHopPhieuQuy.mockResolvedValue({
+    SoQuyDaChot: 0,
+    Quy: [1, 2, 3, 4].map((Quy) => ({ Quy, DaChot: false })),
+  });
+  renderIn(<TongQuanVienChucCaNhan idNam={2027} idNhanVien={7} />);
+  expect(await screen.findByText("Theo dõi phiếu quý năm 2027")).toBeInTheDocument();
+  expect(screen.getAllByText("Chưa đến quý.")).toHaveLength(4);
+  expect(screen.queryByText("Bạn chưa lập phiếu quý này.")).not.toBeInTheDocument();
+});

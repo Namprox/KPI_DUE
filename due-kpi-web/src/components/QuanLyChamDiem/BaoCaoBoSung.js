@@ -78,16 +78,29 @@ export function DanhSachChuaLap({ idNam, idDonVi, quy = 0, loaiDoiTuong, onClose
       .catch((error) => { if (active) setState({ error: error.message }); });
     return () => { active = false; };
   }, [idNam, idDonVi, quy, loaiDoiTuong, page, retry]);
-  return <section className="cd-phieu-header bc-bo-sung" aria-label="Danh sách chưa lập phiếu">
-    <h3>Chưa lập phiếu {quy ? `quý ${quy}` : "năm"} · {state.data ? `${so(state.data.TotalCount)} người` : "…"}</h3>
-    <button className="btn-cancel" onClick={onClose}>Đóng danh sách</button>
-    {state.loading && <p role="status">Đang tải danh sách...</p>}
-    {state.error && <p role="alert">{state.error} <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button></p>}
-    {state.data && <>
-      <div className="bc-table"><table className="custom-table"><thead><tr><th>Mã nhân viên</th><th>Họ tên</th><th>Đơn vị chính</th><th>Loại đối tượng</th><th>Chức danh</th><th>Chức vụ</th></tr></thead>
-        <tbody>{state.data.Items.map((r) => <tr key={r.IdNhanVien}><td>{r.MaNhanVien}</td><td>{r.HoTen}</td><td>{r.TenDonVi}</td><td>{r.LoaiDoiTuongText}</td><td>{r.TenChucDanh || "—"}</td><td>{r.TenChucVu || "—"}</td></tr>)}</tbody></table></div>
-      {!state.data.Items.length && <p>Không có người chưa lập phiếu trong trang này.</p>}
-      <div className="bc-pagination"><button className="btn-cancel" disabled={page <= 1} onClick={() => setPage(page - 1)}>Trang trước</button><span>Trang {page} / {Math.max(1, Math.ceil(state.data.TotalCount / 20))}</span><button className="btn-cancel" disabled={page * 20 >= state.data.TotalCount} onClick={() => setPage(page + 1)}>Trang sau</button></div>
-    </>}
+  return <section className="cd-phieu-header bc-bo-sung bc-danh-sach" aria-label="Danh sách chưa lập phiếu">
+    <div className="bc-danh-sach-head">
+      <h3>Chưa lập phiếu {quy ? `quý ${quy}` : "năm"} · {state.data ? `${so(state.data.TotalCount)} người` : "…"}</h3>
+      <button type="button" className="btn-cancel" onClick={onClose}>Đóng danh sách</button>
+    </div>
+    <div className="bc-danh-sach-body">
+      {state.loading && <p className="bc-danh-sach-message" role="status">Đang tải danh sách...</p>}
+      {state.error && (
+        <div className="bc-danh-sach-message bc-danh-sach-error" role="alert">
+          <p>{state.error}</p>
+          <button type="button" className="btn-cancel" onClick={() => setRetry((v) => v + 1)}>Thử lại</button>
+        </div>
+      )}
+      {state.data && <>
+        <div className="bc-table modern-table-card"><table className="custom-table"><thead><tr><th>Mã nhân viên</th><th>Họ tên</th><th>Đơn vị chính</th><th>Loại đối tượng</th><th>Chức danh</th><th>Chức vụ</th></tr></thead>
+          <tbody>{state.data.Items.map((r) => <tr key={r.IdNhanVien}><td>{r.MaNhanVien}</td><td>{r.HoTen}</td><td>{r.TenDonVi}</td><td>{r.LoaiDoiTuongText}</td><td>{r.TenChucDanh || "—"}</td><td>{r.TenChucVu || "—"}</td></tr>)}</tbody></table></div>
+        {!state.data.Items.length && <p className="bc-danh-sach-message">Không có người chưa lập phiếu trong trang này.</p>}
+        <div className="bc-pagination">
+          <button type="button" className="btn-cancel" disabled={page <= 1} onClick={() => setPage(page - 1)}>Trang trước</button>
+          <span>Trang {page} / {Math.max(1, Math.ceil(state.data.TotalCount / 20))}</span>
+          <button type="button" className="btn-cancel" disabled={page * 20 >= state.data.TotalCount} onClick={() => setPage(page + 1)}>Trang sau</button>
+        </div>
+      </>}
+    </div>
   </section>;
 }
