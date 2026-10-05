@@ -454,6 +454,20 @@ export const MENU_GROUPS = [
         serverPermissionSource: "doiNgu",
       },
       {
+        name: "Sáng kiến",
+        icon: "fa-solid fa-lightbulb",
+        path: "/sang-kien",
+        childPaths: ["/sang-kien/:id"],
+        roles: MOI_NGUOI,
+      },
+      {
+        name: "Ủy quyền nhập liệu sáng kiến",
+        icon: "fa-solid fa-user-shield",
+        path: "/sang-kien/uy-quyen",
+        serverPermission: "LaQuanLy",
+        serverPermissionSource: "sangKien",
+      },
+      {
         // Server giới hạn dữ liệu; mọi tài khoản đều có lối vào danh sách cá nhân.
         name: "Thành tích đoàn thể",
         icon: "fa-solid fa-medal",
@@ -684,9 +698,9 @@ export const ROUTE_RULES = buildRouteRules();
 export const findRouteRule = (pathname) =>
   ROUTE_RULES.find((rule) => matchPath(rule.path, pathname)) || null;
 
-export const canAccessRule = (rule, user, quyenDaoTao, quyenDoiNgu) => {
+export const canAccessRule = (rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien) => {
   if (!user) return false;
-  if (rule.serverPermission) return (rule.serverPermissionSource === "doiNgu" ? quyenDoiNgu : quyenDaoTao)?.[rule.serverPermission] === true;
+  if (rule.serverPermission) return (rule.serverPermissionSource === "sangKien" ? quyenSangKien : rule.serverPermissionSource === "doiNgu" ? quyenDoiNgu : quyenDaoTao)?.[rule.serverPermission] === true;
 
   if (rule.personalKpi && !coDanhGiaKpiCaNhan(user)) return false;
 
@@ -725,7 +739,7 @@ export const canAccessRule = (rule, user, quyenDaoTao, quyenDoiNgu) => {
   );
 };
 
-export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu) => {
+export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu, quyenSangKien) => {
   const rule = findRouteRule(pathname);
   if (!rule) {
     if (process.env.NODE_ENV !== "production") {
@@ -736,7 +750,7 @@ export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu) => {
     }
     return false;
   }
-  return canAccessRule(rule, user, quyenDaoTao, quyenDoiNgu);
+  return canAccessRule(rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien);
 };
 
 /**
@@ -745,8 +759,8 @@ export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu) => {
  */
 const laMucMock = (item) => String(item?.name || "").startsWith("[Mock]");
 
-export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu) =>
-  group.items.filter((item) => !laMucMock(item) && canAccessRule(item, user, quyenDaoTao, quyenDoiNgu))
+export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien) =>
+  group.items.filter((item) => !laMucMock(item) && canAccessRule(item, user, quyenDaoTao, quyenDoiNgu, quyenSangKien))
     .map((item) => item.path === "/hoat-dong-dao-tao" && quyenDaoTao &&
       quyenDaoTao.XemTatCa !== true && quyenDaoTao.XemTheoKhoa !== true
       ? { ...item, name: "Hoạt động đào tạo của tôi" }
@@ -755,10 +769,12 @@ export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu
       ? { ...item, name: "Phát triển đội ngũ của tôi" }
       : item.path === "/thanh-tich-doan-the" &&
         quyenDoanThe?.XemTatCa !== true && quyenDoanThe?.XemTheoKhoa !== true
-      ? { ...item, name: "Thành tích đoàn thể của tôi" } : item);
+      ? { ...item, name: "Thành tích đoàn thể của tôi" }
+      : item.path === "/sang-kien" && quyenSangKien?.XemTatCa !== true && quyenSangKien?.XemTheoDonVi !== true
+      ? { ...item, name: "Sáng kiến của tôi" } : item);
 
-export const visibleGroups = (user, quyenDaoTao, quyenDoanThe, quyenDoiNgu) =>
+export const visibleGroups = (user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien) =>
   MENU_GROUPS.map((group) => ({
     ...group,
-    items: visibleItems(group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu),
+    items: visibleItems(group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien),
   })).filter((group) => group.items.length > 0);

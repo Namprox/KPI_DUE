@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { Link } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
@@ -57,6 +58,7 @@ const tuChiTiet = (ct) => ({
   key: `ct-${ct.IdChiTiet}`,
   idChiTiet: ct.IdChiTiet,
   idMuc: String(ct.IdMuc ?? ""),
+  loaiThanhTich: ct.LoaiThanhTich,
   quy: ct.Quy != null ? String(ct.Quy) : "",
   // Server trả date-only nhưng vẫn có thể kèm phần giờ; <input type="date"> chỉ
   // nhận đúng "YYYY-MM-DD" nên cắt tại đây, không đổi sang Date rồi format lại
@@ -124,9 +126,10 @@ const BadgeTrangThai = ({ meta, ghiChu }) => {
 /**
  * Kê khai THÀNH TÍCH VƯỢT TRỘI (Nhóm II) - phía VIÊN CHỨC / NGƯỜI LAO ĐỘNG.
  *
- * Nhân viên tự kê từng thành tích đạt được trong năm (sáng kiến, khen thưởng,
+ * Nhân viên tự kê từng thành tích đạt được trong năm (khen thưởng,
  * hoàn thành khoá đào tạo, tham gia phong trào), đơn vị phụ trách chốt hoặc trả
- * về TỪNG DÒNG; điểm đã chốt chảy vào phiếu KPI qua bốn mã công thức TTVT_*.
+ * về TỪNG DÒNG; điểm đã chốt chảy vào phiếu KPI qua các mã công thức TTVT_*.
+ * Sáng kiến do P_KH ghi nhận ở module riêng; dòng kê khai cũ chỉ để tra cứu.
  *
  * Năm quy ước nghiệp vụ mà giao diện phải phản ánh đúng:
  *
@@ -142,9 +145,8 @@ const BadgeTrangThai = ({ meta, ghiChu }) => {
  *    chặn ngay trong chính request lưu. Vì vậy tệp của
  *    dòng chưa lưu đi thẳng vào KHO TẠM khi chọn, rồi được gắn vào dòng trong
  *    cùng lần lưu qua `IdMinhChung[]`.
- *  - **Vượt trần vẫn lưu được.** Bảng KPI ghi "Điểm tối đa 30" chứ không ghi
- *    "chỉ được kê 30" - kê 4 sáng kiến cấp Bộ là hợp lệ, phần vượt chỉ không
- *    được tính. Cảnh báo trên panel là THÔNG TIN, không chặn thao tác nào.
+ *  - **Vượt trần vẫn lưu được.** Phần điểm vượt trần không được tính.
+ *    Cảnh báo VUOT_TRAN trên panel là thông tin, không chặn thao tác.
  *
  * Thêm dòng đi qua ĐÚNG MỘT lối: nút "Kê khai thành tích" mở danh mục rồi chọn
  * mức. Cố ý bỏ nút "Thêm dòng trống" - dòng không trỏ tới mức nào thì không lưu
@@ -228,13 +230,15 @@ const KeKhaiThanhTich = () => {
     danhMuc.forEach((m) => map.set(String(m.IdMuc), m));
     return map;
   }, [danhMuc]);
+  const laDongSangKien = useCallback((r) => Number(r.loaiThanhTich ?? mucById.get(String(r.idMuc))?.LoaiThanhTich) === 1, [mucById]);
+  const suaDuocDong = (r) => choPhepSuaDong(r) && !laDongSangKien(r);
 
   const suaDuoc = choPhepSua(banKe);
   const coThayDoi = chuKy(rows) !== goc;
 
   const capNhatDong = (key, thayDoi) =>
     setRows((truoc) =>
-      truoc.map((r) => (r.key === key ? { ...r, ...thayDoi } : r)),
+      truoc.map((r) => (r.key === key && !laDongSangKien(r) ? { ...r, ...thayDoi } : r)),
     );
 
   const goDong = (key) =>
@@ -277,6 +281,8 @@ const KeKhaiThanhTich = () => {
    * Dòng ĐÃ CHỐT bị loại hẳn: hợp đồng nói dòng đã chốt vắng mặt thì server GIỮ
    * NGUYÊN, còn gửi lên để sửa là 409 DONG_DA_CHOT cho CẢ request. Loại ra là
    * cách duy nhất chắc chắn không làm hỏng lần lưu của những dòng khác.
+   * Sáng kiến cũ chưa chốt vẫn gửi nguyên dữ liệu để tránh bị xoá do vắng mặt.
+   * Backend cho lưu nguyên dòng cũ; UI khoá mọi sửa đổi loại này.
    */
   const rowsGuiLen = useMemo(() => rows.filter(choPhepSuaDong), [rows]);
 
@@ -345,11 +351,11 @@ const KeKhaiThanhTich = () => {
           // Giữ nguyên chuỗi 'YYYY-MM-DD' của <input type="date">, không đổi
           // sang ISO để tránh lệch một ngày do múi giờ.
           NgayDatDuoc: r.ngayDatDuoc || null,
-          TenThanhTich: r.tenThanhTich.trim(),
-          SoQuyetDinh: r.soQuyetDinh?.trim() || null,
-          CoQuanCap: r.coQuanCap?.trim() || null,
+          TenThanhTich: laDongSangKien(r) ? r.tenThanhTich : r.tenThanhTich.trim(),
+          SoQuyetDinh: (laDongSangKien(r) ? r.soQuyetDinh : r.soQuyetDinh?.trim()) || null,
+          CoQuanCap: (laDongSangKien(r) ? r.coQuanCap : r.coQuanCap?.trim()) || null,
           SoLuong: Number(r.soLuong),
-          MoTa: r.moTa?.trim() || null,
+          MoTa: (laDongSangKien(r) ? r.moTa : r.moTa?.trim()) || null,
           // Tệp đã nằm sẵn trên máy chủ ở kho tạm; đây là lúc gắn chúng vào dòng.
           IdMinhChung:
             (r.mcTam || []).length > 0
@@ -437,7 +443,7 @@ const KeKhaiThanhTich = () => {
           <tbody>
             {rows.map((r, i) => {
               const muc = mucHienThi(r);
-              const dongSuaDuoc = choPhepSuaDong(r) && !dangLuu;
+              const dongSuaDuoc = suaDuocDong(r) && !dangLuu;
               // Ô trống phải hiện "-": Number("") = 0 nên tính thẳng sẽ ra
               // "0 điểm", đọc như thể đã quy đổi xong trong khi chưa nhập gì.
               const coSoLuong = String(r.soLuong).trim() !== "";
@@ -457,7 +463,7 @@ const KeKhaiThanhTich = () => {
                 r.trangThaiDong === TRANG_THAI_DONG_TT.TRA_VE
                   ? "kkt-row-tra-ve"
                   : "",
-                choPhepSuaDong(r) ? "" : "kkt-row-khoa",
+                suaDuocDong(r) ? "" : "kkt-row-khoa",
               ]
                 .filter(Boolean)
                 .join(" ");
@@ -578,7 +584,7 @@ const KeKhaiThanhTich = () => {
                     </td>
                     <td className="kkt-act-cell">
                       <div className="kkt-act-box">
-                        {choPhepSuaDong(r) ? (
+                        {suaDuocDong(r) ? (
                           <button
                             type="button"
                             className="action-btn delete-btn"
@@ -591,7 +597,7 @@ const KeKhaiThanhTich = () => {
                         ) : (
                           <i
                             className="fa-solid fa-lock"
-                            title="Dòng đã chốt; cần đơn vị phụ trách mở lại trước khi sửa"
+                            title={laDongSangKien(r) ? "Sáng kiến đã chuyển sang Phòng Khoa học ghi nhận" : "Dòng đã chốt; cần đơn vị phụ trách mở lại trước khi sửa"}
                           ></i>
                         )}
                       </div>
@@ -618,7 +624,7 @@ const KeKhaiThanhTich = () => {
                                 tenThanhTich: e.target.value,
                               })
                             }
-                            placeholder="Tên sáng kiến / danh hiệu / khoá học / sự kiện..."
+                            placeholder="Tên thành tích / danh hiệu / khoá học / sự kiện..."
                             disabled={!dongSuaDuoc}
                           />
                         </div>
@@ -694,7 +700,7 @@ const KeKhaiThanhTich = () => {
                             idNam={selectedNam}
                             danhSach={r.minhChung}
                             mcTam={r.mcTam}
-                            choPhepSua={choPhepSuaDong(r)}
+                            choPhepSua={suaDuocDong(r)}
                             yeuCauMinhChung={muc?.YeuCauMinhChung}
                             onChange={(ds) =>
                               capNhatDong(r.key, { minhChung: ds })
@@ -1062,7 +1068,7 @@ const KeKhaiThanhTich = () => {
       <div className="page-header">
         <h2 className="kkt-title">Kê khai thành tích vượt trội</h2>
         <span className="breadcrumb">
-          Sáng kiến, khen thưởng, đào tạo bồi dưỡng và phong trào của Trường
+          Khen thưởng, đào tạo bồi dưỡng và phong trào của Trường
         </span>
       </div>
 
@@ -1116,15 +1122,17 @@ const KeKhaiThanhTich = () => {
         )}
       </div>
 
+      <div className="kkt-tran-canh-bao">Sáng kiến, cải tiến công việc do Phòng Khoa học ghi nhận, không tự kê khai tại đây. <Link to="/sang-kien">Xem sáng kiến của tôi</Link></div>
       {renderNoiDung()}
 
       <DanhMucThanhTichModal
         isOpen={moDanhMuc}
-        danhMuc={danhMuc}
+        danhMuc={danhMuc.filter((m) => Number(m.LoaiThanhTich) !== 1)}
         onClose={() => setMoDanhMuc(false)}
         onChon={
           suaDuoc
             ? (muc) => {
+              if (Number(muc.LoaiThanhTich) === 1) return;
               setRows((truoc) => [
                 ...truoc,
                 { ...dongMoi(), idMuc: String(muc.IdMuc) },

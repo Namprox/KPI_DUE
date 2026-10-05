@@ -1,5 +1,7 @@
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { render as renderView, screen, waitFor, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import KeKhaiThanhTich from "./KeKhaiThanhTich";
 import { apiFetch } from "../../utils/api";
 
@@ -7,22 +9,23 @@ jest.mock("../../utils/api", () => ({ apiFetch: jest.fn() }));
 jest.mock("primereact/toast", () => ({ Toast: () => null }));
 
 const NAM = 2026;
+const render = (view) => renderView(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>{view}</MemoryRouter>);
 
 /**
  * Danh mục Nhóm II là cây ĐÚNG HAI CẤP: gốc = tiêu chí (không kê được), lá =
  * mức quy đổi. Picker dựng cột trái từ gốc và cột phải từ lá của gốc đó, nên
  * fixture phải có đủ cả hai tầng.
  */
-const TEN_LA = "Sáng kiến cấp Trường";
+const TEN_LA = "Khen thưởng cấp Trường";
 
 const danhMucMacDinh = (laExtra = {}) => [
   {
     IdMuc: 1,
     MaMuc: "TT1",
-    TenMuc: "Sáng kiến, cải tiến",
+    TenMuc: "Khen thưởng",
     IdCha: null,
     LaLa: false,
-    LoaiThanhTich: 1,
+    LoaiThanhTich: 2,
     TrangThai: true,
     TranDiem: 30,
   },
@@ -32,7 +35,7 @@ const danhMucMacDinh = (laExtra = {}) => [
     TenMuc: TEN_LA,
     IdCha: 1,
     LaLa: true,
-    LoaiThanhTich: 1,
+    LoaiThanhTich: 2,
     TrangThai: true,
     DiemQuyDoi: 5,
     ChoPhepSoLuong: true,
@@ -65,7 +68,7 @@ const banKe = () => ({
       TenMuc: TEN_LA,
       DiemMuc: 5,
       Quy: 1,
-      TenThanhTich: "Sáng kiến chờ duyệt",
+      TenThanhTich: "Thành tích chờ duyệt",
       SoLuong: 1,
       DiemKeKhai: 5,
       TrangThaiDong: 1,
@@ -81,7 +84,7 @@ const banKe = () => ({
       TenMuc: TEN_LA,
       DiemMuc: 5,
       Quy: 2,
-      TenThanhTich: "Sáng kiến đã chốt",
+      TenThanhTich: "Thành tích đã chốt",
       SoLuong: 1,
       DiemKeKhai: 5,
       SoLuongDuyet: 1,
@@ -106,7 +109,7 @@ const banKe = () => ({
       TenMuc: TEN_LA,
       DiemMuc: 5,
       Quy: 3,
-      TenThanhTich: "Sáng kiến bị trả về",
+      TenThanhTich: "Thành tích bị trả về",
       SoLuong: 1,
       DiemKeKhai: 5,
       TrangThaiDong: 3,
@@ -162,13 +165,41 @@ beforeAll(() => {
 
 beforeEach(() => jest.clearAllMocks());
 
+test("sáng kiến cũ vẫn hiển thị, khoá sửa và không chọn loại 1 khi thêm dòng", async () => {
+  const item = banKe();
+  item.ChiTiet[0] = { ...item.ChiTiet[0], LoaiThanhTich: 1, TenThanhTich: "Sáng kiến cũ", TenMuc: "Sáng kiến cấp Bộ" };
+  item.TongHopTheoLoai = [{ LoaiThanhTich: 1, DiemDuocTinh: 0, TranDiem: 30, MaCanhBao: "SANG_KIEN_DA_CHUYEN", CanhBao: "Sáng kiến đã chuyển sang nguồn P_KH." }];
+  const danhMuc = [...danhMucMacDinh(), { IdMuc: 2, LoaiThanhTich: 1, TenMuc: "Sáng kiến, cải tiến", LaLa: false }, { IdMuc: 21, IdCha: 2, LoaiThanhTich: 1, TenMuc: "Sáng kiến cấp Bộ", LaLa: true }];
+  mockApi({ item, danhMuc });
+  render(<KeKhaiThanhTich />);
+  expect(await screen.findByDisplayValue("Sáng kiến cũ")).toBeDisabled();
+  expect(screen.getByText("Sáng kiến đã chuyển sang nguồn P_KH.")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Xem sáng kiến của tôi" })).toHaveAttribute("href", "/sang-kien");
+  fireEvent.click(screen.getByRole("button", { name: /Kê khai thành tích/ }));
+  expect(screen.queryByRole("button", { name: /Sáng kiến cấp Bộ/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: new RegExp(TEN_LA) })).toBeEnabled();
+});
+
+test("lưu thành tích khác giữ nguyên sáng kiến cũ chưa chốt trong payload để không bị xoá", async () => {
+  const item = banKe();
+  item.ChiTiet[0] = { ...item.ChiTiet[0], LoaiThanhTich: 1, TenThanhTich: "Sáng kiến cũ", SoQuyetDinh: "QĐ 12", NgayDatDuoc: "2026-02-10" };
+  mockApi({ item, ghiDe: async () => ({ ok: true, json: async () => ({ Success: true, Item: item }) }) });
+  render(<KeKhaiThanhTich />);
+  fireEvent.change(await screen.findByDisplayValue("Thành tích bị trả về"), { target: { value: "Thành tích khác được sửa" } });
+  fireEvent.click(screen.getByRole("button", { name: /^\s*Lưu\s*$/ }));
+  await waitFor(() => expect(goiApi("ke-khai-thanh-tich/chi-tiet")).toBeTruthy());
+  const body = JSON.parse(goiApi("ke-khai-thanh-tich/chi-tiet")[1].body);
+  expect(body.ChiTiet.find((r) => r.IdChiTiet === 101)).toMatchObject({ IdMuc: 11, Quy: 1, TenThanhTich: "Sáng kiến cũ", SoQuyetDinh: "QĐ 12", NgayDatDuoc: "2026-02-10", SoLuong: 1 });
+  expect(body.ChiTiet.find((r) => r.IdChiTiet === 103).TenThanhTich).toBe("Thành tích khác được sửa");
+});
+
 test("dòng chờ duyệt, đã chốt và trả về cùng nằm trên một bảng", async () => {
   mockApi();
   render(<KeKhaiThanhTich />);
 
-  await screen.findByDisplayValue("Sáng kiến chờ duyệt");
-  expect(screen.getByDisplayValue("Sáng kiến đã chốt")).toBeTruthy();
-  expect(screen.getByDisplayValue("Sáng kiến bị trả về")).toBeTruthy();
+  await screen.findByDisplayValue("Thành tích chờ duyệt");
+  expect(screen.getByDisplayValue("Thành tích đã chốt")).toBeTruthy();
+  expect(screen.getByDisplayValue("Thành tích bị trả về")).toBeTruthy();
 
   // Lý do trả về đọc được ngay tại dòng, không phải banner chung của bản kê.
   expect(screen.getByText(/Thiếu quyết định công nhận/)).toBeTruthy();
@@ -183,9 +214,9 @@ test("dòng đã chốt bị khoá nhưng vẫn kê thêm được thành tích 
   mockApi();
   render(<KeKhaiThanhTich />);
 
-  const oChoDuyet = await screen.findByDisplayValue("Sáng kiến chờ duyệt");
-  const oDaChot = screen.getByDisplayValue("Sáng kiến đã chốt");
-  const oTraVe = screen.getByDisplayValue("Sáng kiến bị trả về");
+  const oChoDuyet = await screen.findByDisplayValue("Thành tích chờ duyệt");
+  const oDaChot = screen.getByDisplayValue("Thành tích đã chốt");
+  const oTraVe = screen.getByDisplayValue("Thành tích bị trả về");
 
   expect(oChoDuyet.disabled).toBe(false);
   expect(oTraVe.disabled).toBe(false);
@@ -214,8 +245,8 @@ test("dòng đã chốt bị loại khỏi payload lưu, chỉ gửi dòng còn 
   mockApi({ ghiDe });
   render(<KeKhaiThanhTich />);
 
-  const oTraVe = await screen.findByDisplayValue("Sáng kiến bị trả về");
-  fireEvent.change(oTraVe, { target: { value: "Sáng kiến đã sửa" } });
+  const oTraVe = await screen.findByDisplayValue("Thành tích bị trả về");
+  fireEvent.change(oTraVe, { target: { value: "Thành tích đã sửa" } });
 
   fireEvent.click(screen.getByRole("button", { name: /^\s*Lưu\s*$/ }));
 
@@ -227,7 +258,7 @@ test("dòng đã chốt bị loại khỏi payload lưu, chỉ gửi dòng còn 
 
   expect(options.method).toBe("PUT");
   expect(payload.ChiTiet.map((c) => c.IdChiTiet)).toEqual([101, 103]);
-  expect(payload.ChiTiet[1].TenThanhTich).toBe("Sáng kiến đã sửa");
+  expect(payload.ChiTiet[1].TenThanhTich).toBe("Thành tích đã sửa");
   // Không gửi điểm: server tự tính từ snapshot của mức.
   expect(payload.ChiTiet[0].DiemKeKhai).toBeUndefined();
 });
@@ -266,8 +297,8 @@ test("minh chứng của dòng mới lên kho tạm rồi được gắn trong c
   );
 
   // Dòng vừa thêm nằm CUỐI bảng, sau các dòng đã có sẵn của bản kê.
-  const oTenMoi = screen.getAllByPlaceholderText(/Tên sáng kiến/).at(-1);
-  fireEvent.change(oTenMoi, { target: { value: "Sáng kiến mới" } });
+  const oTenMoi = screen.getAllByPlaceholderText(/Tên thành tích/).at(-1);
+  fireEvent.change(oTenMoi, { target: { value: "Thành tích mới" } });
   chonQuyDongCuoi("Quý I");
 
   const file = new File(["%PDF-1.4"], "minh-chung.pdf", {
@@ -305,7 +336,7 @@ test("THIEU_MINH_CHUNG dùng ThuTu zero-based để trỏ đúng dòng mới", a
           Message: "Thieu minh chung",
           // Dòng MỚI là phần tử thứ 2 của payload (101, 103, dòng mới) ⇒ ThuTu 2.
           DongCoVanDe: [
-            { IdChiTiet: 0, ThuTu: 2, TenThanhTich: "Sáng kiến mới" },
+            { IdChiTiet: 0, ThuTu: 2, TenThanhTich: "Thành tích mới" },
           ],
         }),
       };
@@ -322,21 +353,21 @@ test("THIEU_MINH_CHUNG dùng ThuTu zero-based để trỏ đúng dòng mới", a
     await screen.findByRole("button", { name: new RegExp(TEN_LA) }),
   );
   // Dòng vừa thêm nằm CUỐI bảng, sau các dòng đã có sẵn của bản kê.
-  const oTenMoi = screen.getAllByPlaceholderText(/Tên sáng kiến/).at(-1);
-  fireEvent.change(oTenMoi, { target: { value: "Sáng kiến mới" } });
+  const oTenMoi = screen.getAllByPlaceholderText(/Tên thành tích/).at(-1);
+  fireEvent.change(oTenMoi, { target: { value: "Thành tích mới" } });
   chonQuyDongCuoi("Quý I");
 
   fireEvent.click(screen.getByRole("button", { name: /^\s*Lưu\s*$/ }));
 
   // Banner chỉ đích danh dòng, và dòng MỚI (không có IdChiTiet) được đánh dấu.
-  const item = await screen.findByRole("button", { name: /Sáng kiến mới/ });
+  const item = await screen.findByRole("button", { name: /Thành tích mới/ });
   expect(item).toBeTruthy();
 
-  const oTen = screen.getByDisplayValue("Sáng kiến mới");
+  const oTen = screen.getByDisplayValue("Thành tích mới");
   const dongLoi = oTen.closest("tr");
   expect(dongLoi.className).toContain("kkt-row-loi");
   // Dòng đã có id thì KHÔNG bị đánh dấu nhầm.
   expect(
-    screen.getByDisplayValue("Sáng kiến chờ duyệt").closest("tr").className,
+    screen.getByDisplayValue("Thành tích chờ duyệt").closest("tr").className,
   ).not.toContain("kkt-row-loi");
 });

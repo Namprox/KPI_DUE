@@ -220,6 +220,13 @@ export const MA_CANH_BAO = {
 };
 
 export const CANH_BAO_META = {
+  SANG_KIEN_DA_CHUYEN: {
+    label: "Sáng kiến đã chuyển",
+    icon: "fa-circle-info",
+    bg: "#fffbeb",
+    color: "#b45309",
+    border: "#fde68a",
+  },
   VUOT_TRAN: {
     label: "Vượt trần",
     icon: "fa-triangle-exclamation",

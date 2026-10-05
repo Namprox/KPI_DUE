@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { laCongThucGioGiang } from "../../../utils/gioGiangTyLe";
-import { laThanhTichDoanThe } from "../../../utils/diemTuDongPhieu";
+import { laThanhTichDoanThe, laSangKien } from "../../../utils/diemTuDongPhieu";
 import {
   chuanHoaFileMinhChung,
   ACCEPT_PDF,
@@ -340,8 +340,11 @@ const DanhGiaPhuLuc2Form = ({
                           const isTtdt = laThanhTichDoanThe(autoInfo);
                           const isDaoTao = congThuc.startsWith("CTDT_");
                           const isDoiNgu = congThuc.startsWith("PTDN_");
+                          const isSangKien = laSangKien(autoInfo);
                           const autoNote = laCongThucGioGiang(autoInfo)
                             ? "Điểm dựa trên tỷ lệ hoàn thành định mức giờ giảng do hệ thống cung cấp"
+                            : isSangKien
+                            ? congThuc === "SK_DOI_MOI_GIANG_DAY" ? "Điểm từ sáng kiến đồng bộ NCKH được Phòng Khoa học đánh dấu đổi mới giảng dạy" : "Điểm được tính tự động từ sáng kiến đồng bộ NCKH và Phòng Khoa học ghi nhận"
                             : isNckh
                             ? "Điểm được tính tự động dựa vào dữ liệu từ website NCKH của trường"
                             : isPhsv
@@ -511,13 +514,13 @@ const DanhGiaPhuLuc2Form = ({
                                 </div>
                               )}
 
-                              {(isNckh || isVpgd || isTtvt || isVpvc || isTtdt || isDaoTao || isDoiNgu) &&
+                              {(isNckh || isVpgd || isTtvt || isVpvc || isTtdt || isDaoTao || isDoiNgu || isSangKien) &&
                                 minhChungList.length > 0 && (
                                   <div
                                     className={`pl2-nckh-mc-box ${isVpgd ? "pl2-mc-box-vpgd" : ""}`}
                                   >
                                     <div className="pl2-nckh-mc-title">
-                                      {isVpgd || isVpvc ? (
+                                      {isSangKien ? <>Sáng kiến đã ghi nhận</> : isVpgd || isVpvc ? (
                                         <>
                                           <i className="fa-solid fa-triangle-exclamation"></i>{" "}
                                           Vi phạm đã ghi nhận
@@ -554,6 +557,8 @@ const DanhGiaPhuLuc2Form = ({
                                                 {mc.TieuDe || "Chi tiết thành tích đoàn thể"}
                                               </Link> : Number(mc.LoaiNguon) === 11 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/phat-trien-doi-ngu/${encodeURIComponent(mc.MaNguon)}`}>
                                                 {mc.TieuDe || "Chi tiết phát triển đội ngũ"}
+                                              </Link> : Number(mc.LoaiNguon) === 12 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/sang-kien/${encodeURIComponent(mc.MaNguon)}`}>
+                                                {mc.TieuDe || "Chi tiết sáng kiến"}
                                               </Link> : <span className="pl2-nckh-mc-name">
                                                 {mc.TieuDe ||
                                                   "(Không có tiêu đề)"}

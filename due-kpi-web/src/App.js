@@ -26,6 +26,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { HoatDongDaoTaoProvider } from "./context/HoatDongDaoTaoContext";
 import { ThanhTichDoanTheProvider } from "./context/ThanhTichDoanTheContext";
 import { PhatTrienDoiNguProvider } from "./context/PhatTrienDoiNguContext";
+import { SangKienProvider } from "./context/SangKienContext";
 
 const FullScreenLoader = () => (
   <div
@@ -170,7 +171,7 @@ export default function App() {
         <Router
           future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
-          <HoatDongDaoTaoProvider><ThanhTichDoanTheProvider><PhatTrienDoiNguProvider><AppContent /></PhatTrienDoiNguProvider></ThanhTichDoanTheProvider></HoatDongDaoTaoProvider>
+          <HoatDongDaoTaoProvider><ThanhTichDoanTheProvider><PhatTrienDoiNguProvider><SangKienProvider><AppContent /></SangKienProvider></PhatTrienDoiNguProvider></ThanhTichDoanTheProvider></HoatDongDaoTaoProvider>
         </Router>
       </AuthProvider>
     </PrimeReactProvider>
