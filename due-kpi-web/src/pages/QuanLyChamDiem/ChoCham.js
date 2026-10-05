@@ -28,12 +28,10 @@ const PAGE_SIZE = 20;
 const SO_PHIEU_TAI_SONG_SONG = 5;
 
 /**
- * Hàng đợi gom theo HỒ SƠ - lối vào duy nhất của chuyên viên thẩm định.
+ * Hàng đợi gom theo HỒ SƠ.
  *
- * Từ đây bấm "Thẩm định" để mở /quan-ly/phieu/:id và chấm từng tiêu chí. Hàng
- * đợi theo từng dòng tiêu chí (HangDoiThamDinh) đã bị ẩn khỏi menu vì nó không
- * xem được minh chứng nên vẫn phải mở hồ sơ mới chấm được - hai lối vào cho
- * cùng một việc chỉ làm rối. Đừng thêm link sang đó nữa.
+ * Từ đây bấm "Thẩm định" để mở /quan-ly/phieu/:id và chấm từng tiêu chí.
+ * Chấm theo tiêu chí nằm tại /quan-ly/tham-dinh, dùng các API nhóm theo tiêu chí.
  *
  * Server đã lọc sẵn theo JWT + bảng tieu_chi_don_vi_cham: chỉ trả phiếu
  * (trang_thai = 2) mà đơn vị đang đăng nhập có ít nhất một tiêu chí được giao.

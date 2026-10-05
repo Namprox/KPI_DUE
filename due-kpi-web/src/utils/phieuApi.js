@@ -817,6 +817,62 @@ export const fetchThamDinhPending = async ({
   return { items: data.Items || [], tongSoDong: data.TongSoDong ?? null };
 };
 
+/** Tiêu chí và số đếm trong phạm vi do BE phân quyền, chỉ phiếu năm/chấm tay. */
+export const fetchThamDinhTieuChi = async (idNam) => {
+  const data = await getJson(
+    `tham-dinh/tieu-chi${buildQuery({ idNam })}`,
+    "Không tải được danh sách tiêu chí thẩm định",
+  );
+  return data.Items || [];
+};
+
+/** Mỗi dòng mang RowVersion của phiếu tại thời điểm người chấm xem danh sách. */
+export const fetchCaNhanThamDinhTieuChi = async (
+  idTieuChi,
+  { idNam, page = 1, pageSize = 500, sortBy = "cu_nhat" } = {},
+) => {
+  const data = await getJson(
+    `tham-dinh/tieu-chi/${idTieuChi}/ca-nhan${buildQuery({ idNam, page, pageSize, sortBy })}`,
+    "Không tải được danh sách cá nhân chờ thẩm định",
+  );
+  return { items: data.Items || [], tongSoDong: data.TongSoDong ?? null };
+};
+
+/** HTTP 200 có thể Success=false: luôn chuyển toàn bộ kết quả từng dòng cho UI. */
+export const duyetThamDinhHangLoat = async ({ items, nhanXet } = {}) => {
+  if (!Array.isArray(items) || items.length === 0 || items.length > 500) {
+    throw new Error("Vui lòng chọn từ 1 đến 500 dòng để duyệt.");
+  }
+  const ids = new Set();
+  for (const item of items) {
+    const id = Number(item.IdChiTiet);
+    if (!Number.isInteger(id) || id <= 0 || !item.RowVersion || ids.has(id)) {
+      throw new Error("Danh sách có dòng thiếu RowVersion hoặc mã dòng không hợp lệ. Vui lòng tải lại.");
+    }
+    ids.add(id);
+  }
+  if ((nhanXet || "").length > 1000) {
+    throw new Error("Nhận xét không được vượt quá 1000 ký tự.");
+  }
+  return sendJson(
+    "tham-dinh/duyet-hang-loat",
+    "POST",
+    {
+      NhanXet: nhanXet || null,
+      Items: items.map(({ IdChiTiet, RowVersion }) => ({ IdChiTiet, RowVersion })),
+    },
+    "Duyệt hàng loạt thất bại",
+  );
+};
+
+export const fetchThangDiemTieuChi = async (idTieuChi) => {
+  const data = await getJson(
+    `thangdiem${buildQuery({ tieuChiId: idTieuChi })}`,
+    "Không tải được thang điểm tiêu chí",
+  );
+  return data.Items || [];
+};
+
 /**
  * Thẩm định có SỬA điểm (dòng 2 → 3).
  *

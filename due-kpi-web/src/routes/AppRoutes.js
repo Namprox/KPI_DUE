@@ -57,8 +57,7 @@ import ThanhTichNckh from "../pages/CaNhan/ThanhTichNckh";
 import KeKhaiThanhTich from "../pages/CaNhan/KeKhaiThanhTich";
 import ChoCham from "../pages/QuanLyChamDiem/ChoCham";
 import DuyetPhieuQuy from "../pages/QuanLyChamDiem/DuyetPhieuQuy";
-// HangDoiThamDinh (hàng đợi theo dòng tiêu chí) đã bị ẩn - xem ghi chú ở
-// menuConfig.js. File màn hình vẫn giữ trong pages/QuanLyChamDiem/.
+import ChamTheoTieuChi from "../pages/QuanLyChamDiem/ChamTheoTieuChi";
 import DanhSachPhieu from "../pages/QuanLyChamDiem/DanhSachPhieu";
 import ChamDiemPhieu from "../pages/QuanLyChamDiem/ChamDiemPhieu";
 import DuyetHoSoKhoa from "../pages/QuanLyChamDiem/DuyetHoSoKhoa";
@@ -219,6 +218,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/mau-giam-tru" element={<MauGiamTru />} />
 
         <Route path="/quan-ly/cho-cham" element={<ChoCham />} />
+        <Route path="/quan-ly/tham-dinh" element={<ChamTheoTieuChi />} />
         <Route path="/quan-ly/phieu-quy" element={<DuyetPhieuQuy />} />
         <Route path="/quan-ly/phieu" element={<DanhSachPhieu />} />
         <Route path="/quan-ly/phieu/:id" element={<ChamDiemPhieu />} />

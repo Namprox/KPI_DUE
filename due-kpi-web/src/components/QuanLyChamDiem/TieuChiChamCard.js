@@ -26,7 +26,7 @@ import {
  * được vào <a href>, việc tải blob do useMinhChungPhieuPreview ở trang cha lo.
  * Liên kết / DOI (loại 2, 3) không có tệp trên đĩa nên mở thẳng DuongDan.
  */
-const MinhChungRow = ({ mc, onXem, onTai }) => {
+export const MinhChungRow = ({ mc, onXem, onTai }) => {
   const nhan = mc.TenHienThi || mc.TenFileGoc || mc.DuongDan;
   if (Number(mc.LoaiNguon) === 11) return <div className="cd-mc-row"><i className="fa-solid fa-user-graduate cd-mc-icon" /><div className="cd-mc-main">
     {mc.MaNguon != null ? <Link className="cd-mc-name" to={`/phat-trien-doi-ngu/${encodeURIComponent(mc.MaNguon)}`}>{mc.TieuDe || "Chi tiết phát triển đội ngũ"}</Link> : <span className="cd-mc-name">{mc.TieuDe || "Phát triển đội ngũ"}</span>}

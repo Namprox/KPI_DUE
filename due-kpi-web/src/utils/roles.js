@@ -52,6 +52,8 @@ export const VAI_TRO_TRUONG_PHONG = [
 export const MOI_NGUOI = "*";
 
 export const ROLE_SETS = {
+  /** Hợp đồng tham-dinh/tieu-chi: TK/TKL/TP hoặc ADMIN. */
+  THAM_DINH_TIEU_CHI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG, ROLE.ADMIN],
   /** Đóng gói và chỉ định ưu tiên tại đúng đơn vị; không gồm cấp phó. */
   TO_TRINH_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ...VAI_TRO_TRUONG_PHONG, ROLE.ADMIN],
   /** Chỉ quản trị viên hệ thống. */

@@ -21,7 +21,7 @@ const bangNhau = (a, b) =>
  * Nhận xét bắt buộc khi điểm chọn lệch điểm giảng viên tự kê khai - server trả
  * 409 THIEU_LY_DO trong đúng trường hợp này.
  */
-const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
+const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan, nhanChuPhieu = "Giảng viên" }) => {
   const diemToiDa = Number(chiTiet.DiemToiDa ?? thangDiem?.diemToiDa ?? 0);
   const loai = thangDiem?.loaiThangDiem ?? LOAI_THANG_DIEM.LIEN_TUC;
 
@@ -65,8 +65,7 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
   const lechDiemGv =
     diemChon !== "" &&
     diemChon != null &&
-    chiTiet.DiemTuDanhGia != null &&
-    Number(diemChon) !== Number(chiTiet.DiemTuDanhGia);
+    Number(diemChon) !== Number(chiTiet.DiemTuDanhGia ?? 0);
 
   const kiemTraDiem = () => {
     if (diemChon === "" || diemChon == null)
@@ -88,7 +87,7 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
     }
     if (lechDiemGv && !nhanXet.trim()) {
       setLoi(
-        "Điểm khác mức giảng viên tự kê khai - bắt buộc ghi lý do điều chỉnh trong ô nhận xét.",
+        `Điểm khác mức ${nhanChuPhieu.toLowerCase()} tự kê khai - bắt buộc ghi lý do điều chỉnh trong ô nhận xét.`,
       );
       return;
     }
@@ -119,7 +118,7 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
 
           <div className="cd-sd-tom-tat">
             <div>
-              <div className="cd-meta-label">Giảng viên tự chấm</div>
+              <div className="cd-meta-label">{nhanChuPhieu} tự chấm</div>
               <div className="cd-sd-so">
                 {formatDiem(chiTiet.DiemTuDanhGia)}
               </div>
@@ -138,7 +137,7 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
 
           {chiTiet.MoTaHoanThanh && (
             <div className="cd-box">
-              <div className="cd-box-title">Giảng viên mô tả</div>
+              <div className="cd-box-title">{nhanChuPhieu} mô tả</div>
               <div className="cd-sd-mo-ta">{chiTiet.MoTaHoanThanh}</div>
             </div>
           )}
@@ -172,7 +171,7 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
                       </span>
                       {muc.id === idMucGv && (
                         <span className="cd-td-cua-gv">
-                          <i className="fa-solid fa-user-check"></i> GV chọn
+                          <i className="fa-solid fa-user-check"></i> {nhanChuPhieu === "Giảng viên" ? "GV" : nhanChuPhieu} chọn
                         </span>
                       )}
                     </label>
@@ -219,7 +218,7 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
               disabled={dangGui}
               placeholder={
                 lechDiemGv
-                  ? "Bắt buộc: nêu lý do điều chỉnh so với mức giảng viên tự kê khai"
+                  ? `Bắt buộc: nêu lý do điều chỉnh so với mức ${nhanChuPhieu.toLowerCase()} tự kê khai`
                   : "Nhận xét của đơn vị (không bắt buộc)"
               }
               onChange={(e) => {
@@ -231,8 +230,8 @@ const SuaDiemModal = ({ chiTiet, thangDiem, dangGui, onDong, onXacNhan }) => {
             {lechDiemGv && (
               <div className="cd-hint cd-hint-warn">
                 <i className="fa-solid fa-circle-info"></i> Mức bạn chọn (
-                {formatDiem(diemChon)}) khác mức giảng viên tự kê khai (
-                {formatDiem(chiTiet.DiemTuDanhGia)}) - phải ghi lý do.
+                {formatDiem(diemChon)}) khác mức {nhanChuPhieu.toLowerCase()} tự kê khai (
+                {formatDiem(chiTiet.DiemTuDanhGia ?? 0)}) - phải ghi lý do.
               </div>
             )}
 

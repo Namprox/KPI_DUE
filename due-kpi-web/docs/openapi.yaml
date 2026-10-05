@@ -11426,6 +11426,156 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ThamDinhPendingResponse"
+  /api/tham-dinh/tieu-chi:
+    get:
+      tags:
+        - ThamDinh
+      summary: Cham theo TIEU CHI - danh sach tieu chi trong pham vi tham dinh
+      description: |
+        Man hinh moi, SONG SONG luong cham theo phieu (luong cu giu nguyen): chon tieu
+        chi -> GET /api/tham-dinh/tieu-chi/{idTieuChi}/ca-nhan -> duyet tung nguoi hoac
+        POST /api/tham-dinh/duyet-hang-loat.
+
+        Pham vi GIONG HET GET /api/tham-dinh/pending: tieu chi duoc phan cong qua
+        tieu_chi_don_vi_cham (CoPhanQuyen = true) + tieu chi CHUA phan quyen cua nguoi
+        thuoc don vi minh (CoPhanQuyen = false, mac dinh don vi chu quan cham). ADMIN
+        thay toan bo. Chi phieu NAM, chi tieu chi cham thu cong.
+
+        Chi tra tieu chi co it nhat 1 dong cho tham dinh / dang bo sung / da chot. Sap
+        xep: SoChoThamDinh giam dan, roi theo thu tu nhom / tieu chi.
+      operationId: thamDinhGetTieuChi
+      parameters:
+        - name: idNam
+          in: query
+          description: Nen luon truyen nam dang danh gia.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThamDinhTieuChiResponse"
+        "400":
+          description: idNam khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThamDinhTieuChiResponse"
+        "403":
+          description: Chi don vi tham dinh (TK/TKL/TP) hoac ADMIN moi xem duoc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThamDinhTieuChiResponse"
+  /api/tham-dinh/tieu-chi/{idTieuChi}/ca-nhan:
+    get:
+      tags:
+        - ThamDinh
+      summary: Cham theo TIEU CHI - danh sach ca nhan cho tham dinh cua 1 tieu chi
+      description: |
+        Chinh la hang doi GET /api/tham-dinh/pending loc theo idTieuChi, khac o 2 diem:
+        pageSize toi da 500 (du de "Duyet toan bo") va mac dinh 100.
+
+        Moi dong co RowVersion (row_version cua PHIEU) de goi ngay
+        POST /api/chitiet/{idChiTiet}/tham-dinh/duyet, PUT .../diem-khoa,
+        POST .../tham-dinh/tra-ve hoac POST /api/tham-dinh/duyet-hang-loat ma khong
+        phai mo phieu.
+      operationId: thamDinhGetCaNhanTheoTieuChi
+      parameters:
+        - name: idTieuChi
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idNam
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 500
+        - name: sortBy
+          in: query
+          description: "moi_nhat = nop sau len truoc; cu_nhat (mac dinh) = FIFO"
+          schema:
+            type: string
+            enum: [moi_nhat, cu_nhat]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThamDinhPendingResponse"
+        "400":
+          description: idTieuChi / idNam / sortBy khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThamDinhPendingResponse"
+        "403":
+          description: Chi don vi tham dinh (TK/TKL/TP) hoac ADMIN moi xem duoc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThamDinhPendingResponse"
+  /api/tham-dinh/duyet-hang-loat:
+    post:
+      tags:
+        - ThamDinh
+      summary: Cham theo TIEU CHI - duyet giu nguyen diem cho nhieu dong
+      description: |
+        Duyet GIU NGUYEN diem chu phieu tu ke khai (dong 2 -> 3) cho DUNG cac dong FE
+        gui len (toi da 500), kem RowVersion da tai. Server KHONG tu lay them dong nao:
+        dong bi doi sau khi tai (vd chu phieu vua nop lai) bi bo qua va bao
+        CONCURRENCY_CONFLICT, khong duyet mu.
+
+        Moi dong di qua DUNG logic cua POST /api/chitiet/{idChiTiet}/tham-dinh/duyet
+        (quyen theo tieu chi, trang thai dong, lich su cham, tu chuyen phieu 2 -> 3 khi
+        dong cuoi duoc chot) va la mot transaction rieng -> thanh cong TUNG PHAN la hop
+        le. Tra 200 kem ket qua tung dong; Success = true chi khi khong dong nao loi.
+
+        Hai dong cung mot phieu trong mot lo -> dong sau loi CONCURRENCY_CONFLICT (phieu
+        da doi row_version). Man hinh theo 1 tieu chi khong gap vi moi phieu chi co 1
+        dong cua tieu chi do.
+      operationId: thamDinhDuyetHangLoat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThamDinhDuyetHangLoatRequest"
+      responses:
+        "200":
+          description: Da xu ly ca lo (xem KetQua tung dong)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThamDinhDuyetHangLoatResponse"
+        "400":
+          description: >-
+            Items rong, qua 500 dong, IdChiTiet <= 0, thieu RowVersion, trung
+            IdChiTiet, hoac NhanXet qua 1000 ky tu. Khong dong nao duoc xu ly.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThamDinhDuyetHangLoatResponse"
+        "403":
+          description: Khong phai truong don vi (TK/TKL/TP) hoac ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThamDinhDuyetHangLoatResponse"
   /api/to-trinh-khoa:
     get:
       tags:
@@ -21543,6 +21693,13 @@ components:
           nullable: true
         SoMinhChung:
           type: integer
+        RowVersion:
+          type: string
+          format: byte
+          nullable: true
+          description: >-
+            row_version cua PHIEU chua dong nay (base64). Dung cho duyet / sua diem /
+            tra ve ngay tren danh sach. NULL neu CSDL chua chay ban SP moi.
     ThamDinhPendingResponse:
       type: object
       properties:
@@ -21559,6 +21716,131 @@ components:
           type: integer
           nullable: true
           description: Tong so dong khop dieu kien (khong phai so dong trong trang hien tai)
+    ThamDinhTieuChiDto:
+      type: object
+      description: Mot TIEU CHI trong man hinh cham theo tieu chi, kem so dem theo trang thai dong
+      properties:
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+          nullable: true
+        TenNhom:
+          type: string
+          nullable: true
+        DiemToiDa:
+          type: number
+          nullable: true
+        LoaiThangDiem:
+          type: integer
+          nullable: true
+          description: 1 roi rac, 2 lien tuc, 3 co/khong, 4 cong thuc
+        LoaiDoiTuong:
+          type: integer
+          description: 1 giang vien, 2 vien chuc/NLD
+        BatBuocMinhChung:
+          type: boolean
+        CoPhanQuyen:
+          type: boolean
+          description: >-
+            true = duoc phan cong qua tieu_chi_don_vi_cham; false = tieu chi mac dinh
+            do truong don vi chu quan cham
+        SoChoThamDinh:
+          type: integer
+          description: So dong cho minh tham dinh (phieu 2, dong 2) = so nguoi can xu ly
+        SoBiTraLaiThamDinh:
+          type: integer
+          description: Trong SoChoThamDinh, so dong Truong khoa tra ve tham dinh lai (NguonTraVe = 3)
+        SoDangBoSung:
+          type: integer
+          description: Dong da tra ve cho chu phieu, chua nop lai (dong 1, NguonTraVe = 2)
+        SoDaChot:
+          type: integer
+          description: Dong da chot diem (dong 3)
+    ThamDinhTieuChiResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ThamDinhTieuChiDto"
+    ThamDinhDuyetHangLoatRequest:
+      type: object
+      properties:
+        NhanXet:
+          type: string
+          nullable: true
+          maxLength: 1000
+          description: Nhan xet chung cho ca lo (tuy chon)
+        Items:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/ThamDinhDuyetHangLoatItem"
+    ThamDinhDuyetHangLoatItem:
+      type: object
+      required:
+        - IdChiTiet
+        - RowVersion
+      properties:
+        IdChiTiet:
+          type: integer
+        RowVersion:
+          type: string
+          format: byte
+          description: RowVersion da tai tu GET .../ca-nhan (row_version cua PHIEU)
+    ThamDinhDuyetHangLoatResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+          description: true chi khi KHONG dong nao loi
+        Message:
+          type: string
+        TongSo:
+          type: integer
+        SoThanhCong:
+          type: integer
+        SoThatBai:
+          type: integer
+        KetQua:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ThamDinhDuyetHangLoatKetQua"
+    ThamDinhDuyetHangLoatKetQua:
+      type: object
+      properties:
+        IdChiTiet:
+          type: integer
+        IdPhieu:
+          type: integer
+          nullable: true
+        Success:
+          type: boolean
+        Message:
+          type: string
+          nullable: true
+        ErrorCode:
+          type: string
+          nullable: true
+          description: >-
+            CONCURRENCY_CONFLICT / INVALID_STATE_DONG / INVALID_STATE /
+            FORBIDDEN_DON_VI / FORBIDDEN / AUTO_SCORED / NOT_FOUND / SQL_ERROR ...
+        TrangThaiPhieu:
+          type: integer
+          nullable: true
+          description: "= 3: dong cuoi cua phieu vua chot, ho so da chuyen Truong khoa"
+        NewRowVersion:
+          type: string
+          format: byte
+          nullable: true
     ToTrinhKhoaDto:
       type: object
       description: Goi KPI cua mot don vi trong mot nam (UNIQUE theo id_nam + id_don_vi)

@@ -264,15 +264,17 @@ export const MENU_GROUPS = [
     icon: "fa-clipboard-check",
     items: [
       {
-        // Giai đoạn 2 - lối vào duy nhất của chuyên viên thẩm định. Hàng đợi
-        // theo TỪNG DÒNG tiêu chí (/quan-ly/tham-dinh) đã bị ẩn khỏi menu và
-        // AppRoutes: nó không xem được minh chứng nên vẫn phải mở hồ sơ để
-        // chấm, thành ra chỉ nhân đôi lối đi. File màn hình vẫn còn ở
-        // pages/QuanLyChamDiem/HangDoiThamDinh.js nếu cần bật lại.
+        // Giai đoạn 2, chấm theo hồ sơ; song song với chấm theo tiêu chí.
         name: "Hồ sơ chờ thẩm định",
         icon: "fa-solid fa-inbox",
         path: "/quan-ly/cho-cham",
         roles: ROLE_SETS.TRUONG_DON_VI,
+      },
+      {
+        name: "Chấm theo tiêu chí",
+        icon: "fa-solid fa-list-check",
+        path: "/quan-ly/tham-dinh",
+        roles: ROLE_SETS.THAM_DINH_TIEU_CHI,
       },
       {
         name: "Chờ tôi chấm KPI đơn vị",
