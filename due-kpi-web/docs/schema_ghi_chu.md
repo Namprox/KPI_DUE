@@ -32,7 +32,7 @@ Mã đơn vị duy nhất còn viết cứng trong SP: `N'P_DTBDCL'` (Phòng Đ�
 Từ đợt "Hoạt động đào tạo" (§16) mã này còn viết cứng ở `fn_hoat_dong_dao_tao_thuoc_phong`,
 `fn_hoat_dong_dao_tao_quyen` và `sp_hoat_dong_dao_tao_nguoi_nhap_ung_vien` (module học vụ §14 cũng
 dùng qua `fn_hoc_vu_co_quyen_quan_ly`) — đổi mã phải sửa cả các chỗ này.
-Từ đợt "Thành tích đoàn thể" (§17) có thêm cặp mã viết cứng `N'P_TCTD'` (đơn vị) + `N'TT'` (chức vụ Tổ trưởng), chỉ
+Từ đợt "Thành tích đoàn thể" (§17) có thêm cặp mã viết cứng `N'P_TCTD'` (đơn vị — Tổ Công tác Đảng - Đoàn thể) + `N'TT'` (chức vụ Tổ trưởng), chỉ
 ở **một** chỗ: `fn_thanh_tich_doan_the_quyen`. Đổi mã tổ / mã chức vụ thì chỉ sửa hàm này.
 Từ đợt "Phát triển đội ngũ" (§18) có thêm mã `N'P_TCHC'` (Phòng Tổ chức – Hành chính), viết cứng ở
 `fn_phat_trien_doi_ngu_thuoc_phong`, `fn_phat_trien_doi_ngu_quyen` và `sp_phat_trien_doi_ngu_nguoi_nhap_ung_vien`
@@ -2793,7 +2793,7 @@ trội"**, trần **50 điểm**, gồm 4 tiêu chí:
 | 4 | Tham gia / tổ chức chương trình, phong trào của Trường | 10 | Đơn vị quản lý trực tiếp + Đơn vị tổ chức |
 
 > **Từ đợt "Sáng kiến" (2026-10-05, §19): tiêu chí 1 KHÔNG còn đi qua module này.** `TTVT_SANG_KIEN` đọc bảng
-> `sang_kien` (đồng bộ NCKH + P_KH nhập tay); `sp_ke_khai_thanh_tich_luu_chi_tiet` chặn dòng loại 1 mới / đổi nội dung
+> `sang_kien` (đồng bộ NCKH + cờ cải tiến do trưởng đơn vị đánh dấu — §19.9); `sp_ke_khai_thanh_tich_luu_chi_tiet` chặn dòng loại 1 mới / đổi nội dung
 > (`SANG_KIEN_DA_CHUYEN`); dòng cũ giữ trong DB nhưng không còn tính điểm. Các mô tả loại 1 bên dưới là lịch sử.
 
 ### 11.0. Vì sao có module này
@@ -4019,7 +4019,7 @@ chấm khi GV nộp phiếu, `POST api/phieu/{id}/tong-hop-tu-dong`, và preview
 | `fn_nckh_diem_tu_dong` | 4 mã vào whitelist + **một** nhánh chung: `EXISTS` bản ghi `da_xoa = 0` của (`@id_nhan_vien`, `@id_nam`, `ma_loai = @cong_thuc`) → `@diem_toi_da`, không có → **0** |
 | `fn_nckh_minh_chung_tu_dong` | Nhánh `loai_nguon = 9` ("Hoạt động đào tạo"): mỗi bản ghi một dòng |
 | `sp_mau_danh_gia_diem_tu_dong` | Cờ `@co_tieu_chi_hddt`: gọi toàn trường thì mở rộng tập GV ra người có bản ghi trong năm. Không thêm result set |
-| `MauDanhGiaService` (C#) | `LyDoDiemTuDong` khi điểm 0: "P_DTBDCL chưa ghi nhận… chạy lại tổng hợp tự động" |
+| `MauDanhGiaService` (C#) | `LyDoDiemTuDong` khi điểm 0: "Phòng Đào tạo và Bảo đảm chất lượng chưa ghi nhận… chấm lại phiếu bằng chức năng Tổng hợp tự động" (từ §21 nằm ở `BLL/DiemTuDongDienGiai.cs`) |
 
 - Chưa có bản ghi → **0**, không phải NULL. NULL ở hàm này nghĩa là "mã chưa hỗ trợ", khi đó engine giữ điểm cũ.
 - Khoá theo `@id_nhan_vien`, **không đọc `@quy`**: giảng viên chỉ có phiếu năm. `ApDungQuy` của 4 mã = false.
@@ -4169,7 +4169,7 @@ POST tạo mới trả 201. Hợp đồng result set như §16.5.
 | `fn_nckh_diem_tu_dong` | 2 mã vào whitelist + **một** nhánh: `EXISTS` bản ghi `da_xoa = 0` của (`@id_nhan_vien`, `@id_nam`, `ma_loai = @cong_thuc`) → `@diem_toi_da`, không có → **0** |
 | `fn_nckh_minh_chung_tu_dong` | Nhánh `loai_nguon = 10` ("Thành tích đoàn thể"): mỗi bản ghi một dòng; `ma_nguon` = `id_thanh_tich`, `tieu_de` = `noi_dung`, `mo_ta` = tên loại + cơ quan ghi nhận + số / ngày QĐ + ghi chú, `ngay` = `ngay_quyet_dinh` (có thể NULL) |
 | `sp_mau_danh_gia_diem_tu_dong` | Cờ `@co_tieu_chi_ttdt`: gọi toàn trường thì mở rộng tập GV ra người có bản ghi trong năm |
-| `MauDanhGiaService` (C#) | `LyDoDiemTuDong` khi điểm 0: "Tổ trưởng P_TCTD chưa ghi nhận… chạy lại tổng hợp tự động" |
+| `MauDanhGiaService` (C#) | `LyDoDiemTuDong` khi điểm 0: "Tổ trưởng Tổ Công tác Đảng - Đoàn thể chưa ghi nhận… chấm lại phiếu bằng chức năng Tổng hợp tự động" (từ §21 nằm ở `BLL/DiemTuDongDienGiai.cs`) |
 
 - **Bất biến:** vị từ lọc (`id_nhan_vien` + `id_nam` + `da_xoa = 0` + `ma_loai`) giống hệt nhau ở hai hàm.
 - Không đọc `@quy`. `sp_phieu_quy_create` / tripwire phiếu năm VC **không** mở cổng cho 2 mã (chỉ dùng cho GV).
@@ -4300,7 +4300,7 @@ hạng mục) trả 201. Hợp đồng result set như §16.5.
 | `fn_nckh_diem_tu_dong` | 3 mã vào whitelist + **một** nhánh: `EXISTS` bản ghi `da_xoa = 0` của (`@id_nhan_vien`, `@id_nam`, `ma_loai = @cong_thuc`) → `@diem_toi_da`, không có → **0** |
 | `fn_nckh_minh_chung_tu_dong` | Nhánh `loai_nguon = 11` ("Phát triển đội ngũ"): mỗi bản ghi một dòng; `ma_nguon` = `id_ban_ghi`, `tieu_de` = tên hạng mục (+ chi tiết), `mo_ta` = tên loại + số / ngày QĐ + ghi chú, `ngay` = `ngay_quyet_dinh` (có thể NULL) |
 | `sp_mau_danh_gia_diem_tu_dong` | Cờ `@co_tieu_chi_ptdn`: gọi toàn trường thì mở rộng tập GV ra người có bản ghi trong năm |
-| `MauDanhGiaService` (C#) | `GanLyDoDiemPhatTrienDoiNgu`: `LyDoDiemTuDong` khi điểm 0 — "Phong To chuc - Hanh chinh chua ghi nhan… chay lai tong hop tu dong" |
+| `MauDanhGiaService` (C#) | `GanLyDoDiemPhatTrienDoiNgu`: `LyDoDiemTuDong` khi điểm 0 — "Phòng Tổ chức – Hành chính chưa ghi nhận… chấm lại phiếu bằng chức năng Tổng hợp tự động" (từ §21 nằm ở `BLL/DiemTuDongDienGiai.cs`) |
 
 - **Bất biến:** vị từ lọc (`id_nhan_vien` + `id_nam` + `da_xoa = 0` + `ma_loai`) giống hệt nhau ở hai hàm. Hạng mục ngừng
   dùng không bị lọc ở cả hai.
@@ -4319,7 +4319,11 @@ hạng mục) trả 201. Hợp đồng result set như §16.5.
 
 ---
 
-## 19. SÁNG KIẾN — ĐỒNG BỘ NCKH + P_KH NHẬP TAY (`sang_kien`) → nguồn tiêu chí GV `SK_DOI_MOI_GIANG_DAY` và tiêu chí VC `TTVT_SANG_KIEN`
+## 19. SÁNG KIẾN — ĐỒNG BỘ NCKH + 2 CỜ ĐÁNH DẤU (`sang_kien`) → nguồn tiêu chí GV `SK_DOI_MOI_GIANG_DAY` và tiêu chí VC `TTVT_SANG_KIEN`
+
+> **Đợt 2026-10-06 #3 — bỏ nhập tay, thêm cờ "Cải tiến công việc" (xem 19.9).** Hệ thống NCKH đã kê khai sáng kiến cho
+> **mọi người** (GV lẫn VC) nên luồng P_KH nhập tay bị bỏ; VC được cộng 5 khi **trưởng đơn vị** đánh dấu cải tiến. Các
+> mục 19.0 – 19.6 bên dưới đã cập nhật theo đợt này; chỗ nào còn nói "nhập tay" là mô tả dữ liệu cũ.
 
 ### 19.0. Vì sao có module này
 
@@ -4327,8 +4331,8 @@ Hai tiêu chí liên quan tới sáng kiến:
 
 | Đối tượng | Mã công thức | Câu chữ tiêu chí | Cách tính |
 |---|---|---|---|
-| Giảng viên | `SK_DOI_MOI_GIANG_DAY` (**mã mới**) | Có sáng kiến trong Đổi mới, sáng tạo trong giảng dạy (phương pháp giảng dạy, kiểm tra đánh giá, học liệu, LMS) được DUE công nhận | Có / không: ≥ 1 sáng kiến → đủ `diem_toi_da` |
-| Viên chức / NLĐ | `TTVT_SANG_KIEN` (**mã cũ, đổi nguồn**) | Có sáng kiến, cải tiến công việc được công nhận (30 đ) | Cộng dồn: cấp Bộ trở lên 20 / cấp Trường 10 / cải tiến công việc 5 mỗi lần, trần 30 |
+| Giảng viên | `SK_DOI_MOI_GIANG_DAY` (**mã mới**) | Có sáng kiến trong Đổi mới, sáng tạo trong giảng dạy (phương pháp giảng dạy, kiểm tra đánh giá, học liệu, LMS) được DUE công nhận | Có / không: ≥ 1 sáng kiến được P_KH đánh dấu → đủ `diem_toi_da` |
+| Viên chức / NLĐ | `TTVT_SANG_KIEN` (**mã cũ, đổi nguồn**) | Có sáng kiến, cải tiến công việc được công nhận (30 đ) | Mỗi sáng kiến: cấp Bộ trở lên 20 / cấp Trường (+ ĐHĐN) 10, **cộng thêm 5** nếu trưởng đơn vị đánh dấu "Cải tiến công việc, tham mưu chính trong việc ban hành các quy định, giải quyết các công việc tại đơn vị được công nhận"; trần 30 |
 
 Phía NCKH (`NckhApiUrl`) có `GET /api/kpiinitiative`, trả sáng kiến của **mọi** người dùng NCKH (giảng viên lẫn viên chức),
 **toàn thời gian**. Mỗi phần tử là 1 người dùng (`UserId`, `FullName`, `Email`) kèm mảng `Initiatives`
@@ -4338,19 +4342,23 @@ Phía NCKH (`NckhApiUrl`) có `GET /api/kpiinitiative`, trả sáng kiến của
 Hai vấn đề mà dữ liệu thô không tự giải quyết được:
 1. API **không cho biết** sáng kiến có thuộc giảng dạy hay không (`SolutionType` chỉ là lĩnh vực khoa học) ⇒ cần **P_KH
    đánh dấu** cho tiêu chí GV.
-2. Viên chức có sáng kiến **không nằm trên NCKH** (cấp Bộ, cải tiến công việc) ⇒ cần **nhập tay**.
+2. API **không cho biết** sáng kiến có phải "cải tiến công việc … tại đơn vị" hay không ⇒ cần **trưởng đơn vị đánh dấu**
+   cho phần +5 của tiêu chí VC (đợt 2026-10-06 #3). *(Đợt 2026-10-05 tưởng VC không có trên NCKH nên làm luồng P_KH
+   nhập tay — đã bỏ.)*
 
-Quyết định đã chốt với người dùng (2026-10-05): **MỘT bảng chung** cho cả hai nguồn; **bỏ** luồng viên chức tự kê khai
-sáng kiến (`ke_khai_thanh_tich_vuot_troi` loại 1), chuyển sang **P_KH** ghi nhận; nhập tay **chỉ cho viên chức**, giảng
-viên chỉ có dữ liệu đồng bộ.
+Quyết định đã chốt với người dùng (2026-10-05): **MỘT bảng chung**; **bỏ** luồng viên chức tự kê khai sáng kiến
+(`ke_khai_thanh_tich_vuot_troi` loại 1). Đợt 2026-10-06 #3: **chỉ còn dữ liệu đồng bộ NCKH** + 2 cờ.
 
 ### 19.1. Bảng
 
 - **`cap_sang_kien`** — **cố định 4 dòng**: `CAP_DHDN` 10 · `CAP_TRUONG` 10 · `CAP_BO` 20 · `CAI_TIEN_CONG_VIEC` 5.
   - `ten_nguon` = **đúng text** `InitiativeLevel` của NCKH ("Cấp cơ sở (ĐHĐN)", "Cấp cơ sở (Trường)", "Cấp Bộ"), dùng để
-    ánh xạ khi đồng bộ (filtered unique `ux_cap_sk_ten_nguon`). `NULL` = chỉ nhập tay (cải tiến công việc).
+    ánh xạ khi đồng bộ (filtered unique `ux_cap_sk_ten_nguon`).
   - `diem_vien_chuc` = điểm / sáng kiến của tiêu chí VC. Trần thật vẫn là `tieu_chi_danh_gia.diem_toi_da` (30).
   - Cấp cơ sở (ĐHĐN) tính **10** như cấp Trường (đã chốt với người dùng).
+  - Dòng **`CAI_TIEN_CONG_VIEC`** (`ten_nguon` NULL) từ đợt 2026-10-06 #3 **không còn là cấp** của sáng kiến:
+    `diem_vien_chuc` của nó là **điểm cộng thêm** khi cờ `la_cai_tien_cong_viec = 1` (`fn_sang_kien_hop_le` đọc theo
+    `ma_cap`; `GET danh-muc` trả riêng ở `DiemCaiTienCongViec`). Giữ dòng vì dòng nhập tay cũ còn tham chiếu FK.
 - **`loai_giai_phap_sang_kien`** — **cố định 7 dòng**, `ten_loai` = đúng text `SolutionType` của NCKH. Chỉ để hiển thị /
   lọc, **không** ảnh hưởng điểm.
 - **`sang_kien`** — **1 dòng = 1 sáng kiến**.
@@ -4364,6 +4372,10 @@ viên chỉ có dữ liệu đồng bộ.
     đánh giá tạo sau vẫn tự đúng mà không phải đồng bộ lại.
   - Cột xét **"đổi mới giảng dạy"**: `la_doi_moi_giang_day` (NULL chưa xét / 1 có / 0 không) + `id_nguoi_xet`,
     `ngay_xet`, `ghi_chu_xet`. **Chỉ dòng đồng bộ** có giá trị (`chk_sk_xet_nguon`). Đồng bộ lại **không** ghi đè.
+  - Cột xét **"cải tiến công việc"** (đợt 2026-10-06 #3): `la_cai_tien_cong_viec` (NULL / 1 / 0) +
+    `id_nguoi_xet_cai_tien` (FK `fk_sk_nguoi_xet_ct`), `ngay_xet_cai_tien`, `ghi_chu_xet_cai_tien`. **1 cờ cho cả sáng
+    kiến**; chỉ dòng đồng bộ (`chk_sk_cai_tien_nguon`); có giá trị ⇒ có ngày xét (`chk_sk_cai_tien`). Đồng bộ lại **không**
+    ghi đè.
   - `con_o_nguon` = 0: lần đồng bộ gần nhất **không còn thấy** sáng kiến ⇒ giữ dòng (kèm kết quả xét) nhưng **không tính**.
   - Xoá **mềm** chỉ cho dòng nhập tay (`chk_sk_xoa_nguon`).
 - **`sang_kien_tac_gia`** — 1 dòng = 1 tác giả. **Không có tác giả chính** (người dùng chốt: chỉ lưu danh sách tác giả,
@@ -4384,9 +4396,11 @@ viên chỉ có dữ liệu đồng bộ.
   - Filtered unique `(id_sang_kien, id_nhan_vien)` và `(id_sang_kien, ma_nguoi_dung_nckh)`. Hai tài khoản NCKH cùng khớp
     1 nhân viên trong 1 sáng kiến ⇒ chỉ dòng đầu giữ `id_nhan_vien`.
 - **`sang_kien_nguoi_nhap`** — ủy quyền, clone §18 (`ux_sknn_nv WHERE da_thu_hoi = 0`).
-- **`lich_su_sang_kien`** — `hanh_dong`: 1 Tạo · 2 Sửa · 3 Xoá · 4 Xét đổi mới giảng dạy · 5 Đồng bộ (1 dòng tóm tắt / lần,
-  `id_sang_kien` NULL) · 6 Cấp quyền nhập · 7 Thu hồi quyền nhập (`id_nhan_vien` = người được cấp).
-- TVP: `SangKienNckhRow` (payload làm phẳng, 1 dòng / (UserId × InitiativeId)), `SangKienTacGiaRow`, `SangKienXetRow`.
+- **`lich_su_sang_kien`** — `hanh_dong`: 1 Tạo · 2 Sửa · 3 Xoá (1–3 chỉ còn ở dữ liệu nhập tay cũ) · 4 Xét đổi mới giảng
+  dạy · 5 Đồng bộ (1 dòng tóm tắt / lần, `id_sang_kien` NULL) · 6 Cấp quyền nhập · 7 Thu hồi quyền nhập (`id_nhan_vien` =
+  người được cấp) · **8 Xét cải tiến công việc** (`chk_lssk_hd` 1..8).
+- TVP: `SangKienNckhRow` (payload làm phẳng, 1 dòng / (UserId × InitiativeId)), `SangKienXetRow`, `SangKienXetCaiTienRow`
+  (đợt 2026-10-06 #3; `SangKienTacGiaRow` của luồng nhập tay bị DROP).
   Định nghĩa có ở **cả** `schema.sql` §19.7 và `procedure.sql` mục 19 — sửa một bên phải sửa cả bên kia.
 
 ### 19.2. Đồng bộ — `POST api/sang-kien/dong-bo` → `sp_sang_kien_dong_bo`
@@ -4405,19 +4419,18 @@ viên chỉ có dữ liệu đồng bộ.
 
 ### 19.3. Quy tắc nghiệp vụ — đã chốt với người dùng (2026-10-05)
 
-1. **Một vị từ duy nhất** `dbo.fn_sang_kien_hop_le(@id_nhan_vien, @id_nam)`: `da_xoa = 0`, (`nguon = 2` hoặc
-   `con_o_nguon = 1`), ngày công nhận trong năm, người đó là tác giả. Engine điểm, minh chứng, preview và báo cáo tổng hợp
-   kê khai **đều đọc hàm này** ⇒ không còn bất biến "chép từng chữ" giữa hai hàm như §16–18.
+1. **Một vị từ duy nhất** `dbo.fn_sang_kien_hop_le(@id_nhan_vien, @id_nam)`: `da_xoa = 0`, `nguon = 1` **và**
+   `con_o_nguon = 1` (từ đợt 2026-10-06 #3 — trước đó dòng nhập tay luôn tính), ngày công nhận trong năm, người đó là
+   tác giả. Hàm trả sẵn `diem_cap`, `diem_cai_tien`, `diem_vien_chuc` (= tổng). Engine điểm, minh chứng, preview và báo
+   cáo tổng hợp kê khai **đều đọc hàm này** ⇒ không còn bất biến "chép từng chữ" giữa hai hàm như §16–18.
 2. **GV** (`SK_DOI_MOI_GIANG_DAY`): ≥ 1 dòng hợp lệ có `la_doi_moi_giang_day = 1` ⇒ đủ điểm; chỉ phiếu năm, không đọc
-   `@quy`. Nhập tay **không** vào được tiêu chí GV (CHECK + SP chặn xét dòng nhập tay — `DONG_NHAP_TAY`).
-3. **VC** (`TTVT_SANG_KIEN`): `SUM(diem_vien_chuc)` của các dòng hợp lệ **có cấp** (cả 2 nguồn), lọc quý khi phiếu quý,
-   sàn 0, trần `diem_toi_da`. Giữ nguyên hợp đồng "TTVT_* biết lọc quý" (`sp_phieu_quy_create`, `ap_dung_quy`, tripwire
-   không đổi).
-4. Nhập tay: **chỉ viên chức** (`KHONG_PHAI_VIEN_CHUC`; khi sửa chỉ kiểm tác giả **mới**); `ngay_cong_nhan` phải thuộc một
-   năm đánh giá (nếu không sẽ không bao giờ được tính → `INVALID`); chống trùng `TRUNG_SANG_KIEN` theo (tác giả, tên
-   **hoặc** số chứng nhận chuẩn hoá) so với **mọi** dòng còn hiệu lực, **kể cả dòng đồng bộ** — tránh P_KH nhập lại một
-   sáng kiến cấp Trường đã có từ NCKH ⇒ cộng 2 lần.
-5. Dòng đồng bộ không sửa / xoá được qua API (`DONG_DONG_BO`): sửa trên NCKH rồi đồng bộ lại.
+   `@quy`.
+3. **VC** (`TTVT_SANG_KIEN`): `SUM(diem_vien_chuc)` của các dòng hợp lệ có `diem_vien_chuc > 0`, lọc quý khi phiếu quý,
+   sàn 0, trần `diem_toi_da`. `diem_vien_chuc` = điểm cấp (cấp không nhận diện = 0) **+** điểm dòng `CAI_TIEN_CONG_VIEC`
+   (5) khi `la_cai_tien_cong_viec = 1` ⇒ sáng kiến không nhận diện cấp nhưng được đánh dấu cải tiến vẫn được 5. Giữ
+   nguyên hợp đồng "TTVT_* biết lọc quý" (`sp_phieu_quy_create`, `ap_dung_quy`, tripwire không đổi).
+4. *(Đã bỏ đợt 2026-10-06 #3)* Nhập tay chỉ viên chức, chống trùng `TRUNG_SANG_KIEN`, `KHONG_PHAI_VIEN_CHUC`.
+5. Dòng đồng bộ không sửa / xoá được qua API: sửa trên NCKH rồi đồng bộ lại.
 6. **Kê khai cũ loại 1** (§11): `sp_ke_khai_thanh_tich_luu_chi_tiet` chặn dòng **mới / đổi nội dung** thuộc mục loại 1
    (`SANG_KIEN_DA_CHUYEN`, 422); dòng cũ giữ nguyên trong DB, **không còn tính điểm**, P_KH nhập lại nếu cần (người dùng
    chọn). `sp_ke_khai_thanh_tich_result_sets` cho loại 1 `diem_duoc_tinh = 0` + cảnh báo `SANG_KIEN_DA_CHUYEN`;
@@ -4430,9 +4443,11 @@ viên chỉ có dữ liệu đồng bộ.
 | Cột | Điều kiện | Được làm |
 |---|---|---|
 | `la_quan_ly` | ADMIN, hoặc TP / QTP **tại** `P_KH` | Toàn quyền + cấp / thu hồi ủy quyền |
-| `duoc_nhap` | `la_quan_ly`, **hoặc** có ủy quyền chưa thu hồi **và** hôm nay vẫn thuộc P_KH | Đồng bộ, nhập / sửa / xoá, xét giảng dạy, picker viên chức |
+| `duoc_nhap` | `la_quan_ly`, **hoặc** có ủy quyền chưa thu hồi **và** hôm nay vẫn thuộc P_KH | Đồng bộ, xét giảng dạy |
 | `xem_tat_ca` | `duoc_nhap`, hoặc HT | Xem toàn trường |
 | `xem_theo_don_vi` | Trưởng đơn vị (`fn_chuc_vu_truong_don_vi`) ở ≥ 1 đơn vị | Xem sáng kiến có tác giả thuộc đơn vị mình |
+| `duoc_xet_cai_tien` | ADMIN, HT, hoặc trưởng đơn vị | Mở màn xét cải tiến công việc |
+| `xet_cai_tien_tat_ca` | ADMIN hoặc HT | Xét cải tiến **mọi** sáng kiến (trưởng đơn vị: theo dòng, xem 19.9) |
 
 - Người còn lại xem sáng kiến mà **mình là tác giả** (`fn_sang_kien_nhan_vien_duoc_xem` = chính mình + nhân sự hiệu lực
   hôm nay của các đơn vị mình làm trưởng).
@@ -4441,9 +4456,9 @@ viên chỉ có dữ liệu đồng bộ.
 
 ### 19.5. Mã lỗi + HTTP
 
-`FORBIDDEN` 403 · `NOT_FOUND` 404 · `INVALID` 400 · `KHONG_PHAI_VIEN_CHUC` / `KHONG_THUOC_PHONG` / `DONG_DONG_BO` /
-`DONG_NHAP_TAY` 422 · `TRUNG_SANG_KIEN` / `DA_DUOC_CAP` / `DANG_DONG_BO` 409 · `DB_ERROR` 500 · lỗi API NCKH
-(`NCKH_API_ERROR` / `NCKH_API_RONG`) 502. POST tạo mới trả 201. Hợp đồng result set như §16.5.
+`FORBIDDEN` 403 · `NOT_FOUND` 404 · `INVALID` 400 · `KHONG_THUOC_PHONG` / `DONG_NHAP_TAY` 422 · `DA_DUOC_CAP` /
+`DANG_DONG_BO` 409 · `DB_ERROR` 500 · lỗi API NCKH (`NCKH_API_ERROR` / `NCKH_API_RONG`) 502. Hợp đồng result set như
+§16.5. (`KHONG_PHAI_VIEN_CHUC` / `TRUNG_SANG_KIEN` / `DONG_DONG_BO` và 201 chỉ có ở luồng nhập tay — đã bỏ.)
 
 ### 19.6. Nối vào chấm tự động
 
@@ -4451,7 +4466,7 @@ viên chỉ có dữ liệu đồng bộ.
 |---|---|
 | `fn_sang_kien_hop_le` (MỚI) | Vị từ chung — **phải tạo trước** `fn_nckh_minh_chung_tu_dong` (inline TVF tham chiếu inline TVF khác phải có sẵn lúc CREATE) |
 | `fn_nckh_diem_tu_dong` | Whitelist + `SK_DOI_MOI_GIANG_DAY`; nhánh `TTVT_SANG_KIEN` **tách riêng** đọc `fn_sang_kien_hop_le`; khối TTVT chung chỉ còn loại 2 / 3 / 4 |
-| `fn_nckh_minh_chung_tu_dong` | Bỏ `TTVT_SANG_KIEN` khỏi nhánh 7; nhánh **`loai_nguon = 12` "Sáng kiến"** cho cả 2 mã (`ma_nguon` = `id_sang_kien`; `mo_ta` = cấp (+ điểm + quý với VC) + nguồn + số chứng nhận) |
+| `fn_nckh_minh_chung_tu_dong` | Bỏ `TTVT_SANG_KIEN` khỏi nhánh 7; nhánh **`loai_nguon = 12` "Sáng kiến"** cho cả 2 mã (`ma_nguon` = `id_sang_kien`; `mo_ta` = cấp (+ "+ Cải tiến công việc" + điểm + quý với VC) + "Đồng bộ NCKH" + số chứng nhận) |
 | `sp_mau_danh_gia_diem_tu_dong` | Cờ `@co_tieu_chi_sk`: gọi toàn trường thì mở rộng tập người ra tác giả có sáng kiến hợp lệ trong năm |
 | `MauDanhGiaService` (C#) | `GanLyDoDiemSangKien` cho cả 2 mã; `GanLyDoDiemThanhTichVuotTroi` bỏ qua `TTVT_SANG_KIEN` (câu nhắc "kê khai" không còn đúng) |
 
@@ -4461,6 +4476,45 @@ viên chỉ có dữ liệu đồng bộ.
   (`loai_thang_diem = 1` → `thang_diem` cần mức `= diem_toi_da` và mức `= 0`).
 - Tiêu chí VC `TTVT_SANG_KIEN` giữ nguyên (KT3); `diem_toi_da` phải là 30.
 - Phiếu đã tạo không nhận mã mới (snapshot). Phiếu VC đang có điểm `TTVT_SANG_KIEN` từ nguồn cũ (KT5) đổi khi chấm lại.
+
+### 19.9. Đợt 2026-10-06 #3 — bỏ nhập tay + cờ "Cải tiến công việc" do trưởng đơn vị đánh dấu
+
+**Lý do.** Hệ thống NCKH đã kê khai sáng kiến cho **tất cả** mọi người (GV lẫn VC), nên luồng P_KH nhập tay cho VC (dựng
+ở đợt 2026-10-05 vì tưởng VC không có trên NCKH) thừa. Điều duy nhất NCKH không cho biết với VC là sáng kiến có phải
+"cải tiến công việc, tham mưu chính … tại đơn vị" hay không.
+
+**Đã chốt với người dùng (2026-10-06):**
+
+| # | Quyết định |
+|---|---|
+| 1 | **Bỏ hẳn nhập tay**: DROP `sp_sang_kien_create / _update / _delete / _vien_chuc_list` + TVP `SangKienTacGiaRow`; gỡ `POST /api/sang-kien`, `PUT` / `DELETE /api/sang-kien/{id}`, `GET /api/sang-kien/vien-chuc` (giờ 404). Dòng nhập tay cũ còn hiệu lực bị **xoá mềm** trong migration (in số dòng trước; `id_nguoi_xoa` NULL + `ngay_xoa` = lúc chạy — đảo được). |
+| 2 | VC: cấp Bộ **20** / cấp Trường **10** mỗi sáng kiến (ĐHĐN giữ 10) — tự động theo `InitiativeLevel`. |
+| 3 | Cờ **cải tiến công việc** → **cộng thêm** điểm dòng `CAI_TIEN_CONG_VIEC` (5): cấp Trường + cải tiến = 15. Trần 30. |
+| 4 | Cờ gắn với **cả sáng kiến** (mọi tác giả hưởng); trưởng đơn vị nào có tác giả trong sáng kiến cũng đổi được (đè nhau, lịch sử `hanh_dong = 8` giữ vết). |
+| 5 | Cờ GV "đổi mới giảng dạy" **giữ nguyên** (P_KH, `POST /xet-giang-day`). |
+
+**Giả định (người dùng chưa nói, chọn theo tiền lệ — sửa nếu khác):**
+- Ai được đánh dấu: **ADMIN / HT** mọi sáng kiến; **trưởng đơn vị** (`fn_chuc_vu_truong_don_vi`) chỉ sáng kiến có ≥ 1 tác
+  giả là nhân sự **hôm nay** của đơn vị mình làm trưởng, **trừ chính mình** (`fn_sang_kien_nhan_vien_xet_cai_tien`) —
+  không tự đánh dấu cho sáng kiến chỉ có mình là tác giả trong đơn vị (tiền lệ "Trưởng khoa không tự duyệt gói");
+  HT / ADMIN lo phần đó.
+- Không giới hạn chỉ sáng kiến có tác giả VC (cờ chỉ ảnh hưởng `TTVT_SANG_KIEN`; FE lọc `doiTuong=2`).
+
+**Thay đổi:**
+
+| Nơi | Thay đổi |
+|---|---|
+| `sang_kien` | + `la_cai_tien_cong_viec`, `id_nguoi_xet_cai_tien`, `ngay_xet_cai_tien`, `ghi_chu_xet_cai_tien` + `fk_sk_nguoi_xet_ct`, `chk_sk_cai_tien_nguon`, `chk_sk_cai_tien` |
+| `lich_su_sang_kien` | `chk_lssk_hd` 1..8 |
+| `fn_sang_kien_hop_le` | Chỉ `nguon = 1`; + `la_cai_tien_cong_viec`, `diem_cap`, `diem_cai_tien`; `diem_vien_chuc` = tổng |
+| `fn_nckh_diem_tu_dong` / `fn_nckh_minh_chung_tu_dong` (nhánh 12) / `sp_ke_khai_thanh_tich_tong_hop` | Lọc VC `id_cap IS NOT NULL` → `diem_vien_chuc > 0` |
+| `fn_sang_kien_quyen` | + `duoc_xet_cai_tien`, `xet_cai_tien_tat_ca` (+ `la_admin` nội bộ) |
+| `fn_sang_kien_nhan_vien_xet_cai_tien` (MỚI) | Nhân sự hôm nay của đơn vị mình làm trưởng, trừ chính mình |
+| `sp_sang_kien_xet_cai_tien` (MỚI) | Clone `sp_sang_kien_xet_giang_day`; all-or-nothing: NOT_FOUND (không có / đã xoá / không phải đồng bộ), FORBIDDEN liệt kê dòng ngoài phạm vi |
+| `sp_sang_kien_list` / `_get_by_id` | + 5 cột cờ cải tiến, `cho_phep_xet_cai_tien` (cùng luật SP xét); bỏ `cho_phep_sua`; list + `@trang_thai_cai_tien`, RS1 + `duoc_xet_cai_tien` |
+| `sp_sang_kien_quyen` | + `duoc_xet_cai_tien` |
+| `sp_sang_kien_danh_muc` | RS1 + `diem_cai_tien_cong_viec`; RS2 chỉ cấp có `ten_nguon`; bỏ `chi_nhap_tay` |
+| Không đổi | `sp_sang_kien_dong_bo` (MERGE liệt kê cột tường minh, không đụng cột cờ), `sp_sang_kien_xet_giang_day`, `sp_mau_danh_gia_diem_tu_dong` (chỉ `EXISTS`), câu báo `SANG_KIEN_DA_CHUYEN` của `sp_ke_khai_thanh_tich_luu_chi_tiet` (vẫn ghi "P_KH ghi nhận" — đổi phải chép lại cả SP) |
 
 ---
 
@@ -4514,3 +4568,114 @@ phản hồi SV mọi lỗi khác 400; lỗi API NCKH 502. `DELETE api/phanhoisi
 
 Chạy `update_database.sql` **trước**, deploy C# **sau**. C# mới gọi 2 SP hỏi quyền mới; deploy C# trước thì đồng bộ
 NCKH / import phản hồi SV lỗi 500 cho tới khi chạy script.
+
+---
+
+## 21. XEM ĐIỂM TỰ ĐỘNG TRÊN PHIẾU + SIẾT XEM TRƯỚC THEO MẪU (2026-10-06 #2)
+
+### 21.0. Vì sao có đợt này
+
+10 tiêu chí GV vừa chuyển sang chấm tự động (§16 `CTDT_*` / `NCS_*`, §17 `TTDT_*`, §18 `PTDN_*`, §19
+`SK_DOI_MOI_GIANG_DAY`). GV đã xem được bản ghi nguồn của mình (list / `{id}` của 4 module) và điểm trên phiếu
+(`GET api/phieu/me/{idNam}`). Còn **minh chứng + lý do 0 điểm theo từng tiêu chí** thì chỉ lấy được qua
+`GET api/maudanhgia/{id}/diem-tu-dong?idNhanVien=`, và các tài liệu FE §16–§19 đang chỉ dùng route này cho GV. Route đó
+có hai vấn đề:
+
+1. **Không kiểm quyền**: ai đăng nhập cũng đọc được vi phạm giảng dạy / điểm trừ / kỷ luật / phản hồi SV / bài báo của
+   người khác, hoặc cả trường (bỏ trống `idNhanVien`).
+2. **Không gắn phiếu**: tính trên tiêu chí hiện tại của mẫu, nên bỏ qua `cong_thuc_snapshot`, quý của phiếu và luật
+   "mỗi (người, năm, quý) chỉ 1 phiếu nhận điểm tự động" (§10.7).
+
+### 21.1. `GET api/phieu/{id}/tu-dong` → `sp_phieu_tu_dong_chi_tiet` (chỉ đọc)
+
+Mỗi dòng `chi_tiet_danh_gia` có `loai_nguon_diem = 2` của phiếu, kèm:
+
+- **Đã ghi**: `diem_da_ghi` (`ct.diem_tu_dong`), `diem_chinh_thuc`, `id_thang_diem_da_ghi`, `ngay_tu_dong`, `trang_thai_dong`.
+- **Tính lại**: `diem_tu_dong` = `fn_nckh_diem_tu_dong(ct.cong_thuc_snapshot, …, tc.diem_toi_da, …, quy của phiếu)`, tức
+  **cùng lời gọi với engine** (`sp_phieu_cham_tu_dong_apply`). Vì vậy tính lại lệch đã ghi chỉ khi dữ liệu nguồn đã đổi
+  sau lần chấm. BLL đặt `CanChamLai` = `DiemDaGhi` có giá trị **và** khác `DiemTuDong`.
+- **Minh chứng**: `fn_nckh_minh_chung_tu_dong` (consumer thứ 3, sau `sp_nckh_dong_bo` và preview theo mẫu).
+- **Lý do 0 điểm**: `BLL/DiemTuDongDienGiai.cs`, dùng chung với preview theo mẫu.
+  Câu lý do viết **tiếng Việt có dấu** và hiện nguyên văn cho người dùng cuối: gọi tên đơn vị / chức năng
+  ("Phòng Tổ chức – Hành chính", "chức năng Tổng hợp tự động") thay cho mã đơn vị, mã công thức và đường dẫn API.
+
+Phiếu không phải phiếu nhận điểm tự động → `la_phieu_nhan_tu_dong = 0`: RS2 vẫn liệt kê dòng nhưng `diem_tu_dong`
+NULL, RS4 rỗng. Engine cũng không bao giờ chấm phiếu đó.
+
+**Bất biến chép (không gọi)**, sửa một nơi phải sửa cả nơi kia:
+
+| Phần | Chép từ |
+|---|---|
+| Cổng xem phiếu năm | `sp_phieu_danh_gia_get_detail`: chủ phiếu · HT / ADMIN · trưởng đơn vị chủ quản (+ cây con) · trưởng đơn vị được giao chấm ≥ 1 tiêu chí |
+| Cổng xem phiếu quý | `sp_phieu_quy_get_detail`: chủ phiếu · HT / ADMIN · `fn_chuc_vu_can_ht_duyet()` tại đơn vị phiếu |
+| Chọn phiếu nhận điểm tự động + khớp `@ma_nckh` qua email | `sp_phieu_cham_tu_dong_apply` |
+| Tên cột RS2 (`gio_*` / `bbqt_*`), RS3, RS4 | `sp_mau_danh_gia_diem_tu_dong`: C# đọc chung bằng `DAL/DiemTuDongReader.cs` |
+
+Không qua cổng → `NOT_FOUND` (404), giống `GET api/phieu/{id}`: không lộ phiếu có tồn tại hay không.
+
+### 21.2. Siết `sp_mau_danh_gia_diem_tu_dong`
+
+Thêm `@current_user_id`, `@current_user_chuc_vu`, `@current_user_don_vi`, **không mặc định**: quên truyền là lỗi gọi SP,
+không âm thầm thành "ai cũng xem được". Cổng **sao y** `sp_gio_giang_ty_le_hoan_thanh` (chép, không gọi):
+
+| Người gọi | Được xem |
+|---|---|
+| ADMIN / HT | Mọi người, kể cả `@id_nhan_vien` NULL (toàn trường) |
+| `@id_nhan_vien` = chính mình | Tự xem |
+| Trưởng đơn vị (`fn_chuc_vu_truong_don_vi`) | Nhân sự có dòng `nhan_vien_chuc_vu` hiệu lực hôm nay (`la_goc = 1`) tại đơn vị mình giữ chức vụ trưởng + cây con. `@id_nhan_vien` NULL → tập người bị lọc theo phạm vi; ngoài phạm vi → `FORBIDDEN` |
+| Còn lại | `FORBIDDEN` (403) |
+
+- Cổng nằm **trước** bước "không tìm thấy nhân viên", để người ngoài phạm vi không dò được id nào tồn tại.
+- RS1 có thêm cột `error_code` (`NOT_FOUND` / `INVALID` / `FORBIDDEN` / NULL).
+- Phần tính điểm và RS2–RS4 không đổi.
+
+### 21.3. Thứ tự deploy
+
+Chạy `update_database.sql` **trước**, deploy C# **ngay sau**. SP mới bắt buộc 3 tham số người gọi, nên khoảng giữa hai
+bước backend cũ gọi xem trước theo mẫu sẽ lỗi 500. Deploy C# trước thì cả hai route lỗi 500, vì SP cũ không nhận tham số
+mới và `sp_phieu_tu_dong_chi_tiet` chưa có.
+
+## 22. XẾP HẠNG TẠM TÍNH TRÊN PHIẾU (2026-10-07)
+
+### 22.0. Vì sao có đợt này
+
+Giảng viên muốn biết mình đang đứng thứ mấy trong khoa (vd 12/60) **ngay khi điền / xem phiếu**. Trước đợt này chưa
+có số nào dùng được:
+
+- `phieu_danh_gia.hang_trong_khoa` chỉ được ghi ở `sp_to_trinh_khoa_dong_goi` (§8.2), mà bước này đòi 100% hồ sơ của
+  đơn vị ở trạng thái 4/5.
+- `tong_diem_tich_luy` chỉ được ghi ở `sp_phieu_khoa_duyet_ho_so` (3 → 4). Trong lúc chấm (1/2/3) cột này NULL nên
+  không sắp xếp được.
+
+### 22.1. `GET api/phieu/{id}/xep-hang-tam-tinh` → `sp_phieu_xep_hang_tam_tinh` (chỉ đọc)
+
+Luật đã chốt với người dùng (2026-10-07):
+
+| Điểm | Luật |
+|---|---|
+| Phạm vi xếp | **Trong nhóm** hạn ngạch (1 GV thường · 2 VC/NLĐ · 3 CBQL), khớp `hang_trong_khoa`. Không xếp toàn đơn vị. Viên chức Khoa (xét xuất sắc cấp Trường, §8.7) vẫn xếp trong nhóm 2 như bước đóng gói |
+| Mẫu số `TongSo` | **Mọi** phiếu năm (`quy = 0`, chưa xoá) của (năm, đơn vị) trong nhóm, **kể cả phiếu đang Nháp**. Điểm nháp của người khác cũng được tính; `SoPhieuChuaNop` để FE ghi chú |
+| Điểm mỗi phiếu | Trạng thái ≥ 4 và đã có `tong_diem_tich_luy` → lấy cột (đúng số đóng gói dùng). Còn lại → `EXEC sp_phieu_danh_gia_tinh_tong_diem` (**gọi**, không chép công thức: một nguồn sự thật cho cả nhánh roll-up quý và trần nhóm B) |
+| Đồng hạng | `RANK()`: cùng điểm thì cùng hạng. Khác đóng gói (`ROW_NUMBER` + `uu_tien_xuat_sac`) vì ở đây chỉ hiển thị, không cắt suất |
+| Lộ dữ liệu | Chỉ trả số liệu của **chính phiếu được hỏi**, không trả điểm hay tên người khác |
+
+Response: `Hang`, `TongSo`, `SoNguoiDongHang` (tính cả mình), `SoPhieuChuaNop`, `TongDiemTichLuy`, `NhomXepHang`,
+`LaTamTinh` (trong nhóm còn phiếu < 4), `HangChinhThuc` (= `hang_trong_khoa` của lần đóng gói gần nhất, null nếu chưa
+đóng gói).
+
+Chi phí mỗi lần gọi: một lần `EXEC sp_phieu_danh_gia_tinh_tong_diem` cho mỗi phiếu chưa chốt trong nhóm (khoa 60 người
+thì khoảng 60 lần, mỗi lần SUM chi tiết của một phiếu). Không cache, không ghi DB.
+
+**Bất biến chép (không gọi)**, sửa một nơi phải sửa cả nơi kia:
+
+| Phần | Chép từ |
+|---|---|
+| Cổng xem phiếu năm | Nhánh `quy = 0` của `sp_phieu_tu_dong_chi_tiet` (= `sp_phieu_danh_gia_get_detail`): chủ phiếu · HT / ADMIN · trưởng đơn vị chủ quản (+ cây con) · trưởng đơn vị được giao chấm ≥ 1 tiêu chí |
+| Khoá nhóm (`CASE` trên `fn_chuc_vu_can_ht_duyet()` / `loai_doi_tuong`) | `sp_to_trinh_khoa_dong_goi` (và `nhom_hien_tai` của `sp_to_trinh_khoa_get_detail`) |
+
+Không qua cổng, phiếu quý hoặc id không tồn tại → `NOT_FOUND` (404), giống `GET api/phieu/{id}`.
+
+### 22.2. Thứ tự deploy
+
+Không phụ thuộc thứ tự: SP mới không ai gọi cho tới khi C# mới lên; C# lên trước thì chỉ route mới lỗi 500 cho tới khi
+chạy `update_database.sql`. Không đổi bảng, không đổi dữ liệu. Script test: `Tests/test_xep_hang_tam_tinh.sql` (chỉ đọc).

@@ -52,8 +52,8 @@ export const VAI_TRO_TRUONG_PHONG = [
 export const MOI_NGUOI = "*";
 
 export const ROLE_SETS = {
-  /** Hợp đồng tham-dinh/tieu-chi: TK/TKL/TP hoặc ADMIN. */
-  THAM_DINH_TIEU_CHI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG, ROLE.ADMIN],
+  /** Hợp đồng tham-dinh/tieu-chi: các trưởng đơn vị hoặc ADMIN. */
+  THAM_DINH_TIEU_CHI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ...VAI_TRO_TRUONG_PHONG, ROLE.ADMIN],
   /** Đóng gói và chỉ định ưu tiên tại đúng đơn vị; không gồm cấp phó. */
   TO_TRINH_DON_VI: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ...VAI_TRO_TRUONG_PHONG, ROLE.ADMIN],
   /** Chỉ quản trị viên hệ thống. */
@@ -169,12 +169,13 @@ export const ROLE_SETS = {
   /**
    * Upload thời khóa biểu là thao tác ghi đè dữ liệu nguồn toàn trường của một
    * năm đánh giá. Khớp đúng quyền API /gio-giang-tkb/import: chỉ Admin và Hiệu
-   * trưởng được vào màn hình quản lý này.
+   * trưởng được thực hiện thao tác ghi. Quyền xem dùng canViewGioGiangTkb.
    */
   GIO_GIANG_TKB: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
 
   /** Quyền đọc tỷ lệ giờ giảng; phạm vi người được xem do backend kiểm tra. */
-  TY_LE_GIO_GIANG: [ROLE.ADMIN, ROLE.HIEU_TRUONG, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRUONG_PHONG],
+  TY_LE_GIO_GIANG: [ROLE.ADMIN, ROLE.HIEU_TRUONG, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ...VAI_TRO_TRUONG_PHONG],
+  DIEM_TB_PHAN_HOI_SV: [ROLE.ADMIN, ROLE.THU_KY_KHOA, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ...VAI_TRO_TRUONG_PHONG],
 
   /**
    * Trưởng đơn vị - nhóm được chấm điểm cấp Khoa cho phiếu KPI cá nhân.
@@ -481,8 +482,30 @@ export const canManageHocVu = (user) =>
     String(dv.MaDonVi || "").trim().toUpperCase() === "P_DTBDCL"
   ));
 
+/** Xem giờ TKB: ADMIN/HT hoặc TP/QTP tại P_DTBDCL, kể cả kiêm nhiệm. */
+export const canViewGioGiangTkb = (user) => {
+  if (hasRole(ROLE_SETS.GIO_GIANG_TKB, user)) return true;
+  const appointments = Array.isArray(user?.DonVi) && user.DonVi.length > 0
+    ? user.DonVi : [user];
+  return appointments.some((dv) =>
+    [ROLE.TRUONG_PHONG, ROLE.QUYEN_TRUONG_PHONG].includes(normalizeRole(dv)) &&
+    String(dv?.MaDonVi || "").trim().toUpperCase() === "P_DTBDCL"
+  );
+};
+
 export const canViewHocVu = (user) =>
   canManageHocVu(user) || hasRole(ROLE_SETS.KPI_KHOA, user);
+
+/** Import và chốt phản hồi SV: chức vụ và đơn vị phải cùng một bổ nhiệm. */
+export const canManagePhanHoiSinhVien = (user) => {
+  if (hasRole(ROLE_SETS.ADMIN, user)) return true;
+  const appointments = Array.isArray(user?.DonVi) && user.DonVi.length > 0
+    ? user.DonVi : [user];
+  return appointments.some((dv) =>
+    [ROLE.TRUONG_PHONG, ROLE.QUYEN_TRUONG_PHONG].includes(normalizeRole(dv)) &&
+    String(dv?.MaDonVi || "").trim().toUpperCase() === "P_DTBDCL"
+  );
+};
 
 /** Đồng bộ NCKH: ADMIN hoặc TP/QTP tại đúng P_KH, kể cả kiêm nhiệm. */
 export const canSyncNckh = (user) => {

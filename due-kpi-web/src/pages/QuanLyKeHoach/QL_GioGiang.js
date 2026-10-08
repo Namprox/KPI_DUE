@@ -4,6 +4,8 @@ import SearchSelect from "../../components/Common/SearchSelect";
 import "../../css/Pages.css";
 import "../../css/QuanLyKeHoach/QL_GioGiang.css";
 import { apiFetch } from "../../utils/api";
+import { useAuth } from "../../context/AuthContext";
+import { hasRole, ROLE_SETS } from "../../utils/roles";
 import { COT_TKB, taiMauGioGiangTkb } from "../../utils/gioGiangTkbTemplate";
 import { AnhXaGioGiang, ChiTietGioGiang, TongHopGioGiang } from "./GioGiangTkbPanels";
 import {
@@ -91,6 +93,8 @@ const TrangThaiAnhXa = ({ item }) => {
 };
 
 const QL_GioGiang = () => {
+  const { user } = useAuth();
+  const canManage = hasRole(ROLE_SETS.GIO_GIANG_TKB, user);
   const toast = useRef(null);
   const fileInputRef = useRef(null);
   const [namList, setNamList] = useState([]);
@@ -274,6 +278,7 @@ const QL_GioGiang = () => {
   }, [items]);
 
   const openImportModal = () => {
+    if (!canManage) return;
     setImportFile(null);
     setFormError("");
     setIsImportModalOpen(true);
@@ -294,6 +299,7 @@ const QL_GioGiang = () => {
 
   const handleImport = async (event) => {
     event.preventDefault();
+    if (!canManage) return;
     const payload = {
       file: importFile,
       idNam: selectedYear,
@@ -342,7 +348,7 @@ const QL_GioGiang = () => {
   };
 
   const handleRemap = async () => {
-    if (!selectedYear || isRemapping) return;
+    if (!canManage || !selectedYear || isRemapping) return;
     setIsRemapping(true);
     try {
       const result = await quetAnhXaTuDong(selectedYear);
@@ -396,7 +402,7 @@ const QL_GioGiang = () => {
               placeholder="Chọn năm đánh giá"
             />
           </div>
-          <button
+          {canManage && <button
             type="button"
             className="btn-add-new ggtk-upload-button"
             onClick={openImportModal}
@@ -404,7 +410,7 @@ const QL_GioGiang = () => {
           >
             <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" />
             Upload thời khóa biểu
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -472,7 +478,7 @@ const QL_GioGiang = () => {
               <strong>Còn {so(soDongChuaAnhXa, 0)} dòng dữ liệu chưa ánh xạ</strong>
               <span>Các dòng chưa xác định được giảng viên theo họ tên và khoa chưa được tính vào bảng tổng hợp.</span>
             </div>
-            <button
+            {canManage && <button
               type="button"
               className="ggtk-remap-button"
               onClick={handleRemap}
@@ -480,7 +486,7 @@ const QL_GioGiang = () => {
             >
               <i className={`fa-solid ${isRemapping ? "fa-spinner fa-spin" : "fa-wand-magic-sparkles"}`} aria-hidden="true" />
               {isRemapping ? "Đang quét..." : "Quét lại tự động"}
-            </button>
+            </button>}
           </div>
         )}
 
@@ -614,7 +620,7 @@ const QL_GioGiang = () => {
                       </td>
                       <td><div className="ggtk-row-actions">
                         <button type="button" className="btn-cancel" onClick={() => setDetailItem(item)}>Chi tiết</button>
-                        <button type="button" className="btn-cancel" onClick={() => setMappingItem(item)}>Ánh xạ</button>
+                        {canManage && <button type="button" className="btn-cancel" onClick={() => setMappingItem(item)}>Ánh xạ</button>}
                       </div></td>
                     </tr>
                   ))}
@@ -624,7 +630,7 @@ const QL_GioGiang = () => {
                         <div className="ggtk-empty-state">
                           <i className="fa-regular fa-calendar-xmark" aria-hidden="true" />
                           <strong>{items.length === 0 ? "Chưa có dữ liệu thời khóa biểu" : "Không tìm thấy kết quả phù hợp"}</strong>
-                          <span>{items.length === 0 ? "Hãy upload file Excel thời khóa biểu để bắt đầu tổng hợp." : "Thử thay đổi từ khóa hoặc bộ lọc ánh xạ."}</span>
+                          <span>{items.length === 0 ? canManage ? "Hãy upload file Excel thời khóa biểu để bắt đầu tổng hợp." : "Chưa có thời khóa biểu cho năm đánh giá này." : "Thử thay đổi từ khóa hoặc bộ lọc ánh xạ."}</span>
                         </div>
                       </td>
                     </tr>
@@ -656,13 +662,13 @@ const QL_GioGiang = () => {
         {activeTab === "tong-hop" && <TongHopGioGiang idNam={selectedYear} revision={revision} />}
       </section>
       {detailItem && <ChiTietGioGiang key={detailItem.IdGioGiangTkb} item={detailItem} onClose={() => setDetailItem(null)} />}
-      {mappingItem && <AnhXaGioGiang key={mappingItem.IdGioGiangTkb} item={mappingItem} onClose={() => setMappingItem(null)} onSaved={async () => {
+      {canManage && mappingItem && <AnhXaGioGiang key={mappingItem.IdGioGiangTkb} item={mappingItem} onClose={() => setMappingItem(null)} onSaved={async () => {
         await fetchData(selectedYear);
         setRevision((value) => value + 1);
         toast.current?.show({ severity: "success", summary: "Đã cập nhật ánh xạ", life: 3000 });
       }} />}
 
-      {isImportModalOpen && (
+      {canManage && isImportModalOpen && (
         <div
           className="modal-overlay ggtk-modal-overlay"
           onMouseDown={(event) => {

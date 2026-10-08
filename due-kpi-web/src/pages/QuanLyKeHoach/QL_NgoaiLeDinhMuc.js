@@ -1,3 +1,4 @@
+import { hasRole, ROLE_SETS } from "../../utils/roles";
 import React, { useState, useEffect, useRef } from "react";
 import { Toast } from "primereact/toast";
 import { useAuth } from "../../context/AuthContext";
@@ -54,10 +55,7 @@ const QL_NgoaiLeDinhMuc = () => {
   const { confirmDeleteDialog } = useConfirmDeleteDialog();
   const { user } = useAuth();
   const currentUser = user || {};
-  const roleCode = currentUser?.MaChucVu || "";
-  const isAdmin = roleCode === "Admin";
-  const isManager = ["HT", "PHT", "TK", "TBM"].includes(roleCode);
-  const canManage = isAdmin || isManager;
+  const canManage = hasRole(ROLE_SETS.QUAN_TRI, currentUser);
 
   useEffect(() => {
     initData();

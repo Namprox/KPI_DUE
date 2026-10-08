@@ -1,3 +1,4 @@
+import { hasRole, ROLE_SETS } from "../../utils/roles";
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -15,10 +16,7 @@ const QL_ThangDiemByTieuChi = () => {
   const { user } = useAuth();
 
   const currentUser = user || {};
-  const roleCode = currentUser?.MaChucVu || "";
-  const isAdmin = roleCode === "Admin";
-  const isManager = ["HT", "PHT", "TK", "TBM"].includes(roleCode);
-  const canManage = isAdmin || isManager;
+  const canManage = hasRole(ROLE_SETS.QUAN_LY_TIEU_CHI, currentUser);
 
   const initialForm = {
     GiaTriDiem: "",

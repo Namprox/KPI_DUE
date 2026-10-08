@@ -142,6 +142,7 @@ export const MinhChungRow = ({ mc, onXem, onTai }) => {
 const TieuChiChamCard = ({
   chiTiet,
   stt,
+  autoInfo,
   moTa,
   lichSu = [],
   dangTaiLichSu = false,
@@ -169,13 +170,15 @@ const TieuChiChamCard = ({
 
   const [daThuGon, setDaThuGon] = useState(false);
 
-  const [minhChung, setMinhChung] = useState(
+  const [minhChungDaTai, setMinhChung] = useState(
     Array.isArray(chiTiet.MinhChung) ? chiTiet.MinhChung : null,
   );
   const [nhiemVu, setNhiemVu] = useState(
     Array.isArray(chiTiet.NhiemVuCongDong) ? chiTiet.NhiemVuCongDong : null,
   );
   const [dangTaiPhu, setDangTaiPhu] = useState(false);
+  const minhChung = !chamTay && Array.isArray(autoInfo?.MinhChung) ? autoInfo.MinhChung : minhChungDaTai;
+  const lyDoDiemTuDong = autoInfo?.LyDoDiemTuDong ?? chiTiet.LyDoDiemTuDong;
 
   // Sau mỗi lần lưu, phiếu được tải lại → nạp lại phần dữ liệu kèm theo còn thiếu
   // của bản ghi mới.
@@ -586,8 +589,8 @@ const TieuChiChamCard = ({
             <i className="fa-solid fa-robot"></i> Hệ thống tự tính từ dữ liệu đã
             ghi nhận.
           </div>
-          {diemTuDong != null && Number(diemTuDong) === 0 && chiTiet.LyDoDiemTuDong && (
-            <p className="cdm-tu-dong-chu-thich">{chiTiet.LyDoDiemTuDong}</p>
+          {lyDoDiemTuDong && (
+            <p className="cdm-tu-dong-chu-thich">{lyDoDiemTuDong}</p>
           )}
         </div>
       )}

@@ -344,7 +344,7 @@ const DanhGiaPhuLuc2Form = ({
                           const autoNote = laCongThucGioGiang(autoInfo)
                             ? "Điểm dựa trên tỷ lệ hoàn thành định mức giờ giảng do hệ thống cung cấp"
                             : isSangKien
-                            ? congThuc === "SK_DOI_MOI_GIANG_DAY" ? "Điểm từ sáng kiến đồng bộ NCKH được Phòng Khoa học đánh dấu đổi mới giảng dạy" : "Điểm được tính tự động từ sáng kiến đồng bộ NCKH và Phòng Khoa học ghi nhận"
+                            ? congThuc === "SK_DOI_MOI_GIANG_DAY" ? "Điểm từ sáng kiến đồng bộ NCKH được Phòng Khoa học đánh dấu đổi mới giảng dạy" : "Điểm theo cấp sáng kiến NCKH, cộng thêm điểm cải tiến công việc do trưởng đơn vị đánh dấu"
                             : isNckh
                             ? "Điểm được tính tự động dựa vào dữ liệu từ website NCKH của trường"
                             : isPhsv

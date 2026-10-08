@@ -6,6 +6,8 @@ import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import { ROLE, ROLE_SETS, donViTheoVaiTro, normalizeRole } from "../../utils/roles";
 import { fetchDonViList } from "../../utils/donViApi";
 import TieuChiChamCard from "../../components/QuanLyChamDiem/TieuChiChamCard";
+import { useDiemTuDongPhieu } from "../../hooks/useDiemTuDongPhieu";
+import PhieuTuDongNotice from "../../components/DanhGia/PhieuTuDongNotice";
 import TienDoCham from "../../components/QuanLyChamDiem/TienDoCham";
 import TongDiemMeta from "../../components/QuanLyChamDiem/TongDiemMeta";
 import {
@@ -45,6 +47,7 @@ const DuyetPhieuQuy = () => {
   const [quy, setQuy] = useState("");
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
+  const tuDong = useDiemTuDongPhieu(selected);
   const [tieuChiMau, setTieuChiMau] = useState({});
   const [scores, setScores] = useState({});
   const [nhanXet, setNhanXet] = useState("");
@@ -235,6 +238,7 @@ const DuyetPhieuQuy = () => {
   return (
     <div className="page-container pq-page">
       <Toast ref={toastRef} position="top-right" />
+      <PhieuTuDongNotice phieu={selected} tuDong={tuDong} />
       <header className="pq-header">
         <div><h2>DUYỆT KPI VIÊN CHỨC THEO QUÝ</h2><p>Hàng đợi tại đúng đơn vị bạn phụ trách</p></div>
         <div className="pq-filters">
@@ -286,6 +290,7 @@ const DuyetPhieuQuy = () => {
               return (
                 <TieuChiChamCard
                   key={row.IdChiTiet}
+                  autoInfo={tuDong.theoChiTiet[row.IdChiTiet]}
                   chiTiet={{
                     ...row,
                     // Phiếu quý không có nghiệp vụ nhiệm vụ cộng đồng; truyền

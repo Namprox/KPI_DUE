@@ -34,6 +34,8 @@ import {
 import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import TieuChiChamCard from "../../components/QuanLyChamDiem/TieuChiChamCard";
+import { useDiemTuDongPhieu } from "../../hooks/useDiemTuDongPhieu";
+import PhieuTuDongNotice from "../../components/DanhGia/PhieuTuDongNotice";
 import CanhBaoTieuChiChuaChot from "../../components/QuanLyChamDiem/CanhBaoTieuChiChuaChot";
 import {
   TrangThaiBadge,
@@ -85,6 +87,7 @@ const ChotHoSoPhong = () => {
   const { nhanVienIndex } = useNhanVienIndex();
 
   const [phieu, setPhieu] = useState(null);
+  const tuDong = useDiemTuDongPhieu(phieu);
   // Map IdTieuChi -> { loaiNhom } của mẫu: nguồn DUY NHẤT để biết tiêu chí thuộc
   // Nhóm A hay Nhóm B, vì ChiTietDanhGiaDto không trả loai_nhom. Chỉ cần cho
   // đường lùi tinhTongDiemTamTinh().
@@ -746,6 +749,7 @@ const ChotHoSoPhong = () => {
   return (
     <div className="page-container">
       <Toast ref={toast} position="top-right" />
+      <PhieuTuDongNotice phieu={phieu} tuDong={tuDong} />
 
       <div className="page-header">
         <button
@@ -969,6 +973,7 @@ const ChotHoSoPhong = () => {
         <TieuChiChamCard
           key={ct.IdChiTiet}
           chiTiet={ct}
+        autoInfo={tuDong.theoChiTiet[ct.IdChiTiet]}
           stt={index + 1}
           moTa={tieuChiMauMap.get(Number(ct.IdTieuChi))?.moTa ?? ct.MoTa}
           lichSu={lichSuTheoChiTiet.get(Number(ct.IdChiTiet)) || []}

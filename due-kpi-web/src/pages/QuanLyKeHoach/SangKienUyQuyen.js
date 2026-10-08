@@ -43,7 +43,7 @@ export default function SangKienUyQuyen() {
   };
   if (quyen?.LaQuanLy !== true) return <div className="page-container">Bạn không có quyền ủy quyền nhập liệu.</div>;
   return <div className="page-container sk">
-    <div className="page-header sk-heading"><div className="header-title"><h2>Ủy quyền nhập liệu sáng kiến</h2><span className="breadcrumb">Cấp quyền ghi nhận cho nhân sự Phòng Khoa học</span></div><Link className="sk-button" to="/sang-kien">Về danh sách sáng kiến</Link></div>
+    <div className="page-header sk-heading"><div className="header-title"><h2>Ủy quyền nhập liệu sáng kiến</h2><span className="breadcrumb">Cấp quyền đồng bộ NCKH và xét đổi mới giảng dạy cho nhân sự Phòng Khoa học</span></div><Link className="sk-button" to="/sang-kien">Về danh sách sáng kiến</Link></div>
     {message && <p role="status" className="sk-notice">{message}</p>}
     {error && <div role="alert" className="sk-error">{error} <button onClick={() => setRevision((v) => v + 1)}>Thử lại</button></div>}
     <div className="sk-heading"><h3>Danh sách ủy quyền</h3><label className="sk-check"><input type="checkbox" checked={history} onChange={(e) => setHistory(e.target.checked)} />Bao gồm đã thu hồi</label></div>

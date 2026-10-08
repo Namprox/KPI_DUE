@@ -10,6 +10,8 @@ import {
   coLoaiDoiTuong,
   coDanhGiaKpiCaNhan,
   canViewHocVu,
+  canViewGioGiangTkb,
+  canManagePhanHoiSinhVien,
 } from "../utils/roles";
 
 export const PUBLIC_ROUTES = [
@@ -407,7 +409,7 @@ export const MENU_GROUPS = [
         name: "Giờ giảng từ thời khóa biểu",
         icon: "fa-solid fa-calendar-week",
         path: "/quan-ly-gio-giang",
-        roles: ROLE_SETS.GIO_GIANG_TKB,
+        access: canViewGioGiangTkb,
       },
       {
         name: "Tỷ lệ hoàn thành giờ giảng",
@@ -476,20 +478,17 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
       },
       {
-        // Hai điều kiện phải cùng đúng: chức vụ Trưởng Phòng VÀ thuộc đúng phòng
-        // giám sát giảng dạy. Đây là màn hình nghiệp vụ của riêng phòng đó,
-        // không phải màn hình quản trị dữ liệu chung.
+        // ADMIN hoặc TP/QTP tại P_DTBDCL, khớp quyền import và chốt của BE.
         name: "Quản lý đánh giá sinh viên",
         icon: "fa-solid fa-user-graduate",
         path: "/quan-ly-danh-gia-sinh-vien",
-        roles: ROLE_SETS.GIAM_SAT_GIANG_DAY,
-        donVi: DON_VI_SETS.GIAM_SAT_GIANG_DAY,
+        access: canManagePhanHoiSinhVien,
       },
       {
         name: "Điểm trung bình ĐGSV",
         icon: "fa-solid fa-square-poll-vertical",
         path: "/diem-trung-binh-danh-gia-sinh-vien",
-        roles: ROLE_SETS.QUAN_TRI,
+        roles: ROLE_SETS.DIEM_TB_PHAN_HOI_SV,
       },
       {
         // TK/TKL xét từng nhiệm vụ; TLGVK chỉ xem. Quyền ghi lấy từ BE.
@@ -512,9 +511,8 @@ export const MENU_GROUPS = [
         childPaths: ["/quan-ly/vi-pham"],
       },
       {
-        // Cùng luật vào trang với "Quản lý đánh giá sinh viên": chức vụ Trưởng
-        // Phòng VÀ thuộc đúng phòng giám sát giảng dạy (Admin được miễn ràng
-        // buộc đơn vị).
+        // Trưởng Phòng/Trung tâm tại phòng giám sát giảng dạy.
+        // Admin được miễn ràng buộc đơn vị.
         name: "Tổng hợp điểm trừ vi phạm",
         icon: "fa-solid fa-square-poll-vertical",
         path: "/tong-hop-vi-pham",

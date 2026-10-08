@@ -19,9 +19,9 @@
 import {
   coQuyenTaiDonVi,
   donViTheoVaiTro,
-  normalizeRole,
   ROLE_SETS,
   VAI_TRO_TRUONG_PHONG,
+  hasRole,
 } from "./roles";
 import { buildDonViIndex } from "./viPhamPermissions";
 import { TRANG_THAI_DONG, laTieuChiChamTay } from "./phieuApi";
@@ -30,7 +30,7 @@ const ROLE_TRUONG_DON_VI = ROLE_SETS.TRUONG_DON_VI;
 
 /** Trưởng Phòng cũng thẩm định được - họ được giao tiêu chí qua bảng phân quyền. */
 export const laTruongDonVi = (user) =>
-  ROLE_TRUONG_DON_VI.includes(normalizeRole(user));
+  hasRole(ROLE_TRUONG_DON_VI, user);
 
 /**
  * Trưởng Phòng chỉ được giao đúng vài tiêu chí trong hồ sơ nên màn hình của họ
@@ -38,7 +38,7 @@ export const laTruongDonVi = (user) =>
  * điều hướng chỉ có ích cho người nhìn cả phiếu.
  */
 export const laTruongPhong = (user) =>
-  VAI_TRO_TRUONG_PHONG.includes(normalizeRole(user));
+  hasRole(VAI_TRO_TRUONG_PHONG, user);
 
 const ROLE_TRUONG_KHOA = ["TK", "TKL"];
 
@@ -48,7 +48,7 @@ const ROLE_TRUONG_KHOA = ["TK", "TKL"];
  * ngoài - gọi các endpoint đó sẽ nhận 403.
  */
 export const laTruongKhoa = (user) =>
-  ROLE_TRUONG_KHOA.includes(normalizeRole(user));
+  hasRole(ROLE_TRUONG_KHOA, user);
 
 /**
  * Danh sách Phòng / Trung tâm mà tôi đang là Trưởng phòng.
@@ -67,15 +67,14 @@ export const phongToiPhuTrach = (user) =>
 /**
  * Tôi có phải Trưởng phòng CỦA ĐÚNG đơn vị chủ quản hồ sơ này không?
  *
- * KHÁC laTruongPhong(user) ở trên: hàm kia chỉ đọc `MaChucVu` vô hướng nên trả
+ * KHÁC laTruongPhong(user) ở trên: hàm kia chỉ xét có chức vụ TP nên trả
  * true cho một TP đang mở hồ sơ của Phòng KHÁC - đủ để lọc danh sách tiêu chí
  * hiển thị, KHÔNG đủ để bật nút chốt hồ sơ. Ở đây điều kiện phải là cặp (đơn vị,
  * chức vụ) trên CÙNG MỘT DÒNG user.DonVi[], đúng bằng luật server gác
  * POST phieu/{id}/khoa/duyet-ho-so: "truong don vi CHU QUAN cua ho so ... trong
  * pham vi cay don vi cua minh".
  *
- * CỐ Ý không đụng tới laTruongKhoa(): TK/TKL vẫn chốt hồ sơ qua màn hình
- * /quan-ly/duyet-ho-so của họ, luật ở đó không đổi.
+ * TK/TKL chốt hồ sơ qua màn hình /quan-ly/duyet-ho-so riêng.
  *
  * Admin nhận false (ROLE.ADMIN không nằm trong tập truyền vào coQuyenTaiDonVi
  * nên đường tắt của hàm đó không kích hoạt) - với Admin màn hình chốt chạy ở chế
@@ -139,15 +138,16 @@ export const duocChamTieuChi = (
   { user, phieu, phanQuyen, donViIndex },
 ) => {
   if (!chiTiet || !user || !laTruongDonVi(user)) return false;
-  if (user.IdDonVi == null) return false;
+  const donViPhuTrach = donViTheoVaiTro(ROLE_TRUONG_DON_VI, user);
 
   const daPhanQuyen = phanQuyen?.get(Number(chiTiet.IdTieuChi));
   if (daPhanQuyen && daPhanQuyen.size > 0) {
-    return daPhanQuyen.has(Number(user.IdDonVi));
+    return donViPhuTrach.some((dv) => daPhanQuyen.has(Number(dv.IdDonVi)));
   }
 
   // Không phân quyền riêng → đơn vị chủ quản phiếu (hoặc đơn vị cha) chấm.
-  return laDonViChaHoacChinhNo(user.IdDonVi, phieu?.IdDonVi, donViIndex);
+  return donViPhuTrach.some((dv) =>
+    laDonViChaHoacChinhNo(dv.IdDonVi, phieu?.IdDonVi, donViIndex));
 };
 
 /**
@@ -270,7 +270,7 @@ export const traThamDinhDuoc = (chiTiet, ctx) =>
  * trong response của server.
  */
 export const locTieuChiHienThi = (chiTietList = [], ctx) => {
-  if (!laTruongPhong(ctx?.user)) return chiTietList;
+  if (!laTruongPhong(ctx?.user) || laTruongKhoa(ctx?.user)) return chiTietList;
   return chiTietList.filter((ct) => duocChamTieuChi(ct, ctx));
 };
 

@@ -9,14 +9,14 @@
  * Đây chỉ là lớp gợi ý cho UI. Server vẫn chặn lại ở BLL + Stored Procedure.
  */
 
-import { normalizeRole, ROLE_SETS } from "./roles";
+import { normalizeRole, ROLE_SETS, hasRole, donViTheoVaiTro } from "./roles";
 
 const ROLE_TRUONG_DON_VI = ROLE_SETS.TRUONG_DON_VI;
 
 /** Re-export để các file đang import normalizeRole từ đây vẫn chạy. */
 export { normalizeRole };
 
-export const isAdminRole = (user) => normalizeRole(user) === "ADMIN";
+export const isAdminRole = (user) => hasRole(ROLE_SETS.ADMIN, user);
 
 /** Trưởng Khoa / Trưởng Khoa lớn / Trưởng Phòng - nhóm được ghi nhận vi phạm. */
 export const isTruongDonVi = (user) => {
@@ -189,8 +189,9 @@ export const canSuaXoaViPham = (item, user) => {
   if (!item) return false;
   if (isAdminRole(user)) return true;
   if (!isTruongDonVi(user)) return false;
-  if (item.IdDonViGhiNhan == null || user?.IdDonVi == null) return false;
-  return String(item.IdDonViGhiNhan) === String(user.IdDonVi);
+  if (item.IdDonViGhiNhan == null) return false;
+  return donViTheoVaiTro(ROLE_TRUONG_DON_VI, user).some((dv) =>
+    String(item.IdDonViGhiNhan) === String(dv.IdDonVi));
 };
 
 /* ------------------------------------------------------------------ */
@@ -208,17 +209,20 @@ export const canGhiNhanLoai = (loai, user, lecturer, donViIndex) => {
   if (isAdminRole(user)) return true;
   if (!isTruongDonVi(user)) return false;
 
+  const donViPhuTrach = donViTheoVaiTro(ROLE_TRUONG_DON_VI, user);
+
   // (a) đơn vị cố định được phân quyền
-  if ((loai.DonViGhiNhan || []).some((d) => d.IdDonVi === user?.IdDonVi))
+  if ((loai.DonViGhiNhan || []).some((d) => donViPhuTrach.some((dv) =>
+    Number(d.IdDonVi) === Number(dv.IdDonVi))))
     return true;
 
   // (c) mọi đơn vị chủ trì
-  if (loai.ChoPhepMoiDonVi === true) return true;
+  if (loai.ChoPhepMoiDonVi === true) return donViPhuTrach.length > 0;
 
   // (b) trưởng Khoa chủ quản của chính giảng viên đó
   if (loai.ChoPhepKhoaChuQuan === true && lecturer) {
     const khoa = resolveKhoaCuaNhanVien(lecturer.IdDonVi, donViIndex);
-    if (khoa && khoa.IdDonVi === user?.IdDonVi) return true;
+    if (khoa && donViPhuTrach.some((dv) => Number(khoa.IdDonVi) === Number(dv.IdDonVi))) return true;
   }
 
   return false;

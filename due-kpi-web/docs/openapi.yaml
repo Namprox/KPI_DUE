@@ -725,6 +725,12 @@ paths:
         - MauDanhGia
       summary: Xem trước điểm tự động của các tiêu chí loai_nguon_diem=2 trong mẫu
       description: >
+        QUYỀN (2026-10-06): ADMIN / HT xem mọi người, kể cả bỏ trống idNhanVien (toàn
+        trường); ai cũng tự xem được (idNhanVien = chính mình); trưởng đơn vị
+        (TK / TKL / TP / QTP / GD / VT) xem nhân sự đơn vị mình + đơn vị con — bỏ trống
+        idNhanVien thì danh sách bị lọc theo phạm vi đó. Còn lại → 403. Màn phiếu của
+        giảng viên dùng GET /api/phieu/{id}/tu-dong.
+
         Tính on-the-fly qua fn_nckh_diem_tu_dong, KHÔNG ghi DB và không cần phiếu.
         Năm đánh giá lấy từ chính mẫu (mau_danh_gia.id_nam).
         Mỗi phần tử Items = 1 giảng viên × 1 tiêu chí tự động.
@@ -804,6 +810,16 @@ paths:
                 $ref: "#/components/schemas/MauDanhGiaDiemTuDongResponse"
         "400":
           description: Id mẫu, id nhân viên hoặc quý không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MauDanhGiaDiemTuDongResponse"
+        "401":
+          description: Thiếu hoặc sai token
+        "403":
+          description: >
+            Không có quyền: xem người khác / toàn trường mà không phải ADMIN / HT, hoặc
+            trưởng đơn vị xem người ngoài đơn vị mình.
           content:
             application/json:
               schema:
@@ -4469,9 +4485,10 @@ paths:
       summary: Quyen cua nguoi dang nhap tren module sang kien (de bat / tat menu)
       description: >
         LaQuanLy = ADMIN hoac TP / QTP TAI P_KH (toan quyen + uy quyen).
-        DuocNhap = LaQuanLy, hoac duoc uy quyen VA hom nay van thuoc P_KH (dong bo, nhap tay vien chuc,
-        sua / xoa, xet doi moi giang day). XemTatCa = DuocNhap hoac HT. XemTheoDonVi = la truong don vi
-        o it nhat 1 don vi. DuocUyQuyen = co uy quyen chua thu hoi.
+        DuocNhap = LaQuanLy, hoac duoc uy quyen VA hom nay van thuoc P_KH (dong bo NCKH, xet doi moi
+        giang day). XemTatCa = DuocNhap hoac HT. XemTheoDonVi = la truong don vi o it nhat 1 don vi.
+        DuocUyQuyen = co uy quyen chua thu hoi. DuocXetCaiTien = ADMIN / HT / truong don vi (mo man xet
+        cai tien cong viec; nut tung dong theo ChoPhepXetCaiTien).
       operationId: sangKienGetQuyen
       responses:
         "200":
@@ -4484,10 +4501,11 @@ paths:
     get:
       tags:
         - SangKien
-      summary: Danh muc 4 cap sang kien + 7 loai giai phap
+      summary: Danh muc cap sang kien NCKH + diem cai tien cong viec + 7 loai giai phap
       description: >
-        Cap: CAP_DHDN 10, CAP_TRUONG 10, CAP_BO 20, CAI_TIEN_CONG_VIEC 5 (DiemVienChuc = diem / sang kien
-        cua tieu chi vien chuc TTVT_SANG_KIEN). ChiNhapTay = true: cap khong co tren NCKH.
+        Cap (chi cap lay tu NCKH): CAP_DHDN 10, CAP_TRUONG 10, CAP_BO 20 (DiemVienChuc = diem / sang kien
+        cua tieu chi vien chuc TTVT_SANG_KIEN). DiemCaiTienCongViec (5) = diem CONG THEM khi sang kien duoc
+        truong don vi danh dau cai tien cong viec.
       operationId: sangKienGetDanhMuc
       responses:
         "200":
@@ -4496,38 +4514,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SangKienDanhMucResponse"
-  /api/sang-kien/vien-chuc:
-    get:
-      tags:
-        - SangKien
-      summary: Picker vien chuc (tac gia khi P_KH nhap tay)
-      description: 1 dong / vien chuc (v_vien_chuc_don_vi), don vi hien thi = don vi chinh. Quyen DuocNhap.
-      operationId: sangKienGetVienChuc
-      parameters:
-        - name: tuKhoa
-          in: query
-          required: false
-          schema:
-            type: string
-            maxLength: 100
-        - name: idDonVi
-          in: query
-          required: false
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienVienChucListResponse"
-        "403":
-          description: Khong co quyen nhap lieu (FORBIDDEN)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienVienChucListResponse"
   /api/sang-kien/dong-bo:
     post:
       tags:
@@ -4535,7 +4521,7 @@ paths:
       summary: Dong bo sang kien tu NCKH (GET {NckhApiUrl}/api/kpiinitiative)
       description: >
         Keo TOAN BO sang kien (toan thoi gian, moi nguoi dung NCKH) - khong co tham so nam; nam / quy
-        suy tu ngay cong nhan. MERGE theo InitiativeId, KHONG ghi de ket qua xet doi moi giang day;
+        suy tu ngay cong nhan. MERGE theo InitiativeId, KHONG ghi de ket qua xet (doi moi giang day, cai tien cong viec);
         sang kien vang mat -> ConONguon = false (khong tinh diem). Tac gia ghep sang nhan vien theo email;
         email khong khop thi TAM ghep theo ho ten khi khop dung 1 nhan vien dang hoat dong (CachGhep = 2).
         Quyen DuocNhap (hoi truoc khi goi NCKH). NCKH tra rong -> 502 va KHONG ghi gi.
@@ -4608,6 +4594,50 @@ paths:
                 $ref: "#/components/schemas/SangKienResponse"
         "422":
           description: DONG_NHAP_TAY
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+  /api/sang-kien/xet-cai-tien:
+    post:
+      tags:
+        - SangKien
+      summary: Truong don vi danh dau hang loat sang kien co phai "Cai tien cong viec" (+5 tieu chi VC)
+      description: >
+        "Cai tien cong viec, tham muu chinh trong viec ban hanh cac quy dinh, giai quyet cac cong viec tai
+        don vi duoc cong nhan" -> tieu chi vien chuc TTVT_SANG_KIEN cong THEM DiemCaiTienCongViec (5) cho moi
+        sang kien co = true (vd cap Truong 10 + 5 = 15). 1 co cho CA sang kien. LaCaiTienCongViec true /
+        false / null (null = bo xet; thieu field cung la null). Quyen: ADMIN / HT moi sang kien; truong don
+        vi chi sang kien co >= 1 tac gia la nhan su don vi minh (KHONG tinh chinh minh) - dong ngoai pham vi
+        -> 403 FORBIDDEN liet ke ten. Toi da 1000 dong, khong lap IdSangKien, all-or-nothing.
+      operationId: sangKienXetCaiTien
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SangKienXetCaiTienRequest"
+      responses:
+        "200":
+          description: OK (SoCapNhat = so dong thuc su doi)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "400":
+          description: INVALID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "403":
+          description: FORBIDDEN (khong phai truong don vi / ADMIN / HT, hoac dong ngoai pham vi)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SangKienResponse"
+        "404":
+          description: NOT_FOUND
           content:
             application/json:
               schema:
@@ -4743,20 +4773,27 @@ paths:
         - name: nguon
           in: query
           required: false
-          description: 1 dong bo NCKH, 2 P_KH nhap tay
+          description: Giu de tuong thich - moi dong con hieu luc deu la 1 (dong bo NCKH); 2 = nhap tay cu (da xoa mem)
           schema:
             type: integer
             enum: [1, 2]
         - name: idCap
           in: query
           required: false
-          description: 1..4; 0 = chua nhan dien cap
+          description: 1..3; 0 = chua nhan dien cap
           schema:
             type: integer
         - name: trangThaiXet
           in: query
           required: false
-          description: 0 chua xet, 1 doi moi giang day, 2 khong phai (ngam nguon = 1)
+          description: Co doi moi giang day - 0 chua xet, 1 co, 2 khong (ngam nguon = 1)
+          schema:
+            type: integer
+            enum: [0, 1, 2]
+        - name: trangThaiCaiTien
+          in: query
+          required: false
+          description: Co cai tien cong viec - 0 chua xet, 1 co, 2 khong (ngam nguon = 1)
           schema:
             type: integer
             enum: [0, 1, 2]
@@ -4823,52 +4860,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SangKienListResponse"
-    post:
-      tags:
-        - SangKien
-      summary: P_KH nhap tay 1 sang kien - CHI vien chuc
-      description: >
-        Tac gia phai la vien chuc (422 KHONG_PHAI_VIEN_CHUC). NgayCongNhan phai thuoc 1 nam danh gia.
-        Trung (cung tac gia + cung ten hoac cung so chung nhan, ke ca sang kien dong bo) -> 409
-        TRUNG_SANG_KIEN. Quyen DuocNhap.
-      operationId: sangKienCreate
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SangKienCreateRequest"
-      responses:
-        "201":
-          description: Da tao (IdSangKien + Item)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "400":
-          description: INVALID
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "409":
-          description: TRUNG_SANG_KIEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "422":
-          description: KHONG_PHAI_VIEN_CHUC
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
   /api/sang-kien/{id}:
     get:
       tags:
@@ -4896,103 +4887,6 @@ paths:
                 $ref: "#/components/schemas/SangKienResponse"
         "404":
           description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-    put:
-      tags:
-        - SangKien
-      summary: Sua sang kien NHAP TAY (thay toan bo, ke ca tac gia)
-      description: Dong dong bo -> 422 DONG_DONG_BO. Tac gia MOI phai la vien chuc.
-      operationId: sangKienUpdate
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SangKienUpdateRequest"
-      responses:
-        "200":
-          description: OK (CoThayDoi + Item)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "400":
-          description: INVALID
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "404":
-          description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "409":
-          description: TRUNG_SANG_KIEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "422":
-          description: DONG_DONG_BO / KHONG_PHAI_VIEN_CHUC
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-    delete:
-      tags:
-        - SangKien
-      summary: Xoa mem sang kien NHAP TAY
-      operationId: sangKienDelete
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: lyDo
-          in: query
-          required: false
-          schema:
-            type: string
-            maxLength: 500
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "403":
-          description: FORBIDDEN
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "404":
-          description: NOT_FOUND
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SangKienResponse"
-        "422":
-          description: DONG_DONG_BO
           content:
             application/json:
               schema:
@@ -6056,6 +5950,104 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhieuTongHopTuDongResponse"
+  /api/phieu/{id}/tu-dong:
+    get:
+      tags:
+        - PhieuDanhGia
+      summary: Điểm tự động + minh chứng của các dòng loai_nguon_diem = 2 trên 1 phiếu (chỉ đọc)
+      description: >
+        sp_phieu_tu_dong_chi_tiet. Mỗi dòng tự động của phiếu kèm điểm ĐÃ GHI (DiemDaGhi,
+        DiemChinhThuc - engine ghi lúc nộp / Khoa bấm tổng hợp) và điểm TÍNH LẠI từ dữ liệu
+        nguồn hiện tại (DiemTuDong, không ghi DB), danh sách MinhChung và LyDoDiemTuDong.
+        CanChamLai = true khi engine đã ghi và DiemTuDong khác DiemDaGhi (dữ liệu nguồn đổi
+        sau lần chấm) → chấm lại bằng POST /api/phieu/{id}/tong-hop-tu-dong (phiếu năm) hoặc
+        nộp lại (phiếu quý).
+
+        Khác GET /api/maudanhgia/{id}/diem-tu-dong: mã công thức lấy từ snapshot của PHIẾU
+        (CongThucTongHop = cong_thuc_snapshot), phạm vi = quý của phiếu (0 = năm), và áp luật
+        kiêm nhiệm "mỗi (người, năm, quý) chỉ 1 phiếu nhận điểm tự động": phiếu không phải
+        phiếu nhận → LaPhieuNhanTuDong = false, DiemTuDong / MinhChung rỗng, Message nêu
+        IdPhieuNhanTuDong.
+
+        Dùng cho cả phiếu năm và phiếu quý. Quyền xem trùng GET /api/phieu/{id} (phiếu năm)
+        / GET /api/phieu-quy/{id} (phiếu quý); không được xem → 404 như phiếu không tồn tại.
+      operationId: phieuGetTuDong
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK (kể cả phiếu không có dòng tự động - Items rỗng)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTuDongResponse"
+        "400":
+          description: Id phiếu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTuDongResponse"
+        "401":
+          description: Thiếu hoặc sai token
+        "404":
+          description: Không tìm thấy phiếu, hoặc người gọi không được xem phiếu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTuDongResponse"
+  /api/phieu/{id}/xep-hang-tam-tinh:
+    get:
+      tags:
+        - PhieuDanhGia
+      summary: Vị trí tạm tính của phiếu năm trong đơn vị, vd 12/60 (chỉ đọc)
+      description: >
+        sp_phieu_xep_hang_tam_tinh. Cho chủ phiếu biết mình đang đứng thứ mấy NGAY KHI đang
+        điền / xem phiếu, trước khi Trưởng khoa đóng gói tờ trình (hang_trong_khoa chỉ có sau
+        đóng gói, tong_diem_tich_luy chỉ có sau khi Trưởng khoa chốt hồ sơ → phải tính sống).
+
+        Xếp TRONG NHÓM hạn ngạch (1 Giảng viên thường · 2 Viên chức/NLĐ · 3 Cán bộ quản lý),
+        không xếp toàn đơn vị. Mẫu số TongSo = MỌI phiếu năm của (năm, đơn vị) trong nhóm, kể
+        cả phiếu đang Nháp (điểm của họ là điểm tự cho → SoPhieuChuaNop để FE ghi chú).
+        Điểm mỗi phiếu: phiếu trạng thái ≥ 4 lấy tổng đã chốt; còn lại tính sống bằng đúng công
+        thức của GET /api/phieu/{id}/xem-truoc-chot (điểm chính thức, chưa có thì điểm Khoa,
+        rồi điểm tự đánh giá). Đồng hạng theo RANK: cùng điểm = cùng hạng.
+
+        Chỉ trả số liệu của chính phiếu được hỏi, không lộ điểm người khác. Quyền xem trùng
+        GET /api/phieu/{id}; không được xem, phiếu quý hoặc phiếu không tồn tại → 404.
+        Phiếu quý không xếp hạng (dùng id phiếu năm).
+      operationId: phieuXepHangTamTinh
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id phiếu NĂM (quy = 0).
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuXepHangTamTinhResponse"
+        "400":
+          description: Id phiếu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuXepHangTamTinhResponse"
+        "401":
+          description: Thiếu hoặc sai token
+        "404":
+          description: Không tìm thấy phiếu năm, hoặc người gọi không được xem phiếu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuXepHangTamTinhResponse"
   /api/phieu/{id}/kiem-tra-hop-le:
     get:
       tags:
@@ -17256,6 +17248,125 @@ components:
           description: Chi tiet cac dong tu dong sau khi cham (khong co khi that bai).
           items:
             $ref: "#/components/schemas/ChiTietTuDongDto"
+    PhieuTuDongResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        IdPhieu:
+          type: integer
+        IdNam:
+          type: integer
+        Quy:
+          type: integer
+          description: 0 = phiếu năm; 1..4 = phiếu quý (phạm vi đã tính điểm / minh chứng).
+        IdNhanVien:
+          type: integer
+        LaPhieuNhanTuDong:
+          type: boolean
+          description: >
+            false = điểm tự động của kỳ này thuộc phiếu khác của cùng người (kiêm nhiệm);
+            Items vẫn liệt kê dòng nhưng DiemTuDong / MinhChung rỗng.
+        IdPhieuNhanTuDong:
+          type: integer
+          nullable: true
+          description: Phiếu đang nhận điểm tự động của kỳ này (null = không phiếu nào có dòng tự động).
+        SoTieuChiTuDong:
+          type: integer
+        Items:
+          type: array
+          description: Không có khi thất bại.
+          items:
+            $ref: "#/components/schemas/PhieuTuDongItemDto"
+    PhieuTuDongItemDto:
+      description: >
+        Cùng shape phần tử của GET /api/maudanhgia/{id}/diem-tu-dong. Ở đây DiemTuDong /
+        IdThangDiemChon / DieuKienDiem là giá trị TÍNH LẠI từ dữ liệu hiện tại;
+        CongThucTongHop là mã snapshot của phiếu.
+      allOf:
+        - $ref: "#/components/schemas/MauDanhGiaDiemTuDongItemDto"
+        - type: object
+          properties:
+            IdChiTiet:
+              type: integer
+            DiemDaGhi:
+              type: number
+              nullable: true
+              description: chi_tiet_danh_gia.diem_tu_dong - engine đã ghi; null = engine chưa chạy.
+            DiemChinhThuc:
+              type: number
+              nullable: true
+            IdThangDiemDaGhi:
+              type: integer
+              nullable: true
+            DieuKienDiemDaGhi:
+              type: string
+              nullable: true
+            NgayTuDong:
+              type: string
+              format: date-time
+              nullable: true
+            TrangThaiDong:
+              type: integer
+              description: 1 KE_KHAI · 2 CHO_THAM_DINH · 3 DA_CHOT.
+            CanChamLai:
+              type: boolean
+              description: DiemDaGhi có giá trị và khác DiemTuDong (dữ liệu nguồn đã đổi sau lần chấm).
+    PhieuXepHangTamTinhResponse:
+      type: object
+      description: >
+        Kết quả GET /api/phieu/{id}/xep-hang-tam-tinh. Khi thất bại chỉ có Success / Message /
+        ErrorCode. Hiển thị gợi ý: "Vị trí tạm tính Hang/TongSo (nhóm NhomXepHangText)".
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          description: NOT_FOUND khi thất bại; không có khi thành công.
+        IdPhieu:
+          type: integer
+        IdNam:
+          type: integer
+        IdDonVi:
+          type: integer
+          description: Đơn vị của phiếu (người kiêm nhiệm có mỗi phiếu một đơn vị, xếp riêng).
+        TrangThai:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+        NhomXepHang:
+          type: integer
+          enum: [1, 2, 3]
+          description: Nhóm NẾU đóng gói ngay bây giờ - 1 Giảng viên · 2 Viên chức/NLĐ · 3 Cán bộ quản lý.
+        NhomXepHangText:
+          type: string
+        TongDiemTichLuy:
+          type: number
+          description: Tổng điểm dùng để xếp (≥ 4 = tổng đã chốt; còn lại = tính sống).
+        Hang:
+          type: integer
+          description: Thứ hạng tạm tính trong nhóm, 1 = cao nhất. Đồng hạng theo RANK.
+        TongSo:
+          type: integer
+          description: Mẫu số - số phiếu năm của đơn vị trong nhóm, kể cả phiếu đang Nháp.
+        SoNguoiDongHang:
+          type: integer
+          description: Số phiếu cùng điểm, tính cả chính phiếu này (> 1 = đồng hạng).
+        SoPhieuChuaNop:
+          type: integer
+          description: Số phiếu trong nhóm còn ở trạng thái Nháp (1).
+        LaTamTinh:
+          type: boolean
+          description: true = trong nhóm còn phiếu chưa được Trưởng khoa chốt (< 4), thứ hạng còn đổi.
+        HangChinhThuc:
+          type: integer
+          nullable: true
+          description: >
+            hang_trong_khoa của lần đóng gói tờ trình gần nhất (có tie-break ưu tiên xuất sắc).
+            Không có = chưa đóng gói.
     PhieuKiemTraHopLeDto:
       type: object
       properties:
@@ -25405,6 +25516,9 @@ components:
           type: boolean
         DuocUyQuyen:
           type: boolean
+        DuocXetCaiTien:
+          type: boolean
+          description: ADMIN / HT / truong don vi - mo man xet cai tien cong viec
     CapSangKienDto:
       type: object
       properties:
@@ -25416,12 +25530,9 @@ components:
           type: string
         TenNguon:
           type: string
-          nullable: true
-          description: Text InitiativeLevel cua NCKH (null = chi nhap tay)
+          description: Text InitiativeLevel cua NCKH dung de anh xa khi dong bo
         DiemVienChuc:
           type: number
-        ChiNhapTay:
-          type: boolean
         ThuTu:
           type: integer
     LoaiGiaiPhapSangKienDto:
@@ -25445,6 +25556,10 @@ components:
         ErrorCode:
           type: string
           nullable: true
+        DiemCaiTienCongViec:
+          type: number
+          nullable: true
+          description: Diem CONG THEM cho tieu chi VC khi sang kien duoc danh dau cai tien cong viec (5)
         Cap:
           type: array
           items:
@@ -25453,35 +25568,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LoaiGiaiPhapSangKienDto"
-    SangKienVienChucDto:
-      type: object
-      properties:
-        IdNhanVien:
-          type: integer
-        MaNhanVien:
-          type: string
-        HoTen:
-          type: string
-        IdDonVi:
-          type: integer
-        MaDonVi:
-          type: string
-        TenDonVi:
-          type: string
-    SangKienVienChucListResponse:
-      type: object
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-        Items:
-          type: array
-          items:
-            $ref: "#/components/schemas/SangKienVienChucDto"
     SangKienDongBoResult:
       type: object
       properties:
@@ -25513,7 +25599,7 @@ components:
           description: Email khong khop, TAM ghep theo ho ten (khop dung 1 nhan vien dang hoat dong) -> co tinh, can ra soat
         SoCapKhongNhanDien:
           type: integer
-          description: InitiativeLevel khong khop danh muc cap -> khong tinh diem vien chuc
+          description: InitiativeLevel khong khop danh muc cap -> khong co diem cap (van +5 neu danh dau cai tien)
         SoThieuNgayCongNhan:
           type: integer
           description: Thieu / sai ApprovalDate -> khong thuoc nam nao
@@ -25546,7 +25632,7 @@ components:
         CachGhep:
           type: integer
           nullable: true
-          description: 1 email, 2 ho ten (tam - can ra soat), 3 P_KH nhap tay, null = chua khop
+          description: 1 email, 2 ho ten (tam - can ra soat), 3 P_KH nhap tay (du lieu cu), null = chua khop
         LaGiangVien:
           type: boolean
         LaVienChuc:
@@ -25558,7 +25644,7 @@ components:
           type: integer
         Nguon:
           type: integer
-          description: 1 dong bo NCKH, 2 P_KH nhap tay (chi vien chuc)
+          description: 1 dong bo NCKH (2 = P_KH nhap tay - chi con o du lieu cu da xoa mem)
         MaSangKienNguon:
           type: integer
           nullable: true
@@ -25577,6 +25663,7 @@ components:
         DiemVienChuc:
           type: number
           nullable: true
+          description: Diem CAP / sang kien cua tieu chi VC, chua gom DiemCaiTienCongViec
         CapTextNguon:
           type: string
           nullable: true
@@ -25626,6 +25713,23 @@ components:
         GhiChuXet:
           type: string
           nullable: true
+        LaCaiTienCongViec:
+          type: boolean
+          nullable: true
+          description: Truong don vi xet cai tien cong viec - null chua xet, true (+5 cho tieu chi VC) / false
+        IdNguoiXetCaiTien:
+          type: integer
+          nullable: true
+        TenNguoiXetCaiTien:
+          type: string
+          nullable: true
+        NgayXetCaiTien:
+          type: string
+          format: date-time
+          nullable: true
+        GhiChuXetCaiTien:
+          type: string
+          nullable: true
         ConONguon:
           type: boolean
         ThoiGianDongBo:
@@ -25657,12 +25761,12 @@ components:
           type: boolean
         CoTacGiaVienChuc:
           type: boolean
-        ChoPhepSua:
-          type: boolean
-          description: Chi dong nhap tay
         ChoPhepXet:
           type: boolean
-          description: Chi dong dong bo
+          description: Duoc xet doi moi giang day (DuocNhap, chi dong dong bo)
+        ChoPhepXetCaiTien:
+          type: boolean
+          description: Duoc xet cai tien cong viec (ADMIN / HT, hoac truong don vi co nhan su la tac gia - khong tinh chinh minh)
         TacGia:
           type: array
           items:
@@ -25675,7 +25779,7 @@ components:
           format: int64
         HanhDong:
           type: integer
-          description: 1 Ghi nhan, 2 Sua, 3 Xoa, 4 Xet doi moi giang day
+          description: 4 Xet doi moi giang day, 8 Xet cai tien cong viec (1 Ghi nhan / 2 Sua / 3 Xoa chi o du lieu nhap tay cu)
         MoTa:
           type: string
         IdNguoiThucHien:
@@ -25698,6 +25802,8 @@ components:
         DuocNhap:
           type: boolean
         XemTatCa:
+          type: boolean
+        DuocXetCaiTien:
           type: boolean
         Page:
           type: integer
@@ -25727,55 +25833,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SangKienLichSuDto"
-        IdSangKien:
-          type: integer
-          nullable: true
-        CoThayDoi:
-          type: boolean
-          nullable: true
         SoCapNhat:
           type: integer
           nullable: true
-    SangKienCreateRequest:
-      type: object
-      required:
-        - TenSangKien
-        - IdCap
-        - NgayCongNhan
-        - IdNhanViens
-      properties:
-        TenSangKien:
-          type: string
-          maxLength: 1000
-        IdCap:
-          type: integer
-          description: 1 cap DHDN, 2 cap Truong, 3 cap Bo tro len, 4 cai tien cong viec
-        IdLoaiGiaiPhap:
-          type: integer
-          nullable: true
-        DonViChuTri:
-          type: string
-          maxLength: 500
-          nullable: true
-        NgayCongNhan:
-          type: string
-          format: date
-        SoChungNhan:
-          type: string
-          maxLength: 500
-          nullable: true
-        GhiChu:
-          type: string
-          maxLength: 1000
-          nullable: true
-        IdNhanViens:
-          type: array
-          description: Tac gia - chi vien chuc, toi da 100
-          items:
-            type: integer
-    SangKienUpdateRequest:
-      allOf:
-        - $ref: "#/components/schemas/SangKienCreateRequest"
     SangKienXetGiangDayItem:
       type: object
       required:
@@ -25801,6 +25861,31 @@ components:
           maxItems: 1000
           items:
             $ref: "#/components/schemas/SangKienXetGiangDayItem"
+    SangKienXetCaiTienItem:
+      type: object
+      required:
+        - IdSangKien
+      properties:
+        IdSangKien:
+          type: integer
+        LaCaiTienCongViec:
+          type: boolean
+          nullable: true
+          description: true / false; null hoac thieu = bo xet
+        GhiChu:
+          type: string
+          maxLength: 500
+          nullable: true
+    SangKienXetCaiTienRequest:
+      type: object
+      required:
+        - Items
+      properties:
+        Items:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/SangKienXetCaiTienItem"
     SangKienNguoiNhapCapRequest:
       type: object
       required:

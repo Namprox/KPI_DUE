@@ -38,8 +38,6 @@
 .sk-warning { color: #92611d; background: #fff8e9; }
 .sk-notice { color: #236148; background: #effaf4; border: 1px solid #cde9d9; }
 .sk-muted { color: #758196; font-size: 13px; }
-.sk fieldset { padding: 0; margin: 0; border: 0; min-width: 0; }
-.sk-full { grid-column: 1 / -1; }
 .sk-footer { justify-content: flex-end; margin-top: 20px; }
 /* Use the shared modal-header/body/footer and form controls from Pages.css.
    Scope PrimeReact theme overrides to this module's dialogs. */
@@ -57,22 +55,7 @@
 .sk-dialog button:disabled { opacity: .5; cursor: not-allowed; }
 .sk-dialog .sk-action-form { display: flex; flex-direction: column; gap: 16px; }
 .sk-action-form > p, .sk-action-form > .sk-footer { margin: 0; }
-.sk-entry-form textarea.form-input { height: auto; font-family: inherit; resize: vertical; }
-.sk-entry-form input.form-input { height: var(--select-height); font-family: inherit; }
-.sk-entry-form .form-grid-2 { gap: 16px 20px; margin-bottom: 0; }
-.sk-entry-form .form-grid-2 > p { margin: 0; }
-.sk-entry-form .sk-entry-type-row { grid-template-columns: 150px minmax(0, 1fr); margin-bottom: 0; }
-.sk-picker { border-top: 1px solid #e3e9f2; margin-top: 20px; padding-top: 16px; }
-.sk-picker > h4 { margin: 0 0 8px; }
-.sk-picker > .sk-muted { margin: 0 0 12px; }
-.sk-picker .form-grid-2 { margin-bottom: 12px; }
-.sk-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; max-height: 160px; overflow-y: auto; }
-.sk-chips > span { display: inline-flex; align-items: center; gap: 6px; background: #eef4fc; border-radius: 6px; padding: 4px 8px; font-size: 12px; }
-.sk-chips button { border: 0; background: transparent; padding: 2px 4px; font-size: 17px; }
-.sk-picker-results { max-height: 220px; overflow-y: auto; display: grid; grid-template-columns: 1fr; gap: 6px; }
-.sk-picker-results button { text-align: left; font-weight: 400; }
-.sk-picker-results strong, .sk-history strong { font-weight: 600; }
-.sk-picker-results span { display: block; color: #758196; margin-top: 4px; font-size: 12px; }
+.sk-history strong { font-weight: 600; }
 .sk-sync-results { display: flex; flex-direction: column; gap: 12px; }
 .sk-sync-results > p { margin: 0; }
 .sk-summary { display: flex; flex-wrap: wrap; gap: 12px 18px; padding: 12px; background: #f5f8fc; margin: 0; border-radius: 6px; }
@@ -101,7 +84,7 @@
 .sk-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .sk-tabs button[aria-selected="true"] { color: #0056b3; border-color: #0056b3; background: #eef4fc; }
 .sk-review-bar > span { margin-right: auto; }
-.sk .sk-list { min-width: 1000px; }
+.sk .sk-list { min-width: 1200px; }
 .sk-details small { display: block; margin-top: 4px; color: #758196; }
 .sk-details .sk-authors { white-space: normal; }
 @media (max-width: 700px) {
@@ -113,5 +96,4 @@
 }
 @media (max-width: 576px) {
   .sk { --select-height: 42px; --select-font: 16px; }
-  .sk-entry-form .sk-entry-type-row { grid-template-columns: 1fr; }
 }

@@ -1,12 +1,11 @@
+import { canManagePhanHoiSinhVien } from "../../utils/roles";
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "../../css/Pages.css";
 import QL_DanhGiaSinhVienListing from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DanhGiaSinhVienListing";
-import QL_DanhGiaSinhVienForm from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DanhGiaSinhVienForm";
 import QL_DanhGiaSinhVienImportModal from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DanhGiaSinhVienImportModal";
 import QL_DanhGiaSinhVienChotModal from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DanhGiaSinhVienChotModal";
-import { useConfirmDeleteDialog } from "../../hooks/useConfirmDeleteDialog";
 import { apiFetch } from "../../utils/api";
 import SearchSelect from "../../components/Common/SearchSelect";
 
@@ -51,20 +50,9 @@ const pickDefaultNam = (options) => {
 const QL_DanhGiaSinhVien = () => {
   const navigate = useNavigate();
 
-  const initialForm = {
-    Mssv: "",
-    MaCanBo: "",
-    HoTenGv: "",
-    MaHocPhan: "",
-    KhoaQuanLyHp: "",
-    KyHoc: "",
-    CauHoi: "",
-    DanhGia: "",
-  };
 
   const [data, setData] = useState([]);
   const [namList, setNamList] = useState([]);
-  const [nhanVienList, setNhanVienList] = useState([]);
   const [donViList, setDonViList] = useState([]);
 
   // Filter states
@@ -80,20 +68,13 @@ const QL_DanhGiaSinhVien = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isChotModalOpen, setIsChotModalOpen] = useState(false);
-  const [formData, setFormData] = useState(initialForm);
-  const [editId, setEditId] = useState(null);
 
-  const { confirmDeleteDialog } = useConfirmDeleteDialog();
   const { user } = useAuth();
   const currentUser = user || {};
 
-  const roleCode = currentUser?.MaChucVu || "";
-  const isAdmin = roleCode === "Admin";
-  const isManager = ["HT", "PHT", "TK", "TBM"].includes(roleCode);
-  const canManage = isAdmin || isManager;
+  const canManage = canManagePhanHoiSinhVien(currentUser);
 
   useEffect(() => {
     const init = async () => {
@@ -111,7 +92,6 @@ const QL_DanhGiaSinhVien = () => {
       );
     };
     init();
-    fetchNhanVienList();
     fetchDonViList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -207,18 +187,6 @@ const QL_DanhGiaSinhVien = () => {
     return [];
   };
 
-  const fetchNhanVienList = async () => {
-    try {
-      const response = await apiFetch("nhan-vien");
-      if (response.ok) {
-        const result = await response.json();
-        setNhanVienList(result.Items || (Array.isArray(result) ? result : []));
-      }
-    } catch (error) {
-      console.error("Lỗi tải danh sách nhân viên:", error);
-    }
-  };
-
   const fetchDonViList = async () => {
     try {
       const response = await apiFetch("donvi");
@@ -281,110 +249,6 @@ const QL_DanhGiaSinhVien = () => {
       searchNamHoc,
       searchKyHoc,
     );
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!canManage) {
-      alert("Bạn không có quyền thực hiện chức năng này!");
-      return;
-    }
-
-    const method = editId ? "PUT" : "POST";
-    const endpoint = editId ? `phanhoisinhvien/${editId}` : "phanhoisinhvien";
-
-    const payload = {
-      Mssv: formData.Mssv,
-      MaCanBo: formData.MaCanBo,
-      HoTenGv: formData.HoTenGv || null,
-      MaHocPhan: formData.MaHocPhan || null,
-      KhoaQuanLyHp: formData.KhoaQuanLyHp || null,
-      KyHoc: formData.KyHoc !== "" ? parseInt(formData.KyHoc, 10) : null,
-      CauHoi: formData.CauHoi !== "" ? parseInt(formData.CauHoi, 10) : null,
-      DanhGia: formData.DanhGia !== "" ? parseFloat(formData.DanhGia) : null,
-    };
-
-    if (editId) {
-      payload.IdPhanHoi = editId;
-    }
-
-    try {
-      const response = await apiFetch(endpoint, {
-        method,
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        fetchData(
-          page,
-          pageSize,
-          selectedDonVi,
-          searchHoTen,
-          searchMaHocPhan,
-          searchNamHoc,
-          searchKyHoc,
-        );
-        closeModal();
-      } else {
-        alert("Lưu thất bại! Vui lòng thử lại.");
-      }
-    } catch (error) {
-      console.error("Lỗi khi lưu dữ liệu:", error);
-      alert("Có lỗi xảy ra khi kết nối máy chủ!");
-    }
-  };
-
-  const handleEdit = (item) => {
-    if (!canManage) return;
-    setEditId(item.IdPhanHoi || item.idPhanHoi);
-    setFormData({
-      Mssv: item.Mssv || item.mssv || "",
-      MaCanBo: item.MaCanBo || item.maCanBo || "",
-      HoTenGv: item.HoTenGv || item.hoTenGv || "",
-      MaHocPhan: item.MaHocPhan || item.maHocPhan || "",
-      KhoaQuanLyHp: item.KhoaQuanLyHp || item.khoaQuanLyHp || "",
-      KyHoc: item.KyHoc ?? item.kyHoc ?? "",
-      CauHoi: item.CauHoi ?? item.cauHoi ?? "",
-      DanhGia: item.DanhGia ?? item.danhGia ?? "",
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (id) => {
-    if (!canManage) return;
-    confirmDeleteDialog({
-      header: "Xác nhận xóa",
-      message: "Bạn có chắc chắn muốn xóa đánh giá sinh viên này?",
-      accept: async () => {
-        try {
-          const res = await apiFetch(`phanhoisinhvien/${id}`, {
-            method: "DELETE",
-          });
-          if (res.ok) {
-            fetchData(
-              page,
-              pageSize,
-              selectedDonVi,
-              searchHoTen,
-              searchMaHocPhan,
-              searchNamHoc,
-              searchKyHoc,
-            );
-          } else {
-            alert("Xóa thất bại!");
-          }
-        } catch (error) {
-          console.error("Lỗi khi xóa:", error);
-          alert("Lỗi kết nối máy chủ!");
-        }
-      },
-    });
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setFormData(initialForm);
-    setEditId(null);
   };
 
   return (
@@ -610,25 +474,12 @@ const QL_DanhGiaSinhVien = () => {
         page={page}
         pageSize={pageSize}
         onPageChange={handlePageChange}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
         isLoading={isLoading}
-        canManage={canManage}
       />
 
-      <QL_DanhGiaSinhVienForm
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        onSubmit={handleSubmit}
-        formData={formData}
-        setFormData={setFormData}
-        isEditing={!!editId}
-        namList={namList}
-        nhanVienList={nhanVienList}
-      />
 
       <QL_DanhGiaSinhVienImportModal
-        isOpen={isImportModalOpen}
+        isOpen={canManage && isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={() =>
           fetchData(
@@ -646,7 +497,7 @@ const QL_DanhGiaSinhVien = () => {
       />
 
       <QL_DanhGiaSinhVienChotModal
-        isOpen={isChotModalOpen}
+        isOpen={canManage && isChotModalOpen}
         onClose={() => setIsChotModalOpen(false)}
         onSuccess={() =>
           fetchData(

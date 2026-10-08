@@ -88,11 +88,11 @@ describe("gioGiangTkbApi validation", () => {
     expect(result.SoDongChuaAnhXa).toBe(2);
   });
 
-  test("route quản lý khớp quyền import của API", () => {
+  test("route giữ quyền ADMIN/HT và chặn chức vụ không có đơn vị phù hợp", () => {
     ["ADMIN", "HT"].forEach((role) => {
       expect(canAccessPath("/quan-ly-gio-giang", { MaChucVu: role })).toBe(true);
     });
-    ["PHT", "TK", "TKL", "TP", "TBM"].forEach((role) => {
+    ["PHT", "TK", "TKL", "TP", "QTP", "TBM"].forEach((role) => {
       expect(canAccessPath("/quan-ly-gio-giang", { MaChucVu: role })).toBe(false);
     });
   });

@@ -3152,19 +3152,21 @@ CREATE INDEX ix_lsptdn_bg        ON lich_su_phat_trien_doi_ngu(id_ban_ghi);
 GO
 
 -- =============================================================================
--- 19. SÁNG KIẾN — đồng bộ NCKH (giảng viên + viên chức) + P_KH nhập tay (CHỈ viên chức)
+-- 19. SÁNG KIẾN — đồng bộ NCKH (giảng viên + viên chức) + 2 cờ đánh dấu
 -- =============================================================================
--- MỘT bảng chung cho mọi sáng kiến, 2 nguồn:
+-- MỘT bảng chung cho mọi sáng kiến:
 --   nguon = 1  ĐỒNG BỘ từ GET {NckhApiUrl}/api/kpiinitiative (toàn thời gian, mọi người
---              có tài khoản NCKH). Cùng InitiativeId lặp lại dưới nhiều UserId (đồng tác
---              giả) → 1 dòng sang_kien + N dòng sang_kien_tac_gia.
---   nguon = 2  P_KH (TP / QTP + người được ủy quyền) NHẬP TAY — chỉ cho VIÊN CHỨC
---              (tác giả phải thuộc v_vien_chuc_don_vi). Giảng viên KHÔNG nhập tay.
+--              có tài khoản NCKH — NCKH đã kê khai cho cả giảng viên lẫn viên chức).
+--              Cùng InitiativeId lặp lại dưới nhiều UserId (đồng tác giả) → 1 dòng
+--              sang_kien + N dòng sang_kien_tac_gia.
+--   nguon = 2  P_KH NHẬP TAY — ĐÃ BỎ (đợt 2026-10-06 #3): dòng cũ bị xoá mềm, không còn
+--              tính điểm; giữ giá trị trong CHECK để không phải sửa dữ liệu lịch sử.
 -- Nguồn cho 2 tiêu chí chấm tự động:
 --   SK_DOI_MOI_GIANG_DAY (GV, có / không): có ≥ 1 sáng kiến hợp lệ trong năm được P_KH
---       đánh dấu la_doi_moi_giang_day = 1 → đủ diem_toi_da. Chỉ dòng đồng bộ được đánh dấu.
---   TTVT_SANG_KIEN (VC, cộng dồn, trần 30): SUM(cap_sang_kien.diem_vien_chuc) các sáng
---       kiến hợp lệ (cả 2 nguồn) — THAY nguồn cũ là kê khai thành tích vượt trội loại 1.
+--       đánh dấu la_doi_moi_giang_day = 1 → đủ diem_toi_da.
+--   TTVT_SANG_KIEN (VC, cộng dồn, trần 30): mỗi sáng kiến hợp lệ = điểm cấp (Bộ 20 /
+--       Trường, ĐHĐN 10) + 5 nếu TRƯỞNG ĐƠN VỊ đánh dấu la_cai_tien_cong_viec = 1
+--       — THAY nguồn cũ là kê khai thành tích vượt trội loại 1.
 -- "Hợp lệ" = dbo.fn_sang_kien_hop_le (procedure.sql) — vị từ DUY NHẤT dùng chung cho điểm
 -- và minh chứng. Năm / quý KHÔNG lưu: suy từ ngay_cong_nhan lúc đọc (khoảng ngày của
 -- nam_danh_gia; quý = DATEPART(QUARTER, ...)).
@@ -3172,8 +3174,11 @@ GO
 -- =============================================================================
 
 -- 19.1. Cấp sáng kiến — CỐ ĐỊNH 4 dòng. ten_nguon = text InitiativeLevel của API NCKH dùng
---       để ánh xạ khi đồng bộ (NULL = chỉ nhập tay). diem_vien_chuc = điểm / sáng kiến của
---       tiêu chí viên chức (trần thật nằm ở tieu_chi_danh_gia.diem_toi_da).
+--       để ánh xạ khi đồng bộ. diem_vien_chuc = điểm / sáng kiến của tiêu chí viên chức
+--       (trần thật nằm ở tieu_chi_danh_gia.diem_toi_da).
+--       Dòng 4 CAI_TIEN_CONG_VIEC (ten_nguon NULL) KHÔNG phải cấp của sáng kiến: diem_vien_chuc
+--       của nó = điểm CỘNG THÊM khi trưởng đơn vị đánh dấu sang_kien.la_cai_tien_cong_viec = 1
+--       (fn_sang_kien_hop_le đọc theo ma_cap). Giữ dòng vì dòng nhập tay cũ còn tham chiếu.
 CREATE TABLE cap_sang_kien (
     id_cap          TINYINT       NOT NULL,
     ma_cap          NVARCHAR(50)  NOT NULL,
@@ -3216,17 +3221,20 @@ INSERT INTO loai_giai_phap_sang_kien (id_loai, ma_loai, ten_loai, thu_tu) VALUES
     (7, N'KHAC',           N'Khác',                           7);
 GO
 
--- 19.3. Sáng kiến — 1 dòng = 1 sáng kiến (đồng bộ hoặc nhập tay).
+-- 19.3. Sáng kiến — 1 dòng = 1 sáng kiến (đồng bộ; nhập tay cũ đã bỏ).
 --   Dòng đồng bộ: khoá nghiệp vụ ma_sang_kien_nguon (= InitiativeId, unique filtered).
 --     id_cap / id_loai_giai_phap NULL khi text API không nhận diện được (giữ text gốc ở
 --     *_text_nguon). con_o_nguon = 0 khi lần đồng bộ gần nhất KHÔNG còn thấy sáng kiến →
 --     giữ dòng (kèm kết quả xét) nhưng KHÔNG tính điểm. Không sửa / xoá được qua API.
---   Dòng nhập tay: bắt buộc id_cap + ngay_cong_nhan + id_nguoi_tao; xoá MỀM (da_xoa).
---   Xét "đổi mới giảng dạy" (la_doi_moi_giang_day: NULL chưa xét / 1 có / 0 không) CHỈ
---     cho dòng đồng bộ; đồng bộ lại KHÔNG ghi đè các cột xét.
+--   Dòng nhập tay (ĐÃ BỎ, chỉ còn dữ liệu cũ đã xoá mềm): bắt buộc id_cap + ngay_cong_nhan
+--     + id_nguoi_tao; xoá MỀM (da_xoa).
+--   Hai cờ, CHỈ cho dòng đồng bộ; đồng bộ lại KHÔNG ghi đè các cột cờ:
+--     la_doi_moi_giang_day  (NULL chưa xét / 1 có / 0 không) — P_KH xét, tiêu chí GV.
+--     la_cai_tien_cong_viec (NULL chưa xét / 1 có / 0 không) — TRƯỞNG ĐƠN VỊ có tác giả trong
+--       sáng kiến (hoặc ADMIN / HT) xét; 1 cờ cho CẢ sáng kiến; tiêu chí VC +5.
 CREATE TABLE sang_kien (
     id_sang_kien              INT            IDENTITY(1,1) NOT NULL,
-    nguon                     TINYINT        NOT NULL,   -- 1 đồng bộ NCKH, 2 P_KH nhập tay
+    nguon                     TINYINT        NOT NULL,   -- 1 đồng bộ NCKH, 2 P_KH nhập tay (đã bỏ)
     ma_sang_kien_nguon        INT            NULL,       -- InitiativeId (chỉ nguon = 1)
     ten_sang_kien             NVARCHAR(1000) NOT NULL,   -- Name
     id_cap                    TINYINT        NULL,
@@ -3241,6 +3249,10 @@ CREATE TABLE sang_kien (
     id_nguoi_xet              INT            NULL,
     ngay_xet                  DATETIME       NULL,
     ghi_chu_xet               NVARCHAR(500)  NULL,
+    la_cai_tien_cong_viec     BIT            NULL,
+    id_nguoi_xet_cai_tien     INT            NULL,
+    ngay_xet_cai_tien         DATETIME       NULL,
+    ghi_chu_xet_cai_tien      NVARCHAR(500)  NULL,
     con_o_nguon               BIT            NOT NULL CONSTRAINT df_sk_con_o_nguon DEFAULT 1,
     id_nguoi_dong_bo          INT            NULL,
     thoi_gian_dong_bo         DATETIME       NULL,
@@ -3255,6 +3267,7 @@ CREATE TABLE sang_kien (
     CONSTRAINT fk_sk_cap           FOREIGN KEY (id_cap)            REFERENCES cap_sang_kien(id_cap),
     CONSTRAINT fk_sk_loai_gp       FOREIGN KEY (id_loai_giai_phap) REFERENCES loai_giai_phap_sang_kien(id_loai),
     CONSTRAINT fk_sk_nguoi_xet     FOREIGN KEY (id_nguoi_xet)      REFERENCES nhan_vien(id_nhan_vien),
+    CONSTRAINT fk_sk_nguoi_xet_ct  FOREIGN KEY (id_nguoi_xet_cai_tien) REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_sk_nguoi_dong_bo FOREIGN KEY (id_nguoi_dong_bo)  REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_sk_nguoi_tao     FOREIGN KEY (id_nguoi_tao)      REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_sk_nguoi_cn      FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES nhan_vien(id_nhan_vien),
@@ -3266,6 +3279,8 @@ CREATE TABLE sang_kien (
                                        OR (id_cap IS NOT NULL AND ngay_cong_nhan IS NOT NULL AND id_nguoi_tao IS NOT NULL)),
     CONSTRAINT chk_sk_xet_nguon    CHECK (nguon = 1 OR la_doi_moi_giang_day IS NULL),
     CONSTRAINT chk_sk_xet          CHECK (la_doi_moi_giang_day IS NULL OR ngay_xet IS NOT NULL),
+    CONSTRAINT chk_sk_cai_tien_nguon CHECK (nguon = 1 OR la_cai_tien_cong_viec IS NULL),
+    CONSTRAINT chk_sk_cai_tien     CHECK (la_cai_tien_cong_viec IS NULL OR ngay_xet_cai_tien IS NOT NULL),
     CONSTRAINT chk_sk_ten          CHECK (LEN(LTRIM(RTRIM(ten_sang_kien))) > 0),
     CONSTRAINT chk_sk_xoa          CHECK ((da_xoa = 0 AND ngay_xoa IS NULL) OR (da_xoa = 1 AND ngay_xoa IS NOT NULL)),
     CONSTRAINT chk_sk_xoa_nguon    CHECK (da_xoa = 0 OR nguon = 2)
@@ -3276,7 +3291,7 @@ GO
 --       đều được tính. Dòng đồng bộ: ma_nguoi_dung_nckh + ho_ten / email từ API, id_nhan_vien
 --       ghép lúc đồng bộ theo EMAIL; không khớp email thì TẠM ghép theo HỌ TÊN khi họ tên khớp
 --       đúng 1 nhân viên đang hoạt động (trùng tên → không ghép). Không khớp → NULL, vẫn lưu để
---       báo "chưa khớp nhân sự"; đồng bộ lại sẽ ghép lại. Dòng nhập tay: chỉ id_nhan_vien (viên chức).
+--       báo "chưa khớp nhân sự"; đồng bộ lại sẽ ghép lại. Dòng nhập tay cũ (đã bỏ): chỉ id_nhan_vien.
 --       cach_ghep: 1 email · 2 họ tên (TẠM, cần rà soát) · 3 nhập tay · NULL chưa khớp.
 CREATE TABLE sang_kien_tac_gia (
     id                  INT           IDENTITY(1,1) NOT NULL,
@@ -3296,6 +3311,7 @@ GO
 
 -- 19.5. Ủy quyền nhập liệu — TP / QTP của P_KH cấp cho nhân sự của phòng (clone §18.4).
 --       Hiệu lực chỉ khi người được cấp HÔM NAY vẫn thuộc P_KH (fn_sang_kien_thuoc_phong).
+--       Từ khi bỏ nhập tay: quyền này = đồng bộ NCKH + xét "đổi mới giảng dạy".
 CREATE TABLE sang_kien_nguoi_nhap (
     id               INT           IDENTITY(1,1) NOT NULL,
     id_nhan_vien     INT           NOT NULL,
@@ -3315,7 +3331,8 @@ GO
 
 -- 19.6. Nhật ký module (convention lich_su_*).
 --       hanh_dong: 1 Tạo (nhập tay) · 2 Sửa · 3 Xoá · 4 Xét đổi mới giảng dạy · 5 Đồng bộ NCKH
---                  (1 dòng tóm tắt / lần, id_sang_kien NULL) · 6 Cấp quyền nhập · 7 Thu hồi quyền nhập.
+--                  (1 dòng tóm tắt / lần, id_sang_kien NULL) · 6 Cấp quyền nhập · 7 Thu hồi quyền nhập
+--                  · 8 Xét cải tiến công việc. (1 / 2 / 3 chỉ còn ở dữ liệu cũ — đã bỏ nhập tay.)
 --       id_nhan_vien = người được cấp / thu hồi quyền (6, 7); NULL với các hành động khác.
 CREATE TABLE lich_su_sang_kien (
     id                 BIGINT         IDENTITY(1,1) NOT NULL,
@@ -3329,15 +3346,16 @@ CREATE TABLE lich_su_sang_kien (
     CONSTRAINT fk_lssk_sk    FOREIGN KEY (id_sang_kien)       REFERENCES sang_kien(id_sang_kien),
     CONSTRAINT fk_lssk_nv    FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_lssk_nguoi FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES nhan_vien(id_nhan_vien),
-    CONSTRAINT chk_lssk_hd   CHECK (hanh_dong BETWEEN 1 AND 7)
+    CONSTRAINT chk_lssk_hd   CHECK (hanh_dong BETWEEN 1 AND 8)
 );
 GO
 
 -- 19.7. TVP
 --   SangKienNckhRow  : payload /api/kpiinitiative đã làm PHẲNG ở C# — 1 dòng = 1 (UserId ×
 --                      InitiativeId); thông tin sáng kiến lặp lại theo từng tác giả.
---   SangKienTacGiaRow: danh sách tác giả (viên chức) khi P_KH nhập tay.
 --   SangKienXetRow   : xét "đổi mới giảng dạy" hàng loạt (la_doi_moi_giang_day NULL = bỏ xét).
+--   SangKienXetCaiTienRow: xét "cải tiến công việc" hàng loạt (la_cai_tien_cong_viec NULL = bỏ xét).
+--   (SangKienTacGiaRow của luồng nhập tay đã bỏ — procedure.sql DROP nếu còn.)
 --   Định nghĩa cũng nằm ở procedure.sql (CREATE nếu chưa có) — sửa một bên phải sửa cả bên kia.
 CREATE TYPE dbo.SangKienNckhRow AS TABLE (
     ma_nguoi_dung_nckh  INT            NOT NULL,
@@ -3354,15 +3372,17 @@ CREATE TYPE dbo.SangKienNckhRow AS TABLE (
 );
 GO
 
-CREATE TYPE dbo.SangKienTacGiaRow AS TABLE (
-    id_nhan_vien INT NOT NULL PRIMARY KEY
-);
-GO
-
 CREATE TYPE dbo.SangKienXetRow AS TABLE (
     id_sang_kien         INT           NOT NULL PRIMARY KEY,
     la_doi_moi_giang_day BIT           NULL,
     ghi_chu_xet          NVARCHAR(500) NULL
+);
+GO
+
+CREATE TYPE dbo.SangKienXetCaiTienRow AS TABLE (
+    id_sang_kien          INT           NOT NULL PRIMARY KEY,
+    la_cai_tien_cong_viec BIT           NULL,
+    ghi_chu               NVARCHAR(500) NULL
 );
 GO
 

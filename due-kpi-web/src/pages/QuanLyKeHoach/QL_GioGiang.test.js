@@ -3,8 +3,10 @@ import "@testing-library/jest-dom";
 import { fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import QL_GioGiang from "./QL_GioGiang";
 import { apiFetch } from "../../utils/api";
+import { useAuth } from "../../context/AuthContext";
 
 jest.mock("../../utils/api", () => ({ apiFetch: jest.fn() }));
+jest.mock("../../context/AuthContext", () => ({ useAuth: jest.fn() }));
 jest.mock("primereact/toast", () => ({ Toast: require("react").forwardRef(() => null) }));
 jest.mock("../../components/Common/SearchSelect", () => ({ value, onChange, options, name }) =>
   <select aria-label={name || "Bộ lọc"} value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>);
@@ -15,6 +17,7 @@ const rows = [
 ];
 const ok = (body) => ({ ok: true, json: async () => body });
 beforeEach(() => {
+  useAuth.mockReturnValue({ user: { MaChucVu: "ADMIN" } });
   apiFetch.mockReset();
   apiFetch.mockImplementation(async (url) => {
     if (url === "namdanhgia") return ok({ Items: [{ IdNam: 2026 }] });
@@ -26,6 +29,21 @@ beforeEach(() => {
     if (url === "gio-giang-tkb/anh-xa") return ok({ Success: true });
     throw new Error(`Unexpected endpoint: ${url}`);
   });
+});
+
+test.each(["TP", "QTP"])("%s P_DTBDCL xem chi tiết/tổng hợp và không có thao tác ghi", async (role) => {
+  useAuth.mockReturnValue({ user: { MaChucVu: "NV", DonVi: [{ MaChucVu: role, MaDonVi: "P_DTBDCL" }] } });
+  render(<QL_GioGiang />);
+  const detailButtons = await screen.findAllByRole("button", { name: "Chi tiết" });
+  expect(screen.queryByRole("button", { name: "Upload thời khóa biểu" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Quét lại tự động" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Ánh xạ", exact: true })).not.toBeInTheDocument();
+  fireEvent.click(detailButtons[0]);
+  expect(await within(screen.getByRole("dialog")).findByText("Lop SDH")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Tổng hợp giờ giảng" }));
+  expect(await screen.findByRole("columnheader", { name: "Giảng dạy ĐH" })).toBeInTheDocument();
+  expect(apiFetch.mock.calls.every(([, options]) => !options?.method || options.method === "GET")).toBe(true);
 });
 
 test("hai dòng trùng tên ánh xạ và gỡ đúng khoa; tổng hợp chỉ còn giờ TKB", async () => {

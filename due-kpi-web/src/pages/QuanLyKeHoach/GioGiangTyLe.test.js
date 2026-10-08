@@ -74,7 +74,7 @@ test("hiện nguyên số API, không cắt tỷ lệ lớn; null và cảnh bá
   fireEvent.click(screen.getByRole("button", { name: "Giải trình giờ giảng của Người có giờ" }));
   const dialog = screen.getByRole("dialog");
   expect(await within(dialog).findByText("12,5")).toBeInTheDocument();
-  expect(within(dialog).getByText("-2")).toBeInTheDocument();
+  expect(within(dialog).queryByText("-2")).not.toBeInTheDocument();
   expect(within(dialog).getByText("33,77")).toBeInTheDocument();
   expect(within(dialog).queryByText("Tập sự / thử việc")).not.toBeInTheDocument();
 });

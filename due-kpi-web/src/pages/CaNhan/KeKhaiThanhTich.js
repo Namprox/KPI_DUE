@@ -129,7 +129,7 @@ const BadgeTrangThai = ({ meta, ghiChu }) => {
  * Nhân viên tự kê từng thành tích đạt được trong năm (khen thưởng,
  * hoàn thành khoá đào tạo, tham gia phong trào), đơn vị phụ trách chốt hoặc trả
  * về TỪNG DÒNG; điểm đã chốt chảy vào phiếu KPI qua các mã công thức TTVT_*.
- * Sáng kiến do P_KH ghi nhận ở module riêng; dòng kê khai cũ chỉ để tra cứu.
+ * Sáng kiến đồng bộ từ NCKH ở module riêng; dòng kê khai cũ chỉ để tra cứu.
  *
  * Năm quy ước nghiệp vụ mà giao diện phải phản ánh đúng:
  *
@@ -597,7 +597,7 @@ const KeKhaiThanhTich = () => {
                         ) : (
                           <i
                             className="fa-solid fa-lock"
-                            title={laDongSangKien(r) ? "Sáng kiến đã chuyển sang Phòng Khoa học ghi nhận" : "Dòng đã chốt; cần đơn vị phụ trách mở lại trước khi sửa"}
+                            title={laDongSangKien(r) ? "Sáng kiến đã chuyển sang dữ liệu đồng bộ NCKH" : "Dòng đã chốt; cần đơn vị phụ trách mở lại trước khi sửa"}
                           ></i>
                         )}
                       </div>
@@ -1122,7 +1122,7 @@ const KeKhaiThanhTich = () => {
         )}
       </div>
 
-      <div className="kkt-tran-canh-bao">Sáng kiến, cải tiến công việc do Phòng Khoa học ghi nhận, không tự kê khai tại đây. <Link to="/sang-kien">Xem sáng kiến của tôi</Link></div>
+      <div className="kkt-tran-canh-bao">Sáng kiến được đồng bộ từ NCKH; cải tiến công việc do trưởng đơn vị đánh dấu, không tự kê khai tại đây. <Link to="/sang-kien">Xem sáng kiến của tôi</Link></div>
       {renderNoiDung()}
 
       <DanhMucThanhTichModal

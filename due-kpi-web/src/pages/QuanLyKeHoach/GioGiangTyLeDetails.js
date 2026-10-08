@@ -29,6 +29,7 @@ export function GiaiTrinhGioGiang({ row, dienGiai, onViewTkb }) {
   const known = [...NHOM_DINH_MUC, ...NHOM_GIO_THUC_HIEN].map(([code]) => code);
   const unknown = [...new Set(items.map((item) => item.KhoanMuc))].filter((code) => !known.includes(code));
   const group = ([code, label, field]) => {
+    if (code === "DIEU_CHINH_SAN_0") return null;
     const children = items.filter((item) => item.KhoanMuc === code);
     if (row[field] === 0 && !children.length) return null;
     if (row[field] == null && !children.length && code !== "DINH_MUC_GOC") return null;
@@ -52,7 +53,7 @@ export function GiaiTrinhGioGiang({ row, dienGiai, onViewTkb }) {
       <thead><tr><th>Khoản mục / diễn giải</th><th>Cách tính</th><th className="ggtk-number">Số giờ</th></tr></thead>
       <tbody>
         {NHOM_DINH_MUC.map(group)}
-        <tr className="ggtl-result"><th colSpan={2} scope="row">Định mức gốc − tổng giảm − điều chỉnh sàn 0 = định mức áp dụng</th><td className="ggtk-number"><strong>{so(row.DinhMucApDung)}</strong></td></tr>
+        <tr className="ggtl-result"><th colSpan={2} scope="row">Định mức áp dụng</th><td className="ggtk-number"><strong>{so(row.DinhMucApDung)}</strong></td></tr>
         {NHOM_GIO_THUC_HIEN.map(group)}
         {unknown.map((code) => group([code, code, ""]))}
         <tr className="ggtl-result"><th colSpan={2} scope="row">Tổng giờ thực hiện</th><td className="ggtk-number"><strong>{so(row.TongGio)}</strong></td></tr>

@@ -9,7 +9,6 @@ import {
   deleteMinhChungQuy,
   downloadMinhChungQuy,
   fetchChiTietMauDanhGia,
-  fetchDiemTuDongMau,
   fetchPhieuNamCuaToi,
   fetchPhieuQuy,
   fetchPhieuQuyCuaToi,
@@ -31,6 +30,7 @@ import "../../css/DanhGia/PhieuQuy.css";
 
 import { formatNgayGio } from "../../utils/phieuApi";
 import { laSangKien, diemSangKienDaLuu } from "../../utils/diemTuDongPhieu";
+import { fetchDiemTuDongPhieu } from "../../utils/phieuTuDongApi";
 
 const so = (value) => {
   const n = Number(value);
@@ -303,18 +303,14 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
       if (item) {
         const idMau = item.IdMau || template?.IdMau;
         const [diemResult, mauResult] = await Promise.allSettled([
-          fetchDiemTuDongMau({
-            idMau: item.IdMau || template?.IdMau,
-            idNhanVien: item.IdNhanVien || user?.IdNhanVien,
-            quy: tab,
-          }),
+          fetchDiemTuDongPhieu(item.IdPhieu),
           fetchChiTietMauDanhGia(idMau),
         ]);
 
         if (diemResult.status === "fulfilled") {
           const nextDiemTuDong = { ...diemDuPhong };
-          diemResult.value.forEach((score) => {
-            if (score.IdTieuChi == null) return;
+          (diemResult.value.Items || []).forEach((score) => {
+            if (score.IdTieuChi == null || !item.ChiTiet?.some((ct) => String(ct.IdChiTiet) === String(score.IdChiTiet))) return;
             const saved = diemDuPhong[score.IdTieuChi];
             nextDiemTuDong[score.IdTieuChi] = {
               ...saved,
@@ -325,7 +321,7 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
           });
           setDiemTuDong(nextDiemTuDong);
         } else {
-          // Preview là dữ liệu bổ sung; phiếu và điểm đã chốt trong ChiTiet vẫn
+          // Minh chứng là dữ liệu bổ sung; phiếu và điểm đã chốt trong ChiTiet vẫn
           // phải hiển thị được khi endpoint điểm tự động tạm thời lỗi.
           console.error("Lỗi khi tải điểm tự động phiếu quý:", diemResult.reason);
         }
@@ -349,7 +345,7 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, tab, queryDonVi, template?.IdMau, user?.IdNhanVien]);
+  }, [selectedYear, tab, queryDonVi, template?.IdMau]);
 
   useEffect(() => {
     load();

@@ -1,3 +1,4 @@
+import { hasRole, ROLE_SETS } from "../../utils/roles";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
@@ -33,10 +34,7 @@ const QL_NamDanhGia = () => {
     const { user } = useAuth();
     const currentUser = user || {};
 
-    const roleCode = currentUser?.MaChucVu || '';
-    const isAdmin = roleCode === 'Admin';
-    const isManager = ['HT', 'PHT', 'TK', 'TBM'].includes(roleCode);
-    const canManage = isAdmin || isManager;
+    const canManage = hasRole(ROLE_SETS.NAM_DANH_GIA, currentUser);
 
     useEffect(() => {
         fetchData();

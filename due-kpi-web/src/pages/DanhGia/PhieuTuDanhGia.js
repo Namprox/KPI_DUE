@@ -29,6 +29,8 @@ import {
 import SearchSelect from "../../components/Common/SearchSelect";
 import ThieuTieuChiChecklist from "../../components/DanhGia/ThieuTieuChiChecklist";
 import { ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
+import { fetchDiemTuDongPhieu } from "../../utils/phieuTuDongApi";
+import { fetchDiemTuDongMau } from "../../utils/phieuQuyApi";
 
 // Flatten the template groups (Nhom -> NhomCon -> TieuChi) into a flat criteria list
 const flattenTemplate = (itemDetail) => {
@@ -114,6 +116,8 @@ const docCoDongChot = (chiTiet = []) =>
 const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   const [criteriaList, setCriteriaList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loiDiemXemTruoc, setLoiDiemXemTruoc] = useState(false);
+  const [lanTaiLai, setLanTaiLai] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({});
   const [autoScorePreview, setAutoScores] = useState({}); // IdTieuChi -> { DiemTuDong, ... }
@@ -328,6 +332,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
       dirtyRef.current = new Set();
       setFormData({});
       setAutoScores({});
+      setLoiDiemXemTruoc(false);
       setTongDiemCoBan(0);
       setTrangThaiPhieu(0);
       setLyDoTraVe("");
@@ -408,24 +413,37 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         const itemDetail = resultDetail.Item || resultDetail.data || {};
         setCriteriaList(flattenTemplate(itemDetail));
 
-        // 4. Auto-computed scores for LoaiNguonDiem = 2 criteria (read-only)
+        // 4. Có phiếu thì dùng snapshot; chưa có phiếu thì xem trước của chính mình.
         let autoMap = {};
-        try {
-          const resAuto = await apiFetch(
-            `maudanhgia/${idMau}/diem-tu-dong?idNhanVien=${currentUser.IdNhanVien}`,
-          );
-          if (resAuto.ok) {
-            const resultAuto = await resAuto.json();
-            const autoItems =
-              resultAuto.Items ||
-              resultAuto.items ||
-              (Array.isArray(resultAuto) ? resultAuto : []);
-            autoItems.forEach((it) => {
-              if (it && it.IdTieuChi != null) autoMap[it.IdTieuChi] = it;
+        if (phieu?.IdPhieu) {
+          try {
+            const resultAuto = await fetchDiemTuDongPhieu(phieu.IdPhieu);
+            (resultAuto.Items || []).forEach((it) => {
+              if (it && it.IdTieuChi != null && chiTiet.some((ct) => String(ct.IdChiTiet) === String(it.IdChiTiet))) autoMap[it.IdTieuChi] = it;
             });
+          } catch (e) {
+            console.error("Lỗi khi tải điểm tự động:", e);
           }
-        } catch (e) {
-          console.error("Lỗi khi tải điểm tự động:", e);
+        } else {
+          try {
+            const items = await fetchDiemTuDongMau({
+              idMau,
+              idNhanVien: currentUser.IdNhanVien,
+              quy: 0,
+            });
+            const ids = new Set(flattenTemplate(itemDetail).map((tc) => String(tc.IdTieuChi)));
+            items.forEach((it) => {
+              if (it.IdTieuChi != null && ids.has(String(it.IdTieuChi))) {
+                autoMap[it.IdTieuChi] = it;
+              }
+            });
+          } catch (e) {
+            // DTO mẫu không có LoaiNguonDiem: thiếu preview thì chưa thể phân
+            // biệt chấm tay / tự động, không được mở các ô nhập như chấm tay.
+            console.error("Lỗi khi tải điểm xem trước:", e);
+            setLoiDiemXemTruoc(true);
+            return;
+          }
         }
 
         autoMap = ghepDiemTuDongPhieu(autoMap, chiTiet || [], flattenTemplate(itemDetail));
@@ -487,6 +505,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
     listYears.length,
     activeLoaiDoiTuong,
     selectedDonVi?.IdDonVi,
+    lanTaiLai,
   ]);
 
   const activeYear = yearDetails.find((y) => y.IdNam === selectedYear);
@@ -1294,6 +1313,21 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           style={{ fontSize: "30px", color: "#003399" }}
         ></i>
         <p style={{ marginTop: "15px" }}>Đang tải biểu mẫu đánh giá</p>
+      </div>
+    );
+  }
+
+  if (loiDiemXemTruoc) {
+    return (
+      <div className="page-container">
+        <div className="pl2-banner-tra-ve" role="alert">
+          <div>
+            <p>Không tải được điểm tự động. Vui lòng thử lại để mở biểu mẫu đánh giá.</p>
+            <button type="button" className="pl2-banner-btn" onClick={() => setLanTaiLai((lan) => lan + 1)}>
+              Thử lại
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

@@ -15,6 +15,8 @@ const truongDonVi = (maChucVu, idDonVi = 10) => ({
 });
 
 const cacMucCoTp = [
+  "/quan-ly/tham-dinh",
+  "/ty-le-hoan-thanh-gio-giang",
   "/quan-ly/to-trinh",
   "/quan-ly/phieu-quy",
   "/quan-ly-nguoi-dung",
@@ -49,8 +51,8 @@ test("mục theo đơn vị yêu cầu chức vụ và đơn vị trên cùng b�
     ],
   };
   expect(canAccessPath("/quan-ly-danh-gia-sinh-vien", user)).toBe(false);
-  expect(canAccessPath("/quan-ly-danh-gia-sinh-vien", truongDonVi("QTP", 23))).toBe(true);
-  expect(canAccessPath("/quan-ly-danh-gia-sinh-vien", { MaChucVu: "QTP", IdDonVi: 23 })).toBe(true);
+  expect(canAccessPath("/quan-ly-danh-gia-sinh-vien", { MaChucVu: "NV", DonVi: [{ MaChucVu: "QTP", IdDonVi: 23, MaDonVi: "P_DTBDCL" }] })).toBe(true);
+  expect(canAccessPath("/quan-ly-danh-gia-sinh-vien", { MaChucVu: "QTP", IdDonVi: 23, MaDonVi: "P_DTBDCL" })).toBe(true);
 });
 
 test("quản lý học vụ chỉ thêm QTP tại P_DTBDCL theo quyền backend", () => {

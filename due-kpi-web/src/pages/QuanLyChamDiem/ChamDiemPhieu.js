@@ -51,6 +51,8 @@ import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import TienDoCham from "../../components/QuanLyChamDiem/TienDoCham";
 import TieuChiChamCard from "../../components/QuanLyChamDiem/TieuChiChamCard";
+import { useDiemTuDongPhieu } from "../../hooks/useDiemTuDongPhieu";
+import PhieuTuDongNotice from "../../components/DanhGia/PhieuTuDongNotice";
 import TongDiemMeta from "../../components/QuanLyChamDiem/TongDiemMeta";
 import LyDoModal from "../../components/QuanLyChamDiem/LyDoModal";
 import SuaDiemModal from "../../components/QuanLyChamDiem/SuaDiemModal";
@@ -96,6 +98,7 @@ const ChamDiemPhieu = () => {
   const { nhanVienIndex } = useNhanVienIndex();
 
   const [phieu, setPhieu] = useState(null);
+  const tuDong = useDiemTuDongPhieu(phieu);
   const [donViList, setDonViList] = useState([]);
   const [phanQuyenRows, setPhanQuyenRows] = useState([]);
   // Map IdTieuChi -> { loaiNhom, thang điểm } của mẫu; rỗng thì hộp thoại chấm
@@ -462,6 +465,7 @@ const ChamDiemPhieu = () => {
       <TieuChiChamCard
         key={ct.IdChiTiet}
         chiTiet={ct}
+        autoInfo={tuDong.theoChiTiet[ct.IdChiTiet]}
         stt={sttTheoChiTiet.get(ct.IdChiTiet)}
         moTa={tieuChiMauMap.get(Number(ct.IdTieuChi))?.moTa ?? ct.MoTa}
         lichSu={lichSuTheoChiTiet.get(Number(ct.IdChiTiet)) || []}
@@ -526,6 +530,7 @@ const ChamDiemPhieu = () => {
   return (
     <div className="page-container">
       <Toast ref={toast} position="top-right" />
+      <PhieuTuDongNotice phieu={phieu} tuDong={tuDong} />
 
       <div
         className="page-header"

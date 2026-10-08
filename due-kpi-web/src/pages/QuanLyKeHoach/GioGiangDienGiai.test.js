@@ -97,7 +97,7 @@ test("contract chỉ có TKB và QNDB; tổng giờ, tỷ lệ và điểm lấy
   expect(within(table).getByRole("row", { name: "Tổng giờ thực hiện 129,5" })).toBeInTheDocument();
   expect(within(table).getAllByRole("rowheader").map((cell) => cell.textContent)).toEqual([
     "Định mức gốc", "Trước ngày vào Trường", "Tập sự / thử việc", "Giảm theo chức vụ",
-    "Định mức gốc − tổng giảm − điều chỉnh sàn 0 = định mức áp dụng",
+    "Định mức áp dụng",
     "Giờ theo TKB", "Huấn luyện QNDB / tự vệ", "Tổng giờ thực hiện",
   ]);
   expect(apiFetch).toHaveBeenCalledTimes(1);

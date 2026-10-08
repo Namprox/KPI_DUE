@@ -70,7 +70,7 @@
 .pl2-criteria .pl2-thang-diem-text { color: #4a5169; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 .pl2-criteria .selected .pl2-thang-diem-text { color: var(--tc-text); }
 .pl2-criteria .pl2-auto-score-box { max-width: none; padding: 16px 18px; border: 1px solid var(--tc-border); border-radius: 12px; background: #fafbfe; }
-.pl2-criteria .pl2-auto-score-info { flex: 1; min-width: 0; }
+.pl2-criteria .pl2-auto-score-info { flex: 1; min-width: 0; grid-template-columns: 16px minmax(0, 1fr); }
 .pl2-criteria .pl2-auto-score-label { color: var(--tc-text); font-size: 16px; font-weight: 600; line-height: 1.5; }
 .pl2-criteria .pl2-auto-score-note { color: var(--tc-muted); font-size: 14px; line-height: 1.5; }
 .pl2-criteria .pl2-auto-icon,
@@ -80,6 +80,18 @@
 .pl2-criteria .pl2-auto-score-info .pl2-auto-detail-link { grid-column: 2; justify-self: start; display: inline-flex; align-items: center; gap: 7px; margin-top: 5px; padding: 6px 10px; border: 1px solid var(--tc-border); border-radius: 7px; background: #fff; color: var(--tc-accent); font-size: 13px; font-weight: 600; line-height: 18px; text-decoration: none; transition: background 0.15s ease, border-color 0.15s ease; }
 .pl2-criteria .pl2-auto-score-info .pl2-auto-detail-link:hover { border-color: var(--tc-accent); background: var(--tc-soft); }
 .pl2-criteria .pl2-auto-score-info .pl2-auto-detail-link:focus-visible { outline: 2px solid var(--tc-accent); outline-offset: 2px; }
+.pl2-criteria .pl2-auto-note {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--tc-border);
+  border-left: 3px solid #c9cef5;
+  border-radius: 10px;
+  background: #fafbfe;
+  color: var(--tc-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
 .pl2-criteria .pl2-auto-thang-diem-list { gap: 8px; margin-top: 14px; }
 .pl2-criteria .pl2-auto-thang-diem-icon { font-size: 18px; margin: 0; }
 .pl2-criteria .pl2-phsv-tb-box { background: #fafbfe; border-color: var(--tc-border); border-radius: 11px; }
@@ -126,4 +138,5 @@
   .pl2-criteria .pl2-thang-diem-item,
   .pl2-criteria .pl2-auto-thang-diem-item { padding: 11px 10px; gap: 9px; }
   .pl2-criteria .pl2-auto-score-box { padding: 12px; gap: 10px; }
+  .pl2-criteria .pl2-auto-note { padding: 10px 12px; }
 }

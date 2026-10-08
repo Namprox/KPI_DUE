@@ -4,7 +4,6 @@ import { render, screen, fireEvent, waitFor, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import SangKien from "./SangKien";
 import SangKienUyQuyen from "./SangKienUyQuyen";
-import SangKienForm from "../../components/SangKien/SangKienForm";
 import SangKienDetail from "../../components/SangKien/SangKienDetail";
 import DanhGiaPhuLuc2Form from "../../components/DanhGia/DanhGiaPhuLuc2/DanhGiaPhuLuc2Form";
 import { MinhChungRow } from "../../components/QuanLyChamDiem/TieuChiChamCard";
@@ -12,7 +11,6 @@ import RequireRole from "../../components/RequireRole";
 import { useQuyenSangKien } from "../../context/SangKienContext";
 import { useAuth } from "../../context/AuthContext";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
-import { apiFetch } from "../../utils/api";
 import * as api from "../../utils/sangKienApi";
 import { canAccessPath, visibleGroups } from "../../config/menuConfig";
 import { ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
@@ -20,14 +18,13 @@ import { ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
 jest.mock("../../context/SangKienContext", () => ({ useQuyenSangKien: jest.fn() }));
 jest.mock("../../context/AuthContext", () => ({ useAuth: jest.fn() }));
 jest.mock("../../hooks/useNamDanhGia", () => ({ useNamDanhGia: jest.fn() }));
-jest.mock("../../utils/api", () => ({ apiFetch: jest.fn() }));
 jest.mock("../../utils/sangKienApi");
 jest.mock("primereact/dialog", () => ({ Dialog: ({ header, children, footer }) => <div role="dialog" aria-label={header}>{children}{footer}</div> }));
 
 const author = { IdNhanVien: 201, MaNhanVien: "VC0201", HoTen: "Nguyễn Văn A", LaVienChuc: true, TenDonVi: "Phòng Khoa học" };
-const catalog = { Cap: [{ IdCap: 4, TenCap: "Cải tiến công việc" }, { IdCap: 2, TenCap: "Cấp cơ sở (Trường)" }], LoaiGiaiPhap: [{ IdLoai: 7, TenLoai: "Khác" }] };
-const synced = { IdSangKien: 12, TenSangKien: "Học liệu số", Nguon: 1, IdCap: 2, TenCap: "Cấp cơ sở (Trường)", IdNamDanhGia: 2026, NgayCongNhan: "2026-04-10T00:00:00", ChoPhepSua: false, ChoPhepXet: true, ConONguon: true, TacGia: [author] };
-const manual = { ...synced, IdSangKien: 13, TenSangKien: "Số hoá hồ sơ", Nguon: 2, ChoPhepSua: true, ChoPhepXet: false };
+const catalog = { DiemCaiTienCongViec: 5, Cap: [{ IdCap: 1, TenCap: "Cấp cơ sở (ĐHĐN)" }, { IdCap: 2, TenCap: "Cấp cơ sở (Trường)" }, { IdCap: 3, TenCap: "Cấp Bộ trở lên" }], LoaiGiaiPhap: [{ IdLoai: 7, TenLoai: "Khác" }] };
+const synced = { IdSangKien: 12, TenSangKien: "Học liệu số", Nguon: 1, IdCap: 2, TenCap: "Cấp cơ sở (Trường)", IdNamDanhGia: 2026, NgayCongNhan: "2026-04-10T00:00:00", ChoPhepXet: true, ChoPhepXetCaiTien: true, ConONguon: true, TacGia: [author] };
+const restricted = { ...synced, IdSangKien: 13, TenSangKien: "Số hoá hồ sơ", ChoPhepXet: false, ChoPhepXetCaiTien: false };
 const show = (view, path = "/sang-kien") => render(<MemoryRouter initialEntries={[path]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>{view}</MemoryRouter>);
 const choose = (label, option) => { fireEvent.click(screen.getByRole("combobox", { name: label })); fireEvent.click(screen.getByRole("option", { name: option, exact: true })); };
 beforeAll(() => { Element.prototype.scrollIntoView = jest.fn(); });
@@ -37,14 +34,10 @@ beforeEach(() => {
   useAuth.mockReturnValue({ user: { MaChucVu: "GV" }, loading: false });
   useNamDanhGia.mockReturnValue({ namList: [{ IdNam: 2026 }], selectedNam: "2026", dangTaiNam: false });
   api.layDanhMucSangKien.mockResolvedValue(catalog);
-  api.laySangKien.mockResolvedValue({ Items: [synced, manual], Page: 1, PageSize: 20, TotalCount: 21, TotalPages: 2 });
-  api.layChiTietSangKien.mockResolvedValue({ Item: manual, LichSu: [] });
-  api.layVienChucSangKien.mockResolvedValue({ Items: [author, { ...author, IdNhanVien: 202, HoTen: "Trần Thị B" }] });
+  api.laySangKien.mockResolvedValue({ Items: [synced, restricted], Page: 1, PageSize: 20, TotalCount: 21, TotalPages: 2 });
+  api.layChiTietSangKien.mockResolvedValue({ Item: synced, LichSu: [] });
   api.xetGiangDaySangKien.mockResolvedValue({ Success: true, SoCapNhat: 1 });
-  api.themSangKien.mockResolvedValue({ Success: true, IdSangKien: 14 });
-  api.suaSangKien.mockResolvedValue({ Success: true, CoThayDoi: false });
-  api.xoaSangKien.mockResolvedValue({ Success: true });
-  apiFetch.mockResolvedValue({ ok: true, json: async () => ({ Items: [{ IdDonVi: 7, TenDonVi: "Phòng Khoa học" }] }) });
+  api.xetCaiTienSangKien.mockResolvedValue({ Success: true, SoCapNhat: 1 });
 });
 test("menu / URL ủy quyền chỉ nhận quyền Sáng kiến, mọi tài khoản có lối vào cá nhân", () => {
   const user = { MaChucVu: "ADMIN" };
@@ -98,12 +91,12 @@ test("list dùng cờ từng dòng, lọc cấp 0 / chưa xét 0 và cho xem m�
   show(<SangKien />);
   await screen.findByRole("button", { name: synced.TenSangKien });
   const table = screen.getByRole("table", { name: "Danh sách sáng kiến" });
-  expect(within(table).getAllByRole("button", { name: "Sửa" })).toHaveLength(1);
-  expect(within(table).getAllByRole("button", { name: "Xét" })).toHaveLength(1);
+  expect(within(table).queryByRole("button", { name: "Sửa" })).not.toBeInTheDocument();
+  expect(within(table).getAllByRole("button", { name: "Xét giảng dạy" })).toHaveLength(1);
   choose("Lọc cấp công nhận", "Chưa xác định cấp");
-  choose("Trạng thái xét", "Chưa xét");
+  choose("Trạng thái xét giảng dạy", "Chưa xét");
   choose("Năm đánh giá", "Mọi năm");
-  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", idCap: "0", trangThaiXet: "0", nguon: "1", page: 1 }), expect.anything()));
+  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", idCap: "0", trangThaiXet: "0", page: 1 }), expect.anything()));
 });
 test("người chỉ xem không thấy đồng bộ, nhập tay, xét và ủy quyền", async () => {
   useQuyenSangKien.mockReturnValue({ quyen: { XemTheoDonVi: true, DuocUyQuyen: true, DuocNhap: false } });
@@ -119,9 +112,9 @@ test("lọc ghép theo họ tên từ URL, đổi bộ lọc về trang đầu v
   await screen.findByRole("button", { name: synced.TenSangKien });
   const box = screen.getByRole("checkbox", { name: "Ghép tạm theo họ tên (cần rà soát)" });
   expect(box).toBeChecked();
-  expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", nguon: "1", ghepTheoHoTen: true, chuaKhopTacGia: true, page: 2 }), expect.anything());
+  expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", ghepTheoHoTen: true, chuaKhopTacGia: true, page: 2 }), expect.anything());
   fireEvent.click(box);
-  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", nguon: "1", ghepTheoHoTen: false, chuaKhopTacGia: true, page: 1 }), expect.anything()));
+  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", ghepTheoHoTen: false, chuaKhopTacGia: true, page: 1 }), expect.anything()));
   expect(box).not.toBeChecked();
   fireEvent.click(box);
   await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ ghepTheoHoTen: true, page: 1 }), expect.anything()));
@@ -130,7 +123,6 @@ test.each([false, true])("cách ghép tác giả trên trang chi tiết=%s phân
   const people = [
     { ...author, IdNhanVien: 1, HoTen: "Tác giả email", CachGhep: 1 },
     { ...author, IdNhanVien: 2, HoTen: "Tác giả ghép tạm", CachGhep: 2 },
-    { ...author, IdNhanVien: 3, HoTen: "Tác giả nhập tay", CachGhep: 3 },
     { HoTenNguon: "Tác giả chưa khớp" },
     { ...author, IdNhanVien: 5, HoTen: "Tác giả dữ liệu cũ" },
   ];
@@ -140,19 +132,18 @@ test.each([false, true])("cách ghép tác giả trên trang chi tiết=%s phân
   await screen.findByText("Tác giả ghép tạm");
   const authors = (name) => within(screen.getByText(name).closest("li"));
   expect(authors("Tác giả email").getByText("Ghép theo email")).toBeInTheDocument();
-  expect(authors("Tác giả nhập tay").getByText("P_KH nhập tay")).toBeInTheDocument();
   expect(authors("Tác giả ghép tạm").getByText("Ghép tạm theo họ tên — cần rà soát")).toBeInTheDocument();
   expect(screen.getByText("Tác giả ghép tạm").closest("li")).toHaveClass("sk-name-match");
   expect(authors("Tác giả ghép tạm").queryByText(/không được tính điểm/)).not.toBeInTheDocument();
   expect(authors("Tác giả chưa khớp").getByText(/Chưa khớp nhân sự — không được tính điểm/)).toBeInTheDocument();
   expect(authors("Tác giả dữ liệu cũ").queryByText(/Ghép theo email|Ghép tạm theo họ tên|P_KH nhập tay/)).not.toBeInTheDocument();
 });
-test.each([true, false, null])("xét hàng loạt gửi %s tường minh, không chọn dòng nhập tay", async (value) => {
+test.each([true, false, null])("xét giảng dạy gửi %s tường minh, chỉ chọn dòng được server cho phép", async (value) => {
   show(<SangKien />);
   await screen.findByRole("button", { name: synced.TenSangKien });
   fireEvent.click(screen.getByRole("tab", { name: "Xét đổi mới giảng dạy" }));
   await screen.findByRole("checkbox", { name: `Chọn ${synced.TenSangKien}` });
-  expect(screen.queryByRole("checkbox", { name: `Chọn ${manual.TenSangKien}` })).not.toBeInTheDocument();
+  expect(screen.getByRole("checkbox", { name: `Chọn ${restricted.TenSangKien}` })).toBeDisabled();
   fireEvent.click(screen.getByRole("checkbox", { name: "Chọn tất cả sáng kiến được xét trên trang" }));
   fireEvent.click(screen.getByRole("button", { name: value === true ? "Có đổi mới giảng dạy" : value === false ? "Không phải đổi mới" : "Bỏ xét" }));
   fireEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
@@ -162,8 +153,8 @@ test("tab xét chọn được tất cả trạng thái và xoá lựa chọn kh
   show(<SangKien />, "/sang-kien?tab=giang-day");
   const box = await screen.findByRole("checkbox", { name: `Chọn ${synced.TenSangKien}` });
   fireEvent.click(box);
-  choose("Trạng thái xét", "Tất cả trạng thái");
-  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ trangThaiXet: "", nguon: 1, doiTuong: 1 }), expect.anything()));
+  choose("Trạng thái xét giảng dạy", "Tất cả trạng thái");
+  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ trangThaiXet: "", doiTuong: 1 }), expect.anything()));
   expect(await screen.findByRole("checkbox", { name: `Chọn ${synced.TenSangKien}` })).not.toBeChecked();
 });
 test("đồng bộ khoá nút khi chờ, hiển thị các cảnh báo và link lọc không giới hạn năm", async () => {
@@ -175,42 +166,79 @@ test("đồng bộ khoá nút khi chờ, hiển thị các cảnh báo và link 
   expect(screen.getByRole("button", { name: "Đang đồng bộ NCKH..." })).toBeDisabled();
   finish({ Success: true, SoSangKien: 15, SoTacGiaChuaKhop: 2, SoTacGiaGhepHoTen: 8, SoCapKhongNhanDien: 1, SoThieuNgayCongNhan: 3 });
   const link = await screen.findByRole("link", { name: "Xem sáng kiến chưa xác định cấp" });
-  expect(screen.getByRole("link", { name: "Xem sáng kiến chưa khớp tác giả" })).toHaveAttribute("href", "/sang-kien?idNam=&nguon=1&chuaKhopTacGia=true");
-  expect(screen.getByRole("link", { name: "Xem sáng kiến ghép theo họ tên" })).toHaveAttribute("href", "/sang-kien?idNam=&nguon=1&ghepTheoHoTen=true");
+  expect(screen.getByRole("link", { name: "Xem sáng kiến chưa khớp tác giả" })).toHaveAttribute("href", "/sang-kien?idNam=&chuaKhopTacGia=true");
+  expect(screen.getByRole("link", { name: "Xem sáng kiến ghép theo họ tên" })).toHaveAttribute("href", "/sang-kien?idNam=&ghepTheoHoTen=true");
   expect(screen.getByText(/8 tác giả tạm ghép theo họ tên/)).toHaveTextContent("vẫn được tính điểm theo quy tắc sáng kiến và cần rà soát");
   expect(screen.getByText(/8 tác giả tạm ghép theo họ tên/)).toHaveTextContent("Sửa email nhân sự cho khớp NCKH rồi đồng bộ lại");
   expect(screen.getByText(/3 sáng kiến thiếu/)).toBeInTheDocument();
   fireEvent.click(link);
-  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", idCap: "0", nguon: "1" }), expect.anything()));
+  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", idCap: "0" }), expect.anything()));
   fireEvent.click(screen.getByRole("link", { name: "Xem sáng kiến ghép theo họ tên" }));
-  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", nguon: "1", ghepTheoHoTen: true, idCap: "", chuaKhopTacGia: false }), expect.anything()));
+  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ idNam: "", ghepTheoHoTen: true, idCap: "", chuaKhopTacGia: false }), expect.anything()));
   expect(screen.getByRole("checkbox", { name: "Ghép tạm theo họ tên (cần rà soát)" })).toBeChecked();
 });
-test("nhập tay chọn nhiều viên chức, date-only, không gửi năm hoặc kết quả xét", async () => {
-  const onSaved = jest.fn();
-  show(<SangKienForm catalog={catalog} onSaved={onSaved} onClose={jest.fn()} />);
-  fireEvent.change(screen.getByLabelText(/Tên sáng kiến/), { target: { value: "Quy trình số hoá" } });
-  choose("Cấp công nhận", "Cải tiến công việc");
-  fireEvent.change(screen.getByLabelText(/Ngày công nhận/), { target: { value: "2026-03-15" } });
-  fireEvent.click(await screen.findByRole("button", { name: /Nguyễn Văn A VC0201/ }));
-  fireEvent.click(screen.getByRole("button", { name: /Trần Thị B VC0201/ }));
-  fireEvent.click(screen.getByRole("button", { name: "Ghi nhận" }));
-  await waitFor(() => expect(api.themSangKien).toHaveBeenCalledWith({ TenSangKien: "Quy trình số hoá", IdCap: 4, IdLoaiGiaiPhap: null, DonViChuTri: null, NgayCongNhan: "2026-03-15", SoChungNhan: null, GhiChu: null, IdNhanViens: [201, 202] }));
-  expect(onSaved).toHaveBeenCalled();
-  expect(screen.queryByRole("combobox", { name: /Năm/ })).not.toBeInTheDocument();
+test("gỡ toàn bộ nhập tay kể cả URL nguồn cũ và dữ liệu còn cờ sửa", async () => {
+  api.laySangKien.mockResolvedValue({ Items: [{ ...synced, ChoPhepSua: true }], TotalPages: 1 });
+  show(<SangKien />, "/sang-kien?nguon=2");
+  await screen.findByRole("button", { name: synced.TenSangKien });
+  expect(screen.queryByRole("button", { name: /Thêm|Sửa|Xoá/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("combobox", { name: "Lọc nguồn" })).not.toBeInTheDocument();
+  expect(api.laySangKien.mock.calls.at(-1)[0]).not.toHaveProperty("nguon");
 });
-test("sửa giữ tác giả cũ dù đã đổi phân loại, thay toàn bộ và null xoá giá trị", async () => {
-  show(<SangKienForm item={{ ...manual, SoChungNhan: "QĐ cũ", TacGia: [{ ...author, LaVienChuc: false }] }} catalog={catalog} onSaved={jest.fn()} onClose={jest.fn()} />);
-  fireEvent.change(screen.getByLabelText("Số chứng nhận / quyết định"), { target: { value: "" } });
-  fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
-  await waitFor(() => expect(api.suaSangKien).toHaveBeenCalledWith(13, expect.objectContaining({ IdNhanViens: [201], SoChungNhan: null })));
+test.each([true, false, null])("trưởng đơn vị xét cải tiến %s với GhiChu và chỉ dòng có quyền", async (value) => {
+  useQuyenSangKien.mockReturnValue({ quyen: { XemTheoDonVi: true, DuocXetCaiTien: true, DuocNhap: false } });
+  show(<SangKien />, "/sang-kien?tab=cai-tien");
+  const box = await screen.findByRole("checkbox", { name: `Chọn ${synced.TenSangKien}` });
+  expect(box).toBeEnabled();
+  expect(screen.getByRole("checkbox", { name: `Chọn ${restricted.TenSangKien}` })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Đồng bộ NCKH" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("tab", { name: "Xét đổi mới giảng dạy" })).not.toBeInTheDocument();
+  expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ doiTuong: 2, trangThaiCaiTien: 0 }), expect.anything());
+  fireEvent.click(screen.getByRole("checkbox", { name: "Chọn tất cả sáng kiến được xét trên trang" }));
+  fireEvent.click(screen.getByRole("button", { name: value === true ? "Có cải tiến công việc" : value === false ? "Không phải cải tiến" : "Bỏ xét" }));
+  fireEvent.change(screen.getByLabelText("Ghi chú xét (tuỳ chọn)"), { target: { value: "  QĐ 45 công nhận cải tiến  " } });
+  fireEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
+  await waitFor(() => expect(api.xetCaiTienSangKien).toHaveBeenCalledWith([{ IdSangKien: 12, LaCaiTienCongViec: value, GhiChu: "QĐ 45 công nhận cải tiến" }]));
+  expect(api.xetGiangDaySangKien).not.toHaveBeenCalled();
 });
-test("lỗi trùng sáng kiến giữ form và thông báo nguyên văn", async () => {
-  api.suaSangKien.mockRejectedValue(new Error("Trùng sáng kiến của Nguyễn Văn A"));
-  show(<SangKienForm item={manual} catalog={catalog} onSaved={jest.fn()} onClose={jest.fn()} />);
-  fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("Trùng sáng kiến của Nguyễn Văn A");
-  expect(screen.getByDisplayValue(manual.TenSangKien)).toBeInTheDocument();
+test("URL tab cải tiến không mở quyền khi GET quyen không cấp", async () => {
+  show(<SangKien />, "/sang-kien?tab=cai-tien");
+  await screen.findByRole("button", { name: synced.TenSangKien });
+  expect(screen.queryByRole("tab", { name: "Xét cải tiến công việc" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Xét cải tiến" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("checkbox", { name: `Chọn ${synced.TenSangKien}` })).not.toBeInTheDocument();
+});
+test("đổi tab xoá lựa chọn; lọc tất cả trạng thái cải tiến giữ giá trị rỗng", async () => {
+  useQuyenSangKien.mockReturnValue({ quyen: { DuocNhap: true, DuocXetCaiTien: true } });
+  show(<SangKien />, "/sang-kien?tab=giang-day&trangThaiCaiTien=1");
+  fireEvent.click(await screen.findByRole("checkbox", { name: `Chọn ${synced.TenSangKien}` }));
+  fireEvent.click(screen.getByRole("tab", { name: "Xét cải tiến công việc" }));
+  expect(await screen.findByRole("checkbox", { name: `Chọn ${synced.TenSangKien}` })).not.toBeChecked();
+  choose("Trạng thái cải tiến", "Tất cả trạng thái");
+  await waitFor(() => expect(api.laySangKien).toHaveBeenLastCalledWith(expect.objectContaining({ doiTuong: 2, trangThaiXet: "", trangThaiCaiTien: "" }), expect.anything()));
+});
+test("403 xét cải tiến giữ thông báo, lựa chọn và ghi chú để xử lý", async () => {
+  useQuyenSangKien.mockReturnValue({ quyen: { DuocXetCaiTien: true } });
+  api.xetCaiTienSangKien.mockRejectedValue(Object.assign(new Error("Không có quyền xét: Học liệu số"), { status: 403 }));
+  show(<SangKien />, "/sang-kien?tab=cai-tien");
+  fireEvent.click(await screen.findByRole("checkbox", { name: `Chọn ${synced.TenSangKien}` }));
+  fireEvent.click(screen.getByRole("button", { name: "Có cải tiến công việc" }));
+  fireEvent.change(screen.getByLabelText("Ghi chú xét (tuỳ chọn)"), { target: { value: "QĐ 45" } });
+  fireEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Không có quyền xét: Học liệu số");
+  expect(screen.getByDisplayValue("QĐ 45")).toBeInTheDocument();
+  expect(screen.getByRole("checkbox", { name: `Chọn ${synced.TenSangKien}` })).toBeChecked();
+  expect(screen.queryByText(/Đã cập nhật/)).not.toBeInTheDocument();
+});
+test("xét từng dòng nạp cờ và ghi chú cải tiến hiện tại", async () => {
+  useQuyenSangKien.mockReturnValue({ quyen: { DuocXetCaiTien: true } });
+  api.laySangKien.mockResolvedValue({ Items: [{ ...synced, LaCaiTienCongViec: false, GhiChuXetCaiTien: "QĐ cũ" }], TotalPages: 1 });
+  show(<SangKien />);
+  fireEvent.click(await screen.findByRole("button", { name: "Xét cải tiến" }));
+  expect(screen.getByDisplayValue("QĐ cũ")).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Kết quả xét" })).toHaveTextContent("Không phải cải tiến công việc");
+  fireEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
+  await waitFor(() => expect(api.xetCaiTienSangKien).toHaveBeenCalledWith([{ IdSangKien: 12, LaCaiTienCongViec: false, GhiChu: "QĐ cũ" }]));
 });
 test("chi tiết hiển thị field thiếu, tác giả chưa khớp, không còn nguồn và lịch sử xét", async () => {
   api.layChiTietSangKien.mockResolvedValue({ Item: { ...synced, IdCap: undefined, IdNamDanhGia: undefined, ConONguon: false, TacGia: [{ HoTenNguon: "Tác giả NCKH", EmailNguon: "nguon@example.test" }] }, LichSu: [{ Id: 1, HanhDong: 4, MoTa: "Đánh dấu giảng dạy" }] });
@@ -219,7 +247,19 @@ test("chi tiết hiển thị field thiếu, tác giả chưa khớp, không cò
   expect(screen.getByText(/Chưa khớp nhân sự/)).toBeInTheDocument();
   expect(screen.getByText(/Không còn trên NCKH/)).toBeInTheDocument();
   expect(screen.getByText("Đánh dấu giảng dạy")).toBeInTheDocument();
-  expect(screen.getByText("Chưa xét")).toBeInTheDocument();
+  expect(screen.getAllByText("Chưa xét")).toHaveLength(2);
+});
+test.each([false, true])("danh sách / chi tiết=%s hiện điểm cải tiến từ danh mục khi không xác định cấp", async (detail) => {
+  const item = { ...synced, IdCap: undefined, DiemVienChuc: undefined, LaCaiTienCongViec: true, TenNguoiXetCaiTien: "Trưởng phòng A", NgayXetCaiTien: "2026-10-06T09:00:00", GhiChuXetCaiTien: "Quyết định cải tiến 45" };
+  api.layDanhMucSangKien.mockResolvedValue({ ...catalog, DiemCaiTienCongViec: 7 });
+  api.laySangKien.mockResolvedValue({ Items: [item], TotalPages: 1 });
+  api.layChiTietSangKien.mockResolvedValue({ Item: item, LichSu: [{ Id: 1, HanhDong: 8, MoTa: "Đánh dấu cải tiến 45" }] });
+  show(detail ? <SangKienDetail id={12} onClose={jest.fn()} /> : <SangKien />);
+  expect(await screen.findByText(/Cải tiến công việc: \+7 điểm/)).toBeInTheDocument();
+  expect(screen.getByText("Quyết định cải tiến 45")).toBeInTheDocument();
+  expect(screen.getByText(/Trưởng phòng A/)).toBeInTheDocument();
+  if (detail) expect(screen.getByText("Xét cải tiến công việc")).toBeInTheDocument();
+  else expect(screen.getByText("Cải tiến +7")).toBeInTheDocument();
 });
 test("ủy quyền hiện người rời phòng và cấp / thu hồi theo backend", async () => {
   api.layNguoiNhapSangKien.mockResolvedValue({ Items: [{ ...author, DaThuHoi: false, ConThuocPhong: false }] });
