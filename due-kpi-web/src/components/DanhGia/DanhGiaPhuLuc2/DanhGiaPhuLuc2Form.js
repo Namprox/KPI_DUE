@@ -111,6 +111,7 @@ const DanhGiaPhuLuc2Form = ({
   formData,
   autoScores = {},
   tongDiemCoBan,
+  viTriTrongKhoa = null,
   lyDoTraVe,
   laDongMoNhap = () => false,
   thongTinDong = () => null,
@@ -240,6 +241,8 @@ const DanhGiaPhuLuc2Form = ({
             </div>
           </div>
         </div>
+
+        {viTriTrongKhoa}
 
         <div className="pl2-header-actions">{hanhDong}</div>
       </div>

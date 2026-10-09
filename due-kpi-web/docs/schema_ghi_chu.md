@@ -4679,3 +4679,207 @@ Không qua cổng, phiếu quý hoặc id không tồn tại → `NOT_FOUND` (40
 
 Không phụ thuộc thứ tự: SP mới không ai gọi cho tới khi C# mới lên; C# lên trước thì chỉ route mới lỗi 500 cho tới khi
 chạy `update_database.sql`. Không đổi bảng, không đổi dữ liệu. Script test: `Tests/test_xep_hang_tam_tinh.sql` (chỉ đọc).
+
+## 23. NHẬT KÝ THAO TÁC (AUDIT) + NHẬT KÝ PHIÊN + TRA CỨU (2026-10-09)
+
+### 23.0. Vì sao có đợt này
+
+Rà soát 2026-10-08 cho thấy hai lỗ hổng truy vết:
+
+- Danh mục nhân sự, vi phạm giảng dạy và dữ liệu import / đồng bộ **không có vết**. Nhiều SP xoá hẳn khỏi DB
+  (`sp_vi_pham_giang_day_delete`, `sp_nhan_vien_chuc_vu_delete`…), sửa thì ghi đè giá trị cũ. Các SP danh mục
+  (vd `sp_don_vi_update`) không nhận `@current_user_id`, nên không biết ai sửa.
+- `nhat_ky_dang_nhap` chỉ ghi đăng nhập. Dòng "thành công" lại được ghi **trước** khi kiểm đơn vị và lưu refresh
+  token, nên có thể ghi thành công cho một lần đăng nhập thực ra bị từ chối. IP lấy từ `X-Forwarded-For` mà không
+  kiểm tra, trong khi IIS production nhận request trực tiếp, nên client làm giả được IP.
+
+Chốt với người dùng (2026-10-09):
+
+| Điểm | Quyết định |
+|---|---|
+| Cách ghi | Trigger + `CONTEXT_INFO`. Không đổi chữ ký SP / DAL / BLL nghiệp vụ |
+| Mức ghi | Chi tiết (XML cũ / mới từng dòng) cho mọi bảng, trừ 4 bảng import thô lớn ghi **tóm tắt** |
+| Nguyên tắc | **Fail-closed**: không xác định được danh tính thì không ghi dữ liệu; không ghi được vết thì không ghi dữ liệu; sự kiện phiên thành công ghi **cùng transaction** với thay đổi |
+| Triển khai | 2 đợt: A (13 bảng) bật ngay; B (20 bảng) seed `dang_bat = 0`, bật sau 1–2 tuần đo |
+| Xem | API chỉ ADMIN; người dùng thường không có API tự xem |
+| Xoá log | Không tự động. Người vận hành tự chạy `sp_nhat_ky_xoa_theo_lo` (production là SQL Express, không có SQL Agent) |
+| IP | Chỉ IP kết nối thật (`UserHostAddress`) |
+
+### 23.1. Luồng danh tính → trigger
+
+```text
+Request ──► TokenAuthorize (token hợp lệ) ──► AuditContext.SetCurrentUser(id)       [HttpContext.Items]
+        ──► DAL: DbHelper.GetConnection().Open()
+              └─ StateChange → Open ──► EXEC dbo.sp_audit_set_context  ──► SET CONTEXT_INFO (128 byte)
+                                         lỗi → đóng connection + ném lỗi (KHÔNG chạy tiếp)
+        ──► SP nghiệp vụ: INSERT / UPDATE / DELETE / MERGE trên bảng có trigger
+              └─ trg_audit_<bảng> ──► dbo.fn_audit_context() + snapshot nhan_vien ──► dbo.nhat_ky_thao_tac
+```
+
+- Mọi connection của ứng dụng đều mở qua `DbHelper.GetConnection()` (đã rà: không có `new SqlConnection` /
+  `SqlBulkCopy` nào khác), nên móc tại một điểm là phủ hết. `sp_audit_set_context` **luôn ghi đè** ở mọi lần Open,
+  kể cả request ẩn danh, nên connection pool không mang danh tính của request trước.
+- `CONTEXT_INFO`: `[0xA1 marker][loại tác nhân][id 4B][mã yêu cầu 16B][len][IP ≤45][len][nguồn ≤59]`.
+  `SET CONTEXT_INFO` trong SP **không** bị hoàn lại khi SP kết thúc.
+- Tác nhân (`loai_tac_nhan`):
+
+| Giá trị | Nghĩa | Khi nào |
+|---|---|---|
+| 1 | Người dùng | Request đã qua `TokenAuthorize`. CHECK bắt buộc có `id_nguoi_thuc_hien` |
+| 2 | Hệ thống / ẩn danh của ứng dụng | Đăng nhập, refresh, đăng xuất; ngoài HTTP request (`nguon = 'SYSTEM'`) |
+| 3 | **Ngoài ứng dụng** | Không có marker: sửa tay qua SSMS, script, job ngoài ứng dụng; C# cũ chưa deploy |
+
+  Loại 2 và lỗi truyền danh tính **không** dùng chung ý nghĩa: lỗi thì không có dòng nào (thao tác bị từ chối).
+- `ma_yeu_cau` là Guid tạo một lần cho mỗi HTTP request (`AuditContext.MaYeuCau`), dùng chung cho access log
+  (`ReqId: ...`), `nhat_ky_dang_nhap.ma_yeu_cau` và `nhat_ky_thao_tac.ma_yeu_cau`, để nối các dấu vết.
+- `TokenAuthorize` gán người dùng **trước** bước kiểm quyền theo mã chức vụ, vì bước đó cũng truy vấn CSDL.
+
+### 23.2. `nhat_ky_thao_tac` (§5.2) và `cau_hinh_audit` (§5.3)
+
+| Cột | Ghi chú |
+|---|---|
+| `muc_ghi` | 1 Chi tiết: 1 dòng / bản ghi. 2 Tóm tắt: 1 dòng / lần kích hoạt trigger |
+| `hanh_dong` | 1 Thêm · 2 Sửa · 3 Xoá · 4 Đổi khoá chính |
+| `khoa_ban_ghi` / `khoa_ban_ghi_cu` | PK dạng chuỗi, nhiều cột nối `\|`, ngày style 126. Tóm tắt: cả hai NULL |
+| `so_dong` | Chi tiết = 1. Tóm tắt = số dòng câu lệnh **tác động** (kể cả UPDATE không đổi giá trị) |
+| `du_lieu_cu` / `du_lieu_moi` | `<r cot="..."/>` (FOR XML RAW). Cột NULL = vắng attribute; `''` = `cot=""` |
+| `ma_nguoi_thuc_hien`, `ho_ten_nguoi_thuc_hien` | **Snapshot** lúc ghi: vẫn nhận diện được khi nhân viên đổi tên / bị xoá |
+| `ten_dang_nhap_sql`, `ung_dung` | `SUSER_SNAME()`, `APP_NAME()` của phiên ghi: phát hiện sửa trực tiếp CSDL |
+
+- **Không FK** tới bảng nào: vết phải còn khi bản ghi hoặc nhân viên bị xoá (khác `lich_su_*` có
+  `ON DELETE CASCADE` theo phiếu).
+- **Không filtered index** trên bảng này: trigger ghi từ mọi SP, kể cả SP tạo với `QUOTED_IDENTIFIER` khác nhau.
+- `cau_hinh_audit`: `ten_bang`, `muc_ghi`, `dang_bat`, `dot_trien_khai` (A/B), `cot_bo_qua` (CSV), `ghi_chu`.
+  Seed 33 dòng (xem `schema.sql` §5.3).
+- **Phân biệt với `lich_su_*` của từng module** (`lich_su_cham_diem`, `lich_su_trang_thai_phieu`…): các bảng đó ghi
+  **ý nghĩa nghiệp vụ** (chấm, duyệt, trả lại, lý do) và giữ nguyên. `nhat_ky_thao_tac` ghi **dữ liệu thô** cũ / mới.
+  Bảng `nhat_ky` (§5.1) vẫn không có SP nào ghi; đợt này không dùng nó.
+
+### 23.3. Generator `sp_audit_tao_trigger` — KHÔNG sửa tay trigger
+
+`EXEC dbo.sp_audit_tao_trigger [@ten_bang = N'<bảng>'] [, @chi_xem_truoc = 1];`
+
+- Đọc cấu trúc **DB thật** (`sys.columns` theo `column_id`, PK theo `key_ordinal`), nên không lệch `schema.sql` khi
+  cột được thêm bằng ALTER. Thứ tự cột trong XML ổn định theo `column_id`.
+- **Quy tắc bắt buộc:** thêm / đổi / xoá cột ở bảng có audit thì trong cùng đợt phải chạy
+  `EXEC dbo.sp_audit_tao_trigger N'<bảng>';`. Trigger cũ không biết cột mới (bỏ sót) hoặc tham chiếu cột đã xoá
+  (mọi DML trên bảng lỗi).
+- Cột được ghi: kiểu số, ngày, chuỗi, `uniqueidentifier`. Tự bỏ qua: `rowversion` (vd `phieu_danh_gia.row_version`),
+  `xml`, `text`, `ntext`, `image`, `varbinary`, `sql_variant`, kiểu CLR, cột `ngay_cap_nhat`, cột trong `cot_bo_qua`.
+- **Danh sách cấm cứng** (không ghi đè được bằng cấu hình): mọi cột có tên chứa `mat_khau`, `password`, `token`,
+  `secret`, `salt`, `hash`. Hiện gồm `nhan_vien.mat_khau`, `refresh_token_hash`, `refresh_token_het_han`. Thêm vào đó,
+  `cot_bo_qua` của `nhan_vien` bỏ `so_lan_dang_nhap_sai`, `khoa_dang_nhap_den`, nên đăng nhập / refresh (chỉ đổi những
+  cột này) không sinh dòng audit. Cổng PHAN 5 của migration kiểm lại: không định nghĩa `trg_audit_%` nào nhắc các mẫu tên này.
+- **Nguyên tử:** bước 1 sinh DDL cho mọi bảng (lỗi cấu trúc thì RAISERROR, chưa đổi gì); bước 2 DROP + CREATE tất cả
+  trong **một** transaction (lỗi bất kỳ bảng nào thì ROLLBACK toàn bộ). Chạy không tham số còn gỡ trigger
+  `trg_audit_%` mồ côi (bảng không còn trong cấu hình).
+- `@chi_xem_truoc = 1` chỉ SELECT `(ten_bang, ddl)`, dùng để review hoặc parse offline (ScriptDom không đọc vào chuỗi SQL động).
+
+Ngữ nghĩa trigger chi tiết:
+
+| Trường hợp | Ghi |
+|---|---|
+| Chỉ `inserted` (INSERT, nhánh INSERT của MERGE) | hành động 1, `du_lieu_moi` |
+| Chỉ `deleted` | hành động 3, `du_lieu_cu` |
+| Cả hai, khớp PK | hành động 2, **chỉ khi thật sự đổi**: so `CAST(xml AS NVARCHAR(MAX)) COLLATE Latin1_General_BIN2`. Phân biệt hoa / thường, tổ hợp dấu (ò dựng sẵn ≠ o + dấu), NULL ≠ `''`, khoảng trắng cuối (XML luôn kết thúc `/>`) |
+| Cả hai, **không khớp PK** (chỉ sinh cho bảng có PK không phải IDENTITY đơn) | hành động 4. Đúng 1 cũ + 1 mới thì ghép 1 dòng (`khoa_ban_ghi_cu` → `khoa_ban_ghi`, có cả cũ lẫn mới); ngược lại mỗi dòng ghi riêng (chỉ cũ hoặc chỉ mới), gom bằng `ma_yeu_cau` |
+
+Mức tóm tắt: 1 dòng / **lần kích hoạt trigger**. `MERGE` kích hoạt trigger **riêng cho từng loại hành động**, nên một
+câu `MERGE` (vd `sp_sinh_vien_hoc_vu_import`) ra tới 3 dòng cùng `ma_yeu_cau`.
+
+Rủi ro đã rà khi bật trigger: không SP nào dùng `@@IDENTITY` (`SCOPE_IDENTITY()` không bị ảnh hưởng); mọi `OUTPUT`
+trong `procedure.sql` đều có `INTO` (thiếu `INTO` trên bảng có trigger là lỗi 334), kể cả hai `MERGE … OUTPUT $action`.
+`@@ROWCOUNT` ngay sau DML trên bảng có trigger (các SP import) được kiểm bằng `Tests/test_nhat_ky.sql` T3.
+Trigger lỗi thì cả câu lệnh nghiệp vụ rollback, đây là chủ ý (nguyên tắc 2).
+
+### 23.4. Phạm vi và đợt triển khai
+
+| Đợt | Bảng | Mức |
+|---|---|---|
+| A | `loai_vi_pham`, `loai_vi_pham_don_vi_ghi_nhan`, `vi_pham_giang_day`; `don_vi`, `chuc_vu`, `chuc_danh_nghe_nghiep`, `nhan_vien`, `nhan_vien_chuc_vu`, `nhan_vien_chuc_danh` | Chi tiết |
+| A | `phan_hoi_sinh_vien`, `sinh_vien_hoc_vu`, `canh_bao_hoc_vu`, `gio_giang_tkb_chi_tiet` | **Tóm tắt** |
+| B | `phieu_danh_gia`, `chi_tiet_danh_gia`, `phieu_danh_gia_don_vi`, `chi_tiet_danh_gia_don_vi`; `diem_tb_phan_hoi_sinh_vien`, `khoa_dao_tao_anh_xa`, `gio_giang_tkb_lan_import`, `gio_giang_tkb`, `gio_giang_tkb_anh_xa`, `giam_tru_nhan_vien`, `giam_tru_con_nho`, 9 bảng `nckh_*` | Chi tiết |
+
+Cấu hình KPI (tiêu chí, thang điểm, mẫu…) **chưa** nằm trong phạm vi. Muốn thêm một bảng: `INSERT cau_hinh_audit`
+rồi `EXEC dbo.sp_audit_tao_trigger N'<bảng>';`. Đổi mức ghi: `UPDATE … SET muc_ghi = …` rồi chạy lại generator.
+
+### 23.5. Nhật ký phiên (`nhat_ky_dang_nhap`, §1.6)
+
+| `loai_su_kien` | Thành công ghi ở (CÙNG transaction) | Thất bại ghi riêng (`sp_auth_log_login_attempt`) |
+|---|---|---|
+| 1 Đăng nhập | `sp_auth_set_refresh_token` — bước cuối, sau kiểm đơn vị | IpBlocked, UserNotFound, AccountLocked, InvalidPassword, ChuaGanDonVi, LoiCapToken |
+| 2 Làm mới token | `sp_auth_set_refresh_token` | AccountDisabled, TokenExpired, ChuaGanDonVi, LoiCapToken. Token không khớp ai thì không có danh tính để ghi (access log vẫn có 401 kèm `ReqId`) |
+| 3 Đăng xuất | `sp_auth_clear_refresh_token` — đúng nhân viên bị cập nhật (`OUTPUT … INTO`) | — |
+| 4 Đổi mật khẩu | `sp_auth_change_password` | AccountDisabled, InvalidPassword, LoiCapNhat |
+| 5 Quản trị đặt lại | `sp_auth_change_password` (`id_nguoi_thuc_hien` = admin) | NhanVienKhongTonTai, LoiCapNhat |
+
+- Ghi nội bộ qua `sp_auth_ghi_nhat_ky_noi_bo`: chỉ INSERT, **không** tự mở / rollback transaction; lỗi (vd vi phạm
+  `chk_nkdn_loai_su_kien`) nổi lên CATCH của SP gọi, nên **thay đổi không xảy ra**. Snapshot `ho_ten`,
+  `ma_nguoi_thuc_hien`, `ho_ten_nguoi_thuc_hien` lúc ghi.
+- Ghi thất bại là best-effort: lỗi khi ghi chỉ vào error log (NLog), không đổi mã trả về (thao tác chính đã thất bại,
+  không có dữ liệu nào đổi cần vết).
+- `sp_auth_is_ip_blocked` chỉ đếm **đăng nhập** thất bại (`loai_su_kien = 1`) và bỏ `ChuaGanDonVi`, `LoiCapToken`
+  (lỗi phía máy chủ / cấu hình). Đổi mật khẩu sai không khoá IP.
+- IP là **IP kết nối thật** (`Helper/ClientIpHelper.cs`) ở cả nhật ký phiên, chặn IP, access log và audit. Nếu sau này
+  đặt reverse proxy phía trước thì phải sửa helper (chỉ tin `X-Forwarded-For` khi `UserHostAddress` là proxy đã cấu
+  hình), nếu không mọi người dùng sẽ mang IP của proxy và cùng bị chặn.
+
+### 23.6. API tra cứu (chỉ ADMIN) và vận hành
+
+| Endpoint | SP |
+|---|---|
+| `GET api/nhat-ky/dang-nhap` | `sp_nhat_ky_dang_nhap_list` |
+| `GET api/nhat-ky/thao-tac` | `sp_nhat_ky_thao_tac_list` (`khoaBanGhi` khớp cả `khoa_ban_ghi_cu`) |
+| `GET api/nhat-ky/thao-tac/{id}` | `sp_nhat_ky_thao_tac_get_by_id` (BLL dựng diff từng trường từ XML) |
+| `GET api/nhat-ky/thao-tac/bang` | `sp_cau_hinh_audit_list` (kèm trạng thái trigger thật) |
+| `GET api/nhat-ky/dung-luong` | `sp_nhat_ky_thong_ke_dung_luong` |
+
+- Quyền chặn ở hai tầng: `[TokenAuthorize(maChucVuAllowed = "ADMIN")]` và SP (`fn_pham_vi_don_vi` có `ADMIN`).
+  Phân trang `ROW_NUMBER() OVER (ORDER BY thoi_gian DESC, id DESC)`, tối đa 200 dòng / trang. Ngày lọc theo giờ máy chủ.
+- **Không có API sửa / xoá nhật ký.** Xoá log cũ: người vận hành tự chạy bằng login có quyền
+  `EXEC dbo.sp_nhat_ky_xoa_theo_lo @loai = N'thao_tac' | N'dang_nhap', @truoc_ngay = '<ngày>' [, @kich_thuoc_lo = 5000] [, @so_lo_toi_da = n];`.
+  SP xoá `TOP (n)` lặp, mỗi lô một transaction nhỏ, bắt buộc `@truoc_ngay` cách hôm nay ≥ 30 ngày. Recovery model FULL
+  thì backup log giữa các lần chạy.
+- **Dung lượng (SQL Express):** giới hạn dữ liệu 10GB / CSDL (2008 R2 trở lên; 2008 thường là 4GB). Chạm giới hạn thì
+  **mọi** lệnh ghi lỗi, và vì trigger ghi audit trong cùng câu lệnh nên nghiệp vụ cũng dừng. `GET api/nhat-ky/dung-luong`
+  bật `CanhBao` khi dữ liệu đã dùng ≥ 80%.
+- (DBA, tuỳ chọn) `DENY UPDATE, DELETE` trên hai bảng nhật ký và `DENY EXECUTE ON sp_nhat_ky_xoa_theo_lo` cho login
+  ứng dụng (xem cuối `update_database.sql`). Chỉ có hiệu lực khi login đó không phải `db_owner` / `sysadmin`.
+
+### 23.7. Đo trước khi bật đợt B
+
+Sau 1–2 tuần chạy đợt A, rồi thử đợt B trên CSDL test với dữ liệu cỡ thật, đo:
+
+1. Tốc độ tăng `nhat_ky_thao_tac` / ngày và % so với giới hạn (`GET api/nhat-ky/dung-luong`, RS2 theo bảng × tháng).
+2. Transaction log trong lúc import TKB, đồng bộ NCKH và lúc engine tính lại điểm: `DBCC SQLPERF(LOGSPACE)` trước / sau.
+3. Thời gian import TKB và đồng bộ NCKH trước / sau trigger, so với `CommandTimeout` 300–600s của các DAL import.
+4. Khoá / blocking trong lúc import: `sys.dm_exec_requests` (`blocking_session_id`, `wait_type`) và lock escalation.
+
+**Tiêu chí bật:** dự báo 12 tháng vẫn dưới 80% giới hạn; import không vượt 50% timeout; không có blocking kéo dài
+ảnh hưởng người dùng. Đạt thì:
+
+```sql
+UPDATE dbo.cau_hinh_audit SET dang_bat = 1 WHERE dot_trien_khai = 'B';
+EXEC dbo.sp_audit_tao_trigger;
+```
+
+Không đạt thì giữ đợt B tắt, hoặc chuyển riêng bảng đó sang tóm tắt (`muc_ghi = 2`).
+
+### 23.8. Thứ tự deploy và kiểm thử
+
+1. **SQL trước, C# sau.** C# mới gọi `sp_audit_set_context` ở mọi lần mở connection; thiếu SP đó thì mọi truy cập CSDL
+   bị từ chối (đúng nguyên tắc 1). C# cũ chạy được với SQL mới (tham số mới đều có mặc định). Trong khoảng giữa, trigger
+   vẫn ghi với `loai_tac_nhan = 3`.
+2. `update_database.sql` có cổng xác nhận cuối (PHAN 5): đủ 33 cấu hình đúng mức / đợt, đợt A đang bật, mỗi bảng bật
+   có `trg_audit_<bảng>` đúng bảng, đang chạy, đủ 3 sự kiện; bảng tắt không có trigger; không trigger mồ côi; không lộ
+   cột bí mật. Sai bất kỳ mục nào thì file coi như **thất bại**, chưa deploy C#.
+3. `Tests/test_nhat_ky.sql` (CSDL test, `BEGIN TRAN … ROLLBACK`): danh tính A/B, so sánh nhị phân, `@@ROWCOUNT`,
+   tác nhân 2/3, CONTEXT_INFO IPv6, xoá, bí mật, chặn IP, tóm tắt + MERGE, đổi khoá chính, xem trước generator,
+   FORBIDDEN, cổng xác nhận, ghi nhật ký lỗi thì không đổi mật khẩu.
+
+### 23.9. Ngoài phạm vi / còn mở
+
+- Access log là ActionFilter, nên request bị `TokenAuthorize` từ chối (401/403) không có dòng access log. Muốn đủ thì
+  chuyển sang `DelegatingHandler`.
+- Mật khẩu vẫn lưu plain-text (đợt riêng).
+- Chưa có chính sách thời gian lưu giữ: người vận hành tự quyết và tự xoá theo lô (23.6).

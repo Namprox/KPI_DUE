@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "../../css/Pages.css";
 import "../../css/DanhGia/DanhGiaPhuLuc2.css";
 import DanhGiaPhuLuc2Form from "../../components/DanhGia/DanhGiaPhuLuc2/DanhGiaPhuLuc2Form";
+import ViTriPhieuTrongKhoa from "../../components/DanhGia/DanhGiaPhuLuc2/ViTriPhieuTrongKhoa";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
 import { Toast } from "primereact/toast";
 import { confirmDialog } from "primereact/confirmdialog";
@@ -122,6 +123,8 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   const [formData, setFormData] = useState({});
   const [autoScorePreview, setAutoScores] = useState({}); // IdTieuChi -> { DiemTuDong, ... }
   const [tongDiemCoBan, setTongDiemCoBan] = useState(0);
+  const [phieuXepHang, setPhieuXepHang] = useState(null);
+  const [lanLamMoiXepHang, setLanLamMoiXepHang] = useState(0);
 
   const [trangThaiPhieu, setTrangThaiPhieu] = useState(0);
   const [lyDoTraVe, setLyDoTraVe] = useState("");
@@ -334,6 +337,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
       setAutoScores({});
       setLoiDiemXemTruoc(false);
       setTongDiemCoBan(0);
+      setPhieuXepHang(null);
       setTrangThaiPhieu(0);
       setLyDoTraVe("");
       setDaCoDongChot(false);
@@ -453,6 +457,11 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         // 5. Hydrate the form state from an existing phieu
         if (phieu) {
           phieuRef.current = phieu;
+          setPhieuXepHang({
+            IdPhieu: phieu.IdPhieu,
+            IdNam: selectedYear,
+            IdDonVi: selectedDonVi?.IdDonVi,
+          });
           setTrangThaiPhieu(phieu.TrangThai);
           setLyDoTraVe(phieu.NhanXetKhoa || "");
           setDaCoDongChot(docCoDongChot(chiTiet));
@@ -713,6 +722,11 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   // tác sau (lưu nháp, tải minh chứng) cần để biết đính vào dòng chi tiết nào.
   const apDungPhieu = (item) => {
     phieuRef.current = item;
+    setPhieuXepHang({
+      IdPhieu: item.IdPhieu,
+      IdNam: selectedYearRef.current,
+      IdDonVi: selectedDonViRef.current?.IdDonVi,
+    });
     const map = { ...chiTietMapRef.current };
     (item.ChiTiet || item.chiTiet || []).forEach((ct) => {
       if (ct.IdTieuChi != null) map[ct.IdTieuChi] = ct.IdChiTiet;
@@ -833,7 +847,10 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         method: "PUT",
         body: JSON.stringify(body),
       });
-      if (res.ok) dirtyRef.current.delete(idTieuChi);
+      if (res.ok) {
+        dirtyRef.current.delete(idTieuChi);
+        setLanLamMoiXepHang((lan) => lan + 1);
+      }
     }
   };
 
@@ -846,6 +863,9 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
       sticky: true,
     });
     try {
+      // Phiếu mới chỉ có điểm xem trước tự động vẫn phải tạo khi bấm Lưu nháp,
+      // kể cả chưa sửa dòng chấm tay, để có IdPhieu lấy vị trí trong khoa.
+      if (loaiDoiTuong === 1) await ensurePhieu();
       await saveAllDrafts();
       // SoTieuChiThieu vừa đổi → nút "Nộp lại" phải bật/tắt lại theo bản mới.
       await taiKiemTra(phieuRef.current?.IdPhieu);
@@ -1137,6 +1157,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
     setTrangThaiPhieu(moi.TrangThai);
     setDaCoDongChot(docCoDongChot(chiTiet));
     setChiTietMap(docChiTietTheoTieuChi(chiTiet));
+    setLanLamMoiXepHang((lan) => lan + 1);
     await taiKiemTra(moi.IdPhieu);
     await taiLichSu(moi.IdPhieu, moi.TrangThai);
     return moi;
@@ -1537,6 +1558,16 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
             formData={formData}
             autoScores={autoScores}
             tongDiemCoBan={tongDiemCoBan}
+            viTriTrongKhoa={loaiDoiTuong === 1 && (
+              <ViTriPhieuTrongKhoa
+                key={`${selectedYear}-${selectedDonVi?.IdDonVi}`}
+                idPhieu={phieuXepHang?.IdNam === selectedYear &&
+                  phieuXepHang?.IdDonVi === selectedDonVi?.IdDonVi
+                  ? phieuXepHang.IdPhieu : null}
+                tenDonVi={selectedDonVi?.TenDonVi}
+                lanLamMoi={lanLamMoiXepHang}
+              />
+            )}
             lyDoTraVe={lyDoTraVe}
             laDongMoNhap={laDongMoNhap}
             thongTinDong={thongTinDong}

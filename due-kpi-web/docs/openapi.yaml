@@ -105,6 +105,9 @@ paths:
         va refresh token duoc set vao 2 cookie httpOnly (kpi_access_token,
         kpi_refresh_token; Path=/; SameSite=Lax; Secure khi HTTPS). Body KHONG
         con tra Tokens — chi gom Success va User.
+        Nhat ky phien (GET /api/nhat-ky/dang-nhap): that bai ghi rieng; thanh cong ghi cung
+        transaction voi viec luu refresh token. IP la IP ket noi THAT - X-Forwarded-For bi bo qua
+        (ca khi chan IP sau 10 lan dang nhap sai / 15 phut).
       operationId: authLogin
       security: []
       requestBody:
@@ -296,6 +299,253 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+  /api/nhat-ky/dang-nhap:
+    get:
+      tags:
+        - NhatKy
+      summary: Nhat ky phien (dang nhap, lam moi token, dang xuat, doi / dat lai mat khau) - CHI ADMIN
+      description: >
+        Phan trang, sap xep ThoiGian giam dan (cung thoi diem: Id giam dan). Su kien THANH CONG
+        duoc ghi trong cung transaction voi thay doi (luu token / doi mat khau / thu hoi token);
+        THAT BAI ghi rieng kem LyDoThatBai (IpBlocked, UserNotFound, AccountLocked, InvalidPassword,
+        AccountDisabled, TokenExpired, ChuaGanDonVi, LoiCapToken, LoiCapNhat, NhanVienKhongTonTai).
+        DiaChiIp la IP ket noi THAT (khong tin X-Forwarded-For). Ngay loc theo gio may chu.
+      operationId: nhatKyDangNhapList
+      parameters:
+        - name: idNhanVien
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: tenDangNhap
+          in: query
+          required: false
+          description: Tien to ten dang nhap (email hoac ma nhan vien)
+          schema:
+            type: string
+            maxLength: 150
+        - name: diaChiIp
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 45
+        - name: loaiSuKien
+          in: query
+          required: false
+          description: 1 Dang nhap · 2 Lam moi token · 3 Dang xuat · 4 Doi mat khau · 5 Quan tri dat lai mat khau
+          schema:
+            type: integer
+            enum: [1, 2, 3, 4, 5]
+        - name: thanhCong
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: maYeuCau
+          in: query
+          required: false
+          description: Ma yeu cau (= ReqId cua access log, = MaYeuCau cua nhat ky thao tac)
+          schema:
+            type: string
+            format: uuid
+        - name: tuNgay
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: denNgay
+          in: query
+          required: false
+          description: Tinh tron ngay
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhatKyDangNhapListResponse"
+        "400":
+          description: Tham so sai (INVALID) - loaiSuKien ngoai 1..5, tuNgay > denNgay, chuoi qua dai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhatKyDangNhapListResponse"
+        "403":
+          description: Khong phai ADMIN
+  /api/nhat-ky/thao-tac:
+    get:
+      tags:
+        - NhatKy
+      summary: Nhat ky thao tac (audit them / sua / xoa) - CHI ADMIN
+      description: >
+        Ghi bang trigger tren cac bang trong cau_hinh_audit (GET /api/nhat-ky/thao-tac/bang).
+        MucGhi 1 (chi tiet): 1 dong / ban ghi, co gia tri cu / moi; MucGhi 2 (tom tat, bang import tho
+        lon): 1 dong / lan thao tac voi SoDong, khong co KhoaBanGhi. MERGE tao toi da 3 dong tom tat
+        cung MaYeuCau. HanhDong 4 = doi khoa chinh (KhoaBanGhiCu -> KhoaBanGhi). Danh sach KHONG kem
+        CacTruong, chi CacTruongThayDoi (HanhDong 2 / 4). khoaBanGhi khop ca KhoaBanGhi lan KhoaBanGhiCu.
+      operationId: nhatKyThaoTacList
+      parameters:
+        - name: tenBang
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+            example: vi_pham_giang_day
+        - name: khoaBanGhi
+          in: query
+          required: false
+          description: Khoa chinh cua ban ghi (nhieu cot noi bang '|', ngay dang ISO 8601)
+          schema:
+            type: string
+            maxLength: 200
+        - name: hanhDong
+          in: query
+          required: false
+          description: 1 Them · 2 Sua · 3 Xoa · 4 Doi khoa chinh
+          schema:
+            type: integer
+            enum: [1, 2, 3, 4]
+        - name: loaiTacNhan
+          in: query
+          required: false
+          description: 1 Nguoi dung · 2 He thong / an danh · 3 Ngoai ung dung (sua truc tiep CSDL)
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+        - name: idNguoiThucHien
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: maYeuCau
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: tuNgay
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: denNgay
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhatKyThaoTacListResponse"
+        "400":
+          description: Tham so sai (INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhatKyThaoTacListResponse"
+        "403":
+          description: Khong phai ADMIN
+  /api/nhat-ky/thao-tac/{id}:
+    get:
+      tags:
+        - NhatKy
+      summary: Chi tiet 1 dong nhat ky thao tac kem gia tri cu / moi tung truong - CHI ADMIN
+      operationId: nhatKyThaoTacGetById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhatKyThaoTacItemResponse"
+        "403":
+          description: Khong phai ADMIN
+        "404":
+          description: Khong tim thay (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhatKyThaoTacItemResponse"
+  /api/nhat-ky/thao-tac/bang:
+    get:
+      tags:
+        - NhatKy
+      summary: Bang dang duoc theo doi (cau_hinh_audit) + trang thai trigger that - CHI ADMIN
+      description: >
+        Dung cho dropdown tenBang. DangBat = true ma TriggerDangChay = false nghia la migration /
+        generator chua chay xong (bao quan tri).
+      operationId: nhatKyBangTheoDoi
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BangTheoDoiListResponse"
+        "403":
+          description: Khong phai ADMIN
+  /api/nhat-ky/dung-luong:
+    get:
+      tags:
+        - NhatKy
+      summary: Dung luong CSDL / nhat ky so voi gioi han SQL Server Express - CHI ADMIN
+      description: >
+        CanhBao = true khi du lieu da dung >= 80% gioi han (Express 2008 R2+: 10GB). Khong tu dong
+        xoa log: nguoi van hanh tu chay dbo.sp_nhat_ky_xoa_theo_lo (xem schema_ghi_chu.md 23.6).
+      operationId: nhatKyDungLuong
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhatKyDungLuongResponse"
+        "403":
+          description: Khong phai ADMIN
   /api/chucvu:
     get:
       tags:
@@ -25927,6 +26177,316 @@ components:
           items:
             $ref: "#/components/schemas/PhatTrienDoiNguUngVienDto"
           description: Cung hinh dang PhatTrienDoiNguUngVienDto (nhan su dang thuoc P_KH)
+    NhatKyDangNhapDto:
+      type: object
+      description: 1 dong nhat ky phien
+      properties:
+        Id:
+          type: integer
+        LoaiSuKien:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+          description: 1 Dang nhap · 2 Lam moi token · 3 Dang xuat · 4 Doi mat khau · 5 Quan tri dat lai mat khau
+        TenLoaiSuKien:
+          type: string
+        ThanhCong:
+          type: boolean
+        LyDoThatBai:
+          type: string
+          nullable: true
+        IdNhanVien:
+          type: integer
+          nullable: true
+          description: Nguoi cua phien (loai 5 - nguoi BI dat lai mat khau)
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+          description: Snapshot luc ghi
+        TenDangNhap:
+          type: string
+        IdNguoiThucHien:
+          type: integer
+          nullable: true
+          description: Chi loai 5 - admin thuc hien
+        MaNguoiThucHien:
+          type: string
+          nullable: true
+        HoTenNguoiThucHien:
+          type: string
+          nullable: true
+        DiaChiIp:
+          type: string
+        UserAgent:
+          type: string
+          nullable: true
+        MaYeuCau:
+          type: string
+          format: uuid
+          nullable: true
+        ThoiGian:
+          type: string
+          format: date-time
+    NhatKyDangNhapListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Page:
+          type: integer
+        PageSize:
+          type: integer
+        TotalCount:
+          type: integer
+        TotalPages:
+          type: integer
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NhatKyDangNhapDto"
+    NhatKyThaoTacTruongDto:
+      type: object
+      description: >
+        1 truong cua ban ghi. Gia tri la chuoi luu trong XML (ngay ISO 8601). null = cot NULL /
+        khong co phia do; null khac "" (chuoi rong). CoThayDoi so sanh chinh xac tung ky tu.
+      properties:
+        Truong:
+          type: string
+        GiaTriCu:
+          type: string
+          nullable: true
+        GiaTriMoi:
+          type: string
+          nullable: true
+        CoThayDoi:
+          type: boolean
+    NhatKyThaoTacDto:
+      type: object
+      description: 1 dong nhat ky thao tac (audit)
+      properties:
+        Id:
+          type: integer
+          format: int64
+        TenBang:
+          type: string
+        MucGhi:
+          type: integer
+          enum: [1, 2]
+          description: 1 Chi tiet · 2 Tom tat
+        LaTomTat:
+          type: boolean
+        HanhDong:
+          type: integer
+          enum: [1, 2, 3, 4]
+          description: 1 Them · 2 Sua · 3 Xoa · 4 Doi khoa chinh
+        TenHanhDong:
+          type: string
+        KhoaBanGhi:
+          type: string
+          nullable: true
+        KhoaBanGhiCu:
+          type: string
+          nullable: true
+        SoDong:
+          type: integer
+          description: Chi tiet = 1; tom tat = so dong cau lenh tac dong
+        LoaiTacNhan:
+          type: integer
+          enum: [1, 2, 3]
+          description: 1 Nguoi dung · 2 He thong / an danh · 3 Ngoai ung dung
+        TenLoaiTacNhan:
+          type: string
+        IdNguoiThucHien:
+          type: integer
+          nullable: true
+        MaNguoiThucHien:
+          type: string
+          nullable: true
+          description: Snapshot luc ghi
+        HoTenNguoiThucHien:
+          type: string
+          nullable: true
+        DiaChiIp:
+          type: string
+          nullable: true
+        Nguon:
+          type: string
+          nullable: true
+          example: PUT /api/donvi/12
+        MaYeuCau:
+          type: string
+          format: uuid
+          nullable: true
+        TenDangNhapSql:
+          type: string
+          nullable: true
+        UngDung:
+          type: string
+          nullable: true
+        ThoiGian:
+          type: string
+          format: date-time
+        CacTruongThayDoi:
+          type: array
+          nullable: true
+          description: Ten cac truong thuc su doi (chi HanhDong 2 / 4)
+          items:
+            type: string
+        CacTruong:
+          type: array
+          nullable: true
+          description: Chi o GET /api/nhat-ky/thao-tac/{id}; null o dong tom tat
+          items:
+            $ref: "#/components/schemas/NhatKyThaoTacTruongDto"
+    NhatKyThaoTacListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Page:
+          type: integer
+        PageSize:
+          type: integer
+        TotalCount:
+          type: integer
+        TotalPages:
+          type: integer
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NhatKyThaoTacDto"
+    NhatKyThaoTacItemResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Item:
+          $ref: "#/components/schemas/NhatKyThaoTacDto"
+    BangTheoDoiDto:
+      type: object
+      properties:
+        TenBang:
+          type: string
+        MucGhi:
+          type: integer
+          enum: [1, 2]
+        DangBat:
+          type: boolean
+        DotTrienKhai:
+          type: string
+          enum: [A, B]
+        CotBoQua:
+          type: string
+          nullable: true
+        GhiChu:
+          type: string
+          nullable: true
+        CoTrigger:
+          type: boolean
+        TriggerDangChay:
+          type: boolean
+    BangTheoDoiListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BangTheoDoiDto"
+    NhatKyDungLuongThangDto:
+      type: object
+      properties:
+        TenBang:
+          type: string
+        Thang:
+          type: string
+          example: "2026-10"
+        SoDongNhatKy:
+          type: integer
+          format: int64
+        SoDongTacDong:
+          type: integer
+          format: int64
+    NhatKyDungLuongDto:
+      type: object
+      properties:
+        PhienBan:
+          type: string
+        LaExpress:
+          type: boolean
+        GioiHanMb:
+          type: number
+          nullable: true
+        DuLieuCapPhatMb:
+          type: number
+          nullable: true
+        DuLieuDaDungMb:
+          type: number
+          nullable: true
+        PhanTramGioiHan:
+          type: number
+          nullable: true
+        NguongCanhBaoPhanTram:
+          type: integer
+        CanhBao:
+          type: boolean
+        NhatKyThaoTacSoDong:
+          type: integer
+          format: int64
+        NhatKyThaoTacMb:
+          type: number
+        NhatKyThaoTacCuNhat:
+          type: string
+          format: date-time
+          nullable: true
+        NhatKyDangNhapSoDong:
+          type: integer
+          format: int64
+        NhatKyDangNhapMb:
+          type: number
+        NhatKyDangNhapCuNhat:
+          type: string
+          format: date-time
+          nullable: true
+        TheoThang:
+          type: array
+          items:
+            $ref: "#/components/schemas/NhatKyDungLuongThangDto"
+    NhatKyDungLuongResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Item:
+          $ref: "#/components/schemas/NhatKyDungLuongDto"
   securitySchemes:
     bearerAuth:
       type: http

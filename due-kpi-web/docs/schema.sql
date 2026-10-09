@@ -109,15 +109,28 @@ CREATE TABLE nhan_vien_chuc_danh (
 );
 GO
 
--- 1.6. Nhật ký đăng nhập
+-- 1.6. Nhật ký phiên: đăng nhập, làm mới token, đăng xuất, đổi / đặt lại mật khẩu.
+--      Đợt "Nhật ký thao tác + nhật ký phiên" (2026-10-09) thêm 7 cột cuối + CHECK (DB thật: thêm qua ALTER).
+--      Sự kiện THÀNH CÔNG được ghi TRONG CÙNG transaction với thay đổi tương ứng (sp_auth_set_refresh_token,
+--      sp_auth_change_password, sp_auth_clear_refresh_token); THẤT BẠI ghi riêng (sp_auth_log_login_attempt).
+--      Xem schema_ghi_chu.md §23.
 CREATE TABLE nhat_ky_dang_nhap (
     id                  INT IDENTITY PRIMARY KEY,
     id_nhan_vien        INT NULL,
-    email_dang_nhap     NVARCHAR(150) NOT NULL,
-    dia_chi_ip          VARCHAR(45) NOT NULL,
+    email_dang_nhap     NVARCHAR(150) NOT NULL,     -- TÊN ĐĂNG NHẬP (email HOẶC mã NV); sự kiện khác = ISNULL(email, ma_nhan_vien)
+    dia_chi_ip          VARCHAR(45) NOT NULL,       -- IP kết nối THẬT (IIS nhận trực tiếp, không tin X-Forwarded-For)
     thanh_cong          BIT NOT NULL,
     ly_do_that_bai      NVARCHAR(100) NULL,
-    thoi_gian_tao       DATETIMEOFFSET(7) NOT NULL DEFAULT SYSDATETIMEOFFSET()
+    thoi_gian_tao       DATETIMEOFFSET(7) NOT NULL DEFAULT SYSDATETIMEOFFSET(),   -- SP ghi GETUTCDATE() (+00:00)
+    loai_su_kien           TINYINT          NOT NULL CONSTRAINT df_nkdn_loai_su_kien DEFAULT 1,
+        -- 1 Đăng nhập · 2 Làm mới token · 3 Đăng xuất · 4 Đổi mật khẩu · 5 Quản trị đặt lại mật khẩu
+    id_nguoi_thuc_hien     INT              NULL,   -- chỉ loại 5: admin đặt lại (KHÔNG FK)
+    ho_ten                 NVARCHAR(100)    NULL,   -- snapshot họ tên của id_nhan_vien lúc ghi
+    ma_nguoi_thuc_hien     NVARCHAR(20)     NULL,   -- snapshot của id_nguoi_thuc_hien
+    ho_ten_nguoi_thuc_hien NVARCHAR(100)    NULL,
+    user_agent             NVARCHAR(500)    NULL,
+    ma_yeu_cau             UNIQUEIDENTIFIER NULL,   -- = ReqId của access log = ma_yeu_cau của nhat_ky_thao_tac
+    CONSTRAINT chk_nkdn_loai_su_kien CHECK (loai_su_kien BETWEEN 1 AND 5)
 );
 GO
 
@@ -1562,6 +1575,103 @@ CREATE TABLE nhat_ky (
 );
 GO
 
+-- 5.2. Nhật ký thao tác (audit) — đợt 2026-10-09, xem schema_ghi_chu.md §23.
+--      Ghi bằng trigger trg_audit_<bảng> do dbo.sp_audit_tao_trigger SINH từ cau_hinh_audit + cấu trúc DB thật.
+--      KHÔNG FK tới bảng nào: vết phải còn khi bản ghi / nhân viên bị xoá. Người thực hiện lấy từ CONTEXT_INFO
+--      (C# gọi sp_audit_set_context ở mỗi lần mở connection), kèm SNAPSHOT mã / họ tên lúc ghi.
+CREATE TABLE nhat_ky_thao_tac (
+    id                     BIGINT           IDENTITY(1,1) NOT NULL,
+    ten_bang               NVARCHAR(128)    NOT NULL,
+    muc_ghi                TINYINT          NOT NULL,   -- 1 Chi tiết (1 dòng / bản ghi) · 2 Tóm tắt (1 dòng / lần kích hoạt trigger)
+    hanh_dong              TINYINT          NOT NULL,   -- 1 Thêm · 2 Sửa · 3 Xoá · 4 Đổi khoá chính
+    khoa_ban_ghi           NVARCHAR(200)    NULL,       -- PK, ghép nối '|', ngày style 126. NULL: dòng tóm tắt; dòng cũ không ghép được của hành động 4
+    khoa_ban_ghi_cu        NVARCHAR(200)    NULL,       -- chỉ hành động 4
+    so_dong                INT              NOT NULL CONSTRAINT df_nktt_so_dong DEFAULT 1,
+        -- chi tiết = 1; tóm tắt = số dòng câu lệnh TÁC ĐỘNG (kể cả UPDATE không đổi giá trị)
+    du_lieu_cu             XML              NULL,       -- <r cot="..."/>; cột NULL = vắng attribute, '' = cot=""
+    du_lieu_moi            XML              NULL,
+    loai_tac_nhan          TINYINT          NOT NULL,   -- 1 Người dùng · 2 Hệ thống / ẩn danh của ứng dụng · 3 Ngoài ứng dụng (không có context)
+    id_nguoi_thuc_hien     INT              NULL,
+    ma_nguoi_thuc_hien     NVARCHAR(20)     NULL,       -- snapshot
+    ho_ten_nguoi_thuc_hien NVARCHAR(100)    NULL,       -- snapshot
+    dia_chi_ip             VARCHAR(45)      NULL,
+    nguon                  VARCHAR(100)     NULL,       -- 'PUT /api/donvi/12' | 'SYSTEM'
+    ma_yeu_cau             UNIQUEIDENTIFIER NULL,       -- gom mọi dòng của 1 HTTP request
+    ten_dang_nhap_sql      NVARCHAR(128)    NULL CONSTRAINT df_nktt_login DEFAULT SUSER_SNAME(),
+    ung_dung               NVARCHAR(128)    NULL CONSTRAINT df_nktt_app   DEFAULT APP_NAME(),
+    thoi_gian              DATETIME         NOT NULL CONSTRAINT df_nktt_thoi_gian DEFAULT GETDATE(),
+    CONSTRAINT pk_nhat_ky_thao_tac PRIMARY KEY (id),
+    CONSTRAINT chk_nktt_muc_ghi   CHECK (muc_ghi IN (1, 2)),
+    CONSTRAINT chk_nktt_hanh_dong CHECK (hanh_dong IN (1, 2, 3, 4)),
+    CONSTRAINT chk_nktt_so_dong   CHECK (so_dong >= 1),
+    CONSTRAINT chk_nktt_tom_tat   CHECK (muc_ghi = 1
+                                         OR (khoa_ban_ghi IS NULL AND khoa_ban_ghi_cu IS NULL AND hanh_dong IN (1, 2, 3))),
+    CONSTRAINT chk_nktt_khoa      CHECK (muc_ghi = 2
+                                         OR (hanh_dong IN (1, 2, 3) AND khoa_ban_ghi IS NOT NULL AND khoa_ban_ghi_cu IS NULL)
+                                         OR (hanh_dong = 4 AND (khoa_ban_ghi IS NOT NULL OR khoa_ban_ghi_cu IS NOT NULL))),
+    CONSTRAINT chk_nktt_tac_nhan  CHECK ((loai_tac_nhan = 1 AND id_nguoi_thuc_hien IS NOT NULL)
+                                         OR (loai_tac_nhan IN (2, 3) AND id_nguoi_thuc_hien IS NULL))
+);
+GO
+
+-- 5.3. Cấu hình audit: bảng nào có trigger, mức ghi, đợt triển khai. Đổi cấu hình rồi
+--      EXEC dbo.sp_audit_tao_trigger [N'<bảng>']; — generator luôn bỏ cột tên chứa mat_khau /
+--      password / token / secret / salt / hash (danh sách cấm cứng, cot_bo_qua không ghi đè được).
+CREATE TABLE cau_hinh_audit (
+    ten_bang       SYSNAME        NOT NULL,
+    muc_ghi        TINYINT        NOT NULL CONSTRAINT df_cha_muc_ghi  DEFAULT 1,   -- 1 Chi tiết · 2 Tóm tắt
+    dang_bat       BIT            NOT NULL CONSTRAINT df_cha_dang_bat DEFAULT 1,
+    dot_trien_khai CHAR(1)        NOT NULL,                                        -- 'A' bật ngay · 'B' bật sau khi đo
+    cot_bo_qua     NVARCHAR(1000) NULL,                                            -- CSV tên cột, vd 'so_lan_dang_nhap_sai,khoa_dang_nhap_den'
+    ghi_chu        NVARCHAR(500)  NULL,
+    CONSTRAINT pk_cau_hinh_audit PRIMARY KEY (ten_bang),
+    CONSTRAINT chk_cha_muc_ghi CHECK (muc_ghi IN (1, 2)),
+    CONSTRAINT chk_cha_dot     CHECK (dot_trien_khai IN ('A', 'B'))
+);
+GO
+
+INSERT INTO cau_hinh_audit (ten_bang, muc_ghi, dang_bat, dot_trien_khai, cot_bo_qua, ghi_chu) VALUES
+    -- Đợt A — vi phạm
+    (N'loai_vi_pham',                  1, 1, 'A', NULL, N'Vi phạm'),
+    (N'loai_vi_pham_don_vi_ghi_nhan',  1, 1, 'A', NULL, N'Vi phạm'),
+    (N'vi_pham_giang_day',             1, 1, 'A', NULL, N'Vi phạm (đang xoá hẳn)'),
+    -- Đợt A — nhân sự
+    (N'don_vi',                        1, 1, 'A', NULL, N'Nhân sự'),
+    (N'chuc_vu',                       1, 1, 'A', NULL, N'Nhân sự'),
+    (N'chuc_danh_nghe_nghiep',         1, 1, 'A', NULL, N'Nhân sự'),
+    (N'nhan_vien',                     1, 1, 'A', N'so_lan_dang_nhap_sai,khoa_dang_nhap_den',
+                                       N'Nhân sự — mật khẩu / token bị danh sách cấm loại; 2 cột đăng nhập bỏ để login không sinh audit'),
+    (N'nhan_vien_chuc_vu',             1, 1, 'A', NULL, N'Nhân sự'),
+    (N'nhan_vien_chuc_danh',           1, 1, 'A', NULL, N'Nhân sự'),
+    -- Đợt A — import thô lớn: TÓM TẮT
+    (N'phan_hoi_sinh_vien',            2, 1, 'A', NULL, N'Import thô lớn'),
+    (N'sinh_vien_hoc_vu',              2, 1, 'A', NULL, N'Import thô lớn (MERGE: tối đa 3 dòng / câu lệnh)'),
+    (N'canh_bao_hoc_vu',               2, 1, 'A', NULL, N'Import thô lớn'),
+    (N'gio_giang_tkb_chi_tiet',        2, 1, 'A', NULL, N'Import thô lớn'),
+    -- Đợt B — phiếu & điểm (bật sau khi đo dung lượng / log / khoá)
+    (N'phieu_danh_gia',                1, 0, 'B', NULL, N'Phiếu & điểm'),
+    (N'chi_tiet_danh_gia',             1, 0, 'B', NULL, N'Phiếu & điểm'),
+    (N'phieu_danh_gia_don_vi',         1, 0, 'B', NULL, N'Phiếu & điểm'),
+    (N'chi_tiet_danh_gia_don_vi',      1, 0, 'B', NULL, N'Phiếu & điểm'),
+    -- Đợt B — import / đồng bộ khác
+    (N'diem_tb_phan_hoi_sinh_vien',    1, 0, 'B', NULL, N'Import / đồng bộ'),
+    (N'khoa_dao_tao_anh_xa',           1, 0, 'B', NULL, N'Import / đồng bộ'),
+    (N'gio_giang_tkb_lan_import',      1, 0, 'B', NULL, N'Import / đồng bộ'),
+    (N'gio_giang_tkb',                 1, 0, 'B', NULL, N'Import / đồng bộ'),
+    (N'gio_giang_tkb_anh_xa',          1, 0, 'B', NULL, N'Import / đồng bộ'),
+    (N'giam_tru_nhan_vien',            1, 0, 'B', NULL, N'Import / đồng bộ'),
+    (N'giam_tru_con_nho',              1, 0, 'B', NULL, N'Import / đồng bộ'),
+    (N'nckh_ho_so',                    1, 0, 'B', NULL, N'Đồng bộ NCKH (MERGE)'),
+    (N'nckh_bai_bao',                  1, 0, 'B', NULL, N'Đồng bộ NCKH'),
+    (N'nckh_de_tai',                   1, 0, 'B', NULL, N'Đồng bộ NCKH'),
+    (N'nckh_sach',                     1, 0, 'B', NULL, N'Đồng bộ NCKH'),
+    (N'nckh_ke_khai_khac',             1, 0, 'B', NULL, N'Đồng bộ NCKH'),
+    (N'nckh_tong_hop',                 1, 0, 'B', NULL, N'Đồng bộ NCKH'),
+    (N'nckh_phan_loai',                1, 0, 'B', NULL, N'Đồng bộ NCKH'),
+    (N'nckh_gio_nckh',                 1, 0, 'B', NULL, N'Đồng bộ NCKH'),
+    (N'nckh_kpi_bai_bao_quoc_te',      1, 0, 'B', NULL, N'Đồng bộ NCKH');
+GO
+
 
 -- =============================================================================
 -- 6. INDEXES
@@ -1664,6 +1774,17 @@ CREATE INDEX ix_lstt_phieu        ON lich_su_trang_thai_phieu(id_phieu, ngay_thu
 
 -- nhật ký
 CREATE INDEX ix_nk_phieu          ON nhat_ky(id_phieu, ngay_tao DESC);
+
+-- nhật ký thao tác (audit) + nhật ký phiên (đợt 2026-10-09). KHÔNG filtered index: trigger ghi từ mọi SP.
+CREATE INDEX ix_nktt_bang_khoa    ON nhat_ky_thao_tac(ten_bang, khoa_ban_ghi, thoi_gian DESC, id DESC);
+CREATE INDEX ix_nktt_bang_khoa_cu ON nhat_ky_thao_tac(ten_bang, khoa_ban_ghi_cu);
+CREATE INDEX ix_nktt_thoi_gian    ON nhat_ky_thao_tac(thoi_gian DESC, id DESC);
+CREATE INDEX ix_nktt_nguoi        ON nhat_ky_thao_tac(id_nguoi_thuc_hien, thoi_gian DESC, id DESC);
+CREATE INDEX ix_nktt_yeu_cau      ON nhat_ky_thao_tac(ma_yeu_cau);
+CREATE INDEX ix_nkdn_ip_thoi_gian ON nhat_ky_dang_nhap(dia_chi_ip, thoi_gian_tao)
+    INCLUDE (thanh_cong, loai_su_kien, ly_do_that_bai);                        -- sp_auth_is_ip_blocked
+CREATE INDEX ix_nkdn_nv_thoi_gian ON nhat_ky_dang_nhap(id_nhan_vien, thoi_gian_tao DESC, id DESC);
+CREATE INDEX ix_nkdn_thoi_gian    ON nhat_ky_dang_nhap(thoi_gian_tao DESC, id DESC);
 
 -- đánh giá đơn vị (khoa/phòng)
 CREATE INDEX ix_pdv_don_vi_nam    ON phieu_danh_gia_don_vi(id_don_vi, id_nam);
