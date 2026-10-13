@@ -1,6 +1,8 @@
 import { matchPath } from "react-router-dom";
 import {
   ROLE_SETS,
+  ROLE,
+  normalizeRole,
   VAI_TRO_TRUONG_PHONG,
   LOAI_DOI_TUONG_KPI,
   DON_VI_SETS,
@@ -20,6 +22,18 @@ export const PUBLIC_ROUTES = [
 ];
 
 export const MENU_GROUPS = [
+  {
+    key: "systemAdmin",
+    label: "Quản trị hệ thống",
+    icon: "fa-shield-halved",
+    items: [{
+      name: "Nhật ký hệ thống",
+      icon: "fa-solid fa-clock-rotate-left",
+      path: "/nhat-ky-he-thong",
+      // API chỉ chấp nhận chức vụ chính, không cộng quyền kiêm nhiệm.
+      access: (user) => normalizeRole(user) === ROLE.ADMIN,
+    }],
+  },
   {
     key: "evaluation",
     label: "Phiếu KPI",
@@ -238,17 +252,6 @@ export const MENU_GROUPS = [
         access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
       },
       {
-        // KPI Nhóm III: phục vụ cộng đồng và các nhiệm vụ khác, theo phân công
-        // của Khoa. Server suy người dùng TỪ TOKEN nên đây chỉ là lối vào; gate
-        // theo NGẠCH giống "Phản hồi sinh viên" vì chỉ giảng viên của Khoa mới
-        // phát sinh dữ liệu này.
-        name: "Phục vụ cộng đồng",
-        icon: "fa-solid fa-hands-holding-circle",
-        path: "/nhiem-vu-khoa-cua-toi",
-        roles: MOI_NGUOI,
-        access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
-      },
-      {
         // Vi phạm giảng dạy do đơn vị ghi nhận cho chính mình (điểm trừ KPI).
         // Server tự giới hạn GET /viphamgiangday về người đăng nhập, nên đây chỉ
         // là lối vào; gate theo NGẠCH vì chỉ giảng viên thuộc Khoa mới bị ghi nhận.
@@ -258,6 +261,16 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
         access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
       },
+    ],
+  },
+  {
+    key: "nhiemVuPhucVu",
+    label: "Nhiệm vụ PVCĐ",
+    icon: "fa-hands-holding-circle",
+    items: [
+      { name: "Nhiệm vụ của tôi", icon: "fa-solid fa-list-check", path: "/nhiem-vu-phuc-vu", serverPermissionSource: "nhiemVuPhucVu", serverPermission: "Xem" },
+      { name: "Phân công và thực hiện", icon: "fa-solid fa-people-group", path: "/nhiem-vu-phuc-vu/quan-ly", serverPermissionSource: "nhiemVuPhucVu", serverPermission: "QuanLy" },
+      { name: "Tổng hợp kết quả", icon: "fa-solid fa-chart-column", path: "/nhiem-vu-phuc-vu/tong-hop", serverPermissionSource: "nhiemVuPhucVu", serverPermission: "QuanLy" },
     ],
   },
   {
@@ -442,6 +455,22 @@ export const MENU_GROUPS = [
         serverPermission: "LaQuanLy",
       },
       {
+        name: "Khen thưởng đột xuất",
+        icon: "fa-solid fa-award",
+        path: "/khen-thuong-dot-xuat",
+        childPaths: ["/khen-thuong-dot-xuat/:id"],
+        // /quyen succeeds for readers too; the API scopes rows to school/unit/self.
+        serverPermission: "Success",
+        serverPermissionSource: "khenThuong",
+      },
+      {
+        name: "Ủy quyền nhập liệu khen thưởng",
+        icon: "fa-solid fa-user-shield",
+        path: "/khen-thuong-dot-xuat/uy-quyen",
+        serverPermission: "LaQuanLy",
+        serverPermissionSource: "khenThuong",
+      },
+      {
         name: "Phát triển đội ngũ",
         icon: "fa-solid fa-user-graduate",
         path: "/phat-trien-doi-ngu",
@@ -489,13 +518,6 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-square-poll-vertical",
         path: "/diem-trung-binh-danh-gia-sinh-vien",
         roles: ROLE_SETS.DIEM_TB_PHAN_HOI_SV,
-      },
-      {
-        // TK/TKL xét từng nhiệm vụ; TLGVK chỉ xem. Quyền ghi lấy từ BE.
-        name: "Ghi nhận phục vụ cộng đồng",
-        icon: "fa-solid fa-hands-holding-circle",
-        path: "/quan-ly/nhiem-vu-khoa",
-        roles: ROLE_SETS.NHIEM_VU_KHOA,
       },
       {
         // Lối vào DUY NHẤT của màn hình ghi nhận vi phạm giảng viên. Giữ
@@ -652,6 +674,8 @@ export const MENU_GROUPS = [
 const buildRouteRules = () => {
   const rules = [
     ...PUBLIC_ROUTES,
+    // Former participants can still open source evidence; GET detail enforces visibility.
+    { path: "/nhiem-vu-phuc-vu/:id", roles: MOI_NGUOI },
     // Trang hạng mục đã ẩn; chặn trước rule chi tiết /phat-trien-doi-ngu/:id.
     { path: "/phat-trien-doi-ngu/hang-muc", access: () => false },
   ];
@@ -687,7 +711,6 @@ const LOAI_DOI_TUONG_THEO_DUONG_DAN = {
   "/gio-giang-cua-toi": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
   "/thanh-tich-nckh": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
   "/phan-hoi-sinh-vien-cua-toi": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
-  "/nhiem-vu-khoa-cua-toi": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
   "/vi-pham-cua-toi": LOAI_DOI_TUONG_KPI.GIANG_VIEN,
 };
 
@@ -696,9 +719,9 @@ export const ROUTE_RULES = buildRouteRules();
 export const findRouteRule = (pathname) =>
   ROUTE_RULES.find((rule) => matchPath(rule.path, pathname)) || null;
 
-export const canAccessRule = (rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien) => {
+export const canAccessRule = (rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu) => {
   if (!user) return false;
-  if (rule.serverPermission) return (rule.serverPermissionSource === "sangKien" ? quyenSangKien : rule.serverPermissionSource === "doiNgu" ? quyenDoiNgu : quyenDaoTao)?.[rule.serverPermission] === true;
+  if (rule.serverPermission) return (rule.serverPermissionSource === "nhiemVuPhucVu" ? quyenNhiemVuPhucVu : rule.serverPermissionSource === "khenThuong" ? quyenKhenThuong : rule.serverPermissionSource === "sangKien" ? quyenSangKien : rule.serverPermissionSource === "doiNgu" ? quyenDoiNgu : quyenDaoTao)?.[rule.serverPermission] === true;
 
   if (rule.personalKpi && !coDanhGiaKpiCaNhan(user)) return false;
 
@@ -737,7 +760,7 @@ export const canAccessRule = (rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKie
   );
 };
 
-export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu, quyenSangKien) => {
+export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu) => {
   const rule = findRouteRule(pathname);
   if (!rule) {
     if (process.env.NODE_ENV !== "production") {
@@ -748,7 +771,7 @@ export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu, quyenSan
     }
     return false;
   }
-  return canAccessRule(rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien);
+  return canAccessRule(rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu);
 };
 
 /**
@@ -757,8 +780,8 @@ export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu, quyenSan
  */
 const laMucMock = (item) => String(item?.name || "").startsWith("[Mock]");
 
-export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien) =>
-  group.items.filter((item) => !laMucMock(item) && canAccessRule(item, user, quyenDaoTao, quyenDoiNgu, quyenSangKien))
+export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu) =>
+  group.items.filter((item) => !laMucMock(item) && canAccessRule(item, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu))
     .map((item) => item.path === "/hoat-dong-dao-tao" && quyenDaoTao &&
       quyenDaoTao.XemTatCa !== true && quyenDaoTao.XemTheoKhoa !== true
       ? { ...item, name: "Hoạt động đào tạo của tôi" }
@@ -769,10 +792,12 @@ export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu
         quyenDoanThe?.XemTatCa !== true && quyenDoanThe?.XemTheoKhoa !== true
       ? { ...item, name: "Thành tích đoàn thể của tôi" }
       : item.path === "/sang-kien" && quyenSangKien?.XemTatCa !== true && quyenSangKien?.XemTheoDonVi !== true
-      ? { ...item, name: "Sáng kiến của tôi" } : item);
+      ? { ...item, name: "Sáng kiến của tôi" }
+      : item.path === "/khen-thuong-dot-xuat" && quyenKhenThuong?.XemTatCa !== true && quyenKhenThuong?.XemTheoDonVi !== true
+      ? { ...item, name: "Khen thưởng đột xuất của tôi" } : item);
 
-export const visibleGroups = (user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien) =>
+export const visibleGroups = (user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu) =>
   MENU_GROUPS.map((group) => ({
     ...group,
-    items: visibleItems(group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien),
+    items: visibleItems(group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu),
   })).filter((group) => group.items.length > 0);

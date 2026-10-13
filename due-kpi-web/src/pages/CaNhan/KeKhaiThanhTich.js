@@ -230,15 +230,15 @@ const KeKhaiThanhTich = () => {
     danhMuc.forEach((m) => map.set(String(m.IdMuc), m));
     return map;
   }, [danhMuc]);
-  const laDongSangKien = useCallback((r) => Number(r.loaiThanhTich ?? mucById.get(String(r.idMuc))?.LoaiThanhTich) === 1, [mucById]);
-  const suaDuocDong = (r) => choPhepSuaDong(r) && !laDongSangKien(r);
+  const laDongNguonRieng = useCallback((r) => [1, 2].includes(Number(r.loaiThanhTich ?? mucById.get(String(r.idMuc))?.LoaiThanhTich)), [mucById]);
+  const suaDuocDong = (r) => choPhepSuaDong(r) && !laDongNguonRieng(r);
 
   const suaDuoc = choPhepSua(banKe);
   const coThayDoi = chuKy(rows) !== goc;
 
   const capNhatDong = (key, thayDoi) =>
     setRows((truoc) =>
-      truoc.map((r) => (r.key === key && !laDongSangKien(r) ? { ...r, ...thayDoi } : r)),
+      truoc.map((r) => (r.key === key && !laDongNguonRieng(r) ? { ...r, ...thayDoi } : r)),
     );
 
   const goDong = (key) =>
@@ -351,11 +351,11 @@ const KeKhaiThanhTich = () => {
           // Giữ nguyên chuỗi 'YYYY-MM-DD' của <input type="date">, không đổi
           // sang ISO để tránh lệch một ngày do múi giờ.
           NgayDatDuoc: r.ngayDatDuoc || null,
-          TenThanhTich: laDongSangKien(r) ? r.tenThanhTich : r.tenThanhTich.trim(),
-          SoQuyetDinh: (laDongSangKien(r) ? r.soQuyetDinh : r.soQuyetDinh?.trim()) || null,
-          CoQuanCap: (laDongSangKien(r) ? r.coQuanCap : r.coQuanCap?.trim()) || null,
+          TenThanhTich: laDongNguonRieng(r) ? r.tenThanhTich : r.tenThanhTich.trim(),
+          SoQuyetDinh: (laDongNguonRieng(r) ? r.soQuyetDinh : r.soQuyetDinh?.trim()) || null,
+          CoQuanCap: (laDongNguonRieng(r) ? r.coQuanCap : r.coQuanCap?.trim()) || null,
           SoLuong: Number(r.soLuong),
-          MoTa: (laDongSangKien(r) ? r.moTa : r.moTa?.trim()) || null,
+          MoTa: (laDongNguonRieng(r) ? r.moTa : r.moTa?.trim()) || null,
           // Tệp đã nằm sẵn trên máy chủ ở kho tạm; đây là lúc gắn chúng vào dòng.
           IdMinhChung:
             (r.mcTam || []).length > 0
@@ -597,7 +597,7 @@ const KeKhaiThanhTich = () => {
                         ) : (
                           <i
                             className="fa-solid fa-lock"
-                            title={laDongSangKien(r) ? "Sáng kiến đã chuyển sang dữ liệu đồng bộ NCKH" : "Dòng đã chốt; cần đơn vị phụ trách mở lại trước khi sửa"}
+                            title={laDongNguonRieng(r) ? "Dòng lịch sử đã chuyển sang nguồn ghi nhận riêng, chỉ dùng để tra cứu" : "Dòng đã chốt; cần đơn vị phụ trách mở lại trước khi sửa"}
                           ></i>
                         )}
                       </div>
@@ -883,7 +883,7 @@ const KeKhaiThanhTich = () => {
                 </div>
               </td>
               <td className="kkt-tong-ghi-chu">
-                <i className="fa-solid fa-circle-info"></i> Vào KPI:{" "}
+                <i className="fa-solid fa-circle-info"></i> Từ bản kê vào KPI:{" "}
                 <strong>{formatDiem(banKe?.TongDiemDuocTinh)}</strong> điểm (sau
                 khử trùng và áp trần)
               </td>
@@ -935,12 +935,12 @@ const KeKhaiThanhTich = () => {
               <i className="fa-solid fa-trophy"></i>
             </div>
             <div>
-              <div className="stat-label">Điểm được tính vào KPI</div>
+              <div className="stat-label">Điểm từ bản kê vào KPI</div>
               <div className="stat-value" style={{ color: "#047857" }}>
                 {formatDiem(banKe.TongDiemDuocTinh)}
               </div>
               <div className="cd-hint" style={{ marginTop: 0 }}>
-                sau khử trùng và áp trần
+                Không bao gồm khen thưởng từ nguồn P_TCHC
               </div>
             </div>
           </div>
@@ -1123,16 +1123,17 @@ const KeKhaiThanhTich = () => {
       </div>
 
       <div className="kkt-tran-canh-bao">Sáng kiến được đồng bộ từ NCKH; cải tiến công việc do trưởng đơn vị đánh dấu, không tự kê khai tại đây. <Link to="/sang-kien">Xem sáng kiến của tôi</Link></div>
+      <div className="kkt-tran-canh-bao">Khen thưởng đột xuất do Phòng Tổ chức - Hành chính ghi nhận. Dòng kê khai cũ chỉ để tra cứu, không cộng lại vào điểm hiện hành. <Link to="/khen-thuong-dot-xuat">Xem khen thưởng đột xuất</Link></div>
       {renderNoiDung()}
 
       <DanhMucThanhTichModal
         isOpen={moDanhMuc}
-        danhMuc={danhMuc.filter((m) => Number(m.LoaiThanhTich) !== 1)}
+        danhMuc={danhMuc.filter((m) => ![1, 2].includes(Number(m.LoaiThanhTich)))}
         onClose={() => setMoDanhMuc(false)}
         onChon={
           suaDuoc
             ? (muc) => {
-              if (Number(muc.LoaiThanhTich) === 1) return;
+              if ([1, 2].includes(Number(muc.LoaiThanhTich))) return;
               setRows((truoc) => [
                 ...truoc,
                 { ...dongMoi(), idMuc: String(muc.IdMuc) },

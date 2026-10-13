@@ -12,6 +12,8 @@ export const laSangKien = (row) =>
   );
 export const diemSangKienDaLuu = (row) => row?.DiemTuDong !== undefined
   ? row.DiemTuDong : row?.DiemChinhThuc ?? null;
+export const laKhenThuongDotXuat = (row) =>
+  String(row?.CongThucSnapshot || row?.CongThucTongHop || "").toUpperCase() === "TTVT_KHEN_THUONG";
 
 // Snapshot của phiếu quyết định nguồn điểm, kể cả khi cấu hình mẫu đã thay đổi.
 // Dòng tự động vẫn khoá nhập nếu API xem trước không tải được.
@@ -34,7 +36,7 @@ export function ghepDiemTuDongPhieu(preview = {}, chiTiet = [], criteria = []) {
       ...preview[id],
     };
     // Phiếu đã có giữ điểm engine đã lưu; ghi nhận nguồn không tự chấm lại phiếu.
-    if (rows.has(id) && (laThanhTichDoanThe(row) || laPhatTrienDoiNgu(row) || laSangKien(row))) {
+    if (rows.has(id) && (laThanhTichDoanThe(row) || laPhatTrienDoiNgu(row) || laSangKien(row) || laKhenThuongDotXuat(row))) {
       result[id].CongThucTongHop = row.CongThucSnapshot || row.CongThucTongHop;
       result[id].DiemTuDong = row.DiemChinhThuc ?? null;
     }

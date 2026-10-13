@@ -344,6 +344,7 @@ const DanhGiaPhuLuc2Form = ({
                           const isDaoTao = congThuc.startsWith("CTDT_");
                           const isDoiNgu = congThuc.startsWith("PTDN_");
                           const isSangKien = laSangKien(autoInfo);
+                          const isNhiemVuPhucVu = congThuc === "NVK_PHAN_CONG_KHOA";
                           const autoNote = laCongThucGioGiang(autoInfo)
                             ? "Điểm dựa trên tỷ lệ hoàn thành định mức giờ giảng do hệ thống cung cấp"
                             : isSangKien
@@ -361,7 +362,8 @@ const DanhGiaPhuLuc2Form = ({
                                     : isTtdt
                                       ? "Điểm được tính tự động từ thành tích đoàn thể do Tổ trưởng P_TCTD ghi nhận"
                                       : isDoiNgu ? "Điểm được tính tự động từ phát triển đội ngũ do Phòng Tổ chức – Hành chính ghi nhận"
-                                      : isDaoTao ? "Điểm được tính tự động từ hoạt động đào tạo đã ghi nhận" : "Không chỉnh sửa";
+                                      : isDaoTao ? "Điểm được tính tự động từ hoạt động đào tạo đã ghi nhận"
+                                      : isNhiemVuPhucVu ? "Điểm từ nhiệm vụ PVCĐ đã chốt và hoàn thành; phiếu đã chốt trước chuyển đổi giữ minh chứng lưu trữ" : "Không chỉnh sửa";
                           const phamViDiem =
                             Number(autoInfo.Quy) > 0
                               ? autoInfo.ApDungQuy === false
@@ -517,13 +519,13 @@ const DanhGiaPhuLuc2Form = ({
                                 </div>
                               )}
 
-                              {(isNckh || isVpgd || isTtvt || isVpvc || isTtdt || isDaoTao || isDoiNgu || isSangKien) &&
+                              {(isNckh || isVpgd || isTtvt || isVpvc || isTtdt || isDaoTao || isDoiNgu || isSangKien || isNhiemVuPhucVu) &&
                                 minhChungList.length > 0 && (
                                   <div
                                     className={`pl2-nckh-mc-box ${isVpgd ? "pl2-mc-box-vpgd" : ""}`}
                                   >
                                     <div className="pl2-nckh-mc-title">
-                                      {isSangKien ? <>Sáng kiến đã ghi nhận</> : isVpgd || isVpvc ? (
+                                      {isNhiemVuPhucVu ? <>Minh chứng nhiệm vụ PVCĐ</> : isSangKien ? <>Sáng kiến đã ghi nhận</> : isVpgd || isVpvc ? (
                                         <>
                                           <i className="fa-solid fa-triangle-exclamation"></i>{" "}
                                           Vi phạm đã ghi nhận
@@ -556,10 +558,12 @@ const DanhGiaPhuLuc2Form = ({
                                             className="pl2-nckh-mc-item"
                                           >
                                             <div className="pl2-nckh-mc-item-main">
-                                              {Number(mc.LoaiNguon) === 10 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/thanh-tich-doan-the/${encodeURIComponent(mc.MaNguon)}`}>
+                                              {Number(mc.LoaiNguon) === 6 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/nhiem-vu-phuc-vu/${encodeURIComponent(mc.MaNguon)}`}>{mc.TieuDe || "Nhiệm vụ PVCĐ đã chốt"}</Link> : Number(mc.LoaiNguon) === 10 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/thanh-tich-doan-the/${encodeURIComponent(mc.MaNguon)}`}>
                                                 {mc.TieuDe || "Chi tiết thành tích đoàn thể"}
                                               </Link> : Number(mc.LoaiNguon) === 11 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/phat-trien-doi-ngu/${encodeURIComponent(mc.MaNguon)}`}>
                                                 {mc.TieuDe || "Chi tiết phát triển đội ngũ"}
+                                              </Link> : Number(mc.LoaiNguon) === 13 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/khen-thuong-dot-xuat/${encodeURIComponent(mc.MaNguon)}`}>
+                                                {mc.TieuDe || "Chi tiết khen thưởng đột xuất"}
                                               </Link> : Number(mc.LoaiNguon) === 12 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/sang-kien/${encodeURIComponent(mc.MaNguon)}`}>
                                                 {mc.TieuDe || "Chi tiết sáng kiến"}
                                               </Link> : <span className="pl2-nckh-mc-name">

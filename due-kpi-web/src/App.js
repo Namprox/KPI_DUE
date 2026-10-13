@@ -26,6 +26,8 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { HoatDongDaoTaoProvider } from "./context/HoatDongDaoTaoContext";
 import { ThanhTichDoanTheProvider } from "./context/ThanhTichDoanTheContext";
 import { PhatTrienDoiNguProvider } from "./context/PhatTrienDoiNguContext";
+import { KhenThuongDotXuatProvider } from "./context/KhenThuongDotXuatContext";
+import { NhiemVuPhucVuProvider } from "./context/NhiemVuPhucVuContext";
 import { SangKienProvider } from "./context/SangKienContext";
 
 const FullScreenLoader = () => (
@@ -171,7 +173,7 @@ export default function App() {
         <Router
           future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
-          <HoatDongDaoTaoProvider><ThanhTichDoanTheProvider><PhatTrienDoiNguProvider><SangKienProvider><AppContent /></SangKienProvider></PhatTrienDoiNguProvider></ThanhTichDoanTheProvider></HoatDongDaoTaoProvider>
+          <HoatDongDaoTaoProvider><ThanhTichDoanTheProvider><PhatTrienDoiNguProvider><SangKienProvider><KhenThuongDotXuatProvider><NhiemVuPhucVuProvider><AppContent /></NhiemVuPhucVuProvider></KhenThuongDotXuatProvider></SangKienProvider></PhatTrienDoiNguProvider></ThanhTichDoanTheProvider></HoatDongDaoTaoProvider>
         </Router>
       </AuthProvider>
     </PrimeReactProvider>

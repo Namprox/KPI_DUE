@@ -30,7 +30,7 @@ const TongHopLoaiPanel = ({ tongHop = [] }) => {
   if (!Array.isArray(tongHop) || tongHop.length === 0) return null;
 
   const tongDuocTinh = tongHop.reduce(
-    (t, r) => t + (Number(r.DiemDuocTinh) || 0),
+    (t, r) => t + (Number(r.LoaiThanhTich) === 2 ? 0 : Number(r.DiemDuocTinh) || 0),
     0,
   );
 
@@ -39,12 +39,13 @@ const TongHopLoaiPanel = ({ tongHop = [] }) => {
       <div className="kkt-tran-grid">
         {tongHop.map((r) => {
           const meta = LOAI_THANH_TICH_META[r.LoaiThanhTich];
+          const lichSuKhenThuong = Number(r.LoaiThanhTich) === 2;
           const tran = Number(r.TranDiem) || 0;
-          const sauKhuTrung = Number(r.DiemSauKhuTrung) || 0;
+          const sauKhuTrung = lichSuKhenThuong ? 0 : Number(r.DiemSauKhuTrung) || 0;
           const vuot = tran > 0 && sauKhuTrung > tran;
           const tiLe =
             tran > 0 ? Math.min((sauKhuTrung / tran) * 100, 100) : 0;
-          const canhBao = r.MaCanhBao
+          const canhBao = lichSuKhenThuong ? CANH_BAO_META.KHEN_THUONG_DA_CHUYEN : r.MaCanhBao
             ? CANH_BAO_META[r.MaCanhBao]
             : null;
 
@@ -85,7 +86,7 @@ const TongHopLoaiPanel = ({ tongHop = [] }) => {
 
               <div className="kkt-tran-so">
                 <span className="kkt-tran-tinh">
-                  {formatDiem(r.DiemDuocTinh)}
+                  {formatDiem(lichSuKhenThuong ? 0 : r.DiemDuocTinh)}
                 </span>
                 <span className="kkt-tran-tran">
                   / {tran > 0 ? formatDiem(tran) : "-"} điểm
@@ -104,9 +105,9 @@ const TongHopLoaiPanel = ({ tongHop = [] }) => {
                 )}
               </div>
 
-              {r.CanhBao && (
+              {(lichSuKhenThuong || r.CanhBao) && (
                 <div className="kkt-tran-canh-bao">
-                  <i className="fa-solid fa-circle-info"></i> {r.CanhBao}
+                  <i className="fa-solid fa-circle-info"></i> {lichSuKhenThuong ? "Lịch sử kê khai cũ, không cộng lại vào KPI. Điểm khen thưởng hiện hành lấy từ nguồn Phòng Tổ chức - Hành chính / điểm tự động." : r.CanhBao}
                 </div>
               )}
             </div>
@@ -117,7 +118,7 @@ const TongHopLoaiPanel = ({ tongHop = [] }) => {
       <div className="kkt-tran-tong">
         <span>
           <i className="fa-solid fa-calculator"></i> Tổng điểm thành tích vượt
-          trội được tính: <b>{formatDiem(tongDuocTinh)}</b> điểm
+          trội từ bản kê được tính: <b>{formatDiem(tongDuocTinh)}</b> điểm (không bao gồm khen thưởng từ nguồn P_TCHC)
         </span>
         {/* Trần nhóm KHÔNG được server thực thi (tổng trần 4 tiêu chí là 65 > 50,
             sp_phieu_danh_gia_tinh_tong_diem mới cộng chứ chưa cắt). Nói rõ ra để

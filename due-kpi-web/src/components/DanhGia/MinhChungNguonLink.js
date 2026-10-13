@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import "../../css/HoatDongDaoTao.css";
 
 const sources = {
+  6: { path: "nhiem-vu-phuc-vu", Detail: lazy(() => import("../NhiemVuPhucVu/NhiemVuPhucVuDetail")) },
   9: { path: "hoat-dong-dao-tao", Detail: lazy(() => import("../HoatDongDaoTao/HoatDongDaoTaoDetail")) },
   10: { path: "thanh-tich-doan-the", Detail: lazy(() => import("../ThanhTichDoanThe/ThanhTichDoanTheDetail")) },
   11: { path: "phat-trien-doi-ngu", Detail: lazy(() => import("../PhatTrienDoiNgu/PhatTrienDoiNguDetail")) },
   12: { path: "sang-kien", Detail: lazy(() => import("../SangKien/SangKienDetail")) },
+  13: { path: "khen-thuong-dot-xuat", Detail: lazy(() => import("../KhenThuongDotXuat/KhenThuongDotXuatDetail")) },
 };
 
 export default function MinhChungNguonLink({ mc, className }) {

@@ -29,7 +29,7 @@ import "../../css/DanhGia/DanhGiaPhuLuc2.css";
 import "../../css/DanhGia/PhieuQuy.css";
 
 import { formatNgayGio } from "../../utils/phieuApi";
-import { laSangKien, diemSangKienDaLuu } from "../../utils/diemTuDongPhieu";
+import { laSangKien, laKhenThuongDotXuat, diemSangKienDaLuu } from "../../utils/diemTuDongPhieu";
 import { fetchDiemTuDongPhieu } from "../../utils/phieuTuDongApi";
 
 const so = (value) => {
@@ -294,7 +294,7 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
       (item?.ChiTiet || []).forEach((row) => {
         next[row.IdChiTiet] = { Diem: row.DiemTuDanhGia ?? "", NhanXet: row.NhanXetTuDanhGia || row.NhanXet || "" };
         if (Number(row.LoaiNguonDiem) === 2 && row.IdTieuChi != null) {
-          diemDuPhong[row.IdTieuChi] = laSangKien(row) ? { ...row, DiemTuDong: diemSangKienDaLuu(row) } : row;
+          diemDuPhong[row.IdTieuChi] = laSangKien(row) || laKhenThuongDotXuat(row) ? { ...row, DiemTuDong: diemSangKienDaLuu(row) } : row;
         }
       });
       setDrafts(next);
@@ -316,7 +316,7 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
               ...saved,
               ...score,
               // Nguồn sáng kiến mới chỉ thay đổi điểm phiếu quý khi nộp lại.
-              ...(laSangKien(saved) ? { CongThucTongHop: saved.CongThucSnapshot || saved.CongThucTongHop, DiemTuDong: saved.DiemTuDong } : {}),
+              ...(laSangKien(saved) || laKhenThuongDotXuat(saved) ? { CongThucTongHop: saved.CongThucSnapshot || saved.CongThucTongHop, DiemTuDong: saved.DiemTuDong } : {}),
             };
           });
           setDiemTuDong(nextDiemTuDong);
@@ -537,7 +537,7 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
   });
   const tongDiem = rows.reduce((sum, row) => {
     const value =
-      Number(row.LoaiNguonDiem) === 2 && laSangKien(row) ? diemSangKienDaLuu(row) : Number(row.LoaiNguonDiem) === 2
+      Number(row.LoaiNguonDiem) === 2 && (laSangKien(row) || laKhenThuongDotXuat(row)) ? diemSangKienDaLuu(row) : Number(row.LoaiNguonDiem) === 2
         ? diemTuDong[row.IdTieuChi]?.DiemTuDong ??
         row.DiemTuDong ??
         row.DiemChinhThuc

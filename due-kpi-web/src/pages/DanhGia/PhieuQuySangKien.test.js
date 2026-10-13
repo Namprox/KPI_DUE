@@ -19,8 +19,8 @@ beforeEach(() => {
   fetchChiTietMauDanhGia.mockResolvedValue({ Nhom: [] });
   fetchDiemTuDongPhieu.mockResolvedValue({ Success: true, Items: [{ IdChiTiet: 8, IdTieuChi: 1, CongThucTongHop: "TTVT_SANG_KIEN", DiemTuDong: 30, MinhChung: [{ LoaiNguon: 12, MaNguon: 12, TieuDe: "Minh chứng nguồn hiện tại" }] }] });
 });
-test.each([0, null, undefined])("phiếu quý giữ điểm Sáng kiến %s đã lưu khi preview nguồn mới là 30", async (score) => {
-  fetchPhieuQuyCuaToi.mockResolvedValue({ IdPhieu: 7, IdMau: 2, IdNhanVien: 201, TrangThai: 2, ChiTiet: [{ IdChiTiet: 8, IdTieuChi: 1, LoaiNguonDiem: 2, CongThucSnapshot: "TTVT_SANG_KIEN", DiemTuDong: score, DiemTuDanhGia: 20 }] });
+test.each(["TTVT_SANG_KIEN", "TTVT_KHEN_THUONG"].flatMap((code) => [0, null, undefined].map((score) => [code, score])))("phiếu quý giữ điểm %s = %s đã lưu khi preview nguồn mới là 30", async (code, score) => {
+  fetchPhieuQuyCuaToi.mockResolvedValue({ IdPhieu: 7, IdMau: 2, IdNhanVien: 201, TrangThai: 2, ChiTiet: [{ IdChiTiet: 8, IdTieuChi: 1, LoaiNguonDiem: 2, CongThucSnapshot: code, DiemTuDong: score, DiemTuDanhGia: 20 }] });
   render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><PhieuQuyCuaToi namList={[{ IdNam: 2026 }]} selectedYear={2026} onYearChange={jest.fn()} template={{ IdMau: 2 }} /></MemoryRouter>);
   await screen.findByText("Minh chứng nguồn hiện tại");
   await waitFor(() => expect(screen.getByTestId("saved-score")).toHaveTextContent(score === 0 ? "0" : "null"));

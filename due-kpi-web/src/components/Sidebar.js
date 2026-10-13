@@ -8,7 +8,10 @@ import { visibleGroups } from "../config/menuConfig";
 import { useQuyenDaoTao } from "../context/HoatDongDaoTaoContext";
 import { useQuyenDoanThe } from "../context/ThanhTichDoanTheContext";
 import { useQuyenDoiNgu } from "../context/PhatTrienDoiNguContext";
+import { useQuyenKhenThuong } from "../context/KhenThuongDotXuatContext";
 import { useQuyenSangKien } from "../context/SangKienContext";
+
+import { useQuyenNhiemVuPhucVu } from "../context/NhiemVuPhucVuContext";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   const { user: authUser } = useAuth();
@@ -26,7 +29,9 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   const { quyen: quyenDoanThe } = useQuyenDoanThe();
   const { quyen: quyenDoiNgu } = useQuyenDoiNgu();
   const { quyen: quyenSangKien } = useQuyenSangKien();
-  const groups = useMemo(() => visibleGroups(authUser, quyen, quyenDoanThe, quyenDoiNgu, quyenSangKien), [authUser, quyen, quyenDoanThe, quyenDoiNgu, quyenSangKien]);
+  const { quyen: quyenKhenThuong } = useQuyenKhenThuong();
+  const { quyen: quyenNhiemVuPhucVu } = useQuyenNhiemVuPhucVu();
+  const groups = useMemo(() => visibleGroups(authUser, quyen, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu), [authUser, quyen, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu]);
   const activePath = useMemo(() => groups.flatMap((group) => group.items).reduce((active, item) => {
     const matches = location.pathname === item.path ||
       (item.path !== "/" && location.pathname.startsWith(item.path + "/"));

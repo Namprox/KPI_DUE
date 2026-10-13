@@ -1,0 +1,85 @@
+import React from "react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import NhiemVuForm from "./NhiemVuForm";
+import PhanCongForm from "./PhanCongForm";
+import ChotForm from "./ChotForm";
+import Detail from "./NhiemVuPhucVuDetail";
+import * as api from "../../utils/nhiemVuPhucVuApi";
+jest.mock("primereact/dialog", () => ({ Dialog: ({ children }) => <div role="dialog">{children}</div> }));
+jest.mock("../../hooks/useNamDanhGia", () => ({ useNamDanhGia: () => ({ namList: [{ IdNam: 2026 }] }) }));
+jest.mock("../../utils/nhiemVuPhucVuApi", () => ({ ...jest.requireActual("../../utils/nhiemVuPhucVuApi"), layNhiemVu: jest.fn(), layCauHinh: jest.fn(), layGiangVien: jest.fn(), thaoTac: jest.fn(), luuBaoCao: jest.fn(), taiMinhChung: jest.fn(), layLichSu: jest.fn() }));
+const config = { Khoa: [{ IdDonVi: 7, TenDonVi: "Khoa A", LaTruongKhoa: true }], Nhom: [{ IdNhomNv: 3, TenNhom: "Phục vụ" }], VaiTro: [{ MaVaiTro: "CT", TenVaiTro: "Chủ trì", DiemQuyDoi: 10 }, { MaVaiTro: "PH", TenVaiTro: "Phối hợp", DiemQuyDoi: 4 }] };
+const base = { IdNhiemVu: 9, IdNam: 2026, IdDonVi: 7, IdNhomNv: 3, Nguon: 2, TenNhiemVu: "Tư vấn tuyển sinh", TuNgay: "2026-11-10T00:00:00", DenNgay: "2026-11-12T00:00:00", HanDangKy: "2026-11-05T17:00:05", SoLuongToiDa: 3, RowVersion: "v1", TrangThai: 3 };
+beforeAll(() => { Element.prototype.scrollIntoView = jest.fn(); });
+beforeEach(() => { jest.clearAllMocks(); api.layCauHinh.mockResolvedValue(config); api.layGiangVien.mockResolvedValue([]); });
+test("TK chỉ sửa hạn nhiệm vụ Trường; giữ nguyên trường không được sửa và RowVersion", () => {
+  const save = jest.fn();
+  render(<NhiemVuForm item={{ ...base, ChoPhepSuaHanDangKy: true }} config={config} namList={[{ IdNam: 2026 }]} onSave={save} />);
+  expect(screen.getByLabelText("Tên nhiệm vụ").disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText("Hạn đăng ký (giờ Việt Nam)"), { target: { value: "2026-11-06T16:30:00" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form"));
+  expect(save).toHaveBeenCalledWith(expect.objectContaining({ RowVersion: "v1", TuNgay: base.TuNgay, DenNgay: base.DenNgay, TenNhiemVu: base.TenNhiemVu, HanDangKy: "2026-11-06T16:30" }));
+});
+test("BGH sửa nội dung giữ nguyên hạn có giây; không gửi điểm", () => {
+  const save = jest.fn();
+  render(<NhiemVuForm item={{ ...base, ChoPhepSuaNoiDung: true }} config={config} namList={[{ IdNam: 2026 }]} onSave={save} />);
+  expect(screen.getByLabelText("Hạn đăng ký (giờ Việt Nam)").disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText("Tên nhiệm vụ"), { target: { value: "Tên mới" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form"));
+  expect(save.mock.calls[0][0]).toMatchObject({ TenNhiemVu: "Tên mới", HanDangKy: base.HanDangKy, RowVersion: "v1" });
+  expect(save.mock.calls[0][0]).not.toHaveProperty("Diem");
+});
+test("khóa thêm gỡ nhưng vẫn đổi vai trò; gửi đủ cả người tự đăng ký", () => {
+  const save = jest.fn();
+  render(<PhanCongForm item={{ ...base, ChoPhepDoiVaiTro: true, ThanhVien: [{ IdNhanVien: 1, HoTen: "An", MaVaiTro: "CT" }, { IdNhanVien: 2, HoTen: "Bình", MaVaiTro: "PH", NguonThamGia: 1 }, { IdNhanVien: 3, HoTen: "Cũ", DaRoi: true }] }} config={config} onSave={save} />);
+  expect(screen.queryByLabelText("Thêm thành viên")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Gỡ An" })).toBeNull();
+  fireEvent.click(screen.getByRole("combobox", { name: "Vai trò An" }));
+  expect(screen.getByRole("option", { name: "Chủ trì · 10 điểm dự kiến" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("option", { name: "Chủ trì · 10 điểm dự kiến" }));
+  fireEvent.submit(screen.getByRole("button", { name: "Lưu toàn bộ phân công" }).closest("form"));
+  expect(save).toHaveBeenCalledWith({ ThanhVien: [{ IdNhanVien: 1, MaVaiTro: "CT" }, { IdNhanVien: 2, MaVaiTro: "PH" }] });
+});
+test("chốt bắt buộc chọn kết quả từng người và lý do, không gửi điểm dự kiến", () => {
+  const save = jest.fn();
+  render(<ChotForm item={{ ...base, ThanhVien: [{ IdNhanVien: 1, HoTen: "An", DiemVaiTro: 10 }, { IdNhanVien: 2, HoTen: "Bình", DiemVaiTro: 4 }] }} onSave={save} />);
+  const form = screen.getByRole("button", { name: "Xác nhận chốt kết quả" }).closest("form");
+  fireEvent.submit(form); expect(save).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("combobox", { name: "Kết quả An" }));
+  fireEvent.click(screen.getByRole("option", { name: "Hoàn thành" }));
+  fireEvent.click(screen.getByRole("combobox", { name: "Kết quả Bình" }));
+  fireEvent.click(screen.getByRole("option", { name: "Không hoàn thành" }));
+  fireEvent.click(screen.getByRole("checkbox")); fireEvent.submit(form); expect(save).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText("Lý do Bình"), { target: { value: "Vắng mặt" } }); fireEvent.submit(form);
+  expect(save).toHaveBeenCalledWith({ KetQua: [{ IdNhanVien: 1, HoanThanh: true }, { IdNhanVien: 2, HoanThanh: false, LyDo: "Vắng mặt" }] });
+});
+test.each([4, 5, 6])("trạng thái %s không tự tạo quyền thao tác khi cờ vắng", async (TrangThai) => {
+  api.layNhiemVu.mockResolvedValue({ ...base, TrangThai });
+  render(<Detail id={9} onClose={jest.fn()} />);
+  await screen.findByText(base.TenNhiemVu);
+  ["Sửa nhiệm vụ", "Phân công / Vai trò", "Chốt kết quả", "Gửi báo cáo", "Hủy nhiệm vụ"].forEach((name) => expect(screen.queryByRole("button", { name })).toBeNull());
+});
+test("409 tải lại, đóng editor cũ và không tự gửi lại", async () => {
+  api.layNhiemVu.mockResolvedValueOnce({ ...base, ChoPhepDangKy: true }).mockResolvedValueOnce({ ...base, RowVersion: "v2", SoSuatConLai: 0, ChoPhepDangKy: false });
+  api.thaoTac.mockRejectedValue(Object.assign(new Error("Hết suất"), { status: 409, code: "HET_SUAT" }));
+  const changed = jest.fn(); render(<Detail id={9} onClose={jest.fn()} onChanged={changed} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Đăng ký tham gia" }));
+  fireEvent.click(screen.getByRole("button", { name: "Xác nhận đăng ký tham gia" }));
+  await screen.findByText(/Dữ liệu vừa thay đổi/);
+  expect(api.layNhiemVu).toHaveBeenCalledTimes(2); expect(api.thaoTac).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("button", { name: "Đăng ký tham gia" })).toBeNull(); expect(changed).toHaveBeenCalled();
+});
+test("lưu báo cáo dùng Item mới cho lần gửi tiếp theo", async () => {
+  const item = { ...base, LaChuTri: true, XemBaoCao: true, ChoPhepBaoCao: true, ChoPhepGuiBaoCao: true, BaoCao: { NoiDung: "Cũ" }, ThanhVien: [{ IdThanhVien: 1, IdNhanVien: 1, MaVaiTro: "CT", HoTen: "An" }], MinhChung: [{ IdMinhChung: 8, TenFileGoc: "a.pdf" }] };
+  api.layNhiemVu.mockResolvedValue(item);
+  api.luuBaoCao.mockResolvedValue({ ...item, RowVersion: "v2", BaoCao: { NoiDung: "Mới" } });
+  api.thaoTac.mockResolvedValue({ ...item, RowVersion: "v3", TrangThai: 4, ChoPhepBaoCao: false, ChoPhepGuiBaoCao: false });
+  render(<Detail id={9} onClose={jest.fn()} />);
+  fireEvent.change(await screen.findByLabelText("Nội dung báo cáo"), { target: { value: "Mới" } });
+  expect(screen.getByRole("button", { name: "Gửi báo cáo" }).disabled).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Lưu báo cáo" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Gửi báo cáo" }).disabled).toBe(false));
+  fireEvent.click(screen.getByRole("button", { name: "Gửi báo cáo" })); fireEvent.click(screen.getByRole("button", { name: "Xác nhận gửi báo cáo" }));
+  await waitFor(() => expect(api.thaoTac).toHaveBeenCalledWith(expect.objectContaining({ RowVersion: "v2" }), "gui-bao-cao", {}));
+  await waitFor(() => expect(screen.queryByLabelText("Nội dung báo cáo")).toBeNull());
+});

@@ -6,6 +6,9 @@ import { coDanhGiaKpiCaNhan } from "../utils/roles";
 import { useQuyenDaoTao } from "../context/HoatDongDaoTaoContext";
 import { useQuyenDoiNgu } from "../context/PhatTrienDoiNguContext";
 import { useQuyenSangKien } from "../context/SangKienContext";
+import { useQuyenKhenThuong } from "../context/KhenThuongDotXuatContext";
+
+import { useQuyenNhiemVuPhucVu } from "../context/NhiemVuPhucVuContext";
 
 const KhongCoQuyen = ({ khongDanhGia }) => (
   <div className="page-container">
@@ -33,15 +36,17 @@ const RequireRole = ({ children }) => {
   const daoTao = useQuyenDaoTao();
   const doiNgu = useQuyenDoiNgu();
   const sangKien = useQuyenSangKien();
+  const khenThuong = useQuyenKhenThuong();
+  const nhiemVuPhucVu = useQuyenNhiemVuPhucVu();
   const rule = findRouteRule(location.pathname);
 
   if (loading) return <div className="page-container">Đang tải thông tin tài khoản...</div>;
   if (rule?.serverPermission) {
-    const permission = rule.serverPermissionSource === "sangKien" ? sangKien : rule.serverPermissionSource === "doiNgu" ? doiNgu : daoTao;
+    const permission = rule.serverPermissionSource === "nhiemVuPhucVu" ? nhiemVuPhucVu : rule.serverPermissionSource === "khenThuong" ? khenThuong : rule.serverPermissionSource === "sangKien" ? sangKien : rule.serverPermissionSource === "doiNgu" ? doiNgu : daoTao;
     if (permission.loading) return <div className="page-container">Đang tải quyền truy cập...</div>;
     if (permission.error) return <div className="page-container"><p role="alert">{permission.error}</p><button onClick={permission.refresh}>Thử lại</button></div>;
   }
-  if (!canAccessPath(location.pathname, user, daoTao.quyen, doiNgu.quyen, sangKien.quyen)) {
+  if (!canAccessPath(location.pathname, user, daoTao.quyen, doiNgu.quyen, sangKien.quyen, khenThuong.quyen, nhiemVuPhucVu.quyen)) {
     const khongDanhGia = findRouteRule(location.pathname)?.personalKpi &&
       Array.isArray(user?.DonVi) && user.DonVi.some((dv) => dv?.LoaiDoiTuong === 0) &&
       !coDanhGiaKpiCaNhan(user);

@@ -220,6 +220,13 @@ export const MA_CANH_BAO = {
 };
 
 export const CANH_BAO_META = {
+  KHEN_THUONG_DA_CHUYEN: {
+    label: "Khen thưởng đã chuyển",
+    icon: "fa-circle-info",
+    bg: "#fffbeb",
+    color: "#b45309",
+    border: "#fde68a",
+  },
   SANG_KIEN_DA_CHUYEN: {
     label: "Sáng kiến đã chuyển",
     icon: "fa-circle-info",
@@ -849,13 +856,15 @@ export const choPhepDuyet = (banKe) => banKe?.ChoPhepDuyet === true;
  * sửa được; dòng từ server phải có cờ `ChoPhepSua = true`, thiếu cờ là khoá.
  */
 export const choPhepSuaDong = (dong) =>
+  Number(dong?.LoaiThanhTich ?? dong?.loaiThanhTich) !== 2 && (
   dong?.idChiTiet == null ||
   dong?.ChoPhepSua === true ||
-  dong?.choPhepSua === true;
+  dong?.choPhepSua === true);
 
 /** Quyền chốt / trả về / mở lại của CHÍNH DÒNG. Fail-closed khi thiếu cờ. */
 export const choPhepXetDong = (dong) =>
-  dong?.ChoPhepXet === true || dong?.choPhepXet === true;
+  Number(dong?.LoaiThanhTich ?? dong?.loaiThanhTich) !== 2 &&
+  (dong?.ChoPhepXet === true || dong?.choPhepXet === true);
 
 /** Còn dòng chưa xét trong nhãn dẫn xuất của header. */
 export const conDongChuaXet = (banKe) => Number(banKe?.SoDongChoDuyet) > 0;

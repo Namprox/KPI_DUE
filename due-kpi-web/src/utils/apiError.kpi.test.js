@@ -1,5 +1,5 @@
 import { readApiError } from "./apiError";
-import { luuNhiemVu } from "./nhiemVuKhoaApi";
+import { luuNhiemVu } from "./nhiemVuPhucVuApi";
 import { createPhieuQuy } from "./phieuQuyApi";
 import { apiFetch } from "./api";
 
@@ -22,6 +22,6 @@ test.each(["Message", "message"])("phiếu quý giữ %s của server cho SAI_LO
 
 test.each([undefined, 12])("lưu nhiệm vụ id=%s giữ Message của GV_NGOAI_KHOA", async (id) => {
   apiFetch.mockResolvedValueOnce(failure(400, "GV_NGOAI_KHOA"));
-  await expect(luuNhiemVu({ id, idNam: 2026, idDonVi: 7, idNhomNv: 2, tenNhiemVu: "Nhiệm vụ", phanCong: [] }))
+  await expect(luuNhiemVu(id, { IdNam: 2026, IdDonVi: 7, IdNhomNv: 2, TenNhiemVu: "Nhiệm vụ", Nguon: 1 }))
     .rejects.toMatchObject({ status: 400, errorCode: "GV_NGOAI_KHOA", message: "Nhan vien khong thuoc dien danh gia KPI" });
 });

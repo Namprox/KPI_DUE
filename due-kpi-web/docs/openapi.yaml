@@ -27,6 +27,416 @@ security:
   - bearerAuth: []
   - cookieAuth: []
 paths:
+  /api/khen-thuong-dot-xuat:
+    get:
+      tags:
+      - KhenThuongDotXuat
+      summary: Danh sách khen thưởng theo phạm vi quyền
+      operationId: KhenThuongDotXuat_GetList
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatListResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      parameters:
+      - name: idNam
+        in: query
+        required: true
+        schema:
+          type: integer
+      - name: quy
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: idMuc
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: idDonVi
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: idNhanVien
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: tuKhoa
+        in: query
+        required: false
+        schema:
+          type: string
+    post:
+      tags:
+      - KhenThuongDotXuat
+      summary: P_TCHC ghi nhận khen thưởng cho một hoặc nhiều viên chức
+      operationId: KhenThuongDotXuat_Create
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KhenThuongDotXuatCreateRequest'
+      description: ADMIN, TP/QTP tại P_TCHC hoặc nhân sự còn thuộc phòng và được ủy quyền. Lưu xong nguồn điểm có
+        hiệu lực ngay. Mức Bộ trở lên 15, ĐHĐN/thành phố 10, Trường 5; không gửi điểm hoặc số lượng. Phiếu đã chấm
+        dùng luồng chấm lại hiện có.
+  /api/khen-thuong-dot-xuat/{id}:
+    get:
+      tags:
+      - KhenThuongDotXuat
+      summary: Chi tiết và lịch sử khen thưởng
+      operationId: KhenThuongDotXuat_GetById
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      tags:
+      - KhenThuongDotXuat
+      summary: Sửa khen thưởng; giữ snapshot khi không đổi mức
+      operationId: KhenThuongDotXuat_Update
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KhenThuongDotXuatUpdateRequest'
+    delete:
+      tags:
+      - KhenThuongDotXuat
+      summary: Xóa mềm khen thưởng và ghi lịch sử
+      operationId: KhenThuongDotXuat_Delete
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: lyDo
+        in: query
+        required: false
+        schema:
+          type: string
+  /api/khen-thuong-dot-xuat/quyen:
+    get:
+      tags:
+      - KhenThuongDotXuat
+      summary: Quyền nhập, quản lý ủy quyền và phạm vi xem
+      operationId: KhenThuongDotXuat_GetQuyen
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatQuyenResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+  /api/khen-thuong-dot-xuat/muc:
+    get:
+      tags:
+      - KhenThuongDotXuat
+      summary: 'Danh mục mức khen: lá loại thành tích 2'
+      operationId: KhenThuongDotXuat_GetMuc
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MucKhenThuongDtoItemsResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      parameters:
+      - name: baoGomNgungDung
+        in: query
+        required: false
+        schema:
+          type: boolean
+  /api/khen-thuong-dot-xuat/vien-chuc:
+    get:
+      tags:
+      - KhenThuongDotXuat
+      summary: Chọn viên chức để ghi nhận; yêu cầu DuocNhap
+      operationId: KhenThuongDotXuat_GetVienChuc
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatVienChucDtoItemsResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      parameters:
+      - name: tuKhoa
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: idDonVi
+        in: query
+        required: false
+        schema:
+          type: integer
+  /api/khen-thuong-dot-xuat/nguoi-nhap:
+    get:
+      tags:
+      - KhenThuongDotXuat
+      summary: Danh sách ủy quyền; yêu cầu LaQuanLy
+      operationId: KhenThuongDotXuat_GetNguoiNhap
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatNguoiNhapDtoItemsResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      parameters:
+      - name: baoGomDaThuHoi
+        in: query
+        required: false
+        schema:
+          type: boolean
+    post:
+      tags:
+      - KhenThuongDotXuat
+      summary: Cấp quyền nhập cho nhân sự P_TCHC
+      operationId: KhenThuongDotXuat_CapNguoiNhap
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KhenThuongDotXuatNguoiNhapCapRequest'
+  /api/khen-thuong-dot-xuat/nguoi-nhap/ung-vien:
+    get:
+      tags:
+      - KhenThuongDotXuat
+      summary: Nhân sự P_TCHC có thể được cấp quyền
+      operationId: KhenThuongDotXuat_GetUngVien
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatUngVienDtoItemsResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+  /api/khen-thuong-dot-xuat/nguoi-nhap/{idNhanVien}:
+    delete:
+      tags:
+      - KhenThuongDotXuat
+      summary: Thu hồi quyền nhập
+      operationId: KhenThuongDotXuat_ThuHoiNguoiNhap
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KhenThuongDotXuatResponse'
+        '400':
+          description: Dữ liệu không hợp lệ, bao gồm ngày quyết định khác năm.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: Không có quyền theo server.
+        '404':
+          description: Không tìm thấy bản ghi.
+        '409':
+          description: Trùng bản ghi hoặc đã cấp quyền.
+        '422':
+          description: Không đúng đối tượng hoặc đã ngừng dùng.
+      parameters:
+      - name: idNhanVien
+        in: path
+        required: true
+        schema:
+          type: integer
   /api/docs:
     get:
       tags:
@@ -1911,7 +2321,7 @@ paths:
       deprecated: true
       description: |
         LUONG TU KE KHAI DA NGUNG - endpoint nay LUON tra 409, khong con ghi duoc gi.
-        KPI Nhom III chuyen sang mo hinh KHOA PHAN CONG: dung api/nhiem-vu-khoa.
+        KPI Nhom III chuyen sang module phan cong va thuc hien nhiem vu: dung api/nhiem-vu-phuc-vu.
         Ly do: vai tro chu tri / phoi hop la quan he tuong doi giua nhieu nguoi trong
         cung mot nhiem vu, de GV tu ke khai thi nhieu nguoi cung khai "chu tri".
 
@@ -1959,7 +2369,7 @@ paths:
           description: >-
             LUON TRA VE MA NAY. Luong tu ke khai da ngung -
             "Luong tu ke khai da ngung. Nhiem vu nhom III nay do Khoa phan cong
-            (xem api/nhiem-vu-khoa)."
+            (xem api/nhiem-vu-phuc-vu)."
           content:
             application/json:
               schema:
@@ -2012,7 +2422,7 @@ paths:
       deprecated: true
       description: |
         LUONG TU KE KHAI DA NGUNG - endpoint nay LUON tra 409, khong con ghi duoc gi.
-        Dung api/nhiem-vu-khoa (Khoa phan cong) thay the.
+        Dung api/nhiem-vu-phuc-vu thay the.
       operationId: nhiemVuUpdate
       parameters:
         - name: idNhiemVu
@@ -2055,7 +2465,7 @@ paths:
           description: >-
             LUON TRA VE MA NAY. Luong tu ke khai da ngung -
             "Luong tu ke khai da ngung. Nhiem vu nhom III nay do Khoa phan cong
-            (xem api/nhiem-vu-khoa)."
+            (xem api/nhiem-vu-phuc-vu)."
           content:
             application/json:
               schema:
@@ -2073,7 +2483,7 @@ paths:
       deprecated: true
       description: |
         LUONG TU KE KHAI DA NGUNG - endpoint nay LUON tra 409, khong con ghi duoc gi.
-        Dung api/nhiem-vu-khoa (Khoa phan cong) thay the.
+        Dung api/nhiem-vu-phuc-vu thay the.
       operationId: nhiemVuDelete
       parameters:
         - name: idNhiemVu
@@ -2104,7 +2514,7 @@ paths:
           description: >-
             LUON TRA VE MA NAY. Luong tu ke khai da ngung -
             "Luong tu ke khai da ngung. Nhiem vu nhom III nay do Khoa phan cong
-            (xem api/nhiem-vu-khoa)."
+            (xem api/nhiem-vu-phuc-vu)."
           content:
             application/json:
               schema:
@@ -11001,54 +11411,51 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhKeKhaiKhacListResponse"
-  /api/cau-hinh/nhiem-vu-khoa:
+  /api/nhiem-vu-phuc-vu/cau-hinh:
     get:
       tags:
-        - NhiemVuKhoa
-      summary: Cau hinh module nhiem vu theo phan cong cua Khoa
-      description: >
-        Tra tran diem cua nhom nhiem vu (20 theo quy che), bo 3 vai tro kem muc diem
-        dang hieu luc, 7 nhom cong tac co dinh va gioi han upload.
-        Doc tu CUNG NGUON voi luc cham diem (fn_nhiem_vu_khoa_tran_diem va
-        danh_muc_vai_tro_pvcd) nen khong the lech voi ket qua tinh toan.
-        Truyen idDonVi/idNam de lay muc diem rieng cua Khoa/nam do (neu Khoa co cau
-        hinh rieng); bo trong = bo mac dinh toan truong.
-        Co LechCauHinh = true khi diem_toi_da cua tieu chi KPI khac tran cua module.
-      operationId: cauHinhNhiemVuKhoa
+        - NhiemVuPhucVu
+      summary: Cấu hình module nhiệm vụ phục vụ
+      operationId: NhiemVuPhucVu_GetCauHinh
+      description: |
+        Trần điểm tiêu chí `NVK_PHAN_CONG_KHOA` (+ cờ `LechCauHinh`), bộ vai trò CT / PHC / PH với
+        điểm **dự kiến** theo cấu hình (Khoa, năm) hiện tại (điểm thật ghi snapshot lúc chốt), 7 nhóm
+        nhiệm vụ, danh sách Khoa người gọi làm việc được (BGH: mọi Khoa; người khác: Khoa mình là
+        Trưởng khoa hoặc giảng viên) và giới hạn upload minh chứng (chỉ PDF).
+        `BayGio` = giờ Việt Nam của máy chủ (so với `HanDangKy`).
       parameters:
         - name: idDonVi
           in: query
           required: false
           schema:
             type: integer
+          description: Khoa - để lấy bộ vai trò riêng của Khoa (nếu có).
         - name: idNam
           in: query
           required: false
           schema:
             type: integer
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CauHinhNhiemVuKhoaResponse"
-        "401":
-          description: Thieu hoac sai token
-
-  /api/nhiem-vu-khoa/ky:
+                $ref: '#/components/schemas/NhiemVuPhucVuCauHinhResponse'
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: FORBIDDEN - tài khoản không còn hoạt động.
+  /api/nhiem-vu-phuc-vu:
     get:
       tags:
-        - NhiemVuKhoa
-      summary: Ky nhiem vu cua (nam x Khoa) + tong quan + 7 nhom
+        - NhiemVuPhucVu
+      summary: Danh sách nhiệm vụ theo quyền người xem
+      operationId: NhiemVuPhucVu_GetList
       description: |
-        Tu 2026-10-02 ky chi con la CONTAINER cua cac nhiem vu: trang thai duyet nam o
-        TUNG nhiem vu (NhiemVuKhoaDto.TrangThai). TrangThai = 2 cua ky chi con sinh ra
-        tu luong cu (chot ky da ngung) va van khoa ghi cho toi khi mo lai.
-        Ky duoc TAO LUOI: endpoint nay tu tao neu chua co.
-        CanDuyet = nguoi goi duyet duoc (TK/TKL/TP/ADMIN); CanKeKhai = nguoi goi la
-        giang vien cua Khoa. SoChoDuyet / SoTraVe / SoDaDuyet dem nhiem vu theo trang thai.
-      operationId: nhiemVuKhoaGetKy
+        Chỉ trả nhiệm vụ người gọi được xem: BGH thấy mọi Khoa (trừ bản nháp của Khoa), Trưởng khoa
+        thấy Khoa mình (trừ bản nháp của BGH), giảng viên thấy nhiệm vụ đang mở đăng ký của Khoa mình
+        và nhiệm vụ mình tham gia. Mỗi dòng mang cờ `ChoPhep*` của người xem.
       parameters:
         - name: idNam
           in: query
@@ -11056,1029 +11463,562 @@ paths:
           schema:
             type: integer
         - name: idDonVi
-          in: query
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK - Item = ky, Nhom = 7 nhom cong tac kem so nhiem vu da nhap
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaKyResponse"
-        "400":
-          description: Don vi khong phai la Khoa (KHONG_PHAI_KHOA) hoac tham so sai
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Khong co quyen xem Khoa nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay nam danh gia
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-    put:
-      tags:
-        - NhiemVuKhoa
-      summary: Dat han / ghi chu, hoac mo lai ky da chot theo luong cu
-      description: |
-        Moi thao tac chi TK/TKL/TP trong pham vi don vi hoac ADMIN (TLGVK chi xem).
-        MoLai = true dua ky da chot (luong cu) tu 2 ve 1, bat buoc co LyDo. Ky da chot
-        thi thao tac duy nhat hop le la mo lai.
-        XoaHan = true uu tien hon HanPhanHoi (go han ve khong gioi han).
-      operationId: nhiemVuKhoaSetKy
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/KyNhiemVuKhoaSetRequest"
-      responses:
-        "200":
-          description: OK - ky sau khi cap nhat
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaKyResponse"
-        "400":
-          description: Thieu LyDo khi mo lai, hoac tham so sai
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Khong co quyen (chi TK/TKL/TP/ADMIN)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: KY_DA_CHOT - phai mo lai truoc khi sua
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/cua-toi:
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: Bang nhiem vu cua chinh giang vien dang dang nhap
-      description: >
-        Khong gate vai tro - id lay tu token, ai cung xem duoc cua minh.
-        Header.IdDonVi = Khoa de KE KHAI (Khoa chinh cua GV) - luon co ke ca khi Khoa
-        chua co ky; FE gui lai trong IdDonVi khi POST api/nhiem-vu-khoa.
-        Items = MOI nhiem vu GV tham gia trong nam (chu tri hoac phoi hop, moi Khoa) kem
-        TrangThai / LyDoTraVe / ChoPhepSua. TongDiemThucTe / TongDiemQuyDoi CHI tinh
-        nhiem vu da duyet (khop diem cham vao phieu); TongDiemChoDuyet la phan chua tinh.
-        PhanHoi = phan hoi cu cua GV (luong phan hoi da ngung, chi doc).
-      operationId: nhiemVuKhoaCuaToi
-      parameters:
-        - name: idNam
-          in: query
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaCuaToiResponse"
-        "400":
-          description: Id nam khong hop le
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay nam danh gia
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/giang-vien:
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: Giang vien cua Khoa (o chon nguoi phoi hop) kem tong diem
-      description: >
-        Mo cho nguoi cua Khoa (TK/TKL/TP/TLGVK, HT, ADMIN) VA giang vien cua chinh Khoa
-        do (chu tri can chon nguoi phoi hop). Voi giang vien, cac cot diem / dem tra
-        null - khong lo diem cua dong nghiep.
-        Diem / dem CHI tinh nhiem vu da duyet; TongDiemChoDuyet la phan chua duyet.
-        Mot truy van duy nhat, khong N+1.
-      operationId: nhiemVuKhoaGiangVien
-      parameters:
-        - name: idNam
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: idDonVi
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: tuKhoa
           in: query
           required: false
-          description: Loc theo ho ten hoac ma nhan vien
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GiangVienDiemResponse"
-        "403":
-          description: Khong phai nguoi cua Khoa va khong phai giang vien cua Khoa
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/tong-hop:
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: Bang tong hop toan Khoa (nguon cho Excel)
-      description: >
-        Gom CA giang vien chua co nhiem vu nao. Moi so dem / diem / SoNhiemVuTheoNhom
-        CHI tinh nhiem vu DA DUYET (khop diem cham vao phieu); SoNhiemVuChoDuyet /
-        TongDiemChoDuyet la phan chua duyet. SoNhiemVuTheoNhom la map id_nhom_nv ->
-        so luong (server tra dang long, C# pivot). VuotTran chi la canh bao hien thi.
-      operationId: nhiemVuKhoaTongHop
-      parameters:
-        - name: idNam
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: idDonVi
-          in: query
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaTongHopResponse"
-        "403":
-          description: Khong co quyen xem Khoa nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/kiem-tra-chot:
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: "DA NGUNG - Kiem tra dieu kien truoc khi chot ky"
-      deprecated: true
-      description: |
-        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG. Truong khoa duyet TUNG nhiem
-        vu (POST api/nhiem-vu-khoa/{id}/xet); hang doi: GET api/nhiem-vu-khoa?trangThai=1.
-        Mo ta cu:
-        Tra danh sach chi tiet tung van de con ton. LoaiVanDe:
-          1 CHAN - nhiem vu co phan cong nhung thieu chu tri
-          2 CHAN - nhiem vu chua phan cong cho ai
-          3 CHAN - phan hoi chua xu ly
-          4 CANH BAO - giang vien vuot tran diem (chi hien thi, KHONG chan chot)
-          5 CANH BAO - lech cau hinh: diem_toi_da cua tieu chi KPI khac tran cua module
-        CoTheChot = true khi khong con van de loai 1/2/3 VA nguoi goi co quyen chot.
-      operationId: nhiemVuKhoaKiemTraChot
-      parameters:
-        - name: idNam
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: idDonVi
-          in: query
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KiemTraChotResponse"
-        "409":
-          description: LUONG_DA_NGUNG
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Khong co quyen xem Khoa nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Ky nhiem vu chua duoc mo
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/chot:
-    post:
-      tags:
-        - NhiemVuKhoa
-      summary: "DA NGUNG - Chot ky nhiem vu cua Khoa"
-      deprecated: true
-      description: >
-        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG - duyet tung nhiem vu la chot
-        du lieu. Mo ta cu:
-        Chi TK/TKL/TP trong pham vi don vi hoac ADMIN (TLGVK KHONG duoc chot).
-        SP tu tinh lai dieu kien chan, khong tin ket qua man hinh kiem-tra-chot ma
-        client vua xem (du lieu co the doi giua hai lan goi).
-        Sau khi chot, ky khoa ghi toan bo: sua nhiem vu / gui phan hoi / them minh
-        chung deu tra 409 KY_DA_CHOT.
-      operationId: nhiemVuKhoaChot
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NhiemVuKhoaChotRequest"
-      responses:
-        "200":
-          description: OK - ky sau khi chot
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaKyResponse"
-        "403":
-          description: FORBIDDEN - khong phai truong don vi / Admin
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Ky nhiem vu chua duoc mo
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: LUONG_DA_NGUNG (luon tra ma nay)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "422":
-          description: CHOT_KHONG_HOP_LE - con van de chan (xem kiem-tra-chot)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/export:
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: Xuat bang tong hop toan Khoa ra Excel de ky
-      description: >
-        File .xlsx mot sheet, cot dong theo 7 nhom cong tac. Moi so lieu CHI tinh
-        nhiem vu da duyet; cot "Ghi chu" bao so nhiem vu / diem con cho duyet. Bao cao dung cot
-        "Tong diem quy doi" = MIN(thuc te, tran); cot "Tong diem thuc te" van hien
-        de nguoi ky thay ai bi cat bao nhieu.
-        Ten file: NhiemVuKhoa_{maDonVi}_{idNam}.xlsx
-      operationId: nhiemVuKhoaExport
-      parameters:
-        - name: idNam
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: idDonVi
-          in: query
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK - file Excel dinh kem
-          content:
-            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-              schema:
-                type: string
-                format: binary
-        "403":
-          description: Khong co quyen xem Khoa nay (tra JSON)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/lich-su:
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: Nhat ky toan ky (ai sua vai tro / diem, luc nao)
-      description: |
-        HanhDong: 1 Tao nhiem vu, 2 Sua nhiem vu, 3 Xoa nhiem vu, 4 Them phan cong,
-        5 Doi vai tro/diem, 6 Go phan cong, 7 Chot ky, 8 Mo lai ky, 9 Xu ly phan hoi.
-        Dong hanh dong 5 mang day du VaiTroTruoc/VaiTroSau va DiemTruoc/DiemSau.
-      operationId: nhiemVuKhoaLichSuKy
-      parameters:
-        - name: idNam
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: idDonVi
-          in: query
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LichSuNhiemVuKhoaResponse"
-        "403":
-          description: Khong co quyen xem Khoa nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/phan-hoi:
-    post:
-      tags:
-        - NhiemVuKhoa
-      summary: "DA NGUNG - Giang vien gui phan hoi"
-      deprecated: true
-      description: |
-        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG (khong doc multipart). GV thieu
-        nhiem vu thi tu ke khai (neu chu tri) hoac bao chu tri them vao. Mo ta cu:
-        multipart/form-data - CO Y khong dung JSON de "mot endpoint gui phan hoi co kem
-        file" dung nghia (.NET 4.0 khong co duong nao khac de vua nhan truong text vua
-        nhan file trong cung mot request). FE luon dung FormData ke ca khi khong co file.
-        loaiPhanHoi = 1 (sai vai tro) BAT BUOC co idNhiemVuKhoa tro toi mot nhiem vu
-        cua chinh ky do; loaiPhanHoi = 2 (thieu nhiem vu) chi co idNhomNv goi y.
-        Giang vien CHI tao duoc phan hoi, KHONG tu tao duoc nhiem vu.
-        File la TUY CHON va duoc dinh kem SAU khi phan hoi da luu, nen loi upload
-        khong lam mat noi dung phan hoi vua gui.
-      operationId: nhiemVuKhoaTaoPhanHoi
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                idNam:
-                  type: integer
-                loaiPhanHoi:
-                  type: integer
-                  description: "1 = sai vai tro, 2 = thieu nhiem vu"
-                idNhiemVuKhoa:
-                  type: integer
-                  description: "Bat buoc khi loaiPhanHoi = 1"
-                idNhomNv:
-                  type: integer
-                  description: "Goi y nhom khi loaiPhanHoi = 2"
-                noiDung:
-                  type: string
-                tenHienThi:
-                  type: string
-                  description: "Ten hien thi cua file dinh kem"
-                file:
-                  type: string
-                  format: binary
-                  description: "PDF, tuy chon"
-              required:
-                - idNam
-                - loaiPhanHoi
-                - noiDung
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PhanHoiNhiemVuKhoaResponse"
-        "400":
-          description: Thieu truong bat buoc / loaiPhanHoi sai / file khong phai PDF
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khoa chua mo ky cua nam nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: LUONG_DA_NGUNG (luon tra ma nay)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: Danh sach phan hoi cu cua ky (phia Khoa, chi doc)
-      operationId: nhiemVuKhoaGetPhanHoi
-      parameters:
-        - name: idNam
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: idDonVi
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: trangThai
-          in: query
-          required: false
-          description: "1 = cho xu ly, 2 = da xu ly. Bo trong = tat ca."
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK - moi dong kem san minh chung cap phan hoi (khong N+1)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PhanHoiNhiemVuKhoaListResponse"
-        "403":
-          description: Khong co quyen xem Khoa nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/phan-hoi/{idPhanHoi}/xu-ly:
-    post:
-      tags:
-        - NhiemVuKhoa
-      summary: "DA NGUNG - Khoa danh dau phan hoi da xu ly"
-      deprecated: true
-      description: >
-        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG.
-      operationId: nhiemVuKhoaXuLyPhanHoi
-      parameters:
-        - name: idPhanHoi
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PhanHoiXuLyRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PhanHoiNhiemVuKhoaResponse"
-        "409":
-          description: LUONG_DA_NGUNG (luon tra ma nay)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/phan-hoi/{idPhanHoi}/minh-chung:
-    post:
-      tags:
-        - NhiemVuKhoa
-      summary: "DA NGUNG - Bo sung minh chung cho mot phan hoi (cap 2)"
-      deprecated: true
-      description: >
-        DA NGUNG (2026-10-02): luon tra 409 LUONG_DA_NGUNG, khong luu file.
-      operationId: nhiemVuKhoaUploadMinhChungPhanHoi
-      parameters:
-        - name: idPhanHoi
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                tenHienThi:
-                  type: string
-              required:
-                - file
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MinhChungNhiemVuKhoaResponse"
-        "400":
-          description: Khong phai PDF hop le / vuot gioi han dung luong
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: LUONG_DA_NGUNG (luon tra ma nay)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "415":
-          description: Yeu cau phai la multipart/form-data
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/{id}/lich-su:
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: Nhat ky cua mot nhiem vu
-      operationId: nhiemVuKhoaLichSu
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LichSuNhiemVuKhoaResponse"
-        "403":
-          description: Khong co quyen xem Khoa nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay ky hoac nhiem vu
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/{id}/minh-chung:
-    post:
-      tags:
-        - NhiemVuKhoa
-      summary: Tai len minh chung CAP NHIEM VU (cap 1, dung chung cho ca nhom)
-      description: >
-        Quyet dinh phan cong / ke hoach / bien ban - tai len MOT lan, moi giang vien
-        trong nhiem vu deu xem duoc. CHI CHU TRI cua nhiem vu, va chi khi nhiem vu chua
-        duoc duyet (da duyet -> 409 NHIEM_VU_DA_DUYET).
-        Chi nhan PDF, kiem 2 lop (duoi file + chu ky '%PDF-'). Cho phep nhieu file.
-      operationId: nhiemVuKhoaUploadMinhChung
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                tenHienThi:
-                  type: string
-              required:
-                - file
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MinhChungNhiemVuKhoaResponse"
-        "400":
-          description: Khong phai PDF hop le / vuot gioi han dung luong
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Khong phai chu tri cua nhiem vu
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay nhiem vu
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: NHIEM_VU_DA_DUYET hoac KY_DA_CHOT (ky cu)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "415":
-          description: Yeu cau phai la multipart/form-data
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: Danh sach minh chung cap nhiem vu
-      operationId: nhiemVuKhoaGetMinhChung
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MinhChungNhiemVuKhoaListResponse"
-        "403":
-          description: Khong co quyen xem nhiem vu nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay nhiem vu
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa:
-    get:
-      tags:
-        - NhiemVuKhoa
-      summary: Danh sach nhiem vu cua ky (phia Khoa - kem phan cong va minh chung)
-      description: >
-        Chi nguoi cua Khoa (TK/TKL/TP/TLGVK, HT, ADMIN). Mot lan goi tra day du nhiem vu -> phan cong -> minh chung (SP tra 3 result set,
-        C# ghep bang Dictionary) nen khong co N+1.
-      operationId: nhiemVuKhoaList
-      parameters:
-        - name: idNam
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: idDonVi
-          in: query
-          required: true
           schema:
             type: integer
         - name: idNhomNv
           in: query
           required: false
-          description: Loc theo 1 trong 7 nhom cong tac
+          schema:
+            type: integer
+        - name: nguon
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [1, 2]
+          description: 1 Nhiệm vụ Khoa · 2 Nhiệm vụ Trường giao.
+        - name: trangThai
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [1, 2, 3, 4, 5, 6]
+        - name: tuKhoa
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: chiMoDangKy
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: true = chỉ nhiệm vụ đang mở đăng ký.
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 500
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NhiemVuPhucVuListResponse'
+        '400':
+          description: INVALID - tham số sai.
+        '401':
+          description: Chưa đăng nhập.
+        '404':
+          description: NOT_FOUND - năm đánh giá không tồn tại.
+    post:
+      tags:
+        - NhiemVuPhucVu
+      summary: Tạo bản nháp nhiệm vụ (Khoa hoặc Trường giao)
+      operationId: NhiemVuPhucVu_Create
+      description: |
+        `Nguon = 1`: Trưởng khoa (TK / TKL đang hiệu lực tại `IdDonVi`) tạo nhiệm vụ Khoa.
+        `Nguon = 2`: Ban giám hiệu (HT / PHT) giao nhiệm vụ cho MỘT Khoa - `HanDangKy` phải để trống
+        (Trưởng khoa đặt khi triển khai). Luôn vào trạng thái 1 (bản nháp).
+        Ràng buộc: `DenNgay` ≥ `TuNgay` và thuộc năm `IdNam` (năm tính điểm = năm chứa ngày kết thúc);
+        `HanDangKy` (giờ VN) trước 00:00 ngày `TuNgay`; `SoLuongToiDa` 1..500.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NhiemVuPhucVuSaveRequest'
+      responses:
+        '201':
+          description: Đã tạo - `Item` là chi tiết nhiệm vụ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '400':
+          description: INVALID / KHONG_PHAI_KHOA / NGOAI_NAM_DANH_GIA.
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: FORBIDDEN - không phải Trưởng khoa của Khoa (nguồn 1) / không phải BGH (nguồn 2).
+        '404':
+          description: NOT_FOUND - năm đánh giá không tồn tại.
+  /api/nhiem-vu-phuc-vu/cua-toi:
+    get:
+      tags:
+        - NhiemVuPhucVu
+      summary: Nhiệm vụ của tôi + nhiệm vụ đang mở đăng ký
+      operationId: NhiemVuPhucVu_GetCuaToi
+      description: |
+        `Header.TongDiemThucTe` = tổng điểm các nhiệm vụ ĐÃ CHỐT mà tôi hoàn thành trong năm (mọi Khoa,
+        cả nguồn Khoa và Trường giao) - CÙNG nguồn với điểm trên phiếu; `TongDiemQuyDoi` = MIN(thực tế,
+        trần). `Items` = nhiệm vụ tôi từng tham gia (kể cả suất đã rút / nhiệm vụ đã hủy, xem `CuaToi`).
+        `MoDangKy` = nhiệm vụ đang mở đăng ký của Khoa tôi mà tôi chưa tham gia (`ChoPhepDangKy = false`
+        khi hết suất).
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NhiemVuPhucVuCuaToiResponse'
+        '400':
+          description: INVALID
+        '401':
+          description: Chưa đăng nhập.
+        '404':
+          description: NOT_FOUND - năm đánh giá không tồn tại.
+  /api/nhiem-vu-phuc-vu/giang-vien:
+    get:
+      tags:
+        - NhiemVuPhucVu
+      summary: Giảng viên của Khoa để phân công (Trưởng khoa / BGH)
+      operationId: NhiemVuPhucVu_GetGiangVien
+      parameters:
+        - name: idDonVi
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idNam
+          in: query
+          required: true
           schema:
             type: integer
         - name: tuKhoa
           in: query
           required: false
-          description: Loc theo ten nhiem vu hoac mo ta
           schema:
             type: string
-        - name: trangThai
-          in: query
-          required: false
-          description: "1 = cho duyet (hang doi cua Truong khoa), 2 = da duyet, 3 = tra ve. Bo trong = tat ca."
-          schema:
-            type: integer
-            enum: [1, 2, 3]
+            maxLength: 100
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaListResponse"
-        "403":
-          description: Khong co quyen xem Khoa nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-    post:
-      tags:
-        - NhiemVuKhoa
-      summary: Chu tri ke khai nhiem vu + danh sach nguoi phoi hop trong MOT request
-      description: |
-        Nguoi goi phai la giang vien cua Khoa IdDonVi va TU DONG la chu tri (CT) cua
-        nhiem vu. PhanCong CHI chua nguoi phoi hop chinh (PHC) / phoi hop (PH):
-        gui vai tro CT -> 422 TRUNG_CHU_TRI; gui chinh minh / trung nguoi -> 400 INVALID.
-        Nhiem vu moi o TrangThai = 1 (cho Truong khoa duyet) - CHUA tinh diem.
-        Client KHONG gui diem: server resolve tu danh_muc_vai_tro_pvcd theo thu tu uu tien
-        (don_vi,nam) > (don_vi,NULL) > (NULL,nam) > (NULL,NULL) roi GHI CUNG vao ban ghi.
-        Moi nguoi trong danh sach phai la giang vien cua chinh Khoa do; sai mot dong thi
-        hong ca request (khong luu mot phan).
-      operationId: nhiemVuKhoaCreate
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NhiemVuKhoaSaveRequest"
-      responses:
-        "201":
-          description: Created - nhiem vu day du kem phan cong
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaItemResponse"
-        "400":
-          description: Thieu ten / nhom, GV_NGOAI_KHOA, vai tro khong kha dung, hoac danh sach chua chinh minh / trung nguoi
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Nguoi goi khong phai giang vien cua Khoa nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: KY_DA_CHOT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "422":
-          description: TRUNG_CHU_TRI - chu tri luon la nguoi ke khai, nguoi phoi hop khong nhan vai tro CT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/{id}:
+                $ref: '#/components/schemas/NhiemVuPhucVuGiangVienItemsResponse'
+        '400':
+          description: INVALID / KHONG_PHAI_KHOA
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: FORBIDDEN - không phải Trưởng khoa của Khoa / BGH.
+  /api/nhiem-vu-phuc-vu/tong-hop:
     get:
       tags:
-        - NhiemVuKhoa
-      summary: Chi tiet mot nhiem vu (kem phan cong va minh chung)
-      description: >
-        Nguoi cua Khoa (can_xem) HOAC thanh vien cua chinh nhiem vu (chu tri mo form sua,
-        nguoi phoi hop xem minh duoc ghi vai tro gi). ChoPhepSua / ChoPhepXet tinh san
-        cho nguoi goi.
-      operationId: nhiemVuKhoaGetById
+        - NhiemVuPhucVu
+      summary: Tổng hợp nhiệm vụ và điểm của Khoa (Trưởng khoa / BGH)
+      operationId: NhiemVuPhucVu_GetTongHop
+      description: |
+        `Header` đếm nhiệm vụ của Khoa theo trạng thái. `Items` = mỗi giảng viên hiện thuộc Khoa hoặc
+        từng tham gia nhiệm vụ của Khoa trong năm: đếm theo vai trò / kết quả ở nhiệm vụ ĐÃ CHỐT của
+        Khoa này, `DiemKhoa` (Khoa này), `TongDiemThucTe` / `TongDiemQuyDoi` (mọi Khoa - đúng số đưa vào
+        phiếu).
       parameters:
-        - name: id
-          in: path
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
           required: true
           schema:
             type: integer
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaItemResponse"
-        "403":
-          description: Khong co quyen xem nhiem vu nay
+                $ref: '#/components/schemas/NhiemVuPhucVuTongHopResponse'
+        '400':
+          description: INVALID / KHONG_PHAI_KHOA
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: FORBIDDEN
+  /api/nhiem-vu-phuc-vu/{id}:
+    get:
+      tags:
+        - NhiemVuPhucVu
+      summary: Chi tiết nhiệm vụ (thành viên, báo cáo, minh chứng, cờ thao tác)
+      operationId: NhiemVuPhucVu_GetById
+      description: |
+        Không được xem → 404 (không lộ nhiệm vụ tồn tại). `BaoCao` / `MinhChung` chỉ có với thành
+        viên, Trưởng khoa của Khoa, BGH. Kết quả / lý do / điểm của NGƯỜI KHÁC chỉ trả cho Trưởng khoa /
+        BGH.
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      responses:
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay nhiem vu
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '401':
+          description: Chưa đăng nhập.
+        '404':
+          description: NOT_FOUND
     put:
       tags:
-        - NhiemVuKhoa
-      summary: Chu tri sua nhiem vu - gui TOAN BO danh sach phoi hop, server tu tinh diff
+        - NhiemVuPhucVu
+      summary: Sửa nhiệm vụ (RowVersion bắt buộc)
+      operationId: NhiemVuPhucVu_Update
       description: |
-        Chi CHU TRI hien tai, va chi khi nhiem vu chua duyet (da duyet -> 409
-        NHIEM_VU_DA_DUYET; can Truong khoa mo lai). Nhiem vu dang TRA VE (3) tu quay ve
-        CHO DUYET (1) khi noi dung THAT SU doi; luu ma khong doi gi thi giu 3 va ly do.
-        Dong CT cua chu tri server tu giu nguyen (khong gui trong PhanCong).
-        Gui len toan bo danh sach sau khi sua; server tinh diff:
-          - dong khong con trong danh sach -> GO (nhat ky hanh dong 6)
-          - dong DOI VAI TRO -> re-snapshot diem theo muc hien hanh (nhat ky hanh dong 5,
-            kem VaiTroTruoc/Sau va DiemTruoc/Sau)
-          - dong moi -> THEM (nhat ky hanh dong 4)
-        BAT BIEN: dong KHONG doi vai tro thi KHONG re-snapshot diem - quy che doi muc
-        diem o ky sau khong lam thay doi du lieu ky cu.
-        IdNam / IdDonVi trong body bi BO QUA khi sua (lay tu chinh nhiem vu).
-      operationId: nhiemVuKhoaUpdate
+        Gửi ĐỦ các trường. Server so sánh với giá trị hiện tại và chỉ áp quyền cho nhóm trường THỰC SỰ đổi:
+        - nội dung giao việc (tên, mô tả, nhóm, năm, thời gian, số lượng) → `ChoPhepSuaNoiDung`
+          (nhiệm vụ Trường giao: CHỈ BGH; nhiệm vụ Khoa: Trưởng khoa);
+        - `HanDangKy` → `ChoPhepSuaHanDangKy` (Trưởng khoa).
+        `IdDonVi` / `Nguon` không đổi. Báo cáo đang chờ duyệt (4), đã chốt (5), đã hủy (6) → không sửa.
+        `SoLuongToiDa` không nhỏ hơn số thành viên hiện có. Không đổi gì → 200, `CoThayDoi = false`.
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NhiemVuKhoaSaveRequest"
+              $ref: '#/components/schemas/NhiemVuPhucVuSaveRequest'
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Đã cập nhật (hoặc không có thay đổi).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaItemResponse"
-        "400":
-          description: Thieu ten / nhom, GV_NGOAI_KHOA, hoac danh sach chua chinh minh / trung nguoi
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Khong phai chu tri cua nhiem vu
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay nhiem vu
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: NHIEM_VU_DA_DUYET hoac KY_DA_CHOT (ky cu)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "422":
-          description: TRUNG_CHU_TRI
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-    delete:
-      tags:
-        - NhiemVuKhoa
-      summary: Xoa mem mot nhiem vu
-      description: >
-        Chu tri: chi khi nhiem vu chua duyet. Truong khoa (TK/TKL/TP/ADMIN): moi trang
-        thai (vd xoa nhiem vu ke khai trung, nhiem vu cu thieu chu tri).
-      operationId: nhiemVuKhoaDelete
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Khong phai chu tri va khong phai Truong khoa
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay nhiem vu
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: NHIEM_VU_DA_DUYET (chu tri xoa nhiem vu da duyet), TRANG_THAI_KHONG_HOP_LE (vua bi doi) hoac KY_DA_CHOT
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/nhiem-vu-khoa/{id}/xet:
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '400':
+          description: INVALID / KHONG_PHAI_KHOA / NGOAI_NAM_DANH_GIA
+        '401':
+          description: Chưa đăng nhập.
+        '403':
+          description: FORBIDDEN - sửa nhóm trường không có quyền.
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: CONCURRENCY_CONFLICT / TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+        '422':
+          description: SO_LUONG_NHO_HON_THANH_VIEN
+  /api/nhiem-vu-phuc-vu/{id}/cong-bo:
     post:
       tags:
-        - NhiemVuKhoa
-      summary: Truong khoa duyet / tra ve / mo lai mot nhiem vu
+        - NhiemVuPhucVu
+      summary: Công bố bản nháp (Khoa → đang triển khai; Trường → giao cho Khoa)
+      operationId: NhiemVuPhucVu_CongBo
       description: |
-        Chi TK/TKL/TP trong pham vi don vi hoac ADMIN (TLGVK KHONG duoc). Duyet = chot du
-        lieu cua nhiem vu: khoa voi chu tri va bat dau tinh diem.
-          TrangThai = 2: duyet (tu 1 cho duyet hoac 3 tra ve). Can co chu tri.
-          TrangThai = 3: tra ve (tu 1) hoac mo lai nhiem vu da duyet (tu 2) - BAT BUOC LyDo.
-        Truong khoa tu duyet nhiem vu minh chu tri la hop le.
-        Diem tren phieu KPI chi doi sau khi chay lai POST api/phieu/{id}/tong-hop-tu-dong.
-        Tra ve nhiem vu day du sau khi xet (giong GET api/nhiem-vu-khoa/{id}).
-      operationId: nhiemVuKhoaXet
+        Bản nháp (1): nhiệm vụ Khoa (Trưởng khoa) → 3 đang triển khai (mở đăng ký nếu có hạn, phân công
+        được ngay); nhiệm vụ Trường (BGH) → 2 chờ Khoa triển khai. Phải còn trước ngày bắt đầu; hạn đăng
+        ký (nếu có) phải còn hiệu lực.
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NhiemVuKhoaXetRequest"
+              $ref: '#/components/schemas/NhiemVuPhucVuThaoTacRequest'
       responses:
-        "200":
-          description: OK - nhiem vu sau khi xet
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaItemResponse"
-        "400":
-          description: INVALID (TrangThai khong phai 2/3) hoac THIEU_LY_DO
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '400':
+          description: INVALID
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: CONCURRENCY_CONFLICT / TRANG_THAI_KHONG_HOP_LE
+        '422':
+          description: DA_QUA_NGAY_BAT_DAU / HET_HAN_DANG_KY
+  /api/nhiem-vu-phuc-vu/{id}/trien-khai:
+    post:
+      tags:
+        - NhiemVuPhucVu
+      summary: Trưởng khoa triển khai nhiệm vụ Trường giao (2 → 3)
+      operationId: NhiemVuPhucVu_TrienKhai
+      description: |
+        Trưởng khoa của Khoa được giao nhận nhiệm vụ và đặt `HanDangKy` (giờ VN; để trống = chỉ phân
+        công, không mở tự đăng ký). Nội dung giao việc giữ nguyên (chỉ BGH sửa). Không tạo bản sao.
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NhiemVuPhucVuThaoTacRequest'
+      responses:
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Khong phai Truong khoa / Admin cua Khoa nay
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '400':
+          description: INVALID - hạn đăng ký không trước ngày bắt đầu.
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: CONCURRENCY_CONFLICT / TRANG_THAI_KHONG_HOP_LE
+        '422':
+          description: DA_QUA_NGAY_BAT_DAU / HET_HAN_DANG_KY
+  /api/nhiem-vu-phuc-vu/{id}/huy:
+    post:
+      tags:
+        - NhiemVuPhucVu
+      summary: Hủy nhiệm vụ chưa chốt (bắt buộc lý do)
+      operationId: NhiemVuPhucVu_Huy
+      description: |
+        Nhiệm vụ Khoa: Trưởng khoa. Nhiệm vụ Trường giao: CHỈ BGH. Đã chốt → 409 `DA_CHOT`.
+        Thành viên / báo cáo giữ làm lịch sử, KHÔNG tính điểm.
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NhiemVuPhucVuThaoTacRequest'
+      responses:
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay nhiem vu
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '400':
+          description: INVALID / THIEU_LY_DO
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: CONCURRENCY_CONFLICT / DA_CHOT / DA_HUY
+  /api/nhiem-vu-phuc-vu/{id}/dang-ky:
+    post:
+      tags:
+        - NhiemVuPhucVu
+      summary: Giảng viên tự đăng ký (nhận suất ngay, vai trò Phối hợp)
+      operationId: NhiemVuPhucVu_DangKy
+      description: |
+        Không có body - người đăng ký lấy từ token. Chỉ giảng viên của Khoa, khi nhiệm vụ đang mở đăng
+        ký (trạng thái 3, trước hạn đăng ký VÀ trước ngày bắt đầu) và còn suất. Đăng ký lại khi đã là
+        thành viên → 200, `CoThayDoi = false` (không tạo thêm thành viên). Suất cuối: hai yêu cầu đồng
+        thời được xếp hàng - người sau nhận 409 `HET_SUAT`.
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      responses:
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: TRANG_THAI_KHONG_HOP_LE (da o trang thai dich / vua bi nguoi khac doi) hoac KY_DA_CHOT
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '403':
+          description: FORBIDDEN - không phải giảng viên của Khoa.
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: HET_SUAT / TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+        '422':
+          description: KHONG_MO_DANG_KY / HET_HAN_DANG_KY
+  /api/nhiem-vu-phuc-vu/{id}/rut-dang-ky:
+    post:
+      tags:
+        - NhiemVuPhucVu
+      summary: Rút suất tự đăng ký
+      operationId: NhiemVuPhucVu_RutDangKy
+      description: |
+        Chỉ suất TỰ ĐĂNG KÝ của chính mình, trước hạn đăng ký và trước ngày bắt đầu. Suất do Trưởng khoa
+        phân công → 422 `KHONG_PHAI_SUAT_DANG_KY`.
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      responses:
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "422":
-          description: DUYET_KHONG_HOP_LE - nhiem vu (du lieu cu) chua co chu tri
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '404':
+          description: NOT_FOUND - không có suất.
+        '409':
+          description: TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+        '422':
+          description: KHONG_PHAI_SUAT_DANG_KY / HET_HAN_DANG_KY
+  /api/nhiem-vu-phuc-vu/{id}/phan-cong:
+    post:
+      tags:
+        - NhiemVuPhucVu
+      summary: Trưởng khoa cập nhật TOÀN BỘ danh sách thành viên và vai trò
+      operationId: NhiemVuPhucVu_PhanCong
+      description: |
+        Gửi toàn bộ danh sách mong muốn; server tự tính thêm (nguồn "phân công") / gỡ (kể cả suất tự
+        đăng ký) / đổi vai trò. Thêm / gỡ chỉ trước ngày bắt đầu (`DA_BAT_DAU`); đổi vai trò được tới khi
+        gửi báo cáo. Tối đa một CT; tổng ≤ `SoLuongToiDa`; người mới phải là giảng viên của Khoa.
+        `RowVersion` bắt buộc - mỗi lần giảng viên đăng ký / rút đều đổi RowVersion nên danh sách cũ
+        không thể vô tình gỡ người vừa đăng ký (409 `CONCURRENCY_CONFLICT`, tải lại rồi gửi lại).
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NhiemVuPhucVuPhanCongRequest'
+      responses:
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/minh-chung-nvk/{idMinhChung}/tai-ve:
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '400':
+          description: INVALID
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: CONCURRENCY_CONFLICT / TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+        '422':
+          description: DA_BAT_DAU / VUOT_SO_LUONG / GV_NGOAI_KHOA / TRUNG_CHU_TRI
+  /api/nhiem-vu-phuc-vu/{id}/bao-cao:
+    put:
+      tags:
+        - NhiemVuPhucVu
+      summary: Chủ trì soạn / sửa báo cáo chung
+      operationId: NhiemVuPhucVu_LuuBaoCao
+      description: Chỉ Chủ trì, trạng thái 3 (kể cả sau khi bị trả lại). Gửi đi là bước riêng (`gui-bao-cao`).
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NhiemVuPhucVuBaoCaoRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '400':
+          description: INVALID
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: CONCURRENCY_CONFLICT / TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+        '422':
+          description: THIEU_NOI_DUNG_BAO_CAO
+  /api/nhiem-vu-phuc-vu/{id}/minh-chung:
+    post:
+      tags:
+        - NhiemVuPhucVu
+      summary: Chủ trì nộp minh chứng PDF cho báo cáo
+      operationId: NhiemVuPhucVu_UploadMinhChung
+      description: |
+        multipart/form-data. Chỉ PDF (đuôi + chữ ký `%PDF-`), giới hạn dung lượng theo
+        `cau-hinh.MaxFileSizeKb`, tối đa 20 minh chứng / nhiệm vụ. Chỉ Chủ trì, khi báo cáo chưa gửi.
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                tenHienThi:
+                  type: string
+                  maxLength: 255
+      responses:
+        '201':
+          description: Đã thêm
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NhiemVuPhucVuMinhChungResponse'
+        '400':
+          description: INVALID - không phải PDF / quá dung lượng.
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+        '415':
+          description: Không phải multipart/form-data.
+        '422':
+          description: QUA_SO_MINH_CHUNG
+  /api/nhiem-vu-phuc-vu/minh-chung/{idMinhChung}:
+    delete:
+      tags:
+        - NhiemVuPhucVu
+      summary: Chủ trì gỡ minh chứng (xóa mềm, tệp giữ nguyên)
+      operationId: NhiemVuPhucVu_XoaMinhChung
+      parameters:
+        - name: idMinhChung
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thành công - `Item` là chi tiết nhiệm vụ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+  /api/nhiem-vu-phuc-vu/minh-chung/{idMinhChung}/tai-ve:
     get:
       tags:
-        - NhiemVuKhoa
-      summary: Tai ve file minh chung cua module nhiem vu Khoa
-      description: >
-        Dung chung cho ca hai cap. Quyen doc: nguoi cua Khoa | giang vien DUOC PHAN CONG
-        nhiem vu do | chu nhan phan hoi. Module chi nhan PDF nen inline luon an toan.
-        [TokenAuthorize] co fallback doc cookie kpi_access_token nen the a/iframe xac thuc
-        duoc ma khong can header Authorization.
-      operationId: minhChungNvkTaiVe
+        - NhiemVuPhucVu
+      summary: Tải minh chứng (thành viên / Trưởng khoa / BGH)
+      operationId: NhiemVuPhucVu_TaiVeMinhChung
+      description: Cookie `kpi_access_token` được chấp nhận nên dùng được trong thẻ a / iframe.
       parameters:
         - name: idMinhChung
           in: path
@@ -12088,70 +12028,137 @@ paths:
         - name: inline
           in: query
           required: false
-          description: "1 = hien thi trong trinh duyet thay vi tai xuong"
           schema:
             type: integer
+            enum: [1]
+          description: 1 = hiển thị trong trình duyệt.
       responses:
-        "200":
-          description: OK - noi dung file
+        '200':
+          description: Tệp PDF
           content:
             application/pdf:
               schema:
                 type: string
                 format: binary
-        "403":
-          description: Khong co quyen xem minh chung nay
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay minh chung, hoac file da bien mat tren may chu
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-
-  /api/minh-chung-nvk/{idMinhChung}:
-    delete:
+        '404':
+          description: NOT_FOUND / FILE_NOT_FOUND
+  /api/nhiem-vu-phuc-vu/{id}/gui-bao-cao:
+    post:
       tags:
-        - NhiemVuKhoa
-      summary: Xoa mem minh chung + don file vat ly
-      description: >
-        Nguoi tu tai file len luon go duoc file cua minh (xet TRUOC vai tro); ngoai ra
-        nguoi nhap cua Khoa cung xoa duoc. Ky phai con mo.
-      operationId: minhChungNvkDelete
+        - NhiemVuPhucVu
+      summary: Chủ trì gửi báo cáo (3 → 4)
+      operationId: NhiemVuPhucVu_GuiBaoCao
+      description: |
+        Từ ngày SAU ngày kết thúc; đúng một Chủ trì; có nội dung; ít nhất một minh chứng PDF. Từ lúc này
+        khóa sửa dữ liệu cho tới khi Trưởng khoa trả báo cáo hoặc chốt.
       parameters:
-        - name: idMinhChung
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NhiemVuPhucVuThaoTacRequest'
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "403":
-          description: Khong co quyen xoa minh chung nay
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: CONCURRENCY_CONFLICT / TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+        '422':
+          description: CHUA_KET_THUC / THIEU_CHU_TRI / THIEU_NOI_DUNG_BAO_CAO / THIEU_MINH_CHUNG
+  /api/nhiem-vu-phuc-vu/{id}/tra-bao-cao:
+    post:
+      tags:
+        - NhiemVuPhucVu
+      summary: Trưởng khoa trả báo cáo để bổ sung (4 → 3, bắt buộc lý do)
+      operationId: NhiemVuPhucVu_TraBaoCao
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NhiemVuPhucVuThaoTacRequest'
+      responses:
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "404":
-          description: Khong tim thay minh chung
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '400':
+          description: THIEU_LY_DO
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: CONCURRENCY_CONFLICT / TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+  /api/nhiem-vu-phuc-vu/{id}/chot:
+    post:
+      tags:
+        - NhiemVuPhucVu
+      summary: Trưởng khoa chốt kết quả từng thành viên (4 → 5, một giao dịch)
+      operationId: NhiemVuPhucVu_Chot
+      description: |
+        `KetQua` phải có ĐÚNG và ĐỦ thành viên hiện tại. Không hoàn thành → bắt buộc `LyDo`, 0 điểm.
+        Chỉ từ ngày sau ngày kết thúc. Điểm lấy từ cấu hình vai trò (Khoa, năm) lúc chốt và ghi snapshot -
+        client KHÔNG gửi điểm. Đã chốt → 409 `DA_CHOT` (không chốt lại, không cộng thêm điểm; không sửa /
+        hủy / mở lại, kể cả BGH). Chốt KHÔNG tự chấm phiếu: phiếu còn mở nhận điểm qua
+        `POST api/phieu/{id}/tong-hop-tu-dong` / nộp phiếu.
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NhiemVuPhucVuChotRequest'
+      responses:
+        '200':
+          description: Thành công - có `SoHoanThanh`, `SoKhongHoanThanh`.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
-        "409":
-          description: KY_DA_CHOT
+                $ref: '#/components/schemas/NhiemVuPhucVuResponse'
+        '400':
+          description: INVALID / THIEU_LY_DO
+        '403':
+          description: FORBIDDEN
+        '404':
+          description: NOT_FOUND
+        '409':
+          description: CONCURRENCY_CONFLICT / TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY
+        '422':
+          description: CHUA_KET_THUC / KET_QUA_KHONG_KHOP / THIEU_CHU_TRI / THIEU_CAU_HINH_VAI_TRO
+  /api/nhiem-vu-phuc-vu/{id}/lich-su:
+    get:
+      tags:
+        - NhiemVuPhucVu
+      summary: Nhật ký nhiệm vụ (thành viên / Trưởng khoa / BGH)
+      operationId: NhiemVuPhucVu_GetLichSu
+      parameters:
+        - $ref: '#/components/parameters/NhiemVuPhucVuId'
+      responses:
+        '200':
+          description: Thành công
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NhiemVuKhoaResponse"
+                $ref: '#/components/schemas/NhiemVuPhucVuLichSuItemsResponse'
+        '401':
+          description: Chưa đăng nhập.
+        '404':
+          description: NOT_FOUND
   /api/tham-dinh/pending:
     get:
       tags:
@@ -13146,6 +13153,11 @@ paths:
         - KeKhaiThanhTich
       summary: Luu TOAN BO cac dong cua ban ke (mot form, mot lan luu)
       description: >
+        Loại 2 (khen thưởng đột xuất) do P_TCHC ghi nhận tại /api/khen-thuong-dot-xuat.
+        Thêm/sửa loại 2 hoặc đổi dòng loại 2 sang loại khác trả 422 KHEN_THUONG_DA_CHUYEN.
+        Dòng cũ chỉ đọc; gửi lại nguyên trạng được, bỏ khỏi form không xóa lịch sử.
+
+
         Dong dang co trong DB ma khong xuat hien trong danh sach se bi go (soft delete) -
         NHUNG chi voi dong con sua duoc; dong DA CHOT khong bi go va gui len de sua se bi
         tu choi voi DONG_DA_CHOT.
@@ -13675,6 +13687,13 @@ paths:
                 $ref: "#/components/schemas/KeKhaiThanhTichResponse"
 components:
   parameters:
+    NhiemVuPhucVuId:
+      name: id
+      in: path
+      required: true
+      description: Id nhiem vu phuc vu.
+      schema:
+        type: integer
     LoaiDoiTuongFilter:
       name: loaiDoiTuong
       in: query
@@ -13686,11 +13705,501 @@ components:
         minimum: 1
         maximum: 4
   schemas:
-    KyNhiemVuKhoaDto:
+    KhenThuongDotXuatCreateRequest:
       type: object
-      description: "Ky nhiem vu cua mot (nam x Khoa) - container. Tu 2026-10-02 trang thai duyet nam o TUNG nhiem vu."
       properties:
-        IdKy:
+        Quy:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 1
+          maximum: 4
+          description: 'Bỏ trống: suy ra quý của NgayQuyetDinh; bản sao cũ thiếu ngày giữ quý cũ khi sửa.'
+        CoQuanKhen:
+          type: string
+          nullable: true
+          maxLength: 255
+        IdNam:
+          type: integer
+          format: int32
+          nullable: true
+        IdMuc:
+          type: integer
+          format: int32
+          nullable: true
+        NoiDung:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 500
+          description: 'Cùng viên chức, năm và nội dung chuẩn hóa trim/lower: chỉ dòng có điểm cao nhất được cộng.'
+        SoQuyetDinh:
+          type: string
+          nullable: true
+          maxLength: 100
+        NgayQuyetDinh:
+          type: string
+          format: date-time
+          nullable: true
+          description: Ngày quyết định thuộc IdNam. PUT cho phép thiếu số/ngày chỉ với bản sao cũ Nguon=3; kiểm tra
+            ở server.
+        GhiChu:
+          type: string
+          nullable: true
+          maxLength: 1000
+        IdNhanViens:
+          type: array
+          items:
+            type: integer
+            format: int32
+          minItems: 1
+          maxItems: 500
+      required:
+      - IdNam
+      - IdMuc
+      - NoiDung
+      - IdNhanViens
+      - SoQuyetDinh
+      - NgayQuyetDinh
+    KhenThuongDotXuatDto:
+      type: object
+      properties:
+        IdKhenThuong:
+          type: integer
+          format: int32
+        Quy:
+          type: integer
+          format: int32
+        Diem:
+          type: number
+          format: double
+        CoQuanKhen:
+          type: string
+          nullable: true
+        IdChiTietKeKhai:
+          type: integer
+          format: int32
+          nullable: true
+        LaDongBiKhu:
+          type: boolean
+          description: 'true: cùng nội dung trong năm đã có dòng điểm cao hơn; nếu bằng điểm chọn ID nhỏ nhất.'
+        IdNam:
+          type: integer
+          format: int32
+        IdMuc:
+          type: integer
+          format: int32
+        MaMuc:
+          type: string
+          nullable: true
+        TenMuc:
+          type: string
+          nullable: true
+        IdNhanVien:
+          type: integer
+          format: int32
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        IdDonVi:
+          type: integer
+          format: int32
+          nullable: true
+        MaDonVi:
+          type: string
+          nullable: true
+        TenDonVi:
+          type: string
+          nullable: true
+        NoiDung:
+          type: string
+          nullable: true
+        SoQuyetDinh:
+          type: string
+          nullable: true
+        NgayQuyetDinh:
+          type: string
+          format: date-time
+          nullable: true
+        GhiChu:
+          type: string
+          nullable: true
+        Nguon:
+          type: integer
+          format: int32
+          description: '1: P_TCHC nhập; 3: chuyển từ dòng kê khai đã chốt, giữ snapshot cũ.'
+        DaXoa:
+          type: boolean
+        IdNguoiTao:
+          type: integer
+          format: int32
+          nullable: true
+        TenNguoiTao:
+          type: string
+          nullable: true
+        NgayTao:
+          type: string
+          format: date-time
+        IdNguoiCapNhat:
+          type: integer
+          format: int32
+          nullable: true
+        TenNguoiCapNhat:
+          type: string
+          nullable: true
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+        ChoPhepSua:
+          type: boolean
+          description: Server xác định quyền nhập và bản ghi còn hiệu lực; FE dùng cờ này cho sửa/xóa.
+    KhenThuongDotXuatLichSuDto:
+      type: object
+      properties:
+        Id:
+          type: integer
+          format: int64
+        HanhDong:
+          type: integer
+          format: int32
+        MoTa:
+          type: string
+          nullable: true
+        IdNguoiThucHien:
+          type: integer
+          format: int32
+          nullable: true
+        TenNguoiThucHien:
+          type: string
+          nullable: true
+        NgayThucHien:
+          type: string
+          format: date-time
+    KhenThuongDotXuatListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+          nullable: true
+        ErrorCode:
+          type: string
+          nullable: true
+        DuocNhap:
+          type: boolean
+        XemTatCa:
+          type: boolean
+        Page:
+          type: integer
+          format: int32
+        PageSize:
+          type: integer
+          format: int32
+        TotalCount:
+          type: integer
+          format: int32
+        TotalPages:
+          type: integer
+          format: int32
+        Items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KhenThuongDotXuatDto'
+    KhenThuongDotXuatNguoiNhapCapRequest:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+          format: int32
+          nullable: true
+        GhiChu:
+          type: string
+          nullable: true
+      required:
+      - IdNhanVien
+    KhenThuongDotXuatNguoiNhapDto:
+      type: object
+      properties:
+        Id:
+          type: integer
+          format: int32
+        IdNhanVien:
+          type: integer
+          format: int32
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        Email:
+          type: string
+          nullable: true
+        IdNguoiCap:
+          type: integer
+          format: int32
+        TenNguoiCap:
+          type: string
+          nullable: true
+        NgayCap:
+          type: string
+          format: date-time
+        GhiChu:
+          type: string
+          nullable: true
+        DaThuHoi:
+          type: boolean
+        IdNguoiThuHoi:
+          type: integer
+          format: int32
+          nullable: true
+        TenNguoiThuHoi:
+          type: string
+          nullable: true
+        NgayThuHoi:
+          type: string
+          format: date-time
+          nullable: true
+        ConThuocPhong:
+          type: boolean
+    KhenThuongDotXuatQuyenResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+          nullable: true
+        ErrorCode:
+          type: string
+          nullable: true
+        LaQuanLy:
+          type: boolean
+        DuocNhap:
+          type: boolean
+        XemTatCa:
+          type: boolean
+        XemTheoDonVi:
+          type: boolean
+        DuocUyQuyen:
+          type: boolean
+    KhenThuongDotXuatResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+          nullable: true
+        ErrorCode:
+          type: string
+          nullable: true
+        Item:
+          $ref: '#/components/schemas/KhenThuongDotXuatDto'
+        LichSu:
+          type: array
+          items:
+            $ref: '#/components/schemas/KhenThuongDotXuatLichSuDto'
+        SoBanGhi:
+          type: integer
+          format: int32
+          nullable: true
+        IdKhenThuongs:
+          type: array
+          items:
+            type: integer
+            format: int32
+        CoThayDoi:
+          type: boolean
+          nullable: true
+    KhenThuongDotXuatUngVienDto:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+          format: int32
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        Email:
+          type: string
+          nullable: true
+        TenChucVu:
+          type: string
+          nullable: true
+        LaQuanLy:
+          type: boolean
+        DaDuocCap:
+          type: boolean
+    KhenThuongDotXuatUpdateRequest:
+      type: object
+      properties:
+        Quy:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 1
+          maximum: 4
+          description: 'Bỏ trống: suy ra quý của NgayQuyetDinh; bản sao cũ thiếu ngày giữ quý cũ khi sửa.'
+        CoQuanKhen:
+          type: string
+          nullable: true
+          maxLength: 255
+        IdNam:
+          type: integer
+          format: int32
+          nullable: true
+        IdMuc:
+          type: integer
+          format: int32
+          nullable: true
+        IdNhanVien:
+          type: integer
+          format: int32
+          nullable: true
+        NoiDung:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 500
+          description: 'Cùng viên chức, năm và nội dung chuẩn hóa trim/lower: chỉ dòng có điểm cao nhất được cộng.'
+        SoQuyetDinh:
+          type: string
+          nullable: true
+          maxLength: 100
+        NgayQuyetDinh:
+          type: string
+          format: date-time
+          nullable: true
+          description: Ngày quyết định thuộc IdNam. PUT cho phép thiếu số/ngày chỉ với bản sao cũ Nguon=3; kiểm tra
+            ở server.
+        GhiChu:
+          type: string
+          nullable: true
+          maxLength: 1000
+      required:
+      - IdNam
+      - IdMuc
+      - NoiDung
+      - IdNhanVien
+    KhenThuongDotXuatVienChucDto:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+          format: int32
+        MaNhanVien:
+          type: string
+          nullable: true
+        HoTen:
+          type: string
+          nullable: true
+        IdDonVi:
+          type: integer
+          format: int32
+        MaDonVi:
+          type: string
+          nullable: true
+        TenDonVi:
+          type: string
+          nullable: true
+    MucKhenThuongDto:
+      type: object
+      properties:
+        IdMuc:
+          type: integer
+          format: int32
+        MaMuc:
+          type: string
+          nullable: true
+        TenMuc:
+          type: string
+          nullable: true
+        DiemQuyDoi:
+          type: number
+          format: double
+        GhiChu:
+          type: string
+          nullable: true
+        ThuTu:
+          type: integer
+          format: int32
+        DangSuDung:
+          type: boolean
+        SoBanGhi:
+          type: integer
+          format: int32
+    MucKhenThuongDtoItemsResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MucKhenThuongDto'
+    KhenThuongDotXuatVienChucDtoItemsResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KhenThuongDotXuatVienChucDto'
+    KhenThuongDotXuatNguoiNhapDtoItemsResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KhenThuongDotXuatNguoiNhapDto'
+    KhenThuongDotXuatUngVienDtoItemsResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KhenThuongDotXuatUngVienDto'
+    NhiemVuPhucVuDto:
+      type: object
+      description: |
+        Một nhiệm vụ (dbo.fn_nhiem_vu_phuc_vu_hien_thi). Trường null bị bỏ khỏi JSON. Cờ `ChoPhep*`
+        tính cho NGƯỜI ĐANG ĐĂNG NHẬP - FE chỉ đọc, không tự suy quyền.
+      properties:
+        IdNhiemVu:
           type: integer
         IdNam:
           type: integer
@@ -13700,70 +14209,379 @@ components:
           type: string
         TenDonVi:
           type: string
+        IdNhomNv:
+          type: integer
+        TenNhom:
+          type: string
+        Nguon:
+          type: integer
+          enum: [1, 2]
+          description: 1 Nhiệm vụ Khoa · 2 Nhiệm vụ Trường giao.
+        TenNguon:
+          type: string
+        TenNhiemVu:
+          type: string
+        MoTa:
+          type: string
+        HanDangKy:
+          type: string
+          format: date-time
+          description: Giờ Việt Nam, không kèm múi giờ. Vắng = không mở tự đăng ký.
+        TuNgay:
+          type: string
+          format: date-time
+        DenNgay:
+          type: string
+          format: date-time
+        SoLuongToiDa:
+          type: integer
+        SoThanhVien:
+          type: integer
+        SoSuatConLai:
+          type: integer
         TrangThai:
           type: integer
-          description: "1 = Dang mo, 2 = Da chot theo LUONG CU (khoa ghi toan ky cho toi khi mo lai)"
-        HanPhanHoi:
+          enum: [1, 2, 3, 4, 5, 6]
+          description: 1 Nháp · 2 Chờ Khoa triển khai · 3 Đang triển khai · 4 Chờ duyệt báo cáo · 5 Đã chốt · 6 Đã hủy.
+        TenTrangThai:
           type: string
-          format: date
-          nullable: true
-          description: "Het han KHONG khoa gi - chi la nhan hien thi"
-        HetHanPhanHoi:
-          type: boolean
+        IdNguoiTao:
+          type: integer
+        TenNguoiTao:
+          type: string
+        NgayTao:
+          type: string
+          format: date-time
+        NgayCapNhat:
+          type: string
+          format: date-time
+        NgayCongBo:
+          type: string
+          format: date-time
+        IdNguoiTrienKhai:
+          type: integer
+        TenNguoiTrienKhai:
+          type: string
+        NgayTrienKhai:
+          type: string
+          format: date-time
         IdNguoiChot:
           type: integer
-          nullable: true
         TenNguoiChot:
           type: string
-          nullable: true
         NgayChot:
           type: string
           format: date-time
-          nullable: true
-        GhiChu:
+        NgayHuy:
           type: string
-          nullable: true
-        CanNhap:
+          format: date-time
+        LyDoHuy:
+          type: string
+        TenNguoiHuy:
+          type: string
+        RowVersion:
+          type: string
+          format: byte
+          description: Base64 8 byte - gửi lại ở mọi thao tác ghi cần RowVersion.
+        LaBanGiamHieu:
           type: boolean
-          nullable: true
-          deprecated: true
-          description: "VET TICH luong Khoa nhap lieu - khong con cap quyen ghi nao. Dung CanDuyet / CanKeKhai."
-        CanChot:
+        LaTruongKhoa:
           type: boolean
-          nullable: true
-          deprecated: true
-          description: "VET TICH - trung gia tri voi CanDuyet"
-        CanDuyet:
+        LaGiangVienKhoa:
           type: boolean
-          nullable: true
-          description: "Duyet / tra ve / mo lai / xoa nhiem vu cua Khoa (TK/TKL/TP/ADMIN)"
-        CanKeKhai:
+        LaThanhVien:
           type: boolean
-          nullable: true
-          description: "Nguoi goi la giang vien cua Khoa - ke khai duoc nhiem vu (lam chu tri)"
-        SoNhiemVu:
+        LaChuTri:
+          type: boolean
+        DangMoDangKy:
+          type: boolean
+        XemBaoCao:
+          type: boolean
+        XemKetQuaTatCa:
+          type: boolean
+        ChoPhepSuaNoiDung:
+          type: boolean
+        ChoPhepSuaHanDangKy:
+          type: boolean
+        ChoPhepCongBo:
+          type: boolean
+        ChoPhepTrienKhai:
+          type: boolean
+        ChoPhepHuy:
+          type: boolean
+        ChoPhepDangKy:
+          type: boolean
+        ChoPhepRutDangKy:
+          type: boolean
+        ChoPhepPhanCong:
+          type: boolean
+          description: Thêm / gỡ thành viên (trước ngày bắt đầu).
+        ChoPhepDoiVaiTro:
+          type: boolean
+        ChoPhepBaoCao:
+          type: boolean
+          description: Soạn báo cáo, thêm / gỡ minh chứng (Chủ trì).
+        ChoPhepGuiBaoCao:
+          type: boolean
+        ChoPhepTraBaoCao:
+          type: boolean
+        ChoPhepChot:
+          type: boolean
+        CuaToi:
+          $ref: '#/components/schemas/NhiemVuPhucVuSuatCuaToiDto'
+        TrangThaiBaoCao:
           type: integer
-          nullable: true
-        SoChoDuyet:
+          enum: [0, 1, 2, 3, 4]
+          description: 0 Chưa có · 1 Đang soạn · 2 Chờ duyệt · 3 Bị trả lại · 4 Đã chốt. Vắng = không được xem báo cáo.
+        TenTrangThaiBaoCao:
+          type: string
+        SoLanGui:
           type: integer
-          nullable: true
-          description: "So nhiem vu trang thai 1 - hang doi cua Truong khoa"
-        SoTraVe:
+        NgayGui:
+          type: string
+          format: date-time
+        LyDoTraLai:
+          type: string
+        NgayTraLai:
+          type: string
+          format: date-time
+        SoMinhChung:
           type: integer
-          nullable: true
-        SoDaDuyet:
-          type: integer
-          nullable: true
-        SoGiangVien:
-          type: integer
-          nullable: true
-        SoPhanHoiCho:
-          type: integer
-          nullable: true
-
-    NhomNhiemVuTrongKyDto:
+    NhiemVuPhucVuSuatCuaToiDto:
       type: object
-      description: "Mot trong 7 nhom cong tac co dinh, kem so nhiem vu da nhap trong ky"
+      properties:
+        MaVaiTro:
+          type: string
+          enum: [CT, PHC, PH]
+        TenVaiTro:
+          type: string
+        NguonThamGia:
+          type: integer
+          enum: [1, 2]
+          description: 1 Tự đăng ký · 2 Trưởng khoa phân công.
+        TenNguonThamGia:
+          type: string
+        DaRoi:
+          type: boolean
+        KetQua:
+          type: integer
+          enum: [1, 2]
+          description: Chỉ có sau khi chốt - 1 Hoàn thành · 2 Không hoàn thành.
+        TenKetQua:
+          type: string
+        LyDoKhongHoanThanh:
+          type: string
+        Diem:
+          type: number
+    NhiemVuPhucVuChiTietDto:
+      allOf:
+        - $ref: '#/components/schemas/NhiemVuPhucVuDto'
+        - type: object
+          properties:
+            BaoCao:
+              $ref: '#/components/schemas/NhiemVuPhucVuBaoCaoDto'
+            ThanhVien:
+              type: array
+              items:
+                $ref: '#/components/schemas/NhiemVuPhucVuThanhVienDto'
+            MinhChung:
+              type: array
+              items:
+                $ref: '#/components/schemas/NhiemVuPhucVuMinhChungDto'
+    NhiemVuPhucVuThanhVienDto:
+      type: object
+      properties:
+        IdThanhVien:
+          type: integer
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        NguonThamGia:
+          type: integer
+          enum: [1, 2]
+        TenNguonThamGia:
+          type: string
+        MaVaiTro:
+          type: string
+          enum: [CT, PHC, PH]
+        TenVaiTro:
+          type: string
+        DiemVaiTro:
+          type: number
+          description: Trước khi chốt = theo cấu hình hiện tại (dự kiến); sau khi chốt = snapshot.
+        DaRoi:
+          type: boolean
+        IdNguoiThem:
+          type: integer
+        TenNguoiThem:
+          type: string
+        NgayThem:
+          type: string
+          format: date-time
+        NgayRoi:
+          type: string
+          format: date-time
+        LaToi:
+          type: boolean
+        KetQua:
+          type: integer
+          enum: [1, 2]
+          description: Của người khác chỉ trả cho Trưởng khoa / BGH.
+        TenKetQua:
+          type: string
+        LyDoKhongHoanThanh:
+          type: string
+        DiemSnapshot:
+          type: number
+    NhiemVuPhucVuBaoCaoDto:
+      type: object
+      properties:
+        NoiDung:
+          type: string
+        IdNguoiCapNhat:
+          type: integer
+        TenNguoiCapNhat:
+          type: string
+        NgayCapNhat:
+          type: string
+          format: date-time
+        SoLanGui:
+          type: integer
+        IdNguoiGui:
+          type: integer
+        TenNguoiGui:
+          type: string
+        NgayGui:
+          type: string
+          format: date-time
+        DaTraLai:
+          type: boolean
+        LyDoTraLai:
+          type: string
+        IdNguoiTraLai:
+          type: integer
+        TenNguoiTraLai:
+          type: string
+        NgayTraLai:
+          type: string
+          format: date-time
+    NhiemVuPhucVuMinhChungDto:
+      type: object
+      properties:
+        IdMinhChung:
+          type: integer
+        IdNhiemVu:
+          type: integer
+        TenHienThi:
+          type: string
+        TenFileGoc:
+          type: string
+        LoaiFile:
+          type: string
+        KichThuocKb:
+          type: integer
+        NguoiTaiLen:
+          type: integer
+        TenNguoiTaiLen:
+          type: string
+        NgayTaiLen:
+          type: string
+          format: date-time
+    NhiemVuPhucVuLichSuDto:
+      type: object
+      properties:
+        Id:
+          type: integer
+          format: int64
+        IdNhiemVu:
+          type: integer
+        IdNhanVien:
+          type: integer
+        TenNhanVien:
+          type: string
+        HanhDong:
+          type: integer
+          minimum: 1
+          maximum: 16
+          description: |
+            1 Tạo bản nháp · 2 Sửa · 3 Công bố / giao · 4 Triển khai · 5 Hủy · 6 Tự đăng ký · 7 Rút đăng ký ·
+            8 Phân công · 9 Gỡ thành viên · 10 Đổi vai trò · 11 Lưu báo cáo · 12 Thêm minh chứng ·
+            13 Gỡ minh chứng · 14 Gửi báo cáo · 15 Trả báo cáo · 16 Chốt kết quả.
+        TenHanhDong:
+          type: string
+        TrangThaiTruoc:
+          type: integer
+        TrangThaiSau:
+          type: integer
+        MoTa:
+          type: string
+        IdNguoiThucHien:
+          type: integer
+        TenNguoiThucHien:
+          type: string
+        NgayThucHien:
+          type: string
+          format: date-time
+    NhiemVuPhucVuCauHinhDto:
+      type: object
+      properties:
+        TranDiem:
+          type: number
+        IdTieuChiKpi:
+          type: integer
+        DiemToiDaTieuChi:
+          type: number
+        LechCauHinh:
+          type: boolean
+        BayGio:
+          type: string
+          format: date-time
+          description: Giờ Việt Nam của máy chủ.
+        LaBanGiamHieu:
+          type: boolean
+        VaiTro:
+          type: array
+          items:
+            $ref: '#/components/schemas/NhiemVuPhucVuVaiTroDto'
+        Nhom:
+          type: array
+          items:
+            $ref: '#/components/schemas/NhiemVuPhucVuNhomDto'
+        Khoa:
+          type: array
+          items:
+            $ref: '#/components/schemas/NhiemVuPhucVuKhoaDto'
+        AllowedExtensions:
+          type: array
+          items:
+            type: string
+        Accept:
+          type: string
+        MaxFileSizeKb:
+          type: integer
+        MaxTenHienThiLength:
+          type: integer
+        MaxSoMinhChung:
+          type: integer
+    NhiemVuPhucVuVaiTroDto:
+      type: object
+      properties:
+        IdVaiTro:
+          type: integer
+        MaVaiTro:
+          type: string
+          enum: [CT, PHC, PH]
+        TenVaiTro:
+          type: string
+        DiemQuyDoi:
+          type: number
+        ThuTu:
+          type: integer
+    NhiemVuPhucVuNhomDto:
+      type: object
       properties:
         IdNhomNv:
           type: integer
@@ -13771,212 +14589,21 @@ components:
           type: string
         ThuTu:
           type: integer
-        SoNhiemVu:
-          type: integer
-
-    PhanCongNhiemVuKhoaDto:
-      type: object
-      description: "Mot dong phan cong. DiemSnapshot GHI CUNG tai thoi diem gan, khong tinh dong tu vai tro."
-      properties:
-        IdPhanCong:
-          type: integer
-        IdNhiemVuKhoa:
-          type: integer
-        IdNhanVien:
-          type: integer
-        MaNhanVien:
-          type: string
-        HoTen:
-          type: string
-        IdVaiTro:
-          type: integer
-        MaVaiTroSnapshot:
-          type: string
-          example: "CT"
-          description: "CT = Chu tri, PHC = Phoi hop chinh, PH = Phoi hop"
-        TenVaiTroSnapshot:
-          type: string
-        DiemSnapshot:
-          type: number
-          format: double
-          example: 10.0
-        LaChuTri:
-          type: boolean
-        GhiChu:
-          type: string
-          nullable: true
-        NgayTao:
-          type: string
-          format: date-time
-        NgayCapNhat:
-          type: string
-          format: date-time
-          nullable: true
-
-    MinhChungNhiemVuKhoaDto:
-      type: object
-      description: "Minh chung PDF, gan o cap nhiem vu (CapGan = 1) hoac cap phan hoi (CapGan = 2)"
-      properties:
-        IdMinhChungNvk:
-          type: integer
-        CapGan:
-          type: integer
-          description: "1 = cap nhiem vu (dung chung ca nhom), 2 = cap phan hoi (ca nhan)"
-        IdNhiemVuKhoa:
-          type: integer
-          nullable: true
-        IdPhanHoi:
-          type: integer
-          nullable: true
-        TenHienThi:
-          type: string
-        TenFileGoc:
-          type: string
-        LoaiFile:
-          type: string
-          example: "pdf"
-        KichThuocKb:
-          type: integer
-          nullable: true
-        NguoiTaiLen:
-          type: integer
-        TenNguoiTaiLen:
-          type: string
-          nullable: true
-        NgayTaiLen:
-          type: string
-          format: date-time
-
-    NhiemVuKhoaDto:
+    NhiemVuPhucVuKhoaDto:
       type: object
       properties:
-        IdNhiemVuKhoa:
+        IdDonVi:
           type: integer
-        IdKy:
-          type: integer
-        IdNhomNv:
-          type: integer
-        TenNhom:
+        MaDonVi:
           type: string
-        ThuTuNhom:
-          type: integer
-        TenNhiemVu:
+        TenDonVi:
           type: string
-        MoTa:
-          type: string
-          nullable: true
-        IdNguoiTao:
-          type: integer
-        TenNguoiTao:
-          type: string
-          nullable: true
-        NgayTao:
-          type: string
-          format: date-time
-        NgayCapNhat:
-          type: string
-          format: date-time
-          nullable: true
-        SoPhanCong:
-          type: integer
-        CoChuTri:
+        LaTruongKhoa:
           type: boolean
-          description: "Nhiem vu ke khai moi luon co; chi du lieu cu moi co the thieu - khi do khong duyet duoc"
-        TrangThai:
-          type: integer
-          enum: [1, 2, 3]
-          description: "1 = Cho duyet (chu tri sua/xoa duoc), 2 = Da duyet (khoa, tinh diem), 3 = Tra ve (xem LyDoTraVe)"
-        IdNguoiDuyet:
-          type: integer
-          nullable: true
-          description: "Nguoi xet GAN NHAT (duyet hoac tra ve / mo lai)"
-        TenNguoiDuyet:
-          type: string
-          nullable: true
-        NgayDuyet:
-          type: string
-          format: date-time
-          nullable: true
-        LyDoTraVe:
-          type: string
-          nullable: true
-          description: "Chi co khi TrangThai = 3"
-        ChoPhepSua:
+        LaGiangVienKhoa:
           type: boolean
-          description: "Nguoi goi la chu tri + nhiem vu chua duyet + ky con mo"
-        ChoPhepXet:
-          type: boolean
-          description: "Nguoi goi duyet / tra ve / mo lai duoc (FE chon nut theo TrangThai)"
-        PhanCong:
-          type: array
-          items:
-            $ref: "#/components/schemas/PhanCongNhiemVuKhoaDto"
-        MinhChung:
-          type: array
-          items:
-            $ref: "#/components/schemas/MinhChungNhiemVuKhoaDto"
-
-    PhanHoiNhiemVuKhoaDto:
+    NhiemVuPhucVuGiangVienDto:
       type: object
-      properties:
-        IdPhanHoi:
-          type: integer
-        IdKy:
-          type: integer
-        IdNhanVien:
-          type: integer
-        MaNhanVien:
-          type: string
-          nullable: true
-        HoTen:
-          type: string
-          nullable: true
-        LoaiPhanHoi:
-          type: integer
-          description: "1 = sai vai tro (tro toi 1 nhiem vu), 2 = thieu nhiem vu"
-        IdNhiemVuKhoa:
-          type: integer
-          nullable: true
-        TenNhiemVu:
-          type: string
-          nullable: true
-        IdNhomNv:
-          type: integer
-          nullable: true
-        TenNhom:
-          type: string
-          nullable: true
-        NoiDung:
-          type: string
-        TrangThai:
-          type: integer
-          description: "1 = cho xu ly (CHAN chot ky), 2 = da xu ly"
-        GhiChuXuLy:
-          type: string
-          nullable: true
-        IdNguoiXuLy:
-          type: integer
-          nullable: true
-        TenNguoiXuLy:
-          type: string
-          nullable: true
-        NgayXuLy:
-          type: string
-          format: date-time
-          nullable: true
-        NgayTao:
-          type: string
-          format: date-time
-        SoMinhChung:
-          type: integer
-        MinhChung:
-          type: array
-          items:
-            $ref: "#/components/schemas/MinhChungNhiemVuKhoaDto"
-
-    GiangVienDiemDto:
-      type: object
-      description: "Giang vien cua Khoa - o chon nguoi phoi hop. Cot diem / dem chi tinh nhiem vu da duyet va la null khi nguoi goi la giang vien."
       properties:
         IdNhanVien:
           type: integer
@@ -13986,32 +14613,54 @@ components:
           type: string
         MaChucDanh:
           type: string
-          nullable: true
+        LaChinh:
+          type: boolean
+        SoDangThamGia:
+          type: integer
         TongDiemThucTe:
           type: number
-          format: double
-          nullable: true
-          description: "Tong cong don that su (da duyet), CO THE vuot tran"
+    NhiemVuPhucVuCuaToiHeaderDto:
+      type: object
+      properties:
+        IdNam:
+          type: integer
+        TranDiem:
+          type: number
+        TongDiemThucTe:
+          type: number
         TongDiemQuyDoi:
           type: number
-          format: double
-          nullable: true
-          description: "MIN(thuc te, tran). Bao cao dung con so nay."
-        TongDiemChoDuyet:
-          type: number
-          format: double
-          nullable: true
-          description: "Diem nhiem vu chua duyet (cho duyet + tra ve) - chua tinh"
-        SoNhiemVu:
+        SoNhiemVuHoanThanh:
           type: integer
-          nullable: true
-        SoChuTri:
+        SoDangThamGia:
           type: integer
-          nullable: true
-
-    NhiemVuKhoaTongHopDto:
+    NhiemVuPhucVuTongHopHeaderDto:
       type: object
-      description: "Mot dong bang tong hop = mot giang vien cua Khoa. Moi so dem / diem CHI tinh nhiem vu da duyet."
+      properties:
+        IdNam:
+          type: integer
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        TranDiem:
+          type: number
+        SoNhap:
+          type: integer
+        SoChoTrienKhai:
+          type: integer
+        SoDangTrienKhai:
+          type: integer
+        SoChoDuyet:
+          type: integer
+        SoDaChot:
+          type: integer
+        SoDaHuy:
+          type: integer
+    NhiemVuPhucVuTongHopDto:
+      type: object
       properties:
         IdNhanVien:
           type: integer
@@ -14019,10 +14668,11 @@ components:
           type: string
         HoTen:
           type: string
-        MaChucDanh:
-          type: string
-          nullable: true
-        SoNhiemVu:
+        LaGiangVienKhoa:
+          type: boolean
+        SoHoanThanh:
+          type: integer
+        SoKhongHoanThanh:
           type: integer
         SoChuTri:
           type: integer
@@ -14030,495 +14680,159 @@ components:
           type: integer
         SoPhoiHop:
           type: integer
+        SoDangThamGia:
+          type: integer
+        DiemKhoa:
+          type: number
         TongDiemThucTe:
           type: number
-          format: double
         TongDiemQuyDoi:
           type: number
-          format: double
-        VuotTran:
-          type: boolean
-          description: "Chi la CANH BAO hien thi, khong chan luu va khong chan duyet"
-        SoNhiemVuChoDuyet:
-          type: integer
-          description: "So nhiem vu chua duyet (cho duyet + tra ve) nguoi nay tham gia"
-        TongDiemChoDuyet:
-          type: number
-          format: double
-          description: "Diem nhiem vu chua duyet - CHUA tinh vao tong"
-        SoNhiemVuTheoNhom:
-          type: object
-          additionalProperties:
-            type: integer
-          description: "Map id_nhom_nv -> so nhiem vu. FE / Excel dung lam cot."
-
-    NhiemVuKhoaTongHopHeaderDto:
+    NhiemVuPhucVuSaveRequest:
       type: object
-      properties:
-        IdKy:
-          type: integer
-          nullable: true
-        IdNam:
-          type: integer
-        IdDonVi:
-          type: integer
-        MaDonVi:
-          type: string
-        TenDonVi:
-          type: string
-        TrangThai:
-          type: integer
-        HanPhanHoi:
-          type: string
-          format: date
-          nullable: true
-        NgayChot:
-          type: string
-          format: date-time
-          nullable: true
-        TranDiem:
-          type: number
-          format: double
-          example: 20.0
-        SoGiangVien:
-          type: integer
-        SoNhiemVu:
-          type: integer
-          description: "Tong so nhiem vu cua ky (moi trang thai)"
-        SoChoDuyet:
-          type: integer
-        SoTraVe:
-          type: integer
-        SoDaDuyet:
-          type: integer
-
-    NhiemVuKhoaTongHopResult:
-      type: object
-      properties:
-        Header:
-          $ref: "#/components/schemas/NhiemVuKhoaTongHopHeaderDto"
-        Items:
-          type: array
-          items:
-            $ref: "#/components/schemas/NhiemVuKhoaTongHopDto"
-        Nhom:
-          type: array
-          items:
-            $ref: "#/components/schemas/NhomNhiemVuTrongKyDto"
-
-    VanDeChotDto:
-      type: object
-      properties:
-        LoaiVanDe:
-          type: integer
-          description: "1 thieu chu tri, 2 chua phan cong ai, 3 phan hoi chua xu ly (CHAN); 4 vuot tran, 5 lech cau hinh (CANH BAO)"
-        LaChan:
-          type: boolean
-        IdNhiemVuKhoa:
-          type: integer
-          nullable: true
-        TenNhiemVu:
-          type: string
-          nullable: true
-        IdNhanVien:
-          type: integer
-          nullable: true
-        HoTen:
-          type: string
-          nullable: true
-        IdPhanHoi:
-          type: integer
-          nullable: true
-        MoTa:
-          type: string
-
-    KiemTraChotDto:
-      type: object
-      properties:
-        IdKy:
-          type: integer
-        TrangThai:
-          type: integer
-        SoVanDeChan:
-          type: integer
-        SoCanhBao:
-          type: integer
-        CoTheChot:
-          type: boolean
-        CanChot:
-          type: boolean
-        VanDe:
-          type: array
-          items:
-            $ref: "#/components/schemas/VanDeChotDto"
-
-    LichSuNhiemVuKhoaDto:
-      type: object
-      properties:
-        Id:
-          type: integer
-          format: int64
-        IdKy:
-          type: integer
-        IdNhiemVuKhoa:
-          type: integer
-          nullable: true
-        TenNhiemVu:
-          type: string
-          nullable: true
-        IdNhanVien:
-          type: integer
-          nullable: true
-        HoTenNhanVien:
-          type: string
-          nullable: true
-        HanhDong:
-          type: integer
-          description: "1 Ke khai NV, 2 Sua NV, 3 Xoa NV, 4 Them phan cong, 5 Doi vai tro/diem, 6 Go phan cong, 7 Chot ky (luong cu), 8 Mo lai ky, 9 Xu ly phan hoi (luong cu), 10 Duyet NV, 11 Tra ve NV, 12 Mo lai NV da duyet"
-        VaiTroTruoc:
-          type: string
-          nullable: true
-        VaiTroSau:
-          type: string
-          nullable: true
-        DiemTruoc:
-          type: number
-          format: double
-          nullable: true
-        DiemSau:
-          type: number
-          format: double
-          nullable: true
-        MoTa:
-          type: string
-          nullable: true
-        IdNguoiThucHien:
-          type: integer
-        HoTenNguoiThucHien:
-          type: string
-          nullable: true
-        NgayThucHien:
-          type: string
-          format: date-time
-
-    NhiemVuKhoaCuaToiHeaderDto:
-      type: object
-      properties:
-        IdKy:
-          type: integer
-          nullable: true
-        IdNam:
-          type: integer
-        IdDonVi:
-          type: integer
-          nullable: true
-          description: "Khoa de KE KHAI (Khoa chinh cua GV) - co ca khi chua co ky; null chi khi khong phai GV cua Khoa nao"
-        MaDonVi:
-          type: string
-          nullable: true
-        TenDonVi:
-          type: string
-          nullable: true
-        TrangThai:
-          type: integer
-        HanPhanHoi:
-          type: string
-          format: date
-          nullable: true
-        HetHanPhanHoi:
-          type: boolean
-        NgayChot:
-          type: string
-          format: date-time
-          nullable: true
-        TongDiemThucTe:
-          type: number
-          format: double
-          description: "Tong diem nhiem vu DA DUYET trong nam (moi Khoa) - dung tap cham vao phieu"
-        TongDiemQuyDoi:
-          type: number
-          format: double
-        TongDiemChoDuyet:
-          type: number
-          format: double
-          description: "Diem nhiem vu chua duyet (cho duyet + tra ve) - CHUA tinh"
-        TranDiem:
-          type: number
-          format: double
-        SoNhiemVu:
-          type: integer
-          description: "So nhiem vu da duyet"
-        SoChoDuyet:
-          type: integer
-        SoTraVe:
-          type: integer
-        CanKeKhai:
-          type: boolean
-          description: "Ke khai duoc nhiem vu moi (la GV cua Khoa + ky khong bi chot theo luong cu)"
-
-    NhiemVuKhoaCuaToiItemDto:
-      type: object
-      properties:
-        IdNhiemVuKhoa:
-          type: integer
-        IdNhomNv:
-          type: integer
-        TenNhom:
-          type: string
-        ThuTuNhom:
-          type: integer
-        TenNhiemVu:
-          type: string
-        MoTa:
-          type: string
-          nullable: true
-        IdPhanCong:
-          type: integer
-        IdVaiTro:
-          type: integer
-        MaVaiTroSnapshot:
-          type: string
-        TenVaiTroSnapshot:
-          type: string
-        DiemSnapshot:
-          type: number
-          format: double
-        LaChuTri:
-          type: boolean
-        GhiChu:
-          type: string
-          nullable: true
-        SoMinhChung:
-          type: integer
-        TrangThai:
-          type: integer
-          enum: [1, 2, 3]
-          description: "1 = Cho duyet, 2 = Da duyet (tinh diem), 3 = Tra ve"
-        LyDoTraVe:
-          type: string
-          nullable: true
-        ChoPhepSua:
-          type: boolean
-          description: "Nguoi nay la chu tri + nhiem vu chua duyet + ky con mo"
-        MinhChung:
-          type: array
-          items:
-            $ref: "#/components/schemas/MinhChungNhiemVuKhoaDto"
-
-    NhiemVuKhoaCuaToiResult:
-      type: object
-      properties:
-        Header:
-          $ref: "#/components/schemas/NhiemVuKhoaCuaToiHeaderDto"
-        Items:
-          type: array
-          items:
-            $ref: "#/components/schemas/NhiemVuKhoaCuaToiItemDto"
-        PhanHoi:
-          type: array
-          items:
-            $ref: "#/components/schemas/PhanHoiNhiemVuKhoaDto"
-
-    PhanCongItemRequest:
-      type: object
-      description: "Mot NGUOI PHOI HOP (PHC / PH) gui len tu form. Client KHONG gui diem va KHONG gui dong chu tri - server tu them dong CT cho nguoi ke khai."
-      properties:
-        IdNhanVien:
-          type: integer
-        IdVaiTro:
-          type: integer
-        GhiChu:
-          type: string
-          nullable: true
       required:
-        - IdNhanVien
-        - IdVaiTro
-
-    NhiemVuKhoaSaveRequest:
-      type: object
-      description: >
-        Chu tri ke khai / sua nhiem vu VA toan bo danh sach nguoi phoi hop trong MOT request.
-        Khi SUA thi gui len TOAN BO danh sach, server tu tinh diff them / doi / xoa.
-        IdNam va IdDonVi chi dung khi TAO (IdDonVi = Header.IdDonVi cua cua-toi; khi sua
-        thi lay tu chinh nhiem vu).
-      properties:
-        IdNam:
-          type: integer
-        IdDonVi:
-          type: integer
-        IdNhomNv:
-          type: integer
-        TenNhiemVu:
-          type: string
-          maxLength: 500
-        MoTa:
-          type: string
-          maxLength: 1000
-          nullable: true
-        PhanCong:
-          type: array
-          description: "CHI nguoi phoi hop, KHONG gom chu tri. Rong = nhiem vu chi co chu tri."
-          items:
-            $ref: "#/components/schemas/PhanCongItemRequest"
-      required:
-        - TenNhiemVu
+        - IdNam
+        - IdDonVi
         - IdNhomNv
-
-    KyNhiemVuKhoaSetRequest:
-      type: object
+        - Nguon
+        - TenNhiemVu
+        - TuNgay
+        - DenNgay
+        - SoLuongToiDa
       properties:
         IdNam:
           type: integer
         IdDonVi:
           type: integer
-        HanPhanHoi:
-          type: string
-          format: date
-          nullable: true
-          description: "Null = giu nguyen han hien tai"
-        XoaHan:
-          type: boolean
-          description: "true = go han phan hoi. Uu tien hon HanPhanHoi."
-        GhiChu:
-          type: string
-          maxLength: 500
-          nullable: true
-        MoLai:
-          type: boolean
-          description: "true = mo lai ky da chot (2 -> 1). Chi TK/TKL/TP/ADMIN, bat buoc co LyDo."
-        LyDo:
-          type: string
-          maxLength: 1000
-          nullable: true
-      required:
-        - IdNam
-        - IdDonVi
-
-    NhiemVuKhoaXetRequest:
-      type: object
-      description: "Truong khoa xet mot nhiem vu. TrangThai la trang thai DICH."
-      properties:
-        TrangThai:
-          type: integer
-          enum: [2, 3]
-          description: "2 = duyet (tu 1 hoac 3); 3 = tra ve (tu 1) / mo lai nhiem vu da duyet (tu 2)"
-        LyDo:
-          type: string
-          maxLength: 1000
-          nullable: true
-          description: "BAT BUOC khi TrangThai = 3; tuy chon (ghi chu) khi duyet"
-      required:
-        - TrangThai
-
-    NhiemVuKhoaChotRequest:
-      type: object
-      description: "DA NGUNG - endpoint chot tra 409 LUONG_DA_NGUNG"
-      properties:
-        IdNam:
-          type: integer
-        IdDonVi:
-          type: integer
-        GhiChu:
-          type: string
-          maxLength: 500
-          nullable: true
-      required:
-        - IdNam
-        - IdDonVi
-
-    PhanHoiXuLyRequest:
-      type: object
-      properties:
-        GhiChuXuLy:
-          type: string
-          maxLength: 1000
-          nullable: true
-        MoLai:
-          type: boolean
-          description: "true = tra phan hoi ve trang thai cho xu ly"
-
-    VaiTroNhiemVuKhoaDto:
-      type: object
-      properties:
-        IdVaiTro:
-          type: integer
-        MaVaiTro:
-          type: string
-          example: "CT"
-        TenVaiTro:
-          type: string
-        DiemQuyDoi:
-          type: number
-          format: double
-        ThuTu:
-          type: integer
-
-    NhomNhiemVuKhoaDto:
-      type: object
-      properties:
         IdNhomNv:
           type: integer
-        TenNhom:
-          type: string
-        ThuTu:
+        Nguon:
           type: integer
-
-    CauHinhNhiemVuKhoaDto:
-      type: object
-      properties:
-        TranDiem:
-          type: number
-          format: double
-          example: 20.0
-          description: "Tran diem cua nhom nhiem vu. Nguon: fn_nhiem_vu_khoa_tran_diem()."
-        IdTieuChiKpi:
+          enum: [1, 2]
+        TenNhiemVu:
+          type: string
+          maxLength: 500
+        MoTa:
+          type: string
+          maxLength: 2000
+        HanDangKy:
+          type: string
+          format: date-time
+          description: Giờ Việt Nam (vd "2026-11-05T17:00:00" hoặc kèm "+07:00"); trước 00:00 ngày TuNgay.
+        TuNgay:
+          type: string
+          format: date
+        DenNgay:
+          type: string
+          format: date
+          description: Nhiệm vụ một ngày - DenNgay = TuNgay. Phải thuộc năm IdNam.
+        SoLuongToiDa:
           type: integer
-          nullable: true
-          description: "Tieu chi tren phieu nhan diem tu dong (cong_thuc_tong_hop = NVK_PHAN_CONG_KHOA)"
-        DiemToiDaTieuChi:
-          type: number
-          format: double
-          nullable: true
-        LechCauHinh:
-          type: boolean
-          description: "true = diem_toi_da cua tieu chi khac tran cua module -> diem cham vao phieu se khac bang tong hop"
-        VaiTro:
-          type: array
-          items:
-            $ref: "#/components/schemas/VaiTroNhiemVuKhoaDto"
-        Nhom:
-          type: array
-          items:
-            $ref: "#/components/schemas/NhomNhiemVuKhoaDto"
-        AllowedExtensions:
-          type: array
-          items:
-            type: string
-          example: ["pdf"]
-        Accept:
+          minimum: 1
+          maximum: 500
+        RowVersion:
           type: string
-          example: ".pdf"
-        MaxFileSizeKb:
+          description: Bắt buộc khi sửa (PUT).
+    NhiemVuPhucVuThaoTacRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        RowVersion:
+          type: string
+        LyDo:
+          type: string
+          maxLength: 1000
+          description: Bắt buộc ở huy / tra-bao-cao.
+        HanDangKy:
+          type: string
+          format: date-time
+          description: Chỉ dùng ở trien-khai (giờ VN). Vắng = chỉ phân công, không mở tự đăng ký.
+    NhiemVuPhucVuPhanCongRequest:
+      type: object
+      required:
+        - ThanhVien
+        - RowVersion
+      properties:
+        ThanhVien:
+          type: array
+          description: TOÀN BỘ danh sách thành viên mong muốn (rỗng = gỡ hết).
+          items:
+            type: object
+            required:
+              - IdNhanVien
+              - MaVaiTro
+            properties:
+              IdNhanVien:
+                type: integer
+              MaVaiTro:
+                type: string
+                enum: [CT, PHC, PH]
+        RowVersion:
+          type: string
+    NhiemVuPhucVuBaoCaoRequest:
+      type: object
+      required:
+        - NoiDung
+        - RowVersion
+      properties:
+        NoiDung:
+          type: string
+          maxLength: 4000
+        RowVersion:
+          type: string
+    NhiemVuPhucVuChotRequest:
+      type: object
+      required:
+        - KetQua
+        - RowVersion
+      properties:
+        KetQua:
+          type: array
+          description: ĐÚNG và ĐỦ thành viên hiện tại.
+          items:
+            type: object
+            required:
+              - IdNhanVien
+              - HoanThanh
+            properties:
+              IdNhanVien:
+                type: integer
+              HoanThanh:
+                type: boolean
+              LyDo:
+                type: string
+                maxLength: 500
+                description: Bắt buộc khi HoanThanh = false.
+        RowVersion:
+          type: string
+    NhiemVuPhucVuResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          description: |
+            FORBIDDEN 403 · NOT_FOUND 404 · INVALID / KHONG_PHAI_KHOA / NGOAI_NAM_DANH_GIA / THIEU_LY_DO 400 ·
+            CONCURRENCY_CONFLICT / TRANG_THAI_KHONG_HOP_LE / DA_CHOT / DA_HUY / HET_SUAT 409 ·
+            KHONG_MO_DANG_KY / HET_HAN_DANG_KY / KHONG_PHAI_SUAT_DANG_KY / DA_BAT_DAU / DA_QUA_NGAY_BAT_DAU /
+            GV_NGOAI_KHOA / VUOT_SO_LUONG / SO_LUONG_NHO_HON_THANH_VIEN / TRUNG_CHU_TRI / THIEU_CHU_TRI /
+            CHUA_KET_THUC / THIEU_NOI_DUNG_BAO_CAO / THIEU_MINH_CHUNG / QUA_SO_MINH_CHUNG / KET_QUA_KHONG_KHOP /
+            THIEU_CAU_HINH_VAI_TRO 422 · DB_ERROR / IO_ERROR 500.
+        Item:
+          $ref: '#/components/schemas/NhiemVuPhucVuChiTietDto'
+        CoThayDoi:
+          type: boolean
+          description: false = server không ghi gì (đăng ký lại, lưu không đổi).
+        SoHoanThanh:
           type: integer
-          example: 10240
-        MaxTenHienThiLength:
+        SoKhongHoanThanh:
           type: integer
-          example: 255
-
-    NhiemVuKhoaResponse:
-      type: object
-      description: "Envelope chung cua module. Cac slot khong dung bi bo qua khi serialize."
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-          description: "FORBIDDEN | NOT_FOUND | INVALID | KHONG_PHAI_KHOA | GV_NGOAI_KHOA | KY_DA_CHOT | TRUNG_CHU_TRI | CHOT_KHONG_HOP_LE | SQL_ERROR"
-
-    NhiemVuKhoaKyResponse:
+    NhiemVuPhucVuListResponse:
       type: object
       properties:
         Success:
@@ -14528,14 +14842,39 @@ components:
         ErrorCode:
           type: string
           nullable: true
-        Item:
-          $ref: "#/components/schemas/KyNhiemVuKhoaDto"
-        Nhom:
+        Page:
+          type: integer
+        PageSize:
+          type: integer
+        TotalCount:
+          type: integer
+        TotalPages:
+          type: integer
+        Items:
           type: array
           items:
-            $ref: "#/components/schemas/NhomNhiemVuTrongKyDto"
-
-    NhiemVuKhoaItemResponse:
+            $ref: '#/components/schemas/NhiemVuPhucVuDto'
+    NhiemVuPhucVuCuaToiResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Header:
+          $ref: '#/components/schemas/NhiemVuPhucVuCuaToiHeaderDto'
+        Items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NhiemVuPhucVuDto'
+        MoDangKy:
+          type: array
+          items:
+            $ref: '#/components/schemas/NhiemVuPhucVuDto'
+    NhiemVuPhucVuCauHinhResponse:
       type: object
       properties:
         Success:
@@ -14546,9 +14885,8 @@ components:
           type: string
           nullable: true
         Item:
-          $ref: "#/components/schemas/NhiemVuKhoaDto"
-
-    NhiemVuKhoaListResponse:
+          $ref: '#/components/schemas/NhiemVuPhucVuCauHinhDto'
+    NhiemVuPhucVuGiangVienItemsResponse:
       type: object
       properties:
         Success:
@@ -14561,48 +14899,8 @@ components:
         Items:
           type: array
           items:
-            $ref: "#/components/schemas/NhiemVuKhoaDto"
-
-    NhiemVuKhoaCuaToiResponse:
-      type: object
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-        Item:
-          $ref: "#/components/schemas/NhiemVuKhoaCuaToiResult"
-
-    NhiemVuKhoaTongHopResponse:
-      type: object
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-        Item:
-          $ref: "#/components/schemas/NhiemVuKhoaTongHopResult"
-
-    KiemTraChotResponse:
-      type: object
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-        Item:
-          $ref: "#/components/schemas/KiemTraChotDto"
-
-    GiangVienDiemResponse:
+            $ref: '#/components/schemas/NhiemVuPhucVuGiangVienDto'
+    NhiemVuPhucVuLichSuItemsResponse:
       type: object
       properties:
         Success:
@@ -14615,9 +14913,24 @@ components:
         Items:
           type: array
           items:
-            $ref: "#/components/schemas/GiangVienDiemDto"
-
-    PhanHoiNhiemVuKhoaResponse:
+            $ref: '#/components/schemas/NhiemVuPhucVuLichSuDto'
+    NhiemVuPhucVuTongHopResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Header:
+          $ref: '#/components/schemas/NhiemVuPhucVuTongHopHeaderDto'
+        Items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NhiemVuPhucVuTongHopDto'
+    NhiemVuPhucVuMinhChungResponse:
       type: object
       properties:
         Success:
@@ -14628,78 +14941,7 @@ components:
           type: string
           nullable: true
         Item:
-          $ref: "#/components/schemas/PhanHoiNhiemVuKhoaDto"
-
-    PhanHoiNhiemVuKhoaListResponse:
-      type: object
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-        Items:
-          type: array
-          items:
-            $ref: "#/components/schemas/PhanHoiNhiemVuKhoaDto"
-
-    MinhChungNhiemVuKhoaResponse:
-      type: object
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-        Item:
-          $ref: "#/components/schemas/MinhChungNhiemVuKhoaDto"
-
-    MinhChungNhiemVuKhoaListResponse:
-      type: object
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-        Items:
-          type: array
-          items:
-            $ref: "#/components/schemas/MinhChungNhiemVuKhoaDto"
-
-    LichSuNhiemVuKhoaResponse:
-      type: object
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-        Items:
-          type: array
-          items:
-            $ref: "#/components/schemas/LichSuNhiemVuKhoaDto"
-
-    CauHinhNhiemVuKhoaResponse:
-      type: object
-      properties:
-        Success:
-          type: boolean
-        Message:
-          type: string
-        ErrorCode:
-          type: string
-          nullable: true
-        Item:
-          $ref: "#/components/schemas/CauHinhNhiemVuKhoaDto"
+          $ref: '#/components/schemas/NhiemVuPhucVuMinhChungDto'
     LichSuTrangThaiPhieuDto:
       type: object
       properties:
@@ -16180,8 +16422,9 @@ components:
           description: >
             1: Bài báo, 2: Sách, 3: Đề tài, 4: Phản hồi sinh viên,
             5: Vi phạm giảng dạy (minh chứng TRỪ điểm của tiêu chí VPGD_TUAN_THU),
-            6: Nhiệm vụ Khoa phân công (NVK_PHAN_CONG_KHOA),
-            7: Thành tích vượt trội (4 mã TTVT_*),
+            6: Nhiệm vụ phục vụ đã chốt (NVK_PHAN_CONG_KHOA) - MaNguon = id nhiệm vụ,
+            mở GET /api/nhiem-vu-phuc-vu/{id}.
+            7: Thành tích vượt trội (TTVT_DAO_TAO / TTVT_PHONG_TRAO),
             8: Việc chưa tuân thủ của viên chức/NLĐ — minh chứng TRỪ điểm của 3 mã
             VPVC_*, chỉ liệt kê vi phạm THUỘC ĐÚNG NHÓM của mã công thức đang xét,
             9: Hoạt động đào tạo do P_DTBDCL ghi nhận (4 mã CTDT_* / NCS_*) — mỗi dòng
@@ -16197,7 +16440,13 @@ components:
             Lưu ý với 5 và 8: danh sách rỗng KHÔNG có nghĩa là không đạt — không có
             vi phạm nào tức là trọn điểm. Riêng 8, tổng các dòng có thể LỚN HƠN phần
             điểm thực sự bị trừ khi tổng vượt trần trừ của nhóm (70 / 30).
-          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+            12: Sáng kiến (GET /api/sang-kien/{id}).
+            13: Khen thưởng đột xuất do P_TCHC ghi nhận (TTVT_KHEN_THUONG).
+            MaNguon là IdKhenThuong, mở GET /api/khen-thuong-dot-xuat/{id}.
+            Các dòng bị khử trùng vẫn có trong minh chứng với mô tả không cộng điểm.
+            14: Nhiệm vụ Khoa (lưu trữ) - CHỈ ở phiếu đã chốt trước đợt chuyển đổi 2026-10-12, đọc từ
+            bản đối chiếu; MaNguon là id nhiệm vụ của module cũ đã gỡ, KHÔNG có API mở.
+          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
         TenLoaiNguon:
           type: string
           example: Bài báo

@@ -1542,7 +1542,12 @@ phiếu** nên phiếu tạo trước khi gán tiêu chí sẽ không nhận mã
 
 ---
 
-## 7. NHIỆM VỤ KHOA — CHỦ TRÌ KÊ KHAI, TRƯỞNG KHOA DUYỆT (KPI Nhóm III)
+## 7. NHIỆM VỤ KHOA — CHỦ TRÌ KÊ KHAI, TRƯỞNG KHOA DUYỆT (KPI Nhóm III) — ĐÃ GỠ (2026-10-12)
+
+> **Đã thay bằng mục 25 (Nhiệm vụ phục vụ — phân công và thực hiện nhiệm vụ).** 20 SP, 2 hàm và TVP
+> `PhanCongNhiemVuKhoaRow` bị DROP; API `api/nhiem-vu-khoa`, `api/minh-chung-nvk`, `api/cau-hinh/nhiem-vu-khoa`
+> không còn. Dữ liệu mọi năm xoá bằng `App_Data/xoa_du_lieu_nhiem_vu_khoa_cu.sql` (sao lưu `bk_nvk_cu_*`, bản đối
+> chiếu 25.7). Phần dưới chỉ còn giá trị lịch sử — giải thích dữ liệu trong bảng sao lưu và bản đối chiếu.
 
 Tên bảng vẫn là `nhiem_vu_khoa` / `phan_cong_nhiem_vu_khoa` (giữ nguyên để không phá dữ liệu
 và FE), nhưng từ **2026-10-02** người nhập liệu là **chủ trì nhiệm vụ**, không còn là Khoa.
@@ -4883,3 +4888,141 @@ Không đạt thì giữ đợt B tắt, hoặc chuyển riêng bảng đó sang
   chuyển sang `DelegatingHandler`.
 - Mật khẩu vẫn lưu plain-text (đợt riêng).
 - Chưa có chính sách thời gian lưu giữ: người vận hành tự quyết và tự xoá theo lô (23.6).
+
+---
+
+## 25. NHIỆM VỤ PHỤC VỤ — PHÂN CÔNG VÀ THỰC HIỆN NHIỆM VỤ (2026-10-12) → nguồn tiêu chí `NVK_PHAN_CONG_KHOA`
+
+Thay module mục 7 (chủ trì tự kê khai, Trưởng khoa duyệt). API `api/nhiem-vu-phuc-vu`
+(`Docs/fe-nhiem-vu-phuc-vu.md`), SP / hàm: `procedure.sql` mục 25, DDL: `schema.sql` mục 25.
+
+### 25.1. Hai luồng, một bảng
+
+| Luồng | Ai tạo | Đường đi |
+|---|---|---|
+| **Nhiệm vụ Khoa** (`nguon = 1`) | Trưởng khoa (TK / TKL tại chính Khoa) | nháp → công bố (mở đăng ký / phân công ngay) → thực hiện → Chủ trì báo cáo → Trưởng khoa chốt |
+| **Nhiệm vụ Trường giao** (`nguon = 2`) | BGH (HT / PHT) | nháp → giao cho MỘT Khoa (chờ triển khai) → Trưởng khoa triển khai **trên chính nhiệm vụ đó** → như trên |
+
+Không tạo bản sao nhiệm vụ để tính điểm: một nhiệm vụ = một dòng `nhiem_vu_phuc_vu`; một người tối đa
+một dòng / nhiệm vụ (`uq_nvpvtv`) ⇒ không thể cộng trùng giữa nguồn Khoa và Trường.
+
+### 25.2. State machine — `nhiem_vu_phuc_vu.trang_thai`
+
+```
+1 NHAP ──cong-bo (Khoa)──────────────────────────────┐
+   └──cong-bo (BGH)──> 2 CHO_TRIEN_KHAI ──trien-khai─┤
+                                                     v
+                         ┌──────────── 3 DANG_TRIEN_KHAI  (đăng ký / phân công / thực hiện / soạn báo cáo)
+            tra-bao-cao  │                   │ gui-bao-cao (Chủ trì, sau ngày kết thúc)
+                         └──────────── 4 CHO_DUYET ──chot (TK, sau ngày kết thúc)──> 5 DA_CHOT
+1..4 ──huy (lý do)──> 6 DA_HUY
+```
+
+- **5 DA_CHOT là điểm cuối**: không sửa, hủy, mở lại, chốt lại — kể cả BGH (không SP nào nhận trạng thái 5).
+- Khi **4 CHO_DUYET**: khoá sửa nội dung, thành viên, vai trò, báo cáo, minh chứng. Muốn sửa thì Trưởng khoa trả
+  báo cáo (về 3) rồi Chủ trì gửi lại.
+- Trạng thái báo cáo **không lưu riêng**: suy từ trạng thái nhiệm vụ + `bao_cao.da_tra_lai`
+  (`fn_nhiem_vu_phuc_vu_hien_thi.trang_thai_bao_cao`: 0 chưa có · 1 đang soạn · 2 chờ duyệt · 3 bị trả lại · 4 đã chốt).
+- "Đang mở đăng ký" là **thời điểm**, không phải trạng thái: 3 + có `han_dang_ky` + bây giờ ≤ hạn + hôm nay < `tu_ngay`.
+
+### 25.3. Quy tắc thời gian (giờ Việt Nam)
+
+`fn_nhiem_vu_phuc_vu_bay_gio()` = `GETUTCDATE() + 7h` — không phụ thuộc múi giờ máy chủ. "Hôm nay" = phần ngày.
+
+| Việc | Điều kiện |
+|---|---|
+| Hạn đăng ký | có giờ, `< tu_ngay 00:00` (CHECK `chk_nvpv_han_dk`); NULL = không mở tự đăng ký (chỉ phân công) |
+| Công bố / triển khai | hôm nay < `tu_ngay`; hạn đăng ký (nếu có) > bây giờ |
+| Đăng ký / rút | bây giờ ≤ hạn **và** hôm nay < `tu_ngay` |
+| Thêm / gỡ thành viên | hôm nay < `tu_ngay` |
+| Đổi vai trò | tới khi gửi báo cáo (trạng thái 3) |
+| Gửi báo cáo / chốt | hôm nay > `den_ngay` (từ ngày tiếp theo ngày kết thúc) |
+| Năm tính điểm | `id_nam`; SP ghi bắt buộc `den_ngay` thuộc `[ngay_bat_dau, ngay_ket_thuc]` của năm đó (`NGOAI_NAM_DANH_GIA`) |
+
+Nhiệm vụ một ngày: `tu_ngay = den_ngay`.
+
+### 25.4. Phân quyền — `fn_nhiem_vu_phuc_vu_quyen` + `fn_nhiem_vu_phuc_vu_thao_tac`
+
+Đọc **thẳng** `nhan_vien_chuc_vu` đang hiệu lực theo ngày VN (và `nhan_vien.trang_thai = 1`) — **KHÔNG** có nhánh
+bổ sung cặp (đơn vị, chức vụ) từ JWT như `fn_pham_vi_don_vi`, nên token cấp trước khi hết chức vụ không còn tác dụng.
+API chỉ truyền `id_nhan_vien` lấy từ token.
+
+| Vai trò | Xác định | Quyền |
+|---|---|---|
+| BGH | dòng chức vụ `HT` / `PHT` (đơn vị bất kỳ) | tạo / sửa nội dung / giao / hủy nhiệm vụ Trường; xem mọi Khoa (trừ bản nháp của Khoa), tổng hợp |
+| Trưởng khoa | dòng `TK` / `TKL` **tại chính Khoa** của nhiệm vụ (kiêm nhiệm → từng Khoa riêng) | tạo / sửa / công bố / hủy nhiệm vụ Khoa; triển khai + đặt hạn đăng ký nhiệm vụ Trường; phân công, vai trò; trả báo cáo; chốt |
+| Giảng viên Khoa | `v_giang_vien_khoa.id_khoa` | xem nhiệm vụ đang mở đăng ký; đăng ký / rút suất tự đăng ký; xem nhiệm vụ và kết quả của mình |
+| Chủ trì | thành viên hiệu lực vai trò `CT` | soạn / gửi báo cáo, thêm / gỡ minh chứng |
+
+ADMIN, Phó khoa, Trợ lý **không** mặc nhiên có quyền Trưởng khoa. Kết quả / điểm của người khác chỉ trả cho Trưởng
+khoa / BGH (`xem_ket_qua_tat_ca`).
+
+**Bất biến:** `fn_nhiem_vu_phuc_vu_thao_tac` là nguồn duy nhất của cờ `ChoPhep*` trả cho FE. Mỗi SP ghi kiểm từng điều
+kiện (để trả mã lỗi cụ thể) rồi **đối chiếu lại cờ tương ứng** dưới khoá dòng — server không bao giờ cho làm việc mà
+FE thấy nút tắt, và ngược lại.
+
+### 25.5. Thành viên, suất, đồng thời
+
+- Đăng ký thành công = nhận suất ngay, vai trò mặc định `PH`; phân công cũng thành thành viên ngay. Giới hạn
+  `so_luong_toi_da` tính **mọi** thành viên hiệu lực (CT + đăng ký + phân công). Giảm giới hạn dưới số hiện có → 422.
+- Một dòng / (nhiệm vụ, người): rút / gỡ ⇒ `da_roi = 1`; đăng ký / phân công lại kích hoạt **chính dòng đó**. Đăng
+  ký lại khi đang là thành viên ⇒ success, `co_thay_doi = 0`, không tạo thêm.
+- Giảng viên chỉ rút suất **tự đăng ký** (`nguon_tham_gia = 1`); suất phân công do Trưởng khoa gỡ qua `phan-cong`.
+- `phan-cong` nhận **toàn bộ** danh sách mong muốn; SP tự tính thêm / gỡ / đổi vai trò, ghi theo thứ tự gỡ → đổi →
+  thêm để không vướng `ux_nvpvtv_chu_tri` (tối đa một CT hiệu lực, lớp chặn cuối).
+- **Khoá:** mọi thao tác ghi lấy `UPDLOCK, HOLDLOCK` trên dòng `nhiem_vu_phuc_vu` trước khi đọc / ghi thành viên ⇒ hai
+  yêu cầu tranh suất cuối được xếp hàng, người sau thấy số thành viên mới (`HET_SUAT`).
+- **RowVersion:** mọi thay đổi (thành viên, báo cáo, minh chứng) đều UPDATE `ngay_thay_doi` của nhiệm vụ ⇒
+  `row_version` đổi ⇒ danh sách phân công cũ của Trưởng khoa không thể vô tình gỡ người vừa đăng ký
+  (`CONCURRENCY_CONFLICT`). Đăng ký / rút / minh chứng không đòi RowVersion; các thao tác còn lại bắt buộc.
+
+### 25.6. Báo cáo, chốt, điểm
+
+- Báo cáo chung (1 / nhiệm vụ) do Chủ trì soạn; gửi cần: đúng một CT, có nội dung, ≥ 1 minh chứng PDF (đuôi + chữ ký
+  `%PDF-`, tối đa 20, file ở `App_Data/uploads/nhiem-vu-phuc-vu/{id}/{guid}.pdf`; gỡ = xoá mềm, tệp giữ nguyên).
+- Chốt: một transaction; danh sách kết quả phải khớp **đúng và đủ** thành viên hiệu lực; không hoàn thành ⇒ bắt
+  buộc lý do, 0 điểm. Điểm = cấu hình vai trò `danh_muc_vai_tro_pvcd` theo ưu tiên (Khoa, năm) > (Khoa, NULL) >
+  (NULL, năm) > (NULL, NULL) **tại lúc chốt**, ghi snapshot (`id/ten/diem_vai_tro_snapshot`, `diem_snapshot`) ⇒ đổi
+  cấu hình về sau không đổi điểm đã chốt. Client không gửi điểm.
+- **Nguồn điểm** tiêu chí `NVK_PHAN_CONG_KHOA` (giữ mã cũ) = `fn_nhiem_vu_phuc_vu_diem(@nv, @nam)`: thành viên
+  `ket_qua = 1` của nhiệm vụ `trang_thai = 5`, cùng năm, mọi Khoa, cả hai nguồn. `fn_nckh_diem_tu_dong` cộng
+  SUM rồi kẹp `diem_toi_da` (20); nhánh 6 của `fn_nckh_minh_chung_tu_dong` liệt kê CHÍNH các dòng đó (loai_nguon 6,
+  `ma_nguon` = id nhiệm vụ) ⇒ điểm và minh chứng không thể lệch.
+- Chốt **không** tự chấm phiếu: phiếu còn mở nhận điểm qua `POST api/phieu/{id}/tong-hop-tu-dong` / nộp phiếu như mọi
+  nguồn tự động. Kiêm nhiệm: vẫn luật "một phiếu nhận điểm tự động / năm" của `sp_phieu_cham_tu_dong_apply`.
+- Trần định nghĩa ở `fn_nhiem_vu_phuc_vu_tran_diem()` (= 20, chỉ để hiển thị / cảnh báo `LechCauHinh`); engine kẹp ở
+  `tieu_chi_danh_gia.diem_toi_da`.
+
+### 25.7. Chuyển đổi từ module cũ — `App_Data/xoa_du_lieu_nhiem_vu_khoa_cu.sql`
+
+Chạy sau `update_database.sql` (đợt này), trước khi deploy C#. `XEM_TRUOC` (mặc định, chỉ đọc) rồi `THUC_HIEN`
+(bắt buộc `id_nguoi_thuc_hien`). Một transaction:
+
+1. Sao lưu 6 bảng cũ → `bk_nvk_cu_<bảng>`.
+2. **Bản đối chiếu** `doi_chieu_nhiem_vu_khoa_cu` (1 dòng / dòng `NVK_PHAN_CONG_KHOA` của phiếu năm) +
+   `_minh_chung` (các nhiệm vụ cũ đã duyệt, `loai_nguon = 14` "Nhiệm vụ Khoa (lưu trữ)").
+   - Phiếu **đã chốt** (trạng thái 3..5) → `giu_nguyen = 1`: điểm, tổng, xếp loại, thứ hạng, gói tờ trình **không
+     đổi** (script chứng minh bằng EXCEPT trước / sau). `sp_phieu_tu_dong_chi_tiet` đọc bản đối chiếu (điểm tính lại =
+     `diem_nguon_cu`, minh chứng loại 14) cho tới khi engine chấm lại dòng đó (`ngay_tu_dong > ngay_chup`, tức phiếu
+     được mở lại).
+   - Phiếu **còn mở** (1..2) → `giu_nguyen = 0`: chỉ dòng NVK được tính lại từ nguồn mới (phiếu nhận điểm tự động) /
+     0 (phiếu không nhận), ghi `lich_su_cham_diem`; tổng chỉ tính lại nếu phiếu đã ghi tổng. Không chạy lại nguồn khác.
+3. Xoá dữ liệu 6 bảng cũ, **mọi năm**. Giữ danh mục dùng chung, dữ liệu module khác, nhật ký audit hệ thống.
+4. Kiểm tra sau chạy; sai ⇒ ROLLBACK toàn bộ.
+5. Ghi `chuyen_doi_du_lieu (ma_dot = 'NVK_CU_2026_10')` cùng transaction ⇒ chạy lại chỉ báo cáo, không xoá / tính lại.
+
+Tệp vật lý cũ (`App_Data/uploads/nhiem-vu-khoa/`) **không** bị xoá; script liệt kê đường dẫn (TK4 / BC4).
+
+### 25.8. Mã lỗi
+
+`FORBIDDEN` 403 · `NOT_FOUND` 404 · `INVALID` / `KHONG_PHAI_KHOA` / `NGOAI_NAM_DANH_GIA` / `THIEU_LY_DO` 400 ·
+`CONCURRENCY_CONFLICT` / `TRANG_THAI_KHONG_HOP_LE` / `DA_CHOT` / `DA_HUY` / `HET_SUAT` 409 ·
+`KHONG_MO_DANG_KY` / `HET_HAN_DANG_KY` / `KHONG_PHAI_SUAT_DANG_KY` / `DA_BAT_DAU` / `DA_QUA_NGAY_BAT_DAU` /
+`GV_NGOAI_KHOA` / `VUOT_SO_LUONG` / `SO_LUONG_NHO_HON_THANH_VIEN` / `TRUNG_CHU_TRI` / `THIEU_CHU_TRI` /
+`CHUA_KET_THUC` / `THIEU_NOI_DUNG_BAO_CAO` / `THIEU_MINH_CHUNG` / `QUA_SO_MINH_CHUNG` / `KET_QUA_KHONG_KHOP` /
+`THIEU_CAU_HINH_VAI_TRO` 422 · `DB_ERROR` / `IO_ERROR` 500.
+
+### 25.9. Nhật ký
+
+`lich_su_nhiem_vu_phuc_vu` ghi **cùng transaction** với mọi thao tác (16 mã hành động — xem `schema.sql` 25.5). Không
+đưa 5 bảng module vào `cau_hinh_audit` (giống các module nghiệp vụ khác: nhật ký riêng đã đủ chi tiết).

@@ -229,12 +229,6 @@ export const ROLE_SETS = {
   ],
 
   /**
-   * Trưởng khoa xét nhiệm vụ; TLGVK chỉ xem. TKK không được cấp quyền tại đây.
-   * Quyền ghi lấy từ CanKeKhai / CanDuyet và ChoPhepSua / ChoPhepXet của BE.
-   */
-  NHIEM_VU_KHOA: [ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ROLE.TRO_LY_GIAO_VU_KHOA],
-
-  /**
    * Duyệt bản kê THÀNH TÍCH VƯỢT TRỘI (Nhóm II) của viên chức / NLĐ.
    *
    * Dành cho trưởng phòng chuyên trách (P.TCHC duyệt khen thưởng,

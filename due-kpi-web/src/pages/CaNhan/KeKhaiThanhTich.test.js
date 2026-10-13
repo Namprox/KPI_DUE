@@ -16,16 +16,16 @@ const render = (view) => renderView(<MemoryRouter future={{ v7_startTransition: 
  * mức quy đổi. Picker dựng cột trái từ gốc và cột phải từ lá của gốc đó, nên
  * fixture phải có đủ cả hai tầng.
  */
-const TEN_LA = "Khen thưởng cấp Trường";
+const TEN_LA = "Hoàn thành đào tạo";
 
 const danhMucMacDinh = (laExtra = {}) => [
   {
     IdMuc: 1,
     MaMuc: "TT1",
-    TenMuc: "Khen thưởng",
+    TenMuc: "Đào tạo",
     IdCha: null,
     LaLa: false,
-    LoaiThanhTich: 2,
+    LoaiThanhTich: 3,
     TrangThai: true,
     TranDiem: 30,
   },
@@ -35,7 +35,7 @@ const danhMucMacDinh = (laExtra = {}) => [
     TenMuc: TEN_LA,
     IdCha: 1,
     LaLa: true,
-    LoaiThanhTich: 2,
+    LoaiThanhTich: 3,
     TrangThai: true,
     DiemQuyDoi: 5,
     ChoPhepSoLuong: true,
@@ -164,6 +164,27 @@ beforeAll(() => {
 });
 
 beforeEach(() => jest.clearAllMocks());
+
+test("khen thưởng loại 2 chỉ đọc, không đính kèm và không vào picker hoặc payload", async () => {
+  const item = banKe();
+  item.ChiTiet[0] = { ...item.ChiTiet[0], IdMuc: 22, LoaiThanhTich: 2, TenThanhTich: "Khen thưởng lịch sử", ChoPhepSua: true, YeuCauMinhChung: true };
+  item.TongHopTheoLoai = [{ LoaiThanhTich: 2, DiemKeKhai: 15, DiemDuyet: 15, DiemDuocTinh: 0, TranDiem: 15, MaCanhBao: "KHEN_THUONG_DA_CHUYEN" }];
+  const danhMuc = [...danhMucMacDinh(), { IdMuc: 2, LoaiThanhTich: 2, TenMuc: "Khen thưởng đột xuất", LaLa: false }, { IdMuc: 22, IdCha: 2, LoaiThanhTich: 2, TenMuc: "Khen thưởng cấp Bộ", LaLa: true }];
+  mockApi({ item, danhMuc, ghiDe: async () => ({ ok: true, json: async () => ({ Success: true, Item: item }) }) });
+  render(<KeKhaiThanhTich />);
+  const old = await screen.findByDisplayValue("Khen thưởng lịch sử");
+  expect(old).toBeDisabled();
+  expect(old.closest("tr").querySelector('.kkt-dz')).toBeNull();
+  expect(screen.getByText("Khen thưởng đã chuyển")).toBeInTheDocument();
+  fireEvent.change(screen.getByDisplayValue("Thành tích bị trả về"), { target: { value: "Đào tạo đã sửa" } });
+  fireEvent.click(screen.getByRole("button", { name: /^\s*Lưu\s*$/ }));
+  await waitFor(() => expect(goiApi("ke-khai-thanh-tich/chi-tiet")).toBeTruthy());
+  expect(JSON.parse(goiApi("ke-khai-thanh-tich/chi-tiet")[1].body).ChiTiet.map((r) => r.IdChiTiet)).toEqual([103]);
+  await waitFor(() => expect(screen.getByRole("button", { name: /Kê khai thành tích/ })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: /Kê khai thành tích/ }));
+  expect(screen.queryByRole("button", { name: /Khen thưởng cấp Bộ/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: new RegExp(TEN_LA) })).toBeEnabled();
+});
 
 test("sáng kiến cũ vẫn hiển thị, khoá sửa và không chọn loại 1 khi thêm dòng", async () => {
   const item = banKe();

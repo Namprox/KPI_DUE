@@ -1802,9 +1802,11 @@ CREATE INDEX ix_phan_loai_nckh_nam ON nckh_phan_loai(id_nam, loai);
 GO
 
 -- =============================================================================
--- 7. NHIỆM VỤ THEO PHÂN CÔNG CỦA KHOA (KPI Nhóm III)
---    Khoa phân công - giảng viên phản hồi. Thay thế luồng GV tự kê khai
---    (nhiem_vu_cong_dong). Mô tả nghiệp vụ: xem schema_ghi_chu.md mục 7.
+-- 7. NHIỆM VỤ THEO PHÂN CÔNG CỦA KHOA (KPI Nhóm III) — ĐÃ NGỪNG (đợt 2026-10-12)
+--    Module cũ đã gỡ: SP / hàm / TVP 7.7 bị DROP, API api/nhiem-vu-khoa không còn.
+--    Dữ liệu mọi năm xoá bằng App_Data/xoa_du_lieu_nhiem_vu_khoa_cu.sql (có sao lưu
+--    bk_nvk_cu_* + bản đối chiếu điểm 25.7). Các bảng dưới GIỮ (rỗng) cho tới khi
+--    quyết định DROP riêng. Thay thế: mục 25 (nhiem_vu_phuc_vu, api/nhiem-vu-phuc-vu).
 -- =============================================================================
 
 -- 7.1. Kỳ nhiệm vụ theo (năm × Khoa). Trạng thái duyệt gắn vào KỲ, không gắn
@@ -3526,4 +3528,431 @@ GO
 CREATE UNIQUE INDEX ux_cap_sk_ten_nguon ON cap_sang_kien(ten_nguon) WHERE ten_nguon IS NOT NULL;
 GO
 CREATE INDEX ix_lssk_sk                 ON lich_su_sang_kien(id_sang_kien);
+GO
+
+-- 24. Khen thuong dot xuat: P_TCHC ghi nhan, tinh diem ngay.
+-- 1.1. Ban ghi khen thuong dot xuat (1 dong = 1 VC x 1 quyet dinh).
+IF OBJECT_ID(N'dbo.khen_thuong_dot_xuat', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.khen_thuong_dot_xuat (
+        id_khen_thuong      INT            IDENTITY(1,1) NOT NULL,
+        id_nam              INT            NOT NULL,
+        quy                 TINYINT        NOT NULL,
+        id_nhan_vien        INT            NOT NULL,
+        id_muc              INT            NOT NULL,
+        ten_muc_snapshot    NVARCHAR(500)  NOT NULL,
+        diem_snapshot       DECIMAL(9,2)   NOT NULL,
+        noi_dung            NVARCHAR(500)  NOT NULL,
+        co_quan_khen        NVARCHAR(255)  NULL,
+        so_quyet_dinh       NVARCHAR(100)  NULL,
+        ngay_quyet_dinh     DATE           NULL,
+        ghi_chu             NVARCHAR(1000) NULL,
+        nguon               TINYINT        NOT NULL CONSTRAINT df_ktdx_nguon    DEFAULT 1,
+        id_chi_tiet_ke_khai INT            NULL,
+        id_nguoi_tao        INT            NULL,
+        ngay_tao            DATETIME       NOT NULL CONSTRAINT df_ktdx_ngay_tao DEFAULT GETDATE(),
+        id_nguoi_cap_nhat   INT            NULL,
+        ngay_cap_nhat       DATETIME       NULL,
+        da_xoa              BIT            NOT NULL CONSTRAINT df_ktdx_da_xoa   DEFAULT 0,
+        id_nguoi_xoa        INT            NULL,
+        ngay_xoa            DATETIME       NULL,
+        CONSTRAINT pk_ktdx              PRIMARY KEY (id_khen_thuong),
+        CONSTRAINT fk_ktdx_nam          FOREIGN KEY (id_nam)              REFERENCES dbo.nam_danh_gia(id_nam),
+        CONSTRAINT fk_ktdx_nv           FOREIGN KEY (id_nhan_vien)        REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_ktdx_muc          FOREIGN KEY (id_muc)              REFERENCES dbo.danh_muc_thanh_tich_vuot_troi(id_muc),
+        CONSTRAINT fk_ktdx_chi_tiet_kk  FOREIGN KEY (id_chi_tiet_ke_khai) REFERENCES dbo.chi_tiet_ke_khai_thanh_tich(id_chi_tiet),
+        CONSTRAINT fk_ktdx_nguoi_tao    FOREIGN KEY (id_nguoi_tao)        REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_ktdx_nguoi_cn     FOREIGN KEY (id_nguoi_cap_nhat)   REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_ktdx_nguoi_xoa    FOREIGN KEY (id_nguoi_xoa)        REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT chk_ktdx_quy         CHECK (quy BETWEEN 1 AND 4),
+        CONSTRAINT chk_ktdx_diem        CHECK (diem_snapshot >= 0),
+        CONSTRAINT chk_ktdx_noi_dung    CHECK (LEN(LTRIM(RTRIM(noi_dung))) > 0),
+        CONSTRAINT chk_ktdx_nguon       CHECK (nguon IN (1, 2, 3)),
+        CONSTRAINT chk_ktdx_nguon_kk    CHECK ((nguon = 3 AND id_chi_tiet_ke_khai IS NOT NULL)
+                                            OR (nguon IN (1, 2) AND id_chi_tiet_ke_khai IS NULL)),
+        CONSTRAINT chk_ktdx_qd          CHECK (nguon = 3 OR (so_quyet_dinh IS NOT NULL AND ngay_quyet_dinh IS NOT NULL)),
+        CONSTRAINT chk_ktdx_nguoi_tao   CHECK (nguon = 3 OR id_nguoi_tao IS NOT NULL),
+        CONSTRAINT chk_ktdx_xoa         CHECK ((da_xoa = 0 AND ngay_xoa IS NULL) OR (da_xoa = 1 AND ngay_xoa IS NOT NULL))
+    );
+    PRINT N'[TAO] dbo.khen_thuong_dot_xuat';
+END
+GO
+
+-- 1.2. Uy quyen nhap lieu (danh sach RIENG cua module).
+IF OBJECT_ID(N'dbo.khen_thuong_dot_xuat_nguoi_nhap', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.khen_thuong_dot_xuat_nguoi_nhap (
+        id               INT           IDENTITY(1,1) NOT NULL,
+        id_nhan_vien     INT           NOT NULL,
+        id_nguoi_cap     INT           NOT NULL,
+        ngay_cap         DATETIME      NOT NULL CONSTRAINT df_ktdxnn_ngay_cap DEFAULT GETDATE(),
+        ghi_chu          NVARCHAR(500) NULL,
+        da_thu_hoi       BIT           NOT NULL CONSTRAINT df_ktdxnn_thu_hoi  DEFAULT 0,
+        id_nguoi_thu_hoi INT           NULL,
+        ngay_thu_hoi     DATETIME      NULL,
+        CONSTRAINT pk_ktdxnn            PRIMARY KEY (id),
+        CONSTRAINT fk_ktdxnn_nv         FOREIGN KEY (id_nhan_vien)     REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_ktdxnn_nguoi_cap  FOREIGN KEY (id_nguoi_cap)     REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_ktdxnn_nguoi_th   FOREIGN KEY (id_nguoi_thu_hoi) REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT chk_ktdxnn_thu_hoi   CHECK ((da_thu_hoi = 0 AND ngay_thu_hoi IS NULL) OR (da_thu_hoi = 1 AND ngay_thu_hoi IS NOT NULL))
+    );
+    PRINT N'[TAO] dbo.khen_thuong_dot_xuat_nguoi_nhap';
+END
+GO
+
+-- 1.3. Nhat ky module. id_nguoi_thuc_hien NULL CHI voi hanh_dong 7 (chuyen tu ke khai - he thong).
+IF OBJECT_ID(N'dbo.lich_su_khen_thuong_dot_xuat', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.lich_su_khen_thuong_dot_xuat (
+        id                 BIGINT         IDENTITY(1,1) NOT NULL,
+        id_khen_thuong     INT            NULL,
+        id_nhan_vien       INT            NULL,
+        hanh_dong          TINYINT        NOT NULL,
+        mo_ta              NVARCHAR(1000) NULL,
+        id_nguoi_thuc_hien INT            NULL,
+        ngay_thuc_hien     DATETIME       NOT NULL CONSTRAINT df_lsktdx_ngay DEFAULT GETDATE(),
+        CONSTRAINT pk_lsktdx        PRIMARY KEY (id),
+        CONSTRAINT fk_lsktdx_kt     FOREIGN KEY (id_khen_thuong)     REFERENCES dbo.khen_thuong_dot_xuat(id_khen_thuong),
+        CONSTRAINT fk_lsktdx_nv     FOREIGN KEY (id_nhan_vien)       REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_lsktdx_nguoi  FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT chk_lsktdx_hd    CHECK (hanh_dong BETWEEN 1 AND 7),
+        CONSTRAINT chk_lsktdx_nguoi CHECK (hanh_dong = 7 OR id_nguoi_thuc_hien IS NOT NULL)
+    );
+    PRINT N'[TAO] dbo.lich_su_khen_thuong_dot_xuat';
+END
+GO
+
+-- 1.4. TVP (giong dau muc 24 cua procedure.sql).
+IF TYPE_ID(N'dbo.KhenThuongDotXuatVienChucRow') IS NULL
+    EXEC(N'CREATE TYPE dbo.KhenThuongDotXuatVienChucRow AS TABLE (
+    id_nhan_vien INT NOT NULL PRIMARY KEY
+);');
+GO
+
+
+-- 1.5. Index (filtered -> QUOTED_IDENTIFIER ON da dat o dau file).
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_ktdx_nv_nam' AND object_id = OBJECT_ID(N'dbo.khen_thuong_dot_xuat'))
+    CREATE INDEX ix_ktdx_nv_nam ON dbo.khen_thuong_dot_xuat(id_nhan_vien, id_nam) INCLUDE (quy, diem_snapshot, noi_dung)
+        WHERE da_xoa = 0;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_ktdx_nam_muc' AND object_id = OBJECT_ID(N'dbo.khen_thuong_dot_xuat'))
+    CREATE INDEX ix_ktdx_nam_muc ON dbo.khen_thuong_dot_xuat(id_nam, id_muc) INCLUDE (id_nhan_vien) WHERE da_xoa = 0;
+GO
+-- KHONG loc da_xoa: moi dong ke khai co TOI DA 1 ban sao, ke ca khi P_TCHC da xoa ban sao.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ux_ktdx_chi_tiet_kk' AND object_id = OBJECT_ID(N'dbo.khen_thuong_dot_xuat'))
+    CREATE UNIQUE INDEX ux_ktdx_chi_tiet_kk ON dbo.khen_thuong_dot_xuat(id_chi_tiet_ke_khai) WHERE id_chi_tiet_ke_khai IS NOT NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ux_ktdxnn_nv' AND object_id = OBJECT_ID(N'dbo.khen_thuong_dot_xuat_nguoi_nhap'))
+    CREATE UNIQUE INDEX ux_ktdxnn_nv ON dbo.khen_thuong_dot_xuat_nguoi_nhap(id_nhan_vien) WHERE da_thu_hoi = 0;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_lsktdx_kt' AND object_id = OBJECT_ID(N'dbo.lich_su_khen_thuong_dot_xuat'))
+    CREATE INDEX ix_lsktdx_kt ON dbo.lich_su_khen_thuong_dot_xuat(id_khen_thuong);
+GO
+
+-- 25. NHIEM VU PHUC VU - phan cong va thuc hien nhiem vu (dot 2026-10-12; THAY muc 7).
+--     Nghiep vu: schema_ghi_chu.md muc 25. SP / ham: procedure.sql muc 25.
+--     An toan khi chay lai: chi tao khi CHUA co.
+
+-- 25.1. Nhiem vu: nguon 1 = Khoa tao, 2 = Truong giao cho MOT Khoa (khong tao ban sao).
+--   trang_thai: 1 NHAP · 2 CHO_TRIEN_KHAI (chi nguon 2) · 3 DANG_TRIEN_KHAI · 4 CHO_DUYET (bao cao
+--   da gui) · 5 DA_CHOT (khong sua / huy / mo lai) · 6 DA_HUY.
+--   han_dang_ky: gio VN (fn_nhiem_vu_phuc_vu_bay_gio), NULL = khong mo tu dang ky.
+--   ngay_thay_doi: moi thay doi thanh vien / bao cao / minh chung cung UPDATE cot nay -> doi
+--   row_version -> form cu nhan CONCURRENCY_CONFLICT.
+IF OBJECT_ID(N'dbo.nhiem_vu_phuc_vu', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.nhiem_vu_phuc_vu (
+        id_nhiem_vu         INT            IDENTITY(1,1) NOT NULL,
+        id_nam              INT            NOT NULL,
+        id_don_vi           INT            NOT NULL,
+        id_nhom_nv          INT            NOT NULL,
+        nguon               TINYINT        NOT NULL,
+        ten_nhiem_vu        NVARCHAR(500)  NOT NULL,
+        mo_ta               NVARCHAR(2000) NULL,
+        han_dang_ky         DATETIME       NULL,
+        tu_ngay             DATE           NOT NULL,
+        den_ngay            DATE           NOT NULL,
+        so_luong_toi_da     INT            NOT NULL,
+        trang_thai          TINYINT        NOT NULL CONSTRAINT df_nvpv_trang_thai DEFAULT 1,
+        id_nguoi_tao        INT            NOT NULL,
+        ngay_tao            DATETIME       NOT NULL CONSTRAINT df_nvpv_ngay_tao DEFAULT GETDATE(),
+        id_nguoi_cap_nhat   INT            NULL,
+        ngay_cap_nhat       DATETIME       NULL,
+        ngay_thay_doi       DATETIME       NULL,
+        id_nguoi_cong_bo    INT            NULL,
+        ngay_cong_bo        DATETIME       NULL,
+        id_nguoi_trien_khai INT            NULL,
+        ngay_trien_khai     DATETIME       NULL,
+        id_nguoi_chot       INT            NULL,
+        ngay_chot           DATETIME       NULL,
+        id_nguoi_huy        INT            NULL,
+        ngay_huy            DATETIME       NULL,
+        ly_do_huy           NVARCHAR(1000) NULL,
+        row_version         ROWVERSION     NOT NULL,
+        CONSTRAINT pk_nvpv              PRIMARY KEY (id_nhiem_vu),
+        CONSTRAINT fk_nvpv_nam          FOREIGN KEY (id_nam)              REFERENCES dbo.nam_danh_gia(id_nam),
+        CONSTRAINT fk_nvpv_don_vi       FOREIGN KEY (id_don_vi)           REFERENCES dbo.don_vi(id_don_vi),
+        CONSTRAINT fk_nvpv_nhom         FOREIGN KEY (id_nhom_nv)          REFERENCES dbo.danh_muc_nhom_nhiem_vu(id_nhom_nv),
+        CONSTRAINT fk_nvpv_nguoi_tao    FOREIGN KEY (id_nguoi_tao)        REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpv_nguoi_cn     FOREIGN KEY (id_nguoi_cap_nhat)   REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpv_nguoi_cb     FOREIGN KEY (id_nguoi_cong_bo)    REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpv_nguoi_tk     FOREIGN KEY (id_nguoi_trien_khai) REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpv_nguoi_chot   FOREIGN KEY (id_nguoi_chot)       REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpv_nguoi_huy    FOREIGN KEY (id_nguoi_huy)        REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT chk_nvpv_nguon       CHECK (nguon IN (1, 2)),
+        CONSTRAINT chk_nvpv_trang_thai  CHECK (trang_thai BETWEEN 1 AND 6),
+        CONSTRAINT chk_nvpv_cho_tk      CHECK (trang_thai <> 2 OR nguon = 2),
+        CONSTRAINT chk_nvpv_ten         CHECK (LEN(LTRIM(RTRIM(ten_nhiem_vu))) > 0),
+        CONSTRAINT chk_nvpv_ngay        CHECK (den_ngay >= tu_ngay),
+        CONSTRAINT chk_nvpv_so_luong    CHECK (so_luong_toi_da BETWEEN 1 AND 500),
+        CONSTRAINT chk_nvpv_han_dk      CHECK (han_dang_ky IS NULL OR han_dang_ky < CAST(tu_ngay AS DATETIME)),
+        CONSTRAINT chk_nvpv_chot        CHECK ((trang_thai = 5 AND id_nguoi_chot IS NOT NULL AND ngay_chot IS NOT NULL)
+                                            OR (trang_thai <> 5 AND ngay_chot IS NULL)),
+        CONSTRAINT chk_nvpv_huy         CHECK ((trang_thai = 6 AND id_nguoi_huy IS NOT NULL AND ngay_huy IS NOT NULL
+                                                AND ly_do_huy IS NOT NULL)
+                                            OR (trang_thai <> 6 AND ngay_huy IS NULL))
+    );
+    PRINT N'[TAO] dbo.nhiem_vu_phuc_vu';
+END
+GO
+
+-- 25.2. Thanh vien. 1 dong / (nhiem vu, nguoi) - rut / go thi da_roi = 1, dang ky / phan cong lai
+--   kich hoat CHINH dong do (dang ky lai khong tao them thanh vien).
+--   nguon_tham_gia: 1 Tu dang ky · 2 Truong khoa phan cong. ma_vai_tro: CT / PHC / PH (dang ky mac
+--   dinh PH). Cac cot *_snapshot + ket_qua chi ghi LUC CHOT: hoan thanh -> diem cua vai tro theo
+--   cau hinh (Khoa, nam) luc chot; khong hoan thanh -> 0 + ly do.
+IF OBJECT_ID(N'dbo.nhiem_vu_phuc_vu_thanh_vien', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.nhiem_vu_phuc_vu_thanh_vien (
+        id_thanh_vien          INT           IDENTITY(1,1) NOT NULL,
+        id_nhiem_vu            INT           NOT NULL,
+        id_nhan_vien           INT           NOT NULL,
+        nguon_tham_gia         TINYINT       NOT NULL,
+        ma_vai_tro             NVARCHAR(30)  NOT NULL CONSTRAINT df_nvpvtv_vai_tro DEFAULT N'PH',
+        da_roi                 BIT           NOT NULL CONSTRAINT df_nvpvtv_da_roi  DEFAULT 0,
+        id_nguoi_them          INT           NOT NULL,
+        ngay_them              DATETIME      NOT NULL CONSTRAINT df_nvpvtv_ngay_them DEFAULT GETDATE(),
+        id_nguoi_roi           INT           NULL,
+        ngay_roi               DATETIME      NULL,
+        id_nguoi_cap_nhat      INT           NULL,
+        ngay_cap_nhat          DATETIME      NULL,
+        ket_qua                TINYINT       NULL,
+        ly_do_khong_hoan_thanh NVARCHAR(500) NULL,
+        id_vai_tro_snapshot    INT           NULL,
+        ten_vai_tro_snapshot   NVARCHAR(200) NULL,
+        diem_vai_tro_snapshot  DECIMAL(5,2)  NULL,
+        diem_snapshot          DECIMAL(5,2)  NULL,
+        CONSTRAINT pk_nvpvtv             PRIMARY KEY (id_thanh_vien),
+        CONSTRAINT fk_nvpvtv_nhiem_vu    FOREIGN KEY (id_nhiem_vu)         REFERENCES dbo.nhiem_vu_phuc_vu(id_nhiem_vu),
+        CONSTRAINT fk_nvpvtv_nv          FOREIGN KEY (id_nhan_vien)        REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpvtv_nguoi_them  FOREIGN KEY (id_nguoi_them)       REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpvtv_nguoi_roi   FOREIGN KEY (id_nguoi_roi)        REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpvtv_nguoi_cn    FOREIGN KEY (id_nguoi_cap_nhat)   REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpvtv_vai_tro     FOREIGN KEY (id_vai_tro_snapshot) REFERENCES dbo.danh_muc_vai_tro_pvcd(id_vai_tro),
+        CONSTRAINT uq_nvpvtv             UNIQUE (id_nhiem_vu, id_nhan_vien),
+        CONSTRAINT chk_nvpvtv_nguon      CHECK (nguon_tham_gia IN (1, 2)),
+        CONSTRAINT chk_nvpvtv_vai_tro    CHECK (ma_vai_tro IN (N'CT', N'PHC', N'PH')),
+        CONSTRAINT chk_nvpvtv_roi        CHECK ((da_roi = 0 AND ngay_roi IS NULL) OR (da_roi = 1 AND ngay_roi IS NOT NULL)),
+        CONSTRAINT chk_nvpvtv_ket_qua    CHECK ((ket_qua IS NULL AND diem_snapshot IS NULL AND ly_do_khong_hoan_thanh IS NULL)
+                                             OR (ket_qua = 1 AND da_roi = 0 AND diem_snapshot >= 0
+                                                 AND id_vai_tro_snapshot IS NOT NULL AND ly_do_khong_hoan_thanh IS NULL)
+                                             OR (ket_qua = 2 AND da_roi = 0 AND diem_snapshot = 0
+                                                 AND ly_do_khong_hoan_thanh IS NOT NULL))
+    );
+    PRINT N'[TAO] dbo.nhiem_vu_phuc_vu_thanh_vien';
+END
+GO
+
+-- 25.3. Bao cao CHUNG (1 / nhiem vu) do Chu tri soan va gui. Trang thai bao cao SUY tu
+--   nhiem_vu_phuc_vu.trang_thai (4 = cho duyet, 5 = da chot) + da_tra_lai (1 = lan xet gan nhat
+--   la tra lai, chua gui lai) - KHONG luu trang thai thu hai.
+IF OBJECT_ID(N'dbo.nhiem_vu_phuc_vu_bao_cao', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.nhiem_vu_phuc_vu_bao_cao (
+        id_nhiem_vu       INT            NOT NULL,
+        noi_dung          NVARCHAR(4000) NOT NULL,
+        id_nguoi_cap_nhat INT            NOT NULL,
+        ngay_cap_nhat     DATETIME       NOT NULL,
+        so_lan_gui        INT            NOT NULL CONSTRAINT df_nvpvbc_so_lan_gui DEFAULT 0,
+        id_nguoi_gui      INT            NULL,
+        ngay_gui          DATETIME       NULL,
+        da_tra_lai        BIT            NOT NULL CONSTRAINT df_nvpvbc_da_tra_lai DEFAULT 0,
+        ly_do_tra_lai     NVARCHAR(1000) NULL,
+        id_nguoi_tra_lai  INT            NULL,
+        ngay_tra_lai      DATETIME       NULL,
+        CONSTRAINT pk_nvpvbc            PRIMARY KEY (id_nhiem_vu),
+        CONSTRAINT fk_nvpvbc_nhiem_vu   FOREIGN KEY (id_nhiem_vu)       REFERENCES dbo.nhiem_vu_phuc_vu(id_nhiem_vu),
+        CONSTRAINT fk_nvpvbc_nguoi_cn   FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpvbc_nguoi_gui  FOREIGN KEY (id_nguoi_gui)      REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpvbc_nguoi_tra  FOREIGN KEY (id_nguoi_tra_lai)  REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT chk_nvpvbc_noi_dung  CHECK (LEN(LTRIM(RTRIM(noi_dung))) > 0),
+        CONSTRAINT chk_nvpvbc_so_lan    CHECK (so_lan_gui >= 0),
+        CONSTRAINT chk_nvpvbc_tra_lai   CHECK (da_tra_lai = 0 OR (ly_do_tra_lai IS NOT NULL AND ngay_tra_lai IS NOT NULL))
+    );
+    PRINT N'[TAO] dbo.nhiem_vu_phuc_vu_bao_cao';
+END
+GO
+
+-- 25.4. Minh chung PDF cua bao cao. File o App_Data/uploads/nhiem-vu-phuc-vu/{id}/{guid}.pdf
+--   (ngoai webroot); go = xoa MEM, tep vat ly giu nguyen.
+IF OBJECT_ID(N'dbo.nhiem_vu_phuc_vu_minh_chung', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.nhiem_vu_phuc_vu_minh_chung (
+        id_minh_chung INT           IDENTITY(1,1) NOT NULL,
+        id_nhiem_vu   INT           NOT NULL,
+        ten_hien_thi  NVARCHAR(255) NOT NULL,
+        ten_file_goc  NVARCHAR(255) NOT NULL,
+        duong_dan     NVARCHAR(500) NOT NULL,
+        loai_file     NVARCHAR(50)  NOT NULL CONSTRAINT df_nvpvmc_loai_file DEFAULT N'pdf',
+        kich_thuoc_kb INT           NULL,
+        nguoi_tai_len INT           NOT NULL,
+        ngay_tai_len  DATETIME      NOT NULL CONSTRAINT df_nvpvmc_ngay DEFAULT GETDATE(),
+        da_xoa        BIT           NOT NULL CONSTRAINT df_nvpvmc_da_xoa DEFAULT 0,
+        id_nguoi_xoa  INT           NULL,
+        ngay_xoa      DATETIME      NULL,
+        CONSTRAINT pk_nvpvmc           PRIMARY KEY (id_minh_chung),
+        CONSTRAINT fk_nvpvmc_nhiem_vu  FOREIGN KEY (id_nhiem_vu)   REFERENCES dbo.nhiem_vu_phuc_vu(id_nhiem_vu),
+        CONSTRAINT fk_nvpvmc_nguoi     FOREIGN KEY (nguoi_tai_len) REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvpvmc_nguoi_xoa FOREIGN KEY (id_nguoi_xoa)  REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT chk_nvpvmc_pdf      CHECK (duong_dan LIKE N'%.pdf'),
+        CONSTRAINT chk_nvpvmc_kb       CHECK (kich_thuoc_kb IS NULL OR kich_thuoc_kb > 0),
+        CONSTRAINT chk_nvpvmc_xoa      CHECK ((da_xoa = 0 AND ngay_xoa IS NULL) OR (da_xoa = 1 AND ngay_xoa IS NOT NULL))
+    );
+    PRINT N'[TAO] dbo.nhiem_vu_phuc_vu_minh_chung';
+END
+GO
+
+-- 25.5. Nhat ky module (ghi CUNG transaction voi thao tac).
+--   hanh_dong: 1 Tao ban nhap · 2 Sua · 3 Cong bo / giao · 4 Trien khai · 5 Huy · 6 Tu dang ky ·
+--   7 Rut dang ky · 8 Phan cong · 9 Go thanh vien · 10 Doi vai tro · 11 Luu bao cao ·
+--   12 Them minh chung · 13 Go minh chung · 14 Gui bao cao · 15 Tra bao cao · 16 Chot ket qua
+--   (1 dong tong + 1 dong / thanh vien, id_nhan_vien = thanh vien).
+IF OBJECT_ID(N'dbo.lich_su_nhiem_vu_phuc_vu', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.lich_su_nhiem_vu_phuc_vu (
+        id                 BIGINT         IDENTITY(1,1) NOT NULL,
+        id_nhiem_vu        INT            NOT NULL,
+        id_nhan_vien       INT            NULL,
+        hanh_dong          TINYINT        NOT NULL,
+        trang_thai_truoc   TINYINT        NULL,
+        trang_thai_sau     TINYINT        NULL,
+        mo_ta              NVARCHAR(2000) NULL,
+        id_nguoi_thuc_hien INT            NOT NULL,
+        ngay_thuc_hien     DATETIME       NOT NULL CONSTRAINT df_lsnvpv_ngay DEFAULT GETDATE(),
+        CONSTRAINT pk_lsnvpv           PRIMARY KEY (id),
+        CONSTRAINT fk_lsnvpv_nhiem_vu  FOREIGN KEY (id_nhiem_vu)        REFERENCES dbo.nhiem_vu_phuc_vu(id_nhiem_vu),
+        CONSTRAINT fk_lsnvpv_nv        FOREIGN KEY (id_nhan_vien)       REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_lsnvpv_nguoi     FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT chk_lsnvpv_hd       CHECK (hanh_dong BETWEEN 1 AND 16)
+    );
+    PRINT N'[TAO] dbo.lich_su_nhiem_vu_phuc_vu';
+END
+GO
+
+-- 25.6. Danh dau dot chuyen doi du lieu: 1 dong / dot, ghi CUNG transaction voi buoc xoa -> co
+--   dong = dot da chay xong, script chay lai KHONG xoa / tinh lai gi nua.
+IF OBJECT_ID(N'dbo.chuyen_doi_du_lieu', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.chuyen_doi_du_lieu (
+        ma_dot             NVARCHAR(50)   NOT NULL,
+        ngay_thuc_hien     DATETIME       NOT NULL CONSTRAINT df_cddl_ngay DEFAULT GETDATE(),
+        id_nguoi_thuc_hien INT            NOT NULL,
+        tom_tat            NVARCHAR(4000) NULL,
+        CONSTRAINT pk_cddl       PRIMARY KEY (ma_dot),
+        CONSTRAINT fk_cddl_nguoi FOREIGN KEY (id_nguoi_thuc_hien) REFERENCES dbo.nhan_vien(id_nhan_vien)
+    );
+    PRINT N'[TAO] dbo.chuyen_doi_du_lieu';
+END
+GO
+
+-- 25.7. Ban DOI CHIEU nguon diem cu (module Nhiem vu Khoa) chup TRUOC khi xoa du lieu cu.
+--   1 dong / dong chi_tiet_danh_gia NVK_PHAN_CONG_KHOA cua phieu nam.
+--     giu_nguyen = 1: phieu DA CHOT (trang_thai 3..5) - diem / tong / xep loai / thu hang giu
+--       nguyen; sp_phieu_tu_dong_chi_tiet doc diem_nguon_cu + minh chung ben duoi thay vi nguon
+--       moi cho toi khi engine cham lai dong do (ngay_tu_dong > ngay_chup).
+--     giu_nguyen = 0: phieu CON MO (1..2) - diem_sau = diem tinh lai tu nguon moi.
+--   tong_nguon_cu = tong diem nguon cu truoc tran; diem_nguon_cu = sau tran (= diem engine cu).
+IF OBJECT_ID(N'dbo.doi_chieu_nhiem_vu_khoa_cu', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.doi_chieu_nhiem_vu_khoa_cu (
+        id_chi_tiet            INT          NOT NULL,
+        ma_dot                 NVARCHAR(50) NOT NULL,
+        id_phieu               INT          NOT NULL,
+        id_nam                 INT          NOT NULL,
+        id_nhan_vien           INT          NOT NULL,
+        trang_thai_phieu       TINYINT      NOT NULL,
+        giu_nguyen             BIT          NOT NULL,
+        la_phieu_nhan_tu_dong  BIT          NOT NULL,
+        diem_tu_dong_truoc     DECIMAL(5,2) NULL,
+        diem_chinh_thuc_truoc  DECIMAL(5,2) NULL,
+        ngay_tu_dong_truoc     DATETIME     NULL,
+        tong_nguon_cu          DECIMAL(9,2) NOT NULL,
+        diem_nguon_cu          DECIMAL(5,2) NOT NULL,
+        diem_sau               DECIMAL(5,2) NULL,
+        ngay_chup              DATETIME     NOT NULL,
+        CONSTRAINT pk_dcnvkc PRIMARY KEY (id_chi_tiet)
+    );
+    PRINT N'[TAO] dbo.doi_chieu_nhiem_vu_khoa_cu';
+END
+GO
+
+-- 25.8. Minh chung cua ban doi chieu (cac nhiem vu cu DA DUYET da sinh ra diem). loai_nguon = 14
+--   (Nhiem vu Khoa - luu tru): ma_nguon la id nhiem vu CU, KHONG con API mo duoc.
+IF OBJECT_ID(N'dbo.doi_chieu_nhiem_vu_khoa_cu_minh_chung', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.doi_chieu_nhiem_vu_khoa_cu_minh_chung (
+        id             INT            IDENTITY(1,1) NOT NULL,
+        id_chi_tiet    INT            NOT NULL,
+        loai_nguon     TINYINT        NOT NULL,
+        ten_loai_nguon NVARCHAR(50)   NOT NULL,
+        ma_nguon       INT            NOT NULL,
+        tieu_de        NVARCHAR(1000) NULL,
+        mo_ta          NVARCHAR(500)  NULL,
+        ngay           DATE           NULL,
+        diem           DECIMAL(9,2)   NULL,
+        CONSTRAINT pk_dcnvkcmc    PRIMARY KEY (id),
+        CONSTRAINT fk_dcnvkcmc_ct FOREIGN KEY (id_chi_tiet) REFERENCES dbo.doi_chieu_nhiem_vu_khoa_cu(id_chi_tiet)
+    );
+    PRINT N'[TAO] dbo.doi_chieu_nhiem_vu_khoa_cu_minh_chung';
+END
+GO
+
+-- 25.9. TVP (giong dau muc 25 cua procedure.sql).
+IF TYPE_ID(N'dbo.NhiemVuPhucVuThanhVienRow') IS NULL
+    EXEC(N'CREATE TYPE dbo.NhiemVuPhucVuThanhVienRow AS TABLE (
+    id_nhan_vien INT          NOT NULL PRIMARY KEY,
+    ma_vai_tro   NVARCHAR(30) NOT NULL
+);');
+GO
+
+IF TYPE_ID(N'dbo.NhiemVuPhucVuKetQuaRow') IS NULL
+    EXEC(N'CREATE TYPE dbo.NhiemVuPhucVuKetQuaRow AS TABLE (
+    id_nhan_vien INT           NOT NULL PRIMARY KEY,
+    hoan_thanh   BIT           NOT NULL,
+    ly_do        NVARCHAR(500) NULL
+);');
+GO
+
+-- 25.10. Index (filtered -> QUOTED_IDENTIFIER ON).
+--   ux_nvpvtv_chu_tri: BAT BIEN toi da MOT chu tri dang hieu luc / nhiem vu (SP kiem tuong minh de
+--   tra TRUNG_CHU_TRI; index la lop chan cuoi).
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_nvpv_nam_don_vi' AND object_id = OBJECT_ID(N'dbo.nhiem_vu_phuc_vu'))
+    CREATE INDEX ix_nvpv_nam_don_vi ON dbo.nhiem_vu_phuc_vu(id_nam, id_don_vi, trang_thai) INCLUDE (nguon, tu_ngay, den_ngay);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ux_nvpvtv_chu_tri' AND object_id = OBJECT_ID(N'dbo.nhiem_vu_phuc_vu_thanh_vien'))
+    CREATE UNIQUE INDEX ux_nvpvtv_chu_tri ON dbo.nhiem_vu_phuc_vu_thanh_vien(id_nhiem_vu)
+        WHERE ma_vai_tro = N'CT' AND da_roi = 0;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_nvpvtv_nv' AND object_id = OBJECT_ID(N'dbo.nhiem_vu_phuc_vu_thanh_vien'))
+    CREATE INDEX ix_nvpvtv_nv ON dbo.nhiem_vu_phuc_vu_thanh_vien(id_nhan_vien, id_nhiem_vu)
+        INCLUDE (ma_vai_tro, ket_qua, diem_snapshot) WHERE da_roi = 0;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_nvpvmc_nhiem_vu' AND object_id = OBJECT_ID(N'dbo.nhiem_vu_phuc_vu_minh_chung'))
+    CREATE INDEX ix_nvpvmc_nhiem_vu ON dbo.nhiem_vu_phuc_vu_minh_chung(id_nhiem_vu) WHERE da_xoa = 0;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_lsnvpv_nhiem_vu' AND object_id = OBJECT_ID(N'dbo.lich_su_nhiem_vu_phuc_vu'))
+    CREATE INDEX ix_lsnvpv_nhiem_vu ON dbo.lich_su_nhiem_vu_phuc_vu(id_nhiem_vu, ngay_thuc_hien DESC);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_dcnvkcmc_ct' AND object_id = OBJECT_ID(N'dbo.doi_chieu_nhiem_vu_khoa_cu_minh_chung'))
+    CREATE INDEX ix_dcnvkcmc_ct ON dbo.doi_chieu_nhiem_vu_khoa_cu_minh_chung(id_chi_tiet);
 GO

@@ -1,4 +1,5 @@
 import React from "react";
+import NhatKyHeThong from "../pages/NhatKyHeThong";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import QLNhanVien from "../pages/QuanLyToChuc/QL_NhanVien";
 import QLNhanVienChiTiet from "../pages/QuanLyToChuc/QL_NhanVienChiTiet";
@@ -37,6 +38,9 @@ import HocVuSinhVien from "../pages/QuanLyKeHoach/HocVuSinhVien";
 import HoatDongDaoTao from "../pages/QuanLyKeHoach/HoatDongDaoTao";
 import HoatDongDaoTaoUyQuyen from "../pages/QuanLyKeHoach/HoatDongDaoTaoUyQuyen";
 import PhatTrienDoiNgu from "../pages/QuanLyKeHoach/PhatTrienDoiNgu";
+import KhenThuongDotXuat from "../pages/QuanLyKeHoach/KhenThuongDotXuat";
+import KhenThuongDotXuatUyQuyen from "../pages/QuanLyKeHoach/KhenThuongDotXuatUyQuyen";
+import KhenThuongDotXuatDetailPage from "../pages/QuanLyKeHoach/KhenThuongDotXuatDetailPage";
 import PhatTrienDoiNguUyQuyen from "../pages/QuanLyKeHoach/PhatTrienDoiNguUyQuyen";
 import PhatTrienDoiNguDetailPage from "../pages/QuanLyKeHoach/PhatTrienDoiNguDetailPage";
 import SangKien from "../pages/QuanLyKeHoach/SangKien";
@@ -54,7 +58,7 @@ import GioGiangCuaToi from "../pages/CaNhan/GioGiangCuaToi";
 import KhoMinhChungCaNhan from "../pages/CaNhan/KhoMinhChung";
 import KhoMinhChungDonVi from "../pages/DanhGia/KhoMinhChungDonVi";
 import PhanHoiSinhVienCuaToi from "../pages/CaNhan/PhanHoiSinhVienCuaToi";
-import NhiemVuKhoaCuaToi from "../pages/CaNhan/NhiemVuKhoaCuaToi";
+import NhiemVuPhucVu from "../pages/NhiemVuPhucVu";
 import ViPhamCuaToi from "../pages/CaNhan/ViPhamCuaToi";
 import ThanhTichNckh from "../pages/CaNhan/ThanhTichNckh";
 import KeKhaiThanhTich from "../pages/CaNhan/KeKhaiThanhTich";
@@ -70,7 +74,6 @@ import ChotHoSoPhong from "../pages/QuanLyChamDiem/ChotHoSoPhong";
 import ToTrinhKhoa from "../pages/QuanLyChamDiem/ToTrinhKhoa";
 import HoSoKpiGiangVien from "../pages/QuanLyChamDiem/HoSoKpiGiangVien";
 import BaoCaoDonVi from "../pages/QuanLyChamDiem/BaoCaoDonVi";
-import PhanCongNhiemVuKhoa from "../pages/QuanLyChamDiem/PhanCongNhiemVuKhoa";
 import DuyetKeKhaiThanhTich from "../pages/QuanLyChamDiem/DuyetKeKhaiThanhTich";
 import ChiTietDuyetThanhTich from "../pages/QuanLyChamDiem/ChiTietDuyetThanhTich";
 import RequireRole from "../components/RequireRole";
@@ -137,7 +140,10 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
           path="/phan-hoi-sinh-vien-cua-toi"
           element={<PhanHoiSinhVienCuaToi />}
         />
-        <Route path="/nhiem-vu-khoa-cua-toi" element={<NhiemVuKhoaCuaToi />} />
+        <Route path="/nhiem-vu-phuc-vu" element={<NhiemVuPhucVu />} />
+        <Route path="/nhiem-vu-phuc-vu/quan-ly" element={<NhiemVuPhucVu mode="manage" />} />
+        <Route path="/nhiem-vu-phuc-vu/tong-hop" element={<NhiemVuPhucVu mode="summary" />} />
+        <Route path="/nhiem-vu-phuc-vu/:id" element={<NhiemVuPhucVu detailOnly />} />
         <Route path="/vi-pham-cua-toi" element={<ViPhamCuaToi />} />
         <Route path="/thanh-tich-nckh" element={<ThanhTichNckh />} />
         <Route path="/ke-khai-thanh-tich" element={<KeKhaiThanhTich />} />
@@ -177,6 +183,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         />
         <Route path="/quan-ly-chuc-danh" element={<QLChucDanh />} />
         <Route path="/quan-ly-chuc-vu" element={<QLChucVu />} />
+        <Route path="/nhat-ky-he-thong" element={<NhatKyHeThong />} />
         <Route path="/truong/to-trinh" element={<DuyetToTrinh />} />
         <Route path="/truong/xet-xuat-sac-vien-chuc-khoa" element={<XetXuatSacVienChucKhoa />} />
         <Route path="/truong/phieu" element={<TheoDoiPhieuTruong />} />
@@ -214,6 +221,9 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route path="/hoat-dong-dao-tao" element={<HoatDongDaoTao />} />
         <Route path="/hoat-dong-dao-tao/uy-quyen" element={<HoatDongDaoTaoUyQuyen />} />
         <Route path="/phat-trien-doi-ngu" element={<PhatTrienDoiNgu />} />
+        <Route path="/khen-thuong-dot-xuat" element={<KhenThuongDotXuat />} />
+        <Route path="/khen-thuong-dot-xuat/uy-quyen" element={<KhenThuongDotXuatUyQuyen />} />
+        <Route path="/khen-thuong-dot-xuat/:id" element={<KhenThuongDotXuatDetailPage />} />
         <Route path="/phat-trien-doi-ngu/uy-quyen" element={<PhatTrienDoiNguUyQuyen />} />
         <Route path="/phat-trien-doi-ngu/:id" element={<PhatTrienDoiNguDetailPage />} />
         <Route path="/sang-kien" element={<SangKien />} />
@@ -245,10 +255,6 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         />
         <Route path="/quan-ly/vi-pham" element={<QLViPham />} />
         <Route path="/quan-ly/bao-cao" element={<BaoCaoDonVi />} />
-        <Route
-          path="/quan-ly/nhiem-vu-khoa"
-          element={<PhanCongNhiemVuKhoa />}
-        />
         <Route
           path="/quan-ly/ke-khai-thanh-tich"
           element={<DuyetKeKhaiThanhTich />}
