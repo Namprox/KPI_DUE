@@ -45,13 +45,15 @@ export default function NhiemVuForm({ item, config, namList, idNam, idDonVi, bus
           options={(editing ? [Number(item.Nguon)] : sources).map((n) => ({ value: n, label: n === 1 ? "Nhiệm vụ Khoa" : "Nhiệm vụ Trường giao" }))} /></label>
         <label>Khoa thực hiện<SearchSelect ariaLabel="Khoa thực hiện" portal searchable value={form.IdDonVi} disabled={busy || editing} required placeholder="Chọn Khoa"
           onChange={(value) => change("IdDonVi", value)} options={khoas.map((k) => ({ value: k.IdDonVi, label: k.TenDonVi }))} /></label>
-        <label>Năm đánh giá<SearchSelect ariaLabel="Năm đánh giá" portal value={form.IdNam} disabled={busy || !content} required placeholder="Chọn năm"
+        <div className="nvpv-grid nvpv-wide nvpv-year-group">
+          <label>Năm đánh giá<SearchSelect ariaLabel="Năm đánh giá" portal value={form.IdNam} disabled={busy || !content} required placeholder="Chọn năm"
           onChange={(value) => change("IdNam", value)} options={[
             ...namList.map((n) => ({ value: n.IdNam, label: String(n.IdNam) })),
             ...(!namList.some((n) => String(n.IdNam) === String(form.IdNam)) && form.IdNam ? [{ value: form.IdNam, label: String(form.IdNam) }] : []),
           ]} /></label>
-        <label>Nhóm nhiệm vụ<SearchSelect ariaLabel="Nhóm nhiệm vụ" portal searchable value={form.IdNhomNv} disabled={busy || !content} required placeholder="Chọn nhóm"
+          <label>Nhóm nhiệm vụ<SearchSelect ariaLabel="Nhóm nhiệm vụ" portal searchable value={form.IdNhomNv} disabled={busy || !content} required placeholder="Chọn nhóm"
           onChange={(value) => change("IdNhomNv", value)} options={(config?.Nhom || []).map((n) => ({ value: n.IdNhomNv, label: n.TenNhom }))} /></label>
+        </div>
         <label className="nvpv-wide">Tên nhiệm vụ<input required maxLength={500} value={form.TenNhiemVu} disabled={!content} onChange={(e) => change("TenNhiemVu", e.target.value)} /></label>
         <label className="nvpv-wide">Mô tả<textarea maxLength={2000} rows={3} value={form.MoTa} disabled={!content} onChange={(e) => change("MoTa", e.target.value)} /></label>
         <label>Ngày bắt đầu<input type="date" required value={form.TuNgay} disabled={!content} onChange={(e) => change("TuNgay", e.target.value)} /></label>

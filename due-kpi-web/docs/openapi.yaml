@@ -972,8 +972,14 @@ paths:
     post:
       tags:
         - ChucVu
-      summary: Create
+      summary: Create (chi ma / ten / trang thai)
       operationId: chucVuCreate
+      description: >-
+        Chi ADMIN / HT / PHT (chuc vu chinh trong JWT) - dot 2026-10-14; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
+        4 truong giam tru KHONG con ghi: chi nhan gia tri mac dinh (TyLeDinhMucGiang null / 1, LoaiGiamTru
+        null / dinh_muc_phan_tram, khong gio, khong ghi chu), khac -> 400 huong dan api/chucvu/{id}/giam-tru/{idNam}.
+        Chuc vu moi "Chua cau hinh" giam tru o moi nam.
       requestBody:
         required: true
         content:
@@ -987,6 +993,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChucVuResponse"
+  /api/chucvu/giam-tru:
+    get:
+      tags:
+        - ChucVu
+      summary: Cau hinh giam tru gio giang HIEU LUC cua moi chuc vu o mot nam (dot 2026-10-14)
+      description: >-
+        Moi nguoi dang nhap deu xem duoc. Nam chua co ban rieng KE THUA ban cua nam gan nhat truoc do
+        (IdNamNguon < IdNam, LaKeThua = true); khong co nguon nao -> DaCauHinh = false ("Chua cau hinh").
+        Khong gom chuc vu Admin. ChoPhepSua = nguoi goi la ADMIN / HT / PHT va nam chua dong.
+        Route khai bao TRUOC api/chucvu/{id}. Xem Docs/fe-chuc-vu-giam-tru-theo-nam.md.
+      operationId: chucVuGiamTruList
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucVuGiamTruResponse"
+        "400":
+          description: Thieu / sai idNam
+        "404":
+          description: Nam danh gia khong ton tai
+  /api/chucvu/{id}/giam-tru/{idNam}:
+    get:
+      tags:
+        - ChucVu
+      summary: Cau hinh giam tru HIEU LUC cua 1 chuc vu o 1 nam (dot 2026-10-14)
+      operationId: chucVuGiamTruGet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idNam
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK (Item)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucVuGiamTruResponse"
+        "404":
+          description: Nam / chuc vu khong ton tai (hoac la chuc vu Admin)
+    put:
+      tags:
+        - ChucVu
+      summary: Tao / ghi de BAN RIENG cau hinh giam tru cua (chuc vu, nam) (dot 2026-10-14)
+      description: >-
+        Chi ADMIN / HT / PHT (chuc vu chinh trong JWT; kiem o BLL va SP). Ghi de toan bo: LoaiGiamTru bat
+        buoc; loai ty le -> TyLeDinhMucGiang [0, 1] hoac null, khong GioGiamTruNam; loai gio co dinh ->
+        GioGiamTruNam bat buoc [0, 9999.99], khong TyLeDinhMucGiang. Nam da dong -> 409 NAM_DA_DONG.
+        Luu o nam nay ma lam doi cau hinh hieu luc cua mot nam DA DONG phia sau (nam do chua co ban rieng)
+        -> 409 ANH_HUONG_NAM_DA_DONG. Dang co thao tac khac tren cau hinh / nam -> 409 (thu lai).
+      operationId: chucVuGiamTruSave
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idNam
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChucVuGiamTruSaveRequest"
+      responses:
+        "200":
+          description: OK (Item = ban vua luu)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChucVuGiamTruResponse"
+        "400":
+          description: Du lieu khong hop le
+        "403":
+          description: Khong phai ADMIN / HT / PHT
+        "404":
+          description: Nam / chuc vu khong ton tai
+        "409":
+          description: Nam da dong / anh huong nam da dong / dang co thao tac khac
   /api/chucvu/{id}:
     get:
       tags:
@@ -1009,8 +1112,13 @@ paths:
     put:
       tags:
         - ChucVu
-      summary: Update
+      summary: Update (chi ma / ten / trang thai)
       operationId: chucVuUpdate
+      description: >-
+        Chi ADMIN / HT / PHT (chuc vu chinh trong JWT) - dot 2026-10-14; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
+        4 truong giam tru KHONG con ghi: gui lai DUNG gia tri dang luu (hoac khong gui) thi bo qua; khac
+        -> 400 huong dan PUT api/chucvu/{id}/giam-tru/{idNam}.
       parameters:
         - name: id
           in: path
@@ -1035,6 +1143,9 @@ paths:
         - ChucVu
       summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: chucVuDelete
+      description: >-
+        Chi ADMIN / HT / PHT (chuc vu chinh trong JWT) - dot 2026-10-14; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -1158,6 +1269,11 @@ paths:
         - NamDanhGia
       summary: Create
       operationId: namDanhGiaCreate
+      description: >-
+        Chi ADMIN / HT / PHT (chuc vu chinh trong JWT) - dot 2026-10-14; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
+        TrangThai = 3 (tao thang nam da dong): chot cau hinh giam tru dang ke thua; con chuc vu dang duoc giu
+        trong nam ma chua cau hinh -> 409.
       requestBody:
         required: true
         content:
@@ -1195,6 +1311,12 @@ paths:
         - NamDanhGia
       summary: Update
       operationId: namDanhGiaUpdate
+      description: >-
+        Chi ADMIN / HT / PHT (chuc vu chinh trong JWT) - dot 2026-10-14; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
+        Chuyen sang TrangThai = 3 (dong nam): chot moi muc giam tru DANG KE THUA thanh ban rieng cua nam
+        (SaoChepTuNam); con chuc vu dang duoc giu trong nam ma chua cau hinh -> 409 (Message liet ke ten).
+        Mo lai nam KHONG xoa ban da chot.
       parameters:
         - name: id
           in: path
@@ -1219,6 +1341,10 @@ paths:
         - NamDanhGia
       summary: Delete
       operationId: namDanhGiaDelete
+      description: >-
+        Chi ADMIN / HT / PHT (chuc vu chinh trong JWT) - dot 2026-10-14; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
+        Xoa kem cau hinh giam tru cua nam; 409 neu mot nam da dong phia sau dang ke thua tu nam nay.
       parameters:
         - name: id
           in: path
@@ -15705,7 +15831,9 @@ components:
           nullable: true
           minimum: 0
           maximum: 1
-          description: "Ty le gio chuan giang day con phai hoan thanh (0.0000-1.0000). Null neu khong ap."
+          description: >-
+            KHONG con ghi (2026-10-14) - chi gia tri mac dinh / gia tri dang luu duoc chap nhan, khac -> 400.
+            Cau hinh theo nam: api/chucvu/{id}/giam-tru/{idNam}.
         GhiChuDieuKien:
           type: string
           nullable: true
@@ -15732,7 +15860,9 @@ components:
           nullable: true
           minimum: 0
           maximum: 1
-          description: "Ty le gio chuan giang day con phai hoan thanh (0.0000-1.0000). Null neu khong ap."
+          description: >-
+            KHONG con ghi (2026-10-14) - chi gia tri mac dinh / gia tri dang luu duoc chap nhan, khac -> 400.
+            Cau hinh theo nam: api/chucvu/{id}/giam-tru/{idNam}.
         GhiChuDieuKien:
           type: string
           nullable: true
@@ -15754,11 +15884,22 @@ components:
           type: number
           format: decimal
           nullable: true
-          description: "Ty le gio chuan giang day con phai hoan thanh (0.0000-1.0000)."
+          description: >-
+            GIA TRI CU DONG BANG (2026-10-14), khong con la nguon tinh toan. Cau hinh theo nam:
+            api/chucvu/giam-tru?idNam=.
+        LoaiGiamTru:
+          type: string
+          enum: [dinh_muc_phan_tram, gio_chuan_co_dinh]
+          description: Gia tri cu dong bang (xem TyLeDinhMucGiang).
+        GioGiamTruNam:
+          type: number
+          format: decimal
+          nullable: true
+          description: Gia tri cu dong bang (xem TyLeDinhMucGiang).
         GhiChuDieuKien:
           type: string
           nullable: true
-          description: "Dieu kien ap dung."
+          description: "Gia tri cu dong bang (xem TyLeDinhMucGiang)."
         TrangThai:
           type: boolean
     ChucVuResponse:
@@ -15774,6 +15915,108 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ChucVuDto"
+    ChucVuGiamTruNamDto:
+      type: object
+      description: >-
+        Cau hinh giam tru gio giang HIEU LUC cua 1 chuc vu o 1 nam danh gia (dot 2026-10-14): ban rieng cua
+        IdNam, hoac ke thua ban cua nam gan nhat truoc do. Khong bao gio lay nam sau.
+      properties:
+        IdChucVu:
+          type: integer
+        MaChucVu:
+          type: string
+        TenChucVu:
+          type: string
+        TrangThai:
+          type: boolean
+          description: Trang thai cua chuc vu.
+        IdNam:
+          type: integer
+          description: Nam dang xem.
+        IdNamNguon:
+          type: integer
+          nullable: true
+          description: Nam cua ban ghi dang ap dung. Null = chua cau hinh.
+        LaKeThua:
+          type: boolean
+          description: true = IdNamNguon < IdNam (dang ke thua).
+        DaCauHinh:
+          type: boolean
+          description: false = "Chua cau hinh" (khong co nguon nao o nam nay hoac cac nam truoc).
+        ChoPhepSua:
+          type: boolean
+          description: Nguoi goi la ADMIN / HT / PHT va nam chua dong.
+        TyLeDinhMucGiang:
+          type: number
+          format: decimal
+          nullable: true
+          description: Loai ty le - ty le dinh muc CON PHAI THUC HIEN (0.3 = con 30%). Null = 1 (khong giam).
+        LoaiGiamTru:
+          type: string
+          nullable: true
+          enum: [dinh_muc_phan_tram, gio_chuan_co_dinh]
+          description: Null = chua cau hinh.
+        GioGiamTruNam:
+          type: number
+          format: decimal
+          nullable: true
+          description: Loai gio co dinh - gio chuan tru thang / nam (vd cong doan 44 / 22).
+        GhiChuDieuKien:
+          type: string
+          nullable: true
+        SaoChepTuNam:
+          type: integer
+          nullable: true
+          description: Co gia tri = ban CHOT TU DONG khi dong nam IdNamNguon, chep tu nam nay.
+        IdNguoiCapNhat:
+          type: integer
+          nullable: true
+          description: Cua ban ghi nguon (nam IdNamNguon).
+        HoTenNguoiCapNhat:
+          type: string
+          nullable: true
+        NgayCapNhat:
+          type: string
+          format: date-time
+          nullable: true
+    ChucVuGiamTruSaveRequest:
+      type: object
+      properties:
+        LoaiGiamTru:
+          type: string
+          enum: [dinh_muc_phan_tram, gio_chuan_co_dinh]
+          description: Bat buoc (kiem o BLL).
+        TyLeDinhMucGiang:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Chi loai ty le. Null = 1 (khong giam).
+        GioGiamTruNam:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+          maximum: 9999.99
+          description: Bat buoc voi loai gio co dinh; phai null voi loai ty le.
+        GhiChuDieuKien:
+          type: string
+          nullable: true
+          maxLength: 500
+    ChucVuGiamTruResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        Item:
+          $ref: "#/components/schemas/ChucVuGiamTruNamDto"
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChucVuGiamTruNamDto"
     DonViCreateRequest:
       type: object
       required:
@@ -20090,7 +20333,9 @@ components:
           type: number
           format: double
           nullable: true
-          description: "Null khi LyDo = DU_LIEU_CAN_KIEM_TRA (dong thoi gian chi de xem)."
+          description: >-
+            Null khi LyDo = DU_LIEU_CAN_KIEM_TRA (dong thoi gian chi de xem), va o dong CHUC_VU co GhiChu =
+            THIEU_CAU_HINH_GIAM_TRU_CV (chi neu chuc vu can cau hinh giam tru; khong cong vao tong).
         CongThuc:
           type: string
           nullable: true
@@ -20204,14 +20449,15 @@ components:
           nullable: true
           description: >-
             Khi TyLeHoanThanh null: CHUA_CO_CHUC_DANH / CHUA_CAU_HINH_DINH_MUC / DINH_MUC_BANG_0 /
-            MIEN_TOAN_BO / DU_LIEU_CAN_KIEM_TRA. Di kem TyLeHoanThanh = 100: DAO_TAO_TINH_100
+            MIEN_TOAN_BO / DU_LIEU_CAN_KIEM_TRA / THIEU_CAU_HINH_GIAM_TRU_CV (chuc vu giu trong nam chua co
+            cau hinh giam tru - khong cham tu dong, 2026-10-14). Di kem TyLeHoanThanh = 100: DAO_TAO_TINH_100
             (mien ca nam vi dao tao tien si, tinh hoan thanh 100%).
         CanhBao:
           type: string
           nullable: true
           description: >-
             Noi bang ';': CHUA_CO_DU_LIEU_GIAM_TRU, CHUC_VU_DOI_TRONG_NAM (nhap chuc vu truoc
-            do qua API nhanvienchucvu), THANG_MIEN_VUOT_NAM.
+            do qua API nhanvienchucvu), THANG_MIEN_VUOT_NAM, THIEU_CAU_HINH_GIAM_TRU_CV.
         DiemDuKien:
           type: number
           format: double
@@ -21661,7 +21907,27 @@ components:
           type: number
           format: decimal
           nullable: true
-          description: Tỷ lệ giờ giảng còn phải hoàn thành (0.00–1.00). NULL = không áp dụng giảm trừ.
+          description: >-
+            Tỷ lệ giờ giảng còn phải hoàn thành (0.00–1.00) theo cấu hình của NĂM ĐÁNH GIÁ chứa atDate (mặc định
+            hôm nay) - đợt 2026-10-14. NULL = không giảm theo tỷ lệ / chưa cấu hình (xem LoaiGiamTru).
+        LoaiGiamTru:
+          type: string
+          nullable: true
+          enum: [dinh_muc_phan_tram, gio_chuan_co_dinh]
+          description: Null = chưa cấu hình / không có chức vụ.
+        GioGiamTruNam:
+          type: number
+          format: decimal
+          nullable: true
+          description: Giờ chuẩn trừ / năm khi LoaiGiamTru = gio_chuan_co_dinh.
+        IdNamGiamTru:
+          type: integer
+          nullable: true
+          description: Năm đánh giá dùng để tra (năm chứa ngày; không năm nào chứa -> năm gần nhất đã bắt đầu).
+        IdNamNguonGiamTru:
+          type: integer
+          nullable: true
+          description: Năm của bản cấu hình đang áp dụng (< IdNamGiamTru = kế thừa).
         TuNgay:
           type: string
           format: date
@@ -22088,7 +22354,23 @@ components:
         TyLeGiangChucVu:
           type: number
           format: decimal
-          description: Tỷ lệ định mức giảng theo chức vụ (1.0 = không giảm)
+          description: Tỷ lệ định mức giảng theo chức vụ (1.0 = không giảm, kể cả khi chức vụ áp dụng là loại giờ cố định)
+        LoaiGiamTruChucVu:
+          type: string
+          nullable: true
+          enum: [dinh_muc_phan_tram, gio_chuan_co_dinh]
+          description: >-
+            Loại của chức vụ ĐƯỢC CHỌN (đợt 2026-10-14: chỉ áp 1 chức vụ có mức giảm lớn nhất quy ra giờ, giữa
+            chức vụ snapshot và các chức vụ giờ cố định giữ tại ngày kết thúc năm). Null = không có chức vụ.
+        GioGiamTruChucVu:
+          type: number
+          format: decimal
+          nullable: true
+          description: Giờ chuẩn trừ thẳng khi LoaiGiamTruChucVu = gio_chuan_co_dinh.
+        IdNamNguonGiamTru:
+          type: integer
+          nullable: true
+          description: Năm của bản cấu hình giảm trừ đang áp dụng.
         GioGiangBase:
           type: number
           format: decimal
@@ -22096,7 +22378,9 @@ components:
         GioGiangApDung:
           type: number
           format: decimal
-          description: "Giờ giảng sau chức vụ + ngoại lệ: max(0, base × TyLe − SoGioGiam − base × TyLe × ΣHeSoGiam)"
+          description: >-
+            Giờ giảng sau chức vụ + ngoại lệ: max(0, S − SoGioGiam − S × ΣHeSoGiam), S = base × TyLe (loại tỷ lệ)
+            hoặc max(0, base − GioGiamTruChucVu) (loại giờ cố định).
         LyDoDieuChinh:
           type: string
           nullable: true

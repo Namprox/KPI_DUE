@@ -7,6 +7,8 @@ const QL_ChucVuForm = ({
   formData,
   setFormData,
   isEditing,
+  saving = false,
+  error,
 }) => {
   if (!isOpen) return null;
 
@@ -35,7 +37,7 @@ const QL_ChucVuForm = ({
           </h3>
           <button
             className="close-btn"
-            onClick={onClose}
+            onClick={onClose} disabled={saving}
             style={{
               fontSize: "26px",
               lineHeight: "1",
@@ -47,14 +49,16 @@ const QL_ChucVuForm = ({
           </button>
         </div>
         <div className="modal-body" style={{ padding: "25px" }}>
+          {error && <p role="alert">{error}</p>}
           <form id="cvForm" onSubmit={onSubmit}>
+            <fieldset disabled={saving} style={{ border: 0, padding: 0, margin: 0 }}>
             <div className="form-group" style={{ marginBottom: "20px" }}>
               <label>
                 Mã chức vụ <span className="text-red">*</span>
               </label>
               <input
                 type="text"
-                name="MaChucVu"
+                name="MaChucVu" aria-label="Mã chức vụ"
                 className="form-input"
                 value={formData.MaChucVu || ""}
                 onChange={handleChange}
@@ -68,52 +72,13 @@ const QL_ChucVuForm = ({
               </label>
               <input
                 type="text"
-                name="TenChucVu"
+                name="TenChucVu" aria-label="Tên chức vụ"
                 className="form-input"
                 value={formData.TenChucVu || ""}
                 onChange={handleChange}
                 required
                 placeholder="Bí thư chi bộ, ..."
               />
-            </div>
-            <div className="form-grid-2">
-              <div className="form-group" style={{ marginBottom: "20px" }}>
-                <label>Định mức giảng dạy (0.0 - 1.0)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="1"
-                  name="TyLeDinhMucGiang"
-                  className="form-input"
-                  value={
-                    formData.TyLeDinhMucGiang !== null &&
-                    formData.TyLeDinhMucGiang !== undefined
-                      ? formData.TyLeDinhMucGiang
-                      : ""
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      TyLeDinhMucGiang:
-                        e.target.value === ""
-                          ? null
-                          : parseFloat(e.target.value),
-                    })
-                  }
-                  placeholder="Ví dụ: 0.85"
-                />
-              </div>
-            </div>
-            <div className="form-group" style={{ marginBottom: "20px" }}>
-              <label>Điều kiện áp dụng / Ghi chú</label>
-              <textarea
-                name="GhiChuDieuKien"
-                className="form-input"
-                value={formData.GhiChuDieuKien || ""}
-                onChange={handleChange}
-                rows="2"
-                placeholder="Ví dụ: Bí thư chi bộ - Bảng 2.1 mục 12 QĐ 3237"
-              ></textarea>
             </div>
             <div
               className="form-group"
@@ -138,17 +103,18 @@ const QL_ChucVuForm = ({
                 Đang hoạt động
               </label>
             </div>
+          </fieldset>
           </form>
         </div>
         <div
           className="modal-footer"
           style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}
         >
-          <button type="button" className="btn-cancel" onClick={onClose}>
+          <button type="button" className="btn-cancel" onClick={onClose} disabled={saving}>
             <i className="fa-solid fa-times" style={{ marginRight: "5px" }}></i>{" "}
             Hủy
           </button>
-          <button type="submit" form="cvForm" className="btn-submit">
+          <button type="submit" form="cvForm" className="btn-submit" disabled={saving}>
             <i
               className="fa-solid fa-floppy-disk"
               style={{ marginRight: "5px" }}

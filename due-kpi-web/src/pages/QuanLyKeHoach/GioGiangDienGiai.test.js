@@ -5,6 +5,7 @@ import { TongHopGioGiang } from "./GioGiangTkbPanels";
 import { GiaiTrinhGioGiang } from "./GioGiangTyLeDetails";
 import { apiFetch } from "../../utils/api";
 import { moTaDienGiai, ngayDienGiai } from "../../utils/gioGiangDienGiai";
+import { DiemGioGiang, TyLeGioGiang } from './GioGiangTyLeDetails';
 
 jest.mock("../../utils/api", () => ({ apiFetch: jest.fn() }));
 jest.mock("../../utils/donViApi", () => ({ fetchDonViList: async () => [] }));
@@ -16,6 +17,15 @@ const dienGiai = [
   { IdNhanVien: 440, ThuTu: 4, KhoanMuc: "GIO_TKB", IdGioGiangTkb: 1234, TenNguon: "Giảng viên A - Luật", SoLop: 3, SoTiet: 90, SoGio: 117 },
 ];
 const ok = (body) => ({ ok: true, json: async () => body });
+
+test('thiếu cấu hình chức vụ hiện cảnh báo, không chấm tự động và giữ tổng API', () => {
+  const missing = { ...row, GiamChucVu: 0, DinhMucApDung: 270, LyDo: 'THIEU_CAU_HINH_GIAM_TRU_CV', CanhBao: 'THIEU_CAU_HINH_GIAM_TRU_CV', TyLeHoanThanh: null, DiemDuKien: null };
+  render(<><GiaiTrinhGioGiang row={missing} dienGiai={[{ IdNhanVien: row.IdNhanVien, KhoanMuc: 'CHUC_VU', TenNguon: 'Trưởng ban thanh tra', SoGio: null, GhiChu: 'THIEU_CAU_HINH_GIAM_TRU_CV' }]} /><DiemGioGiang row={missing} /><TyLeGioGiang row={missing} /></>);
+  expect(screen.getAllByText('Chức vụ chưa được cấu hình giảm trừ năm này — liên hệ ADMIN/BGH')).toHaveLength(3);
+  expect(screen.getByText('Không chấm tự động')).toBeInTheDocument();
+  expect(screen.getByRole('row', { name: /Trưởng ban thanh tra/ })).toHaveTextContent('—');
+  expect(screen.getByRole('row', { name: 'Định mức áp dụng 270' })).toBeInTheDocument();
+});
 beforeEach(() => {
   apiFetch.mockReset();
   apiFetch.mockImplementation(async (url) => {

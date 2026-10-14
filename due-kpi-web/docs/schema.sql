@@ -17,6 +17,9 @@ CREATE TABLE don_vi (
 GO
 
 -- 1.2. Chức vụ kiêm nhiệm
+--      Đợt "Giảm trừ giờ giảng theo năm" (2026-10-14): 4 cột ty_le_dinh_muc_giang, loai_giam_tru,
+--      gio_giam_tru_nam, ghi_chu_dieu_kien CHỈ CÒN ĐỂ ĐỌC TƯƠNG THÍCH (api/chucvu cũ) — đóng băng ở giá trị
+--      lúc migration, KHÔNG phép tính nào đọc nữa. Nguồn tính toán: chuc_vu_giam_tru_nam (§2.2b).
 CREATE TABLE chuc_vu (
     id_chuc_vu           INT           IDENTITY(1,1) PRIMARY KEY,
     ma_chuc_vu           NVARCHAR(20)  NOT NULL,
@@ -181,6 +184,41 @@ CREATE TABLE dinh_muc_giang_vien (
     CONSTRAINT chk_dm_gio_giang          CHECK (gio_giang_ly_thuyet >= 0),
     CONSTRAINT chk_dm_gio_nckh           CHECK (gio_nckh >= 0),
     CONSTRAINT chk_dm_gio_pvcd           CHECK (gio_pvcd >= 0)
+);
+GO
+
+-- 2.2b. Giảm trừ giờ giảng theo chức vụ × năm đánh giá (đợt 2026-10-14).
+--   Năm KHÔNG có bản riêng → kế thừa ĐỘNG bản của năm gần nhất TRƯỚC đó (xét riêng từng chức vụ,
+--   id_nam <= năm cần xem). Đọc qua dbo.fn_chuc_vu_giam_tru_ap_dung(@id_nam); không có năm nguồn nào
+--   = "Chưa cấu hình". Không bao giờ lấy năm sau.
+--   loai_giam_tru: 0 = tỷ lệ (ty_le_dinh_muc_giang = tỷ lệ định mức CÒN PHẢI THỰC HIỆN, NULL = 1 = không giảm,
+--                  gio_giam_tru_nam NULL); 1 = giờ cố định (gio_giam_tru_nam giờ chuẩn / năm, ty_le NULL).
+--   sao_chep_tu_nam: NULL = nhập tay / migration; có giá trị = bản chốt khi ĐÓNG NĂM từ mức đang kế thừa
+--                    của năm đó (sp_nam_danh_gia_create / _update).
+--   Năm trang_thai = 3 không sửa được; ghi ở năm Y bị chặn nếu làm đổi cấu hình hiệu lực của một năm đã
+--   đóng sau Y (dbo.fn_chuc_vu_giam_tru_nam_dong_anh_huong). Mọi SP ghi bảng này / đổi trạng thái năm
+--   giữ sp_getapplock N'chuc_vu_giam_tru_nam'. Chi tiết: schema_ghi_chu.md §1.4.
+CREATE TABLE chuc_vu_giam_tru_nam (
+    id_chuc_vu           INT           NOT NULL,
+    id_nam               INT           NOT NULL,
+    loai_giam_tru        BIT           NOT NULL CONSTRAINT df_cvgtn_loai DEFAULT (0),
+    ty_le_dinh_muc_giang DECIMAL(5,4)  NULL,
+    gio_giam_tru_nam     DECIMAL(6,2)  NULL,
+    ghi_chu_dieu_kien    NVARCHAR(500) NULL,
+    sao_chep_tu_nam      INT           NULL,
+    id_nguoi_cap_nhat    INT           NULL,
+    ngay_cap_nhat        DATETIME      NOT NULL CONSTRAINT df_cvgtn_ngay_cap_nhat DEFAULT (GETDATE()),
+    CONSTRAINT pk_cvgtn            PRIMARY KEY (id_chuc_vu, id_nam),
+    CONSTRAINT fk_cvgtn_chuc_vu    FOREIGN KEY (id_chuc_vu) REFERENCES chuc_vu(id_chuc_vu),
+    CONSTRAINT fk_cvgtn_nam        FOREIGN KEY (id_nam)     REFERENCES nam_danh_gia(id_nam),
+    CONSTRAINT chk_cvgtn_tldm      CHECK (ty_le_dinh_muc_giang IS NULL
+                                       OR (ty_le_dinh_muc_giang >= 0 AND ty_le_dinh_muc_giang <= 1)),
+    CONSTRAINT chk_cvgtn_gio       CHECK (gio_giam_tru_nam IS NULL OR gio_giam_tru_nam >= 0),
+    CONSTRAINT chk_cvgtn_nhat_quan CHECK ((loai_giam_tru = 0 AND gio_giam_tru_nam IS NULL)
+                                       OR (loai_giam_tru = 1
+                                           AND ty_le_dinh_muc_giang IS NULL
+                                           AND gio_giam_tru_nam IS NOT NULL)),
+    CONSTRAINT chk_cvgtn_sao_chep  CHECK (sao_chep_tu_nam IS NULL OR sao_chep_tu_nam < id_nam)
 );
 GO
 
@@ -1643,6 +1681,7 @@ INSERT INTO cau_hinh_audit (ten_bang, muc_ghi, dang_bat, dot_trien_khai, cot_bo_
                                        N'Nhân sự — mật khẩu / token bị danh sách cấm loại; 2 cột đăng nhập bỏ để login không sinh audit'),
     (N'nhan_vien_chuc_vu',             1, 1, 'A', NULL, N'Nhân sự'),
     (N'nhan_vien_chuc_danh',           1, 1, 'A', NULL, N'Nhân sự'),
+    (N'chuc_vu_giam_tru_nam',          1, 1, 'A', NULL, N'Nhân sự — giảm trừ giờ giảng theo năm (đợt 2026-10-14)'),
     -- Đợt A — import thô lớn: TÓM TẮT
     (N'phan_hoi_sinh_vien',            2, 1, 'A', NULL, N'Import thô lớn'),
     (N'sinh_vien_hoc_vu',              2, 1, 'A', NULL, N'Import thô lớn (MERGE: tối đa 3 dòng / câu lệnh)'),

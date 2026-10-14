@@ -13,7 +13,7 @@ const expectedGroups = [
   ["unitScoring", "Xử lý KPI đơn vị", "Hồ sơ chờ thẩm định|Chấm theo tiêu chí|Chờ tôi chấm KPI đơn vị|Phiếu toàn đơn vị|Duyệt KPI viên chức theo quý|Duyệt hồ sơ KPI|Chốt hồ sơ nhân viên|Tờ trình KPI đơn vị|Duyệt kê khai thành tích|Ghi nhận vi phạm nhân viên|Báo cáo đơn vị"],
   ["evaluationMgmt", "Duyệt KPI cấp trường", "Duyệt hồ sơ lãnh đạo|Xét xuất sắc viên chức Khoa|Theo dõi phiếu toàn trường"],
   ["kpiSources", "Ghi nhận và số liệu KPI", "Giờ giảng từ thời khóa biểu|Tỷ lệ hoàn thành giờ giảng|Mẫu giảm trừ|Quản lý học vụ|Hoạt động đào tạo|Ủy quyền nhập liệu đào tạo|Khen thưởng đột xuất|Ủy quyền nhập liệu khen thưởng|Phát triển đội ngũ|Ủy quyền nhập liệu phát triển đội ngũ|Sáng kiến|Ủy quyền nhập liệu sáng kiến|Thành tích đoàn thể|Quản lý đánh giá sinh viên|Điểm trung bình ĐGSV|Ghi nhận vi phạm giảng viên|Tổng hợp điểm trừ vi phạm|Thống kê vi phạm của Khoa"],
-  ["planMgmt", "Thiết lập KPI", "Quản lý năm đánh giá|Định mức giảng viên|Ngoại lệ định mức|Danh mục thành tích vượt trội|Danh mục loại vi phạm"],
+  ["planMgmt", "Thiết lập KPI", "Quản lý năm đánh giá|Giảm trừ theo năm|Định mức giảng viên|Ngoại lệ định mức|Danh mục thành tích vượt trội|Danh mục loại vi phạm"],
   ["criteriaMgmt", "Quản lý tiêu chí", "Nhóm tiêu chí|Tiêu chí đánh giá|Mẫu phiếu đánh giá"],
   ["orgMgmt", "Cơ cấu tổ chức", "Cơ cấu đơn vị|Người dùng|Chức danh nghề nghiệp|Quản lý chức vụ"],
 ];

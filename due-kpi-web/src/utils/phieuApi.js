@@ -1425,6 +1425,7 @@ export const fetchBaoCaoChuaLapPhieu = async ({ idNam, idDonVi, quy = 0, loaiDoi
 /* Hồ sơ KPI của một giảng viên                                        */
 /* ------------------------------------------------------------------ */
 
+/** @returns {Promise<import('./chucVuGiamTruTypes').DinhMucApDung | null>} */
 export const fetchDinhMucApDung = async (idNv, idNam) => {
   const data = await getJson(
     `dinh-muc-giang-vien/ap-dung/${idNv}/${idNam}`,

@@ -88,7 +88,7 @@ export const ROLE_SETS = {
    * QUAN_TRI với các danh mục cấp Khoa. PHT cũng bị loại - duyệt kết quả là
    * việc của họ, dựng thước đo thì không.
    *
-   * TRÙNG thành viên với NAM_DANH_GIA và CAP_TRUONG nhưng CỐ Ý tách riêng, theo
+   * CỐ Ý tách riêng với NAM_DANH_GIA và CAP_TRUONG, theo
    * đúng quy ước của file này: ba tập trả lời ba câu hỏi khác nhau (dựng bộ
    * tiêu chí / mở đóng năm đánh giá / duyệt gói KPI), đổi một tập không được
    * lặng lẽ kéo theo hai tập kia.
@@ -96,7 +96,7 @@ export const ROLE_SETS = {
   QUAN_LY_TIEU_CHI: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
 
   /**
-   * Danh mục nền của toàn trường: cây đơn vị, chức danh nghề nghiệp, chức vụ
+   * Danh mục nền của toàn trường: cây đơn vị, chức danh nghề nghiệp
    * (nhóm menu "Cơ cấu tổ chức", TRỪ mục "Người dùng").
    *
    * HẸP HƠN QUAN_TRI một cách có chủ đích, cùng lý do với QUAN_LY_TIEU_CHI:
@@ -156,12 +156,13 @@ export const ROLE_SETS = {
   /**
    * Thiết lập kỳ đánh giá của toàn trường: mở/đóng năm, chốt mốc thời gian.
    *
-   * Hẹp hơn QUAN_TRI vì một năm đánh giá chi phối tất cả các Khoa - PHT, Trưởng
-   * Khoa và Trưởng Bộ môn chỉ làm việc trong năm đã mở, không tự mở năm mới.
-   * Trùng thành viên với CAP_TRUONG nhưng tách riêng: bên kia là thẩm quyền
-   * duyệt gói KPI, đổi một tập không kéo theo tập còn lại.
+   * ADMIN/HT/PHT theo chức vụ chính trong token (bàn giao 2026-10-14).
+   * Dùng canManageNamDanhGia cho thao tác ghi và lối vào màn quản lý.
    */
-  NAM_DANH_GIA: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
+  NAM_DANH_GIA: [ROLE.ADMIN, ROLE.HIEU_TRUONG, ROLE.PHO_HIEU_TRUONG],
+
+  /** Danh mục chức vụ và giảm trừ theo năm; API xét chức vụ chính trong token. */
+  CHUC_VU: [ROLE.ADMIN, ROLE.HIEU_TRUONG, ROLE.PHO_HIEU_TRUONG],
 
   /** Định mức giảng viên toàn trường chỉ do Admin và Hiệu trưởng quản lý. */
   DINH_MUC_GIANG_VIEN: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
@@ -335,6 +336,10 @@ export const ROLE_SETS = {
    */
   DUYET_HO_SO_NHAN_VIEN: [...VAI_TRO_TRUONG_PHONG, ROLE.ADMIN],
 };
+
+/** Các API danh mục này chỉ xét chức vụ chính, không xét kiêm nhiệm. */
+export const canManageChucVuNam = (user) => ROLE_SETS.CHUC_VU.includes(normalizeRole(user));
+export const canManageNamDanhGia = (user) => ROLE_SETS.NAM_DANH_GIA.includes(normalizeRole(user));
 
 /**
  * @param {string[]|"*"} roles tập vai trò được phép, hoặc MOI_NGUOI

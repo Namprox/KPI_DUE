@@ -13,6 +13,7 @@ export const laCongThucGioGiang = (row) =>
   String(row?.CongThucSnapshot || row?.CongThucTongHop || "").toUpperCase() === CONG_THUC_GIO_GIANG;
 
 export const LY_DO_GIO_GIANG = {
+  THIEU_CAU_HINH_GIAM_TRU_CV: "Chức vụ chưa được cấu hình giảm trừ năm này — liên hệ ADMIN/BGH",
   DAO_TAO_TINH_100: "Đi đào tạo tiến sĩ cả năm: tính hoàn thành 100%",
   CHUA_CO_CHUC_DANH: "Chưa có chức danh nghề nghiệp",
   CHUA_CAU_HINH_DINH_MUC: "Chưa cấu hình định mức cho chức danh / năm",
@@ -23,6 +24,7 @@ export const LY_DO_GIO_GIANG = {
   NAM_KHONG_TON_TAI: "Dữ liệu không hợp lệ",
 };
 export const CANH_BAO_GIO_GIANG = {
+  THIEU_CAU_HINH_GIAM_TRU_CV: LY_DO_GIO_GIANG.THIEU_CAU_HINH_GIAM_TRU_CV,
   CHUA_CO_DU_LIEU_GIAM_TRU: "Chưa có dữ liệu file giảm trừ năm này. Hiện chỉ tính giảm theo chức vụ",
   CHUC_VU_DOI_TRONG_NAM: "Chức vụ thay đổi trong năm. Kiểm tra lịch sử chức vụ đã nhập đủ chưa",
   THANG_MIEN_VUOT_NAM: "Số tháng miễn vượt quá số tháng của năm",

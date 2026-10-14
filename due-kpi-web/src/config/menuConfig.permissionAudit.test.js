@@ -84,3 +84,14 @@ test.each(['ADMIN', 'Admin', ' admin '])('chuẩn hóa %s và giữ quyền qu�
 test.each([null, { MaChucVu: 'NV' }, { MaChucVu: 'HT' }, { MaChucVu: 'PHT' }, { MaChucVu: 'TBM' }])('không mở quyền điểm trung bình ngoài hợp đồng', u => {
   checkRoute('/diem-trung-binh-danh-gia-sinh-vien', u, false);
 });
+
+test.each(['Admin', ' ht ', 'PHT'])('chức vụ chính %s quản lý danh mục chức vụ và năm qua menu/URL', MaChucVu => {
+  ['/quan-ly-chuc-vu', '/quan-ly-nam-danh-gia'].forEach(path => {
+    checkRoute(path, { MaChucVu }, true);
+    checkRoute(path, { MaChucVu: 'GV', DonVi: [{ MaChucVu }] }, false);
+  });
+});
+
+test.each(['GV', 'TK', 'NV', 'PHT', 'ADMIN'])('%s xem giảm trừ theo năm qua menu và URL', MaChucVu => {
+  checkRoute('/giam-tru-chuc-vu-theo-nam', { MaChucVu }, true);
+});

@@ -110,9 +110,45 @@ dùng nữa vì hai mã này miễn KPI — xem §1.3). Hệ quả:
   - "Quân nhân dự bị, tự vệ" **không** là chức vụ: dùng `giam_tru_nhan_vien.so_ngay_huan_luyen_qndb` (1 ngày = 2.5 giờ
     chuẩn, **cộng vào giờ thực hiện** — không trừ định mức; xem §13.10).
   - Phép trừ số giờ cố định vào định mức: **đã làm** ở `fn_gio_giang_ty_le_hoan_thanh` (§13.10), tỷ lệ theo thời
-    gian giữ chức vụ. `sp_nhan_vien_resolve_chuc_vu_ap_dung` / `DinhMucGiangVienService.TinhDinhMucApDung` (định mức
-    áp dụng trên phiếu) **vẫn** chỉ xét tỷ lệ (NULL = 1.0) — hai đường tính khác nhau, không dùng lẫn.
+    gian giữ chức vụ. Định mức áp dụng trên phiếu (`sp_dinh_muc_lay_context_ap_dung` /
+    `DinhMucGiangVienService.TinhDinhMucApDung`): xem đợt 2026-10-14 bên dưới — hai đường tính khác nhau, không dùng lẫn.
   - `schema.sql` đã có 2 cột này + 3 CHECK (`chk_chuc_vu_loai_gt`, `chk_chuc_vu_gio_gt`, `chk_chuc_vu_gt_nhat_quan`).
+- **Giảm trừ giờ giảng THEO NĂM** (đợt 2026-10-14): 4 cột `ty_le_dinh_muc_giang`, `loai_giam_tru`, `gio_giam_tru_nam`,
+  `ghi_chu_dieu_kien` của `chuc_vu` **đóng băng** ở giá trị lúc migration, chỉ còn để `api/chucvu` cũ đọc. **Nguồn tính
+  toán duy nhất**: bảng `chuc_vu_giam_tru_nam` (`schema.sql` §2.2b), PK `(id_chuc_vu, id_nam)`, cùng 3 quy tắc CHECK.
+  - **Kế thừa động:** năm chưa có bản riêng dùng bản của năm gần nhất **trước** đó, xét riêng từng chức vụ; không bao giờ
+    lấy năm sau. Đọc qua `dbo.fn_chuc_vu_giam_tru_ap_dung(@id_nam)` (1 dòng / chức vụ; `id_nam_nguon` NULL = "Chưa cấu
+    hình", `thieu_cau_hinh = 1` trừ chức vụ `Admin`). Đọc không ghi.
+  - **Ghi:** `sp_chuc_vu_giam_tru_save` (API `PUT api/chucvu/{id}/giam-tru/{idNam}`): ADMIN / HT / PHT theo chức vụ chính
+    (kiểm ở BLL **và** SP), năm `trang_thai <> 3`, ghi đè toàn bộ bản riêng của năm. Bất biến **"năm đã đóng không đổi"**:
+    `fn_chuc_vu_giam_tru_nam_dong_anh_huong(@id_nam)` liệt kê năm đã đóng Z > Y không có bản riêng trong (Y, Z] — ghi /
+    xoá ở Y khi còn cặp đó bị chặn (`ANH_HUONG_NAM_DA_DONG`).
+  - **Đóng năm** (`sp_nam_danh_gia_update` 1/2 → 3, hoặc `sp_nam_danh_gia_create` với trạng thái 3) gọi
+    `sp_chuc_vu_giam_tru_chot_nam` trong cùng transaction: còn chức vụ **được giữ trong khoảng ngày của năm** mà chưa có
+    nguồn (`fn_chuc_vu_giam_tru_thieu_nguon`) → chặn (409 kèm tên); đủ → chép mọi mức đang kế thừa thành bản riêng
+    (`sao_chep_tu_nam` = năm nguồn). Mở lại năm không xoá bản đã chốt. `sp_nam_danh_gia_delete` xoá cấu hình của năm cùng
+    transaction (có kiểm bất biến).
+  - **Khoá:** mọi SP ghi bảng này / đổi trạng thái năm giữ `sp_getapplock N'chuc_vu_giam_tru_nam'` (Exclusive,
+    Transaction, chờ 15 giây) → lưu cấu hình, đóng / mở / xoá năm chạy nối tiếp.
+  - **Luồng chỉ có ngày** (danh sách quan hệ nhân viên–chức vụ, resolver không truyền năm): năm đánh giá chứa ngày
+    (`fn_nam_danh_gia_theo_ngay`; nhiều năm → `id_nam` lớn nhất; không năm nào chứa → năm gần nhất đã bắt đầu; không có →
+    chưa cấu hình). `sp_nhan_vien_chuc_vu_get_by_id` dùng ngày hôm nay.
+  - **KPI** (`fn_gio_giang_ty_le_chi_tiet`): quy tắc §13.10 **giữ nguyên** (tỷ lệ thấp nhất + cộng giờ cố định), chỉ đổi
+    nguồn hệ số. Chức vụ giữ trong năm chưa có nguồn → `ly_do = THIEU_CAU_HINH_GIAM_TRU_CV` (không chấm tự động).
+  - **Chốt phiếu** (`sp_dinh_muc_lay_context_ap_dung`): **chỉ áp 1 chức vụ có mức giảm lớn nhất** quy ra giờ — ứng viên là
+    chức vụ snapshot (`phieu.id_chuc_vu`, NULL → chức vụ chính) ∪ mọi chức vụ **giờ cố định** người đó giữ tại
+    `ngay_ket_thuc` của năm (mọi đơn vị) ∪ chức vụ chưa cấu hình giữ tại ngày đó. Loại tỷ lệ giảm `gốc × (1 − tỷ lệ)`,
+    loại giờ giảm `giờ`; hoà → snapshot. Định mức sau chức vụ = `gốc × tỷ lệ` hoặc `max(0, gốc − giờ)`, rồi áp ngoại lệ như
+    cũ. Ứng viên chưa cấu hình → `ArgumentException` (chốt 400). `phieu.id_chuc_vu` **không đổi** (vẫn resolve theo tỷ lệ
+    thấp nhất — cột này định tuyến HT duyệt qua `fn_chuc_vu_can_ht_duyet`). Ví dụ gốc 270: TK 0,3 + CTCĐ 44h → KPI 37h,
+    chốt 81h (khác nhau có chủ đích).
+  - **API cũ** `api/chucvu` POST / PUT: chỉ còn mã / tên / trạng thái; gửi lại đúng giá trị giảm trừ cũ thì bỏ qua, đổi
+    → 400 hướng dẫn API theo năm. SP cũ vẫn nhận 4 tham số (bỏ qua) để C# cũ không lỗi trong cửa sổ triển khai. Ghi ở
+    `api/chucvu` và `api/namdanhgia` chỉ ADMIN / HT / PHT (trước đó mọi token đều ghi được → đổi mã chức vụ để leo quyền).
+  - Migration seed **mỗi chức vụ × mỗi năm đã có** từ cột cũ (chỉ khi bảng rỗng): mốc khởi tạo, không phục dựng lịch sử.
+    Hệ quả: các năm đã có đều là bản riêng (`LaKeThua = false`); sửa một năm **không** lan sang năm sau đã có, chỉ năm tạo
+    mới về sau kế thừa. Chức vụ tạo sau migration là "Chưa cấu hình" ở mọi năm.
+  - Audit: bảng có trong `cau_hinh_audit` (đợt A, chi tiết) — §23.4.
 
 ### 1.5. `nhan_vien_chuc_vu` — Quan hệ người × đơn vị × chức vụ × thời gian
 Từ Đợt 1 của kế hoạch kiêm nhiệm, bảng này không còn là "lịch sử chức vụ" mà là
@@ -3525,8 +3561,8 @@ Có ba nơi đọc hàm này, nên không nơi nào lệch nhau:
 | Khoản | Nguồn | Quy tắc |
 |---|---|---|
 | Định mức gốc | `dinh_muc_giang_vien` theo `nhan_vien.id_chuc_danh` + năm | Chưa có chức danh hoặc chưa cấu hình định mức → `ty_le` NULL, 0 điểm |
-| Chức vụ (tỷ lệ) | lịch sử `nhan_vien_chuc_vu` | Mỗi ngày lấy `ty_le_dinh_muc_giang` **thấp nhất** trong các chức vụ đang giữ (NULL = 1). `tu_ngay` được **bù** từ cột I của file khi cùng `id_chuc_vu` và I sớm hơn |
-| Chức vụ (giờ cố định) | `chuc_vu.loai_giam_tru = 1` | Công đoàn 44h / 22h, cộng trên DISTINCT `id_chuc_vu`, **tỷ lệ theo thời gian giữ trên ngày làm việc**, nhân `(12 − E)/12` |
+| Chức vụ (tỷ lệ) | lịch sử `nhan_vien_chuc_vu` + cấu hình **theo năm** (`fn_chuc_vu_giam_tru_ap_dung(@id_nam)`, §1.4) | Mỗi ngày lấy `ty_le_dinh_muc_giang` **thấp nhất** trong các chức vụ đang giữ (NULL = 1). `tu_ngay` được **bù** từ cột I của file khi cùng `id_chuc_vu` và I sớm hơn. Chức vụ chưa có nguồn cấu hình → tính như 1 nhưng `ly_do = THIEU_CAU_HINH_GIAM_TRU_CV` |
+| Chức vụ (giờ cố định) | cấu hình theo năm `loai_giam_tru = 1` | Công đoàn 44h / 22h, cộng trên DISTINCT `id_chuc_vu`, **tỷ lệ theo thời gian giữ trên ngày làm việc**, nhân `(12 − E)/12` |
 | a) Tập sự | K | Định mức = 0 trong thời gian tập sự. Chỉ miễn phần tập sự **trong năm** (vd K 01/07/2025–30/06/2026 → miễn 6 tháng 01/01–30/06/2026); phần còn lại tính **bình thường**, không cảnh báo trần 50% (chốt 2026-09-28) |
 | b) Nghỉ | **O** (chuẩn), M–N, P | Xem "Khối miễn" bên dưới |
 | c) Đào tạo | R–S, **mọi dòng**, không xét Q | Đào tạo tiến sĩ. Coi toàn bộ là tập trung → định mức = 0 trong khoảng đó. Q chỉ là trạng thái "còn đang học tại tháng 9". **Khối miễn chứa đào tạo làm tròn tới bội 0,5 gần nhất** (2026-09-28), xem "Làm tròn tháng đào tạo". **Thời gian đào tạo tính hoàn thành 100%**: miễn cả năm mà có đào tạo → `ty_le = 100`, `ly_do = DAO_TAO_TINH_100`, đủ điểm (2026-09-28) |
@@ -3613,7 +3649,8 @@ trước P → tập sự → nghỉ → đào tạo. Các cột là `giam_chua_
 | < 50% | 0 | 0 |
 
 - **Khác `NCKH_GIO_TY_LE` ở biên:** đúng 50% → 10 (NCKH ra 0); đúng 75% → 10.
-- `ly_do` là `MIEN_TOAN_BO` hoặc `DU_LIEU_CAN_KIEM_TRA` → hàm trả **NULL** = không chấm tự động.
+- `ly_do` là `MIEN_TOAN_BO`, `DU_LIEU_CAN_KIEM_TRA` hoặc `THIEU_CAU_HINH_GIAM_TRU_CV` (đợt 2026-10-14: chức vụ giữ
+  trong năm chưa có cấu hình giảm trừ năm đó) → hàm trả **NULL** = không chấm tự động.
   Engine giữ điểm cũ; dòng chưa từng có điểm sẽ được chốt với điểm trống.
 - `ly_do = DAO_TAO_TINH_100` đi kèm `ty_le = 100` → rơi vào bậc ≥ 100% → `diem_toi_da`. Nhánh chấm **không** phải sửa.
 - `ty_le` NULL vì lý do khác (chưa có chức danh / định mức, định mức = 0) → **0**.
@@ -3625,6 +3662,7 @@ trước P → tập sự → nghỉ → đào tạo. Các cột là `giam_chua_
 | `CHUA_CO_DU_LIEU_GIAM_TRU` | Không có dòng file giảm trừ của năm → chỉ tính chức vụ |
 | `CHUC_VU_DOI_TRONG_NAM` | Có chức vụ bắt đầu / kết thúc trong năm. Chức vụ **trước đó** chỉ có ở ghi chú tự do cột AA của file (vd "26/3/2018–27/8/2026: Trưởng khoa") → phải nhập tay qua API `nhanvienchucvu`, nếu không phần đầu năm tính sai |
 | `THANG_MIEN_VUOT_NAM` | Đi kèm `DU_LIEU_CAN_KIEM_TRA` |
+| `THIEU_CAU_HINH_GIAM_TRU_CV` | Có chức vụ giữ trong năm chưa có cấu hình giảm trừ năm đó (kể cả khi `ly_do` khác, vd miễn toàn bộ) → cấu hình qua `PUT api/chucvu/{id}/giam-tru/{idNam}` |
 
 `TAP_SU_KIEM_TRA_TRAN_50` **đã bỏ** (2026-09-28): phần tập sự trong năm đã miễn, phần còn lại tính bình thường nên
 không cần kiểm tra trần 50% bằng tay.
@@ -3677,6 +3715,8 @@ Mỗi dòng thuộc **đúng một** cột tổng theo `khoan_muc`:
 - **Các trường hợp đặc biệt:**
   - `ly_do = DU_LIEU_CAN_KIEM_TRA`: dòng thời gian vẫn có (`so_gio` NULL) để thấy vì sao số tháng miễn vượt năm.
   - `MIEN_TOAN_BO` (kể cả `DAO_TAO_TINH_100`): không sinh dòng chức vụ / công đoàn / con nhỏ 10% vì chúng đều bằng 0.
+  - `ly_do = THIEU_CAU_HINH_GIAM_TRU_CV`: thêm 1 dòng `CHUC_VU` / dòng quan hệ của chức vụ chưa cấu hình, `so_gio` NULL,
+    `ghi_chu = THIEU_CAU_HINH_GIAM_TRU_CV` (chỉ để biết chức vụ nào cần cấu hình; không vào bất biến tổng).
 
 Mã `ghi_chu` (nối bằng `;`):
 
@@ -4755,7 +4795,7 @@ Request ──► TokenAuthorize (token hợp lệ) ──► AuditContext.SetCu
   `ON DELETE CASCADE` theo phiếu).
 - **Không filtered index** trên bảng này: trigger ghi từ mọi SP, kể cả SP tạo với `QUOTED_IDENTIFIER` khác nhau.
 - `cau_hinh_audit`: `ten_bang`, `muc_ghi`, `dang_bat`, `dot_trien_khai` (A/B), `cot_bo_qua` (CSV), `ghi_chu`.
-  Seed 33 dòng (xem `schema.sql` §5.3).
+  Seed 34 dòng (xem `schema.sql` §5.3; dòng thứ 34 `chuc_vu_giam_tru_nam` thêm ở đợt 2026-10-14).
 - **Phân biệt với `lich_su_*` của từng module** (`lich_su_cham_diem`, `lich_su_trang_thai_phieu`…): các bảng đó ghi
   **ý nghĩa nghiệp vụ** (chấm, duyệt, trả lại, lý do) và giữ nguyên. `nhat_ky_thao_tac` ghi **dữ liệu thô** cũ / mới.
   Bảng `nhat_ky` (§5.1) vẫn không có SP nào ghi; đợt này không dùng nó.
@@ -4801,7 +4841,7 @@ Trigger lỗi thì cả câu lệnh nghiệp vụ rollback, đây là chủ ý (
 
 | Đợt | Bảng | Mức |
 |---|---|---|
-| A | `loai_vi_pham`, `loai_vi_pham_don_vi_ghi_nhan`, `vi_pham_giang_day`; `don_vi`, `chuc_vu`, `chuc_danh_nghe_nghiep`, `nhan_vien`, `nhan_vien_chuc_vu`, `nhan_vien_chuc_danh` | Chi tiết |
+| A | `loai_vi_pham`, `loai_vi_pham_don_vi_ghi_nhan`, `vi_pham_giang_day`; `don_vi`, `chuc_vu`, `chuc_danh_nghe_nghiep`, `nhan_vien`, `nhan_vien_chuc_vu`, `nhan_vien_chuc_danh`; `chuc_vu_giam_tru_nam` (thêm đợt 2026-10-14) | Chi tiết |
 | A | `phan_hoi_sinh_vien`, `sinh_vien_hoc_vu`, `canh_bao_hoc_vu`, `gio_giang_tkb_chi_tiet` | **Tóm tắt** |
 | B | `phieu_danh_gia`, `chi_tiet_danh_gia`, `phieu_danh_gia_don_vi`, `chi_tiet_danh_gia_don_vi`; `diem_tb_phan_hoi_sinh_vien`, `khoa_dao_tao_anh_xa`, `gio_giang_tkb_lan_import`, `gio_giang_tkb`, `gio_giang_tkb_anh_xa`, `giam_tru_nhan_vien`, `giam_tru_con_nho`, 9 bảng `nckh_*` | Chi tiết |
 

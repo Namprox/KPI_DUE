@@ -228,13 +228,11 @@ const QL_NamDanhGiaListing = ({
                     {renderStatus(item.TrangThai)}
                   </td>
                   <td>
-                    <div
+                    {canManage && <div
                       style={{
                         display: "flex",
                         gap: "15px",
                         justifyContent: "center",
-                        opacity: canManage ? 1 : 0.4,
-                        pointerEvents: canManage ? "auto" : "none",
                       }}
                     >
                       <div
@@ -251,7 +249,7 @@ const QL_NamDanhGiaListing = ({
                       >
                         <i className="fa-solid fa-trash"></i>
                       </div>
-                    </div>
+                    </div>}
                   </td>
                 </tr>
               ))}

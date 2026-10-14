@@ -14,6 +14,8 @@ import {
   canViewHocVu,
   canViewGioGiangTkb,
   canManagePhanHoiSinhVien,
+  canManageChucVuNam,
+  canManageNamDanhGia,
 } from "../utils/roles";
 
 export const PUBLIC_ROUTES = [
@@ -559,6 +561,13 @@ export const MENU_GROUPS = [
         icon: "fa-solid fa-calendar-days",
         path: "/quan-ly-nam-danh-gia",
         roles: ROLE_SETS.NAM_DANH_GIA,
+        access: canManageNamDanhGia,
+      },
+      {
+        name: "Giảm trừ theo năm",
+        icon: "fa-solid fa-percent",
+        path: "/giam-tru-chuc-vu-theo-nam",
+        roles: MOI_NGUOI,
       },
       {
         name: "Định mức giảng viên",
@@ -665,7 +674,8 @@ export const MENU_GROUPS = [
         name: "Quản lý chức vụ",
         icon: "fa-solid fa-briefcase",
         path: "/quan-ly-chuc-vu",
-        roles: ROLE_SETS.CO_CAU_TO_CHUC,
+        roles: ROLE_SETS.CHUC_VU,
+        access: canManageChucVuNam,
       },
     ],
   },

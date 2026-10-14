@@ -1,4 +1,4 @@
-import { soGioGiang as so } from "./gioGiangTyLe";
+import { soGioGiang as so, LY_DO_GIO_GIANG } from "./gioGiangTyLe";
 
 export const NHOM_DINH_MUC = [
   ["DINH_MUC_GOC", "Định mức gốc", "DinhMucGoc"],
@@ -18,6 +18,7 @@ export const NHOM_GIO_THUC_HIEN = [
   ["GIO_QNDB", "Huấn luyện QNDB / tự vệ", "GioQndb"],
 ];
 export const GHI_CHU_DIEN_GIAI = {
+  THIEU_CAU_HINH_GIAM_TRU_CV: LY_DO_GIO_GIANG.THIEU_CAU_HINH_GIAM_TRU_CV,
   DO_THEO_NGAY: "Tính theo số ngày thực tế trong tháng",
   THEO_COT_O: 'Số tháng lấy theo cột "Thời gian không làm việc" của file giảm trừ (tháng tròn)',
   COT_O_KHONG_CONG_THEM: "Đã gộp với tập sự / đào tạo, không cộng thêm số tháng ở cột O",

@@ -1,3 +1,4 @@
+import { hienThiGiamTru } from '../../utils/chucVuGiamTruApi';
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -510,9 +511,6 @@ const QL_NhanVienChiTiet = () => {
       const cvName = selectedCV
         ? selectedCV.ten_chuc_vu || selectedCV.TenChucVu
         : "Thành viên";
-      const cvRate = selectedCV
-        ? selectedCV.ty_le_dinh_muc_giang || selectedCV.TyLeDinhMucGiang
-        : null;
       const newItem = {
         IdNvChucVu: Date.now(),
         IdDonVi: parseInt(newDonViId),
@@ -520,7 +518,7 @@ const QL_NhanVienChiTiet = () => {
         IdChucVu: newChucVuId ? parseInt(newChucVuId) : null,
         TenChucVu: cvName,
         LaChinh: isAdmin ? !!newLaChinh : false,
-        TyLeDinhMucGiang: cvRate,
+        CauHinhChoLuu: true,
         TuNgay: newChucVuFromDate,
         DenNgay: newLaChinh
           ? null
@@ -2407,9 +2405,7 @@ const QL_NhanVienChiTiet = () => {
                                       textAlign: "right",
                                     }}
                                   >
-                                    {item.TyLeDinhMucGiang != null
-                                      ? `${(item.TyLeDinhMucGiang * 100).toFixed(0)}%`
-                                      : "-"}
+                                    {item.CauHinhChoLuu ? "Xác định sau khi lưu" : hienThiGiamTru(item)}
                                   </td>
 
                                   {/* Cột Từ ngày */}

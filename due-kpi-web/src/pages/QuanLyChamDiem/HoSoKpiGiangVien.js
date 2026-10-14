@@ -360,7 +360,10 @@ const HoSoKpiGiangVien = () => {
                   giaTri={dinhMuc.data.TenChucDanh || "-"}
                 />
                 <Dong nhan="Chức vụ áp dụng" giaTri={dinhMuc.data.TenChucVuApDung || "-"} />
-                <Dong nhan="Tỷ lệ giờ giảng theo chức vụ" giaTri={formatDiem(dinhMuc.data.TyLeGiangChucVu)} />
+                {dinhMuc.data.LoaiGiamTruChucVu === 'gio_chuan_co_dinh'
+                  ? <Dong nhan="Giảm trừ giờ giảng theo chức vụ" giaTri={dinhMuc.data.GioGiamTruChucVu == null ? '—' : `−${formatDiem(dinhMuc.data.GioGiamTruChucVu)} giờ`} />
+                  : <Dong nhan="Tỷ lệ giờ giảng theo chức vụ" giaTri={dinhMuc.data.TyLeGiangChucVu == null ? '—' : `${formatDiem(dinhMuc.data.TyLeGiangChucVu * 100)}% còn phải thực hiện`} />}
+                {dinhMuc.data.IdNamNguonGiamTru != null && <Dong nhan="Năm nguồn giảm trừ" giaTri={dinhMuc.data.IdNamNguonGiamTru} />}
                 {dinhMuc.data.LyDoDieuChinh && (
                   <div className="cd-box" style={{ marginTop: "12px" }}>
                     <div className="cd-box-title">Lý do điều chỉnh</div>

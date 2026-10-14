@@ -1,3 +1,4 @@
+import { hienThiGiamTru } from '../utils/chucVuGiamTruApi';
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch } from "../utils/api";
@@ -1010,23 +1011,7 @@ const ThongTinCaNhan = ({ setIsPassModalOpen }) => {
                               color: "#475569",
                             }}
                           >
-                            {item.TyLeDinhMucGiang !== null &&
-                            item.TyLeDinhMucGiang !== undefined ? (
-                              <span
-                                style={{
-                                  fontWeight: "600",
-                                  color: "#0f766e",
-                                  backgroundColor: "#f0fdfa",
-                                  padding: "2px 8px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #ccfbf1",
-                                }}
-                              >
-                                {item.TyLeDinhMucGiang}%
-                              </span>
-                            ) : (
-                              "-"
-                            )}
+                            {hienThiGiamTru(item)}
                           </td>
 
                           {/* Thời gian công tác */}

@@ -3,10 +3,18 @@ import '../../css/Pages.css';
 import QLChucVuListing from '../../components/QuanLyToChuc/QL_ChucVu/QL_ChucVuListing';
 import QLChucVuForm from '../../components/QuanLyToChuc/QL_ChucVu/QL_ChucVuForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
-import { apiFetch } from '../../utils/api';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { canManageChucVuNam } from '../../utils/roles';
+import { requestDanhMuc, GIAM_TRU_CHUC_VU_PATH } from '../../utils/chucVuGiamTruApi';
 
 const QL_ChucVu = () => {
-    const initialForm = { MaChucVu: '', TenChucVu: '', TyLeDinhMucGiang: null, GhiChuDieuKien: '', TrangThai: true };
+    const initialForm = { MaChucVu: '', TenChucVu: '', TrangThai: true };
+    const { user } = useAuth();
+    const canManage = canManageChucVuNam(user);
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
+    const [saving, setSaving] = useState(false);
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -24,15 +32,12 @@ const QL_ChucVu = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('chucvu');
-            if (response.ok) {
-                const result = await response.json();
-                const list = result.Items || (Array.isArray(result) ? result : []);
-                setData(list);
-                setFilteredData(list);
-            }
+            const result = await requestDanhMuc('chucvu');
+            const list = result.Items || (Array.isArray(result) ? result : []);
+            setData(list);
+            setFilteredData(list);
         } catch (error) {
-            console.error(error);
+            setError(error.message);
         } finally {
             setIsLoading(false);
         }
@@ -51,34 +56,36 @@ const QL_ChucVu = () => {
         filterData(query, data);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        let updatedList;
-        if (editId) {
-            // Edit mock update in memory
-            updatedList = data.map(item => item.IdChucVu === editId ? { ...formData } : item);
-        } else {
-            // Add mock create in memory
-            const newId = data.length > 0 ? Math.max(...data.map(d => d.IdChucVu || 0), 0) + 1 : 1;
-            const newItem = {
-                ...formData,
-                IdChucVu: newId
-            };
-            updatedList = [...data, newItem];
-        }
-        setData(updatedList);
-        filterData(searchQuery, updatedList);
-        closeModal();
+        if (!canManage || saving) return;
+        setSaving(true);
+        setError('');
+        try {
+            const { MaChucVu, TenChucVu, TrangThai } = formData;
+            await requestDanhMuc(editId ? `chucvu/${editId}` : 'chucvu', {
+                method: editId ? 'PUT' : 'POST', body: JSON.stringify({ MaChucVu, TenChucVu, TrangThai }),
+            });
+            setNotice(editId ? 'Đã cập nhật chức vụ.' : 'Đã tạo chức vụ. Hãy cấu hình giảm trừ theo năm cho chức vụ mới.');
+            closeModal();
+            await fetchData();
+        } catch (err) { setError(err.message); }
+        finally { setSaving(false); }
     };
 
     const handleDelete = (id) => {
+        if (!canManage || saving) return;
         confirmDeleteDialog({
             header: 'Xác nhận xóa',
             message: 'Bạn có chắc chắn muốn xóa Chức vụ này?',
-            accept: () => {
-                const updatedList = data.filter(item => item.IdChucVu !== id);
-                setData(updatedList);
-                filterData(searchQuery, updatedList);
+            accept: async () => {
+                setSaving(true);
+                setError('');
+                try {
+                    await requestDanhMuc(`chucvu/${id}`, { method: 'DELETE' });
+                    await fetchData();
+                } catch (err) { setError(err.message); }
+                finally { setSaving(false); }
             }
         });
     };
@@ -98,10 +105,13 @@ const QL_ChucVu = () => {
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
-                <button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}>
+                {canManage && <button className="btn-add-new" disabled={saving} onClick={() => { setError(''); setIsModalOpen(true); }} style={{ margin: 0 }}>
                     <i className="fa-solid fa-plus"></i> Thêm mới
-                </button>
+                </button>}
+                <Link className="btn-cancel" to={GIAM_TRU_CHUC_VU_PATH}>Giảm trừ theo năm</Link>
             </div>
+            {!isModalOpen && error && <p role="alert">{error}</p>}
+            {notice && <p role="status">{notice}</p>}
 
             <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '5px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
@@ -123,12 +133,15 @@ const QL_ChucVu = () => {
             <QLChucVuListing
                 data={filteredData}
                 onEdit={(item) => {
+                    if (!canManage || saving) return;
                     setEditId(item.IdChucVu);
-                    setFormData({ ...item });
+                    setFormData({ MaChucVu: item.MaChucVu, TenChucVu: item.TenChucVu, TrangThai: item.TrangThai });
+                    setError('');
                     setIsModalOpen(true);
                 }}
                 onDelete={handleDelete}
                 isLoading={isLoading}
+                canManage={canManage && !saving}
             />
 
             <QLChucVuForm
@@ -138,6 +151,8 @@ const QL_ChucVu = () => {
                 formData={formData}
                 setFormData={setFormData}
                 isEditing={!!editId}
+                saving={saving}
+                error={error}
             />
         </div>
     );

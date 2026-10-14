@@ -1,0 +1,19 @@
+.gtcv-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.gtcv-toolbar > :first-child { width: 240px; max-width: 100%; }
+.gtcv-help, .gtcv-meta { color: #64748b; font-size: 13px; line-height: 1.5; }
+.gtcv-meta { display: block; }
+.gtcv-table { overflow-x: auto; background: #fff; border-radius: 8px; }
+.gtcv-table table { min-width: 900px; }
+.gtcv-table td { vertical-align: top; overflow-wrap: anywhere; }
+.gtcv-table .gtcv-edit-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap; background: #003399; color: #fff; }
+.gtcv-table .gtcv-edit-btn:hover { background: #00266f; }
+.gtcv-table .gtcv-edit-btn:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.gtcv-missing { display: inline-block; padding: 4px 8px; border-radius: 6px; background: #fef2f2; color: #b91c1c; font-weight: 600; }
+.gtcv-error, .gtcv-notice { padding: 12px; margin: 12px 0; border-radius: 6px; background: #eff6ff; color: #1e40af; }
+.gtcv-error { background: #fef2f2; color: #b91c1c; }
+.gtcv-modal { width: 95%; max-width: 600px; }
+.gtcv-modal form { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.gtcv-modal .modal-body { overflow-y: auto; }
+.gtcv-modal fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.gtcv-modal .form-group { margin-top: 16px; }
+.gtcv-modal .gtcv-radio { display: inline-flex; align-items: center; gap: 6px; margin: 12px 20px 8px 0; }

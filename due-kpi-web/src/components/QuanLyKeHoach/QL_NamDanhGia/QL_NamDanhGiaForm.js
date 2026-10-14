@@ -9,7 +9,7 @@ const TRANG_THAI_OPTIONS = [
     { value: 3, label: '3 - Đóng hệ thống (Kết thúc)' },
 ];
 
-const QL_NamDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing }) => {
+const QL_NamDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, isEditing, saving = false, error, conflictLink }) => {
     useEffect(() => {
         addLocale('vi', {
             firstDayOfWeek: 1,
@@ -54,10 +54,12 @@ const QL_NamDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, i
                     <h3 style={{ margin: 0, paddingRight: '20px', lineHeight: '1.4' }}>
                         {isEditing ? "Cập nhật Lịch Đánh giá" : "Mở Năm Đánh giá Mới"}
                     </h3>
-                    <button className="close-btn" onClick={onClose} style={{ fontSize: '26px', lineHeight: '1', flexShrink: 0, marginTop: '-2px' }}>&times;</button>
+                    <button className="close-btn" onClick={onClose} disabled={saving} style={{ fontSize: '26px', lineHeight: '1', flexShrink: 0, marginTop: '-2px' }}>&times;</button>
                 </div>
                 <div className="modal-body" style={{ padding: '25px' }}>
-                    <form id="namDanhGiaForm" onSubmit={onSubmit}>
+                    {error && <div role="alert">{error} {conflictLink}</div>}
+                    <form id="namDanhGiaForm" aria-label="Năm đánh giá" onSubmit={onSubmit}>
+                    <fieldset disabled={saving} style={{ border: 0, margin: 0, padding: 0 }}>
 
                         <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                             <div className="form-group">
@@ -74,13 +76,14 @@ const QL_NamDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, i
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Trạng thái hệ thống (Tự động) <span className="text-red">*</span></label>
+                                <label>Trạng thái hệ thống <span className="text-red">*</span></label>
                                 <SearchSelect
                                     name="TrangThai"
+                                    ariaLabel="Trạng thái hệ thống"
                                     value={formData.TrangThai || 1}
                                     onChange={(v) => setFormData({ ...formData, TrangThai: v })}
                                     options={TRANG_THAI_OPTIONS}
-                                    disabled
+                                    disabled={saving}
                                 />
                             </div>
                         </div>
@@ -200,13 +203,14 @@ const QL_NamDanhGiaForm = ({ isOpen, onClose, onSubmit, formData, setFormData, i
                             <textarea name="GhiChu" className="form-input" value={formData.GhiChu || ''} onChange={handleChange} rows="2"></textarea>
                         </div>
 
+                    </fieldset>
                     </form>
                 </div>
                 <div className="modal-footer" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    <button type="button" className="btn-cancel" onClick={onClose}>
+                    <button type="button" className="btn-cancel" onClick={onClose} disabled={saving}>
                         <i className="fa-solid fa-times" style={{ marginRight: '5px' }}></i> Hủy
                     </button>
-                    <button type="submit" form="namDanhGiaForm" className="btn-submit">
+                    <button type="submit" form="namDanhGiaForm" disabled={saving} className="btn-submit">
                         <i className="fa-solid fa-floppy-disk" style={{ marginRight: '5px' }}></i> Lưu dữ liệu
                     </button>
                 </div>

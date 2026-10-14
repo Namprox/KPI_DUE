@@ -37,6 +37,7 @@ export const apiFetch = async (endpoint, options = {}) => {
   const isAuthEndpoint =
     endpoint === "auth/refresh" || endpoint === "auth/login";
 
+  /** @returns {RequestInit} */
   const buildInit = () => {
     const isFormData = options.body instanceof FormData;
     const defaultHeaders = isFormData ? {} : { "Content-Type": "application/json" };

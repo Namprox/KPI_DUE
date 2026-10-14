@@ -1,11 +1,12 @@
-import { hasRole, ROLE_SETS } from "../../utils/roles";
+import { canManageNamDanhGia } from "../../utils/roles";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
 import QLNamDanhGiaListing from '../../components/QuanLyKeHoach/QL_NamDanhGia/QL_NamDanhGiaListing';
 import QLNamDanhGiaForm from '../../components/QuanLyKeHoach/QL_NamDanhGia/QL_NamDanhGiaForm';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
-import { apiFetch } from '../../utils/api';
+import { requestDanhMuc, GIAM_TRU_CHUC_VU_PATH } from '../../utils/chucVuGiamTruApi';
+import { Link } from 'react-router-dom';
 
 const QL_NamDanhGia = () => {
     const currentYear = new Date().getFullYear();
@@ -28,57 +29,30 @@ const QL_NamDanhGia = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState(initialForm);
     const [editId, setEditId] = useState(null);
+    const [error, setError] = useState('');
+    const [conflictYear, setConflictYear] = useState(null);
+    const [saving, setSaving] = useState(false);
 
     const { confirmDeleteDialog } = useConfirmDeleteDialog();
 
     const { user } = useAuth();
     const currentUser = user || {};
 
-    const canManage = hasRole(ROLE_SETS.NAM_DANH_GIA, currentUser);
+    const canManage = canManageNamDanhGia(currentUser);
 
     useEffect(() => {
         fetchData();
     }, []);
 
-    useEffect(() => {
-        if (formData.NgayMoTuDanhGia && formData.NgayDongDanhGiaCapTren) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const startDate = new Date(formData.NgayMoTuDanhGia);
-            startDate.setHours(0, 0, 0, 0);
-
-            const endDate = new Date(formData.NgayDongDanhGiaCapTren);
-            endDate.setHours(23, 59, 59, 999);
-
-            let autoStatus = 1;
-
-            if (today < startDate) {
-                autoStatus = 1;
-            } else if (today >= startDate && today <= endDate) {
-                autoStatus = 2;
-            } else if (today > endDate) {
-                autoStatus = 3;
-            }
-
-            if (formData.TrangThai !== autoStatus) {
-                setFormData(prev => ({ ...prev, TrangThai: autoStatus }));
-            }
-        }
-    }, [formData.NgayMoTuDanhGia, formData.NgayDongDanhGiaCapTren, formData.TrangThai]);
-
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('namdanhgia');
-            if (response.ok) {
-                const result = await response.json();
-                const list = result.Items || (Array.isArray(result) ? result : []);
-                setData(list);
-                setFilteredData(list);
-            }
+            const result = await requestDanhMuc('namdanhgia');
+            const list = result.Items || (Array.isArray(result) ? result : []);
+            setData(list);
+            setFilteredData(list);
         } catch (error) {
-            console.error("Lỗi tải dữ liệu:", error);
+            setError(error.message);
         } finally {
             setIsLoading(false);
         }
@@ -113,6 +87,7 @@ const QL_NamDanhGia = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (saving) return;
         if (!canManage) {
             alert("Bạn không có quyền thực hiện chức năng này!");
             return;
@@ -150,26 +125,23 @@ const QL_NamDanhGia = () => {
             TrangThai: parseInt(formData.TrangThai)
         };
 
-        const response = await apiFetch(endpoint, {
-            method,
-            body: JSON.stringify(payload)
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            if (result.status === 'success' || result.status === undefined) {
-                fetchData();
-                closeModal();
-            } else {
-                alert(result.message || "Lưu thất bại!");
-            }
-        } else {
-            alert("Lỗi kết nối máy chủ!");
-        }
+        setError('');
+        setConflictYear(null);
+        setSaving(true);
+        try {
+            await requestDanhMuc(endpoint, { method, body: JSON.stringify(payload) });
+            closeModal();
+            await fetchData();
+        } catch (err) {
+            setError(err.message);
+            if (err.status === 409 && payload.TrangThai === 3) setConflictYear(payload.IdNam);
+        } finally { setSaving(false); }
     };
 
     const handleEdit = (item) => {
-        if (!canManage) return;
+        if (!canManage || saving) return;
+        setError('');
+        setConflictYear(null);
         setEditId(item.IdNam);
         setFormData({
             ...item,
@@ -184,22 +156,18 @@ const QL_NamDanhGia = () => {
     };
 
     const handleDelete = (id) => {
-        if (!canManage) return;
+        if (!canManage || saving) return;
         confirmDeleteDialog({
             header: 'Xác nhận xóa',
             message: `Bạn có chắc chắn muốn xóa Năm đánh giá ${id}?`,
             accept: async () => {
-                const res = await apiFetch(`namdanhgia/${id}`, {
-                    method: 'DELETE'
-                });
-                if (res.ok) {
-                    const result = await res.json();
-                    if (result.status === "success" || result.status === undefined) {
-                        fetchData();
-                    } else {
-                        alert(result.message || "Xóa thất bại!");
-                    }
-                }
+                setSaving(true);
+                setError('');
+                try {
+                    await requestDanhMuc(`namdanhgia/${id}`, { method: 'DELETE' });
+                    await fetchData();
+                } catch (err) { setError(err.message); }
+                finally { setSaving(false); }
             }
         });
     };
@@ -220,7 +188,7 @@ const QL_NamDanhGia = () => {
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
                 {canManage && (
-                    <button className="btn-add-new" onClick={() => setIsModalOpen(true)} style={{ margin: 0 }}>
+                    <button className="btn-add-new" disabled={saving} onClick={() => { setError(''); setConflictYear(null); setIsModalOpen(true); }} style={{ margin: 0 }}>
                         <i className="fa-solid fa-plus"></i> Thêm mới
                     </button>
                 )}
@@ -243,12 +211,13 @@ const QL_NamDanhGia = () => {
                 </div>
             </div>
 
+            {!isModalOpen && error && <p role="alert">{error}</p>}
             <QLNamDanhGiaListing
                 data={filteredData}
                 onEdit={canManage ? handleEdit : () => { }}
                 onDelete={canManage ? handleDelete : () => { }}
                 isLoading={isLoading}
-                canManage={canManage}
+                canManage={canManage && !saving}
             />
 
             <QLNamDanhGiaForm
@@ -258,6 +227,9 @@ const QL_NamDanhGia = () => {
                 formData={formData}
                 setFormData={setFormData}
                 isEditing={!!editId}
+                saving={saving}
+                error={error}
+                conflictLink={conflictYear != null ? <Link to={`${GIAM_TRU_CHUC_VU_PATH}?idNam=${conflictYear}`}>Cấu hình giảm trừ năm {conflictYear}</Link> : null}
             />
         </div>
     );

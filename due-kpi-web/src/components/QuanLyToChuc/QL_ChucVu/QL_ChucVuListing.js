@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Paginator } from "primereact/paginator";
 
-const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading }) => {
+const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading, canManage = false }) => {
   const [first, setFirst] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
   const rows = 10;
@@ -20,13 +20,6 @@ const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading }) => {
   const paginatedData = data.slice(first, first + rows);
   const onPageChange = (event) => setFirst(event.first);
 
-  const formatRatio = (val) => {
-    if (val === null || val === undefined) return "---";
-    const num = parseFloat(val);
-    if (isNaN(num)) return "---";
-    const percent = (num * 100).toFixed(0);
-    return `${percent}% (${num})`;
-  };
 
   return (
     <div
@@ -74,10 +67,6 @@ const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading }) => {
                 </th>
                 <th width="7%">MÃ CHỨC VỤ</th>
                 <th width="20%">TÊN CHỨC VỤ</th>
-                <th width="15%" style={{ textAlign: "center" }}>
-                  ĐỊNH MỨC GIỜ GIẢNG DẠY
-                </th>
-                <th width="28%">ĐIỀU KIỆN ÁP DỤNG / GHI CHÚ</th>
                 <th width="10%" style={{ textAlign: "center" }}>
                   TRẠNG THÁI
                 </th>
@@ -96,30 +85,6 @@ const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading }) => {
                       {item.MaChucVu}
                     </td>
                     <td style={{ fontWeight: "600" }}>{item.TenChucVu}</td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "500",
-                        color:
-                          item.TyLeDinhMucGiang !== null
-                            ? "#1e293b"
-                            : "#94a3b8",
-                      }}
-                    >
-                      {formatRatio(item.TyLeDinhMucGiang)}
-                    </td>
-                    <td
-                      style={{
-                        color: "#555",
-                        fontSize: "13px",
-                        lineHeight: "1.4",
-                        textAlign: "justify",
-                        hyphens: "auto",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {item.GhiChuDieuKien || "---"}
-                    </td>
                     <td style={{ textAlign: "center" }}>
                       {item.TrangThai ? (
                         <span
@@ -152,7 +117,7 @@ const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading }) => {
                       )}
                     </td>
                     <td>
-                      <div
+                      {canManage && <div
                         style={{
                           display: "flex",
                           gap: "15px",
@@ -173,7 +138,7 @@ const QL_ChucVuListing = ({ data, onEdit, onDelete, isLoading }) => {
                         >
                           <i className="fa-solid fa-trash"></i>
                         </div>
-                      </div>
+                      </div>}
                     </td>
                   </tr>
                 );
