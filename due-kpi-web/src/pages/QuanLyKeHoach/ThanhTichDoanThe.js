@@ -10,6 +10,7 @@ import { apiFetch } from "../../utils/api";
 import { layLoaiDoanThe, layThanhTichDoanThe, xoaThanhTichDoanThe, taiMauDoanThe } from "../../utils/thanhTichDoanTheApi";
 import "../../css/Pages.css";
 import "../../css/HoatDongDaoTao.css";
+import { HUONG_DAN_DIEM_NGUON } from "../../utils/diemTuDongPhieu";
 
 export default function ThanhTichDoanThe() {
   const { quyen, loading: permissionLoading, error: permissionError, refresh } = useQuyenDoanThe();
@@ -107,6 +108,7 @@ export default function ThanhTichDoanThe() {
     {permissionLoading && <p role="status">Đang tải quyền truy cập...</p>}
     {permissionError && <div role="alert" className="hddt-error">{permissionError} <button onClick={refresh}>Thử lại</button></div>}
     {catalogError && <div role="alert" className="hddt-error">{catalogError} <button onClick={() => setCatalogRetry((v) => v + 1)}>Tải lại danh mục</button></div>}
+    {canWrite && <p className="hddt-warning">{HUONG_DAN_DIEM_NGUON}</p>}
     {message && <p role="status" className="hddt-notice">{message}</p>}
     <div className="hddt-filters">
       <div className="hddt-field"><label>Năm đánh giá</label><SearchSelect ariaLabel="Năm đánh giá" value={selectedNam} disabled={dangTaiNam}

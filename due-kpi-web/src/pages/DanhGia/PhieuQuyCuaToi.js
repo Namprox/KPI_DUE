@@ -29,7 +29,8 @@ import "../../css/DanhGia/DanhGiaPhuLuc2.css";
 import "../../css/DanhGia/PhieuQuy.css";
 
 import { formatNgayGio } from "../../utils/phieuApi";
-import { laSangKien, laKhenThuongDotXuat, diemSangKienDaLuu } from "../../utils/diemTuDongPhieu";
+import PhieuTuDongNotice from "../../components/DanhGia/PhieuTuDongNotice";
+import { diemHienThiTuDong, ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
 import { fetchDiemTuDongPhieu } from "../../utils/phieuTuDongApi";
 
 const so = (value) => {
@@ -261,6 +262,7 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
   const [phieu, setPhieu] = useState(null);
   const [drafts, setDrafts] = useState({});
   const [diemTuDong, setDiemTuDong] = useState({});
+  const [tuDong, setTuDong] = useState(null);
   const [tieuChiMau, setTieuChiMau] = useState({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -290,15 +292,15 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
       const item = await fetchPhieuQuyCuaToi({ idNam: selectedYear, quy: tab, idDonVi: queryDonVi });
       setPhieu(item);
       const next = {};
-      const diemDuPhong = {};
-      (item?.ChiTiet || []).forEach((row) => {
+      const chiTiet = item?.ChiTiet || [];
+      const ghep = (response) => ghepDiemTuDongPhieu(response, chiTiet, [], { trangThaiPhieu: item?.TrangThai });
+      chiTiet.forEach((row) => {
         next[row.IdChiTiet] = { Diem: row.DiemTuDanhGia ?? "", NhanXet: row.NhanXetTuDanhGia || row.NhanXet || "" };
-        if (Number(row.LoaiNguonDiem) === 2 && row.IdTieuChi != null) {
-          diemDuPhong[row.IdTieuChi] = laSangKien(row) || laKhenThuongDotXuat(row) ? { ...row, DiemTuDong: diemSangKienDaLuu(row) } : row;
-        }
       });
       setDrafts(next);
-      setDiemTuDong(diemDuPhong);
+      // Chưa có `/tu-dong`: dòng tự động giữ điểm đã ghi trên ChiTiet.
+      setDiemTuDong(ghep(null));
+      setTuDong(null);
 
       if (item) {
         const idMau = item.IdMau || template?.IdMau;
@@ -308,22 +310,14 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
         ]);
 
         if (diemResult.status === "fulfilled") {
-          const nextDiemTuDong = { ...diemDuPhong };
-          (diemResult.value.Items || []).forEach((score) => {
-            if (score.IdTieuChi == null || !item.ChiTiet?.some((ct) => String(ct.IdChiTiet) === String(score.IdChiTiet))) return;
-            const saved = diemDuPhong[score.IdTieuChi];
-            nextDiemTuDong[score.IdTieuChi] = {
-              ...saved,
-              ...score,
-              // Nguồn sáng kiến mới chỉ thay đổi điểm phiếu quý khi nộp lại.
-              ...(laSangKien(saved) || laKhenThuongDotXuat(saved) ? { CongThucTongHop: saved.CongThucSnapshot || saved.CongThucTongHop, DiemTuDong: saved.DiemTuDong } : {}),
-            };
-          });
-          setDiemTuDong(nextDiemTuDong);
+          // Nguồn mới chỉ đổi điểm phiếu quý khi nộp / Trưởng đơn vị chốt: điểm
+          // hiển thị vẫn là DiemChinhThuc, số tính lại chỉ để cảnh báo.
+          setDiemTuDong(ghep(diemResult.value));
+          setTuDong({ data: diemResult.value });
         } else {
           // Minh chứng là dữ liệu bổ sung; phiếu và điểm đã chốt trong ChiTiet vẫn
           // phải hiển thị được khi endpoint điểm tự động tạm thời lỗi.
-          console.error("Lỗi khi tải điểm tự động phiếu quý:", diemResult.reason);
+          setTuDong({ error: diemResult.reason });
         }
 
         if (mauResult.status === "fulfilled") {
@@ -339,6 +333,7 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
       if (e.status === 404 || e.responseStatus === 404 || e.errorCode === "NOT_FOUND") {
         setPhieu(null);
         setDiemTuDong({});
+        setTuDong(null);
         setTieuChiMau({});
       }
       else setError(e);
@@ -536,12 +531,9 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
     };
   });
   const tongDiem = rows.reduce((sum, row) => {
-    const value =
-      Number(row.LoaiNguonDiem) === 2 && (laSangKien(row) || laKhenThuongDotXuat(row)) ? diemSangKienDaLuu(row) : Number(row.LoaiNguonDiem) === 2
-        ? diemTuDong[row.IdTieuChi]?.DiemTuDong ??
-        row.DiemTuDong ??
-        row.DiemChinhThuc
-        : drafts[row.IdChiTiet]?.Diem ?? row.DiemTuDanhGia;
+    const value = Number(row.LoaiNguonDiem) === 2
+      ? diemHienThiTuDong(diemTuDong[row.IdTieuChi]).diem
+      : drafts[row.IdChiTiet]?.Diem ?? row.DiemTuDanhGia;
     return sum + (Number(value) || 0);
   }, 0);
 
@@ -580,6 +572,7 @@ const PhieuQuyCuaToi = ({ namList, selectedYear, onYearChange, template }) => {
       ) : (
         <>
           <div className="pq-toolbar"><div><TrangThaiQuy phieu={phieu} /><span className="pq-total">Phiếu quý {tab}</span></div></div>
+          {tuDong && <PhieuTuDongNotice phieu={phieu} tuDong={tuDong} />}
           {phieu.LyDoTraVe && <div className="pq-alert pq-alert-warn"><i className="fa-solid fa-rotate-left"></i><span><b>Phiếu được trả về:</b> {phieu.LyDoTraVe}</span></div>}
           {Number(phieu.TrangThai) === 5 && phieu.XepLoaiQuyText && <div className="pq-metrics"><div><span>Xếp loại quý</span><strong>{phieu.XepLoaiQuyText}</strong></div></div>}
           <DanhGiaPhuLuc2Form

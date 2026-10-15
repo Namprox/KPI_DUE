@@ -14,7 +14,7 @@ import { useAuth } from "../../context/AuthContext";
 import { apiFetch } from "../../utils/api";
 import * as api from "../../utils/phatTrienDoiNguApi";
 import { canAccessPath, visibleGroups } from "../../config/menuConfig";
-import { ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
+import { diemHienThiTuDong, ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
 
 jest.mock("../../context/PhatTrienDoiNguContext", () => ({ useQuyenDoiNgu: jest.fn() }));
 jest.mock("../../context/AuthContext", () => ({ useAuth: jest.fn() }));
@@ -201,10 +201,11 @@ test("ủy quyền hiển thị người rời phòng, không cấp thêm cho qu
 test.each(["PTDN_DANH_HIEU_NHA_GIAO", "PTDN_NGACH_HOC_HAM_HOC_VI", "PTDN_BOI_DUONG"])("%s dùng điểm server, khoá nhập, link nguồn 11 và lý do nguyên văn", (code) => {
   const reason = "Phong To chuc - Hanh chinh chua ghi nhan...";
   const criteria = [{ IdTieuChi: 1, TenTieuChi: "Phát triển đội ngũ", DiemToiDa: 5, LoaiNguonDiem: 2 }];
-  const preview = { 1: { CongThucTongHop: code, DiemTuDong: 5, LyDoDiemTuDong: reason, ApDungQuy: false, MinhChung: [{ LoaiNguon: 11, MaNguon: 31, TieuDe: "Học vị Tiến sĩ (TS)" }] } };
-  const autoScores = ghepDiemTuDongPhieu(preview, [{ ...criteria[0], CongThucSnapshot: code, DiemChinhThuc: 0 }], criteria);
-  expect(autoScores[1].DiemTuDong).toBe(0);
-  expect(ghepDiemTuDongPhieu(preview, [{ ...criteria[0], CongThucSnapshot: code, DiemChinhThuc: null }], criteria)[1].DiemTuDong).toBeNull();
+  const preview = { LaPhieuNhanTuDong: true, Items: [{ IdChiTiet: 10, IdTieuChi: 1, CongThucTongHop: code, DiemDaGhi: 0, DiemChinhThuc: 0, DiemTuDong: 5, CanChamLai: true, LyDoDiemTuDong: reason, ApDungQuy: false, MinhChung: [{ LoaiNguon: 11, MaNguon: 31, TieuDe: "Học vị Tiến sĩ (TS)" }] }] };
+  const snapshot = { ...criteria[0], IdChiTiet: 10, CongThucSnapshot: code, DiemChinhThuc: 0 };
+  const autoScores = ghepDiemTuDongPhieu(preview, [snapshot], criteria);
+  expect(diemHienThiTuDong(autoScores[1])).toEqual({ diem: 0, duKien: false });
+  expect(diemHienThiTuDong(ghepDiemTuDongPhieu(null, [{ ...snapshot, DiemChinhThuc: null }], criteria)[1]).diem).toBeNull();
   show(<DanhGiaPhuLuc2Form criteriaList={criteria} formData={{}} autoScores={autoScores} tongDiemCoBan={0} laDongMoNhap={() => true} />);
   expect(screen.getByText(reason)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Học vị Tiến sĩ (TS)" })).toHaveAttribute("href", "/phat-trien-doi-ngu/31");
@@ -212,5 +213,5 @@ test.each(["PTDN_DANH_HIEU_NHA_GIAO", "PTDN_NGACH_HOC_HAM_HOC_VI", "PTDN_BOI_DUO
   // File inputs are hidden; assert they are absent even from the DOM for automatic criteria.
   // eslint-disable-next-line testing-library/no-node-access
   expect(document.querySelector('input[type="file"]')).toBeNull();
-  expect(ghepDiemTuDongPhieu(preview, [{ ...criteria[0], LoaiNguonDiem: 1 }], criteria)).toEqual({});
+  expect(ghepDiemTuDongPhieu(preview, [{ ...snapshot, LoaiNguonDiem: 1 }], criteria)).toEqual({});
 });

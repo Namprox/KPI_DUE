@@ -918,7 +918,8 @@ const ChotHoSoKhoa = () => {
   return (
     <div className="page-container">
       <Toast ref={toast} position="top-right" />
-      <PhieuTuDongNotice phieu={phieu} tuDong={tuDong} />
+      <PhieuTuDongNotice phieu={phieu} tuDong={tuDong} donViList={donViList}
+        onReload={() => taiPhieu({ imLang: true })} />
 
       <div className="page-header">
         <button

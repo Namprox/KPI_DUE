@@ -721,6 +721,7 @@ export const tongHopTuDong = async (idPhieu) => {
       "Tổng hợp điểm tự động thất bại",
     );
     const err = new Error(errorInfo.message);
+    err.status = response.status;
     err.errorCode = errorInfo.errorCode;
     err.rawMessage = errorInfo.rawMessage;
     throw err;

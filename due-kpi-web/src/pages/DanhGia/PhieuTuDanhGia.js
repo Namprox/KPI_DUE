@@ -29,7 +29,8 @@ import {
 } from "../../utils/phieuApi";
 import SearchSelect from "../../components/Common/SearchSelect";
 import ThieuTieuChiChecklist from "../../components/DanhGia/ThieuTieuChiChecklist";
-import { ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
+import PhieuTuDongNotice from "../../components/DanhGia/PhieuTuDongNotice";
+import { diemHienThiTuDong, ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
 import { fetchDiemTuDongPhieu } from "../../utils/phieuTuDongApi";
 import { fetchDiemTuDongMau } from "../../utils/phieuQuyApi";
 
@@ -121,7 +122,10 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   const [lanTaiLai, setLanTaiLai] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({});
-  const [autoScorePreview, setAutoScores] = useState({}); // IdTieuChi -> { DiemTuDong, ... }
+  // Nguyên response GET phieu/{id}/tu-dong, hoặc { Items } xem trước theo mẫu khi chưa có phiếu.
+  const [autoResponse, setAutoResponse] = useState(null);
+  // Thông báo phiếu nhận điểm / lỗi của `/tu-dong`, gắn với đúng phiếu đã tải.
+  const [tuDongPhieu, setTuDongPhieu] = useState(null);
   const [tongDiemCoBan, setTongDiemCoBan] = useState(0);
   const [phieuXepHang, setPhieuXepHang] = useState(null);
   const [lanLamMoiXepHang, setLanLamMoiXepHang] = useState(0);
@@ -136,8 +140,8 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   // nhập - trạng thái phiếu chỉ quyết định nút nào hiện ở header.
   const [chiTietMap, setChiTietMap] = useState({});
   const autoScores = useMemo(() => ghepDiemTuDongPhieu(
-    autoScorePreview, Object.values(chiTietMap), criteriaList,
-  ), [autoScorePreview, chiTietMap, criteriaList]);
+    autoResponse, Object.values(chiTietMap), criteriaList, { trangThaiPhieu },
+  ), [autoResponse, chiTietMap, criteriaList, trangThaiPhieu]);
   // PhieuKiemTraHopLeDto: nguồn sự thật DUY NHẤT cho hạn (HanNop / QuaHan) và
   // cho SoTieuChiThieu. Hạn được server chọn theo GIAI ĐOẠN nên giá trị đổi khi
   // phiếu chuyển 1 -> 2 - phải tải lại sau mỗi thao tác ghi, không được cache.
@@ -334,7 +338,8 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
       chiTietMapRef.current = {};
       dirtyRef.current = new Set();
       setFormData({});
-      setAutoScores({});
+      setAutoResponse(null);
+      setTuDongPhieu(null);
       setLoiDiemXemTruoc(false);
       setTongDiemCoBan(0);
       setPhieuXepHang(null);
@@ -417,16 +422,17 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         const itemDetail = resultDetail.Item || resultDetail.data || {};
         setCriteriaList(flattenTemplate(itemDetail));
 
-        // 4. Có phiếu thì dùng snapshot; chưa có phiếu thì xem trước của chính mình.
-        let autoMap = {};
+        // 4. Có phiếu thì đọc `/tu-dong` theo phiếu (ghép theo IdChiTiet); chưa có
+        // phiếu thì xem trước của chính mình theo mẫu. Lỗi `/tu-dong` không chặn
+        // phiếu: dòng tự động vẫn khoá nhập và giữ điểm đã ghi trên ChiTiet.
+        let resultAuto = null;
         if (phieu?.IdPhieu) {
           try {
-            const resultAuto = await fetchDiemTuDongPhieu(phieu.IdPhieu);
-            (resultAuto.Items || []).forEach((it) => {
-              if (it && it.IdTieuChi != null && chiTiet.some((ct) => String(ct.IdChiTiet) === String(it.IdChiTiet))) autoMap[it.IdTieuChi] = it;
-            });
+            resultAuto = await fetchDiemTuDongPhieu(phieu.IdPhieu);
+            setTuDongPhieu({ phieu, data: resultAuto });
           } catch (e) {
-            console.error("Lỗi khi tải điểm tự động:", e);
+            // 404 = phiếu không tồn tại hoặc ngoài phạm vi; không tự gọi lại.
+            setTuDongPhieu({ phieu, error: e });
           }
         } else {
           try {
@@ -435,12 +441,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
               idNhanVien: currentUser.IdNhanVien,
               quy: 0,
             });
-            const ids = new Set(flattenTemplate(itemDetail).map((tc) => String(tc.IdTieuChi)));
-            items.forEach((it) => {
-              if (it.IdTieuChi != null && ids.has(String(it.IdTieuChi))) {
-                autoMap[it.IdTieuChi] = it;
-              }
-            });
+            resultAuto = { Items: items };
           } catch (e) {
             // DTO mẫu không có LoaiNguonDiem: thiếu preview thì chưa thể phân
             // biệt chấm tay / tự động, không được mở các ô nhập như chấm tay.
@@ -450,8 +451,9 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
           }
         }
 
-        autoMap = ghepDiemTuDongPhieu(autoMap, chiTiet || [], flattenTemplate(itemDetail));
-        setAutoScores(autoMap);
+        const autoMap = ghepDiemTuDongPhieu(resultAuto, chiTiet || [], flattenTemplate(itemDetail),
+          { trangThaiPhieu: phieu?.TrangThai });
+        setAutoResponse(resultAuto);
         autoScoresRef.current = autoMap;
 
         // 5. Hydrate the form state from an existing phieu
@@ -666,8 +668,10 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         autoScores[idTieuChi] ? sum : sum + (Number(item.DiemTuDanhGia) || 0),
       0,
     );
+    // Điểm chính thức của dòng tự động, cộng điểm dự kiến khi engine chưa ghi -
+    // form ghi rõ đây là tổng tạm tính.
     const autoTotal = Object.values(autoScores).reduce(
-      (sum, it) => sum + (Number(it.DiemTuDong) || 0),
+      (sum, it) => sum + (diemHienThiTuDong(it).diem || 0),
       0,
     );
     setTongDiemCoBan(manualTotal + autoTotal);
@@ -1551,6 +1555,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         )}
 
         <div className="phu-luc-2-content">
+          {tuDongPhieu && <PhieuTuDongNotice phieu={tuDongPhieu.phieu} tuDong={tuDongPhieu} />}
           <DanhGiaPhuLuc2Form
             loaiDoiTuong={activeLoaiDoiTuong}
             criteriaList={criteriaHienThi}

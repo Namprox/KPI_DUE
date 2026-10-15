@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Dialog } from "primereact/dialog";
 import { layChiTietKhenThuong } from "../../utils/khenThuongDotXuatApi";
 import { formatDiem } from "../../utils/keKhaiThanhTichApi";
@@ -13,15 +13,21 @@ export const ngayKhenThuong = (value, time = false) => {
 export const nguonKhenThuong = (item) => Number(item.Nguon) === 3 ? "Bản sao dòng kê khai đã chốt" : Number(item.Nguon) === 1 ? "P_TCHC ghi nhận" : "—";
 export const HUONG_DAN_DIEM = "Lưu nguồn không tự cập nhật điểm đã chấm trên phiếu. Phiếu năm dùng Tổng hợp tự động; phiếu quý dùng luồng nộp/chấm lại hiện có.";
 export const DONG_BI_KHU = "Không cộng điểm: cùng nội dung trong năm đã có dòng điểm cao hơn hoặc bằng điểm với ID nhỏ hơn.";
-export default function KhenThuongDotXuatDetail({ id, onClose }) {
+export default function KhenThuongDotXuatDetail({ id, onClose, onUnavailable }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const unavailable = useRef(onUnavailable);
+  unavailable.current = onUnavailable;
   useEffect(() => {
     let cancelled = false;
     setData(null); setError("");
     layChiTietKhenThuong(id).then((r) => { if (!cancelled) setData(r); })
-      .catch((e) => { if (!cancelled) setError(e.message); });
+      .catch((e) => {
+        if (cancelled) return;
+        if (unavailable.current && [403, 404].includes(e.status)) unavailable.current(e);
+        else setError(e.message);
+      });
     return () => { cancelled = true; };
   }, [id, retry]);
   const item = data?.Item;

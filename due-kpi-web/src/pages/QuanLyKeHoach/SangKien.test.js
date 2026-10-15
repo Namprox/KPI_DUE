@@ -13,7 +13,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import * as api from "../../utils/sangKienApi";
 import { canAccessPath, visibleGroups } from "../../config/menuConfig";
-import { ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
+import { diemHienThiTuDong, ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
 
 jest.mock("../../context/SangKienContext", () => ({ useQuyenSangKien: jest.fn() }));
 jest.mock("../../context/AuthContext", () => ({ useAuth: jest.fn() }));
@@ -279,11 +279,12 @@ test("ủy quyền hiện người rời phòng và cấp / thu hồi theo backe
 test.each(["SK_DOI_MOI_GIANG_DAY", "TTVT_SANG_KIEN"])("%s giữ điểm phiếu cũ, null khác 0, minh chứng nguồn 12 và khoá nhập", (code) => {
   const criteria = [{ IdTieuChi: 1, TenTieuChi: "Sáng kiến", LoaiNguonDiem: 2, DiemToiDa: 30 }];
   const mc = { LoaiNguon: 12, MaNguon: 12, TieuDe: "Sáng kiến từ NCKH", MoTa: "Cấp cơ sở (Trường) - 10 điểm" };
-  const preview = { 1: { CongThucTongHop: code, DiemTuDong: 10, LyDoDiemTuDong: "Lý do backend trả", MinhChung: [mc] } };
-  const snapshot = { ...criteria[0], CongThucSnapshot: code, DiemChinhThuc: 0 };
-  const autoScores = ghepDiemTuDongPhieu(preview, [snapshot], criteria);
-  expect(autoScores[1].DiemTuDong).toBe(0);
-  expect(ghepDiemTuDongPhieu(preview, [{ ...snapshot, DiemChinhThuc: null }], criteria)[1].DiemTuDong).toBeNull();
+  const item = { IdChiTiet: 11, IdTieuChi: 1, CongThucTongHop: code, DiemDaGhi: 0, DiemChinhThuc: 0, DiemTuDong: 10, CanChamLai: true, LyDoDiemTuDong: "Lý do backend trả", MinhChung: [mc] };
+  const snapshot = { ...criteria[0], IdChiTiet: 11, CongThucSnapshot: code, DiemChinhThuc: 0 };
+  const autoScores = ghepDiemTuDongPhieu({ LaPhieuNhanTuDong: true, Items: [item] }, [snapshot], criteria);
+  expect(diemHienThiTuDong(autoScores[1])).toEqual({ diem: 0, duKien: false });
+  const chuaCham = { ...item, DiemDaGhi: undefined, DiemChinhThuc: undefined, DiemTuDong: undefined };
+  expect(diemHienThiTuDong(ghepDiemTuDongPhieu({ Items: [chuaCham] }, [{ ...snapshot, DiemChinhThuc: null }], criteria)[1]).diem).toBeNull();
   show(<DanhGiaPhuLuc2Form criteriaList={criteria} formData={{}} autoScores={autoScores} tongDiemCoBan={0} laDongMoNhap={() => true} />);
   expect(screen.getByText("Lý do backend trả")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: mc.TieuDe })).toHaveAttribute("href", "/sang-kien/12");

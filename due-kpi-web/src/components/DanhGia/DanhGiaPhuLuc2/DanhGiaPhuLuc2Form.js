@@ -1,7 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { laCongThucGioGiang } from "../../../utils/gioGiangTyLe";
-import { laThanhTichDoanThe, laSangKien } from "../../../utils/diemTuDongPhieu";
+import { laThanhTichDoanThe, laSangKien, diemHienThiTuDong, thangDiemHienThiTuDong } from "../../../utils/diemTuDongPhieu";
+import MinhChungNguonLink from "../MinhChungNguonLink";
+import DiemTuDongStatus from "../DiemTuDongStatus";
+import DuLieuNckhTuDong from "../DuLieuNckhTuDong";
 import {
   chuanHoaFileMinhChung,
   ACCEPT_PDF,
@@ -178,20 +181,21 @@ const DanhGiaPhuLuc2Form = ({
     });
   }, [criteriaList]);
 
-  // Current score of a criterion: auto score, or the manually entered/selected score
+  // Điểm của tiêu chí: tự động = điểm chính thức (hoặc dự kiến khi engine chưa
+  // ghi), chấm tay = điểm đang nhập / chọn.
   const getScoreOf = (tc) => {
     const autoInfo = autoScores[tc.IdTieuChi];
-    if (autoInfo) {
-      const value = autoInfo.DiemTuDong;
-      return value === null || value === undefined || value === ""
-        ? null
-        : Number(value);
-    }
+    if (autoInfo) return diemHienThiTuDong(autoInfo).diem;
     const v = formData[tc.IdTieuChi]?.DiemTuDanhGia;
     return v == null || v === "" ? null : Number(v);
   };
 
   const danhSachThongKe = tieuChiThongKe || criteriaList;
+  // Tổng ở header cộng cả điểm dự kiến: ghi rõ đó là tổng tạm tính của FE.
+  const dongDuKien = danhSachThongKe
+    .map((tc) => diemHienThiTuDong(autoScores[tc.IdTieuChi]))
+    .filter((hienThi) => hienThi.duKien);
+  const diemDuKien = dongDuKien.reduce((sum, hienThi) => sum + hienThi.diem, 0);
   const totalCount = danhSachThongKe.length;
   const answeredCount = danhSachThongKe.filter(
     (tc) => getScoreOf(tc) != null,
@@ -228,6 +232,12 @@ const DanhGiaPhuLuc2Form = ({
           <div className="pl2-header-score-note">
             (Bao gồm Điểm cơ bản + Điểm vượt trội)
           </div>
+          {dongDuKien.length > 0 && (
+            <div className="phieu-auto-tong-tam-tinh">
+              Tổng tạm tính, gồm {formatDiem(diemDuKien)} điểm dự kiến của tiêu chí
+              tự động chưa được ghi vào phiếu.
+            </div>
+          )}
 
           <div className="pl2-progress">
             <div className="pl2-progress-bar">
@@ -370,9 +380,10 @@ const DanhGiaPhuLuc2Form = ({
                                 ? "Dữ liệu trọn năm"
                                 : `Dữ liệu quý ${autoInfo.Quy}`
                               : null;
-                          const coDiemTuDong =
-                            autoInfo.DiemTuDong !== null &&
-                            autoInfo.DiemTuDong !== undefined;
+                          // Điểm hiển thị = DiemChinhThuc; DiemTuDong (tính lại lúc gọi)
+                          // chỉ hiện khi engine chưa ghi dòng, kèm nhãn Dự kiến.
+                          const { diem: diemHienThi, duKien } = diemHienThiTuDong(autoInfo);
+                          const coDiemTuDong = diemHienThi != null;
 
                           const minhChungList = Array.isArray(
                             autoInfo.MinhChung,
@@ -385,11 +396,7 @@ const DanhGiaPhuLuc2Form = ({
                           const diemToiDaAuto =
                             Number(autoInfo.DiemToiDa ?? tc.DiemToiDa) || 0;
                           const tongDiemTru = isVpgd && coDiemTuDong
-                            ? Math.max(
-                                diemToiDaAuto -
-                                  Number(autoInfo.DiemTuDong || 0),
-                                0,
-                              )
+                            ? Math.max(diemToiDaAuto - diemHienThi, 0)
                             : 0;
 
                           // Thang điểm kèm cờ DaChon do API điểm tự động trả về; thang điểm
@@ -405,13 +412,13 @@ const DanhGiaPhuLuc2Form = ({
 
                           // Tiêu chí liên tục (VPGD_TUAN_THU) không được API ánh xạ mức nào ->
                           // tự khớp theo giá trị điểm để vẫn tô sáng đúng mức khi trùng khít.
+                          // Cờ DaChon đi theo điểm tính lại nên chỉ dùng khi đang hiện điểm dự kiến.
                           const idMucApDung =
-                            autoInfo.IdThangDiemChon ??
+                            thangDiemHienThiTuDong(autoInfo) ??
                             thangDiemAuto.find(
                               (td) =>
-                                td.DaChon ||
-                                Number(td.GiaTriDiem) ===
-                                  Number(autoInfo.DiemTuDong ?? -1),
+                                (duKien && td.DaChon) ||
+                                (coDiemTuDong && Number(td.GiaTriDiem) === diemHienThi),
                             )?.IdThangDiem ??
                             null;
                           // Nguồn duy nhất của tiêu chí PHSV là dòng chốt trong
@@ -422,7 +429,7 @@ const DanhGiaPhuLuc2Form = ({
                           const phsvThieuCanCu =
                             isPhsv &&
                             !phsvChot &&
-                            Number(autoInfo.DiemTuDong || 0) > 0;
+                            Number(diemHienThi || 0) > 0;
 
                           // MoTa dạng "Điểm TB 4.65 - 8688 lượt đánh giá" -> chỉ lấy điểm TB,
                           // số lượt và ngày chốt không hiển thị ở phiếu tự đánh giá.
@@ -444,8 +451,9 @@ const DanhGiaPhuLuc2Form = ({
                                 <div className="pl2-auto-score-info">
                                   <i className="fa-solid fa-gauge-high pl2-auto-icon"></i>
                                   <span className="pl2-auto-score-label">
-                                    Điểm hệ thống tự tính
+                                    {duKien || autoInfo.IdChiTiet == null ? "Điểm hệ thống tự tính" : "Điểm chính thức"}
                                   </span>
+                                  {duKien && <span className="phieu-auto-du-kien">Dự kiến</span>}
                                   <i className="fa-solid fa-lock pl2-auto-lock"></i>
                                   <span className="pl2-auto-score-note">
                                     {autoNote}
@@ -465,14 +473,16 @@ const DanhGiaPhuLuc2Form = ({
                                   className={`pl2-auto-score-value ${tongDiemTru > 0 ? "pl2-auto-score-value-tru" : ""}`}
                                 >
                                   {coDiemTuDong
-                                    ? `${formatDiem(autoInfo.DiemTuDong)}đ`
+                                    ? `${formatDiem(diemHienThi)}đ`
                                     : laCongThucGioGiang(autoInfo) ? "Không chấm tự động" : "Chưa tính"}
                                 </div>
                               </div>
 
-                              {coDiemTuDong && Number(autoInfo.DiemTuDong) === 0 && autoInfo.LyDoDiemTuDong && (
+                              {autoInfo.LyDoDiemTuDong && (
                                 <p className="pl2-auto-note">{autoInfo.LyDoDiemTuDong}</p>
                               )}
+                              <DiemTuDongStatus info={autoInfo} />
+                              <DuLieuNckhTuDong info={autoInfo} />
                               {thangDiemAuto.length > 0 && (
                                 <ul className="pl2-auto-thang-diem-list">
                                   {thangDiemAuto.map((td) => {
@@ -558,18 +568,7 @@ const DanhGiaPhuLuc2Form = ({
                                             className="pl2-nckh-mc-item"
                                           >
                                             <div className="pl2-nckh-mc-item-main">
-                                              {Number(mc.LoaiNguon) === 6 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/nhiem-vu-phuc-vu/${encodeURIComponent(mc.MaNguon)}`}>{mc.TieuDe || "Nhiệm vụ PVCĐ đã chốt"}</Link> : Number(mc.LoaiNguon) === 10 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/thanh-tich-doan-the/${encodeURIComponent(mc.MaNguon)}`}>
-                                                {mc.TieuDe || "Chi tiết thành tích đoàn thể"}
-                                              </Link> : Number(mc.LoaiNguon) === 11 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/phat-trien-doi-ngu/${encodeURIComponent(mc.MaNguon)}`}>
-                                                {mc.TieuDe || "Chi tiết phát triển đội ngũ"}
-                                              </Link> : Number(mc.LoaiNguon) === 13 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/khen-thuong-dot-xuat/${encodeURIComponent(mc.MaNguon)}`}>
-                                                {mc.TieuDe || "Chi tiết khen thưởng đột xuất"}
-                                              </Link> : Number(mc.LoaiNguon) === 12 && mc.MaNguon != null ? <Link className="pl2-nckh-mc-name" to={`/sang-kien/${encodeURIComponent(mc.MaNguon)}`}>
-                                                {mc.TieuDe || "Chi tiết sáng kiến"}
-                                              </Link> : <span className="pl2-nckh-mc-name">
-                                                {mc.TieuDe ||
-                                                  "(Không có tiêu đề)"}
-                                              </span>}
+                                              <MinhChungNguonLink mc={mc} className="pl2-nckh-mc-name" />
                                             </div>
                                             {(mc.MoTa || ngay) && (
                                               <div className="pl2-nckh-mc-meta">

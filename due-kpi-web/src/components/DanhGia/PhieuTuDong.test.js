@@ -10,6 +10,7 @@ import { ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
 import PhieuTuDongNotice, { duocTongHopTuDongPhieu } from "./PhieuTuDongNotice";
 import DanhGiaPhuLuc2Form from "./DanhGiaPhuLuc2/DanhGiaPhuLuc2Form";
 import TieuChiChamCard, { MinhChungRow } from "../QuanLyChamDiem/TieuChiChamCard";
+import DiemTuDongStatus from "./DiemTuDongStatus";
 import { layChiTietDaoTao } from "../../utils/hoatDongDaoTaoApi";
 
 jest.mock("../../context/AuthContext", () => ({ useAuth: jest.fn() }));
@@ -75,10 +76,55 @@ test("nút tổng hợp gọi POST rồi tải lại phiếu", async () => {
   expect(tongHopTuDong).toHaveBeenCalledWith(812);
   expect(reload).toHaveBeenCalledTimes(1);
 });
-test.each([0, 2])("hiện Message và link đúng phiếu nhận điểm, quý %s", (Quy) => {
-  show(<PhieuTuDongNotice phieu={form} tuDong={{ data: { ...data, Quy, LaPhieuNhanTuDong: false, IdPhieuNhanTuDong: 800, Message: "Điểm thuộc phiếu 800" } }} />);
-  expect(screen.getByText("Điểm thuộc phiếu 800")).toBeInTheDocument();
+test.each([0, 2])("phiếu không nhận điểm: câu của FE và link đúng phiếu nhận điểm, quý %s", (Quy) => {
+  show(<PhieuTuDongNotice phieu={form} tuDong={{ data: { ...data, Quy, LaPhieuNhanTuDong: false, IdPhieuNhanTuDong: 800, SoTieuChiTuDong: 1, Message: "Diem tu dong cua nam thuoc ve phieu #800" } }} />);
+  expect(screen.getByText(new RegExp(`Điểm tự động của ${Quy ? `quý ${Quy}` : "năm"} được ghi vào phiếu #800`))).toBeInTheDocument();
+  expect(screen.queryByText(/Diem tu dong/)).not.toBeInTheDocument();
   expect(screen.getByRole("link")).toHaveAttribute("href", `/lich-su-danh-gia/800${Quy ? "?loai=quy" : ""}`);
+});
+test("phiếu không có dòng tự động không hiện banner điểm thuộc phiếu khác", () => {
+  const view = show(<PhieuTuDongNotice phieu={form} tuDong={{ data: { ...data, Items: [], LaPhieuNhanTuDong: false, IdPhieuNhanTuDong: 800, SoTieuChiTuDong: 0 } }} />);
+  expect(view.container).toBeEmptyDOMElement();
+});
+test("lỗi tổng hợp hiện câu của FE, không hiện Message không dấu", async () => {
+  useAuth.mockReturnValue({ user: { MaChucVu: "ADMIN" } });
+  tongHopTuDong.mockRejectedValue(Object.assign(new Error("x"), { status: 409, rawMessage: "Chi cham tu dong khi phieu dang nhap (1) hoac da nop (2)." }));
+  const reload = jest.fn().mockResolvedValue({});
+  show(<PhieuTuDongNotice phieu={form} tuDong={{ data }} onReload={reload} />);
+  fireEvent.click(screen.getByRole("button", { name: "Tổng hợp tự động" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Nháp hoặc Đang thẩm định");
+  expect(reload).toHaveBeenCalledTimes(1);
+});
+test("điểm dự kiến trên phiếu Đang thẩm định vẫn cho trưởng đơn vị tổng hợp", () => {
+  const duKien = { ...data, Items: [{ ...data.Items[0], DiemDaGhi: undefined, DiemChinhThuc: undefined, CanChamLai: false }] };
+  expect(duocTongHopTuDongPhieu({ MaChucVu: "ADMIN" }, form, duKien)).toBe(true);
+  expect(duocTongHopTuDongPhieu({ MaChucVu: "ADMIN" }, form, { ...data, Items: [{ ...data.Items[0], CanChamLai: false }] })).toBe(false);
+});
+test.each([[1, /khi nộp phiếu\./], [2, /Tổng hợp tự động/], [3, /không tự đổi/], [5, /mở lại phiếu/]])("cảnh báo chấm lại theo trạng thái phiếu %s", (trangThaiPhieu, text) => {
+  show(<DiemTuDongStatus info={ghepDiemTuDongPhieu(data, [row], [], { trangThaiPhieu })[7]} />);
+  expect(screen.getByText(/điểm mới sẽ là 5/)).toBeInTheDocument();
+  expect(screen.getByText(text)).toBeInTheDocument();
+});
+test("phiếu không nhận điểm ẩn lý do của BE trên card", () => {
+  const info = ghepDiemTuDongPhieu({ ...data, LaPhieuNhanTuDong: false, Items: [{ IdChiTiet: 99, IdTieuChi: 7, MinhChung: [], LyDoDiemTuDong: "Không tìm thấy dữ liệu giờ NCKH" }] }, [row])[7];
+  show(<TieuChiChamCard chiTiet={{ ...row, TrangThaiDong: 3 }} autoInfo={info} stt={1} />);
+  expect(screen.queryByText("Không tìm thấy dữ liệu giờ NCKH")).not.toBeInTheDocument();
+});
+test("bài báo quốc tế lấy từ DuLieuBaiBaoQuocTe.BaiBao, không phải minh chứng loại 1", () => {
+  const preview = { ...data, Items: [{ ...data.Items[0], CongThucTongHop: "NCKH_BBQT_DIEM_KPI", MinhChung: [], DuLieuBaiBaoQuocTe: { SoBaiBao: 1, TongBaiWosScopus: 1, BaiBao: [{ ArticleId: 5, Title: "Deep KPI", JournalName: "J. Test", QRanking: "Q1" }] } }] };
+  show(<DanhGiaPhuLuc2Form criteriaList={[row]} formData={{}} autoScores={ghepDiemTuDongPhieu(preview, [row])} tongDiemCoBan={0} />);
+  expect(screen.getByText("Deep KPI")).toBeInTheDocument();
+  expect(screen.getByText(/J\. Test · Q1/)).toBeInTheDocument();
+  expect(screen.queryByRole("link")).not.toBeInTheDocument();
+});
+test.each([403, 404])("không xem được nguồn đào tạo (%s) thì lùi về văn bản, không báo lỗi đỏ", async (status) => {
+  layChiTietDaoTao.mockRejectedValue(Object.assign(new Error("Forbidden"), { status }));
+  show(<MinhChungRow mc={data.Items[0].MinhChung[0]} />);
+  fireEvent.click(screen.getByRole("link", { name: "CTĐT Kế toán" }));
+  await waitFor(() => expect(screen.queryByRole("link", { name: "CTĐT Kế toán" })).not.toBeInTheDocument());
+  expect(screen.getByText("CTĐT Kế toán")).toBeInTheDocument();
+  expect(screen.getByText("QĐ 123")).toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 test("nguồn đào tạo mở lại modal hiện có qua GET đúng MaNguon", async () => {
   layChiTietDaoTao.mockResolvedValue({ Item: { HoTen: "Nguyễn A", IdNam: 2026, NoiDung: "Hội đồng kế toán" }, LichSu: [] });

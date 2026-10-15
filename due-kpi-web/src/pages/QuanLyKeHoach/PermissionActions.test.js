@@ -37,9 +37,18 @@ test.each(pages)('%s: ADMIN viết hoa thấy thao tác', async (_name, Page, la
   await mount(Page, { MaChucVu: 'ADMIN' });
   expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
 });
-test.each(pages)('%s: nhận quyền HT kiêm nhiệm', async (_name, Page, label) => {
+test.each(pages.slice(1))('%s: nhận quyền HT kiêm nhiệm', async (_name, Page, label) => {
   await mount(Page, { MaChucVu: 'NV', DonVi: [{ MaChucVu: 'HT', IdDonVi: 1 }] });
   expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+});
+// API năm đánh giá chỉ xét chức vụ chính trong JWT (ADMIN/HT/PHT), không xét kiêm nhiệm.
+test('Năm đánh giá: HT kiêm nhiệm không có nút Thêm mới', async () => {
+  await mount(Nam, { MaChucVu: 'NV', DonVi: [{ MaChucVu: 'HT', IdDonVi: 1 }] });
+  expect(screen.queryByRole('button', { name: /Thêm mới/ })).not.toBeInTheDocument();
+});
+test.each(['HT', 'PHT'])('Năm đánh giá: %s là chức vụ chính có nút Thêm mới', async (MaChucVu) => {
+  await mount(Nam, { MaChucVu, DonVi: [{ MaChucVu: 'GV', IdDonVi: 1 }] });
+  expect(screen.getByRole('button', { name: /Thêm mới/ })).toBeInTheDocument();
 });
 test.each(['TP', 'QTP'])('phản hồi: %s kiêm nhiệm đúng phòng có nút import/chốt', async role => {
   await mount(PhanHoi, { MaChucVu: 'NV', DonVi: [{ MaChucVu: role, MaDonVi: 'P_DTBDCL' }] });

@@ -19,7 +19,7 @@ const ACTIONS = [
   ["huy", "Hủy nhiệm vụ", "ChoPhepHuy"],
 ];
 
-export default function NhiemVuPhucVuDetail({ id, onClose, onChanged }) {
+export default function NhiemVuPhucVuDetail({ id, onClose, onChanged, onUnavailable }) {
   const [item, setItem] = useState(null);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +46,8 @@ export default function NhiemVuPhucVuDetail({ id, onClose, onChanged }) {
   const fileInput = useRef(null);
   const changed = useRef(onChanged);
   changed.current = onChanged;
+  const unavailable = useRef(onUnavailable);
+  unavailable.current = onUnavailable;
   const accept = useCallback((next) => {
     setItem(next); setReport(next?.BaoCao?.NoiDung || ""); setPanel("");
     setReason(""); setDeadline(api.gioInput(next?.HanDangKy)); setDeleteId(null);
@@ -60,7 +62,11 @@ export default function NhiemVuPhucVuDetail({ id, onClose, onChanged }) {
         const next = await api.layNhiemVu(id);
         if (seq !== request.current) return;
         accept(next); setLoading(false);
-      } catch (e) { if (seq === request.current) { setError(e.message); setLoading(false); } }
+      } catch (e) {
+        if (seq !== request.current) return;
+        if (unavailable.current && [403, 404].includes(e.status)) { unavailable.current(e); return; }
+        setError(e.message); setLoading(false);
+      }
     })();
     return () => { request.current += 1; };
   }, [id, retry, accept]);

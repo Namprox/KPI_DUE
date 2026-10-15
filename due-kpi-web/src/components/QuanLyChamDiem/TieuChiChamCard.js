@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import MinhChungNguonLink from "../DanhGia/MinhChungNguonLink";
+import DiemTuDongStatus from "../DanhGia/DiemTuDongStatus";
+import DuLieuNckhTuDong from "../DanhGia/DuLieuNckhTuDong";
 import { laCongThucGioGiang } from "../../utils/gioGiangTyLe";
-import { laThanhTichDoanThe, laPhatTrienDoiNgu, laSangKien, laKhenThuongDotXuat, diemSangKienDaLuu } from "../../utils/diemTuDongPhieu";
+import { laThanhTichDoanThe, laPhatTrienDoiNgu, laSangKien, laKhenThuongDotXuat, diemSangKienDaLuu, diemHienThiTuDong } from "../../utils/diemTuDongPhieu";
 import {
   fetchMinhChung,
   fetchNhiemVuCongDong,
@@ -21,29 +22,26 @@ import {
   LOAI_MINH_CHUNG,
 } from "../../utils/minhChungPhieuApi";
 
+// Biểu tượng theo LoaiNguon của minh chứng nguồn trong GET phieu/{id}/tu-dong.
+const ICON_NGUON = {
+  1: "fa-book-open", 2: "fa-book", 3: "fa-flask", 4: "fa-users", 5: "fa-triangle-exclamation",
+  6: "fa-hands-holding-circle", 7: "fa-award", 8: "fa-triangle-exclamation", 9: "fa-chalkboard-user",
+  10: "fa-medal", 11: "fa-user-graduate", 12: "fa-lightbulb", 13: "fa-award", 14: "fa-hands-holding-circle",
+};
+
 /**
- * Một minh chứng. Tệp tải lên (LoaiMinhChung = 1) phải đi qua
+ * Một minh chứng. Minh chứng nguồn (có LoaiNguon) không có tệp hay URL: loại có
+ * API chi tiết mở modal theo MaNguon, loại khác chỉ hiện TieuDe / MoTa / Ngay.
+ * Tệp tải lên (LoaiMinhChung = 1) phải đi qua
  * GET api/minhchung/{id}/tai-ve - endpoint nằm sau [TokenAuthorize] nên không gắn
  * được vào <a href>, việc tải blob do useMinhChungPhieuPreview ở trang cha lo.
  * Liên kết / DOI (loại 2, 3) không có tệp trên đĩa nên mở thẳng DuongDan.
  */
 export const MinhChungRow = ({ mc, onXem, onTai }) => {
   const nhan = mc.TenHienThi || mc.TenFileGoc || mc.DuongDan;
-  if ([6, 14].includes(Number(mc.LoaiNguon))) return <div className="cd-mc-row"><i className="fa-solid fa-hands-holding-circle cd-mc-icon" /><div className="cd-mc-main">
+  if (mc.LoaiNguon != null && mc.IdMinhChung == null) return <div className="cd-mc-row"><i className={`fa-solid ${ICON_NGUON[Number(mc.LoaiNguon)] || "fa-database"} cd-mc-icon`} /><div className="cd-mc-main">
     <MinhChungNguonLink mc={mc} className="cd-mc-name" />
     <div className="cd-mc-meta">{Number(mc.LoaiNguon) === 14 && "Nhiệm vụ Khoa (lưu trữ) · "}{mc.MoTa}{mc.Ngay && <> · {formatNgayGio(mc.Ngay)}</>}</div>
-  </div></div>;
-  if (Number(mc.LoaiNguon) === 13) return <div className="cd-mc-row"><i className="fa-solid fa-award cd-mc-icon" /><div className="cd-mc-main">
-    {mc.MaNguon != null ? <Link className="cd-mc-name" to={`/khen-thuong-dot-xuat/${encodeURIComponent(mc.MaNguon)}`}>{mc.TieuDe || "Chi tiết khen thưởng đột xuất"}</Link> : <span className="cd-mc-name">{mc.TieuDe || "Khen thưởng đột xuất"}</span>}
-    <div className="cd-mc-meta">{mc.MoTa}{mc.Ngay && <> · {formatNgayGio(mc.Ngay)}</>}</div>
-  </div></div>;
-  if (Number(mc.LoaiNguon) === 12) return <div className="cd-mc-row"><i className="fa-solid fa-lightbulb cd-mc-icon" /><div className="cd-mc-main">
-    {mc.MaNguon != null ? <Link className="cd-mc-name" to={`/sang-kien/${encodeURIComponent(mc.MaNguon)}`}>{mc.TieuDe || "Chi tiết sáng kiến"}</Link> : <span className="cd-mc-name">{mc.TieuDe || "Sáng kiến"}</span>}
-    <div className="cd-mc-meta">{mc.MoTa}{mc.Ngay && <> · {formatNgayGio(mc.Ngay)}</>}</div>
-  </div></div>;
-  if (Number(mc.LoaiNguon) === 11) return <div className="cd-mc-row"><i className="fa-solid fa-user-graduate cd-mc-icon" /><div className="cd-mc-main">
-    {mc.MaNguon != null ? <Link className="cd-mc-name" to={`/phat-trien-doi-ngu/${encodeURIComponent(mc.MaNguon)}`}>{mc.TieuDe || "Chi tiết phát triển đội ngũ"}</Link> : <span className="cd-mc-name">{mc.TieuDe || "Phát triển đội ngũ"}</span>}
-    <div className="cd-mc-meta">{mc.MoTa}{mc.Ngay && <> · {formatNgayGio(mc.Ngay)}</>}</div>
   </div></div>;
 
   if (!laMinhChungFile(mc)) {
@@ -187,7 +185,9 @@ const TieuChiChamCard = ({
   );
   const [dangTaiPhu, setDangTaiPhu] = useState(false);
   const minhChung = !chamTay && Array.isArray(autoInfo?.MinhChung) ? autoInfo.MinhChung : minhChungDaTai;
-  const lyDoDiemTuDong = autoInfo?.LyDoDiemTuDong ?? chiTiet.LyDoDiemTuDong;
+  // Phiếu không nhận điểm tự động: ẩn lý do "không tìm thấy dữ liệu" của BE.
+  const lyDoDiemTuDong = autoInfo?.LaPhieuNhanTuDong === false
+    ? null : autoInfo?.LyDoDiemTuDong ?? chiTiet.LyDoDiemTuDong;
 
   // Sau mỗi lần lưu, phiếu được tải lại → nạp lại phần dữ liệu kèm theo còn thiếu
   // của bản ghi mới.
@@ -225,10 +225,13 @@ const TieuChiChamCard = ({
     };
   }, [chiTiet]);
 
-  // Tiêu chí tự động không đi qua ai chấm. Phiếu giảng viên lưu kết quả ở
-  // DiemChinhThuc, còn phiếu quý viên chức trả rõ DiemTuDong.
+  // Tiêu chí tự động không đi qua ai chấm. Có `/tu-dong` thì điểm hiển thị là
+  // DiemChinhThuc (hoặc điểm dự kiến khi engine chưa ghi); chưa có thì dùng điểm
+  // đã ghi trên ChiTiet (DiemTuDong của GET phieu/{id} là điểm đã ghi).
   const laTyLeGioGiang = laCongThucGioGiang(chiTiet);
-  const diemTuDong = laSangKien(chiTiet) || laKhenThuongDotXuat(chiTiet) ? diemSangKienDaLuu(chiTiet) :
+  const hienThiTuDong = !chamTay && autoInfo?.TuDongTheoPhieu ? diemHienThiTuDong(autoInfo) : null;
+  const diemTuDong = hienThiTuDong ? hienThiTuDong.diem :
+    laSangKien(chiTiet) || laKhenThuongDotXuat(chiTiet) ? diemSangKienDaLuu(chiTiet) :
     laTyLeGioGiang || laThanhTichDoanThe(chiTiet) || laPhatTrienDoiNgu(chiTiet) ? chiTiet.DiemChinhThuc :
     chiTiet.DiemTuDong ??
     chiTiet.DiemChinhThuc ??
@@ -428,6 +431,7 @@ const TieuChiChamCard = ({
                 <div className="cdm-diem-nhan">Hệ thống tính</div>
                 <div className="cdm-diem-gt cdm-diem-he-thong">
                   {laTyLeGioGiang && diemTuDong == null ? "Không chấm tự động" : formatDiem(diemTuDong)}
+                  {hienThiTuDong?.duKien && <span className="phieu-auto-du-kien">Dự kiến</span>}
                 </div>
               </div>
             )}
@@ -592,6 +596,7 @@ const TieuChiChamCard = ({
             <span className="cdm-tu-dong-max">
               / {formatDiem(chiTiet.DiemToiDa)}
             </span>
+            {hienThiTuDong?.duKien && <span className="phieu-auto-du-kien">Dự kiến</span>}
           </div>
 
           <div className="cdm-tu-dong-chu-thich">
@@ -601,6 +606,8 @@ const TieuChiChamCard = ({
           {lyDoDiemTuDong && (
             <p className="cdm-tu-dong-chu-thich">{lyDoDiemTuDong}</p>
           )}
+          <DuLieuNckhTuDong info={autoInfo} />
+          <DiemTuDongStatus info={autoInfo} />
         </div>
       )}
     </div>

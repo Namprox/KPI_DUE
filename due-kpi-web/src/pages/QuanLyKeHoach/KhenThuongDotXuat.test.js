@@ -11,7 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { apiFetch } from "../../utils/api";
 import * as api from "../../utils/khenThuongDotXuatApi";
 import { canAccessPath, visibleGroups } from "../../config/menuConfig";
-import { ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
+import { diemHienThiTuDong, ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
 import { MinhChungRow } from "../../components/QuanLyChamDiem/TieuChiChamCard";
 
 jest.mock("../../context/KhenThuongDotXuatContext", () => ({ useQuyenKhenThuong: jest.fn() }));
@@ -127,7 +127,8 @@ test("minh chứng 13 giữ mô tả khử trùng và điểm xem trước khôn
   show(<MinhChungRow mc={{ LoaiNguon: 13, MaNguon: 31, TieuDe: "Khen thưởng cấp Bộ", MoTa: "Không cộng điểm do trùng nội dung" }} />);
   expect(screen.getByRole("link")).toHaveAttribute("href", "/khen-thuong-dot-xuat/31");
   expect(screen.getByText("Không cộng điểm do trùng nội dung")).toBeInTheDocument();
-  const saved = { IdTieuChi: 7, LoaiNguonDiem: 2, CongThucSnapshot: "TTVT_KHEN_THUONG", DiemChinhThuc: 5 };
-  expect(ghepDiemTuDongPhieu({ 7: { DiemTuDong: 15 } }, [saved])[7].DiemTuDong).toBe(5);
-  expect(ghepDiemTuDongPhieu({ 7: { DiemTuDong: 15 } }, [], [saved])[7].DiemTuDong).toBe(15);
+  const saved = { IdChiTiet: 70, IdTieuChi: 7, LoaiNguonDiem: 2, CongThucSnapshot: "TTVT_KHEN_THUONG", DiemChinhThuc: 5 };
+  const response = { LaPhieuNhanTuDong: true, Items: [{ IdChiTiet: 70, IdTieuChi: 7, DiemDaGhi: 5, DiemChinhThuc: 5, DiemTuDong: 15, CanChamLai: true }] };
+  expect(diemHienThiTuDong(ghepDiemTuDongPhieu(response, [saved])[7])).toEqual({ diem: 5, duKien: false });
+  expect(diemHienThiTuDong(ghepDiemTuDongPhieu({ Items: [{ IdTieuChi: 7, DiemTuDong: 15 }] }, [], [saved])[7])).toEqual({ diem: 15, duKien: true });
 });

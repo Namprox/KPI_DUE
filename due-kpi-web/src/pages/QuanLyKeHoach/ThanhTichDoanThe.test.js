@@ -162,7 +162,7 @@ test("chi tiết đọc nguồn qua API riêng, hiển thị cơ quan và lịch
 
 test("phiếu cũ giữ ô điểm và minh chứng chấm tay sau khi mẫu đổi sang tự động", () => {
   const criteria = [{ IdTieuChi: 1, TenTieuChi: "Thành tích đoàn thể", LoaiNguonDiem: 2, LoaiThangDiem: 2, DiemToiDa: 5 }];
-  const autoScores = ghepDiemTuDongPhieu({ 1: { CongThucTongHop: "TTDT_HUY_CHUONG", DiemTuDong: 5 } }, [{ IdTieuChi: 1, LoaiNguonDiem: 1 }], criteria);
+  const autoScores = ghepDiemTuDongPhieu({ Items: [{ IdChiTiet: 10, IdTieuChi: 1, CongThucTongHop: "TTDT_HUY_CHUONG", DiemTuDong: 5 }] }, [{ IdChiTiet: 10, IdTieuChi: 1, LoaiNguonDiem: 1 }], criteria);
   show(<DanhGiaPhuLuc2Form criteriaList={criteria} formData={{}} autoScores={autoScores} tongDiemCoBan={0} laDongMoNhap={() => true} />);
   expect(screen.getByRole("spinbutton")).toBeEnabled();
   expect(document.querySelector('input[type="file"]')).not.toBeNull();

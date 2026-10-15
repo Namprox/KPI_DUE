@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Dialog } from "primereact/dialog";
 import { layChiTietSangKien, layDanhMucSangKien } from "../../utils/sangKienApi";
 import { ngaySangKien, ketQuaXetSangKien, ketQuaCaiTienSangKien, DiemVienChucSangKien, TacGiaSangKien, TrangThaiSangKien } from "./SangKienInfo";
@@ -6,16 +6,22 @@ import "../../css/Pages.css";
 import "../../css/SangKien.css";
 
 const actions = { 1: "Tạo sáng kiến", 2: "Sửa", 3: "Xoá", 4: "Xét đổi mới giảng dạy", 8: "Xét cải tiến công việc" };
-export default function SangKienDetail({ id, onClose }) {
+export default function SangKienDetail({ id, onClose, onUnavailable }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const unavailable = useRef(onUnavailable);
+  unavailable.current = onUnavailable;
   const [catalog, setCatalog] = useState(null);
   useEffect(() => {
     let cancelled = false;
     setData(null); setError("");
     layChiTietSangKien(id).then((r) => { if (!cancelled) setData(r); })
-      .catch((e) => { if (!cancelled) setError(e.message); });
+      .catch((e) => {
+        if (cancelled) return;
+        if (unavailable.current && [403, 404].includes(e.status)) unavailable.current(e);
+        else setError(e.message);
+      });
     return () => { cancelled = true; };
   }, [id, retry]);
   useEffect(() => {

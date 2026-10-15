@@ -9,7 +9,7 @@ import TieuChiChamCard from "./TieuChiChamCard";
 jest.mock("../../utils/phieuTuDongApi", () => ({ fetchDiemTuDongPhieu: jest.fn() }));
 const row = { IdChiTiet: 99, IdTieuChi: 7, TenTieuChi: "Sáng kiến", LoaiNguonDiem: 2, CongThucSnapshot: "SK_DOI_MOI_GIANG_DAY", DiemChinhThuc: 0, TrangThaiDong: 3, MinhChung: [], NhiemVuCongDong: [] };
 const phieu = { IdPhieu: 812, ChiTiet: [row] };
-const data = { Items: [{ IdChiTiet: 99, IdTieuChi: 7, DiemTuDong: 5, LyDoDiemTuDong: "Thông báo nguyên văn của backend", MinhChung: [{ LoaiNguon: 12, MaNguon: 12, TieuDe: "Sáng kiến NCKH", MoTa: "Cấp cơ sở + Cải tiến công việc" }] }] };
+const data = { LaPhieuNhanTuDong: true, Items: [{ IdChiTiet: 99, IdTieuChi: 7, DiemDaGhi: 0, DiemChinhThuc: 0, DiemTuDong: 5, CanChamLai: true, LyDoDiemTuDong: "Thông báo nguyên văn của backend", MinhChung: [{ LoaiNguon: 12, MaNguon: 12, TieuDe: "Sáng kiến NCKH", MoTa: "Cấp cơ sở + Cải tiến công việc" }] }] };
 const View = ({ form }) => {
   const result = useDiemTuDongPhieu(form);
   return <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

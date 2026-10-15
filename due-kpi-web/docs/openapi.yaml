@@ -16466,7 +16466,7 @@ components:
             NCKH_GIO_TY_LE, NCKH_BBQT_DIEM_KPI,
             TTVT_SANG_KIEN, TTVT_KHEN_THUONG, TTVT_DAO_TAO, TTVT_PHONG_TRAO,
             VPVC_HOAN_THANH_CV, VPVC_NOI_QUY, VPVC_CHINH_TRI, GIO_GIANG_TY_LE,
-            CTDT_HOI_DONG, CTDT_TO_GIUP_VIEC, NCS_SP_TRUNG_GIAN, NCS_BAO_VE_LA,
+            GIO_GIANG_VUOT_LOP, CTDT_HOI_DONG, CTDT_TO_GIUP_VIEC, NCS_SP_TRUNG_GIAN, NCS_BAO_VE_LA,
             TTDT_HUY_CHUONG, TTDT_GHI_NHAN_NGOAI,
             PTDN_DANH_HIEU_NHA_GIAO, PTDN_NGACH_HOC_HAM_HOC_VI, PTDN_BOI_DUONG.
 
@@ -16486,6 +16486,11 @@ components:
             GET /api/gio-giang-tkb/ty-le-hoan-thanh): ≥ 100% → DiemToiDa (20);
             > 75% và < 100% → × 0.75 (15); ≥ 50% và ≤ 75% → × 0.50 (10); < 50% → 0.
             Miễn định mức cả năm hoặc dữ liệu cần kiểm tra → null (không chấm tự động).
+
+            Riêng GIO_GIANG_VUOT_LOP (lớp lý thuyết vượt định mức 6 lớp/năm, nguồn SoLopTkb
+            của GET /api/gio-giang-tkb/tong-hop — mỗi dòng TKB đã ánh xạ, cả ĐH lẫn SĐH, là
+            1 lớp): vượt ≥ 4 lớp → DiemToiDa (15); vượt 3 → × 2/3 (10); vượt 1–2 → × 1/3 (5);
+            không vượt hoặc không có dòng TKB → 0.
 
             Riêng NCKH_BBQT_DIEM_KPI: điểm KHÔNG do phía KPI tính — phía NCKH đã tính
             sẵn ở nckh_kpi_bai_bao_quoc_te.diem_kpi_cuoi (FinalKpiScore), phía KPI chỉ

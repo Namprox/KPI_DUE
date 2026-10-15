@@ -17,14 +17,9 @@ export const useDiemTuDongPhieu = (phieu) => {
   // Không để phản hồi của phiếu/năm/đơn vị trước hiển thị trên phiếu mới.
   const current = result?.phieu === phieu ? result : null;
   const data = current?.data;
-  const theoTieuChi = useMemo(() => {
-    const rows = phieu?.ChiTiet || phieu?.chiTiet || [];
-    const ids = new Set(rows.map((row) => String(row.IdChiTiet)));
-    const sources = Object.fromEntries((data?.Items || [])
-      .filter((row) => ids.has(String(row.IdChiTiet)))
-      .map((row) => [row.IdTieuChi, row]));
-    return ghepDiemTuDongPhieu(sources, rows);
-  }, [data, phieu]);
+  const theoTieuChi = useMemo(() => ghepDiemTuDongPhieu(
+    data, phieu?.ChiTiet || phieu?.chiTiet || [], [], { trangThaiPhieu: phieu?.TrangThai },
+  ), [data, phieu]);
   const theoChiTiet = useMemo(() => Object.fromEntries(
     Object.values(theoTieuChi).filter((row) => row.IdChiTiet != null)
       .map((row) => [row.IdChiTiet, row]),

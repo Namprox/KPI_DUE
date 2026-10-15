@@ -11,6 +11,7 @@ import { apiFetch } from "../../utils/api";
 import { layLoaiDaoTao, layHoatDongDaoTao, xoaHoatDongDaoTao, taiMauDaoTao } from "../../utils/hoatDongDaoTaoApi";
 import "../../css/Pages.css";
 import "../../css/HoatDongDaoTao.css";
+import { HUONG_DAN_DIEM_NGUON } from "../../utils/diemTuDongPhieu";
 
 export default function HoatDongDaoTao() {
   const { quyen, loading: permissionLoading, error: permissionError, refresh } = useQuyenDaoTao();
@@ -108,6 +109,7 @@ export default function HoatDongDaoTao() {
     {permissionLoading && <p role="status">Đang tải quyền truy cập...</p>}
     {permissionError && <div role="alert" className="hddt-error">{permissionError} <button onClick={refresh}>Thử lại</button></div>}
     {catalogError && <div role="alert" className="hddt-error">{catalogError} <button onClick={() => setCatalogRetry((v) => v + 1)}>Tải lại danh mục</button></div>}
+    {canWrite && <p className="hddt-warning">{HUONG_DAN_DIEM_NGUON}</p>}
     {quyen?.DuocUyQuyen === true && !canWrite && <p className="hddt-warning">Quyền nhập liệu không còn hiệu lực do bạn đã rời Phòng Đào tạo và Bảo đảm chất lượng.</p>}
     {message && <p role="status" className="hddt-notice">{message}</p>}
     <div className="hddt-filters">

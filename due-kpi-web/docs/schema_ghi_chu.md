@@ -3276,7 +3276,8 @@ khác hẳn cách nhập staging phẳng theo **kỳ học** trước đây, v�
 ### 13.1. Phạm vi CỐ Ý chưa làm — đã chốt với người dùng
 
 - ~~**KHÔNG** thêm mã chấm điểm tự động vào `fn_nckh_diem_tu_dong`.~~ **Đã đảo** (2026-09-27): có mã
-  `GIO_GIANG_TY_LE` chấm theo tỷ lệ hoàn thành sau giảm trừ — xem §13.10.
+  `GIO_GIANG_TY_LE` chấm theo tỷ lệ hoàn thành sau giảm trừ — xem §13.10. Thêm mã `GIO_GIANG_VUOT_LOP`
+  (2026-10-14) chấm theo số lớp vượt định mức 6 lớp/năm — xem §13.11.
 - **KHÔNG** ghi vào `gio_thuc_hien_gv`. Cùng lý do đã ghi ở 3.6.8 và 9.0: ghi tự động sẽ
   đè số liệu nhập tay mà `sp_dinh_muc_lay_context_ap_dung` và phiếu đánh giá đang đọc.
 - Ánh xạ họ tên → nhân viên: **tự động** khi tên khớp duy nhất một nhân viên, còn lại làm
@@ -3743,6 +3744,60 @@ Tạo tiêu chí qua API, **không** seed SQL: `loai_doi_tuong = 1`, `loai_nguon
 `cong_thuc_tong_hop = 'GIO_GIANG_TY_LE'`, `diem_toi_da = 20`, `loai_thang_diem = 1` + 4 dòng `thang_diem`
 20 / 15 / 10 / 0 để engine gán được `id_thang_diem_chon`. Phiếu tạo **trước** khi gán tiêu chí phải tạo lại.
 Import lại file giảm trừ / TKB **không** tự sửa điểm đã ghi, phải gọi lại tổng hợp tự động.
+
+### 13.11. Lớp lý thuyết vượt định mức + mã chấm tự động `GIO_GIANG_VUOT_LOP` (2026-10-14)
+
+Tiêu chí GV "Giờ giảng dạy lý thuyết vượt định mức", chấm từ chính dữ liệu TKB của module này.
+
+```
+so_lop      = fn_gio_giang_thuc_hien(@id_nam).so_lop_tkb của GV   (= SoLopTkb của GET api/gio-giang-tkb/tong-hop)
+so_lop_vuot = so_lop − 6                                         (định mức chuẩn CỐ ĐỊNH 6 lớp / năm)
+```
+
+#### Quy tắc — đã chốt với người dùng (2026-10-14)
+
+| Số lớp trong năm | Vượt | Điểm | Với `diem_toi_da = 15` |
+|---|---|---|---|
+| ≤ 6 | 0 | 0 | 0 |
+| 7 – 8 | 1 – 2 | `diem_toi_da / 3` | 5 |
+| 9 | 3 | `diem_toi_da × 2 / 3` | 10 |
+| ≥ 10 | ≥ 4 | `diem_toi_da` | 15 |
+
+- **Mọi lớp trong file đều là lớp lý thuyết.** File không có cột lý thuyết / thực hành, import không đổi.
+- **Đếm cả sheet DH lẫn SDH.** Năm = 3 kỳ của năm đánh giá (§13.2).
+- **Vượt 1 lớp cũng được bậc thấp nhất** (văn bản chỉ ghi từ "thêm 2 lớp"; người dùng chốt gộp 1 – 2).
+- Định mức **không** giảm trừ theo chức vụ / miễn / tập sự như §13.10.
+- Bậc tính **theo tỷ lệ `@diem_toi_da`** (cùng hợp đồng với `GIO_GIANG_TY_LE`: hàm không bao giờ trả quá
+  `@diem_toi_da`). Đặt tiêu chí 15 điểm thì ra đúng 5 / 10 / 15. Không có dòng TKB đã ánh xạ → **0**, không phải NULL.
+
+#### 1 dòng = 1 lớp — vì sao KHÔNG `DISTINCT` theo mã lớp
+
+`gio_giang_tkb.so_lop = COUNT(1)` số dòng chi tiết (`sp_gio_giang_tkb_dong_bo`), và mã này dùng nguyên con số đó.
+Người dùng đã chạy câu kiểm tra trên dữ liệu 2026 (3030 dòng; 0 dòng thiếu mã lớp; 0 dòng `SoTiet = 0`).
+Chỉ có **một** ca trùng (hệ, kỳ, mã lớp) trong cùng một GV: SĐH `K50.TNH.ĐN1.N1`, nhưng đó là **hai học phần
+khác nhau**. Cột `Lop` của sheet SDH là lớp **sinh hoạt**, không phải lớp tín chỉ, nên `DISTINCT` theo mã lớp sẽ
+gộp sai hai lớp thật. Đếm theo dòng, đếm DISTINCT và đếm dòng có tiết cho phân bố y hệt nhau:
+0đ 80 · 5đ 26 · 10đ 13 · 15đ 156 (275 GV đã ánh xạ).
+
+⚠️ Đổi cách tính `so_lop` ở `sp_gio_giang_tkb_dong_bo` (vd khử trùng) là **đổi điểm KPI** của mã này.
+
+#### Hệ quả cần biết
+
+- Dòng TKB **chưa ánh xạ** (2026: 260 dòng) không tính cho ai, giống `GIO_GIANG_TY_LE`. Ánh xạ xong phải gọi lại
+  `POST api/phieu/{id}/tong-hop-tu-dong`.
+- **Không** có nhánh minh chứng trong `fn_nckh_minh_chung_tu_dong`, giống `GIO_GIANG_TY_LE`: hàm đó là inline TVF
+  tạo trước §13 nên không tham chiếu được hàm TKB. Danh sách lớp xem ở `GET api/gio-giang-tkb/{id}/chi-tiet`.
+- Bản xem trước toàn trường của mẫu (`sp_mau_danh_gia_diem_tu_dong`, không truyền `idNhanVien`) **không** có cờ mở
+  rộng tập theo nguồn TKB. GV chỉ có dữ liệu TKB mà không có nguồn nào khác sẽ không hiện ở bản xem trước toàn
+  trường. Engine chấm phiếu không bị ảnh hưởng.
+
+#### Gắn vào tiêu chí KPI
+
+Tạo tiêu chí qua API, **không** seed SQL: `loai_doi_tuong = 1`, `loai_nguon_diem = 2`,
+`cong_thuc_tong_hop = 'GIO_GIANG_VUOT_LOP'`, `diem_toi_da = 15`, `loai_thang_diem = 1` + 4 dòng `thang_diem`
+15 / 10 / 5 / 0 để engine gán được `id_thang_diem_chon` (KT1 của `update_database.sql` báo mức thiếu).
+Phiếu tạo **trước** khi gán mã không nhận mã mới (snapshot `cong_thuc_snapshot`, KT3 liệt kê) — phải tạo lại.
+Import lại TKB / sửa ánh xạ **không** tự sửa điểm đã ghi, phải gọi lại tổng hợp tự động.
 
 ---
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Dialog } from "primereact/dialog";
 import { layChiTietDoanThe } from "../../utils/thanhTichDoanTheApi";
 import "../../css/Pages.css";
@@ -10,15 +10,21 @@ export const ngayDoanThe = (value, time = false) => {
   return Number.isNaN(date.getTime()) ? "—" : time ? date.toLocaleString("vi-VN") : date.toLocaleDateString("vi-VN");
 };
 const actions = { 1: "Ghi nhận", 2: "Sửa", 3: "Xoá", 4: "Import Excel" };
-export default function ThanhTichDoanTheDetail({ id, onClose }) {
+export default function ThanhTichDoanTheDetail({ id, onClose, onUnavailable }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const unavailable = useRef(onUnavailable);
+  unavailable.current = onUnavailable;
   useEffect(() => {
     let cancelled = false;
     setData(null); setError("");
     layChiTietDoanThe(id).then((r) => { if (!cancelled) setData(r); })
-      .catch((e) => { if (!cancelled) setError(e.message); });
+      .catch((e) => {
+        if (cancelled) return;
+        if (unavailable.current && [403, 404].includes(e.status)) unavailable.current(e);
+        else setError(e.message);
+      });
     return () => { cancelled = true; };
   }, [id, retry]);
   const item = data?.Item;

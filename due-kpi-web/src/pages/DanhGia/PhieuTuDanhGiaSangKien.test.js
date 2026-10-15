@@ -30,7 +30,7 @@ const setup = (existing, score = 5, status = 200) => {
       ok: previewStatus === 200, status: previewStatus,
       json: async () => previewStatus === 200 ? { Items: [{ IdTieuChi: 77, CongThucTongHop: "SK_DOI_MOI_GIANG_DAY", DiemTuDong: score }] } : { Message: "Lỗi tải điểm" },
     };
-    else if (endpoint === "phieu/812/tu-dong") body = { Success: true, Items: [{ IdChiTiet: 9931, IdTieuChi: 77, DiemDaGhi: 0, DiemTuDong: 5, MinhChung: [{ LoaiNguon: 12, MaNguon: 12, TieuDe: "Sáng kiến từ NCKH", MoTa: "Quyết định công nhận" }] }] };
+    else if (endpoint === "phieu/812/tu-dong") body = { Success: true, Items: [{ IdChiTiet: 9931, IdTieuChi: 77, DiemDaGhi: 0, DiemChinhThuc: 0, DiemTuDong: 5, CanChamLai: true, MinhChung: [{ LoaiNguon: 12, MaNguon: 12, TieuDe: "Sáng kiến từ NCKH", MoTa: "Quyết định công nhận" }] }] };
     return { ok: true, status: 200, json: async () => body };
   });
   render(<MemoryRouter initialEntries={["/danh-gia-phu-luc-2?year=2026"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

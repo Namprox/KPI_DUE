@@ -11,6 +11,7 @@ import { apiFetch } from "../../utils/api";
 import { layLoaiDoiNgu, layHangMucDoiNgu, layChiTietDoiNgu, layPhatTrienDoiNgu, xoaPhatTrienDoiNgu, taiMauDoiNgu } from "../../utils/phatTrienDoiNguApi";
 import "../../css/Pages.css";
 import "../../css/PhatTrienDoiNgu.css";
+import { HUONG_DAN_DIEM_NGUON } from "../../utils/diemTuDongPhieu";
 
 export default function PhatTrienDoiNgu() {
   const { quyen, loading: permissionLoading, error: permissionError, refresh } = useQuyenDoiNgu();
@@ -125,6 +126,7 @@ export default function PhatTrienDoiNgu() {
     {permissionLoading && <p role="status">Đang tải quyền truy cập...</p>}
     {permissionError && <div role="alert" className="ptdn-error">{permissionError} <button onClick={refresh}>Thử lại</button></div>}
     {catalogError && <div role="alert" className="ptdn-error">{catalogError} <button onClick={() => setCatalogRetry((v) => v + 1)}>Tải lại danh mục</button></div>}
+    {canWrite && <p className="ptdn-warning">{HUONG_DAN_DIEM_NGUON}</p>}
     {quyen?.DuocUyQuyen === true && !canWrite && <p className="ptdn-warning">Quyền nhập liệu không còn hiệu lực do bạn đã rời Phòng Tổ chức – Hành chính.</p>}
     {message && <p role="status" className="ptdn-notice">{message}</p>}
     <div className="ptdn-filters">
