@@ -60,7 +60,7 @@ export default function SangKienUyQuyen() {
         {p.LaQuanLy === true ? <button disabled>Đã có toàn quyền</button> : p.DaDuocCap === true ? <button className="sk-danger" onClick={() => open(p, true)}>Thu hồi</button> : <button className="sk-primary" onClick={() => open(p, false)}>Cấp quyền</button>}
       </td></tr>)}
     </tbody></table></div>
-    {action && <Dialog visible header={action.revoke ? "Thu hồi quyền nhập liệu" : "Cấp quyền nhập liệu"} onHide={() => setAction(null)} modal closable={!busy} closeOnEscape={!busy} maskClassName="sk-dialog-mask"
+    {action && <Dialog draggable={false} visible header={action.revoke ? "Thu hồi quyền nhập liệu" : "Cấp quyền nhập liệu"} onHide={() => setAction(null)} modal closable={!busy} closeOnEscape={!busy} maskClassName="sk-dialog-mask"
       className="sk-dialog" style={{ width: "520px" }} breakpoints={{ "600px": "95vw" }}>
       <div className="sk sk-action-form"><p>{action.revoke ? "Thu hồi" : "Cấp"} quyền nhập liệu cho <strong>{action.person.HoTen}</strong>?</p>
         {!action.revoke && <label className="sk-field">Ghi chú<textarea maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} rows={3} disabled={busy} /></label>}

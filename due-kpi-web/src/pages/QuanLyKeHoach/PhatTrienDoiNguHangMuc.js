@@ -70,7 +70,7 @@ export default function PhatTrienDoiNguHangMuc() {
           <td>{h.ThuTu}</td><td>{h.MaHangMuc || "—"}</td><td>{h.TenHangMuc}{h.LaCoDinh === true && <small>Cố định</small>}</td><td>{h.TenLoai}</td><td><span className={`ptdn-badge ${h.DangSuDung === true ? "ptdn-THEM" : "ptdn-TRUNG"}`}>{h.DangSuDung === true ? "Đang dùng" : "Ngừng dùng"}</span></td><td>{h.SoBanGhi ?? "—"}</td><td>{h.CoTheSua === true && <button onClick={() => open(h)}>Sửa</button>}</td>
         </tr>)}
       </tbody></table></div>
-    {form && <Dialog visible header={form.IdHangMuc ? "Sửa hạng mục" : "Thêm hạng mục"} modal onHide={() => setForm(null)} closable={!busy} closeOnEscape={!busy} className="ptdn-dialog" maskClassName="ptdn-dialog-mask" style={{ width: "620px" }} breakpoints={{ "700px": "95vw" }}
+    {form && <Dialog draggable={false} visible header={form.IdHangMuc ? "Sửa hạng mục" : "Thêm hạng mục"} modal onHide={() => setForm(null)} closable={!busy} closeOnEscape={!busy} className="ptdn-dialog" maskClassName="ptdn-dialog-mask" style={{ width: "620px" }} breakpoints={{ "700px": "95vw" }}
       pt={{ header: { className: "modal-header" }, content: { className: "modal-body" }, footer: { className: "modal-footer" } }} footer={<><button className="btn-cancel" onClick={() => setForm(null)} disabled={busy}>Hủy</button><button className="btn-submit" form="ptdn-hang-muc-form" type="submit" disabled={busy}>{busy ? "Đang lưu..." : "Lưu hạng mục"}</button></>}>
       <form id="ptdn-hang-muc-form" onSubmit={save} className="ptdn ptdn-entry-form">
         {formError && <p role="alert" className="ptdn-error">{formError}</p>}

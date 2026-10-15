@@ -61,7 +61,7 @@ export default function KhenThuongDotXuatUyQuyen() {
         {p.LaQuanLy === true ? <button disabled>Đã có toàn quyền</button> : p.DaDuocCap === true ? <button className="ktdx-danger" onClick={() => open(p, true)}>Thu hồi</button> : <button className="ktdx-primary" onClick={() => open(p, false)}>Cấp quyền</button>}
       </td></tr>)}
     </tbody></table></div>
-    {action && <Dialog visible header={action.revoke ? "Thu hồi quyền nhập liệu" : "Cấp quyền nhập liệu"} onHide={() => setAction(null)} modal closable={!busy} closeOnEscape={!busy} maskClassName="ktdx-dialog-mask"
+    {action && <Dialog draggable={false} visible header={action.revoke ? "Thu hồi quyền nhập liệu" : "Cấp quyền nhập liệu"} onHide={() => setAction(null)} modal closable={!busy} closeOnEscape={!busy} maskClassName="ktdx-dialog-mask"
       className="ktdx-dialog" style={{ width: "520px" }} breakpoints={{ "600px": "95vw" }}>
       <div className="ktdx"><p>{action.revoke ? "Thu hồi" : "Cấp"} quyền nhập liệu cho <strong>{action.person.HoTen}</strong>?</p>
         {!action.revoke && <label className="ktdx-field">Ghi chú<textarea maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} rows={3} disabled={busy} /></label>}

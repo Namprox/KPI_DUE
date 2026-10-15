@@ -84,7 +84,7 @@ export default function KhenThuongDotXuatForm({ item, idNam, namList, donViList,
   const muc = catalog.items.find((m) => String(m.IdMuc) === String(form.IdMuc));
   const footer = <><button type="button" className="btn-cancel" onClick={onClose} disabled={busy}>Hủy</button>
     <button className="btn-submit" type="submit" form="khenThuongForm" disabled={busy || !canSave || catalog.loading || !!catalog.error}>{busy ? "Đang lưu..." : editing ? "Lưu thay đổi" : "Ghi nhận"}</button></>;
-  return <Dialog visible header={editing ? "Sửa khen thưởng đột xuất" : "Thêm khen thưởng đột xuất"} onHide={onClose} maskClassName="ktdx-dialog-mask"
+  return <Dialog draggable={false} visible header={editing ? "Sửa khen thưởng đột xuất" : "Thêm khen thưởng đột xuất"} onHide={onClose} maskClassName="ktdx-dialog-mask"
     className="ktdx-dialog" style={{ width: "780px" }} breakpoints={{ "820px": "95vw" }} modal closable={!busy} closeOnEscape={!busy} footer={footer}
     pt={{ header: { className: "modal-header" }, content: { className: "modal-body" }, footer: { className: "modal-footer" } }}>
     <form id="khenThuongForm" onSubmit={save} className="ktdx ktdx-entry-form">

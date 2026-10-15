@@ -60,7 +60,7 @@ export default function PhatTrienDoiNguUyQuyen() {
         {p.LaQuanLy === true ? <button disabled>Đã có toàn quyền</button> : p.DaDuocCap === true ? <button className="ptdn-danger" onClick={() => open(p, true)}>Thu hồi</button> : <button className="ptdn-primary" onClick={() => open(p, false)}>Cấp quyền</button>}
       </td></tr>)}
     </tbody></table></div>
-    {action && <Dialog visible header={action.revoke ? "Thu hồi quyền nhập liệu" : "Cấp quyền nhập liệu"} onHide={() => setAction(null)} modal closable={!busy} closeOnEscape={!busy} maskClassName="ptdn-dialog-mask"
+    {action && <Dialog draggable={false} visible header={action.revoke ? "Thu hồi quyền nhập liệu" : "Cấp quyền nhập liệu"} onHide={() => setAction(null)} modal closable={!busy} closeOnEscape={!busy} maskClassName="ptdn-dialog-mask"
       className="ptdn-dialog" style={{ width: "520px" }} breakpoints={{ "600px": "95vw" }}>
       <div className="ptdn"><p>{action.revoke ? "Thu hồi" : "Cấp"} quyền nhập liệu cho <strong>{action.person.HoTen}</strong>?</p>
         {!action.revoke && <label className="ptdn-field">Ghi chú<textarea maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} rows={3} disabled={busy} /></label>}

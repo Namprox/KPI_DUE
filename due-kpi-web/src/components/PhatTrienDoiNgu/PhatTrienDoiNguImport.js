@@ -23,7 +23,7 @@ export default function PhatTrienDoiNguImport({ idNam, onClose, onImported }) {
     <button className="btn-submit" onClick={() => run(true)} disabled={!file || busy}><i className={`fa-solid ${busy ? "fa-spinner fa-spin" : "fa-file-circle-check"}`} aria-hidden="true" />{busy ? "Đang xử lý..." : "Kiểm tra file"}</button>
     <button className="btn-submit" onClick={() => run(false)} disabled={!canConfirm || busy}><i className="fa-solid fa-file-import" aria-hidden="true" />Xác nhận import</button>
   </>;
-  return <Dialog visible header={`Import phát triển đội ngũ · Năm ${idNam}`} onHide={onClose} modal maskClassName="ptdn-dialog-mask"
+  return <Dialog draggable={false} visible header={`Import phát triển đội ngũ · Năm ${idNam}`} onHide={onClose} modal maskClassName="ptdn-dialog-mask"
     className="ptdn-dialog" style={{ width: "1050px" }} breakpoints={{ "1100px": "95vw" }} closable={!busy} closeOnEscape={!busy}
     closeIcon={<span aria-hidden="true">×</span>} footer={footer}
     pt={{ header: { className: "modal-header" }, content: { className: "modal-body" }, footer: { className: "modal-footer" } }}>

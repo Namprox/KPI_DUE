@@ -22,7 +22,7 @@ export default function ThanhTichDoanTheDetail({ id, onClose }) {
     return () => { cancelled = true; };
   }, [id, retry]);
   const item = data?.Item;
-  return <Dialog visible header="Chi tiết thành tích đoàn thể" onHide={onClose} modal className="hddt-dialog" maskClassName="hddt-dialog-mask"
+  return <Dialog draggable={false} visible header="Chi tiết thành tích đoàn thể" onHide={onClose} modal className="hddt-dialog" maskClassName="hddt-dialog-mask"
     style={{ width: "780px" }} breakpoints={{ "820px": "95vw" }}>
     <div className="hddt">
       {error ? <div role="alert" className="hddt-error">{error} <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button></div> : !data ? <p>Đang tải chi tiết...</p> : <>

@@ -162,7 +162,7 @@ export default function PhatTrienDoiNgu() {
     {form && <PhatTrienDoiNguForm item={form.item} idNam={selectedNam} namList={namList} loaiList={loaiList} khoaList={khoaList} onClose={() => setForm(null)} onSaved={saved} />}
     {importOpen && canWrite && <PhatTrienDoiNguImport idNam={selectedNam} onClose={() => setImportOpen(false)} onImported={(r) => { setMessage(r.Message || "Đã import phát triển đội ngũ."); setRevision((v) => v + 1); }} />}
     {detailId && <PhatTrienDoiNguDetail id={detailId} onClose={() => setDetailId(null)} />}
-    {deleting && <Dialog visible header="Xoá phát triển đội ngũ" onHide={() => setDeleting(null)} modal closable={!busy} closeOnEscape={!busy} className="ptdn-dialog" maskClassName="ptdn-dialog-mask" style={{ width: "520px" }} breakpoints={{ "600px": "95vw" }}>
+    {deleting && <Dialog draggable={false} visible header="Xoá phát triển đội ngũ" onHide={() => setDeleting(null)} modal closable={!busy} closeOnEscape={!busy} className="ptdn-dialog" maskClassName="ptdn-dialog-mask" style={{ width: "520px" }} breakpoints={{ "600px": "95vw" }}>
       <div className="ptdn"><p>Xoá ghi nhận của <strong>{deleting.HoTen}</strong>: {deleting.TenHangMuc}?</p><p className="ptdn-muted">Bản ghi được xoá mềm và lưu lịch sử.</p>
         <label className="ptdn-field">Lý do (tuỳ chọn)<textarea maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} disabled={busy} rows={3} /></label>
         {deleteError && <p role="alert" className="ptdn-error">{deleteError}</p>}<div className="ptdn-actions ptdn-footer"><button onClick={() => setDeleting(null)} disabled={busy}>Hủy</button><button className="ptdn-danger" onClick={deleteRecord} disabled={busy}>{busy ? "Đang xoá..." : "Xác nhận xoá"}</button></div>

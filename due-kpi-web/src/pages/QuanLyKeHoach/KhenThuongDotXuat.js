@@ -139,7 +139,7 @@ export default function KhenThuongDotXuat() {
     </div>
     {form && <KhenThuongDotXuatForm item={form.item} idNam={selectedNam} namList={namList} donViList={donViList} onClose={() => setForm(null)} onSaved={saved} />}
     {detailId && <KhenThuongDotXuatDetail id={detailId} onClose={() => setDetailId(null)} />}
-    {deleting && <Dialog visible header="Xóa khen thưởng đột xuất" onHide={() => setDeleting(null)} modal closable={!busy} closeOnEscape={!busy} className="ktdx-dialog" maskClassName="ktdx-dialog-mask" style={{ width: "520px" }} breakpoints={{ "600px": "95vw" }}>
+    {deleting && <Dialog draggable={false} visible header="Xóa khen thưởng đột xuất" onHide={() => setDeleting(null)} modal closable={!busy} closeOnEscape={!busy} className="ktdx-dialog" maskClassName="ktdx-dialog-mask" style={{ width: "520px" }} breakpoints={{ "600px": "95vw" }}>
       <div className="ktdx"><p>Xóa ghi nhận của <strong>{deleting.HoTen}</strong>: {deleting.NoiDung}?</p><p className="ktdx-muted">Bản ghi được xóa mềm và lưu lịch sử.</p><label className="ktdx-field">Lý do (tùy chọn)<textarea maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} disabled={busy} rows={3} /></label>
         {deleteError && <p role="alert" className="ktdx-error">{deleteError}</p>}<div className="ktdx-actions ktdx-footer"><button onClick={() => setDeleting(null)} disabled={busy}>Hủy</button><button className="ktdx-danger" onClick={deleteRecord} disabled={busy}>{busy ? "Đang xóa..." : "Xác nhận xóa"}</button></div>
       </div>

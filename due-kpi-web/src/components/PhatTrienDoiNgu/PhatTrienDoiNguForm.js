@@ -80,7 +80,7 @@ export default function PhatTrienDoiNguForm({ item, idNam, namList, loaiList, kh
       {busy ? "Đang lưu..." : editing ? "Lưu thay đổi" : "Ghi nhận"}
     </button>
   </>;
-  return <Dialog visible header={editing ? "Sửa ghi nhận phát triển đội ngũ" : "Thêm ghi nhận phát triển đội ngũ"} onHide={onClose} maskClassName="ptdn-dialog-mask"
+  return <Dialog draggable={false} visible header={editing ? "Sửa ghi nhận phát triển đội ngũ" : "Thêm ghi nhận phát triển đội ngũ"} onHide={onClose} maskClassName="ptdn-dialog-mask"
     className="ptdn-dialog" style={{ width: "780px" }} breakpoints={{ "820px": "95vw" }} modal closable={!busy} closeOnEscape={!busy}
     closeIcon={<span aria-hidden="true">×</span>} footer={footer}
     pt={{ header: { className: "modal-header" }, content: { className: "modal-body" }, footer: { className: "modal-footer" } }}>

@@ -143,7 +143,7 @@ export default function NhiemVuPhucVuDetail({ id, onClose, onChanged }) {
       }
     }, "Đã tải minh chứng và cập nhật chi tiết.");
   };
-  return <Dialog visible modal header="Chi tiết nhiệm vụ PVCĐ" onHide={() => { if (!busy) onClose(); }} closable={!busy} closeOnEscape={!busy}
+  return <Dialog draggable={false} visible modal header="Chi tiết nhiệm vụ PVCĐ" onHide={() => { if (!busy) onClose(); }} closable={!busy} closeOnEscape={!busy}
     className="nvpv-dialog" style={{ width: "1080px" }} breakpoints={{ "1120px": "96vw" }}>
     <div className="nvpv">
       {error && <p role="alert" className="nvpv-error">{error} {!item && !loading && <button onClick={() => setRetry((v) => v + 1)}>Tải lại chi tiết</button>}</p>}

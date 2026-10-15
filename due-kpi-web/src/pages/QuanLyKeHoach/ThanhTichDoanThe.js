@@ -141,7 +141,7 @@ export default function ThanhTichDoanThe() {
     {form && <ThanhTichDoanTheForm item={form.item} idNam={selectedNam} namList={namList} loaiList={loaiList} khoaList={khoaList} onClose={() => setForm(null)} onSaved={saved} />}
     {importOpen && canWrite && <ThanhTichDoanTheImport idNam={selectedNam} onClose={() => setImportOpen(false)} onImported={(r) => { setMessage(r.Message || "Đã import thành tích đoàn thể."); setRevision((v) => v + 1); }} />}
     {detailId && <ThanhTichDoanTheDetail id={detailId} onClose={() => setDetailId(null)} />}
-    {deleting && <Dialog visible header="Xoá thành tích đoàn thể" onHide={() => setDeleting(null)} modal closable={!busy} closeOnEscape={!busy} className="hddt-dialog" maskClassName="hddt-dialog-mask" style={{ width: "520px" }} breakpoints={{ "600px": "95vw" }}>
+    {deleting && <Dialog draggable={false} visible header="Xoá thành tích đoàn thể" onHide={() => setDeleting(null)} modal closable={!busy} closeOnEscape={!busy} className="hddt-dialog" maskClassName="hddt-dialog-mask" style={{ width: "520px" }} breakpoints={{ "600px": "95vw" }}>
       <div className="hddt"><p>Xoá ghi nhận của <strong>{deleting.HoTen}</strong>: {deleting.NoiDung}?</p><p className="hddt-muted">Bản ghi được xoá mềm và lưu lịch sử.</p>
         <label className="hddt-field">Lý do (tuỳ chọn)<textarea maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} disabled={busy} rows={3} /></label>
         {deleteError && <p role="alert" className="hddt-error">{deleteError}</p>}<div className="hddt-actions hddt-footer"><button onClick={() => setDeleting(null)} disabled={busy}>Hủy</button><button className="hddt-danger" onClick={deleteRecord} disabled={busy}>{busy ? "Đang xoá..." : "Xác nhận xoá"}</button></div>

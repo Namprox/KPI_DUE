@@ -25,7 +25,7 @@ export default function SangKienDetail({ id, onClose }) {
     return () => { cancelled = true; };
   }, [retry]);
   const item = data?.Item;
-  return <Dialog visible header="Chi tiết sáng kiến" onHide={onClose} modal className="sk-dialog" maskClassName="sk-dialog-mask"
+  return <Dialog draggable={false} visible header="Chi tiết sáng kiến" onHide={onClose} modal className="sk-dialog" maskClassName="sk-dialog-mask"
     style={{ width: "820px" }} breakpoints={{ "860px": "95vw" }}>
     <div className="sk">
       {error ? <div role="alert" className="sk-error">{error} <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button></div> : !data ? <p role="status">Đang tải chi tiết...</p> : !item ? <p>Không có thông tin sáng kiến.</p> : <>

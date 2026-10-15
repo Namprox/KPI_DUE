@@ -25,7 +25,7 @@ export default function KhenThuongDotXuatDetail({ id, onClose }) {
     return () => { cancelled = true; };
   }, [id, retry]);
   const item = data?.Item;
-  return <Dialog visible header="Chi tiết khen thưởng đột xuất" onHide={onClose} modal className="ktdx-dialog" maskClassName="ktdx-dialog-mask"
+  return <Dialog draggable={false} visible header="Chi tiết khen thưởng đột xuất" onHide={onClose} modal className="ktdx-dialog" maskClassName="ktdx-dialog-mask"
     style={{ width: "780px" }} breakpoints={{ "820px": "95vw" }}>
     <div className="ktdx">
       {error ? <div role="alert" className="ktdx-error">{error} <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button></div> : !data ? <p>Đang tải chi tiết...</p> : <>

@@ -63,7 +63,7 @@ export default function HoatDongDaoTaoForm({ item, idNam, namList, loaiList, kho
       {busy ? "Đang lưu..." : editing ? "Lưu thay đổi" : "Ghi nhận"}
     </button>
   </>;
-  return <Dialog visible header={editing ? "Sửa hoạt động đào tạo" : "Thêm hoạt động đào tạo"} onHide={onClose} maskClassName="hddt-dialog-mask"
+  return <Dialog draggable={false} visible header={editing ? "Sửa hoạt động đào tạo" : "Thêm hoạt động đào tạo"} onHide={onClose} maskClassName="hddt-dialog-mask"
     className="hddt-dialog" style={{ width: "780px" }} breakpoints={{ "820px": "95vw" }} modal closable={!busy} closeOnEscape={!busy}
     closeIcon={<span aria-hidden="true">×</span>} footer={footer}
     pt={{ header: { className: "modal-header" }, content: { className: "modal-body" }, footer: { className: "modal-footer" } }}>

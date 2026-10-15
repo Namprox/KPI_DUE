@@ -22,7 +22,7 @@ export default function PhatTrienDoiNguDetail({ id, onClose }) {
     return () => { cancelled = true; };
   }, [id, retry]);
   const item = data?.Item;
-  return <Dialog visible header="Chi tiết phát triển đội ngũ" onHide={onClose} modal className="ptdn-dialog" maskClassName="ptdn-dialog-mask"
+  return <Dialog draggable={false} visible header="Chi tiết phát triển đội ngũ" onHide={onClose} modal className="ptdn-dialog" maskClassName="ptdn-dialog-mask"
     style={{ width: "780px" }} breakpoints={{ "820px": "95vw" }}>
     <div className="ptdn">
       {error ? <div role="alert" className="ptdn-error">{error} <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button></div> : !data ? <p>Đang tải chi tiết...</p> : <>
