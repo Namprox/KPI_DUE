@@ -49,7 +49,7 @@ const Login = () => {
       }
     } catch (err) {
       console.error("[LỖI MẠNG/BACKEND]:", err);
-      setError(`Lỗi kết nối tới máy chủ - Chi tiết: ${err.message}`);
+      setError(err.isNetworkError ? err.message : `Lỗi kết nối tới máy chủ - Chi tiết: ${err.message}`);
     } finally {
       setIsLoading(false);
     }

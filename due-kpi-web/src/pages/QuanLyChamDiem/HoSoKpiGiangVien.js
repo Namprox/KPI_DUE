@@ -315,9 +315,9 @@ const HoSoKpiGiangVien = () => {
       {tab === "dinhMuc" && (
         <>
           <Khoi
-            tieuDe="Định mức áp dụng (sau ngoại lệ)"
+            tieuDe="Định mức áp dụng"
             trangThai={dinhMuc}
-            moTa="Định mức gốc theo chức danh, đã trừ/nhân các ngoại lệ đang hiệu lực của giảng viên."
+            moTa="Định mức gốc theo chức danh sau giảm trừ theo chức vụ. Chưa gồm các khoản giảm trừ cá nhân trong file Mẫu giảm trừ (tập sự, nghỉ, con nhỏ…) - các khoản đó tính trong tỷ lệ hoàn thành giờ giảng."
           >
             {dinhMuc.data ? (
               <>

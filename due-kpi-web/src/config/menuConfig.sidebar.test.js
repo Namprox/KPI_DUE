@@ -6,16 +6,19 @@ import {
 } from "./menuConfig";
 
 const expectedGroups = [
-  ["systemAdmin", "Quản trị hệ thống", "Nhật ký hệ thống"],
-  ["evaluation", "Phiếu KPI", "Đánh giá KPI Giảng viên|Đánh giá KPI Nhân viên|Lịch sử đánh giá|Đánh giá KPI Khoa|Lịch sử đánh giá KPI Khoa|Đánh giá KPI Phòng/Trung tâm|Lịch sử đánh giá KPI Phòng/Trung tâm|Kho minh chứng cá nhân|Kho minh chứng đơn vị"],
-  ["personalData", "Kê khai và dữ liệu của tôi", "Giờ giảng của tôi|Kê khai thành tích|Thành tích NCKH|Phản hồi sinh viên|Vi phạm của tôi"],
-  ["nhiemVuPhucVu", "Nhiệm vụ PVCĐ", "Nhiệm vụ của tôi|Phân công và thực hiện|Tổng hợp kết quả"],
-  ["unitScoring", "Xử lý KPI đơn vị", "Hồ sơ chờ thẩm định|Chấm theo tiêu chí|Chờ tôi chấm KPI đơn vị|Phiếu toàn đơn vị|Duyệt KPI viên chức theo quý|Duyệt hồ sơ KPI|Chốt hồ sơ nhân viên|Tờ trình KPI đơn vị|Duyệt kê khai thành tích|Ghi nhận vi phạm nhân viên|Báo cáo đơn vị"],
-  ["evaluationMgmt", "Duyệt KPI cấp trường", "Duyệt hồ sơ lãnh đạo|Xét xuất sắc viên chức Khoa|Theo dõi phiếu toàn trường"],
-  ["kpiSources", "Ghi nhận và số liệu KPI", "Giờ giảng từ thời khóa biểu|Tỷ lệ hoàn thành giờ giảng|Mẫu giảm trừ|Quản lý học vụ|Hoạt động đào tạo|Ủy quyền nhập liệu đào tạo|Khen thưởng đột xuất|Ủy quyền nhập liệu khen thưởng|Phát triển đội ngũ|Ủy quyền nhập liệu phát triển đội ngũ|Sáng kiến|Ủy quyền nhập liệu sáng kiến|Thành tích đoàn thể|Quản lý đánh giá sinh viên|Điểm trung bình ĐGSV|Ghi nhận vi phạm giảng viên|Tổng hợp điểm trừ vi phạm|Thống kê vi phạm của Khoa"],
-  ["planMgmt", "Thiết lập KPI", "Quản lý năm đánh giá|Giảm trừ theo năm|Định mức giảng viên|Ngoại lệ định mức|Danh mục thành tích vượt trội|Danh mục loại vi phạm"],
-  ["criteriaMgmt", "Quản lý tiêu chí", "Nhóm tiêu chí|Tiêu chí đánh giá|Mẫu phiếu đánh giá"],
-  ["orgMgmt", "Cơ cấu tổ chức", "Cơ cấu đơn vị|Người dùng|Chức danh nghề nghiệp|Quản lý chức vụ"],
+  ["Cá nhân", "evaluation", "Phiếu KPI của tôi", "Đánh giá KPI Giảng viên|Đánh giá KPI Nhân viên|Lịch sử đánh giá|Kho minh chứng cá nhân"],
+  ["Cá nhân", "personalData", "Dữ liệu của tôi", "Giờ giảng của tôi|Kê khai thành tích|Thành tích NCKH|Phản hồi sinh viên|Vi phạm của tôi|Nhiệm vụ của tôi"],
+  ["Cá nhân", "hoatDongThanhTich", "Hoạt động & thành tích", "Hoạt động đào tạo|Khen thưởng đột xuất|Phát triển đội ngũ|Sáng kiến|Thành tích đoàn thể"],
+  ["Công việc đơn vị", "unitScoring", "Việc chờ tôi xử lý", "Hồ sơ chờ thẩm định|Chấm theo tiêu chí|Chờ tôi chấm KPI đơn vị|Duyệt KPI viên chức theo quý|Duyệt hồ sơ KPI|Chốt hồ sơ nhân viên|Tờ trình KPI đơn vị|Duyệt kê khai thành tích"],
+  ["Công việc đơn vị", "unitKpi", "KPI đơn vị", "Đánh giá KPI Khoa|Lịch sử đánh giá KPI Khoa|Đánh giá KPI Phòng/Trung tâm|Lịch sử đánh giá KPI Phòng/Trung tâm|Kho minh chứng đơn vị|Phiếu toàn đơn vị|Báo cáo đơn vị"],
+  ["Công việc đơn vị", "viPham", "Vi phạm", "Ghi nhận vi phạm giảng viên|Ghi nhận vi phạm nhân viên|Thống kê vi phạm của Khoa|Tổng hợp điểm trừ vi phạm"],
+  ["Công việc đơn vị", "kpiSources", "Dữ liệu nguồn", "Giờ giảng từ thời khóa biểu|Tỷ lệ hoàn thành giờ giảng|Quản lý học vụ|Quản lý đánh giá sinh viên|Điểm trung bình ĐGSV|Mẫu giảm trừ"],
+  ["Công việc đơn vị", "nhiemVuPhucVu", "Nhiệm vụ PVCĐ", "Phân công và thực hiện|Tổng hợp kết quả"],
+  ["Cấp Trường", "evaluationMgmt", "Duyệt KPI cấp trường", "Duyệt hồ sơ lãnh đạo|Xét xuất sắc viên chức Khoa|Theo dõi phiếu toàn trường"],
+  ["Quản trị", "planMgmt", "Thiết lập KPI", "Quản lý năm đánh giá|Giảm trừ theo năm|Định mức giảng viên|Danh mục thành tích vượt trội|Danh mục loại vi phạm"],
+  ["Quản trị", "criteriaMgmt", "Quản lý tiêu chí", "Nhóm tiêu chí|Tiêu chí đánh giá|Mẫu phiếu đánh giá"],
+  ["Quản trị", "uyQuyenNhapLieu", "Ủy quyền nhập liệu", "Ủy quyền nhập liệu đào tạo|Ủy quyền nhập liệu khen thưởng|Ủy quyền nhập liệu phát triển đội ngũ|Ủy quyền nhập liệu sáng kiến"],
+  ["Quản trị", "orgMgmt", "Tổ chức & hệ thống", "Cơ cấu đơn vị|Người dùng|Chức danh nghề nghiệp|Quản lý chức vụ|Nhật ký hệ thống"],
 ];
 
 const donVi = (MaChucVu, LoaiDoiTuong) => ({ MaChucVu, LoaiDoiTuong });
@@ -70,13 +73,54 @@ test("mã chức danh không ghi đè phân loại phiếu KPI hoặc tự cấp
 test("nhóm và mục sidebar theo đúng thứ tự công việc", () => {
   expect(
     MENU_GROUPS.map((group) => [
+      group.section,
       group.key,
       group.label,
       group.items
         .filter((item) => !item.name.startsWith("[Mock]"))
         .map((item) => item.name),
     ]),
-  ).toEqual(expectedGroups.map(([key, label, names]) => [key, label, names.split("|")]));
+  ).toEqual(expectedGroups.map(([section, key, label, names]) => [section, key, label, names.split("|")]));
+});
+
+test("các nhóm cùng phân khu đứng liền nhau, khu theo thứ tự cá nhân → quản trị", () => {
+  const sections = MENU_GROUPS.map((group) => group.section)
+    .filter((section, i, all) => section !== all[i - 1]);
+  expect(sections).toEqual(["Cá nhân", "Công việc đơn vị", "Cấp Trường", "Quản trị"]);
+});
+
+test("menuAccess chỉ ẩn mục khỏi sidebar, URL giữ nguyên quyền", () => {
+  const giamTru = "/giam-tru-chuc-vu-theo-nam";
+  const khoCaNhan = "/kho-minh-chung";
+  const paths = (user) => visibleGroups(user).flatMap((g) => g.items.map((i) => i.path));
+
+  [{ MaChucVu: "GV", DonVi: [donVi("GV", 1)] }, { MaChucVu: "TK", DonVi: [donVi("TK", 1)] }, { MaChucVu: "TP", DonVi: [donVi("TP", 2)] }]
+    .forEach((user) => {
+      expect(paths(user)).not.toContain(giamTru);
+      expect(canAccessPath(giamTru, user)).toBe(true);
+    });
+  // Chức vụ CHÍNH như API sửa giảm trừ; kiêm nhiệm không đủ.
+  ["ADMIN", "HT", "PHT"].forEach((MaChucVu) => expect(paths({ MaChucVu })).toContain(giamTru));
+  expect(paths({ MaChucVu: "GV", DonVi: [donVi("GV", 1), donVi("PHT", 0)] })).not.toContain(giamTru);
+
+  const admin = { MaChucVu: "ADMIN", DonVi: [donVi("ADMIN", 0)] };
+  expect(paths(admin)).not.toContain(khoCaNhan);
+  expect(canAccessPath(khoCaNhan, admin)).toBe(true);
+  expect(paths({ MaChucVu: "GV", DonVi: [donVi("GV", 1)] })).toContain(khoCaNhan);
+  expect(paths({ MaChucVu: "NV", DonVi: [donVi("NV", 2)] })).toContain(khoCaNhan);
+});
+
+test.each([
+  ["giảng viên", { MaChucVu: "GV", DonVi: [donVi("GV", 1)] }],
+  ["thư ký Khoa", { MaChucVu: "TKK", DonVi: [donVi("TKK", 2)] }],
+  ["trưởng Khoa", { MaChucVu: "TK", DonVi: [donVi("TK", 1)] }],
+  ["trưởng Phòng", { MaChucVu: "TP", DonVi: [donVi("TP", 2)] }],
+  ["Hiệu trưởng", { MaChucVu: "HT", DonVi: [donVi("HT", 1)] }],
+  ["ADMIN", { MaChucVu: "ADMIN", DonVi: [donVi("ADMIN", 0)] }],
+])("mỗi nhóm sidebar của %s không quá 7 mục", (_label, user) => {
+  const quyen = { XemTatCa: true, LaQuanLy: true, Success: true };
+  visibleGroups(user, quyen, quyen, quyen, quyen, quyen, { Xem: true, QuanLy: true })
+    .forEach((group) => expect([group.label, group.items.length <= 7]).toEqual([group.label, true]));
 });
 
 test.each([

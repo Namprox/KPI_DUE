@@ -6,6 +6,21 @@ export const setSessionExpiredHandler = (fn) => {
   onSessionExpired = fn;
 };
 
+export const NETWORK_ERROR_MESSAGE =
+  "Không kết nối được máy chủ. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.";
+
+// fetch() chỉ reject khi không tới được server (mất mạng, server tắt, CORS) và
+// trình duyệt trả thông điệp thô kiểu "Failed to fetch" - đổi sang tiếng Việt để
+// màn hình nào hiện e.message cũng đọc được. AbortError giữ nguyên cho bên gọi.
+const fetchOrThrow = async (url, init) => {
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    if (err?.name === "AbortError") throw err;
+    throw Object.assign(new Error(NETWORK_ERROR_MESSAGE), { isNetworkError: true, cause: err });
+  }
+};
+
 let refreshPromise = null;
 
 const refreshSession = async () => {
@@ -51,13 +66,13 @@ export const apiFetch = async (endpoint, options = {}) => {
     };
   };
 
-  let response = await fetch(url, buildInit());
+  let response = await fetchOrThrow(url, buildInit());
 
   if (response.status === 401 && !isAuthEndpoint) {
     const refreshed = await refreshSession();
 
     if (refreshed) {
-      response = await fetch(url, buildInit());
+      response = await fetchOrThrow(url, buildInit());
       if (response.status === 401 && onSessionExpired) onSessionExpired();
     } else {
       if (onSessionExpired) onSessionExpired();

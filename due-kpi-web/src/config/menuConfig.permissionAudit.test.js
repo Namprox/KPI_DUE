@@ -78,7 +78,7 @@ test.each(['ADMIN', 'Admin', ' admin '])('chuẩn hóa %s và giữ quyền qu�
   const u = { MaChucVu };
   checkRoute('/quan-ly-danh-gia-sinh-vien', u, true);
   expect(canManagePhanHoiSinhVien(u)).toBe(true);
-  ['/quan-ly-nam-danh-gia', '/mau-danh-gia', '/quan-ly-ngoai-le-dinh-muc', '/nhom-tieu-chi', '/quan-ly-chuc-danh'].forEach(path => checkRoute(path, u, true));
+  ['/quan-ly-nam-danh-gia', '/mau-danh-gia', '/nhom-tieu-chi', '/quan-ly-chuc-danh'].forEach(path => checkRoute(path, u, true));
 });
 
 test.each([null, { MaChucVu: 'NV' }, { MaChucVu: 'HT' }, { MaChucVu: 'PHT' }, { MaChucVu: 'TBM' }])('không mở quyền điểm trung bình ngoài hợp đồng', u => {
@@ -92,6 +92,13 @@ test.each(['Admin', ' ht ', 'PHT'])('chức vụ chính %s quản lý danh mục
   });
 });
 
-test.each(['GV', 'TK', 'NV', 'PHT', 'ADMIN'])('%s xem giảm trừ theo năm qua menu và URL', MaChucVu => {
+test.each(['PHT', 'ADMIN', 'HT'])('%s xem giảm trừ theo năm qua menu và URL', MaChucVu => {
   checkRoute('/giam-tru-chuc-vu-theo-nam', { MaChucVu }, true);
+});
+
+// Ai cũng mở được bảng giảm trừ bằng URL, nhưng menu chỉ hiện với người sửa được (menuAccess).
+test.each(['GV', 'TK', 'NV'])('%s vẫn mở giảm trừ theo năm bằng URL, không thấy trên menu', MaChucVu => {
+  const path = '/giam-tru-chuc-vu-theo-nam';
+  expect(canAccessPath(path, { MaChucVu })).toBe(true);
+  expect(visibleGroups({ MaChucVu }).flatMap(g => g.items.map(i => i.path))).not.toContain(path);
 });

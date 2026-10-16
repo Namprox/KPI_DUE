@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../css/Sidebar.css";
 import logoImage from "../images/logo.png";
 import { useAuth } from "../context/AuthContext";
-import { normalizeRole } from "../utils/roles";
 import { visibleGroups } from "../config/menuConfig";
 import { useQuyenDaoTao } from "../context/HoatDongDaoTaoContext";
 import { useQuyenDoanThe } from "../context/ThanhTichDoanTheContext";
@@ -15,7 +14,6 @@ import { useQuyenNhiemVuPhucVu } from "../context/NhiemVuPhucVuContext";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
   const { user: authUser } = useAuth();
-  const user = authUser || {};
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,7 +22,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
 
   const isExpanded = !isCollapsed || isHovered;
 
-  const myRole = normalizeRole(user);
   const { quyen } = useQuyenDaoTao();
   const { quyen: quyenDoanThe } = useQuyenDoanThe();
   const { quyen: quyenDoiNgu } = useQuyenDoiNgu();
@@ -38,34 +35,24 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
     return matches && item.path.length > (active?.length || 0) ? item.path : active;
   }, null), [groups, location.pathname]);
 
+  // Nhóm chứa mục khớp DÀI NHẤT. Không xét theo tiền tố từng nhóm: mục cha và
+  // mục con có thể nằm ở hai nhóm khác nhau (vd /sang-kien ở "Hoạt động &
+  // thành tích", /sang-kien/uy-quyen ở "Ủy quyền nhập liệu").
+  const activeGroupKey = useMemo(() => (
+    groups.find((group) => group.items.some((item) => item.path === activePath))?.key || null
+  ), [groups, activePath]);
+
+  // Accordion: đổi trang thì chỉ mở nhóm chứa trang đó.
   useEffect(() => {
-    const currentPath = location.pathname;
-    for (const group of groups) {
-      if (
-        group.items.some(
-          (item) =>
-            item.path === currentPath ||
-            (item.path !== "/" && currentPath.startsWith(item.path + "/")),
-        )
-      ) {
-        setOpenMenus((prev) => ({ ...prev, [group.key]: true }));
-        break;
-      }
-    }
-  }, [location.pathname, myRole, groups]);
+    if (activeGroupKey) setOpenMenus({ [activeGroupKey]: true });
+  }, [activeGroupKey]);
 
   const toggleSubMenu = (menuKey) => {
     if (!isExpanded) return;
-    setOpenMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
+    setOpenMenus((prev) => (prev[menuKey] ? {} : { [menuKey]: true }));
   };
 
-  const isMenuActive = (group) => {
-    return group.items.some(
-      (item) =>
-        item.path === location.pathname ||
-        (item.path !== "/" && location.pathname.startsWith(item.path + "/")),
-    );
-  };
+  const isMenuActive = (group) => group.key === activeGroupKey;
 
   const renderSubMenu = (items) => {
     if (!isExpanded) return null;
@@ -142,21 +129,46 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
             {isExpanded && <span>Tổng quan</span>}
           </li>
 
-          {groups.map((group) => (
+          {groups.map((group, index) => (
             <React.Fragment key={group.key}>
-              <li
-                className={`menu-item has-submenu ${isMenuActive(group) ? "active" : ""}`}
-                onClick={() => toggleSubMenu(group.key)}
-              >
-                <i className={`fa-solid ${group.icon} menu-icon`}></i>
-                {isExpanded && <span>{group.label}</span>}
-                {isExpanded && (
-                  <i
-                    className={`fa-solid fa-chevron-down arrow ${openMenus[group.key] ? "open" : ""}`}
-                  ></i>
-                )}
-              </li>
-              {openMenus[group.key] && renderSubMenu(group.items)}
+              {group.section !== groups[index - 1]?.section && (
+                <li
+                  className={`menu-section ${isExpanded ? "" : "menu-section-collapsed"}`}
+                  aria-hidden={!isExpanded}
+                >
+                  {isExpanded && group.section}
+                </li>
+              )}
+              {group.items.length === 1 ? (
+                // Nhóm chỉ còn một mục với người dùng này: hiện thẳng mục đó
+                // (một lần bấm) thay vì tiêu đề nhóm phải mở ra mới thấy.
+                <li
+                  className={`menu-item ${activePath === group.items[0].path ? "active" : ""}`}
+                  onClick={() => {
+                    navigate(group.items[0].path);
+                    if (isMobile) setIsCollapsed(true);
+                  }}
+                >
+                  <i className={`${group.items[0].icon} menu-icon`}></i>
+                  {isExpanded && <span>{group.items[0].name}</span>}
+                </li>
+              ) : (
+                <>
+                  <li
+                    className={`menu-item has-submenu ${isMenuActive(group) ? "active" : ""}`}
+                    onClick={() => toggleSubMenu(group.key)}
+                  >
+                    <i className={`fa-solid ${group.icon} menu-icon`}></i>
+                    {isExpanded && <span>{group.label}</span>}
+                    {isExpanded && (
+                      <i
+                        className={`fa-solid fa-chevron-down arrow ${openMenus[group.key] ? "open" : ""}`}
+                      ></i>
+                    )}
+                  </li>
+                  {openMenus[group.key] && renderSubMenu(group.items)}
+                </>
+              )}
             </React.Fragment>
           ))}
         </ul>

@@ -30,6 +30,31 @@ const KhongCoQuyen = ({ khongDanhGia }) => (
   </div>
 );
 
+const LoiTaiQuyen = ({ message, onRetry }) => (
+  <div className="page-container">
+    <div
+      role="alert"
+      className="modern-table-card"
+      style={{ padding: "60px 20px", textAlign: "center", color: "#666" }}
+    >
+      <i
+        className="fa-solid fa-triangle-exclamation"
+        style={{ fontSize: "56px", color: "#e0a800", marginBottom: "15px" }}
+      ></i>
+      <h3 style={{ color: "#7f8c8d", margin: "0 0 8px 0" }}>Không tải được quyền truy cập</h3>
+      <p style={{ margin: "0 0 20px 0", fontSize: "14px" }}>{message}</p>
+      <button
+        type="button"
+        className="btn-submit"
+        style={{ display: "inline-flex" }}
+        onClick={onRetry}
+      >
+        <i className="fa-solid fa-rotate-right" aria-hidden="true"></i> Thử lại
+      </button>
+    </div>
+  </div>
+);
+
 const RequireRole = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -44,7 +69,7 @@ const RequireRole = ({ children }) => {
   if (rule?.serverPermission) {
     const permission = rule.serverPermissionSource === "nhiemVuPhucVu" ? nhiemVuPhucVu : rule.serverPermissionSource === "khenThuong" ? khenThuong : rule.serverPermissionSource === "sangKien" ? sangKien : rule.serverPermissionSource === "doiNgu" ? doiNgu : daoTao;
     if (permission.loading) return <div className="page-container">Đang tải quyền truy cập...</div>;
-    if (permission.error) return <div className="page-container"><p role="alert">{permission.error}</p><button onClick={permission.refresh}>Thử lại</button></div>;
+    if (permission.error) return <LoiTaiQuyen message={permission.error} onRetry={permission.refresh} />;
   }
   if (!canAccessPath(location.pathname, user, daoTao.quyen, doiNgu.quyen, sangKien.quyen, khenThuong.quyen, nhiemVuPhucVu.quyen)) {
     const khongDanhGia = findRouteRule(location.pathname)?.personalKpi &&

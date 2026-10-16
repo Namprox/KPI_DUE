@@ -12,10 +12,12 @@ jest.mock("../utils/api", () => ({ apiFetch: jest.fn() }));
 jest.mock("../pages/CaNhan/GioGiangCuaToi", () => () => <h1>Giờ giảng cá nhân</h1>);
 jest.mock("../pages/QuanLyKeHoach/QL_GioGiang", () => () => <h1>Giờ TKB</h1>);
 jest.mock("../pages/QuanLyKeHoach/TyLeHoanThanhGioGiang", () => () => <h1>Tỷ lệ giờ giảng</h1>);
+jest.mock("../pages/QuanLyKeHoach/MauGiamTru", () => () => <h1>Mẫu giảm trừ</h1>);
 
 const retiredPaths = [
   "/ke-khai-gio-quy-doi", "/quan-ly/ke-khai-gio-quy-doi",
   "/cong-viec-quy-doi", "/quan-ly/cong-viec-quy-doi",
+  "/quan-ly-ngoai-le-dinh-muc",
 ];
 
 function Location() {
@@ -32,6 +34,7 @@ test.each([
   ["/quan-ly/ke-khai-gio-quy-doi/tong-hop", "/ty-le-hoan-thanh-gio-giang", "HT", "Tỷ lệ giờ giảng"],
   ["/cong-viec-quy-doi", "/quan-ly-gio-giang", "ADMIN", "Giờ TKB"],
   ["/quan-ly/cong-viec-quy-doi/12", "/quan-ly-gio-giang", "ADMIN", "Giờ TKB"],
+  ["/quan-ly-ngoai-le-dinh-muc", "/mau-giam-tru", "ADMIN", "Mẫu giảm trừ"],
 ])("bookmark %s chuyển sang %s", async (path, destination, MaChucVu, heading) => {
   useAuth.mockReturnValue({ user: { MaChucVu, DonVi: [{ MaChucVu, LoaiDoiTuong: 1 }] } });
   render(<MemoryRouter initialEntries={[path]}><AppRoutes /><Location /></MemoryRouter>);

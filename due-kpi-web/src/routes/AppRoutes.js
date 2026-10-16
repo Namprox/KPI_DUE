@@ -11,7 +11,6 @@ import QLMauDanhGia from "../pages/QuanLyKeHoach/QL_MauDanhGia";
 import QLPhanQuyenTieuChi from "../pages/QuanLyKeHoach/QL_PhanQuyenTieuChi";
 import QLThangDiemByTieuChi from "../pages/QuanLyTieuChi/QL_ThangDiemByTieuChi";
 import QLDinhMucGiangVien from "../pages/QuanLyKeHoach/QL_DinhMucGiangVien";
-import QLNgoaiLeDinhMuc from "../pages/QuanLyKeHoach/QL_NgoaiLeDinhMuc";
 import DanhGiaPhuLuc2 from "../pages/DanhGia/DanhGiaPhuLuc2";
 import DanhGiaNhanVien from "../pages/DanhGia/DanhGiaNhanVien";
 import DanhGiaKpiDonVi from "../pages/DanhGia/DanhGiaKpiDonVi";
@@ -102,6 +101,8 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
       <Route path="/quan-ly/ke-khai-gio-quy-doi/*" element={<Navigate to="/ty-le-hoan-thanh-gio-giang" replace />} />
       <Route path="/cong-viec-quy-doi/*" element={<Navigate to="/quan-ly-gio-giang" replace />} />
       <Route path="/quan-ly/cong-viec-quy-doi/*" element={<Navigate to="/quan-ly-gio-giang" replace />} />
+      {/* Ngoại lệ định mức nhập tay đã thay bằng file Mẫu giảm trừ (điểm giờ giảng không đọc ngoại lệ). */}
+      <Route path="/quan-ly-ngoai-le-dinh-muc" element={<Navigate to="/mau-giam-tru" replace />} />
       <Route
         element={
           <RequireRole>
@@ -177,10 +178,6 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
         <Route
           path="/quan-ly-dinh-muc-giang-vien"
           element={<QLDinhMucGiangVien />}
-        />
-        <Route
-          path="/quan-ly-ngoai-le-dinh-muc"
-          element={<QLNgoaiLeDinhMuc />}
         />
         <Route path="/quan-ly-chuc-danh" element={<QLChucDanh />} />
         <Route path="/quan-ly-chuc-vu" element={<QLChucVu />} />

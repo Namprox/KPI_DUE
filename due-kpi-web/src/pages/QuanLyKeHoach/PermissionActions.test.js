@@ -6,7 +6,6 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/api';
 import Nam from './QL_NamDanhGia';
 import Mau from './QL_MauDanhGia';
-import NgoaiLe from './QL_NgoaiLeDinhMuc';
 import Nhom from '../QuanLyTieuChi/QL_NhomTieuChi';
 import Thang from '../QuanLyTieuChi/QL_ThangDiemByTieuChi';
 import ChucDanh from '../QuanLyToChuc/QL_ChucDanh';
@@ -30,7 +29,7 @@ const mount = async (Page, user) => {
 };
 const pages = [
   ['Năm đánh giá', Nam, /Thêm mới/], ['Mẫu phiếu', Mau, /Thêm mới/],
-  ['Ngoại lệ', NgoaiLe, /Thêm ngoại lệ mới/], ['Nhóm tiêu chí', Nhom, /Thêm mới/],
+  ['Nhóm tiêu chí', Nhom, /Thêm mới/],
   ['Thang điểm', Thang, /Thêm mức điểm/], ['Chức danh', ChucDanh, /Thêm mới/],
 ];
 test.each(pages)('%s: ADMIN viết hoa thấy thao tác', async (_name, Page, label) => {

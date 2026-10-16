@@ -97,7 +97,7 @@ export const ROLE_SETS = {
 
   /**
    * Danh mục nền của toàn trường: cây đơn vị, chức danh nghề nghiệp
-   * (nhóm menu "Cơ cấu tổ chức", TRỪ mục "Người dùng").
+   * (nhóm menu "Tổ chức & hệ thống", TRỪ mục "Người dùng").
    *
    * HẸP HƠN QUAN_TRI một cách có chủ đích, cùng lý do với QUAN_LY_TIEU_CHI:
    * ba danh mục này là dữ liệu gốc mà mọi phân quyền khác dựa vào - đổi
