@@ -30,7 +30,9 @@ test.each([
   ["/ke-khai-gio-quy-doi", "/gio-giang-cua-toi", "GV", "Giờ giảng cá nhân"],
   ["/ke-khai-gio-quy-doi/tong-hop", "/gio-giang-cua-toi", "GV", "Giờ giảng cá nhân"],
   ["/quan-ly/ke-khai-gio-quy-doi", "/ty-le-hoan-thanh-gio-giang", "TK", "Tỷ lệ giờ giảng"],
-  ["/quan-ly/ke-khai-gio-quy-doi/12", "/ty-le-hoan-thanh-gio-giang", "TP", "Tỷ lệ giờ giảng"],
+  // TKL chứ không phải TP: tỷ lệ giờ giảng là trang của cấp Khoa, trưởng
+  // phòng ngoài P_DTBDCL không có lối vào (canViewTyLeGioGiang).
+  ["/quan-ly/ke-khai-gio-quy-doi/12", "/ty-le-hoan-thanh-gio-giang", "TKL", "Tỷ lệ giờ giảng"],
   ["/quan-ly/ke-khai-gio-quy-doi/tong-hop", "/ty-le-hoan-thanh-gio-giang", "HT", "Tỷ lệ giờ giảng"],
   ["/cong-viec-quy-doi", "/quan-ly-gio-giang", "ADMIN", "Giờ TKB"],
   ["/quan-ly/cong-viec-quy-doi/12", "/quan-ly-gio-giang", "ADMIN", "Giờ TKB"],

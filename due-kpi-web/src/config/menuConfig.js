@@ -13,7 +13,9 @@ import {
   coDanhGiaKpiCaNhan,
   canViewHocVu,
   canViewGioGiangTkb,
+  canViewTyLeGioGiang,
   canManagePhanHoiSinhVien,
+  canXemDiemTbPhanHoiSv,
   canManageChucVuNam,
   canManageNamDanhGia,
 } from "../utils/roles";
@@ -486,10 +488,13 @@ export const MENU_GROUPS = [
         access: canViewGioGiangTkb,
       },
       {
+        // Cấp Trường, cấp Khoa, và TP/QTP tại P_DTBDCL (phòng import TKB).
+        // Trưởng phòng khác KHÔNG vào: trang liệt kê giảng viên, backend lọc
+        // theo đơn vị nên họ chỉ nhận bảng rỗng - xem canViewTyLeGioGiang.
         name: "Tỷ lệ hoàn thành giờ giảng",
         icon: "fa-solid fa-chart-column",
         path: "/ty-le-hoan-thanh-gio-giang",
-        roles: ROLE_SETS.TY_LE_GIO_GIANG,
+        access: canViewTyLeGioGiang,
       },
       {
         name: "Quản lý học vụ",
@@ -505,10 +510,13 @@ export const MENU_GROUPS = [
         access: canManagePhanHoiSinhVien,
       },
       {
+        // Cấp Khoa (TK/TKL/TKK) xem giảng viên Khoa mình, ADMIN và TP/QTP tại
+        // P_DTBDCL xem toàn trường. Trưởng phòng khác KHÔNG vào - cùng lý do
+        // với mục tỷ lệ giờ giảng; xem canXemDiemTbPhanHoiSv.
         name: "Điểm trung bình ĐGSV",
         icon: "fa-solid fa-square-poll-vertical",
         path: "/diem-trung-binh-danh-gia-sinh-vien",
-        roles: ROLE_SETS.DIEM_TB_PHAN_HOI_SV,
+        access: canXemDiemTbPhanHoiSv,
       },
       {
         name: "Mẫu giảm trừ",

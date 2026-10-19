@@ -121,14 +121,21 @@ test("tự xem lấy ID từ auth/me và xét LoaiDoiTuong tại mọi đơn v�
 test("menu và URL dùng cùng ma trận quyền, giữ quyền nhập TKB", () => {
   const path = "/ty-le-hoan-thanh-gio-giang";
   const group = MENU_GROUPS.find((g) => g.key === "kpiSources");
-  ["ADMIN", "HT", "TK", "TKL", "TP"].forEach((MaChucVu) => {
+  ["ADMIN", "HT", "TK", "TKL"].forEach((MaChucVu) => {
     const user = { MaChucVu };
     expect(canAccessPath(path, user)).toBe(true);
     expect(visibleItems(group, user).some((item) => item.path === path)).toBe(true);
   });
-  ["GV", "TKK", "PHT", "PTK"].forEach((MaChucVu) => {
+  // Trưởng phòng KHÔNG vào bằng chức vụ: trang liệt kê giảng viên, nên chỉ
+  // P_DTBDCL (phòng import TKB) có việc ở đây - xem canViewTyLeGioGiang.
+  ["GV", "TKK", "PHT", "PTK", "TP", "QTP", "GD", "VT"].forEach((MaChucVu) => {
     expect(canAccessPath(path, { MaChucVu })).toBe(false);
     expect(visibleItems(group, { MaChucVu }).some((item) => item.path === path)).toBe(false);
+  });
+  ["TP", "QTP"].forEach((MaChucVu) => {
+    const user = { MaChucVu, MaDonVi: "P_DTBDCL" };
+    expect(canAccessPath(path, user)).toBe(true);
+    expect(visibleItems(group, user).some((item) => item.path === path)).toBe(true);
   });
   expect(canAccessPath(path, { MaChucVu: "GV", DonVi: [{ MaChucVu: "TK", IdDonVi: 12 }] })).toBe(true);
   expect(canAccessPath("/quan-ly-gio-giang", { MaChucVu: "TK" })).toBe(false);

@@ -48,6 +48,23 @@ export const VAI_TRO_TRUONG_PHONG = [
   ROLE.VIEN_TRUONG,
 ];
 
+/**
+ * Tập HẸP hơn VAI_TRO_TRUONG_PHONG: chỉ Trưởng Phòng và Quyền Trưởng Phòng.
+ *
+ * Dùng cho màn hình mà backend gác bằng ĐÚNG MÃ chức vụ, không bằng khái niệm
+ * "cấp trưởng đơn vị". Mọi cổng phân quyền mà docs tả rõ đều viết "TP / QTP"
+ * (fn_phan_hoi_sinh_vien_co_quyen_import, fn_nckh_co_quyen_dong_bo - §19.2)
+ * hoặc IN (N'TK', N'TKL', N'TP') (§10.6); GD và VT KHÔNG có mặt ở cổng nào.
+ * Mở thêm cho họ chỉ dẫn Giám đốc Trung tâm / Viện trưởng tới 403 hoặc bảng
+ * rỗng - xem canManageHocVu, cũng cố ý loại GD/VT theo quyền backend.
+ *
+ * TP và QTP luôn đi CẶP, đừng tách: một Phòng chỉ có một trong hai chức vụ,
+ * không bao giờ có cả hai (chốt với người dùng 2026-10-19). Nên QTP không phải
+ * vai trò phụ mở thêm cho rộng - đó chính là người đang phụ trách đơn vị, và
+ * loại QTP ra là khóa đúng người cần vào.
+ */
+export const VAI_TRO_TP_QTP = [ROLE.TRUONG_PHONG, ROLE.QUYEN_TRUONG_PHONG];
+
 /** Sentinel: mọi người dùng đã đăng nhập đều truy cập được. */
 export const MOI_NGUOI = "*";
 
@@ -174,9 +191,53 @@ export const ROLE_SETS = {
    */
   GIO_GIANG_TKB: [ROLE.ADMIN, ROLE.HIEU_TRUONG],
 
-  /** Quyền đọc tỷ lệ giờ giảng; phạm vi người được xem do backend kiểm tra. */
-  TY_LE_GIO_GIANG: [ROLE.ADMIN, ROLE.HIEU_TRUONG, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ...VAI_TRO_TRUONG_PHONG],
-  DIEM_TB_PHAN_HOI_SV: [ROLE.ADMIN, ROLE.THU_KY_KHOA, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON, ...VAI_TRO_TRUONG_PHONG],
+  /**
+   * Quyền ĐỌC tỷ lệ hoàn thành giờ giảng, phần KHÔNG xét đơn vị
+   * (/ty-le-hoan-thanh-gio-giang). Lối vào màn hình là canViewTyLeGioGiang,
+   * tập này chỉ là một nửa của nó - xem hàm đó trước khi sửa.
+   *
+   * Khớp GET api/gio-giang-tkb/ty-le-hoan-thanh: ADMIN / HT xem toàn trường;
+   * TK / TKL xem đơn vị mình giữ chức vụ + cây đơn vị cấp dưới; ai cũng xem
+   * được dòng của CHÍNH MÌNH khi truyền idNhanVien = id của mình (lối đi đó ở
+   * /gio-giang-cua-toi, không qua tập này).
+   *
+   * TRƯỞNG PHÒNG CỐ Ý KHÔNG có ở đây dù backend vẫn nhận chức vụ TP: trang
+   * liệt kê GIẢNG VIÊN, mà giảng viên thuộc Khoa (v_giang_vien_khoa), nên TP
+   * của một Phòng bất kỳ chỉ nhận về bảng rỗng - một mục menu dẫn tới trang
+   * trắng. Chỉ P_DTBDCL có việc ở đây (họ import thời khóa biểu), và ràng buộc
+   * đơn vị đó nằm trong canViewTyLeGioGiang. GD / VT không có ở cổng nào.
+   *
+   * PHT nằm ngoài (backend không nhận). Song sinh với DIEM_TB_PHAN_HOI_SV
+   * nhưng KHÁC thành viên ở hai đầu: tập đó có TKK và không có HT - đừng gộp.
+   */
+  TY_LE_GIO_GIANG: [ROLE.ADMIN, ROLE.HIEU_TRUONG, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON],
+
+  /**
+   * Quyền ĐỌC điểm trung bình phản hồi sinh viên đã chốt
+   * (/diem-trung-binh-danh-gia-sinh-vien).
+   *
+   * Khớp GET api/diem-tb-phan-hoi-sv: ADMIN và TP@P_DTBDCL xem toàn trường;
+   * TK / TKL / TP / TKK chỉ xem giảng viên thuộc đơn vị mình (+ con trực
+   * tiếp). Người không giữ chức vụ nào trong số đó nhận 404 - SP không trả
+   * result set - nên tập này phải khớp đúng: rộng hơn là đẩy người dùng vào
+   * trang trắng kèm thông điệp "hãy chốt điểm" mà họ không có quyền làm.
+   *
+   * TRƯỞNG PHÒNG CỐ Ý KHÔNG có ở đây, dù backend vẫn nhận chức vụ TP: mỗi dòng
+   * là một GIẢNG VIÊN, nên TP của một Phòng bất kỳ chỉ nhận bảng rỗng. Đúng
+   * MỘT phòng có việc ở trang này là P_DTBDCL - phòng chốt điểm, và cũng là
+   * người duy nhất xem được TOÀN TRƯỜNG - nên ràng buộc đơn vị nằm trong
+   * canXemDiemTbPhanHoiSv chứ không phải ở tập vai trò này. Không bỏ TP/QTP
+   * của P_DTBDCL được: họ đã import và chốt điểm (canManagePhanHoiSinhVien,
+   * cùng luật fn_phan_hoi_sinh_vien_co_quyen_import = "ADMIN, hoặc TP / QTP
+   * tại P_DTBDCL"), cho chốt mà không cho xem kết quả là luồng vỡ.
+   *
+   * HT / PHT CỐ Ý nằm ngoài, khác hẳn TY_LE_GIO_GIANG ở trên: SP đọc không
+   * nhận hai chức vụ này. Muốn mở cho Hiệu trưởng thì phải sửa
+   * sp_diem_tb_phan_hoi_sv_get_chi_tiet trước; thêm vào đây chỉ dẫn tới 404.
+   *
+   * CHỈ mở cửa màn hình XEM. Quyền import / chốt là canManagePhanHoiSinhVien.
+   */
+  DIEM_TB_PHAN_HOI_SV: [ROLE.ADMIN, ROLE.THU_KY_KHOA, ROLE.TRUONG_KHOA, ROLE.TRUONG_KHOA_LON],
 
   /**
    * Trưởng đơn vị - nhóm được chấm điểm cấp Khoa cho phiếu KPI cá nhân.
@@ -505,6 +566,42 @@ export const canManagePhanHoiSinhVien = (user) => {
     String(dv?.MaDonVi || "").trim().toUpperCase() === "P_DTBDCL"
   );
 };
+
+/**
+ * TP / QTP tại ĐÚNG một đơn vị (theo mã), xét cả bổ nhiệm kiêm nhiệm.
+ *
+ * Chức vụ và mã đơn vị phải nằm trên CÙNG MỘT bổ nhiệm - đúng nguyên tắc của
+ * backend (§10.6: hai vế phải ở cùng một dòng fn_pham_vi_don_vi). Kiểm rời rạc
+ * sẽ cho người là TP ở Phòng mang tư cách TP sang mọi đơn vị khác.
+ */
+const laTruongPhongTai = (user, maDonVi) => {
+  const appointments = Array.isArray(user?.DonVi) && user.DonVi.length > 0
+    ? user.DonVi : [user];
+  return appointments.some((dv) =>
+    VAI_TRO_TP_QTP.includes(normalizeRole(dv)) &&
+    String(dv?.MaDonVi || "").trim().toUpperCase() === maDonVi);
+};
+
+/**
+ * Lối vào /ty-le-hoan-thanh-gio-giang: cấp Trường và cấp Khoa theo chức vụ
+ * (TY_LE_GIO_GIANG), cộng TP / QTP tại P_DTBDCL - phòng import thời khóa biểu,
+ * cùng điều kiện với canViewGioGiangTkb của trang dữ liệu thô.
+ *
+ * Gác theo đơn vị ở đây chứ không bằng `donVi` trên mục menu: `hasDonVi` là
+ * phép AND với `hasRole` nên khai `donVi` sẽ khóa luôn TK / TKL, những người
+ * cần trang này nhất.
+ */
+export const canViewTyLeGioGiang = (user) =>
+  hasRole(ROLE_SETS.TY_LE_GIO_GIANG, user) || laTruongPhongTai(user, "P_DTBDCL");
+
+/**
+ * Lối vào /diem-trung-binh-danh-gia-sinh-vien: cấp Khoa và ADMIN theo chức vụ
+ * (DIEM_TB_PHAN_HOI_SV), cộng TP / QTP tại P_DTBDCL - phòng chốt điểm, cũng là
+ * người duy nhất xem được toàn trường. Cùng lý do dùng hàm thay cho `donVi`
+ * như canViewTyLeGioGiang.
+ */
+export const canXemDiemTbPhanHoiSv = (user) =>
+  hasRole(ROLE_SETS.DIEM_TB_PHAN_HOI_SV, user) || laTruongPhongTai(user, "P_DTBDCL");
 
 /** Đồng bộ NCKH: ADMIN hoặc TP/QTP tại đúng P_KH, kể cả kiêm nhiệm. */
 export const canSyncNckh = (user) => {

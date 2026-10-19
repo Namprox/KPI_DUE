@@ -28,6 +28,7 @@ import {
   fetchDanhSachPhieuQuy,
   trangThaiPhieuQuy,
 } from "../../utils/phieuQuyApi";
+import { coLoaiDoiTuong, LOAI_DOI_TUONG_KPI } from "../../utils/roles";
 
 const PAGE_SIZE = 20;
 const SO_PHIEU_TAI_SONG_SONG = 5;
@@ -94,7 +95,7 @@ const LichSuDanhGia = () => {
   const [tienDoTheoPhieu, setTienDoTheoPhieu] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [idNam, setIdNam] = useState(""); // '' = mọi năm
-  const [loaiPhieu, setLoaiPhieu] = useState("nam");
+  const [loaiPhieuChon, setLoaiPhieuChon] = useState("nam");
   const [quy, setQuy] = useState(""); // '' = cả bốn quý
   const [trangThaiChon, setTrangThaiChon] = useState([]); // rỗng = mọi trạng thái
   const [sortBy, setSortBy] = useState("ngay_tao");
@@ -102,6 +103,12 @@ const LichSuDanhGia = () => {
   // Chỉ tải sau khi năm mặc định đã được gieo, nếu không lượt tải đầu tiên chạy
   // với bộ lọc rỗng rồi lập tức bị lượt thứ hai thay thế.
   const [daSanSang, setDaSanSang] = useState(false);
+
+  // Phiếu quý chỉ tồn tại ở ngạch VIÊN CHỨC / NLĐ (xem DanhGiaNhanVien.js):
+  // giảng viên bấm sang tab đó chỉ nhận về một bảng rỗng. Suy ra từ user thay vì
+  // giữ thêm state để lượt render trước khi /me trả về không kẹt ở tab sai.
+  const laVienChuc = coLoaiDoiTuong(currentUser, LOAI_DOI_TUONG_KPI.VIEN_CHUC);
+  const loaiPhieu = laVienChuc ? loaiPhieuChon : "nam";
 
   const showToast = (severity, summary, detail) => {
     toast.current?.show({ severity, summary, detail, life: 4000 });
@@ -226,7 +233,7 @@ const LichSuDanhGia = () => {
   }, [loaiPhieu, rows]);
 
   const chuyenLoaiPhieu = (loai) => {
-    setLoaiPhieu(loai);
+    setLoaiPhieuChon(loai);
     setTrangThaiChon([]);
     setPage(1);
   };
@@ -321,27 +328,29 @@ const LichSuDanhGia = () => {
           Phiếu đánh giá của tôi
         </h2>
         <span className="breadcrumb">
-          {currentUser.HoTen || "Người dùng"} - phiếu KPI năm và phiếu đánh giá
-          theo quý
+          {currentUser.HoTen || "Người dùng"} - phiếu KPI năm
+          {laVienChuc ? " và phiếu đánh giá theo quý" : ""}
         </span>
       </div>
 
-      <div className="pq-tabs" aria-label="Loại phiếu đánh giá">
-        <button
-          type="button"
-          className={loaiPhieu === "nam" ? "active" : ""}
-          onClick={() => chuyenLoaiPhieu("nam")}
-        >
-          <i className="fa-solid fa-calendar"></i> Phiếu năm
-        </button>
-        <button
-          type="button"
-          className={loaiPhieu === "quy" ? "active" : ""}
-          onClick={() => chuyenLoaiPhieu("quy")}
-        >
-          <i className="fa-solid fa-calendar-days"></i> Phiếu quý
-        </button>
-      </div>
+      {laVienChuc && (
+        <div className="pq-tabs" aria-label="Loại phiếu đánh giá">
+          <button
+            type="button"
+            className={loaiPhieu === "nam" ? "active" : ""}
+            onClick={() => chuyenLoaiPhieu("nam")}
+          >
+            <i className="fa-solid fa-calendar"></i> Phiếu năm
+          </button>
+          <button
+            type="button"
+            className={loaiPhieu === "quy" ? "active" : ""}
+            onClick={() => chuyenLoaiPhieu("quy")}
+          >
+            <i className="fa-solid fa-calendar-days"></i> Phiếu quý
+          </button>
+        </div>
+      )}
 
       <div className="cd-toolbar">
         <div className="cd-field">

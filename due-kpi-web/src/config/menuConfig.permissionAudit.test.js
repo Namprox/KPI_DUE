@@ -44,7 +44,26 @@ test.each(['TP', 'QTP', 'GD', 'VT', 'TK', 'TKL'])('kiêm %s: quyền chấm và 
   expect(canGhiNhanLoai({ DonViGhiNhan: [{ IdDonVi: '20' }] }, u)).toBe(true);
   expect(canGhiNhanLoai({ DonViGhiNhan: [{ IdDonVi: 10 }] }, u)).toBe(false);
   checkRoute('/quan-ly/tham-dinh', u, true);
+});
+
+// Hai trang dữ liệu nguồn GIẢNG VIÊN gác theo ĐƠN VỊ, không chỉ theo chức vụ:
+// chức vụ trưởng phòng một mình không đủ, phải là P_DTBDCL - phòng import thời
+// khóa biểu và chốt điểm phản hồi SV. Phòng khác chỉ nhận bảng rỗng từ backend.
+test.each(['TP', 'QTP'])('kiêm %s tại P_DTBDCL xem được hai trang dữ liệu nguồn', role => {
+  const u = user(role);
+  u.DonVi[1].MaDonVi = ' p_dtbdcl ';
   checkRoute('/ty-le-hoan-thanh-gio-giang', u, true);
+  checkRoute('/diem-trung-binh-danh-gia-sinh-vien', u, true);
+  u.DonVi[1].MaDonVi = 'P_KH';
+  checkRoute('/ty-le-hoan-thanh-gio-giang', u, false);
+  checkRoute('/diem-trung-binh-danh-gia-sinh-vien', u, false);
+});
+
+test.each(['TP', 'QTP', 'GD', 'VT', 'PTP', 'TKP'])('%s của phòng khác không thấy hai trang dữ liệu nguồn', role => {
+  const u = user(role);
+  u.DonVi[1].MaDonVi = 'P_KH';
+  checkRoute('/ty-le-hoan-thanh-gio-giang', u, false);
+  checkRoute('/diem-trung-binh-danh-gia-sinh-vien', u, false);
 });
 
 test('TP kiêm nhiệm chỉ thấy tiêu chí được giao; giữ quyền xem của TK đồng thời', () => {
@@ -67,7 +86,7 @@ test.each(['TP', 'QTP'])('%s tại P_DTBDCL dùng được menu, URL và import/
   expect(canManagePhanHoiSinhVien(u)).toBe(false);
 });
 
-test.each(['GD', 'VT', 'TK', 'TKL', 'TKK'])('%s chỉ đọc điểm trung bình, không import/chốt phản hồi', role => {
+test.each(['TK', 'TKL', 'TKK'])('%s chỉ đọc điểm trung bình, không import/chốt phản hồi', role => {
   const u = user(role); u.DonVi[1].MaDonVi = 'P_DTBDCL';
   checkRoute('/diem-trung-binh-danh-gia-sinh-vien', u, true);
   checkRoute('/quan-ly-danh-gia-sinh-vien', u, false);
