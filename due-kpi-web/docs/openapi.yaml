@@ -1177,6 +1177,9 @@ paths:
         - DonVi
       summary: Create
       operationId: donViCreate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -1214,6 +1217,9 @@ paths:
         - DonVi
       summary: Update
       operationId: donViUpdate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -1238,6 +1244,9 @@ paths:
         - DonVi
       summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: donViDelete
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -1378,6 +1387,9 @@ paths:
         - MauDanhGia
       summary: Create
       operationId: mauDanhGiaCreate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -1397,6 +1409,8 @@ paths:
         - MauDanhGia
       summary: Clone mau danh gia sang nam moi
       description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
         Tao mau danh gia moi cho nam dich va copy toan bo tieu chi tu mau nguon.
         Co the truyen TenMau de dat ten moi; neu bo trong se giu ten mau nguon.
       operationId: mauDanhGiaCloneToNam
@@ -1449,6 +1463,9 @@ paths:
         - MauDanhGia
       summary: Update
       operationId: mauDanhGiaUpdate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -1473,6 +1490,9 @@ paths:
         - MauDanhGia
       summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: mauDanhGiaDelete
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -1634,6 +1654,9 @@ paths:
         - ChiTietMauDanhGia
       summary: Create
       operationId: chiTietMauDanhGiaCreate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -1671,6 +1694,9 @@ paths:
         - ChiTietMauDanhGia
       summary: Update
       operationId: chiTietMauDanhGiaUpdate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -1695,6 +1721,9 @@ paths:
         - ChiTietMauDanhGia
       summary: Delete
       operationId: chiTietMauDanhGiaDelete
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -1714,6 +1743,9 @@ paths:
         - ChiTietMauDanhGia
       summary: Bulk add tieu chi vao mau danh gia
       operationId: chiTietMauDanhGiaBulkCreate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -2674,6 +2706,9 @@ paths:
         - ThangDiem
       summary: Create
       operationId: thangDiemCreate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -2711,6 +2746,9 @@ paths:
         - ThangDiem
       summary: Update
       operationId: thangDiemUpdate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -2735,6 +2773,9 @@ paths:
         - ThangDiem
       summary: Delete
       operationId: thangDiemDelete
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -2777,6 +2818,9 @@ paths:
         - DinhMucGiangVien
       summary: Create
       operationId: dinhMucGiangVienCreate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -2814,6 +2858,9 @@ paths:
         - DinhMucGiangVien
       summary: Update
       operationId: dinhMucGiangVienUpdate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -2838,6 +2885,9 @@ paths:
         - DinhMucGiangVien
       summary: Delete
       operationId: dinhMucGiangVienDelete
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -2869,6 +2919,9 @@ paths:
         - GioThucHienGv
       summary: Create
       operationId: gioThucHienGvCreate
+      description: >-
+        Chi ADMIN (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -2906,6 +2959,9 @@ paths:
         - GioThucHienGv
       summary: Update
       operationId: gioThucHienGvUpdate
+      description: >-
+        Chi ADMIN (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -2930,6 +2986,9 @@ paths:
         - GioThucHienGv
       summary: Delete
       operationId: gioThucHienGvDelete
+      description: >-
+        Chi ADMIN (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -7938,6 +7997,9 @@ paths:
         - ChucDanhNgheNghiep
       summary: Create
       operationId: chucDanhNgheNghiepCreate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -7975,6 +8037,9 @@ paths:
         - ChucDanhNgheNghiep
       summary: Update
       operationId: chucDanhNgheNghiepUpdate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -7999,6 +8064,9 @@ paths:
         - ChucDanhNgheNghiep
       summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: chucDanhNgheNghiepDelete
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -8032,6 +8100,8 @@ paths:
         - NhomTieuChi
       summary: Create
       description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
         LoaiNhom BAT BUOC voi LoaiDoiTuong 1 (giang vien), 2 (vien chuc/NLD) va
         3 (khoa) — bo trong se bi tu choi o CA HAI tang (NhomTieuChiService va
         sp_nhom_tieu_chi_create). Rieng LoaiDoiTuong = 4 (Phong/Trung tam) duoc
@@ -8084,6 +8154,8 @@ paths:
         - NhomTieuChi
       summary: Update
       description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
         Bo trong mot truong = GIU NGUYEN gia tri cu (SP dung ISNULL). Vi vay
         KHONG co duong xoa LoaiNhom da co ve NULL qua endpoint nay — nhom da
         mang LoaiNhom 1 hoac 2 thi chi doi duoc sang gia tri con lai. Rang buoc
@@ -8114,6 +8186,9 @@ paths:
         - NhomTieuChi
       summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: nhomTieuChiDelete
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -8147,6 +8222,9 @@ paths:
         - TieuChiDanhGia
       summary: Create
       operationId: tieuChiDanhGiaCreate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -8184,6 +8262,9 @@ paths:
         - TieuChiDanhGia
       summary: Update
       operationId: tieuChiDanhGiaUpdate
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -8208,6 +8289,9 @@ paths:
         - TieuChiDanhGia
       summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: tieuChiDanhGiaDelete
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -8257,6 +8341,9 @@ paths:
         điểm cấp Khoa của tiêu chí (lưu vết người chấm qua id_nguoi_dg_khoa + lich_su_cham_diem).
         Danh sách rỗng = bỏ phân quyền, quay về mặc định trưởng khoa/phòng đơn vị chủ quản chấm.
       operationId: tieuChiDonViChamSet
+      description: >-
+        Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -8306,6 +8393,9 @@ paths:
         - NhomNhiemVu
       summary: Create
       operationId: nhomNhiemVuCreate
+      description: >-
+        Chi ADMIN (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -8343,6 +8433,9 @@ paths:
         - NhomNhiemVu
       summary: Update
       operationId: nhomNhiemVuUpdate
+      description: >-
+        Chi ADMIN (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -8367,6 +8460,9 @@ paths:
         - NhomNhiemVu
       summary: Delete
       operationId: nhomNhiemVuDelete
+      description: >-
+        Chi ADMIN (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -8414,6 +8510,9 @@ paths:
         - VaiTroPvcd
       summary: Create
       operationId: vaiTroPvcdCreate
+      description: >-
+        Chi ADMIN (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       requestBody:
         required: true
         content:
@@ -8451,6 +8550,9 @@ paths:
         - VaiTroPvcd
       summary: Update
       operationId: vaiTroPvcdUpdate
+      description: >-
+        Chi ADMIN (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -8475,6 +8577,9 @@ paths:
         - VaiTroPvcd
       summary: Delete
       operationId: vaiTroPvcdDelete
+      description: >-
+        Chi ADMIN (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
+        `{ "message": "..." }` tu bo loc quyen.
       parameters:
         - name: id
           in: path
@@ -16517,8 +16622,10 @@ components:
             Riêng NCKH_GIO_TY_LE (hoàn thành định mức giờ NCKH) là BẬC THANG theo tỷ lệ
             gio_nckh_quy_doi / gio_nckh_dinh_muc: ≥ 100% → diem_toi_da (40);
             > 75% và < 100% → diem_toi_da × 0.75 (30); > 50% và ≤ 75% → diem_toi_da × 0.50 (20);
-            ≤ 50% → 0. Không có dòng trong nckh_gio_nckh của năm đó, hoặc định mức ≤ 0,
-            hoặc giờ quy đổi null → 0.
+            ≤ 50% → 0. Định mức ≤ 0 (không chia được): LaTroGiangTapSu = false (miễn NCKH)
+            → diem_toi_da; true hoặc null (trợ giảng / phục vụ giảng dạy / chuyên viên tập
+            sự, hoặc chưa có thông tin) → 0. Không có dòng trong nckh_gio_nckh của năm đó,
+            định mức null, hoặc giờ quy đổi null → 0.
 
             Riêng NCKH_BBQT_DIEM_KPI (KPI bài báo quốc tế) KHÔNG dùng bậc thang và cũng
             không phải đạt/không đạt: điểm = nckh_kpi_bai_bao_quoc_te.diem_kpi_cuoi lấy
@@ -16615,7 +16722,10 @@ components:
 
             Lý do với NCKH_GIO_TY_LE: nhân viên chưa có email (không đối chiếu được),
             không tìm thấy dòng giờ NCKH của năm mẫu khớp email (chưa đồng bộ hoặc lệch
-            năm), định mức ≤ 0 / trống, chưa có giờ quy đổi.
+            năm), định mức trống, chưa có giờ quy đổi. NGOẠI LỆ với định mức ≤ 0: luôn có
+            lý do, kể cả khi điểm = diem_toi_da (TyLeHoanThanh null nên FE không tự diễn giải
+            được) — "được miễn NCKH… điểm tối đa" (LaTroGiangTapSu = false), "thuộc nhóm trợ
+            giảng…" (true), hoặc "chưa có thông tin…" (null).
 
             Lý do với NCKH_BBQT_DIEM_KPI: nhân viên chưa có email, không tìm thấy dòng
             KPI bài báo quốc tế của năm mẫu khớp email, chưa có diem_kpi_cuoi.
@@ -20973,9 +21083,19 @@ components:
           format: double
           nullable: true
           description: "ConvertedHours - gio NCKH quy doi thuc te (vd: 100.02)."
+        LaTroGiangTapSu:
+          type: boolean
+          nullable: true
+          description: >
+            Truong Intern (TEN TAM) cua API NCKH - true = Tro giang / phuc vu giang day /
+            chuyen vien tap su. Chi co tac dung khi GioNckhDinhMuc <= 0: false -> mien NCKH
+            (diem toi da), true -> 0 diem. null = API chua tra / sai ten truong (xu ly nhu true).
         DatDinhMuc:
           type: boolean
-          description: Dan xuat - GioNckhQuyDoi >= GioNckhDinhMuc. false khi thieu mot trong hai so lieu.
+          description: >
+            Dan xuat - dung dieu kien diem toi da cua NCKH_GIO_TY_LE: GioNckhDinhMuc > 0 thi
+            GioNckhQuyDoi >= GioNckhDinhMuc; GioNckhDinhMuc <= 0 thi LaTroGiangTapSu = false
+            (mien NCKH). false khi thieu so lieu hoac LaTroGiangTapSu true / null.
         TyLeHoanThanh:
           type: number
           format: double

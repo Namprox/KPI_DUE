@@ -1,0 +1,29 @@
+.ls-timeline { list-style: none; margin: 16px 0 0; padding: 0; font-size: 14px; line-height: 1.55; }
+.ls-timeline li { display: grid; grid-template-columns: 92px minmax(0, 1fr); column-gap: 18px; margin: 0; padding: 0; }
+.ls-timeline-time { padding-top: 1px; text-align: right; line-height: 1.35; font-variant-numeric: tabular-nums; }
+.ls-timeline-time b { display: block; font-size: 13px; font-weight: 600; color: #334155; }
+.ls-timeline-time span { display: block; font-size: 12px; color: #64748b; }
+.ls-timeline-body { position: relative; min-width: 0; padding: 0 0 20px 22px; border-left: 2px solid #e2e8f0; overflow-wrap: anywhere; }
+.ls-timeline-body::before { content: ""; position: absolute; left: -7px; top: 4px; width: 12px; height: 12px; box-sizing: border-box; border: 2px solid #0056b3; border-radius: 50%; background: #fff; }
+.ls-timeline-moi-nhat li:first-child .ls-timeline-body::before { background: #0056b3; box-shadow: 0 0 0 3px #dbeafe; }
+.ls-timeline li:last-child .ls-timeline-body { border-left-color: transparent; padding-bottom: 0; }
+.ls-timeline-body > b { display: block; font-weight: 600; color: #172033; line-height: 1.35; }
+.ls-timeline-body p { margin: 4px 0 0; color: #334155; white-space: pre-wrap; }
+.ls-timeline-phu { margin-top: 4px; font-weight: 600; color: #172033; }
+.ls-timeline-body small { display: block; margin-top: 2px; font-size: 12px; color: #64748b; }
+.ls-timeline-khung { padding: 18px 20px; }
+.ls-timeline-khung > .ls-timeline { margin-top: 0; }
+.ls-timeline-rong { margin: 12px 0 0; font-size: 13px; color: #64748b; }
+
+.ls-timeline-compact { margin-top: 6px; font-size: 13px; line-height: 1.45; }
+.ls-timeline-compact li { grid-template-columns: 78px minmax(0, 1fr); column-gap: 14px; }
+.ls-timeline-compact .ls-timeline-time b { font-size: 12px; }
+.ls-timeline-compact .ls-timeline-time span { font-size: 11px; }
+.ls-timeline-compact .ls-timeline-body { padding: 0 0 12px 18px; }
+.ls-timeline-compact .ls-timeline-body::before { left: -6px; top: 3px; width: 10px; height: 10px; }
+.ls-timeline-compact.ls-timeline-moi-nhat li:first-child .ls-timeline-body::before { box-shadow: 0 0 0 2px #dbeafe; }
+.ls-timeline-compact .ls-timeline-body p { margin-top: 2px; }
+
+@media (max-width: 680px) {
+  .ls-timeline li { grid-template-columns: 70px minmax(0, 1fr); column-gap: 12px; }
+}

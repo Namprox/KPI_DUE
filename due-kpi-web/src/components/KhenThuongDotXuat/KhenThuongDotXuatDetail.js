@@ -4,6 +4,7 @@ import { layChiTietKhenThuong } from "../../utils/khenThuongDotXuatApi";
 import { formatDiem } from "../../utils/keKhaiThanhTichApi";
 import "../../css/Pages.css";
 import "../../css/KhenThuongDotXuat.css";
+import LichSuTimeline, { tachNgayGio } from "../Common/LichSuTimeline";
 
 export const ngayKhenThuong = (value, time = false) => {
   if (!value) return "—";
@@ -50,9 +51,7 @@ export default function KhenThuongDotXuatDetail({ id, onClose, onUnavailable }) 
         </> : <p>Không có thông tin bản ghi.</p>}
         <p className="ktdx-muted">{HUONG_DAN_DIEM}</p>
         <h4>Lịch sử thay đổi</h4>
-        {(data.LichSu || []).length === 0 ? <p className="ktdx-muted">Chưa có lịch sử.</p> : <ol className="ktdx-history">{data.LichSu.map((l) => <li key={l.Id}>
-          <strong>{{ 1: "Ghi nhận", 2: "Sửa", 3: "Xóa" }[l.HanhDong] || "Thay đổi"}</strong><small>{l.TenNguoiThucHien || "—"} · {ngayKhenThuong(l.NgayThucHien, true)}</small><p>{l.MoTa}</p>
-        </li>)}</ol>}
+        <LichSuTimeline items={(data.LichSu || []).map((l) => ({ key: l.Id, ...tachNgayGio(l.NgayThucHien), tieuDe: { 1: "Ghi nhận", 2: "Sửa", 3: "Xóa" }[l.HanhDong] || "Thay đổi", moTa: l.MoTa, nguoi: l.TenNguoiThucHien }))} />
       </>}
       <div className="ktdx-actions ktdx-footer"><button onClick={onClose}>Đóng</button></div>
     </div>

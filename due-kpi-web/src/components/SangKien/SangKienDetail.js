@@ -4,6 +4,7 @@ import { layChiTietSangKien, layDanhMucSangKien } from "../../utils/sangKienApi"
 import { ngaySangKien, ketQuaXetSangKien, ketQuaCaiTienSangKien, DiemVienChucSangKien, TacGiaSangKien, TrangThaiSangKien } from "./SangKienInfo";
 import "../../css/Pages.css";
 import "../../css/SangKien.css";
+import LichSuTimeline, { tachNgayGio } from "../Common/LichSuTimeline";
 
 const actions = { 1: "Tạo sáng kiến", 2: "Sửa", 3: "Xoá", 4: "Xét đổi mới giảng dạy", 8: "Xét cải tiến công việc" };
 export default function SangKienDetail({ id, onClose, onUnavailable }) {
@@ -55,9 +56,7 @@ export default function SangKienDetail({ id, onClose, onUnavailable }) {
           <dt>Cập nhật gần nhất</dt><dd>{item.TenNguoiCapNhat || "—"} · {ngaySangKien(item.NgayCapNhat, true)}</dd>
         </dl>
         <h4>Lịch sử thay đổi</h4>
-        {(data.LichSu || []).length === 0 ? <p className="sk-muted">Chưa có lịch sử.</p> : <ol className="sk-history">{data.LichSu.map((entry) => <li key={entry.Id}>
-          <strong>{actions[entry.HanhDong] || `Hành động ${entry.HanhDong}`}</strong><small>{entry.TenNguoiThucHien || "—"} · {ngaySangKien(entry.NgayThucHien, true)}</small><p>{entry.MoTa}</p>
-        </li>)}</ol>}
+        <LichSuTimeline items={(data.LichSu || []).map((entry) => ({ key: entry.Id, ...tachNgayGio(entry.NgayThucHien), tieuDe: actions[entry.HanhDong] || `Hành động ${entry.HanhDong}`, moTa: entry.MoTa, nguoi: entry.TenNguoiThucHien }))} />
       </>}
       <div className="sk-actions sk-footer"><button onClick={onClose}>Đóng</button></div>
     </div>

@@ -5,6 +5,7 @@ import * as api from "../../utils/nhiemVuPhucVuApi";
 import NhiemVuForm from "./NhiemVuForm";
 import PhanCongForm from "./PhanCongForm";
 import ChotForm from "./ChotForm";
+import LichSuTimeline from "../Common/LichSuTimeline";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
 import "../../css/NhiemVuPhucVu.css";
@@ -156,15 +157,15 @@ export default function NhiemVuPhucVuDetail({ id, onClose, onChanged, onUnavaila
       {notice && <p role="status" className="nvpv-notice">{notice}</p>}
       {loading ? <p role="status">Đang tải chi tiết...</p> : item && <>
         <div className="nvpv-detail-title"><h3>{item.TenNhiemVu}</h3><span className={`cd-status-badge nvpv-status-${item.TrangThai}`}>{item.TenTrangThai || api.TRANG_THAI[item.TrangThai]}</span></div>
-        <dl className="nvpv-details"><dt>Khoa / Năm</dt><dd>{item.TenDonVi} · {item.IdNam}</dd><dt>Nguồn / Nhóm</dt><dd>{item.TenNguon} · {item.TenNhom}</dd>
-          <dt>Thời gian</dt><dd>{api.hienThiNgay(item.TuNgay)} – {api.hienThiNgay(item.DenNgay)}</dd><dt>Hạn đăng ký</dt><dd>{item.HanDangKy ? api.hienThiNgay(item.HanDangKy, true) : "Không mở tự đăng ký"} (giờ Việt Nam)</dd>
-          <dt>Số lượng</dt><dd>{item.SoThanhVien}/{item.SoLuongToiDa} · Còn {item.SoSuatConLai ?? "—"} suất</dd><dt>Mô tả</dt><dd className="nvpv-pre">{item.MoTa || "—"}</dd>
+        <dl className="nvpv-details"><dt>Khoa</dt><dd>{item.TenDonVi}</dd><dt>Năm</dt><dd>{item.IdNam}</dd><dt>Loại nhiệm vụ</dt><dd>{item.TenNguon} · {item.TenNhom}</dd>
+          <dt>Thời gian</dt><dd>{api.hienThiNgay(item.TuNgay)} – {api.hienThiNgay(item.DenNgay)}</dd>
+          <dt>Hạn đăng ký</dt><dd>{item.HanDangKy ? <>{api.hienThiNgay(item.HanDangKy, true)}{config?.BayGio && <small>Giờ hiện tại: {api.hienThiNgay(config.BayGio, true)}</small>}</> : "Không mở đăng ký (Trưởng khoa phân công)"}</dd>
+          <dt>Số người</dt><dd>{item.SoThanhVien}/{item.SoLuongToiDa}{item.SoSuatConLai != null && (Number(item.SoSuatConLai) > 0 ? ` · Còn ${item.SoSuatConLai} chỗ` : " · Đã đủ")}</dd><dt>Mô tả</dt><dd className="nvpv-pre">{item.MoTa || "—"}</dd>
         </dl>
         {item.LyDoHuy && <p className="nvpv-warning">Lý do hủy: {item.LyDoHuy}</p>}
         {configError && <p role="alert" className="nvpv-error">Không tải được cấu hình: {configError} <button disabled={busy} onClick={() => setRetry((v) => v + 1)}>Thử lại</button></p>}
-        {config?.BayGio && <p className="nvpv-muted">Giờ máy chủ khi tải: {api.hienThiNgay(config.BayGio, true)} (Việt Nam).</p>}
-        {Number(item.CuaToi?.NguonThamGia) === 2 && item.CuaToi?.DaRoi !== true && <p className="nvpv-notice">Bạn được phân công tham gia. Liên hệ Trưởng khoa nếu cần rút khỏi nhiệm vụ.</p>}
-        <div className="nvpv-actions">
+        {Number(item.CuaToi?.NguonThamGia) === 2 && item.CuaToi?.DaRoi !== true && <p className="nvpv-notice">Bạn được Trưởng khoa phân công vào nhiệm vụ này. Nếu muốn rút, hãy liên hệ Trưởng khoa.</p>}
+        <div className="nvpv-actions nvpv-toolbar">
           {(item.ChoPhepSuaNoiDung === true || item.ChoPhepSuaHanDangKy === true) && <button disabled={busy || reportDirty || !config} onClick={() => setPanel("edit")}>Sửa nhiệm vụ</button>}
           {(item.ChoPhepPhanCong === true || item.ChoPhepDoiVaiTro === true) && <button disabled={busy || reportDirty || !config} onClick={() => setPanel("assign")}>Phân công / Vai trò</button>}
           {ACTIONS.filter(([, , flag]) => item[flag] === true).map(([key, label]) => <button key={key} disabled={busy || reportDirty || (key === "gui-bao-cao" && !checklistReady)} onClick={() => { setPanel(key); setReason(""); setError(""); }}>{label}</button>)}
@@ -179,23 +180,23 @@ export default function NhiemVuPhucVuDetail({ id, onClose, onChanged, onUnavaila
             : <p>{panel === "gui-bao-cao" ? "Sau khi gửi, mọi chỉnh sửa bị khóa đến khi Trưởng khoa trả báo cáo." : `Xác nhận ${currentAction[1].toLowerCase()}?`}</p>}
           <div className="nvpv-actions"><button className="btn-submit" type="submit">Xác nhận {currentAction[1].toLowerCase()}</button><button type="button" onClick={() => setPanel("")}>Quay lại</button></div>
         </fieldset></form>}
-        <h3>Thành viên và kết quả</h3>
-        <div className="modern-table-card table-scroll"><table className="custom-table"><thead><tr><th>Thành viên</th><th>Vai trò / Nguồn tham gia</th><th>Trạng thái</th><th>Kết quả / Điểm</th></tr></thead><tbody>
-          {(item.ThanhVien || []).map((v) => <tr key={v.IdThanhVien} className={v.DaRoi === true ? "nvpv-left" : ""}><td>{v.HoTen}{v.LaToi === true ? " (Tôi)" : ""}<small>{v.MaNhanVien}</small></td><td>{v.TenVaiTro}<small>{v.TenNguonThamGia}</small></td><td>{v.DaRoi === true ? "Đã rút / gỡ" : "Đang trong danh sách"}</td><td>{v.TenKetQua || "—"}{v.DiemSnapshot != null && <small>{v.DiemSnapshot} điểm</small>}{v.LyDoKhongHoanThanh && <small>{v.LyDoKhongHoanThanh}</small>}</td></tr>)}
+        <h3 className="nvpv-heading">Thành viên</h3>
+        <div className="modern-table-card table-scroll"><table className="custom-table"><thead><tr><th>Thành viên</th><th>Vai trò</th><th>Trạng thái</th><th>Kết quả</th></tr></thead><tbody>
+          {(item.ThanhVien || []).map((v) => <tr key={v.IdThanhVien} className={v.DaRoi === true ? "nvpv-left" : ""}><td>{v.HoTen}{v.LaToi === true ? " (Tôi)" : ""}<small>{v.MaNhanVien}</small></td><td>{v.TenVaiTro}<small>{v.TenNguonThamGia}</small></td><td>{v.DaRoi === true ? "Đã rời" : "Đang tham gia"}</td><td>{v.TenKetQua || "—"}{v.DiemSnapshot != null && <small>{v.DiemSnapshot} điểm</small>}{v.LyDoKhongHoanThanh && <small>{v.LyDoKhongHoanThanh}</small>}</td></tr>)}
           {!(item.ThanhVien || []).length && <tr><td colSpan={4}>Chưa có thành viên.</td></tr>}
         </tbody></table></div>
-        {item.XemBaoCao === true && <section className="nvpv-section"><h3>Báo cáo chung và minh chứng</h3>
+        {item.XemBaoCao === true && <section className="nvpv-section"><h3>Báo cáo và minh chứng</h3>
           {(Number(item.TrangThaiBaoCao) === 3 || item.BaoCao?.DaTraLai === true) && <p className="nvpv-warning">Báo cáo bị trả lại: {item.LyDoTraLai || item.BaoCao?.LyDoTraLai}</p>}
-          <p className="nvpv-muted">{({ 0: "Chưa có báo cáo", 1: "Đang soạn", 2: "Chờ duyệt", 3: "Bị trả lại", 4: "Đã chốt" })[item.TrangThaiBaoCao] || "Chưa có báo cáo"} · Số lần gửi: {item.SoLanGui ?? item.BaoCao?.SoLanGui ?? 0} · Ngày gửi: {api.hienThiNgay(item.NgayGui || item.BaoCao?.NgayGui, true)}</p>
-          {item.ChoPhepBaoCao === true ? <><label>Nội dung báo cáo<textarea rows={6} maxLength={4000} value={report} disabled={busy} onChange={(e) => setReport(e.target.value)} /></label><div className="nvpv-actions"><button disabled={busy || !reportDirty} onClick={() => run(() => api.luuBaoCao(item, report))}>Lưu báo cáo</button><span>{report.length}/4000 ký tự {reportDirty ? "· Chưa lưu" : ""}</span></div></> : <p className="nvpv-pre">{item.BaoCao?.NoiDung || "Chưa có nội dung báo cáo."}</p>}
+          <p className="nvpv-muted">Trạng thái: <b>{({ 0: "Chưa có báo cáo", 1: "Đang soạn", 2: "Chờ duyệt", 3: "Bị trả lại", 4: "Đã chốt" })[item.TrangThaiBaoCao] || "Chưa có báo cáo"}</b>{Number(item.SoLanGui ?? item.BaoCao?.SoLanGui ?? 0) > 0 && ` · Đã gửi ${item.SoLanGui ?? item.BaoCao?.SoLanGui} lần, gần nhất ${api.hienThiNgay(item.NgayGui || item.BaoCao?.NgayGui, true)}`}</p>
+          {item.ChoPhepBaoCao === true ? <><label>Nội dung báo cáo<textarea rows={6} maxLength={4000} value={report} disabled={busy} onChange={(e) => setReport(e.target.value)} /></label><div className="nvpv-actions"><button disabled={busy || !reportDirty} onClick={() => run(() => api.luuBaoCao(item, report))}>Lưu báo cáo</button><span>{report.length}/4000 ký tự {reportDirty ? "· Chưa lưu" : ""}</span></div></> : <div className="nvpv-report"><span>Nội dung báo cáo</span><p className="nvpv-pre">{item.BaoCao?.NoiDung || "Chưa có nội dung báo cáo."}</p></div>}
           <ul className="nvpv-evidence">{(item.MinhChung || []).map((mc) => <li key={mc.IdMinhChung}><span>{mc.TenHienThi || mc.TenFileGoc}<small>{mc.KichThuocKb} KB · {mc.TenNguoiTaiLen}</small></span><a href={api.urlMinhChung(mc.IdMinhChung, true)} target="_blank" rel="noreferrer">Xem PDF</a><a href={api.urlMinhChung(mc.IdMinhChung)}>Tải về</a>{item.ChoPhepBaoCao === true && <button disabled={busy} onClick={() => setDeleteId(mc.IdMinhChung)}>Gỡ minh chứng</button>}</li>)}</ul>
           {deleteId != null && <div className="nvpv-warning">Xác nhận gỡ minh chứng này? <button disabled={busy || reportDirty} onClick={() => run(() => api.xoaMinhChung(deleteId))}>Xác nhận gỡ</button> <button disabled={busy} onClick={() => setDeleteId(null)}>Giữ lại</button></div>}
           {item.ChoPhepBaoCao === true && <div className="nvpv-form"><div className="nvpv-grid"><label>Minh chứng PDF<input ref={fileInput} type="file" accept={config?.Accept || ".pdf"} disabled={busy || !config} onChange={(e) => setFile(e.target.files?.[0] || null)} /></label><label>Tên hiển thị (tùy chọn)<input value={fileName} maxLength={config?.MaxTenHienThiLength} disabled={busy} onChange={(e) => setFileName(e.target.value)} /></label></div><p className="nvpv-muted">{config ? `Tối đa ${config.MaxSoMinhChung} PDF, ${config.MaxFileSizeKb} KB/tệp.` : "Đang tải giới hạn minh chứng..."}</p><button disabled={busy || !config || !file || reportDirty} onClick={upload}>Tải minh chứng</button>{reportDirty && <small>Lưu nội dung báo cáo trước khi tải minh chứng.</small>}</div>}
-          {item.LaChuTri === true && <><ul className="nvpv-checklist">{checklist.map(([ok, label]) => <li key={label}>{ok ? "✓" : "○"} {label}</li>)}</ul><p className="nvpv-muted">Chỉ được gửi từ ngày sau ngày kết thúc; quyền gửi theo thời gian máy chủ.</p></>}
+          {item.LaChuTri === true && <><ul className="nvpv-checklist">{checklist.map(([ok, label]) => <li key={label}>{ok ? "✓" : "○"} {label}</li>)}</ul><p className="nvpv-muted">Báo cáo được gửi từ ngày sau khi nhiệm vụ kết thúc.</p></>}
         </section>}
         {Number(item.TrangThai) === 5 && <p className="nvpv-notice">{api.HUONG_DAN_DIEM}</p>}
-        {(item.XemBaoCao === true || item.LaThanhVien === true || item.CuaToi || item.LaTruongKhoa === true || item.LaBanGiamHieu === true) && <section className="nvpv-section"><button onClick={() => setShowHistory((v) => !v)}>{showHistory ? "Ẩn lịch sử" : "Xem lịch sử"}</button>
-          {showHistory && (historyLoading ? <p role="status">Đang tải lịch sử...</p> : historyError ? <p role="alert">{historyError} <button onClick={() => setHistoryRevision((v) => v + 1)}>Thử lại</button></p> : <ol className="nvpv-history">{(history || []).map((h) => <li key={h.Id}><b>{h.TenHanhDong}</b><small>{h.TenNguoiThucHien} · {api.hienThiNgay(h.NgayThucHien, true)}</small><p>{h.MoTa}</p></li>)}{history?.length === 0 && <li>Chưa có lịch sử.</li>}</ol>)}
+        {(item.XemBaoCao === true || item.LaThanhVien === true || item.CuaToi || item.LaTruongKhoa === true || item.LaBanGiamHieu === true) && <section className="nvpv-history-section"><button onClick={() => setShowHistory((v) => !v)}>{showHistory ? "Ẩn lịch sử" : "Xem lịch sử"}</button>
+          {showHistory && (historyLoading ? <p role="status">Đang tải lịch sử...</p> : historyError ? <p role="alert">{historyError} <button onClick={() => setHistoryRevision((v) => v + 1)}>Thử lại</button></p> : <LichSuTimeline items={(history || []).map((h) => ({ key: h.Id, ngay: api.hienThiNgay(h.NgayThucHien), gio: String(h.NgayThucHien || "").slice(11, 16), moc: Date.parse(h.NgayThucHien), tieuDe: h.TenHanhDong, moTa: h.MoTa, nguoi: h.TenNguoiThucHien }))} />)}
         </section>}
       </>}
       <div className="nvpv-actions nvpv-footer"><button disabled={busy} onClick={onClose}>Đóng</button>{busy && <span role="status">Đang xử lý...</span>}</div>

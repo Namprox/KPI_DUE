@@ -817,6 +817,10 @@ CREATE TABLE nckh_gio_nckh (
     hoc_vi              NVARCHAR(255) NULL,          -- DegreeName
     hoc_ham             NVARCHAR(255) NULL,          -- AcademicRank
     diem_dat_duoc       DECIMAL(18,4) NULL,          -- AchievedScore
+    -- Intern (TÊN TRƯỜNG TẠM): 1 = Trợ giảng / phục vụ giảng dạy / chuyên viên tập sự.
+    -- Chỉ có tác dụng khi gio_nckh_dinh_muc <= 0: 1 → 0 điểm, 0 → điểm tối đa (miễn NCKH).
+    -- NULL (API không trả / sai tên trường) được xử lý như 1.
+    la_tro_giang_tap_su BIT           NULL,
     CONSTRAINT pk_gio_nckh_nckh  PRIMARY KEY (ma_nguoi_dung_nckh, id_nam),
     CONSTRAINT fk_gio_nckh_nguoi FOREIGN KEY (id_nguoi_dong_bo) REFERENCES nhan_vien(id_nhan_vien)
 );
@@ -868,6 +872,29 @@ CREATE TYPE dbo.GioNckhRowV2 AS TABLE (
     hoc_vi              NVARCHAR(255) NULL,
     hoc_ham             NVARCHAR(255) NULL,
     diem_dat_duoc       DECIMAL(18,4) NULL,
+    PRIMARY KEY (ma_nguoi_dung_nckh, id_nam)
+);
+GO
+
+-- Bản V3: payload bổ sung trường Intern (tên tạm) → la_tro_giang_tap_su. Cùng lý do với V2:
+-- không ALTER được TYPE nên tạo type mới, GIỮ V1 / V2; sp_nckh_gio_nckh_dong_bo nhận V3.
+-- Định nghĩa V3 cũng nằm ở procedure.sql — sửa một bên phải sửa cả bên kia.
+CREATE TYPE dbo.GioNckhRowV3 AS TABLE (
+    ma_nguoi_dung_nckh  INT           NOT NULL,
+    id_nam              INT           NOT NULL,
+    ho_ten              NVARCHAR(255) NULL,
+    email               NVARCHAR(255) NULL,
+    ten_don_vi          NVARCHAR(255) NULL,
+    chuc_danh           NVARCHAR(255) NULL,
+    ky_bao_cao          NVARCHAR(100) NULL,
+    gio_chuan           DECIMAL(10,2) NULL,
+    ty_le_giam          DECIMAL(6,2)  NULL,
+    gio_nckh_dinh_muc   DECIMAL(10,2) NULL,
+    gio_nckh_quy_doi    DECIMAL(10,2) NULL,
+    hoc_vi              NVARCHAR(255) NULL,
+    hoc_ham             NVARCHAR(255) NULL,
+    diem_dat_duoc       DECIMAL(18,4) NULL,
+    la_tro_giang_tap_su BIT           NULL,
     PRIMARY KEY (ma_nguoi_dung_nckh, id_nam)
 );
 GO

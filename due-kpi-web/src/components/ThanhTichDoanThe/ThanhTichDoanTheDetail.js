@@ -3,6 +3,7 @@ import { Dialog } from "primereact/dialog";
 import { layChiTietDoanThe } from "../../utils/thanhTichDoanTheApi";
 import "../../css/Pages.css";
 import "../../css/HoatDongDaoTao.css";
+import LichSuTimeline, { tachNgayGio } from "../Common/LichSuTimeline";
 
 export const ngayDoanThe = (value, time = false) => {
   if (!value) return "—";
@@ -41,9 +42,7 @@ export default function ThanhTichDoanTheDetail({ id, onClose, onUnavailable }) {
           <dt>Người tạo</dt><dd>{item.TenNguoiTao || "—"} · {ngayDoanThe(item.NgayTao, true)}</dd>
         </dl>}
         <h4>Lịch sử thay đổi</h4>
-        {(data.LichSu || []).length === 0 ? <p className="hddt-muted">Chưa có lịch sử.</p> : <ol className="hddt-history">{data.LichSu.map((l) => <li key={l.Id}>
-          <strong>{actions[l.HanhDong] || `Hành động ${l.HanhDong}`}</strong><small>{l.TenNguoiThucHien || "—"} · {ngayDoanThe(l.NgayThucHien, true)}</small><p>{l.MoTa}</p>
-        </li>)}</ol>}
+        <LichSuTimeline items={(data.LichSu || []).map((l) => ({ key: l.Id, ...tachNgayGio(l.NgayThucHien), tieuDe: actions[l.HanhDong] || `Hành động ${l.HanhDong}`, moTa: l.MoTa, nguoi: l.TenNguoiThucHien }))} />
       </>}
       <div className="hddt-actions hddt-footer"><button onClick={onClose}>Đóng</button></div>
     </div>

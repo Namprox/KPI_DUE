@@ -900,6 +900,11 @@
   line-height: 18px;
 }
 
+.pl2-auto-detail-link {
+  grid-column: 2;
+  justify-self: start;
+}
+
 .pl2-auto-score-value {
   flex-shrink: 0;
   min-width: 72px;

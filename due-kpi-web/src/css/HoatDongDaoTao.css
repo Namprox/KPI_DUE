@@ -23,7 +23,7 @@
 .hddt-table-scroll { overflow-x: auto; }
 .hddt table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 850px; }
 .hddt .custom-table td { overflow-wrap: anywhere; }
-.hddt td small, .hddt-history small { display: block; color: #758196; margin-top: 5px; font-size: 12px; }
+.hddt td small { display: block; color: #758196; margin-top: 5px; font-size: 12px; }
 .hddt td.hddt-empty { text-align: center; padding: 45px 20px; color: #788496; }
 .hddt-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .hddt-row-actions button { padding: 5px 8px; font-size: 13.5px; }
@@ -62,7 +62,7 @@
 .hddt-chips button { border: 0; background: transparent; padding: 2px 4px; font-size: 17px; }
 .hddt-picker-results { max-height: 220px; overflow-y: auto; display: grid; grid-template-columns: 1fr; gap: 6px; }
 .hddt-picker-results button { text-align: left; font-weight: 400; }
-.hddt-picker-results strong, .hddt-history strong { font-weight: 600; }
+.hddt-picker-results strong { font-weight: 600; }
 .hddt-picker-results span { display: block; color: #758196; margin-top: 4px; font-size: 12px; }
 .hddt-summary { display: flex; flex-wrap: wrap; gap: 18px; padding: 12px; background: #f5f8fc; margin: 12px 0; border-radius: 6px; }
 .hddt-import-results { max-height: 430px; border: 1px solid #e3e9f2; }
@@ -74,9 +74,6 @@
 .hddt-details { display: grid; grid-template-columns: 150px 1fr; gap: 10px 18px; line-height: 1.6; }
 .hddt-details dt { color: #758196; }
 .hddt-details dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.hddt-history { padding-left: 20px; }
-.hddt-history li { margin-bottom: 16px; padding-left: 6px; }
-.hddt-history p { white-space: pre-wrap; }
 .hddt-check { display: flex; gap: 8px; align-items: center; }
 @media (max-width: 700px) {
   .page-container.hddt { padding: 16px; }

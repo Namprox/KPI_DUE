@@ -70,6 +70,7 @@
   font-weight: 600;
   line-height: 1.6;
   vertical-align: middle;
+  white-space: nowrap;
 }
 .phieu-auto-nckh {
   margin-top: 12px;

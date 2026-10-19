@@ -3,7 +3,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
-import { formatNgayGio } from "../../utils/phieuApi";
+import { formatNgayGio, parseNgay } from "../../utils/phieuApi";
+import LichSuTimeline, { tachNgayGio } from "../../components/Common/LichSuTimeline";
 import {
   fetchToTrinhDetail,
   fetchToTrinhList,
@@ -415,42 +416,20 @@ const DuyetToTrinh = () => {
             <>
               <p
                 className="sub-title"
-                style={{ marginBottom: "12px", marginTop: "20px" }}
+                style={{ marginBottom: "4px", marginTop: "20px" }}
               >
-                NHẬT KÝ GÓI
+                LỊCH SỬ XỬ LÝ
               </p>
-              <div className="modern-table-card">
-                <table className="custom-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: "22%" }}>Thời điểm</th>
-                      <th style={{ width: "24%" }}>Hành động</th>
-                      <th style={{ width: "22%" }}>Người thực hiện</th>
-                      <th>Ghi chú</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {goi.LichSu.map((ls) => (
-                      <tr key={ls.Id}>
-                        <td style={{ fontSize: "13px" }}>
-                          {formatNgayGio(ls.NgayThucHien)}
-                        </td>
-                        <td style={{ fontSize: "13px" }}>
-                          {ls.HanhDongText ||
-                            TEN_HANH_DONG_TO_TRINH[ls.HanhDong] ||
-                            `Hành động ${ls.HanhDong}`}
-                          {ls.SoHoSoTraVe ? ` (${ls.SoHoSoTraVe} hồ sơ)` : ""}
-                        </td>
-                        <td style={{ fontSize: "13px" }}>
-                          {ls.TenNguoiThucHien || "-"}
-                        </td>
-                        <td style={{ fontSize: "13px", color: "#64748b" }}>
-                          {ls.LyDo || ls.NhanXet || "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="modern-table-card ls-timeline-khung">
+                <LichSuTimeline
+                  items={goi.LichSu.map((ls) => ({
+                    key: ls.Id,
+                    ...tachNgayGio(parseNgay(ls.NgayThucHien)),
+                    tieuDe: `${ls.HanhDongText || TEN_HANH_DONG_TO_TRINH[ls.HanhDong] || `Hành động ${ls.HanhDong}`}${ls.SoHoSoTraVe ? ` (${ls.SoHoSoTraVe} hồ sơ)` : ""}`,
+                    moTa: ls.LyDo || ls.NhanXet,
+                    nguoi: ls.TenNguoiThucHien,
+                  }))}
+                />
               </div>
             </>
           )}

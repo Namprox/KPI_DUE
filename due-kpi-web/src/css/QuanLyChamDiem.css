@@ -1118,22 +1118,6 @@ button.cd-chip:hover {
   margin-bottom: 4px;
 }
 
-.cd-ls-dong {
-  font-size: 13px;
-  color: #6b7086;
-  line-height: 1.6;
-}
-
-.cd-ls-thoi-gian {
-  color: #1f2333;
-  font-variant-numeric: tabular-nums;
-}
-
-.cd-ls-diem {
-  color: #1f2333;
-  font-weight: 600;
-}
-
 .cdm-the {
   display: flex;
   align-items: stretch;

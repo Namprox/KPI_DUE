@@ -15,7 +15,8 @@ import MinhChungThanhTichRow from "../../components/KeKhaiThanhTich/MinhChungTha
 import TongHopLoaiPanel from "../../components/KeKhaiThanhTich/TongHopLoaiPanel";
 import DongCoVanDeBanner from "../../components/KeKhaiThanhTich/DongCoVanDeBanner";
 import { useMinhChungThanhTichPreview } from "../../hooks/useMinhChungThanhTichPreview";
-import { formatNgayGio } from "../../utils/phieuApi";
+import { formatNgayGio, parseNgay } from "../../utils/phieuApi";
+import LichSuTimeline, { tachNgayGio } from "../../components/Common/LichSuTimeline";
 import {
   choPhepDuyet,
   choPhepXetDong,
@@ -865,40 +866,20 @@ const ChiTietDuyetThanhTich = () => {
               Chưa có thao tác nào được ghi nhận
             </div>
           ) : (
-            <div className="table-scroll">
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: "18%" }}>Thời điểm</th>
-                    <th style={{ width: "18%" }}>Hành động</th>
-                    <th style={{ width: "24%" }}>Người thực hiện</th>
-                    <th>Thay đổi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lichSu.map((ls) => (
-                    <tr key={ls.Id}>
-                      <td className="cd-ls-thoi-gian">
-                        {formatNgayGio(ls.NgayThucHien)}
-                      </td>
-                      <td>
-                        {TEN_HANH_DONG_TT[ls.HanhDong] ||
-                          `Hành động ${ls.HanhDong}`}
-                      </td>
-                      <td>{ls.TenNguoiThucHien || "-"}</td>
-                      <td>
-                        {ls.MoTa && <div>{ls.MoTa}</div>}
-                        {(ls.DiemTruoc != null || ls.DiemSau != null) && (
-                          <div className="cd-ls-diem">
-                            Điểm: {formatDiem(ls.DiemTruoc)} →{" "}
-                            {formatDiem(ls.DiemSau)}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="ls-timeline-khung">
+              <LichSuTimeline
+                items={lichSu.map((ls) => ({
+                  key: ls.Id,
+                  ...tachNgayGio(parseNgay(ls.NgayThucHien)),
+                  tieuDe: TEN_HANH_DONG_TT[ls.HanhDong] || `Hành động ${ls.HanhDong}`,
+                  moTa: ls.MoTa,
+                  phu:
+                    ls.DiemTruoc != null || ls.DiemSau != null
+                      ? `Điểm: ${formatDiem(ls.DiemTruoc)} → ${formatDiem(ls.DiemSau)}`
+                      : null,
+                  nguoi: ls.TenNguoiThucHien,
+                }))}
+              />
             </div>
           )}
         </div>

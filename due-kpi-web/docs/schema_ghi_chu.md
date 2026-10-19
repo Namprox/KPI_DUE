@@ -91,8 +91,8 @@ Từ đợt "Chức danh chính thức": cột `gio_nckh`, `gio_pvcd` đã **DRO
 dùng nữa vì hai mã này miễn KPI — xem §1.3). Hệ quả:
 - Điều kiện "đủ định mức giờ NCKH" khi duyệt hồ sơ do **Trưởng khoa tick tay**; hệ thống không còn gợi ý.
 - Điểm tự động NCKH (`NCKH_GIO_TY_LE`) **không đổi** — dùng `nckh_gio_nckh.gio_nckh_dinh_muc` của web NCKH.
-- Còn lại nhưng **không còn tác dụng**: `ngoai_le_dinh_muc.he_so_nckh /
-  he_so_giam_nckh / so_gio_them_nckh / he_so_giam_pvcd / mien_nckh`; `phieu_danh_gia.gio_nckh_dinh_muc_ap_dung /
+- Còn lại nhưng **không còn tác dụng**: toàn bộ bảng `ngoai_le_dinh_muc` (từ 2026-10-16 không còn chỗ nào đọc —
+  xem đoạn "Ngoại lệ định mức đã ngừng" ở §13.10); `phieu_danh_gia.gio_nckh_dinh_muc_ap_dung /
   gio_pvcd_dinh_muc_ap_dung / he_so_nckh_ap_dung` (phiếu mới lưu NULL).
 - `chuc_vu.ty_le_dinh_muc_nckh` (+ CHECK `chk_chuc_vu_tldm_nckh`) **đã DROP** (2026-09-26), cùng field
   JSON `ty_le_dinh_muc_nckh` của `api/chucvu`. Tỷ lệ định mức theo chức vụ chỉ còn `ty_le_dinh_muc_giang`.
@@ -138,8 +138,8 @@ dùng nữa vì hai mã này miễn KPI — xem §1.3). Hệ quả:
   - **Chốt phiếu** (`sp_dinh_muc_lay_context_ap_dung`): **chỉ áp 1 chức vụ có mức giảm lớn nhất** quy ra giờ — ứng viên là
     chức vụ snapshot (`phieu.id_chuc_vu`, NULL → chức vụ chính) ∪ mọi chức vụ **giờ cố định** người đó giữ tại
     `ngay_ket_thuc` của năm (mọi đơn vị) ∪ chức vụ chưa cấu hình giữ tại ngày đó. Loại tỷ lệ giảm `gốc × (1 − tỷ lệ)`,
-    loại giờ giảm `giờ`; hoà → snapshot. Định mức sau chức vụ = `gốc × tỷ lệ` hoặc `max(0, gốc − giờ)`, rồi áp ngoại lệ như
-    cũ. Ứng viên chưa cấu hình → `ArgumentException` (chốt 400). `phieu.id_chuc_vu` **không đổi** (vẫn resolve theo tỷ lệ
+    loại giờ giảm `giờ`; hoà → snapshot. Định mức sau chức vụ = `gốc × tỷ lệ` hoặc `max(0, gốc − giờ)` (không
+    còn áp ngoại lệ từ 2026-10-16). Ứng viên chưa cấu hình → `ArgumentException` (chốt 400). `phieu.id_chuc_vu` **không đổi** (vẫn resolve theo tỷ lệ
     thấp nhất — cột này định tuyến HT duyệt qua `fn_chuc_vu_can_ht_duyet`). Ví dụ gốc 270: TK 0,3 + CTCĐ 44h → KPI 37h,
     chốt 81h (khác nhau có chủ đích).
   - **API cũ** `api/chucvu` POST / PUT: chỉ còn mã / tên / trạng thái; gửi lại đúng giá trị giảm trừ cũ thì bỏ qua, đổi
@@ -510,6 +510,14 @@ phiếu đánh giá" ở cuối mục này).
 | `ty_le_giam` | `ReductionPercentage` | Tỷ lệ định mức, đơn vị **%** (vd 85) | — (`chuc_vu.ty_le_dinh_muc_nckh` đã DROP, xem §2.2) |
 | `gio_nckh_dinh_muc` | `RequiredHours` | Định mức giờ NCKH phải đạt (vd 108) | — (`dinh_muc_giang_vien.gio_nckh` đã DROP, xem §2.2) |
 | `gio_nckh_quy_doi` | `ConvertedHours` | Giờ NCKH quy đổi thực tế (vd 100.02) | `gio_thuc_hien_gv.gio_nckh_thuc_te` |
+| `la_tro_giang_tap_su` | `Intern` (**tên tạm**) | `BIT NULL`: 1 = Trợ giảng / phục vụ giảng dạy / chuyên viên tập sự. Chỉ có tác dụng khi định mức ≤ 0 (xem "Điểm đi vào phiếu") | — |
+
+⚠️ **`Intern` là TÊN TẠM** (đợt 2026-10-19), chưa xác nhận với phía NCKH. Sửa tên: chỉ đổi chuỗi trong
+`[JsonProperty("Intern")]` ở `Models/Nckh/NckhScienceScoringDto.cs`, deploy, đồng bộ lại. Tên sai thì
+Json.NET bỏ qua trường → cột NULL → GV định mức 0 nhận **0 điểm** (an toàn: như trước đợt), và
+`LyDoDiemTuDong` báo "chưa có thông tin…". Kiểm bằng KT1 của `update_database.sql` đợt này
+(bản sao `Tests/update_database_2026-10-19_dinh_muc_nckh_0_intern.sql`). Nếu API trả ngược nghĩa (true =
+phải làm NCKH), phủ định giá trị ở `NckhGioNckhDal.StreamRows`, không sửa SQL.
 
 ⚠️ **API KHÔNG NHẬN THAM SỐ LỌC.** Đã kiểm chứng: `?nam=2025` và `?nam=2026` trả kết quả
 GIỐNG HỆT NHAU (326 dòng, `Year` trải 2021–2026). Hệ quả — khác hẳn `sp_nckh_dong_bo`:
@@ -533,9 +541,10 @@ Với `nckh_ho_so`: hai luồng đồng bộ độc lập, không đảm bảo t
 User NCKH chưa khớp vẫn được liệt kê với `IdNhanVien = null`.
 
 Hai cột DẪN XUẤT do `sp_nckh_gio_nckh_list` tính, KHÔNG lưu trong bảng:
-`dat_dinh_muc` = `gio_nckh_quy_doi >= gio_nckh_dinh_muc` (thiếu 1 trong 2 số → 0) và
-`ty_le_hoan_thanh` = quy đổi/định mức × 100, **NULL khi định mức ≤ 0** (tránh chia 0 —
-dữ liệu thực tế CÓ dòng định mức = 0).
+`dat_dinh_muc` = **đúng điều kiện điểm tối đa** của `NCKH_GIO_TY_LE`: định mức > 0 → `gio_nckh_quy_doi
+>= gio_nckh_dinh_muc`; định mức ≤ 0 → `la_tro_giang_tap_su = 0` (miễn); còn lại (thiếu số, cờ 1 / NULL)
+→ 0. Và `ty_le_hoan_thanh` = quy đổi/định mức × 100, **NULL khi định mức ≤ 0** (tránh chia 0 —
+dữ liệu thực tế CÓ dòng định mức = 0: năm 2026 có 35 dòng, 2025 có 30 dòng).
 
 ⚠️ **PHẠM VI — đã chốt với người dùng:** đồng bộ KHÔNG ghi gì vào `gio_thuc_hien_gv`.
 Cột `gio_nckh_quy_doi` ở đây và `gio_thuc_hien_gv.gio_nckh_thuc_te` (`nguon = 2: Đồng bộ
@@ -559,7 +568,12 @@ Dùng lại **khung chấm điểm tự động** đã có, không viết đư�
   | `> 75%` và `< 100%` | `@diem_toi_da * 0.75` | 30 |
   | `> 50%` và `<= 75%` | `@diem_toi_da * 0.50` | 20 |
   | `<= 50%` | `0` | 0 |
+  | Định mức `<= 0`, `la_tro_giang_tap_su = 0` (**miễn NCKH**) | `@diem_toi_da` (coi như 100%) | 40 |
+  | Định mức `<= 0`, `la_tro_giang_tap_su = 1` hoặc NULL | `0` (coi như 0%) | 0 |
 
+  Hai dòng cuối (đợt 2026-10-19): định mức ≤ 0 không chia được nên điểm do cờ trợ giảng / phục vụ giảng
+  dạy / chuyên viên tập sự quyết định. So sánh `= 0` nên NULL (API chưa trả / sai tên trường) ra 0 điểm.
+  Trước đợt này mọi định mức ≤ 0 đều 0 điểm trong khi nhãn `dat_dinh_muc` lại báo "Đạt".
   Vượt định mức vẫn chặn trần ở `@diem_toi_da`. **Đúng 50% rơi vào bậc 0đ** (bậc trên là
   "> 50%"). Nhờ dùng chung 1 hàm nên **cả ba luồng có ngay**: chấm khi GV nộp phiếu
   (`sp_phieu_cham_tu_dong_apply`), endpoint `POST api/phieu/{id}/tong-hop-tu-dong`, và
@@ -584,9 +598,15 @@ Dùng lại **khung chấm điểm tự động** đã có, không viết đư�
   tiết **không tham gia tính điểm**, chỉ để hiển thị. Hai luồng chấm thật
   (`sp_phieu_cham_tu_dong_apply`, `POST api/phieu/{id}/tong-hop-tu-dong`) không trả dòng nguồn.
 - Thiếu dữ liệu → **0 điểm** (không phải NULL — NULL ở hàm này nghĩa là "mã chưa hỗ trợ",
-  engine sẽ giữ nguyên điểm cũ): không có dòng cho (GV, năm), `gio_nckh_dinh_muc` NULL
-  hoặc ≤ 0, hoặc `gio_nckh_quy_doi` NULL. Lưu ý định mức ≤ 0 là **dữ liệu thật** (GV được
-  miễn NCKH) chứ không phải lỗi — cùng ca mà `ty_le_hoan_thanh` trả NULL ở mục trên.
+  engine sẽ giữ nguyên điểm cũ): không có dòng cho (GV, năm), `gio_nckh_dinh_muc` NULL,
+  hoặc `gio_nckh_quy_doi` NULL. Định mức ≤ 0 **không** thuộc nhóm này: đó là **dữ liệu thật**,
+  chấm theo cờ `la_tro_giang_tap_su` (bảng trên) — cùng ca mà `ty_le_hoan_thanh` trả NULL ở mục trên.
+- ⚠️ **BẤT BIẾN "miễn":** điều kiện `dinh_muc IS NOT NULL AND dinh_muc <= 0 AND la_tro_giang_tap_su = 0`
+  có ở 4 nơi: nhánh `NCKH_GIO_TY_LE` của `fn_nckh_diem_tu_dong`, `dat_dinh_muc` của `fn_nckh_gio_chi_tiet`
+  và `sp_nckh_gio_nckh_list`, cột `mien` của `fn_ty_le_hoan_thanh_nckh_khoa`. Sửa một phải sửa cả bốn.
+- `LyDoDiemTuDong` (`BLL/DiemTuDongDienGiai.cs`) cho định mức ≤ 0 có 3 câu: miễn → "được điểm tối đa"
+  (vẫn có lý do dù điểm tối đa, vì `TyLeHoanThanh` NULL nên FE không tự diễn giải được); cờ 1 → "thuộc
+  nhóm trợ giảng…"; cờ NULL → "chưa có thông tin…" (dấu hiệu tên trường `Intern` sai).
 - `loai_thang_diem = 1` (Rời rạc) + 4 dòng `thang_diem` giá trị 40 / 30 / 20 / 0 ⇒ engine
   ánh xạ được `id_thang_diem_chon` để FE hiện nhãn `dieu_kien_diem`. Khác `VPGD_TUAN_THU`
   và `NVK_PHAN_CONG_KHOA` (liên tục, không có `thang_diem`) vì điểm ở đây là 4 mức rời rạc.
@@ -899,7 +919,7 @@ default). `id_nam` NULL = áp dụng mọi năm. App resolve theo thứ tự:
 `(don_vi, nam) > (don_vi, NULL) > (NULL, nam) > (NULL, NULL)`.
 
 ### 4.1. `phieu_danh_gia` — Phiếu đánh giá (Header – 1 phiếu / người / ĐƠN VỊ / năm)
-Snapshot toàn bộ định mức ÁP DỤNG (sau khi đã áp dụng các ngoại lệ) tại thời điểm chốt phiếu.
+Snapshot toàn bộ định mức ÁP DỤNG (sau giảm trừ chức vụ; ngoại lệ định mức không còn áp từ 2026-10-16) tại thời điểm chốt phiếu.
 Đảm bảo có thể truy vết kết luận xếp loại về sau ngay cả khi quy định / cấu hình thay đổi.
 
 **Khoá duy nhất — đổi ở Đợt 3 (kiêm nhiệm đa đơn vị), rồi đổi tiếp ở đợt "Đánh giá theo quý":**
@@ -1453,21 +1473,23 @@ phiếu** nên phiếu tạo trước khi gán tiêu chí sẽ không nhận mã
 - `NCKH_TY_LE_HOAN_THANH_KHOA` = "Tỷ lệ GV hoàn thành nhiệm vụ NCKH" của Khoa.
   `ty_le = D * 100 / N` với `D` = số GV hoàn thành, `N` = số GV thuộc diện tính.
   - **"Hoàn thành" dùng ĐÚNG điều kiện GV được ĐIỂM TỐI ĐA của tiêu chí cá nhân `NCKH_GIO_TY_LE`**
-    (`gio_nckh_quy_doi >= gio_nckh_dinh_muc`, tức tỷ lệ ≥ 100% — xem 3.6.8), để tỷ lệ của Khoa luôn
-    khớp với điểm cá nhân của từng GV. Đổi định nghĩa một bên mà không đổi bên kia → hai con số lệch
-    nhau và bảng đối soát vô nghĩa.
+    (`gio_nckh_dinh_muc > 0 AND gio_nckh_quy_doi >= gio_nckh_dinh_muc`, tức tỷ lệ ≥ 100% — xem 3.6.8), để
+    tỷ lệ của Khoa luôn khớp với điểm cá nhân của từng GV. Đổi định nghĩa một bên mà không đổi bên kia →
+    hai con số lệch nhau và bảng đối soát vô nghĩa. Ngoại lệ duy nhất: GV **miễn** được điểm tối đa ở
+    tiêu chí cá nhân nhưng bị loại khỏi **cả tử số lẫn mẫu số** của Khoa (xem ý "Mẫu số" bên dưới).
   - ⚠️ **BẤT BIẾN:** mệnh đề tìm dòng giờ NCKH (`TOP 1` + JOIN email LOWER+TRIM +
     `ORDER BY ma_nguoi_dung_nckh`) trong `fn_ty_le_hoan_thanh_nckh_khoa` phải GIỐNG HỆT nhánh
     `NCKH_GIO_TY_LE` của `fn_nckh_diem_tu_dong` và `fn_nckh_gio_chi_tiet` — ba nơi, sửa một phải sửa
     cả ba. Dùng `OUTER APPLY` + `TOP 1` chứ **không** `INNER JOIN` thẳng: nguồn có thể có 2 mã NCKH
     trùng email trong cùng một năm → JOIN thẳng sẽ đếm GV đó **hai lần**.
   - **Mẫu số** = toàn bộ GV của Khoa (`v_giang_vien_khoa.id_khoa`, đã cuộn Bộ môn lên Khoa) **TRỪ**
-    GV được **miễn NCKH**. "Được miễn" = `gio_nckh_dinh_muc IS NOT NULL AND <= 0` (định mức `= 0` là
-    dữ liệu thật đã khai báo) — để trong mẫu số sẽ phạt Khoa vì một điều Khoa không kiểm soát.
-    CỐ Ý **không** dùng `ISNULL(dinh_muc, 0) <= 0` như `fn_nckh_diem_tu_dong`: bên đó gộp NULL với 0
-    vì cả hai đều ra 0 điểm, còn ở đây phải TÁCH — định mức NULL / không có dòng nào là **thiếu số
-    liệu**, GV đó vẫn nằm trong mẫu số và tính là **chưa hoàn thành**. Gộp lại sẽ cho Khoa hưởng lợi
-    từ chính lỗi thiếu dữ liệu của mình.
+    GV được **miễn NCKH**. "Được miễn" = `gio_nckh_dinh_muc IS NOT NULL AND <= 0 AND
+    la_tro_giang_tap_su = 0` — đúng điều kiện miễn ở tiêu chí cá nhân (3.6.8); để trong mẫu số sẽ phạt
+    Khoa vì một điều Khoa không kiểm soát. Định mức `<= 0` mà cờ trợ giảng / tập sự = 1 hoặc NULL (cá
+    nhân 0 điểm) → **vẫn trong mẫu số**, tính là chưa hoàn thành. Tập GV đã chỉ gồm chức danh
+    GV / GVC / GVCC (`v_giang_vien_khoa`) nên thực tế hiếm gặp ca này.
+    Định mức NULL / không có dòng nào là **thiếu số liệu**, GV đó vẫn nằm trong mẫu số và tính là **chưa
+    hoàn thành**. Gộp lại sẽ cho Khoa hưởng lợi từ chính lỗi thiếu dữ liệu của mình.
   - Mốc điểm là **hằng số tuyệt đối** 20 / 15 / 10 / 0 theo văn bản (cùng khuôn `PHSV_DIEM_TB_KHOA`,
     khác khuôn `NCKH_GIO_TY_LE` vốn nhân tỉ lệ) → đổi trọng số phải sửa stored procedure. Vẫn kẹp
     trần `diem_toi_da`. **Đúng 50% rơi vào bậc 0đ** (bậc trên là "> 50%") — cùng quy ước với
@@ -3573,6 +3595,13 @@ Có ba nơi đọc hàm này, nên không nơi nào lệch nhau:
 | e) QNDB | X | 2,5 giờ / ngày **cộng vào `tong_gio`**, không trừ định mức |
 | Giảm đặc biệt | Y (`gio_giam_dac_biet`) | Trừ thẳng số giờ |
 | `ngoai_le_dinh_muc` | — | **Không** đọc, tránh trừ trùng với file |
+
+**Ngoại lệ định mức đã ngừng (2026-10-16).** Ngoài hàm này, hai chỗ cuối còn đọc `ngoai_le_dinh_muc`
+(`DinhMucGiangVienService.TinhDinhMucApDung` / `TinhGioNckhThucTe` → `api/dinh-muc-giang-vien/ap-dung`,
+`.../gio-nckh-thuc-te` và snapshot `gio_giang_dinh_muc_ap_dung` lúc chốt hồ sơ) cũng thôi đọc: định mức áp dụng
+= gốc sau giảm trừ chức vụ, `NgoaiLeApDung` luôn rỗng. FE gỡ trang `/quan-ly-ngoai-le-dinh-muc` (bookmark chuyển
+sang `/mau-giam-tru`). Bảng + `api/ngoai-le-dinh-muc` vẫn giữ (không DROP); lúc ngừng DB không còn dòng
+`trang_thai = 1`.
 
 **Đơn vị đo thời gian = tháng lịch** (`fn_so_thang_lich`): mỗi tháng đóng góp *số ngày được phủ / số ngày
 của tháng*, tính **cả ngày cuối**. Ví dụ 01/01–30/06 = 6; 01/02–31/12 = 11.

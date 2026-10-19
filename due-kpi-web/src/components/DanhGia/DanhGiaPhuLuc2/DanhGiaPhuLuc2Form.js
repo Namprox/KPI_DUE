@@ -452,8 +452,8 @@ const DanhGiaPhuLuc2Form = ({
                                   <i className="fa-solid fa-gauge-high pl2-auto-icon"></i>
                                   <span className="pl2-auto-score-label">
                                     {duKien || autoInfo.IdChiTiet == null ? "Điểm hệ thống tự tính" : "Điểm chính thức"}
+                                    {duKien && <span className="phieu-auto-du-kien">Dự kiến</span>}
                                   </span>
-                                  {duKien && <span className="phieu-auto-du-kien">Dự kiến</span>}
                                   <i className="fa-solid fa-lock pl2-auto-lock"></i>
                                   <span className="pl2-auto-score-note">
                                     {autoNote}

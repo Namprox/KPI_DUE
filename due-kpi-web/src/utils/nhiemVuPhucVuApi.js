@@ -47,7 +47,7 @@ export const urlMinhChung = (id, inline = false) =>
   `${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"}/${ROOT}/minh-chung/${encodeURIComponent(id)}/tai-ve${inline ? "?inline=1" : ""}`;
 
 export const TRANG_THAI = { 1: "Bản nháp", 2: "Chờ Khoa triển khai", 3: "Đang triển khai", 4: "Chờ duyệt báo cáo", 5: "Đã chốt", 6: "Đã hủy" };
-export const HUONG_DAN_DIEM = "Điểm trên phiếu còn mở được cập nhật khi nộp phiếu hoặc chọn Tổng hợp tự động trên phiếu KPI.";
+export const HUONG_DAN_DIEM = "Điểm sẽ được cập nhật vào phiếu KPI khi bạn nộp phiếu hoặc bấm “Tổng hợp tự động”.";
 // Server dates are Vietnam wall-clock values. Never parse them through browser timezone.
 export const ngayInput = (value) => value ? String(value).slice(0, 10) : "";
 export const gioInput = (value) => value ? String(value).slice(0, 19) : "";

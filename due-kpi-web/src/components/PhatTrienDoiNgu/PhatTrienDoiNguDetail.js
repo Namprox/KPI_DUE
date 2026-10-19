@@ -3,6 +3,7 @@ import { Dialog } from "primereact/dialog";
 import { layChiTietDoiNgu } from "../../utils/phatTrienDoiNguApi";
 import "../../css/Pages.css";
 import "../../css/PhatTrienDoiNgu.css";
+import LichSuTimeline, { tachNgayGio } from "../Common/LichSuTimeline";
 
 export const ngayDoiNgu = (value, time = false) => {
   if (!value) return "—";
@@ -41,9 +42,7 @@ export default function PhatTrienDoiNguDetail({ id, onClose, onUnavailable }) {
           <dt>Người tạo</dt><dd>{item.TenNguoiTao || "—"} · {ngayDoiNgu(item.NgayTao, true)}</dd>
         </dl>}
         <h4>Lịch sử thay đổi</h4>
-        {(data.LichSu || []).length === 0 ? <p className="ptdn-muted">Chưa có lịch sử.</p> : <ol className="ptdn-history">{data.LichSu.map((l) => <li key={l.Id}>
-          <strong>{actions[l.HanhDong] || `Hành động ${l.HanhDong}`}</strong><small>{l.TenNguoiThucHien || "—"} · {ngayDoiNgu(l.NgayThucHien, true)}</small><p>{l.MoTa}</p>
-        </li>)}</ol>}
+        <LichSuTimeline items={(data.LichSu || []).map((l) => ({ key: l.Id, ...tachNgayGio(l.NgayThucHien), tieuDe: actions[l.HanhDong] || `Hành động ${l.HanhDong}`, moTa: l.MoTa, nguoi: l.TenNguoiThucHien }))} />
       </>}
       <div className="ptdn-actions ptdn-footer"><button onClick={onClose}>Đóng</button></div>
     </div>
