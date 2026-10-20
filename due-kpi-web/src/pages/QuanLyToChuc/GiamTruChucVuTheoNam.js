@@ -1,15 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import SearchSelect from '../../components/Common/SearchSelect';
-import { canManageChucVuNam } from '../../utils/roles';
 import { fetchGiamTruChucVu, saveGiamTruChucVu, requestDanhMuc, giamTruPayload, hienThiGiamTru, nguonGiamTru, LOAI_GIAM_TRU } from '../../utils/chucVuGiamTruApi';
 import '../../css/Pages.css';
 import '../../css/QuanLyToChuc/GiamTruChucVuTheoNam.css';
 
 export default function GiamTruChucVuTheoNam() {
-  const { user } = useAuth();
-  const canManage = canManageChucVuNam(user);
+  // Quyền sửa đọc TRỌN từ ChoPhepSua của từng dòng: từ đợt 2026-10-20 nó là
+  // DuocNhap (GET api/nhan-vien-chuc-vu/quyen - gồm TP / QTP P_TCHC và người
+  // được họ ủy quyền) VÀ năm chưa đóng, nên không suy lại từ chức vụ trong token.
   const [params, setParams] = useSearchParams();
   const requestedYear = params.get('idNam');
   const [years, setYears] = useState([]);
@@ -61,7 +60,7 @@ export default function GiamTruChucVuTheoNam() {
   }, [idNam, yearExists, yearsLoaded, reload]);
 
   const edit = (item) => {
-    if (!canManage || item.ChoPhepSua !== true) return;
+    if (item.ChoPhepSua !== true) return;
     setEditing(item);
     setForm({ LoaiGiamTru: item.LoaiGiamTru || LOAI_GIAM_TRU.TY_LE,
       TyLePhanTram: item.TyLeDinhMucGiang == null ? '' : Number((item.TyLeDinhMucGiang * 100).toFixed(8)),
@@ -70,7 +69,7 @@ export default function GiamTruChucVuTheoNam() {
   };
   const save = async (event) => {
     event.preventDefault();
-    if (saving || !canManage || editing?.ChoPhepSua !== true) return;
+    if (saving || editing?.ChoPhepSua !== true) return;
     const currentGeneration = generation.current;
     setFormError('');
     try {
@@ -107,7 +106,7 @@ export default function GiamTruChucVuTheoNam() {
         <td>{item.DaCauHinh ? hienThiGiamTru(item) : '—'}</td><td>{item.GhiChuDieuKien || '—'}</td>
         <td><span className={!item.DaCauHinh ? 'gtcv-missing' : ''}>{nguonGiamTru(item)}</span>
           {item.HoTenNguoiCapNhat && <small className="gtcv-meta">Bản nguồn: {item.HoTenNguoiCapNhat}</small>}</td>
-        <td>{canManage && item.ChoPhepSua === true ? <button type="button" className="btn-submit gtcv-edit-btn" onClick={() => edit(item)} aria-label={`Sửa giảm trừ ${item.TenChucVu}`}><i className="fa-solid fa-pen-to-square" aria-hidden="true" /> Sửa</button> : <span className="gtcv-meta">Chỉ xem</span>}</td>
+        <td>{item.ChoPhepSua === true ? <button type="button" className="btn-submit gtcv-edit-btn" onClick={() => edit(item)} aria-label={`Sửa giảm trừ ${item.TenChucVu}`}><i className="fa-solid fa-pen-to-square" aria-hidden="true" /> Sửa</button> : <span className="gtcv-meta">Chỉ xem</span>}</td>
       </tr>)}{!items.length && <tr><td colSpan={6}>{years.length ? 'Không có chức vụ.' : 'Chưa có năm đánh giá.'}</td></tr>}</tbody>
     </table></div>}
     {editing && <div className="modal-overlay"><div className="modal-box form-modal-box gtcv-modal" role="dialog" aria-modal="true" aria-labelledby="gtcv-title">

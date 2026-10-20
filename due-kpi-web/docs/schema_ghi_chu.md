@@ -37,6 +37,8 @@ Từ đợt "Thành tích đoàn thể" (§17) có thêm cặp mã viết cứng
 Từ đợt "Phát triển đội ngũ" (§18) có thêm mã `N'P_TCHC'` (Phòng Tổ chức – Hành chính), viết cứng ở
 `fn_phat_trien_doi_ngu_thuoc_phong`, `fn_phat_trien_doi_ngu_quyen` và `sp_phat_trien_doi_ngu_nguoi_nhap_ung_vien`
 (cùng khuôn §16) — đổi mã phải sửa cả 3 chỗ.
+Từ đợt "Kê khai chức vụ - P_TCHC" (§26, 2026-10-20) `N'P_TCHC'` còn viết cứng ở `fn_nhan_vien_chuc_vu_thuoc_phong`,
+`fn_nhan_vien_chuc_vu_quyen` và `sp_nhan_vien_chuc_vu_nguoi_nhap_ung_vien` — đổi mã phải sửa thêm 3 chỗ này.
 Từ đợt "Sáng kiến" (§19) có thêm mã `N'P_KH'`, viết cứng ở `fn_sang_kien_thuoc_phong`, `fn_sang_kien_quyen` và
 `sp_sang_kien_nguoi_nhap_ung_vien` (cùng khuôn §18) — đổi mã phải sửa cả 3 chỗ.
 Từ đợt "Phân quyền đồng bộ / import" (§20) `N'P_KH'` còn viết cứng ở `fn_nckh_co_quyen_dong_bo`, và `N'P_DTBDCL'`
@@ -119,8 +121,9 @@ dùng nữa vì hai mã này miễn KPI — xem §1.3). Hệ quả:
   - **Kế thừa động:** năm chưa có bản riêng dùng bản của năm gần nhất **trước** đó, xét riêng từng chức vụ; không bao giờ
     lấy năm sau. Đọc qua `dbo.fn_chuc_vu_giam_tru_ap_dung(@id_nam)` (1 dòng / chức vụ; `id_nam_nguon` NULL = "Chưa cấu
     hình", `thieu_cau_hinh = 1` trừ chức vụ `Admin`). Đọc không ghi.
-  - **Ghi:** `sp_chuc_vu_giam_tru_save` (API `PUT api/chucvu/{id}/giam-tru/{idNam}`): ADMIN / HT / PHT theo chức vụ chính
-    (kiểm ở BLL **và** SP), năm `trang_thai <> 3`, ghi đè toàn bộ bản riêng của năm. Bất biến **"năm đã đóng không đổi"**:
+  - **Ghi:** `sp_chuc_vu_giam_tru_save` (API `PUT api/chucvu/{id}/giam-tru/{idNam}`): từ 2026-10-20 là `duoc_nhap` của
+    `fn_nhan_vien_chuc_vu_quyen` — ADMIN / HT / PHT, TP / QTP P_TCHC hoặc người được ủy quyền (§26), đọc **cả tập** chức vụ
+    chứ không chỉ chức vụ chính trong JWT (kiểm ở BLL **và** SP), năm `trang_thai <> 3`, ghi đè toàn bộ bản riêng của năm. Bất biến **"năm đã đóng không đổi"**:
     `fn_chuc_vu_giam_tru_nam_dong_anh_huong(@id_nam)` liệt kê năm đã đóng Z > Y không có bản riêng trong (Y, Z] — ghi /
     xoá ở Y khi còn cặp đó bị chặn (`ANH_HUONG_NAM_DA_DONG`).
   - **Đóng năm** (`sp_nam_danh_gia_update` 1/2 → 3, hoặc `sp_nam_danh_gia_create` với trạng thái 3) gọi
@@ -158,6 +161,10 @@ Từ Đợt 1 của kế hoạch kiêm nhiệm, bảng này không còn là "l�
 Đọc **đơn vị chính** của một người: view `dbo.v_nhan_vien_chinh` (1 dòng / nhân viên).
 Đọc **mọi đơn vị** của một người: `dbo.fn_pham_vi_don_vi`. Đừng tự viết JOIN `la_chinh = 1`
 rải rác — view tồn tại để gom hợp đồng đó về một chỗ.
+
+**Ghi** (`sp_nhan_vien_chuc_vu_create / _update / _delete`): từ 2026-10-20 quyền kiểm **trong SP** qua
+`fn_nhan_vien_chuc_vu_kiem_ghi` (P_TCHC kê khai — §26). Bảng này là nguồn phân quyền của cả hệ thống, nên mọi SP mới
+ghi vào nó phải đi qua cùng hàm chốt chặn.
 
 ---
 
@@ -4925,7 +4932,7 @@ Trigger lỗi thì cả câu lệnh nghiệp vụ rollback, đây là chủ ý (
 
 | Đợt | Bảng | Mức |
 |---|---|---|
-| A | `loai_vi_pham`, `loai_vi_pham_don_vi_ghi_nhan`, `vi_pham_giang_day`; `don_vi`, `chuc_vu`, `chuc_danh_nghe_nghiep`, `nhan_vien`, `nhan_vien_chuc_vu`, `nhan_vien_chuc_danh`; `chuc_vu_giam_tru_nam` (thêm đợt 2026-10-14) | Chi tiết |
+| A | `loai_vi_pham`, `loai_vi_pham_don_vi_ghi_nhan`, `vi_pham_giang_day`; `don_vi`, `chuc_vu`, `chuc_danh_nghe_nghiep`, `nhan_vien`, `nhan_vien_chuc_vu`, `nhan_vien_chuc_danh`; `chuc_vu_giam_tru_nam` (thêm đợt 2026-10-14); `nhan_vien_chuc_vu_nguoi_nhap` (thêm đợt 2026-10-20, §26) | Chi tiết |
 | A | `phan_hoi_sinh_vien`, `sinh_vien_hoc_vu`, `canh_bao_hoc_vu`, `gio_giang_tkb_chi_tiet` | **Tóm tắt** |
 | B | `phieu_danh_gia`, `chi_tiet_danh_gia`, `phieu_danh_gia_don_vi`, `chi_tiet_danh_gia_don_vi`; `diem_tb_phan_hoi_sinh_vien`, `khoa_dao_tao_anh_xa`, `gio_giang_tkb_lan_import`, `gio_giang_tkb`, `gio_giang_tkb_anh_xa`, `giam_tru_nhan_vien`, `giam_tru_con_nho`, 9 bảng `nckh_*` | Chi tiết |
 
@@ -5150,3 +5157,74 @@ Tệp vật lý cũ (`App_Data/uploads/nhiem-vu-khoa/`) **không** bị xoá; sc
 
 `lich_su_nhiem_vu_phuc_vu` ghi **cùng transaction** với mọi thao tác (16 mã hành động — xem `schema.sql` 25.5). Không
 đưa 5 bảng module vào `cau_hinh_audit` (giống các module nghiệp vụ khác: nhật ký riêng đã đủ chi tiết).
+
+---
+
+## 26. KÊ KHAI CHỨC VỤ — P_TCHC (2026-10-20) → `nhan_vien_chuc_vu` + `chuc_vu_giam_tru_nam`
+
+Phòng Tổ chức – Hành chính (`N'P_TCHC'`) nắm quyết định bổ nhiệm nên được giao **kê khai chức vụ**: gán chức vụ cho
+nhân viên (`api/nhan-vien-chuc-vu` POST / PUT / DELETE) và sửa hệ số giảm trừ giờ giảng theo năm
+(`PUT api/chucvu/{id}/giam-tru/{idNam}`, §1.4). **Danh mục chức vụ** (`api/chucvu`) và **năm đánh giá** giữ nguyên
+quyền ADMIN / HT / PHT. Import Excel giảm trừ (§15) vẫn chỉ ADMIN.
+
+### 26.1. Quyền — `fn_nhan_vien_chuc_vu_quyen(@id_nguoi, @chuc_vu_jwt, @don_vi_jwt)`
+
+Inline TVF, luôn đúng 1 dòng, đọc **cả tập** (đơn vị, chức vụ) qua `fn_pham_vi_don_vi`. Người không tồn tại / ngừng
+hoạt động → mọi cờ = 0.
+
+| Cờ | Ai | Được làm |
+|---|---|---|
+| `la_admin` | có chức vụ `ADMIN` | không bị 2 chốt chặn ở 26.2 |
+| `la_quan_ly` | `la_admin`, hoặc TP / QTP **trực tiếp** (`la_goc = 1`) tại P_TCHC | cấp / thu hồi ủy quyền |
+| `duoc_nhap` | `la_quan_ly`, HT / PHT (giữ quyền cũ), hoặc ủy quyền chưa thu hồi **và** hôm nay vẫn thuộc P_TCHC | gán chức vụ, sửa hệ số giảm trừ |
+
+- "Thuộc P_TCHC" = `fn_nhan_vien_chuc_vu_thuoc_phong` (dòng `nhan_vien_chuc_vu` hiệu lực hôm nay tại P_TCHC, có hay
+  không có chức vụ). Rời phòng ⇒ ủy quyền tự hết hiệu lực, không cần thu hồi.
+- Khác luật cũ: trước đây chỉ xét **chức vụ chính trong JWT**; nay người kiêm nhiệm PHT ở dòng không phải đơn vị chính
+  cũng được nhập. Migration (PHAN 5) chứng minh không ai có chức vụ chính ADMIN / HT / PHT bị mất quyền.
+- Bảng ủy quyền `nhan_vien_chuc_vu_nguoi_nhap` (`schema.sql` §26.1) — clone khuôn §18.4; tối đa 1 dòng chưa thu hồi / người
+  (`ux_nvcvnn_nv`). Nhật ký: audit trigger (§23, đợt A), **không** có bảng `lich_su_*` riêng.
+
+### 26.2. Chốt chặn khi ghi `nhan_vien_chuc_vu` — `fn_nhan_vien_chuc_vu_kiem_ghi`
+
+`nhan_vien_chuc_vu` là nguồn phân quyền (claim JWT + `fn_pham_vi_don_vi`) ⇒ quyền kiểm **trong SP**, trước mọi thông
+báo khác (người không có quyền luôn nhận `FORBIDDEN`, không dò được dòng nào tồn tại). C# chỉ chuyển danh tính xuống.
+SP gọi phải khởi tạo biến lỗi = `FORBIDDEN` trước khi đọc hàm (0 dòng vẫn bị chặn).
+
+| Thứ tự | `error_code` | Khi nào | HTTP |
+|---|---|---|---|
+| 1 | `FORBIDDEN` | `duoc_nhap = 0` (gồm thiếu danh tính — C# cũ không gửi tham số) | 403 |
+| — | (qua) | người thực hiện `la_admin = 1` | |
+| 2 | `TU_SUA` | nhân viên đích là chính người thực hiện | 403 |
+| 3 | `CHUC_VU_ADMIN` | chức vụ của dòng (mới / cũ) là `ADMIN`, **hoặc** nhân viên đích đang có dòng chưa kết thúc mang `ADMIN` | 403 |
+
+- `TU_SUA` áp cho cả HT / PHT (trước đây BGH tự sửa được dòng của mình) — muốn đổi chức vụ của chính mình thì nhờ người
+  khác có quyền.
+- Đổi đơn vị / đơn vị chính của dòng (`IdDonVi`, `LaChinh`) trước chỉ ADMIN; nay mọi người `duoc_nhap` làm được, trừ
+  người đang giữ ADMIN (chốt 3). Các nhánh lỗi cũ của SP (không tìm thấy, trùng dòng hiệu lực, bỏ đơn vị chính cuối
+  cùng…) giữ nguyên, chỉ trả `(success, message)` — DAL đọc `error_code` khi cột có mặt.
+
+### 26.3. API
+
+| Route | Quyền (SP) | Ghi chú |
+|---|---|---|
+| `GET api/nhan-vien-chuc-vu/quyen` | đã đăng nhập | `LaAdmin`, `LaQuanLy`, `DuocNhap`, `DuocUyQuyen` |
+| `GET api/nhan-vien-chuc-vu/nguoi-nhap?baoGomDaThuHoi=` | `la_quan_ly` | `ConThuocPhong = false` ⇒ ủy quyền còn nhưng hết hiệu lực |
+| `GET api/nhan-vien-chuc-vu/nguoi-nhap/ung-vien` | `la_quan_ly` | nhân sự đang thuộc P_TCHC |
+| `POST api/nhan-vien-chuc-vu/nguoi-nhap` | `la_quan_ly` | `KHONG_THUOC_PHONG` 422, `INVALID` 400 (đã có toàn quyền), `DA_DUOC_CAP` 409 |
+| `DELETE api/nhan-vien-chuc-vu/nguoi-nhap/{idNhanVien}` | `la_quan_ly` | chưa có ủy quyền → `NOT_FOUND` 404 |
+
+Controller riêng `NhanVienChucVuUyQuyenController` (route khai báo **trước** `NhanVienChucVuApi`): đặt action vào
+`NhanVienChucVuController` thì route `api/nhan-vien-chuc-vu/{id}` chọn action theo verb sẽ thấy hai ứng viên POST /
+DELETE ⇒ "Multiple actions". `GET api/chucvu/giam-tru`: `ChoPhepSua` = `duoc_nhap` (đọc qua
+`sp_nhan_vien_chuc_vu_quyen`) và năm chưa đóng. Bàn giao FE: `Docs/fe-ke-khai-chuc-vu-p-tchc.md`.
+
+### 26.4. Triển khai
+
+SQL trước, C# ngay sau. Trong khoảng giữa, C# cũ không gửi danh tính ⇒ thêm / sửa / xoá chức vụ nhân viên trả 403
+(fail-closed); màn giảm trừ vẫn chạy (tham số mới có mặc định). Script: PHAN 0 kiểm phải có đúng 1 `don_vi` mã
+`P_TCHC`; PHAN 5 kiểm đủ đối tượng, 4 SP cũ đã là bản mới, trigger audit bật, fail-closed với danh tính NULL, chốt
+`TU_SUA` / `CHUC_VU_ADMIN` với một HT / PHT mẫu, và không ai có chức vụ chính ADMIN / HT / PHT bị mất quyền.
+
+Ngoài phạm vi đợt này: sửa ngày chức vụ rơi vào năm đã đóng vẫn làm đổi phép tính tỷ lệ giờ giảng (§13.10) như trước;
+P_TCHC sửa được hệ số giảm trừ của chính chức vụ mình giữ (audit ghi lại).

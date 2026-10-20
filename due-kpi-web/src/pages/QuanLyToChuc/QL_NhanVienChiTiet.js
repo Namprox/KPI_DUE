@@ -7,16 +7,30 @@ import { apiFetch } from "../../utils/api";
 import { fetchAllNhanVien } from "../../utils/nhanVienApi";
 import SearchSelect from "../../components/Common/SearchSelect";
 import { hasRole, ROLE_SETS } from "../../utils/roles";
+import { useQuyenChucVu } from "../../context/NhanVienChucVuContext";
+import { laChucVuAdmin, thongBaoLoiChucVu } from "../../utils/nhanVienChucVuApi";
 
 const QL_NhanVienChiTiet = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const currentUser = user || {};
-  const isAdmin = hasRole(ROLE_SETS.ADMIN, currentUser);
   const canManage = hasRole(ROLE_SETS.QUAN_LY_NGUOI_DUNG, currentUser);
 
   const isEditing = !!id;
+
+  // Khối "Đơn vị & Chức vụ" KHÔNG dùng canManage: từ đợt 2026-10-20 quyền kê
+  // khai chức vụ do server trả (GET api/nhan-vien-chuc-vu/quyen) vì nó cộng cả
+  // chức vụ kiêm nhiệm và ủy quyền của P_TCHC - không đọc ra từ token.
+  const { quyen: quyenChucVu, loading: dangTaiQuyenChucVu } = useQuyenChucVu();
+  const duocNhapChucVu = quyenChucVu?.DuocNhap === true;
+  const laAdminChucVu = quyenChucVu?.LaAdmin === true;
+  // Ủy quyền còn nhưng người này đã rời P_TCHC -> quyền tự mất, không cần thu hồi.
+  const uyQuyenHetHieuLuc = quyenChucVu?.DuocUyQuyen === true && !duocNhapChucVu;
+  // Người không phải ADMIN không được thêm / sửa / xóa dòng chức vụ của CHÍNH MÌNH
+  // (403 TU_SUA), áp cả HT / PHT.
+  const laChinhMinh = isEditing && Number(id) === Number(currentUser.IdNhanVien);
+  const duocSuaChucVu = duocNhapChucVu && (laAdminChucVu || !laChinhMinh);
 
   // Tabs state: 'account' | 'title' | 'position'
   const [activeTab, setActiveTab] = useState("account");
@@ -42,6 +56,18 @@ const QL_NhanVienChiTiet = () => {
   const [chucVuList, setChucVuList] = useState([]);
   const [chucDanhList, setChucDanhList] = useState([]);
   const [quanLyList, setQuanLyList] = useState([]);
+  // Chỉ ADMIN được gán chức vụ ADMIN (403 CHUC_VU_ADMIN) - ẩn hẳn khỏi dropdown.
+  const chucVuChonDuoc = laAdminChucVu
+    ? chucVuList
+    : chucVuList.filter((cv) => !laChucVuAdmin(cv));
+  // Vì sao khối này chỉ xem - nói rõ thay vì để người dùng đi tìm nút đã bị ẩn.
+  const lyDoKhongKeKhai = uyQuyenHetHieuLuc
+    ? "Bạn đã rời Phòng Tổ chức – Hành chính, ủy quyền kê khai chức vụ không còn hiệu lực."
+    : !duocNhapChucVu
+      ? "Bạn không có quyền kê khai chức vụ - liên hệ Phòng Tổ chức – Hành chính."
+      : !duocSuaChucVu
+        ? "Không tự kê khai chức vụ cho chính mình - nhờ người khác có quyền."
+        : "";
 
   // Block A: Title History
   const [chucDanhHistory, setChucDanhHistory] = useState([]);
@@ -474,7 +500,7 @@ const QL_NhanVienChiTiet = () => {
             IdNhanVien: parseInt(id),
             IdDonVi: parseInt(newDonViId),
             IdChucVu: newChucVuId ? parseInt(newChucVuId) : null,
-            LaChinh: isAdmin ? !!newLaChinh : false,
+            LaChinh: duocNhapChucVu ? !!newLaChinh : false,
             TuNgay: newChucVuFromDate,
             DenNgay: newLaChinh
               ? null
@@ -489,11 +515,7 @@ const QL_NhanVienChiTiet = () => {
           resetAddChucVuForm();
           fetchChucVuConcurrent();
         } else {
-          alert(
-            resData.Message ||
-            resData.message ||
-            "Thêm đơn vị / chức vụ công tác thất bại!",
-          );
+          alert(thongBaoLoiChucVu(resData, "Thêm đơn vị / chức vụ công tác thất bại!"));
         }
       } catch (err) {
         alert("Có lỗi xảy ra: " + err.message);
@@ -517,7 +539,7 @@ const QL_NhanVienChiTiet = () => {
         TenDonVi: dvName,
         IdChucVu: newChucVuId ? parseInt(newChucVuId) : null,
         TenChucVu: cvName,
-        LaChinh: isAdmin ? !!newLaChinh : false,
+        LaChinh: duocNhapChucVu ? !!newLaChinh : false,
         CauHinhChoLuu: true,
         TuNgay: newChucVuFromDate,
         DenNgay: newLaChinh
@@ -559,7 +581,9 @@ const QL_NhanVienChiTiet = () => {
           DenNgay: editLaChinh ? null : editChucVuToDate || null,
           GhiChu: editChucVuNote || null,
         };
-        if (isAdmin) {
+        // Đổi đơn vị / đơn vị chính trước chỉ ADMIN; từ đợt 2026-10-20 mọi
+        // người DuocNhap đều được (backend chặn riêng dòng của người giữ ADMIN).
+        if (duocNhapChucVu) {
           payload.IdDonVi = editDonViId ? parseInt(editDonViId) : item.IdDonVi;
           payload.IdChucVu = editChucVuId ? parseInt(editChucVuId) : null;
           payload.LaChinh = !!editLaChinh;
@@ -573,11 +597,7 @@ const QL_NhanVienChiTiet = () => {
           setEditingChucVuId(null);
           fetchChucVuConcurrent();
         } else {
-          alert(
-            resData.Message ||
-            resData.message ||
-            "Cập nhật đơn vị / chức vụ thất bại!",
-          );
+          alert(thongBaoLoiChucVu(resData, "Cập nhật đơn vị / chức vụ thất bại!"));
         }
       } catch (err) {
         alert("Có lỗi xảy ra: " + err.message);
@@ -593,22 +613,22 @@ const QL_NhanVienChiTiet = () => {
         if (c.IdNvChucVu === item.IdNvChucVu) {
           return {
             ...c,
-            IdDonVi: isAdmin && editDonViId ? parseInt(editDonViId) : c.IdDonVi,
+            IdDonVi: duocNhapChucVu && editDonViId ? parseInt(editDonViId) : c.IdDonVi,
             TenDonVi:
-              isAdmin && selectedDV
+              duocNhapChucVu && selectedDV
                 ? selectedDV.ten_don_vi || selectedDV.TenDonVi
                 : c.TenDonVi,
-            IdChucVu: isAdmin
+            IdChucVu: duocNhapChucVu
               ? editChucVuId
                 ? parseInt(editChucVuId)
                 : null
               : c.IdChucVu,
-            TenChucVu: isAdmin
+            TenChucVu: duocNhapChucVu
               ? selectedCV
                 ? selectedCV.ten_chuc_vu || selectedCV.TenChucVu
                 : "Thành viên"
               : c.TenChucVu,
-            LaChinh: isAdmin ? !!editLaChinh : c.LaChinh,
+            LaChinh: duocNhapChucVu ? !!editLaChinh : c.LaChinh,
             DenNgay: editLaChinh ? null : editChucVuToDate || null,
             GhiChu: editChucVuNote || null,
           };
@@ -632,11 +652,7 @@ const QL_NhanVienChiTiet = () => {
         if (res.ok && resData.Success) {
           fetchChucVuConcurrent();
         } else {
-          alert(
-            resData.Message ||
-            resData.message ||
-            "Xóa công tác thất bại (không thể xóa đơn vị chính cuối cùng)!",
-          );
+          alert(thongBaoLoiChucVu(resData, "Xóa công tác thất bại (không thể xóa đơn vị chính cuối cùng)!"));
         }
       } catch (err) {
         alert("Có lỗi xảy ra: " + err.message);
@@ -1825,7 +1841,7 @@ const QL_NhanVienChiTiet = () => {
                       viên
                     </span>
                   </div>
-                  {canManage && !isAddingChucVu && (
+                  {duocSuaChucVu && !isAddingChucVu && (
                     <button
                       type="button"
                       className="btn-add-new"
@@ -1841,6 +1857,28 @@ const QL_NhanVienChiTiet = () => {
                     </button>
                   )}
                 </div>
+
+                {!dangTaiQuyenChucVu && lyDoKhongKeKhai && (
+                  <div
+                    role="status"
+                    style={{
+                      marginBottom: "15px",
+                      padding: "10px 12px",
+                      borderRadius: "6px",
+                      background: "#fff8e9",
+                      border: "1px solid #f3e2bd",
+                      color: "#92611d",
+                      fontSize: "13px",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    <i
+                      className="fa-solid fa-circle-info"
+                      style={{ marginRight: "6px" }}
+                    ></i>
+                    {lyDoKhongKeKhai}
+                  </div>
+                )}
 
                 {isLoadingChucVu ? (
                   <div style={{ padding: "10px 0", color: "#666" }}>
@@ -1919,7 +1957,7 @@ const QL_NhanVienChiTiet = () => {
                                   label:
                                     "(Thành viên - không giữ chức vụ quản lý)",
                                 },
-                                ...chucVuList.map((cv) => ({
+                                ...chucVuChonDuoc.map((cv) => ({
                                   value: cv.id_chuc_vu || cv.IdChucVu,
                                   label: cv.ten_chuc_vu || cv.TenChucVu,
                                 })),
@@ -1929,7 +1967,7 @@ const QL_NhanVienChiTiet = () => {
                           </div>
                         </div>
 
-                        {isAdmin && (
+                        {duocNhapChucVu && (
                           <div
                             style={{
                               display: "flex",
@@ -2243,7 +2281,7 @@ const QL_NhanVienChiTiet = () => {
                             >
                               GHI CHÚ
                             </th>
-                            {canManage && (
+                            {duocSuaChucVu && (
                               <th
                                 style={{
                                   padding: "10px",
@@ -2261,7 +2299,7 @@ const QL_NhanVienChiTiet = () => {
                           {chucVuConcurrent.length === 0 ? (
                             <tr>
                               <td
-                                colSpan={canManage ? 7 : 6}
+                                colSpan={duocSuaChucVu ? 7 : 6}
                                 style={{
                                   padding: "15px",
                                   textAlign: "center",
@@ -2289,7 +2327,7 @@ const QL_NhanVienChiTiet = () => {
                                       color: "#334155",
                                     }}
                                   >
-                                    {isEditingRow && isAdmin ? (
+                                    {isEditingRow && duocNhapChucVu ? (
                                       <SearchSelect
                                         value={editDonViId}
                                         onChange={(v) => setEditDonViId(v)}
@@ -2360,7 +2398,7 @@ const QL_NhanVienChiTiet = () => {
 
                                   {/* Cột Chức vụ */}
                                   <td style={{ padding: "10px" }}>
-                                    {isEditingRow && isAdmin ? (
+                                    {isEditingRow && duocNhapChucVu ? (
                                       <SearchSelect
                                         value={editChucVuId}
                                         onChange={(v) => setEditChucVuId(v)}
@@ -2369,7 +2407,7 @@ const QL_NhanVienChiTiet = () => {
                                             value: "",
                                             label: "(Thành viên)",
                                           },
-                                          ...chucVuList.map((cv) => ({
+                                          ...chucVuChonDuoc.map((cv) => ({
                                             value: cv.id_chuc_vu || cv.IdChucVu,
                                             label:
                                               cv.ten_chuc_vu || cv.TenChucVu,
@@ -2503,7 +2541,7 @@ const QL_NhanVienChiTiet = () => {
                                   </td>
 
                                   {/* Cột Thao tác */}
-                                  {canManage && (
+                                  {duocSuaChucVu && (
                                     <td
                                       style={{
                                         padding: "10px",

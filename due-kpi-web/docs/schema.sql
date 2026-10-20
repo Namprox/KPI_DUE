@@ -1709,6 +1709,7 @@ INSERT INTO cau_hinh_audit (ten_bang, muc_ghi, dang_bat, dot_trien_khai, cot_bo_
     (N'nhan_vien_chuc_vu',             1, 1, 'A', NULL, N'Nhân sự'),
     (N'nhan_vien_chuc_danh',           1, 1, 'A', NULL, N'Nhân sự'),
     (N'chuc_vu_giam_tru_nam',          1, 1, 'A', NULL, N'Nhân sự — giảm trừ giờ giảng theo năm (đợt 2026-10-14)'),
+    (N'nhan_vien_chuc_vu_nguoi_nhap',  1, 1, 'A', NULL, N'Nhân sự — ủy quyền P_TCHC kê khai chức vụ (đợt 2026-10-20, §26)'),
     -- Đợt A — import thô lớn: TÓM TẮT
     (N'phan_hoi_sinh_vien',            2, 1, 'A', NULL, N'Import thô lớn'),
     (N'sinh_vien_hoc_vu',              2, 1, 'A', NULL, N'Import thô lớn (MERGE: tối đa 3 dòng / câu lệnh)'),
@@ -4021,4 +4022,42 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_lsnvpv_nhiem_vu' AND 
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_dcnvkcmc_ct' AND object_id = OBJECT_ID(N'dbo.doi_chieu_nhiem_vu_khoa_cu_minh_chung'))
     CREATE INDEX ix_dcnvkcmc_ct ON dbo.doi_chieu_nhiem_vu_khoa_cu_minh_chung(id_chi_tiet);
+GO
+
+-- 26. KE KHAI CHUC VU - P_TCHC (dot 2026-10-20).
+--     P_TCHC gan chuc vu cho nhan vien (nhan_vien_chuc_vu) + sua he so giam tru theo nam
+--     (chuc_vu_giam_tru_nam). Quyen: dbo.fn_nhan_vien_chuc_vu_quyen (procedure.sql "KE KHAI CHUC VU -
+--     P_TCHC"). Nghiep vu: schema_ghi_chu.md muc 26. An toan khi chay lai: chi tao khi CHUA co.
+
+-- 26.1. Uy quyen nhap lieu - TP / QTP cua P_TCHC (hoac ADMIN) cap cho nhan su cua phong (clone 18.4).
+--       Quyen chi co hieu luc khi nguoi duoc cap HOM NAY van thuoc P_TCHC
+--       (fn_nhan_vien_chuc_vu_thuoc_phong) -> roi phong thi tu mat quyen, khong can thu hoi.
+--       Thu hoi = da_thu_hoi = 1 (giu dong lam lich su); cap lai = dong moi. Nhat ky: audit trigger
+--       (cau_hinh_audit muc 5.3), KHONG co bang lich_su_* rieng.
+IF OBJECT_ID(N'dbo.nhan_vien_chuc_vu_nguoi_nhap', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.nhan_vien_chuc_vu_nguoi_nhap (
+        id               INT           IDENTITY(1,1) NOT NULL,
+        id_nhan_vien     INT           NOT NULL,
+        id_nguoi_cap     INT           NOT NULL,
+        ngay_cap         DATETIME      NOT NULL CONSTRAINT df_nvcvnn_ngay_cap DEFAULT GETDATE(),
+        ghi_chu          NVARCHAR(500) NULL,
+        da_thu_hoi       BIT           NOT NULL CONSTRAINT df_nvcvnn_thu_hoi  DEFAULT 0,
+        id_nguoi_thu_hoi INT           NULL,
+        ngay_thu_hoi     DATETIME      NULL,
+        CONSTRAINT pk_nvcvnn            PRIMARY KEY (id),
+        CONSTRAINT fk_nvcvnn_nv         FOREIGN KEY (id_nhan_vien)     REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvcvnn_nguoi_cap  FOREIGN KEY (id_nguoi_cap)     REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_nvcvnn_nguoi_th   FOREIGN KEY (id_nguoi_thu_hoi) REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT chk_nvcvnn_thu_hoi   CHECK ((da_thu_hoi = 0 AND ngay_thu_hoi IS NULL AND id_nguoi_thu_hoi IS NULL)
+                                            OR (da_thu_hoi = 1 AND ngay_thu_hoi IS NOT NULL AND id_nguoi_thu_hoi IS NOT NULL))
+    );
+    PRINT N'[TAO] dbo.nhan_vien_chuc_vu_nguoi_nhap';
+END
+GO
+
+-- 26.2. Index (filtered -> QUOTED_IDENTIFIER ON). ux_nvcvnn_nv: toi da MOT uy quyen chua thu hoi / nguoi
+--       (SP kiem tuong minh de tra DA_DUOC_CAP; index la lop chan cuoi).
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ux_nvcvnn_nv' AND object_id = OBJECT_ID(N'dbo.nhan_vien_chuc_vu_nguoi_nhap'))
+    CREATE UNIQUE INDEX ux_nvcvnn_nv ON dbo.nhan_vien_chuc_vu_nguoi_nhap(id_nhan_vien) WHERE da_thu_hoi = 0;
 GO

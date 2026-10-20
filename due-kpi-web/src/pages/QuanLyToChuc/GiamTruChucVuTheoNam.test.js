@@ -4,11 +4,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Page from './GiamTruChucVuTheoNam';
 import { apiFetch } from '../../utils/api';
-import { useAuth } from '../../context/AuthContext';
 import { giamTruPayload, hienThiGiamTru, LOAI_GIAM_TRU } from '../../utils/chucVuGiamTruApi';
 
 jest.mock('../../utils/api', () => ({ apiFetch: jest.fn() }));
-jest.mock('../../context/AuthContext', () => ({ useAuth: jest.fn() }));
 const response = (body, status = 200) => ({ ok: status === 200, status, json: async () => body });
 let rows;
 let years;
@@ -20,7 +18,6 @@ const selectYear = (label) => {
 };
 beforeEach(() => {
   Element.prototype.scrollIntoView = jest.fn();
-  useAuth.mockReturnValue({ user: { MaChucVu: ' pht ' } });
   failSave = null;
   years = [{ IdNam: 2029, TrangThai: 1 }, { IdNam: 2028, TrangThai: 2 }, { IdNam: 2027, TrangThai: 2 }, { IdNam: 2026, TrangThai: 3 }];
   rows = [
@@ -72,13 +69,12 @@ test.each([
   expect(apiFetch.mock.calls.filter(([url]) => url === 'chucvu/giam-tru?idNam=2028')).toHaveLength(2);
 });
 
-test.each([
-  { MaChucVu: 'GV' }, { MaChucVu: 'GV', DonVi: [{ MaChucVu: 'HT' }] },
-])('vai trò chính không đủ quyền chỉ xem dù có kiêm nhiệm', async (user) => {
-  useAuth.mockReturnValue({ user });
+// Đợt 2026-10-20: quyền sửa đến TRỌN từ ChoPhepSua của server (DuocNhap - gồm
+// TP / QTP P_TCHC và người được ủy quyền - và năm chưa đóng). Trang không được
+// suy lại từ chức vụ trong token, nếu không chuyên viên được ủy quyền mất nút.
+test('mở nút sửa theo ChoPhepSua, không suy từ chức vụ trong token', async () => {
   show();
-  await screen.findByText('Trưởng khoa');
-  expect(screen.queryByRole('button', { name: /Sửa giảm trừ/ })).not.toBeInTheDocument();
+  expect(await screen.findByRole('button', { name: 'Sửa giảm trừ Trưởng khoa' })).toBeInTheDocument();
 });
 
 test('ChoPhepSua từ server khóa ADMIN; deep link giữ đúng năm', async () => {

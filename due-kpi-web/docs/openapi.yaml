@@ -1052,7 +1052,9 @@ paths:
         - ChucVu
       summary: Tao / ghi de BAN RIENG cau hinh giam tru cua (chuc vu, nam) (dot 2026-10-14)
       description: >-
-        Chi ADMIN / HT / PHT (chuc vu chinh trong JWT; kiem o BLL va SP). Ghi de toan bo: LoaiGiamTru bat
+        Quyen (dot 2026-10-20): DuocNhap cua GET api/nhan-vien-chuc-vu/quyen - ADMIN / HT / PHT, TP / QTP
+        P_TCHC hoac nguoi duoc uy quyen con thuoc P_TCHC; doc CA TAP chuc vu, kiem o BLL va SP; con lai 403
+        FORBIDDEN. Ghi de toan bo: LoaiGiamTru bat
         buoc; loai ty le -> TyLeDinhMucGiang [0, 1] hoac null, khong GioGiamTruNam; loai gio co dinh ->
         GioGiamTruNam bat buoc [0, 9999.99], khong TyLeDinhMucGiang. Nam da dong -> 409 NAM_DA_DONG.
         Luu o nam nay ma lam doi cau hinh hieu luc cua mot nam DA DONG phia sau (nam do chua co ban rieng)
@@ -8777,6 +8779,155 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HoSoNhanVienResponse"
+  # ── Ke khai chuc vu - P_TCHC (dot 2026-10-20): quyen + uy quyen ────────────
+  /api/nhan-vien-chuc-vu/quyen:
+    get:
+      tags:
+        - NhanVienChucVu
+      summary: Co quyen ke khai chuc vu cua nguoi dang nhap (dot 2026-10-20)
+      description: >
+        LaQuanLy = ADMIN / TP / QTP P_TCHC (cap / thu hoi uy quyen). DuocNhap = LaQuanLy, HT / PHT, hoac
+        duoc uy quyen va van thuoc P_TCHC (gan chuc vu + sua he so giam tru theo nam). DuocUyQuyen = true
+        ma DuocNhap = false: uy quyen con nhung da roi P_TCHC.
+      operationId: nhanVienChucVuGetQuyen
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuQuyenResponse"
+  /api/nhan-vien-chuc-vu/nguoi-nhap:
+    get:
+      tags:
+        - NhanVienChucVu
+      summary: Danh sach nguoi duoc uy quyen ke khai chuc vu
+      description: >
+        ConThuocPhong = false -> uy quyen con nhung KHONG con hieu luc (nguoi da roi P_TCHC).
+        Quyen: LaQuanLy (ADMIN / TP / QTP P_TCHC).
+      operationId: nhanVienChucVuGetNguoiNhap
+      parameters:
+        - name: baoGomDaThuHoi
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuNguoiNhapListResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuNguoiNhapListResponse"
+    post:
+      tags:
+        - NhanVienChucVu
+      summary: Cap quyen ke khai chuc vu cho 1 nhan su cua P_TCHC
+      description: >
+        Nguoi nhan phai DANG thuoc P_TCHC; roi phong thi tu mat quyen. Nguoi duoc uy quyen KHONG cap
+        tiep duoc. Quyen: LaQuanLy.
+      operationId: nhanVienChucVuCapNguoiNhap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NhanVienChucVuNguoiNhapCapRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuStatusResponse"
+        "400":
+          description: Thieu IdNhanVien, ghi chu qua dai, hoac nguoi nay da co toan quyen (INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuStatusResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuStatusResponse"
+        "404":
+          description: Nhan vien khong ton tai / ngung hoat dong (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuStatusResponse"
+        "409":
+          description: Da duoc cap (DA_DUOC_CAP)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuStatusResponse"
+        "422":
+          description: Nguoi nhan khong thuoc P_TCHC (KHONG_THUOC_PHONG)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuStatusResponse"
+  /api/nhan-vien-chuc-vu/nguoi-nhap/ung-vien:
+    get:
+      tags:
+        - NhanVienChucVu
+      summary: Nhan su dang thuoc P_TCHC (chon de cap quyen ke khai chuc vu)
+      description: "LaQuanLy = dang la TP / QTP (da co toan quyen). Quyen goi: LaQuanLy."
+      operationId: nhanVienChucVuGetUngVien
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuUngVienListResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuUngVienListResponse"
+  /api/nhan-vien-chuc-vu/nguoi-nhap/{idNhanVien}:
+    delete:
+      tags:
+        - NhanVienChucVu
+      summary: Thu hoi uy quyen ke khai chuc vu (giu dong lam lich su)
+      operationId: nhanVienChucVuThuHoiNguoiNhap
+      parameters:
+        - name: idNhanVien
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuStatusResponse"
+        "403":
+          description: Khong phai ADMIN / TP / QTP P_TCHC (FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuStatusResponse"
+        "404":
+          description: Nguoi nay chua duoc cap (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NhanVienChucVuStatusResponse"
   /api/nhan-vien-chuc-vu/by-nhan-vien/{idNv}:
     get:
       tags:
@@ -8821,10 +8972,12 @@ paths:
     post:
       tags:
         - NhanVienChucVu
-      summary: Thêm quan hệ đơn vị / chức vụ cho nhân viên (Admin/BGH)
+      summary: Thêm quan hệ đơn vị / chức vụ cho nhân viên (người DuocNhap - P_TCHC / BGH / ADMIN)
       description: >-
         IdDonVi bắt buộc; IdChucVu có thể null (chỉ là thành viên đơn vị).
-        Đặt LaChinh = true để chuyển đơn vị chính — thao tác này **chỉ ADMIN**.
+        Đặt LaChinh = true để chuyển đơn vị chính. Quyền kiểm trong SP (đợt 2026-10-20): DuocNhap
+        (GET api/nhan-vien-chuc-vu/quyen); người không phải ADMIN không được ghi dòng của chính mình
+        (TU_SUA) và không được gán chức vụ ADMIN / chạm quan hệ của người đang giữ ADMIN (CHUC_VU_ADMIN).
       operationId: nhanVienChucVuCreate
       requestBody:
         required: true
@@ -8846,7 +8999,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienChucVuResponse"
         "403":
-          description: Không có quyền (Admin/BGH; riêng LaChinh = true chỉ ADMIN)
+          description: ErrorCode FORBIDDEN / TU_SUA / CHUC_VU_ADMIN
           content:
             application/json:
               schema:
@@ -8863,10 +9016,11 @@ paths:
     put:
       tags:
         - NhanVienChucVu
-      summary: Cập nhật DenNgay / GhiChu / IdDonVi / LaChinh (Admin/BGH)
+      summary: Cập nhật DenNgay / GhiChu / IdDonVi / LaChinh (người DuocNhap - P_TCHC / BGH / ADMIN)
       description: >-
-        DenNgay và GhiChu là ghi đè trực tiếp. IdDonVi/LaChinh để null = giữ nguyên;
-        đổi một trong hai **chỉ ADMIN** được phép.
+        DenNgay và GhiChu là ghi đè trực tiếp. IdDonVi/LaChinh để null = giữ nguyên. Từ đợt 2026-10-20
+        đổi IdDonVi / LaChinh không còn riêng ADMIN: người DuocNhap đều được, trừ quan hệ của người đang
+        giữ ADMIN (CHUC_VU_ADMIN). Người không phải ADMIN không sửa dòng của chính mình (TU_SUA).
       operationId: nhanVienChucVuUpdate
       parameters:
         - name: id
@@ -8895,7 +9049,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienChucVuResponse"
         "403":
-          description: Không có quyền (chỉ Admin/BGH)
+          description: ErrorCode FORBIDDEN / TU_SUA / CHUC_VU_ADMIN (kiểm trước mọi lỗi khác)
           content:
             application/json:
               schema:
@@ -8909,7 +9063,7 @@ paths:
     delete:
       tags:
         - NhanVienChucVu
-      summary: Xóa cứng bản ghi chức vụ kiêm nhiệm (Admin/BGH)
+      summary: Xóa cứng bản ghi chức vụ kiêm nhiệm (người DuocNhap - P_TCHC / BGH / ADMIN; cùng chốt TU_SUA / CHUC_VU_ADMIN)
       operationId: nhanVienChucVuDelete
       parameters:
         - name: id
@@ -8926,7 +9080,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NhanVienChucVuResponse"
         "403":
-          description: Không có quyền (chỉ Admin/BGH)
+          description: ErrorCode FORBIDDEN / TU_SUA / CHUC_VU_ADMIN (kiểm trước mọi lỗi khác)
           content:
             application/json:
               schema:
@@ -22134,6 +22288,10 @@ components:
           type: boolean
         Message:
           type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          description: Khi that bai - FORBIDDEN / TU_SUA / CHUC_VU_ADMIN (dot 2026-10-20); vang voi loi nghiep vu cu
         Item:
           $ref: "#/components/schemas/NhanVienChucVuDto"
         Items:
@@ -22141,6 +22299,138 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/NhanVienChucVuDto"
+    NhanVienChucVuQuyenResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        LaAdmin:
+          type: boolean
+        LaQuanLy:
+          type: boolean
+          description: ADMIN / TP / QTP P_TCHC - cap / thu hoi uy quyen
+        DuocNhap:
+          type: boolean
+          description: Gan chuc vu + sua he so giam tru theo nam
+        DuocUyQuyen:
+          type: boolean
+    NhanVienChucVuStatusResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+    NhanVienChucVuNguoiNhapCapRequest:
+      type: object
+      required:
+        - IdNhanVien
+      properties:
+        IdNhanVien:
+          type: integer
+        GhiChu:
+          type: string
+          nullable: true
+          maxLength: 500
+    NhanVienChucVuNguoiNhapDto:
+      type: object
+      properties:
+        Id:
+          type: integer
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        Email:
+          type: string
+          nullable: true
+        IdNguoiCap:
+          type: integer
+        TenNguoiCap:
+          type: string
+          nullable: true
+        NgayCap:
+          type: string
+          format: date-time
+        GhiChu:
+          type: string
+          nullable: true
+        DaThuHoi:
+          type: boolean
+        IdNguoiThuHoi:
+          type: integer
+          nullable: true
+        TenNguoiThuHoi:
+          type: string
+          nullable: true
+        NgayThuHoi:
+          type: string
+          format: date-time
+          nullable: true
+        ConThuocPhong:
+          type: boolean
+          description: false = da roi P_TCHC, uy quyen khong con hieu luc
+    NhanVienChucVuNguoiNhapListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/NhanVienChucVuNguoiNhapDto"
+    NhanVienChucVuUngVienDto:
+      type: object
+      properties:
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        Email:
+          type: string
+          nullable: true
+        TenChucVu:
+          type: string
+          nullable: true
+          description: Chuc vu tai P_TCHC (null = chi la thanh vien)
+        LaQuanLy:
+          type: boolean
+          description: Dang la TP / QTP cua phong (da co toan quyen)
+        DaDuocCap:
+          type: boolean
+    NhanVienChucVuUngVienListResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        Items:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/NhanVienChucVuUngVienDto"
     # ── Session 6 schemas: NhanVienChucDanh ─────────────────────────────────────
     NhanVienChucDanhDto:
       type: object

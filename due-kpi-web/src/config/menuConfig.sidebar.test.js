@@ -17,7 +17,7 @@ const expectedGroups = [
   ["Cấp Trường", "evaluationMgmt", "Duyệt KPI cấp trường", "Duyệt hồ sơ lãnh đạo|Xét xuất sắc viên chức Khoa|Theo dõi phiếu toàn trường"],
   ["Quản trị", "planMgmt", "Thiết lập KPI", "Quản lý năm đánh giá|Giảm trừ theo năm|Định mức giảng viên|Danh mục thành tích vượt trội|Danh mục loại vi phạm"],
   ["Quản trị", "criteriaMgmt", "Quản lý tiêu chí", "Nhóm tiêu chí|Tiêu chí đánh giá|Mẫu phiếu đánh giá"],
-  ["Quản trị", "uyQuyenNhapLieu", "Ủy quyền nhập liệu", "Ủy quyền nhập liệu đào tạo|Ủy quyền nhập liệu khen thưởng|Ủy quyền nhập liệu phát triển đội ngũ|Ủy quyền nhập liệu sáng kiến"],
+  ["Quản trị", "uyQuyenNhapLieu", "Ủy quyền nhập liệu", "Ủy quyền nhập liệu đào tạo|Ủy quyền nhập liệu khen thưởng|Ủy quyền nhập liệu phát triển đội ngũ|Ủy quyền nhập liệu sáng kiến|Ủy quyền kê khai chức vụ"],
   ["Quản trị", "orgMgmt", "Tổ chức & hệ thống", "Cơ cấu đơn vị|Người dùng|Chức danh nghề nghiệp|Quản lý chức vụ|Nhật ký hệ thống"],
 ];
 

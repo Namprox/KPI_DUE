@@ -7,6 +7,7 @@ import { useQuyenDaoTao } from "../context/HoatDongDaoTaoContext";
 import { useQuyenDoiNgu } from "../context/PhatTrienDoiNguContext";
 import { useQuyenSangKien } from "../context/SangKienContext";
 import { useQuyenKhenThuong } from "../context/KhenThuongDotXuatContext";
+import { useQuyenChucVu } from "../context/NhanVienChucVuContext";
 
 import { useQuyenNhiemVuPhucVu } from "../context/NhiemVuPhucVuContext";
 
@@ -63,15 +64,16 @@ const RequireRole = ({ children }) => {
   const sangKien = useQuyenSangKien();
   const khenThuong = useQuyenKhenThuong();
   const nhiemVuPhucVu = useQuyenNhiemVuPhucVu();
+  const chucVu = useQuyenChucVu();
   const rule = findRouteRule(location.pathname);
 
   if (loading) return <div className="page-container">Đang tải thông tin tài khoản...</div>;
   if (rule?.serverPermission) {
-    const permission = rule.serverPermissionSource === "nhiemVuPhucVu" ? nhiemVuPhucVu : rule.serverPermissionSource === "khenThuong" ? khenThuong : rule.serverPermissionSource === "sangKien" ? sangKien : rule.serverPermissionSource === "doiNgu" ? doiNgu : daoTao;
+    const permission = rule.serverPermissionSource === "nhiemVuPhucVu" ? nhiemVuPhucVu : rule.serverPermissionSource === "khenThuong" ? khenThuong : rule.serverPermissionSource === "sangKien" ? sangKien : rule.serverPermissionSource === "doiNgu" ? doiNgu : rule.serverPermissionSource === "chucVu" ? chucVu : daoTao;
     if (permission.loading) return <div className="page-container">Đang tải quyền truy cập...</div>;
     if (permission.error) return <LoiTaiQuyen message={permission.error} onRetry={permission.refresh} />;
   }
-  if (!canAccessPath(location.pathname, user, daoTao.quyen, doiNgu.quyen, sangKien.quyen, khenThuong.quyen, nhiemVuPhucVu.quyen)) {
+  if (!canAccessPath(location.pathname, user, daoTao.quyen, doiNgu.quyen, sangKien.quyen, khenThuong.quyen, nhiemVuPhucVu.quyen, chucVu.quyen)) {
     const khongDanhGia = findRouteRule(location.pathname)?.personalKpi &&
       Array.isArray(user?.DonVi) && user.DonVi.some((dv) => dv?.LoaiDoiTuong === 0) &&
       !coDanhGiaKpiCaNhan(user);
