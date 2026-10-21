@@ -6,7 +6,7 @@ const haiChuSo = (n) => String(n).padStart(2, "0");
 /** Date hoặc chuỗi ngày → { ngay: "dd/mm/yyyy", gio: "HH:mm", moc } theo giờ trình duyệt. */
 export const tachNgayGio = (value) => {
   const date = value instanceof Date ? value : value ? new Date(value) : null;
-  if (!date || Number.isNaN(date.getTime())) return { ngay: "—", gio: "" };
+  if (!date || Number.isNaN(date.getTime())) return { ngay: "-", gio: "" };
   return {
     ngay: `${haiChuSo(date.getDate())}/${haiChuSo(date.getMonth() + 1)}/${date.getFullYear()}`,
     gio: `${haiChuSo(date.getHours())}:${haiChuSo(date.getMinutes())}`,

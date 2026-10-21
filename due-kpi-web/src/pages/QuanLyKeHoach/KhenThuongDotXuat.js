@@ -126,13 +126,13 @@ export default function KhenThuongDotXuat() {
     <div className="modern-table-card"><div className="ktdx-table-scroll"><table className="custom-table" aria-label="Danh sách khen thưởng đột xuất"><thead><tr><th>STT</th><th>Viên chức / Đơn vị</th><th>Nội dung / Mức khen</th><th>Quyết định</th><th>Điểm / Quý</th>{actionColumn && <th>Thao tác</th>}</tr></thead><tbody>
       {loading || permissionLoading ? <tr><td className="ktdx-empty" colSpan={actionColumn ? 6 : 5}>Đang tải danh sách...</td></tr> : rows.length === 0 ? <tr><td className="ktdx-empty" colSpan={actionColumn ? 6 : 5}>{error ? "Không tải được danh sách." : "Chưa có ghi nhận phù hợp với bộ lọc."}</td></tr> : rows.map((r, i) => <tr key={r.IdKhenThuong}>
         <td>{((data.Page ?? filter.page) - 1) * (data.PageSize ?? filter.pageSize) + i + 1}</td>
-        <td><span className="table-person-name">{r.HoTen}</span><small>{r.MaNhanVien}</small><small>{r.TenDonVi || "—"}</small></td>
+        <td><span className="table-person-name">{r.HoTen}</span><small>{r.MaNhanVien}</small><small>{r.TenDonVi || "-"}</small></td>
         <td><button className="ktdx-text-link" onClick={() => setDetailId(r.IdKhenThuong)}>{r.NoiDung}</button><small>{r.TenMuc}</small><small>{nguonKhenThuong(r)}</small>{r.LaDongBiKhu === true && <small className="ktdx-warning">{DONG_BI_KHU}</small>}</td>
-        <td>{r.SoQuyetDinh || "—"}<small>{ngayKhenThuong(r.NgayQuyetDinh)}</small><small>{r.CoQuanKhen}</small></td><td>{formatDiem(r.Diem)} điểm<small>Quý {r.Quy}</small></td>
+        <td>{r.SoQuyetDinh || "-"}<small>{ngayKhenThuong(r.NgayQuyetDinh)}</small><small>{r.CoQuanKhen}</small></td><td>{formatDiem(r.Diem)} điểm<small>Quý {r.Quy}</small></td>
         {actionColumn && <td>{r.ChoPhepSua === true && <div className="ktdx-row-actions"><button disabled={busy} onClick={() => edit(r)}>Sửa</button><button disabled={busy} className="ktdx-danger" onClick={() => { setDeleting(r); setReason(""); setDeleteError(""); }}>Xóa</button></div>}</td>}
       </tr>)}
     </tbody></table></div>
-      <div className="table-pager ktdx-pagination"><span>{data ? `${data.TotalCount ?? 0} bản ghi · Trang ${data.Page ?? filter.page}/${Math.max(1, data.TotalPages ?? 1)}` : "—"}</span><div className="ktdx-actions">
+      <div className="table-pager ktdx-pagination"><span>{data ? `${data.TotalCount ?? 0} bản ghi · Trang ${data.Page ?? filter.page}/${Math.max(1, data.TotalPages ?? 1)}` : "-"}</span><div className="ktdx-actions">
         <SearchSelect ariaLabel="Số bản ghi mỗi trang" value={filter.pageSize} onChange={(v) => changeFilter("pageSize", Number(v))} options={[20, 50, 100, 500].map((n) => ({ value: n, label: `${n} / trang` }))} />
         <button disabled={loading || !data || filter.page <= 1} onClick={() => setFilter((p) => ({ ...p, page: p.page - 1 }))}>Trước</button><button disabled={loading || !data || filter.page >= data.TotalPages} onClick={() => setFilter((p) => ({ ...p, page: p.page + 1 }))}>Sau</button>
       </div></div>

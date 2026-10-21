@@ -97,7 +97,7 @@ export default function KhenThuongDotXuatForm({ item, idNam, namList, donViList,
           <div className="form-group"><label>Quý</label><SearchSelect ariaLabel="Quý ghi nhận" value={form.Quy} disabled={busy} onChange={(v) => change("Quy", v)} options={[{ value: "", label: "Theo ngày quyết định" }, ...[1, 2, 3, 4].map((q) => ({ value: q, label: `Quý ${q}` }))]} /></div>
           <div className="form-group ktdx-full"><label>Mức khen thưởng *</label><SearchSelect ariaLabel="Mức khen thưởng" value={form.IdMuc} searchable disabled={busy || catalog.loading || !!catalog.error}
             onChange={(v) => change("IdMuc", v)} placeholder={catalog.loading ? "Đang tải mức..." : "Chọn mức khen thưởng"}
-            options={catalog.items.map((m) => ({ value: m.IdMuc, label: `${m.TenMuc} (${formatDiem(m.DiemQuyDoi)} điểm)${m.DangSuDung === false ? " — Đã ngừng dùng" : ""}` }))} />
+            options={catalog.items.map((m) => ({ value: m.IdMuc, label: `${m.TenMuc} (${formatDiem(m.DiemQuyDoi)} điểm)${m.DangSuDung === false ? " - Đã ngừng dùng" : ""}` }))} />
             {muc && <small>Điểm theo danh mục: {formatDiem(muc.DiemQuyDoi)}. Hệ thống khử trùng nội dung trong cả năm và áp dụng trần tiêu chí.</small>}
             {catalog.error && <p role="alert" className="ktdx-error">{catalog.error} <button type="button" onClick={() => setCatalogRetry((v) => v + 1)}>Tải lại mức</button></p>}
           </div>
@@ -117,7 +117,7 @@ export default function KhenThuongDotXuatForm({ item, idNam, namList, donViList,
           </div>
           <p className="ktdx-muted">{searching ? "Đang tìm viên chức..." : !keyword.trim() && !donVi ? "Nhập từ khóa hoặc chọn đơn vị để tìm viên chức." : people.length === 0 ? "Không tìm thấy viên chức." : "Chọn viên chức trong kết quả bên dưới."}</p>
           {searchError && <p role="alert" className="ktdx-error">{searchError} <button type="button" onClick={() => setSearchRetry((v) => v + 1)}>Tìm lại</button></p>}
-          <div className="ktdx-picker-results">{people.map((p) => <button type="button" key={p.IdNhanVien} onClick={() => pick(p)} disabled={selected.some((s) => String(s.IdNhanVien) === String(p.IdNhanVien)) || (!editing && selected.length >= 500)}><strong>{p.HoTen}</strong><span>{p.MaNhanVien} · {p.TenDonVi || "—"}</span></button>)}</div>
+          <div className="ktdx-picker-results">{people.map((p) => <button type="button" key={p.IdNhanVien} onClick={() => pick(p)} disabled={selected.some((s) => String(s.IdNhanVien) === String(p.IdNhanVien)) || (!editing && selected.length >= 500)}><strong>{p.HoTen}</strong><span>{p.MaNhanVien} · {p.TenDonVi || "-"}</span></button>)}</div>
         </div>
       </fieldset>
     </form>

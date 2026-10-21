@@ -3,18 +3,18 @@ info:
   title: KPI - API Documentation
   version: 1.0.0
   description: >
-    **PHÂN QUYỀN THEO ĐƠN VỊ — quyền là một CẶP (đơn vị, chức vụ).**
+    **PHÂN QUYỀN THEO ĐƠN VỊ - quyền là một CẶP (đơn vị, chức vụ).**
 
 
     Một người có thể thuộc nhiều đơn vị cùng lúc (bảng `nhan_vien_chuc_vu`: giảng
     viên của Khoa **và** lãnh đạo của Phòng). JWT chỉ mang được **một** cặp
-    `id_don_vi` / `id_chuc_vu` — cặp của **đơn vị chính** (`la_chinh = 1`). Danh sách
+    `id_don_vi` / `id_chuc_vu` - cặp của **đơn vị chính** (`la_chinh = 1`). Danh sách
     đầy đủ nằm ở `GET /api/auth/me` → `DonVi[]`.
 
     Mọi điểm kiểm quyền theo đơn vị đều đối chiếu chức vụ và đơn vị **trên cùng một
     dòng** của phạm vi đó. Hệ quả cho phía gọi API:
 
-    - Giữ chức vụ ở đơn vị **không phải** đơn vị chính vẫn dùng được quyền đó —
+    - Giữ chức vụ ở đơn vị **không phải** đơn vị chính vẫn dùng được quyền đó -
       **JWT không cần đổi**, không cần đăng nhập lại.
     - Ngược lại, chức vụ ở đơn vị này **không** kéo sang đơn vị khác: `TP` của Phòng
       không có quyền `TP` trên Khoa mà họ chỉ giảng dạy (403 `FORBIDDEN_DON_VI`).
@@ -514,7 +514,7 @@ paths:
         Gui ca hai, hoac khong gui cai nao, tra 400. Khi thanh cong, access token
         va refresh token duoc set vao 2 cookie httpOnly (kpi_access_token,
         kpi_refresh_token; Path=/; SameSite=Lax; Secure khi HTTPS). Body KHONG
-        con tra Tokens — chi gom Success va User.
+        con tra Tokens - chi gom Success va User.
         Nhat ky phien (GET /api/nhat-ky/dang-nhap): that bai ghi rieng; thanh cong ghi cung
         transaction voi viec luu refresh token. IP la IP ket noi THAT - X-Forwarded-For bi bo qua
         (ca khi chan IP sau 10 lan dang nhap sai / 15 phut).
@@ -540,7 +540,7 @@ paths:
       responses:
         "200":
           description: >-
-            OK — set cookie httpOnly kpi_access_token va kpi_refresh_token.
+            OK - set cookie httpOnly kpi_access_token va kpi_refresh_token.
             Body chi gom Success va User (khong co Tokens).
           content:
             application/json:
@@ -563,7 +563,7 @@ paths:
         "403":
           description: >-
             Xac thuc dung nhung tai khoan chua duoc gan don vi chinh (khong co
-            dong nhan_vien_chuc_vu la_chinh dang hieu luc). Khong phat token —
+            dong nhan_vien_chuc_vu la_chinh dang hieu luc). Khong phat token -
             id_don_vi rong se lam moi gate phan quyen tra ve rong. Admin phai
             bo sung don vi cong tac cho tai khoan.
           content:
@@ -585,7 +585,7 @@ paths:
       responses:
         "200":
           description: >-
-            OK — set lai cookie httpOnly kpi_access_token va
+            OK - set lai cookie httpOnly kpi_access_token va
             kpi_refresh_token (da rotate). Body chi gom Success.
           content:
             application/json:
@@ -599,7 +599,7 @@ paths:
                 $ref: "#/components/schemas/AuthResponse"
         "403":
           description: >-
-            Tai khoan chua duoc gan don vi chinh — giong /api/auth/login.
+            Tai khoan chua duoc gan don vi chinh - giong /api/auth/login.
           content:
             application/json:
               schema:
@@ -612,12 +612,12 @@ paths:
       description: >-
         Doc refresh token tu cookie httpOnly kpi_refresh_token (khong nhan
         body) de thu hoi phia server, sau do xoa ca 2 cookie phien
-        (Max-Age=0). Idempotent — khong co cookie van tra 200.
+        (Max-Age=0). Idempotent - khong co cookie van tra 200.
       operationId: authLogout
       security: []
       responses:
         "200":
-          description: OK — da thu hoi refresh token va xoa cookie phien
+          description: OK - da thu hoi refresh token va xoa cookie phien
           content:
             application/json:
               schema:
@@ -637,7 +637,7 @@ paths:
       operationId: authMe
       responses:
         "200":
-          description: OK — body gom Success va User
+          description: OK - body gom Success va User
           content:
             application/json:
               schema:
@@ -1143,7 +1143,7 @@ paths:
     delete:
       tags:
         - ChucVu
-      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
+      summary: Xóa mềm - set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: chucVuDelete
       description: >-
         Chi ADMIN / HT / PHT (chuc vu chinh trong JWT) - dot 2026-10-14; vai tro khac 403
@@ -1244,7 +1244,7 @@ paths:
     delete:
       tags:
         - DonVi
-      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
+      summary: Xóa mềm - set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: donViDelete
       description: >-
         Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
@@ -1490,7 +1490,7 @@ paths:
     delete:
       tags:
         - MauDanhGia
-      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
+      summary: Xóa mềm - set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: mauDanhGiaDelete
       description: >-
         Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
@@ -1535,7 +1535,7 @@ paths:
       description: >
         QUYỀN (2026-10-06): ADMIN / HT xem mọi người, kể cả bỏ trống idNhanVien (toàn
         trường); ai cũng tự xem được (idNhanVien = chính mình); trưởng đơn vị
-        (TK / TKL / TP / QTP / GD / VT) xem nhân sự đơn vị mình + đơn vị con — bỏ trống
+        (TK / TKL / TP / QTP / GD / VT) xem nhân sự đơn vị mình + đơn vị con - bỏ trống
         idNhanVien thì danh sách bị lọc theo phạm vi đó. Còn lại → 403. Màn phiếu của
         giảng viên dùng GET /api/phieu/{id}/tu-dong.
 
@@ -1544,22 +1544,22 @@ paths:
         Mỗi phần tử Items = 1 giảng viên × 1 tiêu chí tự động.
         DiemTuDong = null nghĩa là mã công thức chưa được hỗ trợ.
 
-        PHẠM VI THỜI GIAN — tham số quy: bỏ trống (hoặc 0) = TRỌN NĂM, đúng hành vi
+        PHẠM VI THỜI GIAN - tham số quy: bỏ trống (hoặc 0) = TRỌN NĂM, đúng hành vi
         trước đây. quy = 1..4 = bản XEM TRƯỚC của phiếu quý: dùng chung
         fn_nckh_diem_tu_dong với sp_phieu_cham_tu_dong_apply (engine chạy bên trong
         POST /api/phieu-quy/{id}/nop) nên con số KHÔNG THỂ lệch với lúc nộp phiếu quý đó.
-        CHỈ 7 mã đọc bộ lọc quý — 4 mã TTVT_* và 3 mã VPVC_*; các mã còn lại khóa theo
+        CHỈ 7 mã đọc bộ lọc quý - 4 mã TTVT_* và 3 mã VPVC_*; các mã còn lại khóa theo
         năm nên vẫn trả số trọn năm. Dùng Items[].ApDungQuy để biết dòng nào thực sự
         được lọc, thay vì hardcode danh sách mã ở phía FE.
 
         MinhChung (các bản ghi nguồn đã tạo ra điểm) CHỈ được trả khi truyền
-        idNhanVien — gọi toàn trường luôn trả mảng rỗng để tránh payload quá lớn.
+        idNhanVien - gọi toàn trường luôn trả mảng rỗng để tránh payload quá lớn.
         Minh chứng dùng chung bộ vị từ với sp_nckh_dong_bo (fn_nckh_minh_chung_tu_dong)
         nên luôn khớp với cờ trong nckh_tong_hop.
 
         Riêng tiêu chí NCKH_GIO_TY_LE (điểm là kết quả một phép chia, không phải
         đạt/không đạt) có thêm DuLieuGioNckh = dòng nckh_gio_nckh đã sinh ra điểm, và
-        LyDoDiemTuDong khi điểm 0 là do dữ liệu nguồn — đủ để FE hiển thị cách tính mà
+        LyDoDiemTuDong khi điểm 0 là do dữ liệu nguồn - đủ để FE hiển thị cách tính mà
         không phải gọi thêm GET /api/nckh/gio-nckh. Hai trường này KHÔNG phụ thuộc
         idNhanVien (gọi toàn trường vẫn có).
 
@@ -1597,7 +1597,7 @@ paths:
           required: false
           description: >
             Bỏ trống hoặc 0 = trọn năm (mặc định, hành vi trước đây).
-            1..4 = chỉ dữ liệu ghi nhận trong quý đó — bản xem trước của phiếu quý.
+            1..4 = chỉ dữ liệu ghi nhận trong quý đó - bản xem trước của phiếu quý.
             Lọc theo quý ảnh hưởng ĐÚNG 7 mã: TTVT_SANG_KIEN, TTVT_KHEN_THUONG,
             TTVT_DAO_TAO, TTVT_PHONG_TRAO (lọc chi_tiet_ke_khai_thanh_tich.quy) và
             VPVC_HOAN_THANH_CV, VPVC_NOI_QUY, VPVC_CHINH_TRI (lọc vi_pham_giang_day.quy).
@@ -1976,7 +1976,7 @@ paths:
         (trang thai 4 + id_nguoi_duyet IS NOT NULL): phai de HT tra ho so ve truoc qua
         POST /api/to-trinh-khoa/{id}/ht-tra-lai.
         NGOAI LE: goi o trang thai 4 ma id_nguoi_duyet IS NULL la goi TU DONG HOAN TAT
-        (don vi khong co ho so lanh dao) — chua qua tay HT lan nao nen VAN rut dong ra
+        (don vi khong co ho so lanh dao) - chua qua tay HT lan nao nen VAN rut dong ra
         duoc, goi se tu ha ve 1 DANG_TONG_HOP.
 
         LyDo BAT BUOC.
@@ -2237,7 +2237,7 @@ paths:
         "400":
           description: >
             idMinhChung <= 0 (khong co ErrorCode), hoac
-            ErrorCode = MINH_CHUNG_KHONG_PHAI_FILE (minh chung la Link/DOI —
+            ErrorCode = MINH_CHUNG_KHONG_PHAI_FILE (minh chung la Link/DOI -
             phan hoi kem Item de FE mo thang DuongDan)
           content:
             application/json:
@@ -2458,7 +2458,7 @@ paths:
         ap dung khi them minh chung. FE dung de dat thuoc tinh accept cua input file va
         chan som file qua co / ten qua dai thay vi doi API tra 400.
         Nguon: Web.config appSettings (allowedEvidenceExtensions, maxEvidenceFileSizeKb)
-        va gioi han cot cua bang minh_chung — doc lai tu dung ham ma luong upload dung
+        va gioi han cot cua bang minh_chung - doc lai tu dung ham ma luong upload dung
         (MinhChungService) nen khong the lech cau hinh.
         LUU Y: code co TRAN CUNG pdf/png/jpg/jpeg; appSettings chi THU HEP duoc danh sach
         nay chu khong noi rong duoc, nen AllowedExtensions luon la tap con cua tran do.
@@ -2546,7 +2546,7 @@ paths:
       summary: List active community-service tasks for a chi_tiet
       description: |
         Returns all non-deleted tasks ordered by ngay_tao ASC.
-        Response includes summary header — tongDiemSnapshot, soNhiemVu, conLai (= 20 - tongDiemSnapshot).
+        Response includes summary header - tongDiemSnapshot, soNhiemVu, conLai (= 20 - tongDiemSnapshot).
         GV sees only their own phieu; Khoa sees their scope; Truong sees all.
       operationId: nhiemVuGetByChiTiet
       parameters:
@@ -3077,9 +3077,14 @@ paths:
       summary: Import phan hoi sinh vien tu file Excel (luu dong THO)
       description: >
         multipart/form-data: file Excel (9 cot: MSSV | ma_hoc_phan | ma_can_bo |
-        ho_lot | ten | cau_hoi | danh_gia | nganh | hoc_ky) + field 'namHoc' (vd 26)
-        + field 'maDonVi'. Doc file streaming va INSERT cac dong THO qua TVP; ghi de
-        toan bo du lieu tho cu cung (nam_hoc, don_vi). Diem trung binh tinh sau.
+        ho_lot | ten | cau_hoi | danh_gia | nganh/khoa | hoc_ky) + field 'namHoc' (vd 26).
+        KHONG con field 'maDonVi' (gui len thi bi bo qua): don vi cua tung dong = Khoa co
+        ten_don_vi khop cot H (viet thuong, bo khoang trang 2 dau; chi Khoa ma K_*, dang hoat dong).
+        Co gia tri cot H khong khop dung 1 Khoa (khong co / trung ten nhieu Khoa / de trong) ->
+        tu choi CA FILE: 400, ErrorCode = KHOA_KHONG_KHOP, KhoaKhongKhop liet ke gia tri can sua;
+        khong xoa / ghi gi. Doc file streaming va INSERT cac dong THO qua TVP; ghi de du lieu tho
+        cu cung nam hoc CUA CAC KHOA CO TRONG FILE (Khoa khong co trong file giu nguyen).
+        Diem trung binh tinh sau.
         QUYEN: chi ADMIN hoac TP / QTP tai P_DTBDCL (Phong Dao tao va Bao dam chat luong),
         tinh ca chuc vu kiem nhiem. Quyen duoc hoi TRUOC khi doc file (nguoi khong co quyen
         nhan 403, file khong bi doc) va SP import kiem lai (fn_phan_hoi_sinh_vien_co_quyen_import).
@@ -3093,7 +3098,6 @@ paths:
               required:
                 - file
                 - namHoc
-                - maDonVi
               properties:
                 file:
                   type: string
@@ -3105,8 +3109,6 @@ paths:
                     (magic bytes ZIP/OLE2) - doi duoi se bi tu choi 400.
                 namHoc:
                   type: integer
-                maDonVi:
-                  type: string
       responses:
         "200":
           description: OK
@@ -3117,13 +3119,14 @@ paths:
         "400":
           description: >-
             Thieu file/tham so, tep rong, sai dinh dang (chi nhan .xls/.xlsx), noi dung
-            khong khop chu ky, vuot 100 MB, file khong doc duoc, hoac khong co dong hop le
+            khong khop chu ky, vuot 100 MB, file khong doc duoc, khong co dong hop le, hoac
+            cot H co ten Khoa khong khop (ErrorCode KHOA_KHONG_KHOP + KhoaKhongKhop)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhanHoiSinhVienImportResponse"
         "403":
-          description: Forbidden — khong phai ADMIN hoac TP / QTP Phong Dao tao va Bao dam chat luong (P_DTBDCL)
+          description: Forbidden - khong phai ADMIN hoac TP / QTP Phong Dao tao va Bao dam chat luong (P_DTBDCL)
           content:
             application/json:
               schema:
@@ -5816,13 +5819,13 @@ paths:
       description: >
         Tao 1 phieu KPI cho 1 nguoi trong 1 nam TAI 1 DON VI.
         Nguoi kiem nhiem 2 don vi (vd vua la GV cua Khoa vua la Truong phong) tao
-        DUOC 2 phieu trong cung mot nam bang cach goi 2 lan voi IdDonVi khac nhau —
+        DUOC 2 phieu trong cung mot nam bang cach goi 2 lan voi IdDonVi khac nhau -
         khoa duy nhat cua phieu la (IdNam, IdNhanVien, IdDonVi). Moi phieu roi vao
         to trinh + han ngach xuat sac 20% cua dung don vi cua no.
         Bo trong IdDonVi = phieu cua don vi chinh (hanh vi cu).
         Diem tu dong (NCKH, phan hoi SV, vi pham giang day, nhiem vu Khoa) khoa theo
         (nguoi, nam) chu khong theo don vi, nen trong mot nam chi MOT phieu cua nguoi
-        do duoc cham tu dong — xem POST /api/phieu/{id}/tong-hop-tu-dong.
+        do duoc cham tu dong - xem POST /api/phieu/{id}/tong-hop-tu-dong.
       operationId: phieuDanhGiaCreate
       requestBody:
         required: true
@@ -5870,18 +5873,18 @@ paths:
         - PhieuDanhGia
       summary: List phieu awaiting Khoa evaluation
       description: >
-        GIAI ĐOẠN 2 — hàng đợi thẩm định theo **PHIẾU** (view tổng quan hồ sơ).
+        GIAI ĐOẠN 2 - hàng đợi thẩm định theo **PHIẾU** (view tổng quan hồ sơ).
         Đơn vị nào cần danh sách thao tác theo **DÒNG** thì dùng
         GET /api/tham-dinh/pending; hai endpoint bổ sung cho nhau, không thay thế nhau.
 
         Chỉ trưởng đơn vị xem được (ma_chuc_vu TK/TKL/TP), lấy theo phân quyền
         **tieu_chi_don_vi_cham**: chỉ trả phiếu (trang_thai=2) mà đơn vị của người
-        đăng nhập có ≥1 tiêu chí được giao chấm — hoặc do tiêu chí đã phân quyền cho
+        đăng nhập có ≥1 tiêu chí được giao chấm - hoặc do tiêu chí đã phân quyền cho
         đơn vị này, hoặc tiêu chí chưa phân quyền và đơn vị này là chủ quản của phiếu.
 
         Kiêm nhiệm: "đơn vị của người đăng nhập" ở đây là **mọi đơn vị mà người đó
         thực sự giữ chức vụ TK/TKL/TP** (+ cây đơn vị cấp dưới), không chỉ đơn vị
-        trong JWT — xem mục phân quyền ở đầu tài liệu. Đơn vị mà họ chỉ là thành viên
+        trong JWT - xem mục phân quyền ở đầu tài liệu. Đơn vị mà họ chỉ là thành viên
         (giảng dạy, không giữ chức vụ) **không** vào hàng đợi này.
 
         Mỗi phiếu kèm tiến độ SoTieuChiDuocGiao / SoTieuChiDaCham. Từ quy trình 4 giai
@@ -5891,7 +5894,7 @@ paths:
         Cả 2 chỉ số đều bỏ qua dòng chấm tự động (loai_nguon_diem = 2).
 
         Phiếu rời hàng đợi khi **mọi dòng** đạt trang_thai_dong = 3; lúc đó phiếu
-        **tự chuyển** sang trang_thai=3 CHO_TK_DUYET — chờ **Trưởng khoa** chốt hồ sơ qua
+        **tự chuyển** sang trang_thai=3 CHO_TK_DUYET - chờ **Trưởng khoa** chốt hồ sơ qua
         POST /api/phieu/{id}/khoa/duyet-ho-so, KHÔNG phải chờ Hiệu trưởng (HT nay duyệt
         cả gói qua POST /api/to-trinh-khoa/{id}/ht-duyet). Phiếu có thể quay lại hàng đợi
         này khi một dòng bị trả về (3 → 2). Response của
@@ -5941,12 +5944,12 @@ paths:
         - PhieuDanhGia
       summary: List ho so LANH DAO cho Hieu truong duyet (theo doi, KHONG con nut duyet le)
       description: >
-        GIAI ĐOẠN 4 — danh sách hồ sơ cấp Trường: chỉ trả phiếu ở **trang_thai = 4
+        GIAI ĐOẠN 4 - danh sách hồ sơ cấp Trường: chỉ trả phiếu ở **trang_thai = 4
         **VÀ** `can_ht_duyet = 1`** trên TOÀN TRƯỜNG, không lọc theo cây đơn vị.
 
-        ⚠️ **LUỒNG DUYỆT TÁCH ĐÔI — danh sách này nay NGẮN HƠN HẲN trước.** Chỉ còn hồ sơ
+        ⚠️ **LUỒNG DUYỆT TÁCH ĐÔI - danh sách này nay NGẮN HƠN HẲN trước.** Chỉ còn hồ sơ
         của **lãnh đạo đơn vị** (TK/TKL/PTK/PTKL/TP/PTP). KPI của nhân viên / giảng viên
-        thường chỉ cần Trưởng khoa (TK/TKL) hoặc Trưởng phòng (TP) duyệt là xong — chúng
+        thường chỉ cần Trưởng khoa (TK/TKL) hoặc Trưởng phòng (TP) duyệt là xong - chúng
         HOÀN TẤT (trạng thái 5) ngay tại bước
         POST /api/to-trinh-khoa/{id}/dong-goi và **không bao giờ** xuất hiện ở đây.
 
@@ -5959,7 +5962,7 @@ paths:
         Phiếu ở **trang_thai = 3 (CHO_TK_DUYET) KHÔNG còn xuất hiện ở đây**: quy trình 4
         giai đoạn đổi nghĩa trạng thái 3 từ CHO_HT_DUYET thành CHO_TK_DUYET, tức hồ sơ mới
         xong bước thẩm định từng dòng và đang chờ **Trưởng khoa** chốt
-        (POST /api/phieu/{id}/khoa/duyet-ho-so) — chưa tới lượt cấp Trường.
+        (POST /api/phieu/{id}/khoa/duyet-ho-so) - chưa tới lượt cấp Trường.
 
         ⚠️ Đây là view **CHỈ ĐỂ THEO DÕI**, không phải hàng đợi hành động: Hiệu trưởng
         KHÔNG duyệt / trả lại / chốt từng phiếu lẻ nữa (POST /api/phieu/{id}/truong/duyet,
@@ -5968,7 +5971,7 @@ paths:
         POST /api/to-trinh-khoa/{id}/ht-tra-lai (trả một DANH SÁCH hồ sơ về 3).
         Dùng GET /api/to-trinh-khoa để lấy hàng đợi hành động thật của HT.
 
-        Quyền: chỉ ma_chuc_vu **HT/ADMIN** — Trưởng khoa gọi vào đây bị **403**. TK muốn
+        Quyền: chỉ ma_chuc_vu **HT/ADMIN** - Trưởng khoa gọi vào đây bị **403**. TK muốn
         xem hồ sơ chờ mình duyệt thì dùng GET /api/phieu?trangThai=3: endpoint đó tự giới
         hạn cho cấp Khoa về đơn vị của người đăng nhập + đơn vị con trực tiếp.
       operationId: phieuDanhGiaGetTruongPending
@@ -6021,7 +6024,7 @@ paths:
 
         CHOT 0 DIEM KHI NOP: moi tieu chi cham tay (LoaiNguonDiem = 1) con
         diem_tu_danh_gia NULL se duoc ghi 0 trong cung transaction nop. Sau khi nop,
-        phieu KHONG con dong nao thieu diem. 0 diem KHONG bi bat minh chung —
+        phieu KHONG con dong nao thieu diem. 0 diem KHONG bi bat minh chung -
         validate minh chung chi soi cac dong GV ke khai diem > 0, va chay TRUOC
         buoc dien 0 nen khong bi anh huong. Tong diem khong doi.
 
@@ -6510,10 +6513,10 @@ paths:
         id_to_trinh cho ho so. Goi dang o trang thai 2 DA_DONG_GOI, 5 HT_TRA_VE, hoac 4
         TU DONG HOAN TAT (id_nguoi_duyet IS NULL) se bi ha ve 1 DANG_TONG_HOP: co ho so
         moi vao thi han ngach cu khong con dung. Goi da trinh HT (3) hoac da duoc HT duyet
-        THAT (4 + id_nguoi_duyet IS NOT NULL) thi chan bang TO_TRINH_DA_TRINH — khong duoc
+        THAT (4 + id_nguoi_duyet IS NOT NULL) thi chan bang TO_TRINH_DA_TRINH - khong duoc
         am tham lat quyet dinh cua Hieu truong.
 
-        LUONG DUYET TACH DOI — CONTRACT KHONG DOI (request / response / error code y
+        LUONG DUYET TACH DOI - CONTRACT KHONG DOI (request / response / error code y
         nguyen). Diem moi: buoc nay ghi them snapshot phieu_danh_gia.can_ht_duyet, quyet
         dinh ho so se ket thuc o cap Truong khoa hay con phai qua Hieu truong. Xem
         truong CanHtDuyet trong PhieuDanhGiaChiTietDto.
@@ -6738,7 +6741,7 @@ paths:
       description: >
         Chay engine sp_phieu_tong_hop_tu_dong: voi moi tieu chi co LoaiNguonDiem = 2,
         tinh diem tu du lieu da dong bo (NCKH, gio giang, phan hoi sinh vien...) theo
-        CongThucSnapshot roi GHI THANG vao diem_chinh_thuc — don vi khong cham tay
+        CongThucSnapshot roi GHI THANG vao diem_chinh_thuc - don vi khong cham tay
         cac tieu chi nay.
         LUU Y: POST /api/phieu/{id}/nop da TU DONG chay engine nay trong cung
         transaction nop phieu, nen endpoint nay chi con dung de cham som (khi phieu
@@ -6750,7 +6753,7 @@ paths:
         khi do cac tieu chi NCKH tu dong se ra 0 diem.
         KIEM NHIEM DA DON VI: moi nguon diem tu dong khoa theo (nguoi, nam) chu khong
         theo don vi, nen neu mot nguoi co nhieu phieu trong cung mot nam thi chi DUNG
-        MOT phieu duoc cham tu dong — uu tien phieu mang mau Giang vien (LoaiDoiTuong
+        MOT phieu duoc cham tu dong - uu tien phieu mang mau Giang vien (LoaiDoiTuong
         = 1), roi den don vi chinh, roi IdPhieu nho nhat. Goi endpoint nay tren phieu
         con lai tra 409 ErrorCode = PHIEU_KHONG_NHAN_DIEM_TU_DONG kem so hieu phieu
         dang giu diem tu dong. Nguoi chi co 1 phieu khong bi anh huong.
@@ -7015,7 +7018,7 @@ paths:
       summary: Overview report - phieu counts, chua lap phieu, ty le hoc vu
       description: |
         Counts phieu NAM (quy = 0) by trang_thai (1..5) and, for trang_thai=5 only, also by xep_loai.
-        DemTheoTrangThai chỉ có phần tử cho trạng thái có phiếu — FE mặc định 0 cho trạng thái vắng.
+        DemTheoTrangThai chỉ có phần tử cho trạng thái có phiếu - FE mặc định 0 cho trạng thái vắng.
         Phạm vi theo ma_chuc_vu: Trường (HT/ADMIN) xem tất cả; Khoa (TK/TKL/TP) và
         Thư ký Khoa (TKK, chỉ đọc) giới hạn cây đơn vị mình; chủ phiếu (id 11) xem phiếu
         của chính mình.
@@ -7200,7 +7203,7 @@ paths:
       description: >
         HT/ADMIN xem tat ca; TK/TKL/TP xem don vi minh (+ don vi con) va cac vi pham
         do don vi minh ghi nhan; nguoi dung khac chi xem vi pham cua chinh minh.
-        Endpoint dung chung cho CA HAI doi tuong — loc theo doi tuong bang cach
+        Endpoint dung chung cho CA HAI doi tuong - loc theo doi tuong bang cach
         doi chieu truong LoaiDoiTuong tra ve (1 = giang vien, 2 = vien chuc/NLD).
       operationId: viPhamGiangDayGetAll
       parameters:
@@ -7334,7 +7337,7 @@ paths:
         - ViPhamGiangDay
       summary: Cap nhat vi pham (chi don vi da ghi nhan hoac ADMIN)
       description: >
-        Ap dung cung quy tac CheDoDiemTru nhu POST — xem mo ta cua
+        Ap dung cung quy tac CheDoDiemTru nhu POST - xem mo ta cua
         POST api/viphamgiangday.
       operationId: viPhamGiangDayUpdate
       parameters:
@@ -7459,7 +7462,7 @@ paths:
         - ViPhamGiangDay
       summary: Tai len / ghi de minh chung PDF (chi don vi da ghi nhan hoac ADMIN)
       description: >
-        CHI chap nhan file PDF — kiem tra ca duoi .pdf lan chu ky "%PDF-" cua noi dung.
+        CHI chap nhan file PDF - kiem tra ca duoi .pdf lan chu ky "%PDF-" cua noi dung.
         Kich thuoc toi da lay tu appSetting maxEvidenceFileSizeKb (mac dinh 10240 KB).
         Moi vi pham giu toi da 1 file: tai len lan sau se GHI DE va xoa file cu.
         Response tra ve ban ghi vi pham da cap nhat (kem MinhChung).
@@ -7640,7 +7643,7 @@ paths:
       summary: Tong hop diem tru cua vien chuc / NLD theo TUNG NHOM (tran 70 / 30 / khong tran)
       description: >
         Chi liet ke VIEN CHUC / NLD (loai vi pham co LoaiDoiTuong = 2). Tra ve MOT DONG
-        cho moi cap (nhan vien x nhom vi pham) — KHONG gop thanh mot con so, vi moi nhom
+        cho moi cap (nhan vien x nhom vi pham) - KHONG gop thanh mot con so, vi moi nhom
         se nap vao mot tieu chi rieng biet cua phieu.
 
 
@@ -7649,7 +7652,7 @@ paths:
         "Chinh tri, tu tuong" = null.
 
 
-        TranDiemTru = null nghia la nhom KHONG ap tran — DiemTruSauTran bang dung
+        TranDiemTru = null nghia la nhom KHONG ap tran - DiemTruSauTran bang dung
         TongDiemTruTho, cong don khong bi cat.
 
 
@@ -7659,7 +7662,7 @@ paths:
 
         IdDonVi tra ve la DON VI CHU QUAN (Khoa/Phong cap 2). Nguoi kiem nhiem nhieu
         don vi se co mot bo dong cho MOI don vi chu quan, moi bo mang tong diem tru
-        day du cua ho — giong hanh vi cua api/vi-pham/tong-hop-giang-vien voi GV kiem
+        day du cua ho - giong hanh vi cua api/vi-pham/tong-hop-giang-vien voi GV kiem
         nhiem nhieu Khoa.
 
 
@@ -7743,7 +7746,7 @@ paths:
         - LoaiViPham
       summary: Danh sach nhom noi dung cong viec (6 nhom GV + 3 nhom vien chuc)
       description: >
-        Ket qua tra ve o truong Nhom. Bo trong loaiDoiTuong se lay CA HAI ro danh muc —
+        Ket qua tra ve o truong Nhom. Bo trong loaiDoiTuong se lay CA HAI ro danh muc -
         UI nen luon truyen loaiDoiTuong de nguoi dung khong chon nham nhom cua doi tuong khac.
       operationId: nhomViPhamGetAll
       parameters:
@@ -8064,7 +8067,7 @@ paths:
     delete:
       tags:
         - ChucDanhNgheNghiep
-      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
+      summary: Xóa mềm - set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: chucDanhNgheNghiepDelete
       description: >-
         Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
@@ -8105,7 +8108,7 @@ paths:
         Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
         `{ "message": "..." }` tu bo loc quyen.
         LoaiNhom BAT BUOC voi LoaiDoiTuong 1 (giang vien), 2 (vien chuc/NLD) va
-        3 (khoa) — bo trong se bi tu choi o CA HAI tang (NhomTieuChiService va
+        3 (khoa) - bo trong se bi tu choi o CA HAI tang (NhomTieuChiService va
         sp_nhom_tieu_chi_create). Rieng LoaiDoiTuong = 4 (Phong/Trung tam) duoc
         bo trong: mau phieu cua ho khong tach muc A/B nen nhom chi de gom muc,
         va DB luu dung NULL. Khong gui LoaiDoiTuong thi mac dinh la 1, tuc van
@@ -8126,7 +8129,7 @@ paths:
                 $ref: "#/components/schemas/NhomTieuChiResponse"
         "400":
           description: >-
-            Bad Request — thieu LoaiNhom khi LoaiDoiTuong khac 4; hoac TenNhom
+            Bad Request - thieu LoaiNhom khi LoaiDoiTuong khac 4; hoac TenNhom
             rong / qua 200 ky tu, LoaiNhom ngoai 1..2, LoaiDoiTuong ngoai 1..4
           content:
             application/json:
@@ -8159,7 +8162,7 @@ paths:
         Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
         `{ "message": "..." }` tu bo loc quyen.
         Bo trong mot truong = GIU NGUYEN gia tri cu (SP dung ISNULL). Vi vay
-        KHONG co duong xoa LoaiNhom da co ve NULL qua endpoint nay — nhom da
+        KHONG co duong xoa LoaiNhom da co ve NULL qua endpoint nay - nhom da
         mang LoaiNhom 1 hoac 2 thi chi doi duoc sang gia tri con lai. Rang buoc
         bat buoc LoaiNhom theo LoaiDoiTuong giong POST, tinh tren loai doi tuong
         HIEU LUC sau khi cap nhat.
@@ -8186,7 +8189,7 @@ paths:
     delete:
       tags:
         - NhomTieuChi
-      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
+      summary: Xóa mềm - set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: nhomTieuChiDelete
       description: >-
         Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
@@ -8289,7 +8292,7 @@ paths:
     delete:
       tags:
         - TieuChiDanhGia
-      summary: Xóa mềm — set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
+      summary: Xóa mềm - set trang_thai=0 (giữ lịch sử, FK vẫn resolve)
       operationId: tieuChiDanhGiaDelete
       description: >-
         Chi ADMIN / HT (chuc vu chinh trong JWT) - dot 2026-10-16; vai tro khac 403
@@ -8313,7 +8316,7 @@ paths:
         - TieuChiDonViCham
       summary: >
         Danh sách phân quyền chấm tiêu chí cho đơn vị. Lọc theo idTieuChi (1 tiêu chí)
-        hoặc idMau (mọi tiêu chí thuộc mẫu — dựng bảng phân quyền cho cả mẫu; tiêu chí
+        hoặc idMau (mọi tiêu chí thuộc mẫu - dựng bảng phân quyền cho cả mẫu; tiêu chí
         không có dòng = mặc định trưởng khoa/phòng chấm).
       operationId: tieuChiDonViChamGetAll
       parameters:
@@ -8637,7 +8640,7 @@ paths:
         Khoa K sẽ không còn trả về người hiển thị đơn vị là Phòng.
 
 
-        Cần phạm vi GỒM CẢ kiêm nhiệm (vd kiểm tra quyền) thì dùng endpoint khác —
+        Cần phạm vi GỒM CẢ kiêm nhiệm (vd kiểm tra quyền) thì dùng endpoint khác -
         danh bạ này cố ý chỉ soi đơn vị chính.
       operationId: nhanVienGetList
       parameters:
@@ -9370,7 +9373,7 @@ paths:
     delete:
       tags:
         - NgoaiLeDinhMuc
-      summary: Vô hiệu hóa ngoại lệ — xóa mềm trang_thai=0 (Admin/BGH)
+      summary: Vô hiệu hóa ngoại lệ - xóa mềm trang_thai=0 (Admin/BGH)
       operationId: ngoaiLeDinhMucDelete
       parameters:
         - name: id
@@ -9398,7 +9401,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NgoaiLeDinhMucResponse"
-  # ── Session 5b: DinhMucGiangVien — định mức áp dụng ─────────────────────────
+  # ── Session 5b: DinhMucGiangVien - định mức áp dụng ─────────────────────────
   /api/dinh-muc-giang-vien/ap-dung/{idNv}/{idNam}:
     get:
       tags:
@@ -9450,7 +9453,7 @@ paths:
       summary: Giờ NCKH thực tế đã tính thêm so_gio_them_nckh từ ngoại lệ
       description: >
         = gio_thuc_hien_gv.gio_nckh_thuc_te (0 nếu chưa nhập)
-          + Σ ngoai_le_active.so_gio_them_nckh (loại 6 — quân nhân dự bị).
+          + Σ ngoai_le_active.so_gio_them_nckh (loại 6 - quân nhân dự bị).
         Session 7 dùng giá trị này khi chốt phiếu.
       operationId: dinhMucGiangVienGetGioNckhThucTe
       parameters:
@@ -9506,7 +9509,7 @@ paths:
         CHI ap dung cho phieu NAM cua vien chuc / NLD trong nam da bat
         nam_danh_gia.ap_dung_phieu_quy (phieu do co NguonDiemCoBan = 2).
 
-        MAU SO LA SO QUY THUC SU DA CHOT, khong phai 4 — nguoi vao lam giua nam / nghi
+        MAU SO LA SO QUY THUC SU DA CHOT, khong phai 4 - nguoi vao lam giua nam / nghi
         thai san khong bi phat vi nhung quy khong ton tai.
 
         0 QUY DA CHOT -> 409 KHONG_CO_QUY_DA_CHOT va KHONG ghi gi. Khong ngam coi la
@@ -9675,7 +9678,7 @@ paths:
       description: >
         LUON tra du 4 dong (quy 1..4); quy chua co phieu thi IdPhieu / TrangThai /
         TongDiemCoBan deu null. SoQuyDaChot la MAU SO thuc dung cua phep trung binh.
-        DiemCoBanTbQuy = null khi SoQuyDaChot = 0 — "chua co quy nao" KHAC "duoc 0 diem".
+        DiemCoBanTbQuy = null khi SoQuyDaChot = 0 - "chua co quy nao" KHAC "duoc 0 diem".
       operationId: phieuQuyGetTongHop
       parameters:
         - name: idNam
@@ -9837,7 +9840,7 @@ paths:
         ghi diem_chinh_thuc = COALESCE(diem_khoa, diem_tu_danh_gia, 0) -> khoa dong ->
         tinh tong diem -> dua phieu ve trang thai 5.
 
-        XEP LOAI KHONG DUOC GHI — phieu quy khong co xep loai (chk_pdg_quy_khong_xep_loai).
+        XEP LOAI KHONG DUOC GHI - phieu quy khong co xep loai (chk_pdg_quy_khong_xep_loai).
 
         Quyen: TP / TK / TKL (+ ADMIN) TAI DUNG don vi cua phieu. TK/TKL nam trong danh
         sach vi vien chuc van phong Khoa co cap tren la Truong khoa chu khong phai
@@ -9982,7 +9985,7 @@ paths:
       summary: Create phieu danh gia don vi
       description: >-
         Tao 1 phieu danh gia cho 1 don vi / nam tu mot mau (1 phieu / don vi / nam).
-        Chi cap nhap don vi (TKK/TKP) duoc phep tao — SP enforce.
+        Chi cap nhap don vi (TKK/TKP) duoc phep tao - SP enforce.
       operationId: phieuDonViCreate
       requestBody:
         required: true
@@ -10167,13 +10170,13 @@ paths:
         HT chot ket qua. SP tu tinh lai 3 tong diem de chong tamper, ghi
         diem_chinh_thuc cho tung dong roi snapshot lich su.
 
-        XepLoai tuy chon — bo trong thi BLL tinh theo tong diem tich luy, bang
+        XepLoai tuy chon - bo trong thi BLL tinh theo tong diem tich luy, bang
         HAI thang khac nhau tuy loai mau cua phieu:
-          - Khoa (mau loai 3): XepLoaiCalculator.TinhXepLoaiDonVi — 95 / 80 / 60.
-          - Phong / Trung tam (mau loai 4): TinhXepLoaiPhongTrungTam —
+          - Khoa (mau loai 3): XepLoaiCalculator.TinhXepLoaiDonVi - 95 / 80 / 60.
+          - Phong / Trung tam (mau loai 4): TinhXepLoaiPhongTrungTam -
             < 50 muc 1; 50..60 muc 2; > 60 muc 3. Ham nay TOI DA tra muc 3 vi
             muc 4 con phu thuoc han ngach top 20% toan truong (chua tinh tu
-            dong) — HT phai gui XepLoai = 4 bang tay.
+            dong) - HT phai gui XepLoai = 4 bang tay.
 
         RIENG mau loai 4, gui XepLoai bang tay van bi SP kiem lai bang tong no
         tu tinh: muc >= 2 can tong >= 50, muc >= 3 can tong > 60, muc 4 can
@@ -10201,7 +10204,7 @@ paths:
                 $ref: "#/components/schemas/PhieuDanhGiaDonViResponse"
         "409":
           description: >-
-            Conflict — phieu khong o trang thai 4; RowVersion da thay doi
+            Conflict - phieu khong o trang thai 4; RowVersion da thay doi
             (CONCURRENCY_CONFLICT); hoac tong diem khong du cho muc XepLoai da
             chon o phieu Phong/Trung tam (DIEM_KHONG_DU)
           content:
@@ -10332,7 +10335,7 @@ paths:
         - PhieuDonVi
       summary: Cham diem chi tiet - cap nhap (TKK/TKP)
       description: >-
-        Nhap diem 1 dong chi tiet. RowVersion tuy chon — neu gui se duoc SP kiem
+        Nhap diem 1 dong chi tiet. RowVersion tuy chon - neu gui se duoc SP kiem
         tra concurrency. NewRowVersion trong response la row_version moi cua PHIEU.
       operationId: chiTietDonViDiemNhap
       parameters:
@@ -11328,7 +11331,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: OK — dong bo thanh cong; tra so dong da ghi moi bang.
+          description: OK - dong bo thanh cong; tra so dong da ghi moi bang.
           content:
             application/json:
               schema:
@@ -11340,19 +11343,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/NckhSyncResult"
         "403":
-          description: Forbidden — khong phai ADMIN hoac TP / QTP Phong Khoa hoc (P_KH)
+          description: Forbidden - khong phai ADMIN hoac TP / QTP Phong Khoa hoc (P_KH)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhSyncResult"
         "409":
-          description: Conflict — loi ghi DB (da rollback toan bo transaction)
+          description: Conflict - loi ghi DB (da rollback toan bo transaction)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhSyncResult"
         "502":
-          description: Bad Gateway — khong goi/parse duoc API NCKH, hoac API tra rong
+          description: Bad Gateway - khong goi/parse duoc API NCKH, hoac API tra rong
           content:
             application/json:
               schema:
@@ -11379,25 +11382,25 @@ paths:
       operationId: nckhGioNckhDongBo
       responses:
         "200":
-          description: OK — dong bo thanh cong; tra tong so dong da ghi.
+          description: OK - dong bo thanh cong; tra tong so dong da ghi.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhGioNckhSyncResult"
         "403":
-          description: Forbidden — khong phai ADMIN hoac TP / QTP Phong Khoa hoc (P_KH)
+          description: Forbidden - khong phai ADMIN hoac TP / QTP Phong Khoa hoc (P_KH)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhGioNckhSyncResult"
         "409":
-          description: Conflict — loi ghi DB (da rollback toan bo transaction)
+          description: Conflict - loi ghi DB (da rollback toan bo transaction)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhGioNckhSyncResult"
         "502":
-          description: Bad Gateway — khong goi/parse duoc API NCKH, hoac API tra rong
+          description: Bad Gateway - khong goi/parse duoc API NCKH, hoac API tra rong
           content:
             application/json:
               schema:
@@ -11434,31 +11437,31 @@ paths:
             type: integer
       responses:
         "200":
-          description: OK — dong bo thanh cong; tra so dong da ghi cho nam do.
+          description: OK - dong bo thanh cong; tra so dong da ghi cho nam do.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
         "400":
-          description: Bad Request — thieu hoac sai tham so 'id_nam'
+          description: Bad Request - thieu hoac sai tham so 'id_nam'
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
         "403":
-          description: Forbidden — khong phai ADMIN hoac TP / QTP Phong Khoa hoc (P_KH)
+          description: Forbidden - khong phai ADMIN hoac TP / QTP Phong Khoa hoc (P_KH)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
         "409":
-          description: Conflict — loi ghi DB (da rollback toan bo transaction)
+          description: Conflict - loi ghi DB (da rollback toan bo transaction)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NckhBaiBaoQuocTeSyncResult"
         "502":
-          description: Bad Gateway — khong goi/parse duoc API NCKH, hoac API tra rong
+          description: Bad Gateway - khong goi/parse duoc API NCKH, hoac API tra rong
           content:
             application/json:
               schema:
@@ -12877,10 +12880,10 @@ paths:
         Hieu truong / ADMIN xet chon cap Truong (/api/xet-xuat-sac-vien-chuc-khoa) -
         dem o SoHoSoChoXetTruong, HoSo[].ChoXetXuatSacTruong = true.
 
-        LUONG DUYET TACH DOI — BUOC NAY NAY LA MOC HOAN TAT CUA HO SO THUONG.
+        LUONG DUYET TACH DOI - BUOC NAY NAY LA MOC HOAN TAT CUA HO SO THUONG.
         KPI cua nhan vien / giang vien chi can Truong khoa (TK/TKL) hoac Truong phong (TP)
         duyet la xong. Nhung xep_loai cuoi cung (ke ca muc 4) chi tinh duoc khi 100% ho so
-        cua don vi da chot, vi han ngach 20% xep hang tren TOAN DON VI — nen moc HOAN TAT cua
+        cua don vi da chot, vi han ngach 20% xep hang tren TOAN DON VI - nen moc HOAN TAT cua
         ho so thuong la buoc dong goi nay, KHONG phai buoc TK bam "Chot ho so" (3 -> 4).
         FE KHONG duoc hien "Da hoan tat" ngay sau khi chot ho so.
 
@@ -12888,7 +12891,7 @@ paths:
         1. Doi 100% ho so cua (nam, don vi) o trang thai 4 HOAC 5. Con ho so o 1/2/3 -> 409
            CHUA_DU_HO_SO kem danh sach ai con thieu trong HoSo[].
            (Truoc day chi chap nhan trang thai 4. Nay phai chap nhan ca 5 vi ho so thuong
-           da HOAN TAT o lan dong goi truoc — giu dieu kien cu thi moi lan dong goi LAI deu
+           da HOAN TAT o lan dong goi truoc - giu dieu kien cu thi moi lan dong goi LAI deu
            bao CHUA_DU_HO_SO vinh vien. FE tu dem tien do thi cung phai dem ca 4 va 5,
            hoac dung Item.SoHoSoDaChot do backend tra.)
         2. PHAN HOACH BA NHOM LOAI TRU NHAU trong tung don vi:
@@ -12929,12 +12932,12 @@ paths:
            lai; HangTrongKhoa la thu hang TRONG NHOM (tren toan bo quan the nhom, khong
            phai chi trong nhom du dieu kien) va KHONG CON NULL voi vien chuc;
            NhomXepHang = snapshot nhom; gan id_to_trinh cho moi phieu trong goi.
-        7. MOI — day ho so THUONG (CanHtDuyet = false) tu 4 -> 5 HOAN TAT: ghi id_nguoi_chot,
+        7. MOI - day ho so THUONG (CanHtDuyet = false) tu 4 -> 5 HOAN TAT: ghi id_nguoi_chot,
            ngay_chot_ket_qua, snapshot diem vao lich_su_cham_diem (cap 4 Truong khoa) va
            mot dong lich_su_trang_thai_phieu (hanh_dong 4 Chot, cap_thuc_hien 4).
-           KHONG ghi id_nguoi_dg_truong / ngay_truong_duyet — Hieu truong khong tham gia.
+           KHONG ghi id_nguoi_dg_truong / ngay_truong_duyet - Hieu truong khong tham gia.
            Ho so LANH DAO (CanHtDuyet = true) O LAI trang thai 4.
-        8. MOI — trang thai goi cuoi cung re nhanh theo so ho so lanh dao con lai:
+        8. MOI - trang thai goi cuoi cung re nhanh theo so ho so lanh dao con lai:
            * con > 0  -> goi = 2 (DA_DONG_GOI), lich su hanh_dong = 1. FE hien nut
                         "Trinh Hieu truong".
            * con = 0  -> goi = 4 (HT_DA_DUYET) TU DONG HOAN TAT, id_nguoi_duyet de NULL,
@@ -12947,19 +12950,19 @@ paths:
         (vd "Dong goi to trinh thanh cong. 28 ho so da hoan tat, 3 ho so lanh dao cho
         Hieu truong duyet. Han ngach theo nhom: Giang vien 1/2 suat (mau so 10); Vien chuc
         / NLD 1/1 suat (mau so 8). Con 1 suat bo trong do nguoi trong Top chua du dieu kien
-        — suat khong don xuong nguoi ke tiep.") — nen hien thang thay vi FE tu ghep chuoi.
+        - suat khong don xuong nguoi ke tiep.") - nen hien thang thay vi FE tu ghep chuoi.
         HoSo[] bo sung CanHtDuyet + NhomXepHang.
 
         CHAY LAI DUOC nhieu lan: goi o trang thai 2 (da dong goi), 5 (HT tra ve), hoac 4
         TU DONG HOAN TAT (id_nguoi_duyet IS NULL) deu dong goi lai duoc, ket qua ghi de.
         Goi da trinh HT (3) hoac da duoc HT duyet THAT (4 + id_nguoi_duyet IS NOT NULL)
-        thi chan — thong diep loi khac nhau cho hai truong hop trang thai 4.
+        thi chan - thong diep loi khac nhau cho hai truong hop trang thai 4.
 
         CANH BAO NGHIEP VU: dong goi LAI co the HA xep loai cua ho so DA HOAN TAT. Them ho
         so moi vao don vi lam mau so han ngach doi => buoc 6 ghi de xep_loai cho TOAN BO
         phieu cua don vi, ke ca phieu dang o trang thai 5; mot nguoi dang Xuat sac co the
         rot ve Hoan thanh tot. Day la he qua toan hoc khong tranh duoc cua viec cho ho so
-        xong som o cap TK trong khi han ngach van tinh tren toan don vi — KHONG phai loi.
+        xong som o cap TK trong khi han ngach van tinh tren toan don vi - KHONG phai loi.
         Bien do con rong hon vi hai ly do: luat bo-lap-suat co the LAM GIAM so nguoi dat
         muc 4 ngay ca khi thanh phan nhom khong doi; va mot nguoi DOI NHOM (vd duoc bo
         nhiem PTK) lam doi mau so cua HAI nhom cung luc.
@@ -13023,12 +13026,12 @@ paths:
         tra ve.
 
         LUONG DUYET TACH DOI: goi luc nay CHI con ho so LANH DAO (CanHtDuyet = true) o
-        trang thai 4 — ho so thuong da HOAN TAT (trang thai 5) tu buoc dong goi.
+        trang thai 4 - ho so thuong da HOAN TAT (trang thai 5) tu buoc dong goi.
 
         Fail-closed MOI: goi khong con ho so nao o trang thai 4 -> 409
         KHONG_CO_HO_SO_LANH_DAO. Ve ly thuyet dong goi da chuyen thang goi sang trang
         thai 4 trong truong hop nay nen FE xu ly dung (an nut "Trinh Hieu truong" khi
-        SoHoSoChoHt = 0) thi khong gap loi nay — van phai bat de khong roi vao handler
+        SoHoSoChoHt = 0) thi khong gap loi nay - van phai bat de khong roi vao handler
         loi chung.
       operationId: toTrinhKhoaTrinh
       parameters:
@@ -13060,7 +13063,7 @@ paths:
           description: >-
             Conflict - goi khong o trang thai 2 (INVALID_STATE), dat gioi han so lan
             trinh (TRAN_LAN_TRINH), goi khong con ho so nao thuoc dien Hieu truong duyet
-            (KHONG_CO_HO_SO_LANH_DAO — MOI), hoac concurrency conflict.
+            (KHONG_CO_HO_SO_LANH_DAO - MOI), hoac concurrency conflict.
           content:
             application/json:
               schema:
@@ -13074,7 +13077,7 @@ paths:
         GIAI DOAN 4. Day la buoc THAY THE POST /api/phieu/{id}/chot cu (chot le tung
         phieu): mot lenh duyet dua cac ho so con lai trong goi vao HOAN_TAT.
 
-        LUONG DUYET TACH DOI — CONTRACT KHONG DOI nhung Y NGHIA HEP LAI. SP loc
+        LUONG DUYET TACH DOI - CONTRACT KHONG DOI nhung Y NGHIA HEP LAI. SP loc
         p.trang_thai = 4, ma sau khi dong goi thi tap do CHINH XAC la ho so LANH DAO
         (TK/TKL/PTK/PTKL/TP/PTP). Ho so thuong da o trang thai 5 tu buoc dong goi va
         KHONG bi anh huong boi lenh nay.
@@ -13139,7 +13142,7 @@ paths:
         IdPhieuList bat buoc co it nhat 1 phan tu; moi id phai thuoc dung goi nay va
         dang o trang thai 4.
 
-        LUONG DUYET TACH DOI — CONTRACT KHONG DOI nhung PHAM VI HEP LAI. Chi ho so o
+        LUONG DUYET TACH DOI - CONTRACT KHONG DOI nhung PHAM VI HEP LAI. Chi ho so o
         trang thai 4 tra ve duoc, ma do chinh la ho so LANH DAO. Ho so thuong da HOAN TAT
         (trang thai 5) tu buoc dong goi nen truyen id cua chung se nhan HO_SO_KHONG_HOP_LE.
         Dung nghiep vu: ho so thuong da dong, muon dong vao phai dung
@@ -16562,7 +16565,7 @@ components:
         LoaiNhom:
           type: integer
           nullable: true
-          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) — mẫu phiếu của Phòng/TT không tách mục A/B."
+          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) - mẫu phiếu của Phòng/TT không tách mục A/B."
         DiemToiDa:
           type: number
           nullable: true
@@ -16588,7 +16591,7 @@ components:
         LoaiNhom:
           type: integer
           nullable: true
-          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) — mẫu phiếu của Phòng/TT không tách mục A/B."
+          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) - mẫu phiếu của Phòng/TT không tách mục A/B."
         DiemToiDa:
           type: number
           nullable: true
@@ -16617,7 +16620,7 @@ components:
         LoaiNhom:
           type: integer
           nullable: true
-          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) — mẫu phiếu của Phòng/TT không tách mục A/B."
+          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) - mẫu phiếu của Phòng/TT không tách mục A/B."
         DiemToiDaNhom:
           type: number
           nullable: true
@@ -16677,12 +16680,12 @@ components:
           type: integer
           description: >
             Số tiêu chí trong mẫu CÓ đọc bộ lọc quý (4 mã TTVT_* + 3 mã VPVC_*).
-            Quy > 0 mà trường này = 0 nghĩa là bộ lọc không đổi được gì — toàn bộ con số
+            Quy > 0 mà trường này = 0 nghĩa là bộ lọc không đổi được gì - toàn bộ con số
             vẫn là trọn năm, và Message nói rõ điều đó.
         NamApDungPhieuQuy:
           type: boolean
           description: >
-            nam_danh_gia.ap_dung_phieu_quy của năm thuộc mẫu — năm này có chạy chế độ
+            nam_danh_gia.ap_dung_phieu_quy của năm thuộc mẫu - năm này có chạy chế độ
             đánh giá theo quý hay không. Dùng để quyết định có hiện bộ lọc quý trên UI.
             CỐ Ý không chặn quy > 0 khi cờ đang tắt: người cấu hình mẫu cần xem thử
             TRƯỚC khi bật công tắc.
@@ -16737,7 +16740,7 @@ components:
             /api/thanh-tich-doan-the): cùng quy tắc có / không như CTDT_* / NCS_*.
 
             Riêng 3 mã PTDN_* (phát triển đội ngũ do P_TCHC ghi nhận, nguồn
-            /api/phat-trien-doi-ngu — danh hiệu NGND / NGƯT; bổ nhiệm ngạch / học hàm, học vị;
+            /api/phat-trien-doi-ngu - danh hiệu NGND / NGƯT; bổ nhiệm ngạch / học hàm, học vị;
             khoá bồi dưỡng): cùng quy tắc có / không như CTDT_* / NCS_*; hạng mục cụ thể
             trong loại không ảnh hưởng điểm.
 
@@ -16747,11 +16750,11 @@ components:
             Miễn định mức cả năm hoặc dữ liệu cần kiểm tra → null (không chấm tự động).
 
             Riêng GIO_GIANG_VUOT_LOP (lớp lý thuyết vượt định mức 6 lớp/năm, nguồn SoLopTkb
-            của GET /api/gio-giang-tkb/tong-hop — mỗi dòng TKB đã ánh xạ, cả ĐH lẫn SĐH, là
+            của GET /api/gio-giang-tkb/tong-hop - mỗi dòng TKB đã ánh xạ, cả ĐH lẫn SĐH, là
             1 lớp): vượt ≥ 4 lớp → DiemToiDa (15); vượt 3 → × 2/3 (10); vượt 1–2 → × 1/3 (5);
             không vượt hoặc không có dòng TKB → 0.
 
-            Riêng NCKH_BBQT_DIEM_KPI: điểm KHÔNG do phía KPI tính — phía NCKH đã tính
+            Riêng NCKH_BBQT_DIEM_KPI: điểm KHÔNG do phía KPI tính - phía NCKH đã tính
             sẵn ở nckh_kpi_bai_bao_quoc_te.diem_kpi_cuoi (FinalKpiScore), phía KPI chỉ
             lấy nguyên con số đó, sàn ở 0 và chặn trần ở DiemToiDa.
         ApDungQuy:
@@ -16760,7 +16763,7 @@ components:
             true = mã công thức này CÓ đọc bộ lọc quý (TTVT_* / VPVC_*), nên DiemTuDong
             là con số của riêng quý đã hỏi.
             false = mã khóa theo năm: DiemTuDong LUÔN là số trọn năm dù request có
-            truyền quy hay không — FE nên gắn nhãn "trọn năm" cho những dòng này khi
+            truyền quy hay không - FE nên gắn nhãn "trọn năm" cho những dòng này khi
             đang lọc theo quý, nếu không người xem sẽ tưởng đã được lọc.
         DiemTuDong:
           type: number
@@ -16802,7 +16805,7 @@ components:
           type: integer
           nullable: true
           description: >
-            Mức thang điểm (thang_diem.id_thang_diem) mà engine SẼ gán khi chấm thật —
+            Mức thang điểm (thang_diem.id_thang_diem) mà engine SẼ gán khi chấm thật -
             preview dùng đúng quy tắc của sp_phieu_cham_tu_dong_apply nên không bao giờ lệch.
             Chỉ ánh xạ cho tiêu chí RỜI RẠC (loai_thang_diem = 1) và khớp CHÍNH XÁC
             gia_tri_diem = DiemTuDong.
@@ -16816,7 +16819,7 @@ components:
           type: array
           description: >
             TOÀN BỘ các mức thang điểm của tiêu chí này, sắp theo ThuTuHienThi.
-            Luôn khác null — mảng rỗng nghĩa là tiêu chí chưa khai thang điểm
+            Luôn khác null - mảng rỗng nghĩa là tiêu chí chưa khai thang điểm
             (ví dụ các tiêu chí NCKH loại Có/Không).
             Mức đang được chọn có DaChon = true và IdThangDiem trùng IdThangDiemChon;
             khi IdThangDiemChon null thì mọi phần tử đều có DaChon = false.
@@ -16838,22 +16841,22 @@ components:
             - $ref: "#/components/schemas/NckhGioNckhItem"
           nullable: true
           description: >
-            CHỈ xuất hiện khi CongThucTongHop = NCKH_GIO_TY_LE — dòng nckh_gio_nckh
+            CHỈ xuất hiện khi CongThucTongHop = NCKH_GIO_TY_LE - dòng nckh_gio_nckh
             ĐÃ SINH RA DiemTuDong, để FE hiển thị được cách tính thay vì một con số
             trần trụi (TyLeHoanThanh = gio_nckh_quy_doi / gio_nckh_dinh_muc × 100 là
-            con số quyết định bậc điểm — xem mô tả DiemTuDong ở trên).
+            con số quyết định bậc điểm - xem mô tả DiemTuDong ở trên).
             Cùng shape với item của GET /api/nckh/gio-nckh nên FE dùng chung 1 bộ parser.
             Server chọn dòng bằng đúng mệnh đề của fn_nckh_diem_tu_dong (khớp
             nhan_vien.email = nckh_gio_nckh.email LOWER+TRIM, g.id_nam = năm của mẫu,
             TOP 1 ORDER BY ma_nguoi_dung_nckh) nên luôn là dòng đã tạo ra điểm.
             VẮNG MẶT (NullValueHandling.Ignore) khi tiêu chí dùng mã công thức khác,
-            hoặc không tìm thấy dòng khớp — trường hợp sau xem LyDoDiemTuDong.
+            hoặc không tìm thấy dòng khớp - trường hợp sau xem LyDoDiemTuDong.
         DuLieuBaiBaoQuocTe:
           allOf:
             - $ref: "#/components/schemas/NckhBaiBaoQuocTeItem"
           nullable: true
           description: >
-            CHỈ xuất hiện khi CongThucTongHop = NCKH_BBQT_DIEM_KPI — dòng
+            CHỈ xuất hiện khi CongThucTongHop = NCKH_BBQT_DIEM_KPI - dòng
             nckh_kpi_bai_bao_quoc_te ĐÃ SINH RA DiemTuDong, để FE đối chiếu con số điểm
             với dữ liệu gốc phía NCKH (DiemKpiCuoi chính là điểm, kèm TongDiemTacGia,
             TongBaiWosScopus, CoQ1Q2, SoBaiBao và mảng BaiBao chi tiết).
@@ -16861,9 +16864,9 @@ components:
             nhan_vien.email = nckh_kpi_bai_bao_quoc_te.email LOWER+TRIM, b.id_nam = năm
             của mẫu, TOP 1 ORDER BY ma_nguoi_dung_nckh) nên luôn là dòng đã tạo ra điểm.
             Bản thân trường này KHÔNG phụ thuộc idNhanVien, nhưng trường con BaiBao thì
-            CÓ — xem mô tả trong NckhBaiBaoQuocTeItem.
+            CÓ - xem mô tả trong NckhBaiBaoQuocTeItem.
             VẮNG MẶT (NullValueHandling.Ignore) khi tiêu chí dùng mã công thức khác,
-            hoặc không tìm thấy dòng khớp — trường hợp sau xem LyDoDiemTuDong.
+            hoặc không tìm thấy dòng khớp - trường hợp sau xem LyDoDiemTuDong.
         LyDoDiemTuDong:
           type: string
           nullable: true
@@ -16871,14 +16874,14 @@ components:
             CHỈ xuất hiện khi CongThucTongHop = NCKH_GIO_TY_LE, NCKH_BBQT_DIEM_KPI, một
             trong 4 mã TTVT_*, một trong 4 mã CTDT_* / NCS_* hoặc một trong 2 mã TTDT_*,
             VÀ điểm bằng 0 vì DỮ LIỆU
-            NGUỒN chứ không phải vì giảng viên không đạt — hai trường hợp này đều ra 0
+            NGUỒN chứ không phải vì giảng viên không đạt - hai trường hợp này đều ra 0
             nhưng cách xử lý khác hẳn nhau.
 
             Lý do với NCKH_GIO_TY_LE: nhân viên chưa có email (không đối chiếu được),
             không tìm thấy dòng giờ NCKH của năm mẫu khớp email (chưa đồng bộ hoặc lệch
             năm), định mức trống, chưa có giờ quy đổi. NGOẠI LỆ với định mức ≤ 0: luôn có
             lý do, kể cả khi điểm = diem_toi_da (TyLeHoanThanh null nên FE không tự diễn giải
-            được) — "được miễn NCKH… điểm tối đa" (LaTroGiangTapSu = false), "thuộc nhóm trợ
+            được) - "được miễn NCKH… điểm tối đa" (LaTroGiangTapSu = false), "thuộc nhóm trợ
             giảng…" (true), hoặc "chưa có thông tin…" (null).
 
             Lý do với NCKH_BBQT_DIEM_KPI: nhân viên chưa có email, không tìm thấy dòng
@@ -16887,7 +16890,7 @@ components:
             KHÔNG sinh lý do.
 
             Lý do với TTVT_*: chưa có dòng thành tích nào được DUYỆT trong phạm vi (năm /
-            quý) — thường là bản kê chưa được đơn vị phụ trách xét.
+            quý) - thường là bản kê chưa được đơn vị phụ trách xét.
 
             Lý do với CTDT_HOI_DONG / CTDT_TO_GIUP_VIEC / NCS_SP_TRUNG_GIAN / NCS_BAO_VE_LA:
             Phòng Đào tạo và Bảo đảm chất lượng (P_DTBDCL) chưa ghi nhận bản ghi nào của
@@ -16903,7 +16906,7 @@ components:
             loại đó trong năm. Ghi nhận xong (/api/phat-trien-doi-ngu) phải chạy lại
             POST /api/phieu/{id}/tong-hop-tu-dong.
 
-            VẮNG MẶT khi đủ dữ liệu để tính — khi đó FE tự diễn giải từ
+            VẮNG MẶT khi đủ dữ liệu để tính - khi đó FE tự diễn giải từ
             DuLieuGioNckh.TyLeHoanThanh / DuLieuBaiBaoQuocTe.DiemKpiCuoi.
     MauDanhGiaThangDiemMucDto:
       type: object
@@ -16937,19 +16940,19 @@ components:
             6: Nhiệm vụ phục vụ đã chốt (NVK_PHAN_CONG_KHOA) - MaNguon = id nhiệm vụ,
             mở GET /api/nhiem-vu-phuc-vu/{id}.
             7: Thành tích vượt trội (TTVT_DAO_TAO / TTVT_PHONG_TRAO),
-            8: Việc chưa tuân thủ của viên chức/NLĐ — minh chứng TRỪ điểm của 3 mã
+            8: Việc chưa tuân thủ của viên chức/NLĐ - minh chứng TRỪ điểm của 3 mã
             VPVC_*, chỉ liệt kê vi phạm THUỘC ĐÚNG NHÓM của mã công thức đang xét,
-            9: Hoạt động đào tạo do P_DTBDCL ghi nhận (4 mã CTDT_* / NCS_*) — mỗi dòng
+            9: Hoạt động đào tạo do P_DTBDCL ghi nhận (4 mã CTDT_* / NCS_*) - mỗi dòng
             1 bản ghi; TieuDe = nội dung (tên CTĐT / NCS – luận án), MoTa = loại + số /
             ngày QĐ + ghi chú. Có ≥ 1 dòng là đủ điểm, nhiều dòng KHÔNG cộng thêm.
-            10: Thành tích đoàn thể do Tổ trưởng P_TCTD ghi nhận (2 mã TTDT_*) — mỗi dòng
+            10: Thành tích đoàn thể do Tổ trưởng P_TCTD ghi nhận (2 mã TTDT_*) - mỗi dòng
             1 bản ghi; MaNguon = id thành tích (GET /api/thanh-tich-doan-the/{id}),
             TieuDe = nội dung, MoTa = loại + cơ quan ghi nhận + số / ngày QĐ + ghi chú.
             Có ≥ 1 dòng là đủ điểm, nhiều dòng KHÔNG cộng thêm.
-            11: Phát triển đội ngũ do P_TCHC ghi nhận (3 mã PTDN_*) — mỗi dòng 1 bản ghi;
+            11: Phát triển đội ngũ do P_TCHC ghi nhận (3 mã PTDN_*) - mỗi dòng 1 bản ghi;
             MaNguon = id bản ghi (GET /api/phat-trien-doi-ngu/{id}), TieuDe = tên hạng mục
             (+ chi tiết), MoTa = loại + số / ngày QĐ + ghi chú. Có ≥ 1 dòng là đủ điểm.
-            Lưu ý với 5 và 8: danh sách rỗng KHÔNG có nghĩa là không đạt — không có
+            Lưu ý với 5 và 8: danh sách rỗng KHÔNG có nghĩa là không đạt - không có
             vi phạm nào tức là trọn điểm. Riêng 8, tổng các dòng có thể LỚN HƠN phần
             điểm thực sự bị trừ khi tổng vượt trần trừ của nhóm (70 / 30).
             12: Sáng kiến (GET /api/sang-kien/{id}).
@@ -16968,7 +16971,7 @@ components:
           description: >
             Mã bản ghi bên hệ thống nguồn
             (ma_bai_bao_nguon / ma_sach_nguon / ma_de_tai_nguon / id_diem_tb / id_vi_pham /
-            id_hoat_dong — với LoaiNguon 9, mở bằng GET /api/hoat-dong-dao-tao/{id})
+            id_hoat_dong - với LoaiNguon 9, mở bằng GET /api/hoat-dong-dao-tao/{id})
         TieuDe:
           type: string
         MoTa:
@@ -16981,7 +16984,7 @@ components:
           nullable: true
           description: >
             Ngày xuất bản (bài báo/sách), ngày bắt đầu (đề tài), ngày chốt (phản hồi SV),
-            ngày vi phạm (vi phạm giảng dạy) hoặc ngày quyết định (hoạt động đào tạo —
+            ngày vi phạm (vi phạm giảng dạy) hoặc ngày quyết định (hoạt động đào tạo -
             có thể null vì số / ngày QĐ không bắt buộc)
     ChiTietMauDanhGiaCreateRequest:
       type: object
@@ -17065,7 +17068,7 @@ components:
           minimum: -999.99
           maximum: 999.99
           description: >-
-            Duoc AM khi tieu chi cha co LoaiDoiTuong = 2 — xem ThangDiemCreateRequest.
+            Duoc AM khi tieu chi cha co LoaiDoiTuong = 2 - xem ThangDiemCreateRequest.
         DieuKienDiem:
           type: string
         ThuTuHienThi:
@@ -17292,6 +17295,10 @@ components:
           type: boolean
         Message:
           type: string
+        ErrorCode:
+          type: string
+          nullable: true
+          description: KHOA_KHONG_KHOP / FORBIDDEN / INVALID / DB_ERROR; null khi thanh cong
         TotalRowsRead:
           type: integer
           description: Tong so dong doc tu file (khong tinh header)
@@ -17303,10 +17310,30 @@ components:
           description: So dong bi bo qua (thieu ma_can_bo/cau_hoi/danh_gia hoac ngoai khoang)
         DeletedRows:
           type: integer
-          description: So dong THO cu cung (nam_hoc, don_vi) da bi xoa truoc khi chen lai
+          description: So dong THO cu cung nam hoc cua cac Khoa co trong file da bi xoa truoc khi chen lai
         InsertedRows:
           type: integer
           description: So dong THO thuc su chen vao DB
+        KhoaKhongKhop:
+          type: array
+          description: >-
+            Cac gia tri cot H khong khop dung 1 Khoa (chi co phan tu khi ErrorCode =
+            KHOA_KHONG_KHOP), sap xep theo SoDong giam dan; rong khi khong co loi nay.
+          items:
+            $ref: "#/components/schemas/PhanHoiSinhVienKhoaKhongKhopDto"
+    PhanHoiSinhVienKhoaKhongKhopDto:
+      type: object
+      properties:
+        GiaTriCotH:
+          type: string
+          nullable: true
+          description: Gia tri goc trong file; null khi cot H de trong
+        SoDong:
+          type: integer
+          description: So dong hop le trong file mang gia tri nay
+        SoKhoaKhop:
+          type: integer
+          description: 0 = khong co Khoa nao trung ten; lon hon 1 = trung ten nhieu Khoa
     GiamTruImportResponse:
       type: object
       description: >-
@@ -17658,13 +17685,13 @@ components:
           nullable: true
           description: >-
             Don vi cua phieu (kiem nhiem da don vi). Bo trong / null = don vi CHINH
-            cua nhan vien — day la hanh vi truoc khi co field nay, client cu khong
+            cua nhan vien - day la hanh vi truoc khi co field nay, client cu khong
             phai sua gi.
             Co gia tri = tao phieu tai mot don vi khac ma nguoi do dang tham gia;
             don vi do PHAI co dong hieu luc trong nhan_vien_chuc_vu cua chinh nguoi
             duoc tao phieu, neu khong API tra 409 "Nhan vien khong thuoc don vi nay
             trong nam danh gia".
-            Moi (nam, nguoi, don vi) chi 1 phieu — goi lai voi cung bo ba tra 409
+            Moi (nam, nguoi, don vi) chi 1 phieu - goi lai voi cung bo ba tra 409
             "Phieu danh gia da ton tai".
             LoaiDoiTuong cua phieu SUY RA TU DON VI NAY chu khong tu chuc danh:
             don vi Khoa (ma_don_vi bat dau bang "K_") + nguoi co chuc danh nghe
@@ -17672,7 +17699,7 @@ components:
             hoac Khoa nhung nguoi khong co chuc danh) => 2 (mau Vien chuc / NLD).
             IdMau truyen len phai cung LoaiDoiTuong voi ket qua do.
             HE QUA: phieu o Phong mang LoaiDoiTuong = 2 nen dinh luat "vien chuc toi
-            da muc 2 (Hoan thanh nhiem vu)" — mot Truong phong kiem GV Khoa khong the
+            da muc 2 (Hoan thanh nhiem vu)" - mot Truong phong kiem GV Khoa khong the
             dat Xuat sac tren phieu Phong, nhung van dat duoc tren phieu Khoa.
     ChiTietDanhGiaDiemKhoaRequest:
       type: object
@@ -18799,7 +18826,7 @@ components:
           nullable: true
         LoaiDoiTuong:
           type: integer
-          description: Luon 2 (vien chuc / NLD) — chk_pdg_quy_loai_doi_tuong chan cung.
+          description: Luon 2 (vien chuc / NLD) - chk_pdg_quy_loai_doi_tuong chan cung.
         TrangThai:
           type: integer
           enum: [1, 2, 5]
@@ -18825,7 +18852,7 @@ components:
           nullable: true
           description: >
             Tong nhom B cua quy nay, CHUA kep tran cuoi nam. Cuoi nam cac quy duoc CONG
-            DON, kep theo tung tieu chi roi cat tran nhom — tong nam co the NHO HON tong
+            DON, kep theo tung tieu chi roi cat tran nhom - tong nam co the NHO HON tong
             bon con so nay.
         TongDiemTichLuy:
           type: number
@@ -18912,7 +18939,7 @@ components:
           format: double
           nullable: true
           description: >
-            CHI POST /api/phieu-quy/{id}/tp/duyet chieu ba cot nay — ket qua chot diem
+            CHI POST /api/phieu-quy/{id}/tp/duyet chieu ba cot nay - ket qua chot diem
             cua quy vua duyet, de FE hien ngay khong phai goi lai GET. Cac thao tac khac
             de null (NullValueHandling.Ignore nen JSON bo qua han).
         TongDiemVuotTroi:
@@ -18920,7 +18947,7 @@ components:
           format: double
           nullable: true
           description: >
-            Nhu tren. DA cat tran nhom B neu nhom co cau hinh tran — xem
+            Nhu tren. DA cat tran nhom B neu nhom co cau hinh tran - xem
             PhieuNamTongHopQuyResponse.TranNhomVuotTroi.
         TongDiemTichLuy:
           type: number
@@ -18932,7 +18959,7 @@ components:
           nullable: true
           enum: [1, 2, 3]
           description: >
-            Nhu tren (chi tp/duyet chieu) — xep loai cua quy vua chot, tinh tu
+            Nhu tren (chi tp/duyet chieu) - xep loai cua quy vua chot, tinh tu
             TongDiemTichLuy. Xem PhieuQuyDto.XepLoaiQuy.
         XepLoaiQuyText:
           type: string
@@ -18990,7 +19017,7 @@ components:
       properties:
         LyDo:
           type: string
-          description: BAT BUOC — thieu tra THIEU_LY_DO.
+          description: BAT BUOC - thieu tra THIEU_LY_DO.
         RowVersion:
           type: string
           format: byte
@@ -19084,7 +19111,7 @@ components:
         vao khoang hop le cua chinh tieu chi do. Day la bang FE PHAI hien de nguoi bi kep
         diem hieu vi sao tong cuoi nam nho hon tong bon quy cong lai.
         LUU Y: bang nay chi giai trinh duoc phep cat THU NHAT (theo tung tieu chi). Phep
-        cat THU HAI (tran cua ca nhom B) khong xuat hien o dong nao trong bang — xem
+        cat THU HAI (tran cua ca nhom B) khong xuat hien o dong nao trong bang - xem
         TranNhomVuotTroi / TongVuotTroiTruocTranNhom o response bao ngoai.
       properties:
         IdTieuChi:
@@ -19156,14 +19183,14 @@ components:
             $ref: "#/components/schemas/PhieuQuyTongHopDto"
         SoQuyDaChot:
           type: integer
-          description: MAU SO thuc dung cua phep trung binh — khong phai 4.
+          description: MAU SO thuc dung cua phep trung binh - khong phai 4.
         DiemCoBanTbQuy:
           type: number
           format: double
           nullable: true
           description: >
-            null khi SoQuyDaChot = 0. KHONG phai 0 — hai truong hop khac nhau.
-            DA LOAI 3 dong VPVC_* ra khoi phep trung binh — xem DiemVpvcNam.
+            null khi SoQuyDaChot = 0. KHONG phai 0 - hai truong hop khac nhau.
+            DA LOAI 3 dong VPVC_* ra khoi phep trung binh - xem DiemVpvcNam.
         DiemVpvcNam:
           type: number
           format: double
@@ -19178,7 +19205,7 @@ components:
           description: >
             CONG DON cac quy da chot, tung tieu chi da KEP o tran cua no, ROI ca nhom B
             da cat o TranNhomVuotTroi. Day la con so ma roll-up cuoi nam se ghi that.
-            null khi SoQuyDaChot = 0 — cung hop dong voi DiemCoBanTbQuy.
+            null khi SoQuyDaChot = 0 - cung hop dong voi DiemCoBanTbQuy.
         TranNhomVuotTroi:
           type: number
           format: double
@@ -19186,7 +19213,7 @@ components:
           description: >
             Tran cua CA nhom B (nhom_tieu_chi.diem_toi_da cua nut goc, vd 50 voi bang
             vien chuc / NLD). null = KHONG co tran (chua co phieu nam, hoac mau khong co
-            tieu chi nhom B nao). null KHONG phai 0 — 0 se la "khong duoc diem nao".
+            tieu chi nhom B nao). null KHONG phai 0 - 0 se la "khong duoc diem nao".
         TongVuotTroiTruocTranNhom:
           type: number
           format: double
@@ -19271,7 +19298,7 @@ components:
         CanhBao:
           type: boolean
           description: >
-            true khi tong hop tu DUOI 4 quy. KHONG phai loi — mau so la so quy thuc co —
+            true khi tong hop tu DUOI 4 quy. KHONG phai loi - mau so la so quy thuc co -
             nhung FE phai hien ro "chi tong hop tu N quy".
         SoQuyDaChot:
           type: integer
@@ -19291,7 +19318,7 @@ components:
           nullable: true
           description: >
             SO HANG THU HAI: 3 tieu chi VPVC_* cham TRON NAM tren chinh phieu nam.
-            Chung KHONG lay trung binh 4 quy — trung binh chi tru ~1/4 so vi pham ca nam.
+            Chung KHONG lay trung binh 4 quy - trung binh chi tru ~1/4 so vi pham ca nam.
         TongDiemCoBan:
           type: number
           format: double
@@ -19332,7 +19359,7 @@ components:
           enum: [1, 2, 3]
           description: >
             Xep loai CA NAM theo TongDiemTichLuy vua tong hop (luat vien chuc, tran 3),
-            DA LUU vao phieu nam. Muc theo diem de doi chieu — TK van chon xep loai khi
+            DA LUU vao phieu nam. Muc theo diem de doi chieu - TK van chon xep loai khi
             chot ho so, muc 4 do han ngach 20% quyet.
         XepLoaiTongHopQuyText:
           type: string
@@ -19355,7 +19382,7 @@ components:
         CanhBaoTieuChiTuDong:
           type: boolean
           description: >
-            true khi SoTieuChiTuDongBoSot > 0 — FE phai hien banner tren man hinh roll-up.
+            true khi SoTieuChiTuDongBoSot > 0 - FE phai hien banner tren man hinh roll-up.
     PhieuDanhGiaChiTietDto:
       type: object
       properties:
@@ -19383,7 +19410,7 @@ components:
         SoQuyDaChot:
           type: integer
           nullable: true
-          description: MAU SO thuc dung — so quy DA CHOT, KHONG phai 4.
+          description: MAU SO thuc dung - so quy DA CHOT, KHONG phai 4.
         DanhSachQuyDaChot:
           type: string
           nullable: true
@@ -19402,7 +19429,7 @@ components:
           description: >
             Chi co o GET /api/phieu/{id}, chi phieu NguonDiemCoBan = 2. Xep loai CA NAM
             theo diem tong hop tu cac quy, ghi cung lan roll-up voi DiemCoBanTbQuy /
-            SoQuyDaChot. Muc THEO DIEM de doi chieu — ket qua cuoi van la XepLoai.
+            SoQuyDaChot. Muc THEO DIEM de doi chieu - ket qua cuoi van la XepLoai.
         XepLoaiTongHopQuyText:
           type: string
           nullable: true
@@ -19415,7 +19442,7 @@ components:
             1 Nhap, 2 Dang tham dinh, 3 Cho Truong khoa duyet, 4 CHO HIEU TRUONG DUYET,
             5 Hoan tat. Nghia cua 3 va 4 DA DOI so voi luong cu.
             LUONG DUYET TACH DOI: text cua muc 4 doi tu "Truong khoa da chot" thanh
-            "Cho Hieu truong duyet" — sau buoc dong goi to trinh, trang thai 4 chi con
+            "Cho Hieu truong duyet" - sau buoc dong goi to trinh, trang thai 4 chi con
             la tram dung cua HO SO LANH DAO (CanHtDuyet = true). Ho so thuong di thang
             4 -> 5 ngay trong sp_to_trinh_khoa_dong_goi.
             FE co bang map rieng thi PHAI sua muc 4; hoac dung thang TrangThaiText nay.
@@ -19480,11 +19507,11 @@ components:
                     dong goi to trinh, KHONG qua Hieu truong.
             Snapshot do sp_phieu_khoa_duyet_ho_so ghi MOT LAN tai buoc chot ho so (3 -> 4);
             KHONG suy lai theo nhan su hien tai. Truoc do (TrangThai 1/2/3) luon = false va
-            CHUA co y nghia — chi dien giai khi TrangThai >= 4.
+            CHUA co y nghia - chi dien giai khi TrangThai >= 4.
             FE TUYET DOI KHONG tu tinh co nay tu IdChucVu hay tu chuc vu cua user dang
             dang nhap (logic resolve chuc vu co nhieu canh sac: kiem nhiem da don vi,
             dong chuc vu NULL). Luon doc tu API.
-            CHI co trong result set cua GET /api/phieu/{id} (MapHeaderDetail rieng) —
+            CHI co trong result set cua GET /api/phieu/{id} (MapHeaderDetail rieng) -
             cac endpoint tra header phieu khac dung chung MapHeader nen KHONG co truong nay.
         IdNam:
           type: integer
@@ -19672,7 +19699,7 @@ components:
     ViPhamGiangDayCreateRequest:
       type: object
       description: >
-        IdNguoiGhiNhan / IdDonViGhiNhan KHONG nhan tu body — server lay tu JWT.
+        IdNguoiGhiNhan / IdDonViGhiNhan KHONG nhan tu body - server lay tu JWT.
         Minh chung KHONG nam trong body: sau khi tao xong, POST file PDF len
         api/viphamgiangday/{idViPham}/minh-chung (multipart/form-data).
       required:
@@ -19725,7 +19752,7 @@ components:
     ViPhamGiangDayUpdateRequest:
       type: object
       description: >
-        Khong sua minh chung qua PUT nay — dung cac endpoint
+        Khong sua minh chung qua PUT nay - dung cac endpoint
         api/viphamgiangday/{idViPham}/minh-chung.
       required:
         - IdNhanVien
@@ -19824,7 +19851,7 @@ components:
           format: double
           nullable: true
           description: >
-            Tran diem tru cua nhom (vien chuc: 70 / 30); null = nhom khong ap tran —
+            Tran diem tru cua nhom (vien chuc: 70 / 30); null = nhom khong ap tran -
             moi nhom cua giang vien, va nhom "Chinh tri, tu tuong" cua vien chuc.
         DiemTru:
           type: number
@@ -19881,7 +19908,7 @@ components:
         DuongDan:
           type: string
           description: >
-            Path tuong doi duoi App_Data, luon ket thuc .pdf. KHONG phai URL cong khai —
+            Path tuong doi duoi App_Data, luon ket thuc .pdf. KHONG phai URL cong khai -
             tai file qua GET api/viphamgiangday/{idViPham}/minh-chung/tai-ve.
         KichThuocKb:
           type: integer
@@ -20030,10 +20057,10 @@ components:
         TongDiemTruCaNhan:
           type: number
           format: double
-          description: T — tong diem tru cua cac ca nhan thuoc Khoa
+          description: T - tong diem tru cua cac ca nhan thuoc Khoa
         SoGiangVien:
           type: integer
-          description: N — so giang vien dang hoat dong cua Khoa
+          description: N - so giang vien dang hoat dong cua Khoa
         SoGiangVienViPham:
           type: integer
         MauSo:
@@ -20062,7 +20089,7 @@ components:
       type: object
       description: >
         Giang vien (LoaiDoiTuong = 1): 6 nhom, khong ap tran theo nhom.
-        Vien chuc/NLD (LoaiDoiTuong = 2): 3 nhom — "Hoan thanh cong viec..." (tran 70),
+        Vien chuc/NLD (LoaiDoiTuong = 2): 3 nhom - "Hoan thanh cong viec..." (tran 70),
         "Tuan thu gio giac, tac phong, noi quy" (tran 30) va
         "Chinh tri, tu tuong" (KHONG ap tran).
       properties:
@@ -20076,7 +20103,7 @@ components:
           description: >
             Ma nghiep vu on dinh cua nhom, TRUNG DUNG ma CongThucTongHop cua tieu chi
             cham tu dong tuong ung: VPVC_HOAN_THANH_CV (tran 70), VPVC_NOI_QUY (tran 30),
-            VPVC_CHINH_TRI (khong tran). null = nhom chua gan cong thuc — toan bo 6 nhom
+            VPVC_CHINH_TRI (khong tran). null = nhom chua gan cong thuc - toan bo 6 nhom
             giang vien deu null, va tieu chi mang ma do se duoc cham TRON DIEM vi khong
             khop vi pham nao.
         LoaiDoiTuong:
@@ -20141,7 +20168,7 @@ components:
           type: integer
           enum: [0, 1, 2]
           description: >
-            Cach ap muc tru khi ghi nhan —
+            Cach ap muc tru khi ghi nhan -
             0 = tu do: nhap bao nhieu cung duoc (mac dinh, hanh vi cu cua danh muc giang vien);
             1 = co dinh: luon dung DiemTruMacDinh, bo qua gia tri client gui
             (VD "Di lam muon: tru 01 diem/lan");
@@ -21055,10 +21082,10 @@ components:
       type: object
       description: >
         1 dòng KPI bài báo quốc tế theo năm (bảng nckh_kpi_bai_bao_quoc_te), đã ghép với
-        nhân viên KPI qua email — bảng nguồn KHÔNG có cột id_nhan_vien và KHÔNG có FK
+        nhân viên KPI qua email - bảng nguồn KHÔNG có cột id_nhan_vien và KHÔNG có FK
         sang nckh_ho_so nên ánh xạ bằng email ngay lúc đọc (cùng quy ước với
         NckhGioNckhItem).
-        Điểm ở đây do PHÍA NCKH tính sẵn (DiemKpiCuoi) — phía KPI không tính lại.
+        Điểm ở đây do PHÍA NCKH tính sẵn (DiemKpiCuoi) - phía KPI không tính lại.
       properties:
         MaNguoiDungNckh:
           type: integer
@@ -21094,12 +21121,12 @@ components:
           description: >
             Điểm KPI cuối cùng phía NCKH đã quy đổi. ĐÂY CHÍNH LÀ điểm tự động của tiêu
             chí NCKH_BBQT_DIEM_KPI (sau khi sàn 0 và chặn trần ở DiemToiDa của tiêu chí)
-            — nếu DiemTuDong nhỏ hơn giá trị này nghĩa là đã bị chặn trần.
+            - nếu DiemTuDong nhỏ hơn giá trị này nghĩa là đã bị chặn trần.
         SoBaiBao:
           type: integer
           description: >
             Cột DẪN XUẤT bên DB (= số phần tử của articles_json lúc đồng bộ). Luôn có kể
-            cả khi BaiBao vắng mặt — dùng để biết có bao nhiêu bài mà không cần tải cả mảng.
+            cả khi BaiBao vắng mặt - dùng để biết có bao nhiêu bài mà không cần tải cả mảng.
         BaiBao:
           type: array
           nullable: true
@@ -21153,7 +21180,7 @@ components:
         PublicationDate:
           type: string
           nullable: true
-          description: Dạng chuỗi "2026-07-05" — giữ nguyên text, không parse.
+          description: Dạng chuỗi "2026-07-05" - giữ nguyên text, không parse.
         PublicationYear:
           type: integer
           nullable: true
@@ -21804,7 +21831,7 @@ components:
         LoaiNhom:
           type: integer
           nullable: true
-          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) — mẫu phiếu của Phòng/TT không tách mục A/B."
+          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) - mẫu phiếu của Phòng/TT không tách mục A/B."
         LoaiDoiTuong:
           type: integer
           description: "1: Giảng viên, 2: Viên chức/NLĐ, 3: Khoa, 4: Phòng ban/hành chính"
@@ -21847,7 +21874,7 @@ components:
           description: >-
             Khac 0. Duong = diem toi da thong thuong.
             AM = tieu chi CHI TRU diem (khong co diem toi da, con so la muc tru toi
-            da) — vd muc III "Chap hanh quy dinh" cua bang KPI Vien chuc/NLD khai
+            da) - vd muc III "Chap hanh quy dinh" cua bang KPI Vien chuc/NLD khai
             -100. Gia tri am CHI hop le khi LoaiDoiTuong = 2 (Vien chuc/NLD);
             GV (1) / Khoa (3) / Phong (4) van bat buoc duong.
         LoaiThangDiem:
@@ -22109,7 +22136,7 @@ components:
     HoSoNhanVienUpdateRequest:
       type: object
       description: >
-        Body cho PUT /api/nhan-vien/{id}/ho-so. Tất cả field là tùy chọn —
+        Body cho PUT /api/nhan-vien/{id}/ho-so. Tất cả field là tùy chọn -
         field nào null thì giữ nguyên giá trị hiện tại (cập nhật bộ phận).
       properties:
         GioiTinh:
@@ -22233,7 +22260,7 @@ components:
           type: integer
         IdDonVi:
           type: integer
-          description: Đơn vị của quan hệ — bắt buộc (validate ở BLL)
+          description: Đơn vị của quan hệ - bắt buộc (validate ở BLL)
         IdChucVu:
           type: integer
           nullable: true
@@ -22906,7 +22933,7 @@ components:
         LoaiNhom:
           type: integer
           nullable: true
-          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) — mẫu phiếu của Phòng/TT không tách mục A/B."
+          description: "1: Nhóm A (cơ bản), 2: Nhóm B (vượt trội). null khi LoaiDoiTuong = 4 (Phòng/Trung tâm) - mẫu phiếu của Phòng/TT không tách mục A/B."
         BatBuocMinhChung:
           type: boolean
           nullable: true
@@ -23015,7 +23042,7 @@ components:
           type: number
           nullable: true
           description: >-
-            SUM diem cua TAT CA tieu chi trong phieu — KHONG phai TongDiemCoBan
+            SUM diem cua TAT CA tieu chi trong phieu - KHONG phai TongDiemCoBan
             + TongDiemVuotTroi. Nhom cua Phong/Trung tam co loai_nhom = NULL nen
             khong roi vao ve nao trong hai tong tren; cong lai se ra 0.
         XepLoai:
@@ -23430,7 +23457,7 @@ components:
           enum: [1, 2, 3, 4]
           description: >-
             Tuy chon. Bo trong -> BLL tinh theo tong diem tich luy (thang
-            nguong khac nhau giua mau Khoa va mau Phong/Trung tam — xem mo ta
+            nguong khac nhau giua mau Khoa va mau Phong/Trung tam - xem mo ta
             endpoint). O mau Phong/TT, muc 4 CHI dat duoc bang cach gui tay va
             can tong > 80.
         GhiChuXepLoai:
@@ -23478,7 +23505,7 @@ components:
           type: string
           format: byte
           nullable: true
-          description: "Tuy chon — neu gui se duoc SP kiem tra concurrency"
+          description: "Tuy chon - neu gui se duoc SP kiem tra concurrency"
     ThamDinhPendingDto:
       type: object
       description: Mot DONG trong hang doi tham dinh (khong phai mot phieu)
@@ -23733,7 +23760,7 @@ components:
           enum: [1, 2, 3, 4, 5]
           description: >-
             1 DANG_TONG_HOP, 2 DA_DONG_GOI, 3 DA_TRINH, 4 HT_DA_DUYET, 5 HT_TRA_VE.
-            LUONG DUYET TACH DOI — trang thai 4 nay co HAI NGUON GOC khac han nhau, phan
+            LUONG DUYET TACH DOI - trang thai 4 nay co HAI NGUON GOC khac han nhau, phan
             biet qua IdNguoiDuyet:
             * IdNguoiDuyet co gia tri => Hieu truong duyet THAT (goi da di qua 2 -> 3 -> 4).
             * IdNguoiDuyet = null    => GOI TU DONG HOAN TAT: don vi khong co ho so lanh
@@ -23741,7 +23768,7 @@ components:
               thang 1 -> 4, lich su hanh_dong = 6).
             Goi tu dong hoan tat van mo lai duoc khi co ho so moi duoc chot; goi HT duyet
             that thi bi khoa cung.
-            FE hien "Nguoi duyet: ..." PHAI handle null (hien "—" hoac "Tu dong").
+            FE hien "Nguoi duyet: ..." PHAI handle null (hien "-" hoac "Tu dong").
         TrangThaiText:
           type: string
           nullable: true
@@ -23880,7 +23907,7 @@ components:
             HOAN TAT (trang thai 5) ngay tai buoc dong goi, khong qua Hieu truong.
             Chi co nghia khi TrangThai >= 4. Vang mat o result set khong tra cot nay
             (vd nhanh loi DONG_HANG).
-            Cap (TrangThai = 4, CanHtDuyet = false) la DU LIEU TON tu quy trinh cu —
+            Cap (TrangThai = 4, CanHtDuyet = false) la DU LIEU TON tu quy trinh cu -
             hop le tam thoi, TK phai dong goi lai mot lan de no hoan tat.
         TongDiemCoBan:
           type: number
@@ -23998,7 +24025,7 @@ components:
           enum: [1, 2, 3, 4, 5, 6]
           description: >-
             1 Dong goi, 2 Trinh HT, 3 HT duyet, 4 HT tra ve, 5 Mo lai goi,
-            6 TU DONG HOAN TAT (moi) — dong goi xong ma don vi khong co ho so lanh dao
+            6 TU DONG HOAN TAT (moi) - dong goi xong ma don vi khong co ho so lanh dao
             nao nen goi di thang sang trang thai 4, khong qua Hieu truong.
         HanhDongText:
           type: string
@@ -24222,7 +24249,7 @@ components:
           nullable: true
           description: >-
             LUONG DUYET TACH DOI. O dong-goi: so ho so THUONG (CanHtDuyet = false) vua
-            duoc chuyen thang sang HOAN TAT (trang thai 5) — khong can Hieu truong duyet.
+            duoc chuyen thang sang HOAN TAT (trang thai 5) - khong can Hieu truong duyet.
             O ht-duyet: so ho so LANH DAO vua chuyen sang HOAN TAT.
             Vang mat o cac endpoint khac.
         SoHoSoChoHt:
@@ -24232,7 +24259,7 @@ components:
             CHI co o dong-goi. So ho so LANH DAO (CanHtDuyet = true) con o trang thai 4,
             cho Truong khoa trinh Hieu truong.
             * > 0  => Item.TrangThai = 2 (DA_DONG_GOI), FE hien nut "Trinh Hieu truong".
-            * = 0  => Item.TrangThai = 4 (goi TU DONG HOAN TAT), FE PHAI AN nut do —
+            * = 0  => Item.TrangThai = 4 (goi TU DONG HOAN TAT), FE PHAI AN nut do -
                       bam vao se nhan 409 KHONG_CO_HO_SO_LANH_DAO.
             Vien chuc Khoa muc 3 cho HT xet cap Truong KHONG tinh vao day.
         SoHoSoChoXetTruong:

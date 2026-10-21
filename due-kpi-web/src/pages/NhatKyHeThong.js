@@ -7,8 +7,8 @@ import "../css/Pages.css";
 import "../css/NhatKyHeThong.css";
 
 const TABS = [{ key: "dang-nhap", label: "Phiên đăng nhập", enabled: true }, { key: "thao-tac", label: "Thao tác dữ liệu", enabled: true }];
-const number = (value) => value == null ? "—" : Number(value).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
-const person = (name, code, id) => [name, code || (id == null ? null : `ID ${id}`)].filter(Boolean).join(" · ") || "—";
+const number = (value) => value == null ? "-" : Number(value).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+const person = (name, code, id) => [name, code || (id == null ? null : `ID ${id}`)].filter(Boolean).join(" · ") || "-";
 
 function Capacity({ item }) {
   if (!item) return null;
@@ -81,9 +81,9 @@ export default function NhatKyHeThong() {
       options={[{ value: "", label: "Tất cả" }, ...options.map(([value, text, disabled]) => ({ value, label: text, disabled }))]} />
       : <input type={type} min={type === "number" ? 1 : undefined} step={type === "number" ? 1 : undefined} value={draft[key] || ""} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} />}
   </label>;
-  const requestLink = (id) => id ? <button className="nk-link" title="Xem thao tác cùng yêu cầu" onClick={() => switchTab("thao-tac", { maYeuCau: id })}>{id}</button> : "—";
+  const requestLink = (id) => id ? <button className="nk-link" title="Xem thao tác cùng yêu cầu" onClick={() => switchTab("thao-tac", { maYeuCau: id })}>{id}</button> : "-";
   const action = (row) => <>{HANH_DONG[row.HanhDong] || row.TenHanhDong}{isSummary(row) && <div>Import {number(row.SoDong)} dòng (tóm tắt)</div>}{row.HanhDong === 4 && <div>{row.KhoaBanGhiCu != null && row.KhoaBanGhi != null ? `Đổi khoá: ${row.KhoaBanGhiCu} → ${row.KhoaBanGhi}` : "Đổi nhiều dòng, không ghép được khoá; xem cùng mã yêu cầu."}</div>}</>;
-  const actor = (row) => <>{TAC_NHAN[row.LoaiTacNhan] || row.TenLoaiTacNhan}{row.LoaiTacNhan === 1 && <div>{person(row.HoTenNguoiThucHien, row.MaNguoiThucHien, row.IdNguoiThucHien)}</div>}{row.LoaiTacNhan === 3 && <div>SQL: {row.TenDangNhapSql || "—"}<br />Ứng dụng: {row.UngDung || "—"}</div>}</>;
+  const actor = (row) => <>{TAC_NHAN[row.LoaiTacNhan] || row.TenLoaiTacNhan}{row.LoaiTacNhan === 1 && <div>{person(row.HoTenNguoiThucHien, row.MaNguoiThucHien, row.IdNguoiThucHien)}</div>}{row.LoaiTacNhan === 3 && <div>SQL: {row.TenDangNhapSql || "-"}<br />Ứng dụng: {row.UngDung || "-"}</div>}</>;
 
   return <div className="page-container nk-page">
     <div className="page-header nk-toolbar"><div className="header-title"><h2>Nhật ký hệ thống</h2><span className="breadcrumb">Quản trị hệ thống / Tra cứu nhật ký</span></div><button className="btn-cancel" onClick={() => setReload((n) => n + 1)}>Tải lại</button></div>
@@ -111,8 +111,8 @@ export default function NhatKyHeThong() {
           {(list?.Items || []).map((row) => <tr key={row.Id} className={!session && row.LoaiTacNhan === 3 ? "nk-external" : ""}>
             <td>{logTime(row.ThoiGian, session)}</td>
             <td>{session ? <>{SU_KIEN[row.LoaiSuKien] || row.TenLoaiSuKien}<div className={row.ThanhCong ? "nk-success" : "nk-failure"}>{row.ThanhCong ? "Thành công" : "Thất bại"}</div>{!row.ThanhCong && <div>{LY_DO[row.LyDoThatBai] || row.LyDoThatBai || "Không có lý do được ghi"}</div>}</> : <><b>{row.TenBang}</b><div>{action(row)}</div></>}</td>
-            <td>{session ? <>{person(row.HoTen, row.MaNhanVien, row.IdNhanVien)}<div>{row.TenDangNhap || "—"}</div>{row.LoaiSuKien === 5 && <div>Người đặt lại: {person(row.HoTenNguoiThucHien, row.MaNguoiThucHien, row.IdNguoiThucHien)}</div>}</> : actor(row)}</td>
-            <td>IP: {row.DiaChiIp || "—"}{session ? <div className="nk-agent">{row.UserAgent || "—"}</div> : <><div>{row.Nguon || "—"}</div>{!isSummary(row) && <div>Khoá: {row.KhoaBanGhi ?? "—"}</div>}<div>{row.CacTruongThayDoi?.join(", ")}</div></>}</td>
+            <td>{session ? <>{person(row.HoTen, row.MaNhanVien, row.IdNhanVien)}<div>{row.TenDangNhap || "-"}</div>{row.LoaiSuKien === 5 && <div>Người đặt lại: {person(row.HoTenNguoiThucHien, row.MaNguoiThucHien, row.IdNguoiThucHien)}</div>}</> : actor(row)}</td>
+            <td>IP: {row.DiaChiIp || "-"}{session ? <div className="nk-agent">{row.UserAgent || "-"}</div> : <><div>{row.Nguon || "-"}</div>{!isSummary(row) && <div>Khoá: {row.KhoaBanGhi ?? "-"}</div>}<div>{row.CacTruongThayDoi?.join(", ")}</div></>}</td>
             <td>{requestLink(row.MaYeuCau)}</td>
             {!session && <td>{!isSummary(row) && <button className="nk-link" onClick={() => setDetailId(row.Id)}>Chi tiết</button>}{!isSummary(row) && row.KhoaBanGhi != null && <button className="nk-link" onClick={() => switchTab("thao-tac", { tenBang: row.TenBang, khoaBanGhi: row.KhoaBanGhi })}>Lịch sử bản ghi</button>}</td>}
           </tr>)}
@@ -127,7 +127,7 @@ export default function NhatKyHeThong() {
     <Dialog header="Chi tiết thao tác dữ liệu" visible={detailId != null} onHide={() => setDetailId(null)} style={{ width: "min(1000px, 95vw)" }} modal draggable={false}>
       {detailError ? <p role="alert" className="nk-alert">{detailError}</p> : !detail ? <p role="status">Đang tải chi tiết...</p> : <div className="nk-detail">
         <p><b>{detail.TenBang}</b> · {action(detail)} · {logTime(detail.ThoiGian)} (giờ máy chủ)</p>
-        <p>{actor(detail)}</p><p>IP: {detail.DiaChiIp || "—"} · Nguồn: {detail.Nguon || "—"}</p><p>Mã yêu cầu: {requestLink(detail.MaYeuCau)}</p>
+        <p>{actor(detail)}</p><p>IP: {detail.DiaChiIp || "-"} · Nguồn: {detail.Nguon || "-"}</p><p>Mã yêu cầu: {requestLink(detail.MaYeuCau)}</p>
         {isSummary(detail) ? <p>Nhật ký tóm tắt không có chi tiết từng trường.</p> : <><label><input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> Hiện tất cả trường</label>
           <div className="table-scroll"><table className="nk-table"><thead><tr><th>Trường</th><th>Giá trị cũ</th><th>Giá trị mới</th></tr></thead><tbody>{(detail.CacTruong || []).filter((r) => showAll || r.CoThayDoi === true).map((r) => <tr className={r.CoThayDoi ? "nk-changed" : ""} key={r.Truong}><td>{r.Truong}</td><td><pre>{rawValue(r.GiaTriCu)}</pre></td><td><pre>{rawValue(r.GiaTriMoi)}</pre></td></tr>)}</tbody></table></div>
           {!(detail.CacTruong || []).some((r) => showAll || r.CoThayDoi === true) && <p>Không có trường {showAll ? "được ghi" : "thay đổi"}.</p>}</>}

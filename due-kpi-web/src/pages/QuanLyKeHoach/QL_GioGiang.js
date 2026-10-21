@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Toast } from "primereact/toast";
+import { confirmDialog } from "primereact/confirmdialog";
 import SearchSelect from "../../components/Common/SearchSelect";
 import "../../css/Pages.css";
 import "../../css/QuanLyKeHoach/QL_GioGiang.css";
@@ -297,19 +298,7 @@ const QL_GioGiang = () => {
     if (fileError && fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleImport = async (event) => {
-    event.preventDefault();
-    if (!canManage) return;
-    const payload = {
-      file: importFile,
-      idNam: selectedYear,
-    };
-    const validationMessage = kiemTraImportTkb(payload);
-    if (validationMessage) {
-      setFormError(validationMessage);
-      return;
-    }
-
+  const runImport = async (payload) => {
     setIsImporting(true);
     setFormError("");
     try {
@@ -345,6 +334,32 @@ const QL_GioGiang = () => {
     } finally {
       setIsImporting(false);
     }
+  };
+
+  const handleImport = (event) => {
+    event.preventDefault();
+    if (!canManage) return;
+    const payload = {
+      file: importFile,
+      idNam: selectedYear,
+    };
+    const validationMessage = kiemTraImportTkb(payload);
+    if (validationMessage) {
+      setFormError(validationMessage);
+      return;
+    }
+    confirmDialog({
+      header: "Xác nhận upload thời khóa biểu",
+      message: `Upload file “${payload.file.name}” sẽ ghi đè dữ liệu thời khóa biểu của cả hai hệ DH và SDH trong năm ${selectedYear}, rồi tính lại giờ chuẩn. Ánh xạ giảng viên đã có, kể cả ánh xạ đã sửa tay, được giữ nguyên. Tiếp tục?`,
+      icon: "pi pi-exclamation-triangle",
+      acceptLabel: "Xác nhận upload",
+      rejectLabel: "Hủy",
+      acceptClassName: "p-button-primary",
+      rejectClassName: "p-button-secondary p-button-outlined",
+      // Modal upload dùng .modal-overlay (z-index 10000) nên hộp xác nhận phải nằm trên mức đó.
+      baseZIndex: 10001,
+      accept: () => runImport(payload),
+    });
   };
 
   const handleRemap = async () => {

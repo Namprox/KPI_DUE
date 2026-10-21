@@ -53,7 +53,7 @@ export function nguonGiamTru(item) {
 
 const so = (value) => Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 2 });
 export function hienThiGiamTru(item) {
-  if (item.LoaiGiamTru === LOAI_GIAM_TRU.GIO) return item.GioGiamTruNam == null ? '—' : `−${so(item.GioGiamTruNam)} giờ`;
+  if (item.LoaiGiamTru === LOAI_GIAM_TRU.GIO) return item.GioGiamTruNam == null ? '-' : `−${so(item.GioGiamTruNam)} giờ`;
   if (item.LoaiGiamTru === LOAI_GIAM_TRU.TY_LE) return `${so((item.TyLeDinhMucGiang ?? 1) * 100)}% còn phải thực hiện`;
-  return item.IdChucVu ? 'Chưa cấu hình' : '—';
+  return item.IdChucVu ? 'Chưa cấu hình' : '-';
 }

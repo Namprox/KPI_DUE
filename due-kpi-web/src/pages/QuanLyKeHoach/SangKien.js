@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Dialog } from "primereact/dialog";
+import { confirmDialog } from "primereact/confirmdialog";
 import SearchSelect from "../../components/Common/SearchSelect";
 import SangKienDetail from "../../components/SangKien/SangKienDetail";
 import { ngaySangKien, ketQuaXetSangKien, ketQuaCaiTienSangKien, DiemVienChucSangKien, TacGiaSangKien, TrangThaiSangKien } from "../../components/SangKien/SangKienInfo";
@@ -108,6 +109,19 @@ export default function SangKien() {
     } catch (e) { if (permissionRef.current === owner) setError(e.message); }
     finally { setBusy(false); setSyncing(false); }
   };
+  const confirmSynchronize = () => {
+    if (busy || !canWrite) return;
+    confirmDialog({
+      header: "Xác nhận đồng bộ sáng kiến từ NCKH",
+      message: "Hệ thống kéo toàn bộ sáng kiến của mọi năm từ NCKH, có thể mất vài chục giây. Kết quả xét đổi mới giảng dạy và cải tiến công việc đã có được giữ nguyên; sáng kiến không còn trên NCKH sẽ bị đánh dấu không tính điểm. Đồng bộ không tự chấm lại phiếu đã nộp. Tiếp tục?",
+      icon: "pi pi-exclamation-triangle",
+      acceptLabel: "Đồng bộ",
+      rejectLabel: "Hủy",
+      acceptClassName: "p-button-primary",
+      rejectClassName: "p-button-secondary p-button-outlined",
+      accept: synchronize,
+    });
+  };
   const openAction = (value) => { setAction(value); setNote(value.note || ""); setActionError(""); };
   const submitAction = async () => {
     if (busy || !action || (action.improvement ? !canImprove : !canWrite)) return;
@@ -138,7 +152,7 @@ export default function SangKien() {
   return <div className="page-container sk">
     <div className="page-header sk-heading"><div className="header-title"><h2>{management ? "Sáng kiến" : "Sáng kiến của tôi"}</h2><span className="breadcrumb">
       {quyen?.XemTatCa === true ? "Sáng kiến của toàn trường từ hệ thống NCKH" : quyen?.XemTheoDonVi === true ? "Sáng kiến của nhân sự trong phạm vi đơn vị" : "Sáng kiến bạn là tác giả"}</span></div>
-      <div className="sk-actions">{canWrite && <button disabled={busy} onClick={synchronize}>{syncing ? "Đang đồng bộ NCKH..." : "Đồng bộ NCKH"}</button>}
+      <div className="sk-actions">{canWrite && <button disabled={busy} onClick={confirmSynchronize}>{syncing ? "Đang đồng bộ NCKH..." : "Đồng bộ NCKH"}</button>}
         {quyen?.LaQuanLy === true && <Link className="sk-button" to="/sang-kien/uy-quyen">Ủy quyền nhập liệu</Link>}</div>
     </div>
     {permissionLoading && <p role="status">Đang tải quyền truy cập...</p>}
@@ -150,7 +164,7 @@ export default function SangKien() {
     {message && <p role="status" className="sk-notice">{message}</p>}
     {syncing && <p role="status" className="sk-notice">Đang lấy toàn bộ sáng kiến từ NCKH. Quá trình có thể mất vài chục giây.</p>}
     {syncResult && <div className="sk-sync-results">
-      <div className="sk-summary">{[["Người dùng nguồn", "SoNguoiDungNguon"], ["Sáng kiến", "SoSangKien"], ["Mới", "SoMoi"], ["Đã có", "SoDaCo"], ["Không còn trên NCKH", "SoKhongConONguon"], ["Tác giả", "SoTacGia"]].map(([label, key]) => <span key={key}>{label}: <strong>{syncResult[key] ?? "—"}</strong></span>)}</div>
+      <div className="sk-summary">{[["Người dùng nguồn", "SoNguoiDungNguon"], ["Sáng kiến", "SoSangKien"], ["Mới", "SoMoi"], ["Đã có", "SoDaCo"], ["Không còn trên NCKH", "SoKhongConONguon"], ["Tác giả", "SoTacGia"]].map(([label, key]) => <span key={key}>{label}: <strong>{syncResult[key] ?? "-"}</strong></span>)}</div>
       {syncResult.SoTacGiaChuaKhop > 0 && <p className="sk-warning">{syncResult.SoTacGiaChuaKhop} tác giả chưa khớp nhân sự, không được tính điểm. <Link to="/sang-kien?idNam=&chuaKhopTacGia=true">Xem sáng kiến chưa khớp tác giả</Link></p>}
       {syncResult.SoTacGiaGhepHoTen > 0 && <p className="sk-warning">{syncResult.SoTacGiaGhepHoTen} tác giả tạm ghép theo họ tên, vẫn được tính điểm theo quy tắc sáng kiến và cần rà soát. Sửa email nhân sự cho khớp NCKH rồi đồng bộ lại để ghép theo email. <Link to="/sang-kien?idNam=&ghepTheoHoTen=true">Xem sáng kiến ghép theo họ tên</Link></p>}
       {syncResult.SoCapKhongNhanDien > 0 && <p className="sk-warning">{syncResult.SoCapKhongNhanDien} sáng kiến chưa xác định cấp, không có điểm cấp; vẫn được cộng điểm cải tiến công việc nếu được đánh dấu. <Link to="/sang-kien?idNam=&idCap=0">Xem sáng kiến chưa xác định cấp</Link></p>}
@@ -183,24 +197,24 @@ export default function SangKien() {
         <td>{((data.Page ?? filter.page) - 1) * (data.PageSize ?? filter.pageSize) + index + 1}</td>
         <td><button className="sk-text-link" onClick={() => setDetailId(r.IdSangKien)}>{r.TenSangKien}</button><TrangThaiSangKien item={r} /><small>{r.TenLoaiGiaiPhap || r.LoaiGiaiPhapTextNguon}</small><small>{r.DonViChuTri}</small></td>
         <td><TacGiaSangKien items={r.TacGia} /></td>
-        <td>{r.TenCap || r.CapTextNguon || "Chưa xác định cấp"}<small>{ngaySangKien(r.NgayCongNhan)} · Năm {r.IdNamDanhGia ?? "—"}</small><small>{r.SoChungNhan || "—"}</small><DiemVienChucSangKien item={r} diemCaiTien={catalog.DiemCaiTienCongViec} /></td>
+        <td>{r.TenCap || r.CapTextNguon || "Chưa xác định cấp"}<small>{ngaySangKien(r.NgayCongNhan)} · Năm {r.IdNamDanhGia ?? "-"}</small><small>{r.SoChungNhan || "-"}</small><DiemVienChucSangKien item={r} diemCaiTien={catalog.DiemCaiTienCongViec} /></td>
         <td>{r.Nguon === 1 ? <><span className={`sk-badge ${r.LaDoiMoiGiangDay === true ? "sk-THEM" : "sk-TRUNG"}`}>{ketQuaXetSangKien(r)}</span><small>{r.GhiChuXet}</small></> : "Không áp dụng"}</td>
-        <td><span className={`sk-badge ${r.LaCaiTienCongViec === true ? "sk-THEM" : "sk-TRUNG"}`}>{r.LaCaiTienCongViec === true ? `Cải tiến +${catalog.DiemCaiTienCongViec ?? "—"}` : ketQuaCaiTienSangKien(r)}</span><small>{r.GhiChuXetCaiTien}</small>
-          <small>{r.TenNguoiXetCaiTien || "—"} · {ngaySangKien(r.NgayXetCaiTien, true)}</small></td>
+        <td><span className={`sk-badge ${r.LaCaiTienCongViec === true ? "sk-THEM" : "sk-TRUNG"}`}>{r.LaCaiTienCongViec === true ? `Cải tiến +${catalog.DiemCaiTienCongViec ?? "-"}` : ketQuaCaiTienSangKien(r)}</span><small>{r.GhiChuXetCaiTien}</small>
+          <small>{r.TenNguoiXetCaiTien || "-"} · {ngaySangKien(r.NgayXetCaiTien, true)}</small></td>
         {hasActions && <td><div className="sk-row-actions">
           {canWrite && r.ChoPhepXet === true && <button disabled={busy} onClick={() => openAction({ rows: [r], value: r.LaDoiMoiGiangDay ?? null, choose: true, improvement: false, note: r.GhiChuXet })}>Xét giảng dạy</button>}
           {canImprove && r.ChoPhepXetCaiTien === true && <button disabled={busy} onClick={() => openAction({ rows: [r], value: r.LaCaiTienCongViec ?? null, choose: true, improvement: true, note: r.GhiChuXetCaiTien })}>Xét cải tiến</button>}
         </div></td>}
       </tr>)}</tbody>
-    </table></div><div className="table-pager sk-pagination"><span>{data ? `${data.TotalCount ?? 0} sáng kiến · Trang ${data.Page ?? filter.page}/${Math.max(1, data.TotalPages ?? 1)}` : "—"}</span>
-      <div className="sk-actions"><SearchSelect ariaLabel="Số sáng kiến mỗi trang" value={filter.pageSize} onChange={(v) => changeFilters({ pageSize: v })} options={[20, 50, 100, 500].map((n) => ({ value: n, label: `${n} / trang` }))} />
-        <button className="table-pager-btn" disabled={loading || !data || filter.page <= 1} onClick={() => changeFilters({ page: filter.page - 1 })}>Trước</button><button className="table-pager-btn" disabled={loading || !data || filter.page >= data.TotalPages} onClick={() => changeFilters({ page: filter.page + 1 })}>Sau</button></div></div></div>
+    </table></div><div className="table-pager sk-pagination"><span>{data ? `${data.TotalCount ?? 0} sáng kiến · Trang ${data.Page ?? filter.page}/${Math.max(1, data.TotalPages ?? 1)}` : "-"}</span>
+        <div className="sk-actions"><SearchSelect ariaLabel="Số sáng kiến mỗi trang" value={filter.pageSize} onChange={(v) => changeFilters({ pageSize: v })} options={[20, 50, 100, 500].map((n) => ({ value: n, label: `${n} / trang` }))} />
+          <button className="table-pager-btn" disabled={loading || !data || filter.page <= 1} onClick={() => changeFilters({ page: filter.page - 1 })}>Trước</button><button className="table-pager-btn" disabled={loading || !data || filter.page >= data.TotalPages} onClick={() => changeFilters({ page: filter.page + 1 })}>Sau</button></div></div></div>
     {detailId && <SangKienDetail id={detailId} onClose={() => setDetailId(null)} />}
     {action && (action.improvement ? canImprove : canWrite) && <Dialog draggable={false} visible header={action.improvement ? "Xét cải tiến công việc" : "Xét đổi mới, sáng tạo trong giảng dạy"} onHide={() => { if (!busy) setAction(null); }} modal closable={!busy} closeOnEscape={!busy} className="sk-dialog" maskClassName="sk-dialog-mask" style={{ width: "620px" }} breakpoints={{ "660px": "95vw" }}>
       <div className="sk sk-action-form"><p>Áp dụng cho {action.rows.length} sáng kiến.</p>
         {action.improvement && <p className="sk-muted">Kết quả áp dụng cho toàn bộ sáng kiến và mọi tác giả viên chức. Lần xét sau thay thế kết quả trước.</p>}
         {action.choose ? <div className="sk-field"><label>Kết quả xét</label><SearchSelect ariaLabel="Kết quả xét" value={action.value === null ? "null" : String(action.value)} disabled={busy} onChange={(v) => setAction((prev) => ({ ...prev, value: v === "null" ? null : v === "true" }))} options={[{ value: "true", label: action.improvement ? "Có cải tiến công việc" : "Có đổi mới giảng dạy" }, { value: "false", label: action.improvement ? "Không phải cải tiến công việc" : "Không phải đổi mới" }, { value: "null", label: "Chưa xét (bỏ xét)" }]} /></div>
-          : <p><strong>{action.value === null ? "Bỏ xét — trở về chưa xét" : action.improvement ? ketQuaCaiTienSangKien({ LaCaiTienCongViec: action.value }) : ketQuaXetSangKien({ LaDoiMoiGiangDay: action.value })}</strong></p>}
+          : <p><strong>{action.value === null ? "Bỏ xét - trở về chưa xét" : action.improvement ? ketQuaCaiTienSangKien({ LaCaiTienCongViec: action.value }) : ketQuaXetSangKien({ LaDoiMoiGiangDay: action.value })}</strong></p>}
         <label className="sk-field">Ghi chú xét (tuỳ chọn)<textarea maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} rows={3} /></label>
         {actionError && <p role="alert" className="sk-error">{actionError}</p>}<div className="sk-actions sk-footer"><button disabled={busy} onClick={() => setAction(null)}>Hủy</button><button disabled={busy} className="sk-primary" onClick={submitAction}>{busy ? "Đang xử lý..." : "Xác nhận"}</button></div>
       </div>

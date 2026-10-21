@@ -19,8 +19,8 @@ const ViTriPhieuTrongKhoa = ({ idPhieu, tenDonVi, lanLamMoi = 0 }) => {
         if (!res.ok) return;
         const data = await res.json();
         if (!controller.signal.aborted && data.Success === true &&
-            Number(data.IdPhieu) === Number(idPhieu) && Number(data.TongSo) > 0 &&
-            Number(data.HangChinhThuc ?? data.Hang) > 0) {
+          Number(data.IdPhieu) === Number(idPhieu) && Number(data.TongSo) > 0 &&
+          Number(data.HangChinhThuc ?? data.Hang) > 0) {
           setKetQua({ idPhieu, lanLamMoi, data });
         }
       } catch (err) {
@@ -41,7 +41,7 @@ const ViTriPhieuTrongKhoa = ({ idPhieu, tenDonVi, lanLamMoi = 0 }) => {
           <i className="fa-solid fa-ranking-star" aria-hidden="true"></i>
           Vị trí tạm tính
         </span>
-        <div className="pl2-ranking-value">—</div>
+        <div className="pl2-ranking-value">-</div>
         {tenDonVi && <div className="pl2-ranking-context">{tenDonVi}</div>}
         <div className="pl2-ranking-note">Lưu nháp phiếu để xem vị trí trong khoa.</div>
       </div>

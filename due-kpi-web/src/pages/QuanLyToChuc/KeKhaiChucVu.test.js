@@ -32,7 +32,7 @@ const response = (body, status = 200) => ({ ok: status < 300, status, json: asyn
 beforeEach(() => {
   jest.clearAllMocks();
   Element.prototype.scrollIntoView = jest.fn();
-  jest.spyOn(window, "alert").mockImplementation(() => {});
+  jest.spyOn(window, "alert").mockImplementation(() => { });
   jest.spyOn(window, "confirm").mockReturnValue(true);
   luu = null;
   dong = [DONG];
@@ -92,10 +92,12 @@ test("guard chặn URL ủy quyền khi LaQuanLy=false", () => {
 test("ủy quyền: cấp cho chuyên viên, khóa TP và người đã rời phòng", async () => {
   useQuyenChucVu.mockReturnValue(quyen({ LaQuanLy: true, DuocNhap: true }));
   jest.spyOn(api, "layNguoiNhapChucVu").mockResolvedValue({ Items: [{ IdNhanVien: 88, HoTen: "Nhân sự cũ", MaNhanVien: "NV88", ConThuocPhong: false, DaThuHoi: false }] });
-  jest.spyOn(api, "layUngVienChucVu").mockResolvedValue({ Items: [
-    { IdNhanVien: 5, HoTen: "Trưởng phòng", MaNhanVien: "NV05", TenChucVu: "Trưởng phòng", LaQuanLy: true },
-    { IdNhanVien: 7, HoTen: "Chuyên viên", MaNhanVien: "NV07", DaDuocCap: false },
-  ] });
+  jest.spyOn(api, "layUngVienChucVu").mockResolvedValue({
+    Items: [
+      { IdNhanVien: 5, HoTen: "Trưởng phòng", MaNhanVien: "NV05", TenChucVu: "Trưởng phòng", LaQuanLy: true },
+      { IdNhanVien: 7, HoTen: "Chuyên viên", MaNhanVien: "NV07", DaDuocCap: false },
+    ]
+  });
   const cap = jest.spyOn(api, "capQuyenChucVu").mockResolvedValue({ Success: true, Message: "Đã cấp quyền." });
   render(<MemoryRouter future={future}><ChucVuUyQuyen /></MemoryRouter>);
   expect(await screen.findByRole("button", { name: "Đã có toàn quyền" })).toBeDisabled();
@@ -250,7 +252,7 @@ test("bỏ trống Từ ngày bị chặn, không gửi PUT xoá ngày", async (
 
 test.each([
   ["CHUC_VU_ADMIN", "Chỉ ADMIN được thao tác với chức vụ / tài khoản ADMIN."],
-  ["TU_SUA", "Không tự kê khai chức vụ cho chính mình — nhờ người khác có quyền."],
+  ["TU_SUA", "Không tự kê khai chức vụ cho chính mình - nhờ người khác có quyền."],
   ["FORBIDDEN", "Bạn không có quyền kê khai chức vụ."],
 ])("403 %s hiện câu hướng dẫn thay cho Message của server", async (ErrorCode, thongBao) => {
   luu = { status: 403, body: { Success: false, ErrorCode, Message: "Khong co quyen." } };

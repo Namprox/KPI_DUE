@@ -27,12 +27,12 @@ const VI = "vi-VN";
 
 export const so = (v) =>
   v == null || v === "" || Number.isNaN(Number(v))
-    ? "—"
+    ? "-"
     : Number(v).toLocaleString(VI);
 
 export const tyLe = (v, toiDa = 2) =>
   v == null
-    ? "—"
+    ? "-"
     : `${Number(v).toLocaleString(VI, { maximumFractionDigits: toiDa })}%`;
 
 /** Phần trăm làm tròn 1 chữ số; null khi mẫu số 0 (khác 0%). */
@@ -41,11 +41,11 @@ export const phanTram = (xong, tong) =>
 
 export const diem = (v) =>
   v == null || v === ""
-    ? "—"
+    ? "-"
     : Number(v).toLocaleString(VI, {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 2,
-      });
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 2,
+    });
 
 /** Năm nhập học → số khóa theo quy ước của Trường (2022 → Khóa 48). */
 export const hienThiKhoa = (nam) => {
@@ -372,7 +372,7 @@ export const HeroKpi = ({ nhan, xong, tong, donVi = "nhân sự", children }) =>
       <span className="db-kpi-nhan">{nhan}</span>
       <div className="db-hero-line">
         <span className="db-hero-so">
-          {pt == null ? "—" : `${pt.toLocaleString(VI)}%`}
+          {pt == null ? "-" : `${pt.toLocaleString(VI)}%`}
         </span>
         <span className="db-hero-mau">
           {so(xong)} / {so(tong)} {donVi}
@@ -784,8 +784,8 @@ export const PhieuNamVienChucPanel = ({ data, choBan = false }) => {
             }
             moTa={
               choBan
-                ? "Chưa chốt quý nào — hãy duyệt phiếu quý trước."
-                : `Nằm trong ${so(choDuyet)} hồ sơ chờ trưởng đơn vị duyệt nhưng chưa chốt quý nào — hệ thống sẽ chặn khi chốt hồ sơ.`
+                ? "Chưa chốt quý nào - hãy duyệt phiếu quý trước."
+                : `Nằm trong ${so(choDuyet)} hồ sơ chờ trưởng đơn vị duyệt nhưng chưa chốt quý nào - hệ thống sẽ chặn khi chốt hồ sơ.`
             }
           />
         )}
@@ -800,7 +800,7 @@ export const PhieuNamVienChucPanel = ({ data, choBan = false }) => {
           <Alert
             icon="lamMoi"
             tieuDe={`${so(tongHopCu)} phiếu tổng hợp đã cũ`}
-            moTa="Có quý được chốt sau lần tổng hợp gần nhất — cần tổng hợp lại."
+            moTa="Có quý được chốt sau lần tổng hợp gần nhất - cần tổng hợp lại."
           />
         )}
       </div>
@@ -867,12 +867,12 @@ export const DiemTrungBinhCard = ({ rows }) => (
                   <td className="is-num">{diem(r.DiemTrungBinh)}</td>
                   <td className="is-num is-muted">
                     {r.DiemThapNhat == null
-                      ? "—"
+                      ? "-"
                       : `${diem(r.DiemThapNhat)} – ${diem(r.DiemCaoNhat)}`}
                   </td>
                   <td>
                     <div className="db-diem-nhom">
-                      {nhom.length === 0 && <span className="db-muted">—</span>}
+                      {nhom.length === 0 && <span className="db-muted">-</span>}
                       {nhom.map((n) => (
                         <div className="db-diem-nhom-row" key={n.key}>
                           <div
@@ -902,7 +902,7 @@ export const DiemTrungBinhCard = ({ rows }) => (
     <div className="db-card-note">
       <Alert muc="info" icon="thongTin" nho>
         Hai nhóm chấm theo hai bảng tiêu chí khác nhau (ngưỡng Hoàn thành tốt:
-        giảng viên &gt; 100, viên chức ≥ 101) — không so sánh trực tiếp hai con số.
+        giảng viên &gt; 100, viên chức ≥ 101) - không so sánh trực tiếp hai con số.
       </Alert>
     </div>
   </Card>

@@ -51,7 +51,7 @@ export default function PhieuTuDongNotice({ phieu, tuDong, donViList, onReload }
     return <div className="phieu-auto-notice">
       <p>
         Điểm tự động của {quy ? `quý ${quy}` : "năm"} được ghi vào
-        {data.IdPhieuNhanTuDong ? ` phiếu #${data.IdPhieuNhanTuDong}` : " phiếu khác"} của cùng viên chức — mỗi kỳ
+        {data.IdPhieuNhanTuDong ? ` phiếu #${data.IdPhieuNhanTuDong}` : " phiếu khác"} của cùng viên chức - mỗi kỳ
         chỉ một phiếu nhận điểm tự động, nên các tiêu chí tự động trên phiếu này không được chấm.
       </p>
       {data.IdPhieuNhanTuDong && <Link to={`/lich-su-danh-gia/${data.IdPhieuNhanTuDong}${query}`}>

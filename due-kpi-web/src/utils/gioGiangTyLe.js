@@ -13,7 +13,7 @@ export const laCongThucGioGiang = (row) =>
   String(row?.CongThucSnapshot || row?.CongThucTongHop || "").toUpperCase() === CONG_THUC_GIO_GIANG;
 
 export const LY_DO_GIO_GIANG = {
-  THIEU_CAU_HINH_GIAM_TRU_CV: "Chức vụ chưa được cấu hình giảm trừ năm này — liên hệ ADMIN/BGH",
+  THIEU_CAU_HINH_GIAM_TRU_CV: "Chức vụ chưa được cấu hình giảm trừ năm này - liên hệ ADMIN/BGH",
   DAO_TAO_TINH_100: "Đi đào tạo tiến sĩ cả năm: tính hoàn thành 100%",
   CHUA_CO_CHUC_DANH: "Chưa có chức danh nghề nghiệp",
   CHUA_CAU_HINH_DINH_MUC: "Chưa cấu hình định mức cho chức danh / năm",
@@ -42,7 +42,7 @@ export const COT_GIAM_GIO_GIANG = [
   ["DieuChinhSan0", "Điều chỉnh sàn 0"],
 ];
 export const soGioGiang = (value, fixed = false) =>
-  value == null || !Number.isFinite(Number(value)) ? "—" : Number(value).toLocaleString("vi-VN", {
+  value == null || !Number.isFinite(Number(value)) ? "-" : Number(value).toLocaleString("vi-VN", {
     minimumFractionDigits: fixed ? 2 : 0, maximumFractionDigits: 2,
   });
 

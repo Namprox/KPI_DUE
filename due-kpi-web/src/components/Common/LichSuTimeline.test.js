@@ -4,8 +4,8 @@ import LichSuTimeline, { tachNgayGio } from "./LichSuTimeline";
 
 test("tachNgayGio tách ngày, giờ và bỏ qua giá trị rỗng", () => {
   expect(tachNgayGio(new Date(2026, 9, 19, 8, 7))).toMatchObject({ ngay: "19/10/2026", gio: "08:07" });
-  expect(tachNgayGio(null)).toEqual({ ngay: "—", gio: "" });
-  expect(tachNgayGio("không phải ngày")).toEqual({ ngay: "—", gio: "" });
+  expect(tachNgayGio(null)).toEqual({ ngay: "-", gio: "" });
+  expect(tachNgayGio("không phải ngày")).toEqual({ ngay: "-", gio: "" });
 });
 
 test("xếp mốc mới nhất lên đầu và hiện đủ nội dung", () => {
@@ -23,7 +23,7 @@ test("xếp mốc mới nhất lên đầu và hiện đủ nội dung", () => {
 });
 
 test("giữ thứ tự gốc khi thiếu mốc thời gian và hiện chữ khi rỗng", () => {
-  const { container, rerender } = render(<LichSuTimeline items={[{ key: 1, ngay: "—", tieuDe: "A" }, { key: 2, ngay: "—", tieuDe: "B" }]} />);
+  const { container, rerender } = render(<LichSuTimeline items={[{ key: 1, ngay: "-", tieuDe: "A" }, { key: 2, ngay: "-", tieuDe: "B" }]} />);
   expect([...container.querySelectorAll(".ls-timeline-body > b")].map((b) => b.textContent)).toEqual(["A", "B"]);
   expect(container.querySelector(".ls-timeline-moi-nhat")).toBeNull();
   rerender(<LichSuTimeline items={[]} />);

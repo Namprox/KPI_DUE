@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { confirmDialog } from "primereact/confirmdialog";
 import { apiFetch } from "../../../utils/api";
 import SearchSelect from "../../Common/SearchSelect";
 
@@ -7,34 +8,27 @@ const QL_DanhGiaSinhVienImportModal = ({
   onClose,
   onSuccess,
   namList,
-  donViList,
 }) => {
   const [namHoc, setNamHoc] = useState("");
-  const [maDonVi, setMaDonVi] = useState("");
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-
-  // Filter units: only keep those whose ma_don_vi starts with "K_"
-  const khoaList = (donViList || []).filter((item) => {
-    const code = item.MaDonVi || item.ma_don_vi || item.maDonVi || "";
-    return code.toUpperCase().startsWith("K_");
-  });
+  // Từ 2026-10-21 đơn vị của từng dòng = Khoa khớp cột H, không chọn ở màn này
+  // nữa. Giá trị cột H không khớp đúng 1 Khoa làm backend từ chối CẢ FILE
+  // (400 KHOA_KHONG_KHOP) và không xoá / ghi gì, nên liệt kê ra để sửa file.
+  const [khoaKhongKhop, setKhoaKhongKhop] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
       setMessage({ type: "", text: "" });
+      setKhoaKhongKhop([]);
       setFile(null);
       if (namList && namList.length > 0 && !namHoc) {
         setNamHoc(namList[0].IdNam || namList[0].id_nam || "");
       }
-      if (khoaList && khoaList.length > 0 && !maDonVi) {
-        const defaultCode = khoaList[0].MaDonVi || khoaList[0].ma_don_vi || "";
-        setMaDonVi(defaultCode);
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, namList, donViList]);
+  }, [isOpen, namList]);
 
   if (!isOpen) return null;
 
@@ -45,36 +39,15 @@ const QL_DanhGiaSinhVienImportModal = ({
     return num > 100 ? num % 100 : num;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage({ type: "", text: "" });
-
-    if (!namHoc) {
-      setMessage({ type: "error", text: "Vui lòng chọn năm học!" });
-      return;
-    }
-
-    if (!maDonVi) {
-      setMessage({ type: "error", text: "Vui lòng chọn đơn vị (Khoa)!" });
-      return;
-    }
-
-    if (!file) {
-      setMessage({
-        type: "error",
-        text: "Vui lòng chọn file Excel để import!",
-      });
-      return;
-    }
-
+  const runImport = async () => {
     const namHoc2Digits = getNamHoc2Digits(namHoc);
 
     setIsLoading(true);
+    setKhoaKhongKhop([]);
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("namHoc", namHoc2Digits);
-      formData.append("maDonVi", maDonVi);
 
       const res = await apiFetch("phanhoisinhvien/import", {
         method: "POST",
@@ -94,6 +67,10 @@ const QL_DanhGiaSinhVienImportModal = ({
           onClose();
         }, 1500);
       } else {
+        const dsKhoa = Array.isArray(result.KhoaKhongKhop)
+          ? result.KhoaKhongKhop
+          : [];
+        setKhoaKhongKhop(result.ErrorCode === "KHOA_KHONG_KHOP" ? dsKhoa : []);
         setMessage({
           type: "error",
           text:
@@ -111,6 +88,38 @@ const QL_DanhGiaSinhVienImportModal = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setMessage({ type: "", text: "" });
+    setKhoaKhongKhop([]);
+
+    if (!namHoc) {
+      setMessage({ type: "error", text: "Vui lòng chọn năm học!" });
+      return;
+    }
+
+    if (!file) {
+      setMessage({
+        type: "error",
+        text: "Vui lòng chọn file Excel để import!",
+      });
+      return;
+    }
+
+    confirmDialog({
+      header: "Xác nhận nhập dữ liệu đánh giá sinh viên",
+      message: `Nhập file “${file.name}” cho năm ${namHoc}. Khoa của từng dòng lấy từ cột H (ngành/khoa) trong file. Dữ liệu phản hồi sinh viên đã có của năm này ở các Khoa có trong file sẽ bị ghi đè, Khoa không có trong file giữ nguyên; điểm trung bình được tính lại sau đó. Tiếp tục?`,
+      icon: "pi pi-exclamation-triangle",
+      acceptLabel: "Nhập dữ liệu",
+      rejectLabel: "Hủy",
+      acceptClassName: "p-button-primary",
+      rejectClassName: "p-button-secondary p-button-outlined",
+      // Modal import dùng z-index 10000 nên hộp xác nhận phải nằm trên mức đó.
+      baseZIndex: 10001,
+      accept: runImport,
+    });
   };
 
   return (
@@ -168,6 +177,37 @@ const QL_DanhGiaSinhVienImportModal = ({
             </div>
           )}
 
+          {khoaKhongKhop.length > 0 && (
+            <div
+              role="alert"
+              style={{
+                padding: "12px 16px",
+                borderRadius: "6px",
+                marginBottom: "18px",
+                fontSize: "13px",
+                backgroundColor: "#fffbeb",
+                color: "#92400e",
+                border: "1px solid #fde68a",
+              }}
+            >
+              <p style={{ margin: "0 0 8px 0", fontWeight: "600" }}>
+                Chưa có dữ liệu nào bị thay đổi. Sửa cột H (ngành/khoa) của các
+                giá trị sau cho khớp tên Khoa trong hệ thống rồi nhập lại:
+              </p>
+              <ul style={{ margin: 0, paddingLeft: "20px" }}>
+                {khoaKhongKhop.map((item, index) => (
+                  <li key={`${item.GiaTriCotH || ""}-${index}`}>
+                    {item.GiaTriCotH ? `“${item.GiaTriCotH}”` : "(để trống)"} -{" "}
+                    {item.SoDong} dòng -{" "}
+                    {item.SoKhoaKhop > 1
+                      ? `trùng tên ${item.SoKhoaKhop} Khoa`
+                      : "không khớp Khoa nào"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <form id="importDanhGiaSinhVienForm" onSubmit={handleSubmit}>
             <div className="form-group" style={{ marginBottom: "18px" }}>
               <label
@@ -190,40 +230,6 @@ const QL_DanhGiaSinhVienImportModal = ({
                 required
                 disabled={isLoading}
               />
-            </div>
-
-            <div className="form-group" style={{ marginBottom: "18px" }}>
-              <label
-                style={{
-                  fontWeight: "600",
-                  marginBottom: "6px",
-                  display: "block",
-                }}
-              >
-                Đơn vị (Khoa) <span className="text-red">*</span>
-              </label>
-              <SearchSelect
-                value={maDonVi}
-                onChange={(v) => setMaDonVi(v)}
-                options={khoaList.map((dv) => ({
-                  value: dv.MaDonVi || dv.ma_don_vi || "",
-                  label: dv.TenDonVi || dv.ten_don_vi || "",
-                }))}
-                placeholder="-- Chọn đơn vị (Khoa) --"
-                required
-                disabled={isLoading}
-              />
-              {khoaList.length === 0 && (
-                <p
-                  style={{
-                    margin: "4px 0 0 0",
-                    fontSize: "12px",
-                    color: "#ef4444",
-                  }}
-                >
-                  Không tìm thấy đơn vị nào có mã bắt đầu bằng "K_"
-                </p>
-              )}
             </div>
 
             <div className="form-group" style={{ marginBottom: "10px" }}>
@@ -280,6 +286,16 @@ const QL_DanhGiaSinhVienImportModal = ({
                   disabled={isLoading}
                 />
               </div>
+              <p
+                style={{
+                  margin: "8px 0 0 0",
+                  fontSize: "12px",
+                  color: "#64748b",
+                }}
+              >
+                Khoa của từng dòng lấy từ cột H (ngành/khoa) và phải khớp tên
+                Khoa trong hệ thống - không cần chọn Khoa ở đây nữa.
+              </p>
             </div>
           </form>
         </div>
@@ -307,7 +323,7 @@ const QL_DanhGiaSinhVienImportModal = ({
             form="importDanhGiaSinhVienForm"
             className="btn-submit"
             style={{ backgroundColor: "#10b981", borderColor: "#10b981" }}
-            disabled={isLoading || !file || !namHoc || !maDonVi}
+            disabled={isLoading || !file || !namHoc}
           >
             {isLoading ? (
               <>

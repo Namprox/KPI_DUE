@@ -31,7 +31,7 @@ beforeEach(() => {
 test("form hiển thị 0 chính thức, cảnh báo nguồn mới là 5 và minh chứng", () => {
   show(<DanhGiaPhuLuc2Form criteriaList={[row]} formData={{}} autoScores={ghepDiemTuDongPhieu(data, [row])} tongDiemCoBan={0} />);
   expect(screen.getByText("Điểm chính thức")).toBeInTheDocument();
-  expect(screen.getByText(/Dữ liệu nguồn đã thay đổi — điểm mới sẽ là 5/)).toBeInTheDocument();
+  expect(screen.getByText(/Dữ liệu nguồn đã thay đổi - điểm mới sẽ là 5/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "CTĐT Kế toán" })).toBeInTheDocument();
   expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
 });

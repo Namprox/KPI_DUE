@@ -303,7 +303,7 @@ const BaoCaoDonVi = () => {
                               </span>
                             )}
                           </td>
-                          <td style={{ textAlign: "center" }}>{r.SoPhieuGiangVien ?? "—"} / {r.SoPhieuVienChuc ?? "—"}</td>
+                          <td style={{ textAlign: "center" }}>{r.SoPhieuGiangVien ?? "-"} / {r.SoPhieuVienChuc ?? "-"}</td>
                           <td
                             style={{
                               textAlign: "right",
@@ -329,103 +329,103 @@ const BaoCaoDonVi = () => {
           </section>
 
           {tongQuan?.CoQuyenXemDanhSach === true && <section className="bc-report-section">
-          <p className="sub-title">
-            PHIẾU CHƯA HOÀN TẤT ({chuaHoanTat.length}
-            {soTre > 0 ? `, ${soTre} phiếu quá ${NGUONG_TRE} ngày` : ""})
-          </p>
-          <div className="modern-table-card">
-            {loiDanhSach ? <p role="alert">{loiDanhSach}</p> : chuaHoanTat.length === 0 ? (
-              <div className="cd-empty">
-                <i
-                  className="fa-solid fa-circle-check"
-                  style={{ color: "#10b981" }}
-                ></i>
-                Mọi phiếu trong phạm vi của bạn đã hoàn tất.
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table className="custom-table" style={{ minWidth: "900px" }}>
-                  <thead>
-                    <tr>
-                      <th style={{ width: "26%" }}>Nhân viên</th>
-                      <th style={{ width: "20%" }}>Đơn vị</th>
-                      <th style={{ width: "16%", textAlign: "center" }}>
-                        Trạng thái
-                      </th>
-                      <th style={{ width: "12%" }}>Ngày tạo</th>
-                      <th style={{ width: "12%", textAlign: "center" }}>
-                        Ngày ở trạng thái
-                      </th>
-                      <th style={{ width: "8%", textAlign: "center" }}>Mở</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {chuaHoanTat.map((r) => {
-                      const tre = (r.SoNgayOTrangThai || 0) >= NGUONG_TRE;
-                      return (
-                        <tr key={r.IdPhieu}>
-                          <td>
-                            <b style={{ color: "#0f172a", display: "block" }}>
-                              {r.HoTen || `#${r.IdNhanVien}`}
-                            </b>
-                            <div className="bc-report-person-meta">
-                              <small>{r.LoaiDoiTuongText}</small>
-                              {r.MaNhanVien && (
-                                <span className="code-pill">{r.MaNhanVien}</span>
-                              )}
-                            </div>
-                          </td>
-                          <td style={{ fontSize: "13px", color: "#475569" }}>
-                            {r.TenDonVi || "-"}
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            {r.TrangThaiText || "—"}
-                          </td>
-                          <td style={{ fontSize: "13px" }}>
-                            {formatNgay(r.NgayTao)}
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <span
-                              className="rating-badge"
-                              style={
-                                tre
-                                  ? {
-                                    background: "#fef2f2",
-                                    color: "#b91c1c",
-                                    border: "1px solid #fecaca",
-                                  }
-                                  : {
-                                    background: "#f1f5f9",
-                                    color: "#475569",
-                                    border: "1px solid #e2e8f0",
-                                  }
-                              }
-                            >
-                              {r.SoNgayOTrangThai == null ? "—" : `${r.SoNgayOTrangThai} ngày`}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="table-actions">
-                              {canAccessPath(`/quan-ly/phieu/${r.IdPhieu}`, user) && <button
-                                className="action-btn view-btn"
-                                title="Mở phiếu"
-                                aria-label="Mở phiếu"
-                                onClick={() =>
-                                  navigate(`/quan-ly/phieu/${r.IdPhieu}`)
+            <p className="sub-title">
+              PHIẾU CHƯA HOÀN TẤT ({chuaHoanTat.length}
+              {soTre > 0 ? `, ${soTre} phiếu quá ${NGUONG_TRE} ngày` : ""})
+            </p>
+            <div className="modern-table-card">
+              {loiDanhSach ? <p role="alert">{loiDanhSach}</p> : chuaHoanTat.length === 0 ? (
+                <div className="cd-empty">
+                  <i
+                    className="fa-solid fa-circle-check"
+                    style={{ color: "#10b981" }}
+                  ></i>
+                  Mọi phiếu trong phạm vi của bạn đã hoàn tất.
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table className="custom-table" style={{ minWidth: "900px" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: "26%" }}>Nhân viên</th>
+                        <th style={{ width: "20%" }}>Đơn vị</th>
+                        <th style={{ width: "16%", textAlign: "center" }}>
+                          Trạng thái
+                        </th>
+                        <th style={{ width: "12%" }}>Ngày tạo</th>
+                        <th style={{ width: "12%", textAlign: "center" }}>
+                          Ngày ở trạng thái
+                        </th>
+                        <th style={{ width: "8%", textAlign: "center" }}>Mở</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chuaHoanTat.map((r) => {
+                        const tre = (r.SoNgayOTrangThai || 0) >= NGUONG_TRE;
+                        return (
+                          <tr key={r.IdPhieu}>
+                            <td>
+                              <b style={{ color: "#0f172a", display: "block" }}>
+                                {r.HoTen || `#${r.IdNhanVien}`}
+                              </b>
+                              <div className="bc-report-person-meta">
+                                <small>{r.LoaiDoiTuongText}</small>
+                                {r.MaNhanVien && (
+                                  <span className="code-pill">{r.MaNhanVien}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ fontSize: "13px", color: "#475569" }}>
+                              {r.TenDonVi || "-"}
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              {r.TrangThaiText || "-"}
+                            </td>
+                            <td style={{ fontSize: "13px" }}>
+                              {formatNgay(r.NgayTao)}
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              <span
+                                className="rating-badge"
+                                style={
+                                  tre
+                                    ? {
+                                      background: "#fef2f2",
+                                      color: "#b91c1c",
+                                      border: "1px solid #fecaca",
+                                    }
+                                    : {
+                                      background: "#f1f5f9",
+                                      color: "#475569",
+                                      border: "1px solid #e2e8f0",
+                                    }
                                 }
                               >
-                                <i className="fa-solid fa-eye"></i>
-                              </button>}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                                {r.SoNgayOTrangThai == null ? "-" : `${r.SoNgayOTrangThai} ngày`}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="table-actions">
+                                {canAccessPath(`/quan-ly/phieu/${r.IdPhieu}`, user) && <button
+                                  className="action-btn view-btn"
+                                  title="Mở phiếu"
+                                  aria-label="Mở phiếu"
+                                  onClick={() =>
+                                    navigate(`/quan-ly/phieu/${r.IdPhieu}`)
+                                  }
+                                >
+                                  <i className="fa-solid fa-eye"></i>
+                                </button>}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
 
           </section>}
         </div>

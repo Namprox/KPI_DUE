@@ -1,6 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import SangKien from "./SangKien";
 import SangKienUyQuyen from "./SangKienUyQuyen";
@@ -12,6 +12,7 @@ import { useQuyenSangKien } from "../../context/SangKienContext";
 import { useAuth } from "../../context/AuthContext";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import * as api from "../../utils/sangKienApi";
+import { confirmDialog } from "primereact/confirmdialog";
 import { canAccessPath, visibleGroups } from "../../config/menuConfig";
 import { diemHienThiTuDong, ghepDiemTuDongPhieu } from "../../utils/diemTuDongPhieu";
 
@@ -20,6 +21,7 @@ jest.mock("../../context/AuthContext", () => ({ useAuth: jest.fn() }));
 jest.mock("../../hooks/useNamDanhGia", () => ({ useNamDanhGia: jest.fn() }));
 jest.mock("../../utils/sangKienApi");
 jest.mock("primereact/dialog", () => ({ Dialog: ({ header, children, footer }) => <div role="dialog" aria-label={header}>{children}{footer}</div> }));
+jest.mock("primereact/confirmdialog", () => ({ confirmDialog: jest.fn() }));
 
 const author = { IdNhanVien: 201, MaNhanVien: "VC0201", HoTen: "Nguyễn Văn A", LaVienChuc: true, TenDonVi: "Phòng Khoa học" };
 const catalog = { DiemCaiTienCongViec: 5, Cap: [{ IdCap: 1, TenCap: "Cấp cơ sở (ĐHĐN)" }, { IdCap: 2, TenCap: "Cấp cơ sở (Trường)" }, { IdCap: 3, TenCap: "Cấp Bộ trở lên" }], LoaiGiaiPhap: [{ IdLoai: 7, TenLoai: "Khác" }] };
@@ -132,10 +134,10 @@ test.each([false, true])("cách ghép tác giả trên trang chi tiết=%s phân
   await screen.findByText("Tác giả ghép tạm");
   const authors = (name) => within(screen.getByText(name).closest("li"));
   expect(authors("Tác giả email").getByText("Ghép theo email")).toBeInTheDocument();
-  expect(authors("Tác giả ghép tạm").getByText("Ghép tạm theo họ tên — cần rà soát")).toBeInTheDocument();
+  expect(authors("Tác giả ghép tạm").getByText("Ghép tạm theo họ tên - cần rà soát")).toBeInTheDocument();
   expect(screen.getByText("Tác giả ghép tạm").closest("li")).toHaveClass("sk-name-match");
   expect(authors("Tác giả ghép tạm").queryByText(/không được tính điểm/)).not.toBeInTheDocument();
-  expect(authors("Tác giả chưa khớp").getByText(/Chưa khớp nhân sự — không được tính điểm/)).toBeInTheDocument();
+  expect(authors("Tác giả chưa khớp").getByText(/Chưa khớp nhân sự - không được tính điểm/)).toBeInTheDocument();
   expect(authors("Tác giả dữ liệu cũ").queryByText(/Ghép theo email|Ghép tạm theo họ tên|P_KH nhập tay/)).not.toBeInTheDocument();
 });
 test.each([true, false, null])("xét giảng dạy gửi %s tường minh, chỉ chọn dòng được server cho phép", async (value) => {
@@ -163,6 +165,13 @@ test("đồng bộ khoá nút khi chờ, hiển thị các cảnh báo và link 
   show(<SangKien />);
   const button = await screen.findByRole("button", { name: "Đồng bộ NCKH" });
   fireEvent.click(button);
+  // Phải xác nhận trước: bấm nút không được gọi NCKH ngay.
+  expect(api.dongBoSangKien).not.toHaveBeenCalled();
+  const xacNhan = confirmDialog.mock.calls.at(-1)[0];
+  expect(xacNhan.header).toBe("Xác nhận đồng bộ sáng kiến từ NCKH");
+  expect(xacNhan.message).toMatch(/không còn trên NCKH sẽ bị đánh dấu không tính điểm/);
+  await act(async () => { xacNhan.accept(); });
+  expect(api.dongBoSangKien).toHaveBeenCalledTimes(1);
   expect(screen.getByRole("button", { name: "Đang đồng bộ NCKH..." })).toBeDisabled();
   finish({ Success: true, SoSangKien: 15, SoTacGiaChuaKhop: 2, SoTacGiaGhepHoTen: 8, SoCapKhongNhanDien: 1, SoThieuNgayCongNhan: 3 });
   const link = await screen.findByRole("link", { name: "Xem sáng kiến chưa xác định cấp" });

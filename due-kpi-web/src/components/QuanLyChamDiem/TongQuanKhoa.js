@@ -268,11 +268,11 @@ const TruongKhoa = ({
 
   const xepLoaiRows = phanBoXepLoai
     ? [1, 2, 3, 4].map((muc) => ({
-        key: muc,
-        nhan: `${XEP_LOAI_META[muc].label} nhiệm vụ`,
-        so: phanBoXepLoai.dem.get(muc) || 0,
-        c: XL4[muc - 1],
-      }))
+      key: muc,
+      nhan: `${XEP_LOAI_META[muc].label} nhiệm vụ`,
+      so: phanBoXepLoai.dem.get(muc) || 0,
+      c: XL4[muc - 1],
+    }))
     : hangXepLoaiNam(tongQuan?.DemTheoXepLoai);
 
   const drillKey = JSON.stringify([idNam, idDonVi, reloadKey, drill]);
@@ -381,7 +381,7 @@ const TruongKhoa = ({
               (moDrill ? (
                 <button type="button" className="db-link-btn" onClick={() => moDrill({ quy: 0 })}>
                   <Icon ten="canhBao" />
-                  {so(soChuaLap)} người chưa lập phiếu năm — xem danh sách
+                  {so(soChuaLap)} người chưa lập phiếu năm - xem danh sách
                 </button>
               ) : (
                 <span className="db-kpi-phu">{so(soChuaLap)} người chưa lập phiếu năm</span>
@@ -435,7 +435,7 @@ const TruongKhoa = ({
                   {daTinhHanNgach
                     ? `${so(goi.HanNgachXuatSac ?? 0)} suất`
                     : hanNgachDuKien == null
-                      ? "—"
+                      ? "-"
                       : `${so(hanNgachDuKien)} suất (dự kiến)`}
                 </span>
               </div>
@@ -456,7 +456,7 @@ const TruongKhoa = ({
 
       {apDungQuy && (
         <Card
-          title="Viên chức văn phòng Khoa — đánh giá theo quý"
+          title="Viên chức văn phòng Khoa - đánh giá theo quý"
           meta={`${so(quyRows[0]?.SoNhanVien)} viên chức · Trưởng khoa duyệt phiếu quý`}
           actions={<LegendInline items={chuGiaiQuy()} />}
         >
@@ -516,7 +516,7 @@ const TruongKhoa = ({
                                 </Link>
                               </div>
                             </td>
-                            <td className="is-muted">{r.LoaiDoiTuongText || "—"}</td>
+                            <td className="is-muted">{r.LoaiDoiTuongText || "-"}</td>
                             <td>
                               <div className="db-tt-cell">
                                 <span>
@@ -533,11 +533,11 @@ const TruongKhoa = ({
                                 {Number(oTrangThai) >= NGUONG_TRE && (
                                   <Icon ten="dongHo" size={14} nhan={`Quá ${NGUONG_TRE} ngày`} />
                                 )}
-                                {oTrangThai == null ? "—" : `${so(oTrangThai)} ngày`}
+                                {oTrangThai == null ? "-" : `${so(oTrangThai)} ngày`}
                               </span>
                             </td>
                             <td className="is-num is-muted">
-                              {tuoi == null ? "—" : `${so(tuoi)} ngày`}
+                              {tuoi == null ? "-" : `${so(tuoi)} ngày`}
                             </td>
                           </tr>
                         );
@@ -576,7 +576,7 @@ const TruongKhoa = ({
                     <div className="db-person" key={p.IdNhanVien}>
                       <div className="db-person-ten">
                         <span>{p.HoTen}</span>
-                        <span>{p.TenChucDanh || p.TenDonVi || "—"}</span>
+                        <span>{p.TenChucDanh || p.TenDonVi || "-"}</span>
                       </div>
                       {p.LoaiDoiTuongText && <span className="db-chip">{p.LoaiDoiTuongText}</span>}
                     </div>

@@ -69,8 +69,8 @@ const tenToTrinh = (row) =>
   row.TrangThaiToTrinh == null
     ? "Chưa có tờ trình"
     : row.TrangThaiToTrinhText ||
-      TRANG_THAI_TO_TRINH_META[row.TrangThaiToTrinh]?.label ||
-      "Chưa có nhãn";
+    TRANG_THAI_TO_TRINH_META[row.TrangThaiToTrinh]?.label ||
+    "Chưa có nhãn";
 
 const tong5 = (tt) => tt.reduce((a, b) => a + b, 0);
 
@@ -312,7 +312,7 @@ const ToanTruong = ({
   const dieuKienXet = duDieuKienXet
     ? "Đủ điều kiện chốt danh sách"
     : soChuaDuyetXet > 0
-      ? `Chưa chốt được — còn ${so(soChuaDuyetXet)} phiếu viên chức Khoa chưa duyệt`
+      ? `Chưa chốt được - còn ${so(soChuaDuyetXet)} phiếu viên chức Khoa chưa duyệt`
       : cho?.DuDieuKienChotXetXuatSac === false
         ? "Chưa đủ điều kiện chốt danh sách"
         : "Chưa có thông tin điều kiện chốt danh sách";
@@ -364,7 +364,7 @@ const ToanTruong = ({
                 (moDrill ? (
                   <button type="button" className="db-link-btn" onClick={() => moDrill({ quy: 0 })}>
                     <Icon ten="canhBao" />
-                    {so(soChuaLap)} người chưa lập phiếu năm — xem danh sách
+                    {so(soChuaLap)} người chưa lập phiếu năm - xem danh sách
                   </button>
                 ) : (
                   <span className="db-kpi-phu">{so(soChuaLap)} người chưa lập phiếu năm</span>
@@ -401,7 +401,7 @@ const ToanTruong = ({
 
       {apDungQuy && (
         <Card
-          title="Viên chức / NLĐ — đánh giá theo quý"
+          title="Viên chức / NLĐ - đánh giá theo quý"
           meta={`${so(baoCao.PhieuQuy[0]?.SoNhanVien)} viên chức phải lập phiếu quý tại đơn vị chính`}
           actions={<LegendInline items={chuGiaiQuy()} />}
         >
@@ -487,7 +487,7 @@ const ToanTruong = ({
                         </td>
                         {coCotQuy && (
                           <td className="is-num">
-                            {quy ? `${so(quy.SoDaChot)} / ${so(quy.SoNhanVien)}` : "—"}
+                            {quy ? `${so(quy.SoDaChot)} / ${so(quy.SoNhanVien)}` : "-"}
                           </td>
                         )}
                         <td className="is-muted">
@@ -498,10 +498,10 @@ const ToanTruong = ({
                         <td className="is-muted">
                           {Number(r.SoChoHtDuyet) > 0
                             ? `${so(r.SoChoHtDuyet)} ${Number(r.TrangThaiToTrinh) === 3 ? "chờ HT" : "chưa trình"}`
-                            : "—"}
+                            : "-"}
                         </td>
                         <td className="is-num">
-                          {r.LoaiDonVi === "KHOA" ? tyLe(r.TyLeTotNghiepDungHan) : "—"}
+                          {r.LoaiDonVi === "KHOA" ? tyLe(r.TyLeTotNghiepDungHan) : "-"}
                         </td>
                       </tr>
                     );
@@ -572,11 +572,11 @@ const Phong = ({
               phu={
                 quyChoDuyet.length
                   ? quyChoDuyet
-                      .map(
-                        (r) =>
-                          `Quý ${r.Quy}${giaiDoanQuy(r, quyHienTai) === "da-qua" ? " (đã qua)" : ""}: ${so(r.SoChoDuyet)}`,
-                      )
-                      .join(" · ")
+                    .map(
+                      (r) =>
+                        `Quý ${r.Quy}${giaiDoanQuy(r, quyHienTai) === "da-qua" ? " (đã qua)" : ""}: ${so(r.SoChoDuyet)}`,
+                    )
+                    .join(" · ")
                   : "Không có phiếu nào đang chờ"
               }
               phuIcon={coQuyQuaChuaDuyet ? "canhBao" : undefined}
@@ -656,7 +656,7 @@ const Phong = ({
         />
         {quyXl && (
           <KpiCard
-            nhan={`Hoàn thành tốt — quý ${quyXl.Quy}`}
+            nhan={`Hoàn thành tốt - quý ${quyXl.Quy}`}
             giaTri={`${so(soHtTot)} / ${so(quyXl.SoDaChot)}`}
             phu={`phiếu quý ${quyXl.Quy} đã chốt`}
           />
@@ -757,7 +757,7 @@ const PhieuNamQuyTomTat = ({ data }) => {
               <b>
                 {so(biChan)} / {so(data.SoChoTkDuyet)}
               </b>{" "}
-              hồ sơ chờ bạn duyệt chưa chốt quý nào — chưa duyệt được
+              hồ sơ chờ bạn duyệt chưa chốt quý nào - chưa duyệt được
             </span>
           </div>
         )}
@@ -773,7 +773,7 @@ const PhieuNamQuyTomTat = ({ data }) => {
           <div className="db-inline-item">
             <Icon ten="lamMoi" />
             <span>
-              <b>{so(tongHopCu)}</b> phiếu tổng hợp đã cũ — có quý chốt sau lần tổng hợp
+              <b>{so(tongHopCu)}</b> phiếu tổng hợp đã cũ - có quý chốt sau lần tổng hợp
             </span>
           </div>
         )}

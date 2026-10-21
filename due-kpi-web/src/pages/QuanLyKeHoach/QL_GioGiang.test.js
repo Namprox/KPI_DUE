@@ -1,13 +1,15 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen, within, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import QL_GioGiang from "./QL_GioGiang";
 import { apiFetch } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
+import { confirmDialog } from "primereact/confirmdialog";
 
 jest.mock("../../utils/api", () => ({ apiFetch: jest.fn() }));
 jest.mock("../../context/AuthContext", () => ({ useAuth: jest.fn() }));
 jest.mock("primereact/toast", () => ({ Toast: require("react").forwardRef(() => null) }));
+jest.mock("primereact/confirmdialog", () => ({ confirmDialog: jest.fn() }));
 jest.mock("../../components/Common/SearchSelect", () => ({ value, onChange, options, name }) =>
   <select aria-label={name || "Bộ lọc"} value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>);
 
@@ -16,6 +18,14 @@ const rows = [
   { IdGioGiangTkb: 6, HoTen: "Nguyễn Văn An", HoTenChuan: "NGUYEN VAN AN", TenKhoa: "Kinh tế", KhoaChuan: "KINH TE", GioChuanDaiHoc: 10, GioChuanSauDaiHoc: 20, GioChuanTrongNam: 30, IdNhanVien: 7, HoTenNhanVien: "Nguyễn Văn An", MaNhanVien: "NV7" },
 ];
 const ok = (body) => ({ ok: true, json: async () => body });
+// Upload chỉ chạy sau khi người dùng đồng ý trong hộp xác nhận ghi đè.
+const guiUpload = async () => {
+  fireEvent.click(screen.getByRole("button", { name: "Upload và tính giờ" }));
+  const xacNhan = confirmDialog.mock.calls.at(-1)[0];
+  expect(xacNhan.header).toBe("Xác nhận upload thời khóa biểu");
+  expect(xacNhan.message).toMatch(/ghi đè dữ liệu thời khóa biểu của cả hai hệ DH và SDH/);
+  await act(async () => { xacNhan.accept(); });
+};
 beforeEach(() => {
   useAuth.mockReturnValue({ user: { MaChucVu: "ADMIN" } });
   apiFetch.mockReset();
@@ -94,11 +104,11 @@ test("upload hiện lỗi 400 từng dòng, số dòng mỗi hệ và cảnh bá
   expect(screen.getByRole("button", { name: "Tải file mẫu DH + SDH" })).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText(/File Excel thời khóa biểu/), { target: { files: [new File(["excel"], "tkb.xlsx")] } });
   apiFetch.mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ Message: "Sheet DH dong 2: loi | Sheet SDH dong 3: loi" }) });
-  fireEvent.click(screen.getByRole("button", { name: "Upload và tính giờ" }));
+  await guiUpload();
   expect(await screen.findByText("Sheet DH dong 2: loi")).toBeInTheDocument();
   expect(screen.getByText("Sheet SDH dong 3: loi")).toBeInTheDocument();
   apiFetch.mockResolvedValueOnce(ok({ Success: true, SoDongDaiHoc: 12, SoDongSauDaiHoc: 4, CanhBao: [{ HeDaoTao: "DH", SoDongExcel: 2, ThongDiep: "Cảnh báo DH" }, { HeDaoTao: "SDH", SoDongExcel: 2, ThongDiep: "Cảnh báo SDH" }] }));
-  fireEvent.click(screen.getByRole("button", { name: "Upload và tính giờ" }));
+  await guiUpload();
   expect(await screen.findByText("DH: 12 dòng đã lưu")).toBeInTheDocument();
   expect(screen.getByText("SDH: 4 dòng đã lưu")).toBeInTheDocument();
   const warningTable = screen.getByRole("columnheader", { name: "Sheet" }).closest("table");

@@ -95,7 +95,7 @@ export default function HoatDongDaoTaoForm({ item, idNam, namList, loaiList, kho
           {searchError && <p role="alert" className="hddt-error">{searchError}</p>}
           <div className="hddt-picker-results">{teachers.map((p) => <button type="button" key={p.IdNhanVien} onClick={() => pick(p)}
             disabled={selected.some((s) => s.IdNhanVien === p.IdNhanVien) || (!editing && selected.length >= 500)}>
-            <strong>{p.HoTen}</strong><span>{p.MaNhanVien} · {p.TenKhoa || "—"}</span></button>)}</div>
+            <strong>{p.HoTen}</strong><span>{p.MaNhanVien} · {p.TenKhoa || "-"}</span></button>)}</div>
         </div>
       </fieldset>
     </form>

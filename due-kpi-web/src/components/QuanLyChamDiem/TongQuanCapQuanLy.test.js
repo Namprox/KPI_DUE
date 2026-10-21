@@ -119,10 +119,12 @@ test("tổng quan Trường hiển thị việc chờ HT, quý và tỷ lệ Kho
       { Quy: 1, DaDenQuy: true, SoNhanVien: 10, SoChuaLapPhieu: 2, SoDangChamDiem: 3, SoChoDuyet: 4, SoDaChot: 1 },
       { Quy: 2, DaDenQuy: true, SoNhanVien: 10, SoChuaLapPhieu: 5, SoDangChamDiem: 5, SoChoDuyet: 0, SoDaChot: 0 },
     ],
-    DonVi: [{ IdDonVi: 30, TenDonVi: "Khoa C", LoaiDonVi: "KHOA", SoNhanVien: 10, SoChuaLapPhieu: 2, TrangThaiPhieuDv: 3,
+    DonVi: [{
+      IdDonVi: 30, TenDonVi: "Khoa C", LoaiDonVi: "KHOA", SoNhanVien: 10, SoChuaLapPhieu: 2, TrangThaiPhieuDv: 3,
       TrangThaiToTrinh: 3, SoChoHtDuyet: 5,
-      PhieuQuy: [{ Quy: 2, SoNhanVien: 10, SoDaChot: 0 }], XepLoaiPhieuDv: 2, XepLoaiPhieuDvText: "Hoàn thành", TyLeTotNghiepDungHan: 82.5, TyLeCanhBaoHocVu: 5 },
-      { IdDonVi: 40, TenDonVi: "Phòng D", LoaiDonVi: "PHONG", TrangThaiToTrinh: 2, SoChoHtDuyet: 3 }],
+      PhieuQuy: [{ Quy: 2, SoNhanVien: 10, SoDaChot: 0 }], XepLoaiPhieuDv: 2, XepLoaiPhieuDvText: "Hoàn thành", TyLeTotNghiepDungHan: 82.5, TyLeCanhBaoHocVu: 5
+    },
+    { IdDonVi: 40, TenDonVi: "Phòng D", LoaiDonVi: "PHONG", TrangThaiToTrinh: 2, SoChoHtDuyet: 3 }],
   });
 
   renderIn(<TongQuanCapQuanLy idNam={2026} cap="truong" />);
@@ -136,7 +138,7 @@ test("tổng quan Trường hiển thị việc chờ HT, quý và tỷ lệ Kho
   expect(within(viec).getByRole("link", { name: /Tờ trình KPI chờ duyệt/ })).toHaveTextContent("5 hồ sơ lãnh đạo trong gói đã trình");
   expect(within(viec).getByRole("link", { name: /Tờ trình KPI chờ duyệt/ })).toHaveTextContent("3 hồ sơ chưa trình");
   expect(within(viec).getByRole("link", { name: /Xét xuất sắc viên chức Khoa/ })).toHaveAttribute("href", "/truong/xet-xuat-sac-vien-chuc-khoa");
-  expect(within(viec).getByText("Chưa chốt được — còn 4 phiếu viên chức Khoa chưa duyệt")).toBeInTheDocument();
+  expect(within(viec).getByText("Chưa chốt được - còn 4 phiếu viên chức Khoa chưa duyệt")).toBeInTheDocument();
   expect(within(viec).queryByText("Mở danh sách để chốt")).not.toBeInTheDocument();
   // Chưa có màn hình duyệt phiếu đơn vị cấp Trường: thẻ đếm không giả vờ bấm được.
   expect(within(viec).queryByRole("link", { name: /Phiếu đánh giá đơn vị/ })).not.toBeInTheDocument();
@@ -238,7 +240,7 @@ test("mở danh sách người chưa lập khi có quyền xem danh sách", asyn
 
   renderIn(<TongQuanCapQuanLy idNam={2026} cap="truong" />);
 
-  fireEvent.click(await screen.findByRole("button", { name: /3 người chưa lập phiếu năm — xem danh sách/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /3 người chưa lập phiếu năm - xem danh sách/ }));
 
   expect(await screen.findByText("Người chưa lập")).toBeInTheDocument();
   await waitFor(() =>

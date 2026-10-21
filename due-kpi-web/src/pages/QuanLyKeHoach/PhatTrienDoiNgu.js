@@ -146,15 +146,15 @@ export default function PhatTrienDoiNgu() {
     <div className="modern-table-card"><div className="ptdn-table-scroll"><table className="custom-table" aria-label="Danh sách phát triển đội ngũ"><colgroup>
       <col style={{ width: "6%" }} /><col style={{ width: "19%" }} /><col style={{ width: "21%" }} /><col style={{ width: "28%" }} /><col style={{ width: "16%" }} />{actionColumn && <col style={{ width: "10%" }} />}
     </colgroup><thead><tr><th>STT</th><th>Giảng viên / Khoa</th><th>Loại ghi nhận</th><th>Hạng mục / Chi tiết</th><th>Quyết định</th>{actionColumn && <th>Thao tác</th>}</tr></thead><tbody>
-      {loading || permissionLoading ? <tr><td className="ptdn-empty" colSpan={actionColumn ? 6 : 5}>Đang tải danh sách...</td></tr> : rows.length === 0 ? <tr><td className="ptdn-empty" colSpan={actionColumn ? 6 : 5}>{error ? "Không tải được danh sách." : "Chưa có hoạt động phù hợp với bộ lọc."}</td></tr> : rows.map((r, i) => <tr key={r.IdBanGhi}>
-        <td>{((data.Page ?? filter.page) - 1) * (data.PageSize ?? filter.pageSize) + i + 1}</td>
-        <td><span className="table-person-name">{r.HoTen}</span><small>{r.MaNhanVien}</small><small>{r.TenKhoa || "—"}</small></td><td>{r.TenLoai}</td>
-        <td><button className="ptdn-text-link" onClick={() => setDetailId(r.IdBanGhi)}>{r.TenHangMuc}</button>{r.NoiDung && <small>{r.NoiDung}</small>}{r.GhiChu && <small>{r.GhiChu}</small>}<small>{r.Nguon === 2 ? "Import Excel" : r.Nguon === 1 ? "Nhập form" : ""}</small></td>
-        <td>{r.SoQuyetDinh || "—"}<small>{ngayDoiNgu(r.NgayQuyetDinh)}</small></td>
-        {actionColumn && <td>{r.ChoPhepSua === true && <div className="ptdn-row-actions"><button disabled={busy} onClick={() => edit(r)}>Sửa</button><button className="ptdn-danger" onClick={() => { setDeleting(r); setReason(""); setDeleteError(""); }}>Xoá</button></div>}</td>}
-      </tr>)}
-    </tbody></table></div>
-      <div className="table-pager ptdn-pagination"><span>{data ? `${data.TotalCount ?? 0} bản ghi · Trang ${data.Page ?? filter.page}/${Math.max(1, data.TotalPages ?? 1)}` : "—"}</span>
+        {loading || permissionLoading ? <tr><td className="ptdn-empty" colSpan={actionColumn ? 6 : 5}>Đang tải danh sách...</td></tr> : rows.length === 0 ? <tr><td className="ptdn-empty" colSpan={actionColumn ? 6 : 5}>{error ? "Không tải được danh sách." : "Chưa có hoạt động phù hợp với bộ lọc."}</td></tr> : rows.map((r, i) => <tr key={r.IdBanGhi}>
+          <td>{((data.Page ?? filter.page) - 1) * (data.PageSize ?? filter.pageSize) + i + 1}</td>
+          <td><span className="table-person-name">{r.HoTen}</span><small>{r.MaNhanVien}</small><small>{r.TenKhoa || "-"}</small></td><td>{r.TenLoai}</td>
+          <td><button className="ptdn-text-link" onClick={() => setDetailId(r.IdBanGhi)}>{r.TenHangMuc}</button>{r.NoiDung && <small>{r.NoiDung}</small>}{r.GhiChu && <small>{r.GhiChu}</small>}<small>{r.Nguon === 2 ? "Import Excel" : r.Nguon === 1 ? "Nhập form" : ""}</small></td>
+          <td>{r.SoQuyetDinh || "-"}<small>{ngayDoiNgu(r.NgayQuyetDinh)}</small></td>
+          {actionColumn && <td>{r.ChoPhepSua === true && <div className="ptdn-row-actions"><button disabled={busy} onClick={() => edit(r)}>Sửa</button><button className="ptdn-danger" onClick={() => { setDeleting(r); setReason(""); setDeleteError(""); }}>Xoá</button></div>}</td>}
+        </tr>)}
+      </tbody></table></div>
+      <div className="table-pager ptdn-pagination"><span>{data ? `${data.TotalCount ?? 0} bản ghi · Trang ${data.Page ?? filter.page}/${Math.max(1, data.TotalPages ?? 1)}` : "-"}</span>
         <div className="ptdn-actions"><SearchSelect ariaLabel="Số bản ghi mỗi trang" value={filter.pageSize} onChange={(v) => changeFilter("pageSize", Number(v))}
           options={[20, 50, 100].map((n) => ({ value: n, label: `${n} / trang` }))} />
           <button className="table-pager-btn" disabled={loading || !data || filter.page <= 1} onClick={() => setFilter((p) => ({ ...p, page: p.page - 1 }))}>Trước</button>

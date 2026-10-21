@@ -102,7 +102,7 @@ const TongQuanThuKy = ({
                 ? `Lập phiếu, nhập điểm các tiêu chí của ${loaiDonVi} rồi gửi ${tenTruong} duyệt`
                 : dangNhap
                   ? `Nhập điểm các tiêu chí của ${loaiDonVi} rồi gửi ${tenTruong} duyệt`
-                  : "Phiếu đã gửi đi — theo dõi tiến trình duyệt"}
+                  : "Phiếu đã gửi đi - theo dõi tiến trình duyệt"}
             </span>
             <Link
               className={`db-btn${!daLapPhieuDv || dangNhap ? " db-btn-primary" : ""}`}
@@ -191,7 +191,7 @@ const TongQuanThuKy = ({
         />
         {apDungQuy ? (
           <Card
-            title={`Phiếu quý — viên chức${loaiDonVi === "Khoa" ? " văn phòng" : ""}`}
+            title={`Phiếu quý - viên chức${loaiDonVi === "Khoa" ? " văn phòng" : ""}`}
             meta={`${so(duLieu.PhieuQuy[0]?.SoNhanVien)} viên chức`}
           >
             <QuyCompact rows={duLieu.PhieuQuy} quyHienTai={quyHienTai} />

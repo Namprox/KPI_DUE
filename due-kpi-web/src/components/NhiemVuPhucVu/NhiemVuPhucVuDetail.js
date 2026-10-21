@@ -160,7 +160,7 @@ export default function NhiemVuPhucVuDetail({ id, onClose, onChanged, onUnavaila
         <dl className="nvpv-details"><dt>Khoa</dt><dd>{item.TenDonVi}</dd><dt>Năm</dt><dd>{item.IdNam}</dd><dt>Loại nhiệm vụ</dt><dd>{item.TenNguon} · {item.TenNhom}</dd>
           <dt>Thời gian</dt><dd>{api.hienThiNgay(item.TuNgay)} – {api.hienThiNgay(item.DenNgay)}</dd>
           <dt>Hạn đăng ký</dt><dd>{item.HanDangKy ? <>{api.hienThiNgay(item.HanDangKy, true)}{config?.BayGio && <small>Giờ hiện tại: {api.hienThiNgay(config.BayGio, true)}</small>}</> : "Không mở đăng ký (Trưởng khoa phân công)"}</dd>
-          <dt>Số người</dt><dd>{item.SoThanhVien}/{item.SoLuongToiDa}{item.SoSuatConLai != null && (Number(item.SoSuatConLai) > 0 ? ` · Còn ${item.SoSuatConLai} chỗ` : " · Đã đủ")}</dd><dt>Mô tả</dt><dd className="nvpv-pre">{item.MoTa || "—"}</dd>
+          <dt>Số người</dt><dd>{item.SoThanhVien}/{item.SoLuongToiDa}{item.SoSuatConLai != null && (Number(item.SoSuatConLai) > 0 ? ` · Còn ${item.SoSuatConLai} chỗ` : " · Đã đủ")}</dd><dt>Mô tả</dt><dd className="nvpv-pre">{item.MoTa || "-"}</dd>
         </dl>
         {item.LyDoHuy && <p className="nvpv-warning">Lý do hủy: {item.LyDoHuy}</p>}
         {configError && <p role="alert" className="nvpv-error">Không tải được cấu hình: {configError} <button disabled={busy} onClick={() => setRetry((v) => v + 1)}>Thử lại</button></p>}
@@ -177,12 +177,12 @@ export default function NhiemVuPhucVuDetail({ id, onClose, onChanged, onUnavaila
         {currentAction && <form className="nvpv-form" onSubmit={submitAction}><h3>{currentAction[1]}</h3><fieldset disabled={busy}>
           {needsReason ? <label>Lý do bắt buộc<textarea required maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} /></label>
             : panel === "trien-khai" ? <label>Hạn đăng ký (để trống nếu chỉ phân công)<input type="datetime-local" step="1" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></label>
-            : <p>{panel === "gui-bao-cao" ? "Sau khi gửi, mọi chỉnh sửa bị khóa đến khi Trưởng khoa trả báo cáo." : `Xác nhận ${currentAction[1].toLowerCase()}?`}</p>}
+              : <p>{panel === "gui-bao-cao" ? "Sau khi gửi, mọi chỉnh sửa bị khóa đến khi Trưởng khoa trả báo cáo." : `Xác nhận ${currentAction[1].toLowerCase()}?`}</p>}
           <div className="nvpv-actions"><button className="btn-submit" type="submit">Xác nhận {currentAction[1].toLowerCase()}</button><button type="button" onClick={() => setPanel("")}>Quay lại</button></div>
         </fieldset></form>}
         <h3 className="nvpv-heading">Thành viên</h3>
         <div className="modern-table-card table-scroll"><table className="custom-table"><thead><tr><th>Thành viên</th><th>Vai trò</th><th>Trạng thái</th><th>Kết quả</th></tr></thead><tbody>
-          {(item.ThanhVien || []).map((v) => <tr key={v.IdThanhVien} className={v.DaRoi === true ? "nvpv-left" : ""}><td>{v.HoTen}{v.LaToi === true ? " (Tôi)" : ""}<small>{v.MaNhanVien}</small></td><td>{v.TenVaiTro}<small>{v.TenNguonThamGia}</small></td><td>{v.DaRoi === true ? "Đã rời" : "Đang tham gia"}</td><td>{v.TenKetQua || "—"}{v.DiemSnapshot != null && <small>{v.DiemSnapshot} điểm</small>}{v.LyDoKhongHoanThanh && <small>{v.LyDoKhongHoanThanh}</small>}</td></tr>)}
+          {(item.ThanhVien || []).map((v) => <tr key={v.IdThanhVien} className={v.DaRoi === true ? "nvpv-left" : ""}><td>{v.HoTen}{v.LaToi === true ? " (Tôi)" : ""}<small>{v.MaNhanVien}</small></td><td>{v.TenVaiTro}<small>{v.TenNguonThamGia}</small></td><td>{v.DaRoi === true ? "Đã rời" : "Đang tham gia"}</td><td>{v.TenKetQua || "-"}{v.DiemSnapshot != null && <small>{v.DiemSnapshot} điểm</small>}{v.LyDoKhongHoanThanh && <small>{v.LyDoKhongHoanThanh}</small>}</td></tr>)}
           {!(item.ThanhVien || []).length && <tr><td colSpan={4}>Chưa có thành viên.</td></tr>}
         </tbody></table></div>
         {item.XemBaoCao === true && <section className="nvpv-section"><h3>Báo cáo và minh chứng</h3>

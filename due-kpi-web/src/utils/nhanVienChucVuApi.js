@@ -34,7 +34,7 @@ export const thuHoiQuyenChucVu = (id) => chucVuRequest(`/nguoi-nhap/${id}`, { me
  */
 export const LOI_KE_KHAI_CHUC_VU = {
   FORBIDDEN: "Bạn không có quyền kê khai chức vụ.",
-  TU_SUA: "Không tự kê khai chức vụ cho chính mình — nhờ người khác có quyền.",
+  TU_SUA: "Không tự kê khai chức vụ cho chính mình - nhờ người khác có quyền.",
   CHUC_VU_ADMIN: "Chỉ ADMIN được thao tác với chức vụ / tài khoản ADMIN.",
 };
 export const thongBaoLoiChucVu = (body, macDinh) =>

@@ -54,7 +54,7 @@ const BangHoSoToTrinh = ({
         />
       </section>;
     })}{hoSoCapTruong.length > 0 && <section>
-      <h4 style={{ padding: "12px 20px", margin: 0 }}>Viên chức Khoa — xét xuất sắc cấp Trường</h4>
+      <h4 style={{ padding: "12px 20px", margin: 0 }}>Viên chức Khoa - xét xuất sắc cấp Trường</h4>
       <BangHoSoToTrinh hoSo={hoSoCapTruong} chonDuoc={chonDuoc} daChon={daChon} onDoiChon={onDoiChon} ghiChuCot={ghiChuCot} />
     </section>}</>;
   }

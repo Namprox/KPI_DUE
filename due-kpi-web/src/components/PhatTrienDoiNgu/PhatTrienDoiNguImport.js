@@ -37,14 +37,14 @@ export default function PhatTrienDoiNguImport({ idNam, onClose, onImported }) {
       }} /></label>
       {error && <p role="alert" className="ptdn-error">{error}</p>}
       {result && <>
-        <p role="status" className="ptdn-notice">{result.ChiKiemTra === true ? "Kết quả kiểm tra — chưa ghi dữ liệu." : "Kết quả import."} {result.Message}</p>
+        <p role="status" className="ptdn-notice">{result.ChiKiemTra === true ? "Kết quả kiểm tra - chưa ghi dữ liệu." : "Kết quả import."} {result.Message}</p>
         <div className="ptdn-summary"><span>Tổng dòng: <b>{result.TongDong}</b></span><span>{result.ChiKiemTra ? "Sẽ thêm" : "Đã thêm"}: <b>{result.SoThem}</b></span><span>Trùng: <b>{result.SoTrung}</b></span><span>Lỗi: <b>{result.SoLoi}</b></span><span>Cảnh báo: <b>{result.SoCanhBao}</b></span></div>
         {(result.Warnings || []).map((w, i) => <p className="ptdn-warning" key={i}>{w}</p>)}
         <div className="ptdn-table-scroll ptdn-import-results"><table className="custom-table"><thead><tr><th>Dòng Excel</th><th>Kết quả</th><th>Giảng viên</th><th>Hạng mục / Chi tiết</th><th>Thông báo</th></tr></thead>
           <tbody>{(result.Dong || []).map((d, i) => <tr key={`${d.DongExcel}-${i}`}>
             <td>{d.DongExcel}</td><td><span className={`ptdn-badge ptdn-${d.KetQua}`}>
               {d.KetQua === "THEM" ? result.ChiKiemTra ? "Sẽ thêm" : "Đã thêm" : d.KetQua === "TRUNG" ? "Trùng · bỏ qua" : d.KetQua === "LOI" ? "Lỗi · bỏ qua" : d.KetQua}</span></td>
-            <td>{d.HoTen || "—"}<small>{d.MaNhanVien}</small></td><td>{d.TenHangMuc || d.MaHangMuc || "—"}<small>{d.MaLoai}</small><small>{d.NoiDung}</small></td>
+            <td>{d.HoTen || "-"}<small>{d.MaNhanVien}</small></td><td>{d.TenHangMuc || d.MaHangMuc || "-"}<small>{d.MaLoai}</small><small>{d.NoiDung}</small></td>
             <td>{d.ThongBao}{d.MaLoi && <small>{d.MaLoi}</small>}{d.CanhBao && <p className="ptdn-warning">⚠ {d.CanhBao}</p>}</td>
           </tr>)}</tbody></table></div>
       </>}

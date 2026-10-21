@@ -98,7 +98,7 @@ export default function ThanhTichDoanTheForm({ item, idNam, namList, loaiList, k
           {searchError && <p role="alert" className="hddt-error">{searchError}</p>}
           <div className="hddt-picker-results">{teachers.map((p) => <button type="button" key={p.IdNhanVien} onClick={() => pick(p)}
             disabled={selected.some((s) => String(s.IdNhanVien) === String(p.IdNhanVien)) || (!editing && selected.length >= 500)}>
-            <strong>{p.HoTen}</strong><span>{p.MaNhanVien} · {p.TenKhoa || "—"}</span></button>)}</div>
+            <strong>{p.HoTen}</strong><span>{p.MaNhanVien} · {p.TenKhoa || "-"}</span></button>)}</div>
         </div>
       </fieldset>
     </form>

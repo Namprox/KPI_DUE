@@ -246,16 +246,16 @@ export function TongHopGioGiang({ idNam, revision = 0, tyLe = false, idNhanVien 
         <div className="table-scroll"><table className="custom-table ggtk-table ggtl-table">
           <thead><tr>{["Mã NV", "Họ tên", "Đơn vị", "Chức danh", "Định mức gốc", "Định mức áp dụng", "Tổng giờ", "Tỷ lệ (%)", "Điểm dự kiến / tối đa", "Lý do / Cảnh báo", "Giải trình"].map((label) => <th key={label}>{label}</th>)}</tr></thead>
           <tbody>{pageRows.map((row) => <tr key={row.IdNhanVien}>
-            <td>{row.MaNhanVien || "—"}</td><td><strong>{row.HoTen || "—"}</strong></td><td>{row.TenDonVi || "—"}</td><td>{row.TenChucDanh || "—"}</td>
+            <td>{row.MaNhanVien || "-"}</td><td><strong>{row.HoTen || "-"}</strong></td><td>{row.TenDonVi || "-"}</td><td>{row.TenChucDanh || "-"}</td>
             {["DinhMucGoc", "DinhMucApDung", "TongGio"].map((field) => <td className="ggtk-number" key={field}>{soGioGiang(row[field])}</td>)}
             <td className="ggtk-number"><TyLeGioGiang row={row} /></td><td><DiemGioGiang row={row} /></td><td><LyDoCanhBaoGioGiang row={row} /></td>
             <td><button className="btn-cancel" onClick={() => setDetail(row)} aria-label={`Giải trình giờ giảng của ${row.HoTen}`}>Xem</button></td>
           </tr>)}{!filteredRows.length && <tr><td colSpan={11}>Chưa có dữ liệu phù hợp.</td></tr>}</tbody>
         </table></div> : <div className="table-scroll"><table className="custom-table ggtk-table"><thead><tr><th>Giảng viên</th><th>Đơn vị chính</th><th>Giảng dạy ĐH</th><th>Giảng dạy SĐH</th><th>Tổng TKB</th><th>Tổng giờ</th></tr></thead>
-        <tbody>{pageRows.map((row) => <tr key={row.IdNhanVien}><td><div className="ggtk-person-cell"><strong>{row.HoTen}</strong><span>{row.MaNhanVien}</span></div></td><td>{row.TenDonVi || "-"}</td>
-          {["GioTkbDaiHoc", "GioTkbSauDaiHoc", "GioTkb", "TongGio"].map((field) => <td className="ggtk-number" key={field}>{so(row[field])}</td>)}
-        </tr>)}{!filteredRows.length && <tr><td colSpan={6}>{rows.length ? "Không tìm thấy giảng viên phù hợp." : "Chưa có dữ liệu tổng hợp."}</td></tr>}</tbody>
-      </table></div>}
+          <tbody>{pageRows.map((row) => <tr key={row.IdNhanVien}><td><div className="ggtk-person-cell"><strong>{row.HoTen}</strong><span>{row.MaNhanVien}</span></div></td><td>{row.TenDonVi || "-"}</td>
+            {["GioTkbDaiHoc", "GioTkbSauDaiHoc", "GioTkb", "TongGio"].map((field) => <td className="ggtk-number" key={field}>{so(row[field])}</td>)}
+          </tr>)}{!filteredRows.length && <tr><td colSpan={6}>{rows.length ? "Không tìm thấy giảng viên phù hợp." : "Chưa có dữ liệu tổng hợp."}</td></tr>}</tbody>
+        </table></div>}
       {!idNhanVien && <div className="table-foot">
         <span>Hiển thị <strong>{filteredRows.length ? (currentPage - 1) * SO_NGUOI_MOI_TRANG + 1 : 0}–{Math.min(currentPage * SO_NGUOI_MOI_TRANG, filteredRows.length)}</strong> / {filteredRows.length} giảng viên</span>
         <span>Năm đánh giá <strong>{idNam}</strong></span>

@@ -16,7 +16,7 @@ export function LyDoCanhBaoGioGiang({ row }) {
 
 export function TyLeGioGiang({ row }) {
   return <span className={`ggtk-badge ${mauDiemGioGiang(row)}`}>
-    {row.TyLeHoanThanh == null ? "—" : `${so(row.TyLeHoanThanh, true)}%`}
+    {row.TyLeHoanThanh == null ? "-" : `${so(row.TyLeHoanThanh, true)}%`}
   </span>;
 }
 
@@ -36,11 +36,11 @@ export function GiaiTrinhGioGiang({ row, dienGiai, onViewTkb }) {
     return <React.Fragment key={code}>
       <tr className="ggtl-group"><th colSpan={2} scope="row">{label}</th><td className="ggtk-number"><strong>{so(row[field])}</strong></td></tr>
       {children.map((item, index) => <tr key={`${item.ThuTu}-${index}`}>
-        <td><div className="ggtl-description">{moTaDienGiai(item, row) || "—"}</div>
+        <td><div className="ggtl-description">{moTaDienGiai(item, row) || "-"}</div>
           <div className="ggtl-notes">{(item.GhiChu || "").split(";").map((code) => code.trim()).filter((code) => code && code !== "DO_THEO_NGAY").map((code, i) => <small key={`${code}-${i}`}>{GHI_CHU_DIEN_GIAI[code] || code}</small>)}</div>
           {item.KhoanMuc === "GIO_TKB" && item.IdGioGiangTkb != null && onViewTkb && <button type="button" className="btn-cancel" onClick={() => onViewTkb({ IdGioGiangTkb: item.IdGioGiangTkb, HoTen: row.HoTen, TenKhoa: row.TenDonVi })}>Xem chi tiết lớp TKB</button>}
         </td>
-        <td className="ggtl-formula">{item.CongThuc || "—"}</td><td className="ggtk-number">{so(item.SoGio)}</td>
+        <td className="ggtl-formula">{item.CongThuc || "-"}</td><td className="ggtk-number">{so(item.SoGio)}</td>
       </tr>)}
     </React.Fragment>;
   };

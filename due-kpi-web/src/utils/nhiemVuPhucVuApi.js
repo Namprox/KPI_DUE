@@ -52,7 +52,7 @@ export const HUONG_DAN_DIEM = "Điểm sẽ được cập nhật vào phiếu K
 export const ngayInput = (value) => value ? String(value).slice(0, 10) : "";
 export const gioInput = (value) => value ? String(value).slice(0, 19) : "";
 export const hienThiNgay = (value, time = false) => {
-  if (!value) return "—";
+  if (!value) return "-";
   const [y, m, d] = ngayInput(value).split("-");
   return `${d}/${m}/${y}${time && String(value).length > 10 ? ` ${String(value).slice(11, 16)}` : ""}`;
 };

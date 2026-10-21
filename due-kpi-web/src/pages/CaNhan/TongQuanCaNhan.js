@@ -425,7 +425,7 @@ const TongQuanCaNhan = () => {
         <KpiCard
           nhan="Xếp loại"
           laChu
-          giaTri={phieu?.XepLoai ? XEP_LOAI_META[phieu.XepLoai]?.label || "—" : "Chưa chốt kết quả"}
+          giaTri={phieu?.XepLoai ? XEP_LOAI_META[phieu.XepLoai]?.label || "-" : "Chưa chốt kết quả"}
         />
         {/* Không còn việc thì thẻ này nói về tình trạng chứ không nói về hạn:
             hạn của giai đoạn vẫn còn hiệu lực nhưng không phải việc của chủ
@@ -472,15 +472,15 @@ const TongQuanCaNhan = () => {
           <div className="db-kv-list">
             <div className="db-kv">
               <span>Ngày gửi</span>
-              <span>{phieu ? formatNgay(phieu.NgayGui) : "—"}</span>
+              <span>{phieu ? formatNgay(phieu.NgayGui) : "-"}</span>
             </div>
             <div className="db-kv">
               <span>Cập nhật gần nhất</span>
-              <span>{phieu ? formatNgay(phieu.NgayCapNhat) : "—"}</span>
+              <span>{phieu ? formatNgay(phieu.NgayCapNhat) : "-"}</span>
             </div>
             <div className="db-kv">
               <span>Số tiêu chí</span>
-              <span>{phieu ? (phieu.ChiTiet || []).length : "—"}</span>
+              <span>{phieu ? (phieu.ChiTiet || []).length : "-"}</span>
             </div>
           </div>
           <div className="db-quick-links">

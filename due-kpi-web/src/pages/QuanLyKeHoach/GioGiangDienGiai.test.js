@@ -21,9 +21,9 @@ const ok = (body) => ({ ok: true, json: async () => body });
 test('thiếu cấu hình chức vụ hiện cảnh báo, không chấm tự động và giữ tổng API', () => {
   const missing = { ...row, GiamChucVu: 0, DinhMucApDung: 270, LyDo: 'THIEU_CAU_HINH_GIAM_TRU_CV', CanhBao: 'THIEU_CAU_HINH_GIAM_TRU_CV', TyLeHoanThanh: null, DiemDuKien: null };
   render(<><GiaiTrinhGioGiang row={missing} dienGiai={[{ IdNhanVien: row.IdNhanVien, KhoanMuc: 'CHUC_VU', TenNguon: 'Trưởng ban thanh tra', SoGio: null, GhiChu: 'THIEU_CAU_HINH_GIAM_TRU_CV' }]} /><DiemGioGiang row={missing} /><TyLeGioGiang row={missing} /></>);
-  expect(screen.getAllByText('Chức vụ chưa được cấu hình giảm trừ năm này — liên hệ ADMIN/BGH')).toHaveLength(3);
+  expect(screen.getAllByText('Chức vụ chưa được cấu hình giảm trừ năm này - liên hệ ADMIN/BGH')).toHaveLength(3);
   expect(screen.getByText('Không chấm tự động')).toBeInTheDocument();
-  expect(screen.getByRole('row', { name: /Trưởng ban thanh tra/ })).toHaveTextContent('—');
+  expect(screen.getByRole('row', { name: /Trưởng ban thanh tra/ })).toHaveTextContent('-');
   expect(screen.getByRole('row', { name: 'Định mức áp dụng 270' })).toBeInTheDocument();
 });
 beforeEach(() => {
@@ -79,7 +79,7 @@ test("thiếu DienGiai hoặc SoGio an toàn, không gộp số giờ hay trộn
     { IdNhanVien: 440, ThuTu: 1, KhoanMuc: "DAO_TAO", SoThang: 14, GhiChu: "THANG_MIEN_VUOT_NAM" },
     { IdNhanVien: 999, ThuTu: 2, KhoanMuc: "DAO_TAO", CongThuc: "KHONG_HIEN" },
   ]} />);
-  expect(screen.getByRole("row", { name: /14 tháng/ })).toHaveTextContent("—");
+  expect(screen.getByRole("row", { name: /14 tháng/ })).toHaveTextContent("-");
   expect(screen.queryByText("KHONG_HIEN")).not.toBeInTheDocument();
 });
 
@@ -91,12 +91,14 @@ test("ngày chỉ định dạng lịch; TKB và QNDB chỉ mô tả nguồn", (
 });
 
 test("contract chỉ có TKB và QNDB; tổng giờ, tỷ lệ và điểm lấy nguyên API", async () => {
-  apiFetch.mockResolvedValue(ok({ TyLeHoanThanh: [{
-    ...row, GioTkb: 117, GioQndb: 12.5, TongGio: 129.5,
-    TyLeHoanThanh: 95.93, DiemDuKien: 15, DiemToiDa: 20,
-  }], DienGiai: [...dienGiai, {
-    IdNhanVien: 440, ThuTu: 5, KhoanMuc: "GIO_QNDB", SoNgay: 5, SoGio: 12.5,
-  }] }));
+  apiFetch.mockResolvedValue(ok({
+    TyLeHoanThanh: [{
+      ...row, GioTkb: 117, GioQndb: 12.5, TongGio: 129.5,
+      TyLeHoanThanh: 95.93, DiemDuKien: 15, DiemToiDa: 20,
+    }], DienGiai: [...dienGiai, {
+      IdNhanVien: 440, ThuTu: 5, KhoanMuc: "GIO_QNDB", SoNgay: 5, SoGio: 12.5,
+    }]
+  }));
   render(<TongHopGioGiang idNam={2026} idNhanVien={440} tyLe />);
   expect(await screen.findByText("95,93%")).toBeInTheDocument();
   expect(screen.getByText("15 / 20")).toBeInTheDocument();

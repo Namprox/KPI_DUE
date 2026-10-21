@@ -19,7 +19,7 @@ export default function ChotForm({ item, busy, onSave, onCancel }) {
     <p className="nvpv-warning">Chốt rồi không thể sửa, hủy hoặc mở lại. Không hoàn thành = 0 điểm. Điểm hiển thị dưới đây là dự kiến.</p>
     {error && <p role="alert" className="nvpv-error">{error}</p>}
     <fieldset disabled={busy}><div className="table-scroll"><table className="custom-table"><thead><tr><th>Thành viên</th><th>Vai trò / Điểm dự kiến</th><th>Kết quả</th><th>Lý do không hoàn thành</th></tr></thead><tbody>
-      {rows.map((v, i) => <tr key={v.IdNhanVien}><td>{v.HoTen}</td><td>{v.TenVaiTro} · {v.DiemVaiTro ?? "—"}</td><td><SearchSelect required ariaLabel={`Kết quả ${v.HoTen}`} portal disabled={busy} value={v.choice} placeholder="Chọn kết quả"
+      {rows.map((v, i) => <tr key={v.IdNhanVien}><td>{v.HoTen}</td><td>{v.TenVaiTro} · {v.DiemVaiTro ?? "-"}</td><td><SearchSelect required ariaLabel={`Kết quả ${v.HoTen}`} portal disabled={busy} value={v.choice} placeholder="Chọn kết quả"
         onChange={(value) => change(i, { choice: value })} options={[{ value: "yes", label: "Hoàn thành" }, { value: "no", label: "Không hoàn thành" }]} /></td><td>{v.choice === "no" && <input required maxLength={500} aria-label={`Lý do ${v.HoTen}`} value={v.LyDo} onChange={(e) => change(i, { LyDo: e.target.value })} />}</td></tr>)}
     </tbody></table></div>
       <label className="nvpv-check"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} required />Tôi xác nhận kết quả đúng và đủ, hiểu rằng không thể mở lại sau chốt.</label>

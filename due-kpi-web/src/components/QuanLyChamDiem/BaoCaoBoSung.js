@@ -3,7 +3,7 @@ import { fetchBaoCaoChuaLapPhieu } from "../../utils/phieuApi";
 import TienDoCham from "./TienDoCham";
 import "../../css/CaNhan/BaoCaoBoSung.css";
 
-const so = (value) => value == null ? "—" : Number(value).toLocaleString("vi-VN");
+const so = (value) => value == null ? "-" : Number(value).toLocaleString("vi-VN");
 
 export function XepLoaiBaoCao({ rows = [] }) {
   return <div className="tqk-xl-list">{rows.map((r) => (
@@ -18,8 +18,8 @@ export function PhieuNamVienChuc({ data }) {
     <p className="tqk-goi-phu">Các số dưới đây là tập con của phiếu năm, không cộng thêm vào tổng phiếu.</p>
     <div className="bc-metrics">
       {[["SoChuaChotQuyNao", "Chưa chốt quý nào"], ["SoChotChuaDuQuy", "Đã chốt 1–3 quý"],
-        ["SoChotDuBonQuy", "Đã chốt đủ 4 quý"], ["SoChuaTongHopQuy", "Chưa tổng hợp quý"],
-        ["SoTongHopQuyCu", "Cần tổng hợp lại"]].map(([key, label]) => <div key={key}><span>{label}</span><strong>{so(data[key])}</strong></div>)}
+      ["SoChotDuBonQuy", "Đã chốt đủ 4 quý"], ["SoChuaTongHopQuy", "Chưa tổng hợp quý"],
+      ["SoTongHopQuyCu", "Cần tổng hợp lại"]].map(([key, label]) => <div key={key}><span>{label}</span><strong>{so(data[key])}</strong></div>)}
     </div>
     <p>Chờ TK duyệt: <strong>{so(data.SoChoTkDuyet)}</strong> (<strong>{so(data.SoChoTkDuyetChuaChotQuy)}</strong> chưa duyệt được vì chưa có quý chốt).</p>
     <p className="tqk-goi-phu">Hồ sơ có 1–3 quý đã chốt có thể chốt với kết quả chỉ từ các quý đó. Tổng hợp lại khi có quý chốt sau lần tổng hợp gần nhất.</p>
@@ -93,7 +93,7 @@ export function DanhSachChuaLap({ idNam, idDonVi, quy = 0, loaiDoiTuong, onClose
       )}
       {state.data && <>
         <div className="bc-table modern-table-card"><table className="custom-table"><thead><tr><th>Mã nhân viên</th><th>Họ tên</th><th>Đơn vị chính</th><th>Loại đối tượng</th><th>Chức danh</th><th>Chức vụ</th></tr></thead>
-          <tbody>{state.data.Items.map((r) => <tr key={r.IdNhanVien}><td>{r.MaNhanVien}</td><td>{r.HoTen}</td><td>{r.TenDonVi}</td><td>{r.LoaiDoiTuongText}</td><td>{r.TenChucDanh || "—"}</td><td>{r.TenChucVu || "—"}</td></tr>)}</tbody></table></div>
+          <tbody>{state.data.Items.map((r) => <tr key={r.IdNhanVien}><td>{r.MaNhanVien}</td><td>{r.HoTen}</td><td>{r.TenDonVi}</td><td>{r.LoaiDoiTuongText}</td><td>{r.TenChucDanh || "-"}</td><td>{r.TenChucVu || "-"}</td></tr>)}</tbody></table></div>
         {!state.data.Items.length && <p className="bc-danh-sach-message">Không có người chưa lập phiếu trong trang này.</p>}
         <div className="bc-pagination">
           <button type="button" className="btn-cancel" disabled={page <= 1} onClick={() => setPage(page - 1)}>Trang trước</button>

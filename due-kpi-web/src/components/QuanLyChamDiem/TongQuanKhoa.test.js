@@ -179,8 +179,10 @@ test("Trưởng khoa thấy danh sách hồ sơ chưa hoàn tất và người c
 test("thư ký thấy điểm trung bình tách nhóm, giữ điểm 0 và dòng phiếu trực thuộc Khoa", async () => {
   useAuth.mockReturnValue({ user: { MaChucVu: "TKK", IdDonVi: 10, DonVi: [{ IdDonVi: 10, MaChucVu: "TKK" }] } });
   fetchBaoCaoDiemTrungBinh.mockResolvedValue([
-    { IdDonVi: 10, TenDonVi: "Khoa A", LaTrucThuoc: true, SoPhieuGiangVien: 2, DiemTrungBinhGiangVien: 92.5,
-      SoPhieuVienChuc: 1, DiemTrungBinhVienChuc: 0, DiemTrungBinh: 61.67 },
+    {
+      IdDonVi: 10, TenDonVi: "Khoa A", LaTrucThuoc: true, SoPhieuGiangVien: 2, DiemTrungBinhGiangVien: 92.5,
+      SoPhieuVienChuc: 1, DiemTrungBinhVienChuc: 0, DiemTrungBinh: 61.67
+    },
   ]);
   renderIn(<TongQuanKhoa idNam={2026} idDonVi={10} />);
   expect(await screen.findByText("Điểm TB giảng viên")).toBeInTheDocument();
@@ -192,14 +194,18 @@ test("thư ký thấy điểm trung bình tách nhóm, giữ điểm 0 và dòng
 });
 
 test("Khoa dùng bộ lọc thống nhất cho tài khoản kiêm nhiệm và không suy mẫu số từ tổng phiếu", async () => {
-  useAuth.mockReturnValue({ user: { MaChucVu: "TK", IdDonVi: 10, DonVi: [
-    { IdDonVi: 10, MaChucVu: "TK" }, { IdDonVi: 20, MaChucVu: "TP" },
-  ] } });
+  useAuth.mockReturnValue({
+    user: {
+      MaChucVu: "TK", IdDonVi: 10, DonVi: [
+        { IdDonVi: 10, MaChucVu: "TK" }, { IdDonVi: 20, MaChucVu: "TP" },
+      ]
+    }
+  });
   fetchBaoCaoTongQuan.mockResolvedValue({ TongSoPhieu: 15, SoChuaLapPhieu: 5, CoQuyenXemDanhSach: true });
   renderIn(<TongQuanKhoa idNam={2026} idDonVi={10} />);
   await screen.findByRole("region", { name: "Hồ sơ chưa hoàn tất" });
   expect(fetchBaoCaoTongQuan).toHaveBeenCalledWith({ idNam: 2026, idDonVi: 10 });
   expect(fetchBaoCaoChuaLapPhieu).toHaveBeenCalledWith({ idNam: 2026, idDonVi: 10, page: 1, pageSize: 6 });
   expect(screen.queryByText("75%")).not.toBeInTheDocument();
-  expect(screen.getByText("— / — nhân sự")).toBeInTheDocument();
+  expect(screen.getByText("- / - nhân sự")).toBeInTheDocument();
 });

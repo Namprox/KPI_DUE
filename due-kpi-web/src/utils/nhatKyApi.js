@@ -11,8 +11,8 @@ export async function getNhatKy(path, params = {}, signal) {
   if (!response.ok || data?.Success === false || !data) {
     throw new Error(response.status === 403 ? "Bạn không có quyền xem nhật ký hệ thống."
       : response.status === 401 ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
-      : response.status === 404 ? "Không tìm thấy nhật ký hoặc API chưa được triển khai."
-      : data?.Message || "Không tải được nhật ký. Vui lòng thử lại.");
+        : response.status === 404 ? "Không tìm thấy nhật ký hoặc API chưa được triển khai."
+          : data?.Message || "Không tải được nhật ký. Vui lòng thử lại.");
   }
   return data;
 }
@@ -30,7 +30,7 @@ export const LY_DO = {
 export const rawValue = (value) => value == null ? "(trống)" : value === "" ? '""' : String(value);
 export const isSummary = (row) => row.LaTomTat === true || row.MucGhi === 2;
 export function logTime(value, session = false) {
-  if (!value) return "—";
+  if (!value) return "-";
   // Thao tác là giờ máy chủ, không gắn thêm múi giờ hoặc chuyển sang UTC.
   if (!session) return String(value).replace("T", " ");
   const date = new Date(value);

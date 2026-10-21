@@ -58,7 +58,7 @@ test("giữ điểm 0 từ tổng hợp cá nhân và nói rõ quý hiện tại
     />,
   );
 
-  expect(await screen.findByText("Phiếu quý 2 đã nộp — đang chờ trưởng đơn vị duyệt")).toBeInTheDocument();
+  expect(await screen.findByText("Phiếu quý 2 đã nộp - đang chờ trưởng đơn vị duyệt")).toBeInTheDocument();
   expect(fetchTongHopPhieuQuy).toHaveBeenCalledWith({ idNam: 2026, idNhanVien: 7 });
   expect(screen.getByRole("link", { name: "Xem phiếu quý 2" })).toHaveAttribute("href", "/danh-gia-kpi-nhan-vien?year=2026");
   expect(screen.getByText("Tính từ 1 / 4 quý đã chốt (quý 1)")).toBeInTheDocument();

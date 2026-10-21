@@ -62,9 +62,11 @@ export default function GiamTruChucVuTheoNam() {
   const edit = (item) => {
     if (item.ChoPhepSua !== true) return;
     setEditing(item);
-    setForm({ LoaiGiamTru: item.LoaiGiamTru || LOAI_GIAM_TRU.TY_LE,
+    setForm({
+      LoaiGiamTru: item.LoaiGiamTru || LOAI_GIAM_TRU.TY_LE,
       TyLePhanTram: item.TyLeDinhMucGiang == null ? '' : Number((item.TyLeDinhMucGiang * 100).toFixed(8)),
-      GioGiamTruNam: item.GioGiamTruNam ?? '', GhiChuDieuKien: item.GhiChuDieuKien || '' });
+      GioGiamTruNam: item.GioGiamTruNam ?? '', GhiChuDieuKien: item.GhiChuDieuKien || ''
+    });
     setFormError('');
   };
   const save = async (event) => {
@@ -102,15 +104,15 @@ export default function GiamTruChucVuTheoNam() {
       <thead><tr><th>Chức vụ</th><th>Loại giảm trừ</th><th>Mức áp dụng</th><th>Ghi chú điều kiện</th><th>Nguồn</th><th>Thao tác</th></tr></thead>
       <tbody>{items.map((item) => <tr key={item.IdChucVu}>
         <td><strong>{item.TenChucVu}</strong><small className="gtcv-meta">{item.MaChucVu}{item.TrangThai === false ? ' · Ngừng hoạt động' : ''}</small></td>
-        <td>{item.LoaiGiamTru === LOAI_GIAM_TRU.TY_LE ? 'Theo tỷ lệ' : item.LoaiGiamTru === LOAI_GIAM_TRU.GIO ? 'Giờ cố định' : '—'}</td>
-        <td>{item.DaCauHinh ? hienThiGiamTru(item) : '—'}</td><td>{item.GhiChuDieuKien || '—'}</td>
+        <td>{item.LoaiGiamTru === LOAI_GIAM_TRU.TY_LE ? 'Theo tỷ lệ' : item.LoaiGiamTru === LOAI_GIAM_TRU.GIO ? 'Giờ cố định' : '-'}</td>
+        <td>{item.DaCauHinh ? hienThiGiamTru(item) : '-'}</td><td>{item.GhiChuDieuKien || '-'}</td>
         <td><span className={!item.DaCauHinh ? 'gtcv-missing' : ''}>{nguonGiamTru(item)}</span>
           {item.HoTenNguoiCapNhat && <small className="gtcv-meta">Bản nguồn: {item.HoTenNguoiCapNhat}</small>}</td>
         <td>{item.ChoPhepSua === true ? <button type="button" className="btn-submit gtcv-edit-btn" onClick={() => edit(item)} aria-label={`Sửa giảm trừ ${item.TenChucVu}`}><i className="fa-solid fa-pen-to-square" aria-hidden="true" /> Sửa</button> : <span className="gtcv-meta">Chỉ xem</span>}</td>
       </tr>)}{!items.length && <tr><td colSpan={6}>{years.length ? 'Không có chức vụ.' : 'Chưa có năm đánh giá.'}</td></tr>}</tbody>
     </table></div>}
     {editing && <div className="modal-overlay"><div className="modal-box form-modal-box gtcv-modal" role="dialog" aria-modal="true" aria-labelledby="gtcv-title">
-      <div className="modal-header"><h3 id="gtcv-title">{editing.TenChucVu} — năm {idNam}</h3><button className="close-btn" aria-label="Đóng" disabled={saving} onClick={() => setEditing(null)}>×</button></div>
+      <div className="modal-header"><h3 id="gtcv-title">{editing.TenChucVu} - năm {idNam}</h3><button className="close-btn" aria-label="Đóng" disabled={saving} onClick={() => setEditing(null)}>×</button></div>
       <form onSubmit={save}><div className="modal-body">
         {editing.LaKeThua && <p className="gtcv-help">Đang kế thừa từ năm {editing.IdNamNguon}. Lưu sẽ tạo cấu hình riêng cho năm {idNam}.</p>}
         {formError && <div role="alert" className="gtcv-error">{formError}</div>}

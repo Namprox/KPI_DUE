@@ -14,9 +14,9 @@ function TaskTable({ items, onOpen, empty }) {
   return <div className="modern-table-card table-scroll"><table className="custom-table nvpv-table"><thead><tr><th>Nhiệm vụ / Khoa</th><th>Thời gian / Đăng ký</th><th>Số lượng</th><th>Trạng thái</th><th>Tham gia / Kết quả của tôi</th><th /></tr></thead><tbody>
     {items.map((v) => <tr key={v.IdNhiemVu}><td><strong>{v.TenNhiemVu}</strong><small>{v.TenDonVi} · {v.TenNguon}</small><small>{v.TenNhom}</small></td>
       <td>{api.hienThiNgay(v.TuNgay)} – {api.hienThiNgay(v.DenNgay)}<small>Hạn: {v.HanDangKy ? api.hienThiNgay(v.HanDangKy, true) : "Chỉ phân công"}</small></td>
-      <td>{v.SoThanhVien}/{v.SoLuongToiDa}<small>Còn {v.SoSuatConLai ?? "—"} suất</small></td>
+      <td>{v.SoThanhVien}/{v.SoLuongToiDa}<small>Còn {v.SoSuatConLai ?? "-"} suất</small></td>
       <td><span className={`cd-status-badge nvpv-status-${v.TrangThai}`}>{v.TenTrangThai || api.TRANG_THAI[v.TrangThai]}</span>{v.DangMoDangKy === true && <small>{v.ChoPhepDangKy === true ? "Đang mở đăng ký" : "Không còn suất đăng ký cho bạn"}</small>}</td>
-      <td>{v.CuaToi ? <>{v.CuaToi.TenVaiTro || "—"}<small>{v.CuaToi.DaRoi === true ? "Đã rút / gỡ" : v.CuaToi.TenNguonThamGia}</small>{v.CuaToi.TenKetQua && <small>{v.CuaToi.TenKetQua}{v.CuaToi.Diem != null ? ` · ${v.CuaToi.Diem} điểm` : ""}</small>}{v.CuaToi.LyDoKhongHoanThanh && <small>{v.CuaToi.LyDoKhongHoanThanh}</small>}</> : "—"}</td>
+      <td>{v.CuaToi ? <>{v.CuaToi.TenVaiTro || "-"}<small>{v.CuaToi.DaRoi === true ? "Đã rút / gỡ" : v.CuaToi.TenNguonThamGia}</small>{v.CuaToi.TenKetQua && <small>{v.CuaToi.TenKetQua}{v.CuaToi.Diem != null ? ` · ${v.CuaToi.Diem} điểm` : ""}</small>}{v.CuaToi.LyDoKhongHoanThanh && <small>{v.CuaToi.LyDoKhongHoanThanh}</small>}</> : "-"}</td>
       <td><button onClick={() => onOpen(v.IdNhiemVu)}>Xem chi tiết</button></td></tr>)}
     {!items.length && <tr><td colSpan={6} className="nvpv-empty">{empty || "Chưa có nhiệm vụ phù hợp."}</td></tr>}
   </tbody></table></div>;
@@ -125,14 +125,14 @@ export default function NhiemVuPhucVu({ mode = "mine", detailOnly = false }) {
     {error && <p role="alert" className="nvpv-error">{error} <button onClick={refresh}>Thử lại</button></p>}
     {(loading || (configLoading && selectedNam)) && <p role="status">Đang tải nhiệm vụ PVCĐ...</p>}
     {!loading && data && mode === "mine" && <>
-      <div className="nvpv-stats">{[["TongDiemThucTe", "Điểm thực tế vào phiếu"], ["TongDiemQuyDoi", "Tổng điểm quy đổi"], ["SoNhiemVuHoanThanh", "Nhiệm vụ hoàn thành"], ["SoDangThamGia", "Đang tham gia"]].map(([key, label]) => <div key={key}><span>{label}</span><b>{data.Header?.[key] ?? "—"}</b></div>)}</div>
+      <div className="nvpv-stats">{[["TongDiemThucTe", "Điểm thực tế vào phiếu"], ["TongDiemQuyDoi", "Tổng điểm quy đổi"], ["SoNhiemVuHoanThanh", "Nhiệm vụ hoàn thành"], ["SoDangThamGia", "Đang tham gia"]].map(([key, label]) => <div key={key}><span>{label}</span><b>{data.Header?.[key] ?? "-"}</b></div>)}</div>
       <h3>Nhiệm vụ của tôi</h3><TaskTable items={data.Items || []} onOpen={setDetailId} empty="Bạn chưa tham gia nhiệm vụ nào trong năm này." />
       <h3>Đang mở đăng ký tại Khoa của tôi</h3><TaskTable items={data.MoDangKy || []} onOpen={setDetailId} empty="Chưa có nhiệm vụ đang mở đăng ký." />
     </>}
     {!loading && data && mode === "manage" && <><TaskTable items={data.Items || []} onOpen={setDetailId} /><div className="nvpv-pagination"><span>{data.TotalCount ?? 0} nhiệm vụ · Trang {data.Page ?? page}/{Math.max(1, data.TotalPages || 1)}</span><button disabled={page <= 1} onClick={() => setPage((v) => v - 1)}>Trang trước</button><button disabled={page >= Number(data.TotalPages || 1)} onClick={() => setPage((v) => v + 1)}>Trang sau</button></div></>}
-    {!loading && data && mode === "summary" && <><div className="nvpv-stats">{SUMMARY_FIELDS.map(([key, label]) => <div key={key}><span>{label}</span><b>{data.Header?.[key] ?? "—"}</b></div>)}</div>
+    {!loading && data && mode === "summary" && <><div className="nvpv-stats">{SUMMARY_FIELDS.map(([key, label]) => <div key={key}><span>{label}</span><b>{data.Header?.[key] ?? "-"}</b></div>)}</div>
       <p className="nvpv-muted">Điểm Khoa thuộc phạm vi đang xem; điểm thực tế và điểm quy đổi tổng hợp từ mọi Khoa. Trần điểm: {data.Header?.TranDiem ?? config?.TranDiem}.</p>
-      <div className="modern-table-card table-scroll"><table className="custom-table"><thead><tr><th>Giảng viên</th>{SCORE_FIELDS.map(([key, label]) => <th key={key}>{label}</th>)}</tr></thead><tbody>{(data.Items || []).map((v) => <tr key={v.IdNhanVien}><td>{v.HoTen}<small>{v.MaNhanVien}</small></td>{SCORE_FIELDS.map(([key]) => <td key={key}>{v[key] ?? "—"}</td>)}</tr>)}{!data.Items?.length && <tr><td colSpan={10}>Chưa có số liệu tổng hợp.</td></tr>}</tbody></table></div></>}
+      <div className="modern-table-card table-scroll"><table className="custom-table"><thead><tr><th>Giảng viên</th>{SCORE_FIELDS.map(([key, label]) => <th key={key}>{label}</th>)}</tr></thead><tbody>{(data.Items || []).map((v) => <tr key={v.IdNhanVien}><td>{v.HoTen}<small>{v.MaNhanVien}</small></td>{SCORE_FIELDS.map(([key]) => <td key={key}>{v[key] ?? "-"}</td>)}</tr>)}{!data.Items?.length && <tr><td colSpan={10}>Chưa có số liệu tổng hợp.</td></tr>}</tbody></table></div></>}
     {creating && config && <Dialog draggable={false} visible modal header="Tạo nhiệm vụ PVCĐ" closable={!saving} closeOnEscape={!saving} onHide={() => { if (!saving) setCreating(false); }} className="nvpv-dialog" style={{ width: "850px" }} breakpoints={{ "900px": "96vw" }}><div className="nvpv">{createError && <p role="alert" className="nvpv-error">{createError}</p>}<NhiemVuForm config={config} namList={namList} idNam={selectedNam} idDonVi={khoa} busy={saving} onSave={create} onCancel={() => setCreating(false)} /></div></Dialog>}
     {detailId != null && <NhiemVuPhucVuDetail key={detailId} id={detailId} onClose={() => setDetailId(null)} onChanged={refresh} />}
   </div>;

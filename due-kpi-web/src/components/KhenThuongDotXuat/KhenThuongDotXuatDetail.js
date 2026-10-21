@@ -7,11 +7,11 @@ import "../../css/KhenThuongDotXuat.css";
 import LichSuTimeline, { tachNgayGio } from "../Common/LichSuTimeline";
 
 export const ngayKhenThuong = (value, time = false) => {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : time ? date.toLocaleString("vi-VN") : date.toLocaleDateString("vi-VN");
+  return Number.isNaN(date.getTime()) ? "-" : time ? date.toLocaleString("vi-VN") : date.toLocaleDateString("vi-VN");
 };
-export const nguonKhenThuong = (item) => Number(item.Nguon) === 3 ? "Bản sao dòng kê khai đã chốt" : Number(item.Nguon) === 1 ? "P_TCHC ghi nhận" : "—";
+export const nguonKhenThuong = (item) => Number(item.Nguon) === 3 ? "Bản sao dòng kê khai đã chốt" : Number(item.Nguon) === 1 ? "P_TCHC ghi nhận" : "-";
 export const HUONG_DAN_DIEM = "Lưu nguồn không tự cập nhật điểm đã chấm trên phiếu. Phiếu năm dùng Tổng hợp tự động; phiếu quý dùng luồng nộp/chấm lại hiện có.";
 export const DONG_BI_KHU = "Không cộng điểm: cùng nội dung trong năm đã có dòng điểm cao hơn hoặc bằng điểm với ID nhỏ hơn.";
 export default function KhenThuongDotXuatDetail({ id, onClose, onUnavailable }) {
@@ -40,13 +40,13 @@ export default function KhenThuongDotXuatDetail({ id, onClose, onUnavailable }) 
           {item.DaXoa === true && <p className="ktdx-warning">Bản ghi đã xóa.</p>}
           {item.LaDongBiKhu === true && <p className="ktdx-warning">{DONG_BI_KHU}</p>}
           <dl className="ktdx-details">
-            <dt>Viên chức</dt><dd>{item.HoTen} · {item.MaNhanVien}</dd><dt>Đơn vị</dt><dd>{item.TenDonVi || "—"}</dd>
+            <dt>Viên chức</dt><dd>{item.HoTen} · {item.MaNhanVien}</dd><dt>Đơn vị</dt><dd>{item.TenDonVi || "-"}</dd>
             <dt>Năm / Quý</dt><dd>{item.IdNam} / Quý {item.Quy}</dd><dt>Mức khen thưởng</dt><dd>{item.TenMuc}</dd>
             <dt>Điểm ghi nhận</dt><dd>{formatDiem(item.Diem)}</dd><dt>Nội dung</dt><dd>{item.NoiDung}</dd>
-            <dt>Quyết định</dt><dd>{item.SoQuyetDinh || "—"} · {ngayKhenThuong(item.NgayQuyetDinh)}</dd>
-            <dt>Cơ quan khen</dt><dd>{item.CoQuanKhen || "—"}</dd><dt>Ghi chú</dt><dd>{item.GhiChu || "—"}</dd>
+            <dt>Quyết định</dt><dd>{item.SoQuyetDinh || "-"} · {ngayKhenThuong(item.NgayQuyetDinh)}</dd>
+            <dt>Cơ quan khen</dt><dd>{item.CoQuanKhen || "-"}</dd><dt>Ghi chú</dt><dd>{item.GhiChu || "-"}</dd>
             <dt>Nguồn</dt><dd>{nguonKhenThuong(item)}{item.IdChiTietKeKhai != null && <small>Dòng kê khai gốc #{item.IdChiTietKeKhai} (đối chiếu lịch sử)</small>}</dd>
-            <dt>Người tạo</dt><dd>{item.TenNguoiTao || "—"} · {ngayKhenThuong(item.NgayTao, true)}</dd>
+            <dt>Người tạo</dt><dd>{item.TenNguoiTao || "-"} · {ngayKhenThuong(item.NgayTao, true)}</dd>
           </dl>
         </> : <p>Không có thông tin bản ghi.</p>}
         <p className="ktdx-muted">{HUONG_DAN_DIEM}</p>

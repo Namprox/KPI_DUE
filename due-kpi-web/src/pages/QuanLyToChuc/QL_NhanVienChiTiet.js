@@ -2386,7 +2386,7 @@ const QL_NhanVienChiTiet = () => {
                                 ? "Xác định sau khi lưu"
                                 : hienThiGiamTru(item);
                               const giamTru =
-                                giamTruRaw === "—" ? "" : giamTruRaw;
+                                giamTruRaw === "-" ? "" : giamTruRaw;
                               const daKetThuc = !!item.DenNgay;
 
                               if (isEditingRow) {
@@ -2500,13 +2500,13 @@ const QL_NhanVienChiTiet = () => {
                                               fontSize: "12px",
                                               color:
                                                 editChucVuFromDate !==
-                                                chiNgay(item.TuNgay)
+                                                  chiNgay(item.TuNgay)
                                                   ? "#b45309"
                                                   : "#64748b",
                                             }}
                                           >
                                             {editChucVuFromDate !==
-                                            chiNgay(item.TuNgay)
+                                              chiNgay(item.TuNgay)
                                               ? "Đổi ngày bắt đầu sẽ tính lại giảm trừ giờ giảng của các năm liên quan."
                                               : "Ngày bắt đầu giữ chức vụ tại đơn vị này."}
                                           </p>

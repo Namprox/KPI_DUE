@@ -493,7 +493,6 @@ const QL_DanhGiaSinhVien = () => {
           )
         }
         namList={namList}
-        donViList={donViList}
       />
 
       <QL_DanhGiaSinhVienChotModal

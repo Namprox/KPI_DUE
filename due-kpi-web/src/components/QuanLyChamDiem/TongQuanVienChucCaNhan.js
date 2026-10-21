@@ -37,7 +37,7 @@ const moTaQuyChuaChot = (q, quyHienTai) => {
   }
   return {
     chip: q.TrangThaiText || "Đang tự chấm",
-    ghiChu: "Đang tự chấm — nộp phiếu để trưởng đơn vị duyệt.",
+    ghiChu: "Đang tự chấm - nộp phiếu để trưởng đơn vị duyệt.",
   };
 };
 
@@ -131,13 +131,13 @@ export default function TongQuanVienChucCaNhan({
         ? { tieuDe: `Bạn chưa lập phiếu quý ${quyNay.Quy}`, nut: `Lập phiếu quý ${quyNay.Quy}`, canhBao: true }
         : Number(quyNay.TrangThai) === 2
           ? {
-              tieuDe: `Phiếu quý ${quyNay.Quy} đã nộp — đang chờ trưởng đơn vị duyệt`,
-              nut: `Xem phiếu quý ${quyNay.Quy}`,
-            }
+            tieuDe: `Phiếu quý ${quyNay.Quy} đã nộp - đang chờ trưởng đơn vị duyệt`,
+            nut: `Xem phiếu quý ${quyNay.Quy}`,
+          }
           : {
-              tieuDe: `Phiếu quý ${quyNay.Quy} đang ở bước tự chấm — nhớ nộp trước khi hết quý`,
-              nut: `Tiếp tục phiếu quý ${quyNay.Quy}`,
-            };
+            tieuDe: `Phiếu quý ${quyNay.Quy} đang ở bước tự chấm - nhớ nộp trước khi hết quý`,
+            nut: `Tiếp tục phiếu quý ${quyNay.Quy}`,
+          };
 
   const conThieu =
     tichLuy == null
@@ -278,7 +278,7 @@ export default function TongQuanVienChucCaNhan({
               )}
               <div className="db-cong-thuc">
                 <div>
-                  <span>Cơ bản — TB {soQuyChot} quý</span>
+                  <span>Cơ bản - TB {soQuyChot} quý</span>
                   <span>{diem(summary.DiemCoBanTbQuy)}</span>
                 </div>
                 <span className="db-toan-tu" aria-hidden="true">+</span>
@@ -340,7 +340,7 @@ export default function TongQuanVienChucCaNhan({
           </div>
           {canTongHopLai && (
             <Alert nho icon="lamMoi">
-              Có quý được chốt sau lần tổng hợp gần nhất — phiếu năm cần tổng hợp lại.
+              Có quý được chốt sau lần tổng hợp gần nhất - phiếu năm cần tổng hợp lại.
             </Alert>
           )}
           {duongDanPhieu && (
