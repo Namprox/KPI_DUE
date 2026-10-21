@@ -96,7 +96,7 @@
   gap: 10px;
 }
 
-.hoc-vu-year-control label {
+.hoc-vu-year-control .hoc-vu-year-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -106,13 +106,13 @@
   white-space: nowrap;
 }
 
-.hoc-vu-year-control label i {
+.hoc-vu-year-control .hoc-vu-year-label i {
   color: #0056b3;
 }
 
-.hoc-vu-year-control .form-select {
+.hoc-vu-year-control .select-wrap {
   width: auto;
-  min-width: 140px;
+  min-width: 160px;
 }
 
 /* Banner / Message Alerts */
@@ -741,8 +741,9 @@
   border-color: #0056b3;
 }
 
-.hoc-vu-mapping-select {
-  max-width: 320px;
+.hoc-vu-mapping-select.select-wrap {
+  width: 340px;
+  max-width: 100%;
 }
 
 .hoc-vu-actions-cell {
@@ -904,14 +905,16 @@
   cursor: pointer;
 }
 
+.hoc-vu-detail-khoa .select-wrap { font-weight: 400; }
+
 .hoc-vu-detail-khoa i {
   color: #0056b3;
   font-size: 13.5px;
 }
 
-.hoc-vu-detail-select {
-  min-width: 200px;
-  max-width: 280px;
+.hoc-vu-detail-select.select-wrap {
+  width: 340px;
+  max-width: 100%;
 }
 
 .hoc-vu-detail-search {
@@ -1080,7 +1083,7 @@
     min-width: 200px;
   }
 
-  .hoc-vu-detail-select {
+  .hoc-vu-detail-select.select-wrap {
     flex: 1;
     width: 100%;
     max-width: none;
@@ -1141,7 +1144,7 @@
     justify-content: space-between;
   }
 
-  .hoc-vu-year-control .form-select {
+  .hoc-vu-year-control .select-wrap {
     flex: 1;
   }
 

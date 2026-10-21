@@ -3,6 +3,7 @@ import { confirmDialog } from "primereact/confirmdialog";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch } from "../../utils/api";
 import { canManageHocVu } from "../../utils/roles";
+import SearchSelect from "../../components/Common/SearchSelect";
 import HocVuSinhVienDoiChieu from "./HocVuSinhVienDoiChieu";
 import "../../css/Pages.css";
 import "../../css/HocVuSinhVien.css";
@@ -468,23 +469,18 @@ export default function HocVuSinhVien() {
 
         {tab !== "anhXa" && (
           <div className="hoc-vu-year-control">
-            <label htmlFor="hoc-vu-year-select">
+            <span className="hoc-vu-year-label">
               <i className="fa-regular fa-calendar-check" aria-hidden="true" /> Năm đánh giá
-            </label>
-            <select
-              id="hoc-vu-year-select"
-              className="form-select"
+            </span>
+            <SearchSelect
+              className="hoc-vu-year-select"
+              ariaLabel="Năm đánh giá"
               value={idNam}
               disabled={uploading}
-              onChange={(event) => setIdNam(event.target.value)}
-            >
-              {years.length === 0 && <option value="">Chưa có năm</option>}
-              {years.map((year) => (
-                <option key={year.IdNam} value={year.IdNam}>
-                  Năm {year.IdNam}
-                </option>
-              ))}
-            </select>
+              placeholder={years.length === 0 ? "Chưa có năm" : "-- Chọn --"}
+              onChange={(value) => setIdNam(value)}
+              options={years.map((year) => ({ value: year.IdNam, label: `Năm ${year.IdNam}` }))}
+            />
           </div>
         )}
       </div>
@@ -924,25 +920,24 @@ export default function HocVuSinhVien() {
                         <td>
                           {canManage ? (
                             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                              <select
-                                className="form-select hoc-vu-mapping-select"
-                                aria-label={`Khoa trong hệ thống cho mã ${item.MaKhoa}`}
+                              <SearchSelect
+                                className="hoc-vu-mapping-select"
+                                ariaLabel={`Khoa trong hệ thống cho mã ${item.MaKhoa}`}
+                                searchable
+                                portal
                                 value={drafts[item.MaKhoa] ?? item.IdDonVi ?? ""}
                                 disabled={!!busyMapping}
-                                onChange={(event) =>
+                                onChange={(value) =>
                                   setDrafts((current) => ({
                                     ...current,
-                                    [item.MaKhoa]: event.target.value,
+                                    [item.MaKhoa]: value,
                                   }))
                                 }
-                              >
-                                <option value="" disabled={item.IdDonVi != null}>Chưa ánh xạ</option>
-                                {khoaList.map((khoa) => (
-                                  <option key={khoa.IdDonVi} value={khoa.IdDonVi}>
-                                    {khoa.TenDonVi}
-                                  </option>
-                                ))}
-                              </select>
+                                options={[
+                                  { value: "", label: "Chưa ánh xạ", disabled: item.IdDonVi != null },
+                                  ...khoaList.map((khoa) => ({ value: khoa.IdDonVi, label: khoa.TenDonVi })),
+                                ]}
+                              />
                               {item.IdDonVi == null && (
                                 <span className="status-pill pill-amber hoc-vu-badge">
                                   Chưa ánh xạ

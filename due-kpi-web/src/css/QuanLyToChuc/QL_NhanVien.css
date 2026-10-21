@@ -8,3 +8,15 @@
         min-width: 1300px !important;
     }
 }
+
+/* Bộ chọn đơn vị trên thanh công cụ: dùng dropdown dùng chung */
+.ql-nv-donvi-select.select-wrap {
+    width: 340px;
+    max-width: 100%;
+}
+
+@media screen and (max-width: 768px) {
+    .ql-nv-donvi-select.select-wrap {
+        width: 100%;
+    }
+}

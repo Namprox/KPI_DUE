@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import SearchSelect from "../../components/Common/SearchSelect";
 import { apiFetch } from "../../utils/api";
 
 const PAGE_SIZE = 20;
@@ -93,24 +94,21 @@ export default function HocVuSinhVienDoiChieu({ idNam, tyLe, initialSelection, r
 
         <div className="hoc-vu-detail-filters">
           {tyLe?.XemTatCa && (
-            <label className="hoc-vu-detail-khoa" htmlFor="hoc-vu-khoa-select">
+            <div className="hoc-vu-detail-khoa">
               <i className="fa-solid fa-building-columns" aria-hidden="true" />
               <span>Khoa</span>
-              <select
-                id="hoc-vu-khoa-select"
-                aria-label="Khoa"
-                className="form-select hoc-vu-detail-select"
+              <SearchSelect
+                ariaLabel="Khoa"
+                className="hoc-vu-detail-select"
+                searchable
                 value={idDonVi}
-                onChange={(event) => setFilter(setIdDonVi, event.target.value)}
-              >
-                <option value="">Tất cả Khoa</option>
-                {khoaList.map((item) => (
-                  <option key={item.IdDonVi} value={item.IdDonVi}>
-                    {item.TenDonVi}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={(value) => setFilter(setIdDonVi, value)}
+                options={[
+                  { value: "", label: "Tất cả Khoa" },
+                  ...khoaList.map((item) => ({ value: item.IdDonVi, label: item.TenDonVi })),
+                ]}
+              />
+            </div>
           )}
 
           <form

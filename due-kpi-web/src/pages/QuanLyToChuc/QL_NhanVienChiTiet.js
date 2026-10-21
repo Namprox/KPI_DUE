@@ -56,6 +56,68 @@ const QL_NhanVienChiTiet = () => {
   const [chucVuList, setChucVuList] = useState([]);
   const [chucDanhList, setChucDanhList] = useState([]);
   const [quanLyList, setQuanLyList] = useState([]);
+  // Bảng "Đơn vị & Chức vụ" theo canvas thiết kế (Claude Design, 2026-10-20).
+  // 43px = --select-height của SearchSelect: trong panel sửa có cả dropdown lẫn
+  // input, lệch chiều cao là nhìn thấy ngay.
+  const oNhapTrongBang = {
+    height: "43px",
+    padding: "0 10px",
+    fontSize: "14px",
+    margin: 0,
+    width: "100%",
+    boxSizing: "border-box",
+  };
+  const oNhanTruong = {
+    display: "block",
+    marginBottom: "5px",
+    fontSize: "12px",
+    fontWeight: "600",
+    color: "#475569",
+  };
+  // Tiêu đề cột cố ý NHẸ hơn dữ liệu - bản cũ để 13px/700 màu đen nên header
+  // nặng hơn chính nội dung nó gán nhãn.
+  const oTieuDeCot = {
+    padding: "9px 14px",
+    background: "#fafbfc",
+    borderBottom: "1px solid #eef1f6",
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#5b6675",
+    letterSpacing: "0.05em",
+    textTransform: "uppercase",
+    textAlign: "left",
+  };
+  const oODuLieu = { padding: "14px", verticalAlign: "top" };
+  const oNutIcon = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "34px",
+    height: "34px",
+    border: "1px solid #cbd5e1",
+    borderRadius: "7px",
+    background: "#fff",
+    cursor: "pointer",
+  };
+  const oNutPhu = {
+    height: "38px",
+    padding: "0 16px",
+    border: "1px solid #ccd3dd",
+    borderRadius: "7px",
+    background: "#fff",
+    color: "#334155",
+    fontFamily: "inherit",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer",
+  };
+  const oNutChinh = {
+    ...oNutPhu,
+    padding: "0 18px",
+    border: "1px solid #0056b3",
+    background: "#0056b3",
+    color: "#fff",
+  };
   // Chỉ ADMIN được gán chức vụ ADMIN (403 CHUC_VU_ADMIN) - ẩn hẳn khỏi dropdown.
   const chucVuChonDuoc = laAdminChucVu
     ? chucVuList
@@ -105,6 +167,7 @@ const QL_NhanVienChiTiet = () => {
   const [editDonViId, setEditDonViId] = useState("");
   const [editChucVuId, setEditChucVuId] = useState("");
   const [editLaChinh, setEditLaChinh] = useState(false);
+  const [editChucVuFromDate, setEditChucVuFromDate] = useState("");
   const [editChucVuToDate, setEditChucVuToDate] = useState("");
   const [editChucVuNote, setEditChucVuNote] = useState("");
 
@@ -284,6 +347,10 @@ const QL_NhanVienChiTiet = () => {
     d.setDate(d.getDate() - 1);
     return d.toLocaleDateString("sv");
   };
+
+  // API trả kiểu DATE, nhưng input[type="date"] chỉ nhận yyyy-MM-dd: cắt phần
+  // giờ nếu có để ô ngày không rỗng khi mở panel sửa.
+  const chiNgay = (value) => (value ? String(value).slice(0, 10) : "");
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -532,7 +599,7 @@ const QL_NhanVienChiTiet = () => {
         : "";
       const cvName = selectedCV
         ? selectedCV.ten_chuc_vu || selectedCV.TenChucVu
-        : "Thành viên";
+        : null;
       const newItem = {
         IdNvChucVu: Date.now(),
         IdDonVi: parseInt(newDonViId),
@@ -560,24 +627,36 @@ const QL_NhanVienChiTiet = () => {
     setEditDonViId(item.IdDonVi ? String(item.IdDonVi) : "");
     setEditChucVuId(item.IdChucVu ? String(item.IdChucVu) : "");
     setEditLaChinh(!!item.LaChinh);
-    setEditChucVuToDate(item.DenNgay || "");
+    setEditChucVuFromDate(chiNgay(item.TuNgay));
+    setEditChucVuToDate(chiNgay(item.DenNgay));
     setEditChucVuNote(item.GhiChu || "");
   };
 
   const handleSubmitEditChucVu = async (item) => {
-    if (editChucVuToDate && editChucVuToDate < item.TuNgay && !editLaChinh) {
-      alert(
-        "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu (" +
-        item.TuNgay +
-        ").",
-      );
+    // Từ ngày sửa được từ đợt 2026-10-20, nên cặp ngày kiểm trên giá trị SẼ ghi
+    // (đơn vị chính luôn ghi DenNgay = NULL) chứ không trên TuNgay đang lưu.
+    if (!validateDates(editChucVuFromDate, editLaChinh ? null : editChucVuToDate))
       return;
-    }
     if (!validateNote(editChucVuNote)) return;
+
+    // Lùi / tiến Từ ngày làm đổi chức vụ áp dụng, định mức và giảm trừ giờ giảng
+    // ở MỌI năm mà khoảng ngày cũ / mới đi qua, kể cả năm đã đánh giá.
+    const tuNgayCu = chiNgay(item.TuNgay);
+    if (isEditing && editChucVuFromDate !== tuNgayCu) {
+      const [dauKhoang, cuoiKhoang] = [tuNgayCu, editChucVuFromDate].sort();
+      const dongY = window.confirm(
+        `Đổi Từ ngày từ ${formatDate(tuNgayCu)} sang ${formatDate(editChucVuFromDate)}` +
+        ` sẽ thay đổi chức vụ áp dụng và giảm trừ giờ giảng của ${formData.HoTen || "nhân viên này"}` +
+        ` trong khoảng ${formatDate(dauKhoang)} – ${formatDate(cuoiKhoang)}, kể cả các năm đã đánh giá.` +
+        ` Tiếp tục?`,
+      );
+      if (!dongY) return;
+    }
 
     if (isEditing) {
       try {
         const payload = {
+          TuNgay: editChucVuFromDate,
           DenNgay: editLaChinh ? null : editChucVuToDate || null,
           GhiChu: editChucVuNote || null,
         };
@@ -626,9 +705,10 @@ const QL_NhanVienChiTiet = () => {
             TenChucVu: duocNhapChucVu
               ? selectedCV
                 ? selectedCV.ten_chuc_vu || selectedCV.TenChucVu
-                : "Thành viên"
+                : null
               : c.TenChucVu,
             LaChinh: duocNhapChucVu ? !!editLaChinh : c.LaChinh,
+            TuNgay: editChucVuFromDate || c.TuNgay,
             DenNgay: editLaChinh ? null : editChucVuToDate || null,
             GhiChu: editChucVuNote || null,
           };
@@ -867,6 +947,14 @@ const QL_NhanVienChiTiet = () => {
           >
             {isEditing ? "THÔNG TIN CHI TIẾT NHÂN VIÊN" : "THÊM NHÂN VIÊN MỚI"}
           </h2>
+          {isEditing && (formData.HoTen || formData.MaNhanVien) && (
+            <span style={{ fontSize: "14px", color: "#475569" }}>
+              <strong style={{ fontWeight: "600", color: "#0f172a" }}>
+                {formData.HoTen}
+              </strong>
+              {formData.MaNhanVien ? ` · ${formData.MaNhanVien}` : ""}
+            </span>
+          )}
         </div>
       </div>
 
@@ -1820,40 +1908,49 @@ const QL_NhanVienChiTiet = () => {
                   <div>
                     <h3
                       style={{
-                        fontSize: "16px",
-                        fontWeight: "bold",
+                        fontSize: "15px",
+                        fontWeight: "600",
                         color: "#0f172a",
-                        margin: "0 0 4px 0",
+                        margin: "0 0 3px 0",
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
-                        textTransform: "uppercase",
                       }}
                     >
                       <i
                         className="fa-solid fa-building-user"
-                        style={{ color: "#0056b3" }}
+                        style={{ color: "#0056b3", fontSize: "14px" }}
+                        aria-hidden="true"
                       ></i>
-                      Đơn vị & Chức vụ công tác
+                      Đơn vị &amp; chức vụ công tác
                     </h3>
-                    <span style={{ fontSize: "12.5px", color: "#64748b" }}>
-                      Quản lý các đơn vị công tác và chức vụ kiêm nhiệm của nhân
-                      viên
+                    <span style={{ fontSize: "13px", color: "#64748b" }}>
+                      Các đơn vị đang công tác và chức vụ kiêm nhiệm
                     </span>
                   </div>
                   {duocSuaChucVu && !isAddingChucVu && (
                     <button
                       type="button"
-                      className="btn-add-new"
                       onClick={() => setIsAddingChucVu(true)}
                       style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "7px",
+                        height: "38px",
                         margin: 0,
-                        padding: "8px 14px",
+                        padding: "0 14px",
+                        border: "1px solid #0056b3",
+                        borderRadius: "7px",
+                        background: "#0056b3",
+                        color: "#fff",
+                        fontFamily: "inherit",
                         fontSize: "13px",
+                        fontWeight: "600",
+                        cursor: "pointer",
                       }}
                     >
-                      <i className="fa-solid fa-plus"></i> Thêm đơn vị / chức vụ
-                      mới
+                      <i className="fa-solid fa-plus" aria-hidden="true"></i>
+                      Thêm đơn vị / chức vụ
                     </button>
                   )}
                 </div>
@@ -1954,8 +2051,7 @@ const QL_NhanVienChiTiet = () => {
                               options={[
                                 {
                                   value: "",
-                                  label:
-                                    "(Thành viên - không giữ chức vụ quản lý)",
+                                  label: "(Không giữ chức vụ quản lý)",
                                 },
                                 ...chucVuChonDuoc.map((cv) => ({
                                   value: cv.id_chuc_vu || cv.IdChucVu,
@@ -2203,94 +2299,45 @@ const QL_NhanVienChiTiet = () => {
                       </div>
                     )}
 
-                    {/* Table Concurrent Positions & Units */}
+                    {/* Bảng theo canvas thiết kế (Claude Design, 2026-10-20):
+                        tiêu đề cột nhẹ hơn dữ liệu, thao tác là nút viền thay vì
+                        ô màu đặc, trạng thái là chấm + chữ thay vì pill. Dòng đang
+                        sửa mở thành panel biểu mẫu - nhét control vào từng ô là
+                        nguồn gốc của mọi vụ lệch chiều cao trước đây. */}
                     <div
                       style={{
                         overflowX: "auto",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "6px",
+                        border: "1px solid #e3e7ee",
+                        borderRadius: "10px",
                       }}
                     >
                       <table
                         className="custom-table"
-                        style={{
-                          width: "100%",
-                          fontSize: "13px",
-                          background: "#fff",
-                        }}
+                        style={{ width: "100%", background: "#fff" }}
                       >
                         <thead>
-                          <tr style={{ background: "#f8fafc" }}>
-                            <th
-                              style={{
-                                padding: "10px",
-                                textAlign: "left",
-                                borderBottom: "1px solid #e2e8f0",
-                                width: "24%",
-                              }}
-                            >
-                              ĐƠN VỊ
+                          <tr>
+                            <th style={{ ...oTieuDeCot, width: "27%" }}>
+                              Đơn vị
                             </th>
-                            <th
-                              style={{
-                                padding: "10px",
-                                textAlign: "left",
-                                borderBottom: "1px solid #e2e8f0",
-                                width: "20%",
-                              }}
-                            >
-                              CHỨC VỤ
+                            <th style={{ ...oTieuDeCot, width: "20%" }}>
+                              Chức vụ
                             </th>
-                            <th
-                              style={{
-                                padding: "10px",
-                                textAlign: "right",
-                                borderBottom: "1px solid #e2e8f0",
-                                width: "140px",
-                              }}
-                            >
-                              ĐỊNH MỨC GIỜ
+                            <th style={{ ...oTieuDeCot, width: "190px" }}>
+                              Nhiệm kỳ
                             </th>
-                            <th
-                              style={{
-                                padding: "10px",
-                                textAlign: "left",
-                                borderBottom: "1px solid #e2e8f0",
-                                width: "120px",
-                              }}
-                            >
-                              TỪ NGÀY
-                            </th>
-                            <th
-                              style={{
-                                padding: "10px",
-                                textAlign: "left",
-                                borderBottom: "1px solid #e2e8f0",
-                                width: "130px",
-                              }}
-                            >
-                              ĐẾN NGÀY
-                            </th>
-                            <th
-                              style={{
-                                padding: "10px",
-                                textAlign: "left",
-                                borderBottom: "1px solid #e2e8f0",
-                                width: "18%",
-                              }}
-                            >
-                              GHI CHÚ
+                            <th style={{ ...oTieuDeCot, width: "23%" }}>
+                              Ghi chú
                             </th>
                             {duocSuaChucVu && (
                               <th
                                 style={{
-                                  padding: "10px",
-                                  textAlign: "center",
-                                  borderBottom: "1px solid #e2e8f0",
-                                  width: "120px",
+                                  ...oTieuDeCot,
+                                  width: "104px",
+                                  textAlign: "right",
                                 }}
                               >
-                                THAO TÁC
+                                Thao tác
                               </th>
                             )}
                           </tr>
@@ -2299,372 +2346,475 @@ const QL_NhanVienChiTiet = () => {
                           {chucVuConcurrent.length === 0 ? (
                             <tr>
                               <td
-                                colSpan={duocSuaChucVu ? 7 : 6}
+                                colSpan={duocSuaChucVu ? 5 : 4}
                                 style={{
-                                  padding: "15px",
+                                  padding: "34px 14px 38px",
                                   textAlign: "center",
-                                  color: "#475569",
-                                  fontStyle: "italic",
                                 }}
                               >
-                                Chưa có dữ liệu đơn vị & chức vụ công tác
+                                <div
+                                  style={{ fontSize: "14px", color: "#475569" }}
+                                >
+                                  Chưa có đơn vị công tác nào
+                                </div>
+                                <div
+                                  style={{
+                                    marginTop: "5px",
+                                    fontSize: "13px",
+                                    color: "#64748b",
+                                  }}
+                                >
+                                  Mỗi nhân viên cần ít nhất một đơn vị chính đang
+                                  hiệu lực trước khi lưu.
+                                </div>
                               </td>
                             </tr>
                           ) : (
                             chucVuConcurrent.map((item) => {
                               const isEditingRow =
                                 editingChucVuId === item.IdNvChucVu;
+                              const tenDonVi =
+                                item.TenDonVi ||
+                                item.ten_don_vi ||
+                                `Đơn vị #${item.IdDonVi}`;
+                              const tenChucVu =
+                                item.TenChucVu || item.ten_chuc_vu || "";
+                              // Giảm trừ là thuộc tính CỦA chức vụ nên đi kèm ngay
+                              // dưới tên chức vụ, không chiếm một cột rỗng với mọi
+                              // dòng không giữ chức vụ.
+                              const giamTruRaw = item.CauHinhChoLuu
+                                ? "Xác định sau khi lưu"
+                                : hienThiGiamTru(item);
+                              const giamTru =
+                                giamTruRaw === "—" ? "" : giamTruRaw;
+                              const daKetThuc = !!item.DenNgay;
+
+                              if (isEditingRow) {
+                                return (
+                                  <tr key={item.IdNvChucVu}>
+                                    <td
+                                      colSpan={duocSuaChucVu ? 5 : 4}
+                                      style={{
+                                        padding: "18px 14px 20px",
+                                        background: "#f7f9fc",
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "8px",
+                                          marginBottom: "14px",
+                                          flexWrap: "wrap",
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontSize: "13px",
+                                            fontWeight: "600",
+                                            color: "#0f172a",
+                                          }}
+                                        >
+                                          Đang sửa: {tenDonVi}
+                                        </span>
+                                      </div>
+
+                                      <div
+                                        style={{
+                                          display: "grid",
+                                          gridTemplateColumns:
+                                            "repeat(2, minmax(0, 1fr))",
+                                          gap: "14px 20px",
+                                        }}
+                                      >
+                                        {duocNhapChucVu && (
+                                          <div>
+                                            <span style={oNhanTruong}>
+                                              Đơn vị công tác
+                                            </span>
+                                            <SearchSelect
+                                              ariaLabel="Đơn vị công tác"
+                                              value={editDonViId}
+                                              onChange={(v) => setEditDonViId(v)}
+                                              options={donViList.map((dv) => ({
+                                                value:
+                                                  dv.id_don_vi || dv.IdDonVi,
+                                                label:
+                                                  dv.ten_don_vi || dv.TenDonVi,
+                                              }))}
+                                              placeholder="Chọn đơn vị"
+                                            />
+                                          </div>
+                                        )}
+                                        {duocNhapChucVu && (
+                                          <div>
+                                            <span style={oNhanTruong}>
+                                              Chức vụ
+                                            </span>
+                                            <SearchSelect
+                                              ariaLabel="Chức vụ"
+                                              value={editChucVuId}
+                                              onChange={(v) =>
+                                                setEditChucVuId(v)
+                                              }
+                                              options={[
+                                                {
+                                                  value: "",
+                                                  label:
+                                                    "(Không giữ chức vụ quản lý)",
+                                                },
+                                                ...chucVuChonDuoc.map((cv) => ({
+                                                  value:
+                                                    cv.id_chuc_vu || cv.IdChucVu,
+                                                  label:
+                                                    cv.ten_chuc_vu ||
+                                                    cv.TenChucVu,
+                                                })),
+                                              ]}
+                                              placeholder="Chọn chức vụ"
+                                            />
+                                          </div>
+                                        )}
+                                        <div>
+                                          <label
+                                            htmlFor={`cv-tu-ngay-${item.IdNvChucVu}`}
+                                            style={oNhanTruong}
+                                          >
+                                            Từ ngày
+                                          </label>
+                                          <input
+                                            id={`cv-tu-ngay-${item.IdNvChucVu}`}
+                                            type="date"
+                                            className="form-input"
+                                            value={editChucVuFromDate}
+                                            onChange={(e) =>
+                                              setEditChucVuFromDate(
+                                                e.target.value,
+                                              )
+                                            }
+                                            style={oNhapTrongBang}
+                                          />
+                                          <p
+                                            style={{
+                                              margin: "5px 0 0",
+                                              fontSize: "12px",
+                                              color:
+                                                editChucVuFromDate !==
+                                                chiNgay(item.TuNgay)
+                                                  ? "#b45309"
+                                                  : "#64748b",
+                                            }}
+                                          >
+                                            {editChucVuFromDate !==
+                                            chiNgay(item.TuNgay)
+                                              ? "Đổi ngày bắt đầu sẽ tính lại giảm trừ giờ giảng của các năm liên quan."
+                                              : "Ngày bắt đầu giữ chức vụ tại đơn vị này."}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <label
+                                            htmlFor={`cv-den-ngay-${item.IdNvChucVu}`}
+                                            style={oNhanTruong}
+                                          >
+                                            Đến ngày
+                                          </label>
+                                          <input
+                                            id={`cv-den-ngay-${item.IdNvChucVu}`}
+                                            type="date"
+                                            className="form-input"
+                                            disabled={editLaChinh}
+                                            value={editChucVuToDate}
+                                            onChange={(e) =>
+                                              setEditChucVuToDate(e.target.value)
+                                            }
+                                            style={oNhapTrongBang}
+                                          />
+                                          <p
+                                            style={{
+                                              margin: "5px 0 0",
+                                              fontSize: "12px",
+                                              color: "#64748b",
+                                            }}
+                                          >
+                                            {editLaChinh
+                                              ? "Đơn vị chính không đặt ngày kết thúc."
+                                              : "Để trống nếu vẫn đang công tác."}
+                                          </p>
+                                        </div>
+                                        <div style={{ gridColumn: "1 / -1" }}>
+                                          <label
+                                            htmlFor={`cv-ghi-chu-${item.IdNvChucVu}`}
+                                            style={oNhanTruong}
+                                          >
+                                            Ghi chú
+                                          </label>
+                                          <input
+                                            id={`cv-ghi-chu-${item.IdNvChucVu}`}
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Tối đa 500 ký tự"
+                                            value={editChucVuNote}
+                                            onChange={(e) =>
+                                              setEditChucVuNote(e.target.value)
+                                            }
+                                            maxLength={500}
+                                            style={oNhapTrongBang}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "12px",
+                                          marginTop: "16px",
+                                          flexWrap: "wrap",
+                                        }}
+                                      >
+                                        {duocNhapChucVu && (
+                                          <label
+                                            style={{
+                                              display: "inline-flex",
+                                              alignItems: "center",
+                                              gap: "8px",
+                                              fontSize: "13px",
+                                              color: "#334155",
+                                              cursor: "pointer",
+                                            }}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={editLaChinh}
+                                              onChange={(e) => {
+                                                setEditLaChinh(e.target.checked);
+                                                if (e.target.checked)
+                                                  setEditChucVuToDate("");
+                                              }}
+                                              style={{
+                                                width: "16px",
+                                                height: "16px",
+                                                accentColor: "#0056b3",
+                                                cursor: "pointer",
+                                              }}
+                                            />
+                                            Đặt làm đơn vị chính
+                                          </label>
+                                        )}
+                                        <div style={{ flex: 1 }}></div>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setEditingChucVuId(null)
+                                          }
+                                          style={oNutPhu}
+                                        >
+                                          Hủy
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleSubmitEditChucVu(item)
+                                          }
+                                          style={oNutChinh}
+                                        >
+                                          Lưu thay đổi
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              }
+
                               return (
                                 <tr
                                   key={item.IdNvChucVu}
-                                  style={{ borderBottom: "1px solid #f1f5f9" }}
+                                  style={
+                                    daKetThuc ? { background: "#fcfcfd" } : undefined
+                                  }
                                 >
-                                  {/* Cột Đơn vị */}
-                                  <td
-                                    style={{
-                                      padding: "10px",
-                                      fontWeight: "500",
-                                      color: "#334155",
-                                    }}
-                                  >
-                                    {isEditingRow && duocNhapChucVu ? (
-                                      <SearchSelect
-                                        value={editDonViId}
-                                        onChange={(v) => setEditDonViId(v)}
-                                        options={donViList.map((dv) => ({
-                                          value: dv.id_don_vi || dv.IdDonVi,
-                                          label: dv.ten_don_vi || dv.TenDonVi,
-                                        }))}
-                                        placeholder="Chọn đơn vị"
-                                      />
-                                    ) : (
-                                      <div>
-                                        <span
-                                          style={{
-                                            fontWeight: "600",
-                                            color: "#1e293b",
-                                          }}
-                                        >
-                                          {item.TenDonVi ||
-                                            item.ten_don_vi ||
-                                            `Đơn vị #${item.IdDonVi}`}
-                                        </span>
-                                        {item.LaChinh && (
-                                          <span
-                                            style={{
-                                              display: "inline-flex",
-                                              alignItems: "center",
-                                              padding: "2px 8px",
-                                              borderRadius: "10px",
-                                              fontSize: "11px",
-                                              fontWeight: "600",
-                                              backgroundColor: "#e0f2fe",
-                                              color: "#0369a1",
-                                              border: "1px solid #bae6fd",
-                                              marginLeft: "8px",
-                                            }}
-                                          >
-                                            <i
-                                              className="fa-solid fa-star"
-                                              style={{
-                                                marginRight: "4px",
-                                                fontSize: "9px",
-                                              }}
-                                            ></i>
-                                            Đơn vị chính
-                                          </span>
-                                        )}
-                                        {!isEditing && (
-                                          <span
-                                            style={{
-                                              display: "inline-flex",
-                                              alignItems: "center",
-                                              padding: "2px 8px",
-                                              borderRadius: "10px",
-                                              fontSize: "11px",
-                                              fontWeight: "600",
-                                              backgroundColor: "#ffedd5",
-                                              color: "#c2410c",
-                                              border: "1px solid #fed7aa",
-                                              marginLeft: "8px",
-                                            }}
-                                          >
-                                            Chưa lưu
-                                          </span>
-                                        )}
+                                  <td style={oODuLieu}>
+                                    <div
+                                      style={{
+                                        fontSize: "15px",
+                                        fontWeight: "600",
+                                        lineHeight: 1.35,
+                                        color: daKetThuc ? "#475569" : "#0f172a",
+                                      }}
+                                    >
+                                      {tenDonVi}
+                                    </div>
+                                    {item.LaChinh && (
+                                      <div
+                                        style={{
+                                          display: "inline-flex",
+                                          alignItems: "center",
+                                          gap: "5px",
+                                          marginTop: "3px",
+                                          fontSize: "12px",
+                                          fontWeight: "600",
+                                          color: "#0369a1",
+                                        }}
+                                      >
+                                        <i
+                                          className="fa-solid fa-star"
+                                          style={{ fontSize: "10px" }}
+                                          aria-hidden="true"
+                                        ></i>
+                                        Đơn vị chính
+                                      </div>
+                                    )}
+                                    {!isEditing && (
+                                      <div
+                                        style={{
+                                          marginTop: "3px",
+                                          fontSize: "12px",
+                                          fontWeight: "600",
+                                          color: "#b45309",
+                                        }}
+                                      >
+                                        Chưa lưu
                                       </div>
                                     )}
                                   </td>
 
-                                  {/* Cột Chức vụ */}
-                                  <td style={{ padding: "10px" }}>
-                                    {isEditingRow && duocNhapChucVu ? (
-                                      <SearchSelect
-                                        value={editChucVuId}
-                                        onChange={(v) => setEditChucVuId(v)}
-                                        options={[
-                                          {
-                                            value: "",
-                                            label: "(Thành viên)",
-                                          },
-                                          ...chucVuChonDuoc.map((cv) => ({
-                                            value: cv.id_chuc_vu || cv.IdChucVu,
-                                            label:
-                                              cv.ten_chuc_vu || cv.TenChucVu,
-                                          })),
-                                        ]}
-                                        placeholder="Chọn chức vụ"
-                                      />
-                                    ) : (
-                                      <span
-                                        style={{
-                                          color:
-                                            item.IdChucVu || item.TenChucVu
-                                              ? "#334155"
-                                              : "#64748b",
-                                          fontStyle:
-                                            item.IdChucVu || item.TenChucVu
-                                              ? "normal"
-                                              : "italic",
-                                        }}
-                                      >
-                                        {item.TenChucVu ||
-                                          item.ten_chuc_vu ||
-                                          "(Thành viên)"}
-                                      </span>
-                                    )}
-                                  </td>
-
-                                  {/* Cột Định mức */}
-                                  <td
-                                    style={{
-                                      padding: "10px",
-                                      color: "#475569",
-                                      textAlign: "right",
-                                    }}
-                                  >
-                                    {item.CauHinhChoLuu ? "Xác định sau khi lưu" : hienThiGiamTru(item)}
-                                  </td>
-
-                                  {/* Cột Từ ngày */}
-                                  <td
-                                    style={{
-                                      padding: "10px",
-                                      color: "#475569",
-                                    }}
-                                  >
-                                    {formatDate(item.TuNgay)}
-                                  </td>
-
-                                  {/* Cột Đến ngày */}
-                                  <td style={{ padding: "10px" }}>
-                                    {isEditingRow ? (
-                                      editLaChinh ? (
-                                        <span
+                                  <td style={oODuLieu}>
+                                    {tenChucVu ? (
+                                      <>
+                                        <div
                                           style={{
-                                            fontSize: "12px",
-                                            color: "#0369a1",
-                                            fontWeight: "500",
+                                            fontSize: "14px",
+                                            color: daKetThuc
+                                              ? "#475569"
+                                              : "#1e293b",
                                           }}
                                         >
-                                          Đơn vị chính
-                                        </span>
-                                      ) : (
-                                        <input
-                                          type="date"
-                                          className="form-input"
-                                          value={editChucVuToDate}
-                                          onChange={(e) =>
-                                            setEditChucVuToDate(e.target.value)
-                                          }
-                                          style={{
-                                            padding: "4px 8px",
-                                            fontSize: "13px",
-                                            margin: 0,
-                                          }}
-                                        />
-                                      )
-                                    ) : !item.DenNgay ? (
+                                          {tenChucVu}
+                                        </div>
+                                        {giamTru && (
+                                          <div
+                                            style={{
+                                              marginTop: "2px",
+                                              fontSize: "12px",
+                                              color: "#64748b",
+                                            }}
+                                          >
+                                            {giamTru}
+                                          </div>
+                                        )}
+                                      </>
+                                    ) : (
                                       <span
                                         style={{
-                                          display: "inline-flex",
-                                          alignItems: "center",
-                                          padding: "3px 8px",
-                                          borderRadius: "12px",
-                                          fontSize: "12px",
-                                          fontWeight: "600",
-                                          backgroundColor: "#dcfce7",
-                                          color: "#166534",
-                                          border: "1px solid #bbf7d0",
+                                          fontSize: "14px",
+                                          color: "#8a93a2",
+                                          fontStyle: "italic",
                                         }}
                                       >
-                                        <i
-                                          className="fa-solid fa-circle-check"
-                                          style={{
-                                            marginRight: "4px",
-                                            fontSize: "10px",
-                                          }}
-                                        ></i>
-                                        Đang công tác
+                                        Không giữ chức vụ
                                       </span>
-                                    ) : (
-                                      formatDate(item.DenNgay)
                                     )}
                                   </td>
 
-                                  {/* Cột Ghi chú */}
+                                  <td style={oODuLieu}>
+                                    <div
+                                      style={{
+                                        fontSize: "13px",
+                                        whiteSpace: "nowrap",
+                                        color: daKetThuc ? "#475569" : "#334155",
+                                      }}
+                                    >
+                                      {formatDate(item.TuNgay)} →{" "}
+                                      {daKetThuc
+                                        ? formatDate(item.DenNgay)
+                                        : "nay"}
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "6px",
+                                        marginTop: "3px",
+                                        fontSize: "12px",
+                                        color: daKetThuc ? "#64748b" : "#15803d",
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          width: "6px",
+                                          height: "6px",
+                                          borderRadius: "50%",
+                                          background: daKetThuc
+                                            ? "#94a3b8"
+                                            : "#16a34a",
+                                        }}
+                                      ></span>
+                                      {daKetThuc
+                                        ? "Đã kết thúc"
+                                        : "Đang công tác"}
+                                    </div>
+                                  </td>
+
                                   <td
                                     style={{
-                                      padding: "10px",
-                                      color: "#475569",
+                                      ...oODuLieu,
+                                      fontSize: "13px",
+                                      color: "#64748b",
+                                      lineHeight: 1.45,
                                     }}
                                   >
-                                    {isEditingRow ? (
-                                      <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="Ghi chú"
-                                        value={editChucVuNote}
-                                        onChange={(e) =>
-                                          setEditChucVuNote(e.target.value)
-                                        }
-                                        maxLength={500}
-                                        style={{
-                                          padding: "4px 8px",
-                                          fontSize: "13px",
-                                          margin: 0,
-                                        }}
-                                      />
-                                    ) : (
-                                      item.GhiChu || "-"
-                                    )}
+                                    {item.GhiChu || ""}
                                   </td>
 
-                                  {/* Cột Thao tác */}
                                   {duocSuaChucVu && (
                                     <td
                                       style={{
-                                        padding: "10px",
-                                        textAlign: "center",
+                                        ...oODuLieu,
+                                        textAlign: "right",
                                       }}
                                     >
-                                      {isEditingRow ? (
-                                        <div
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          gap: "6px",
+                                          justifyContent: "flex-end",
+                                        }}
+                                      >
+                                        <button
+                                          type="button"
+                                          title="Chỉnh sửa"
+                                          aria-label={`Sửa dòng ${tenDonVi}`}
+                                          onClick={() => startEditChucVu(item)}
                                           style={{
-                                            display: "flex",
-                                            gap: "12px",
-                                            justifyContent: "center",
+                                            ...oNutIcon,
+                                            color: "#0056b3",
                                           }}
                                         >
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              handleSubmitEditChucVu(item)
-                                            }
-                                            style={{
-                                              background: "#22c55e",
-                                              color: "#fff",
-                                              border: "none",
-                                              width: "32px",
-                                              height: "32px",
-                                              borderRadius: "4px",
-                                              cursor: "pointer",
-                                              display: "inline-flex",
-                                              alignItems: "center",
-                                              justifyContent: "center",
-                                            }}
-                                            title="Lưu thay đổi"
-                                          >
-                                            <i
-                                              className="fa-solid fa-check"
-                                              style={{ fontSize: "13px" }}
-                                            ></i>
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              setEditingChucVuId(null)
-                                            }
-                                            style={{
-                                              background: "#64748b",
-                                              color: "#fff",
-                                              border: "none",
-                                              width: "32px",
-                                              height: "32px",
-                                              borderRadius: "4px",
-                                              cursor: "pointer",
-                                              display: "inline-flex",
-                                              alignItems: "center",
-                                              justifyContent: "center",
-                                            }}
-                                            title="Hủy bỏ"
-                                          >
-                                            <i
-                                              className="fa-solid fa-times"
-                                              style={{ fontSize: "13px" }}
-                                            ></i>
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <div
+                                          <i
+                                            className="fa-solid fa-pen-to-square"
+                                            style={{ fontSize: "14px" }}
+                                            aria-hidden="true"
+                                          ></i>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          title="Xóa"
+                                          aria-label={`Xóa dòng ${tenDonVi}`}
+                                          onClick={() =>
+                                            handleDeleteChucVu(item.IdNvChucVu)
+                                          }
                                           style={{
-                                            display: "flex",
-                                            gap: "12px",
-                                            justifyContent: "center",
+                                            ...oNutIcon,
+                                            color: "#b42318",
                                           }}
                                         >
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              startEditChucVu(item)
-                                            }
-                                            style={{
-                                              background: "#f59e0b",
-                                              color: "#fff",
-                                              border: "none",
-                                              width: "32px",
-                                              height: "32px",
-                                              borderRadius: "4px",
-                                              cursor: "pointer",
-                                              display: "inline-flex",
-                                              alignItems: "center",
-                                              justifyContent: "center",
-                                            }}
-                                            title="Chỉnh sửa"
-                                          >
-                                            <i
-                                              className="fa-solid fa-pencil"
-                                              style={{ fontSize: "13px" }}
-                                            ></i>
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              handleDeleteChucVu(
-                                                item.IdNvChucVu,
-                                              )
-                                            }
-                                            style={{
-                                              background: "#ef4444",
-                                              color: "#fff",
-                                              border: "none",
-                                              width: "32px",
-                                              height: "32px",
-                                              borderRadius: "4px",
-                                              cursor: "pointer",
-                                              display: "inline-flex",
-                                              alignItems: "center",
-                                              justifyContent: "center",
-                                            }}
-                                            title="Xóa"
-                                          >
-                                            <i
-                                              className="fa-solid fa-trash"
-                                              style={{ fontSize: "13px" }}
-                                            ></i>
-                                          </button>
-                                        </div>
-                                      )}
+                                          <i
+                                            className="fa-solid fa-trash"
+                                            style={{ fontSize: "14px" }}
+                                            aria-hidden="true"
+                                          ></i>
+                                        </button>
+                                      </div>
                                     </td>
                                   )}
                                 </tr>
@@ -2697,27 +2847,6 @@ const QL_NhanVienChiTiet = () => {
             boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
           }}
         >
-          {/* Ghost style "Quay lại" button */}
-          <button
-            type="button"
-            className="btn-cancel"
-            onClick={handleBack}
-            style={{
-              margin: 0,
-              background: "transparent",
-              color: "#475569",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              padding: "10px 20px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
-            title="Quay lại danh sách nhân viên"
-          >
-            <i className="fa-solid fa-arrow-left"></i> Quay lại
-          </button>
-
           {isEditing ? (
             /* Edit Mode: "Hủy thay đổi" button */
             <button

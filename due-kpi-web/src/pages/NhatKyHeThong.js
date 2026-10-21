@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Dialog } from "primereact/dialog";
 import ObjectTabs from "../components/Common/ObjectTabs";
+import SearchSelect from "../components/Common/SearchSelect";
 import { getNhatKy, SU_KIEN, HANH_DONG, TAC_NHAN, LY_DO, rawValue, isSummary, logTime } from "../utils/nhatKyApi";
 import "../css/Pages.css";
 import "../css/NhatKyHeThong.css";
@@ -76,9 +77,9 @@ export default function NhatKyHeThong() {
     setTab(next); setDraft(filters); setQuery({ ...filters, page: 1, pageSize: query.pageSize }); setValidation(""); setDetailId(null);
   };
   const field = (key, label, options, type = "text") => <label className="nk-field" key={key}>{label}
-    {options ? <select className="form-select" value={draft[key] || ""} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}>
-      <option value="">Tất cả</option>{options.map(([value, text, disabled]) => <option key={value} value={value} disabled={disabled}>{text}</option>)}
-    </select> : <input type={type} min={type === "number" ? 1 : undefined} step={type === "number" ? 1 : undefined} value={draft[key] || ""} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} />}
+    {options ? <SearchSelect ariaLabel={label} value={draft[key] || ""} onChange={(v) => setDraft({ ...draft, [key]: v })}
+      options={[{ value: "", label: "Tất cả" }, ...options.map(([value, text, disabled]) => ({ value, label: text, disabled }))]} />
+      : <input type={type} min={type === "number" ? 1 : undefined} step={type === "number" ? 1 : undefined} value={draft[key] || ""} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} />}
   </label>;
   const requestLink = (id) => id ? <button className="nk-link" title="Xem thao tác cùng yêu cầu" onClick={() => switchTab("thao-tac", { maYeuCau: id })}>{id}</button> : "—";
   const action = (row) => <>{HANH_DONG[row.HanhDong] || row.TenHanhDong}{isSummary(row) && <div>Import {number(row.SoDong)} dòng (tóm tắt)</div>}{row.HanhDong === 4 && <div>{row.KhoaBanGhiCu != null && row.KhoaBanGhi != null ? `Đổi khoá: ${row.KhoaBanGhiCu} → ${row.KhoaBanGhi}` : "Đổi nhiều dòng, không ghép được khoá; xem cùng mã yêu cầu."}</div>}</>;
@@ -119,7 +120,7 @@ export default function NhatKyHeThong() {
         </tbody></table></div>
       </>}
       <div className="nk-toolbar nk-pagination"><span>{number(list?.TotalCount)} bản ghi · Trang {list?.Page || query.page} / {list?.TotalPages || 1}</span><div className="nk-toolbar">
-        <label>Số dòng <select className="form-select" value={query.pageSize} onChange={(e) => setQuery({ ...query, page: 1, pageSize: Number(e.target.value) })}>{[25, 50, 100, 200].map((n) => <option key={n}>{n}</option>)}</select></label>
+        <label>Số dòng <SearchSelect ariaLabel="Số dòng mỗi trang" value={query.pageSize} onChange={(v) => setQuery({ ...query, page: 1, pageSize: Number(v) })} options={[25, 50, 100, 200].map((n) => ({ value: n, label: String(n) }))} /></label>
         <button disabled={busy || !list || query.page <= 1} onClick={() => setQuery({ ...query, page: query.page - 1 })}>Trước</button><button disabled={busy || !list || query.page >= (list.TotalPages || 1)} onClick={() => setQuery({ ...query, page: query.page + 1 })}>Sau</button>
       </div></div>
     </div>

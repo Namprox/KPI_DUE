@@ -5228,3 +5228,19 @@ SQL trước, C# ngay sau. Trong khoảng giữa, C# cũ không gửi danh tính
 
 Ngoài phạm vi đợt này: sửa ngày chức vụ rơi vào năm đã đóng vẫn làm đổi phép tính tỷ lệ giờ giảng (§13.10) như trước;
 P_TCHC sửa được hệ số giảm trừ của chính chức vụ mình giữ (audit ghi lại).
+
+### 26.5. Sửa `tu_ngay` qua PUT (đợt "Sửa từ ngày chức vụ nhân viên", 2026-10-20)
+
+- Trước đợt này `sp_nhan_vien_chuc_vu_update` không có tham số ngày bắt đầu. FE gửi `TuNgay` thì Json.NET bỏ qua, API vẫn
+  trả 200 nên lỗi không lộ ra.
+- Nay SP nhận `@tu_ngay DATE = NULL`. NULL nghĩa là giữ nguyên (`ISNULL` về `tu_ngay` cũ). Phép kiểm `den_ngay >= tu_ngay`
+  chạy trên cặp giá trị **sẽ ghi** (khớp `chk_nvcv_ngay`). Quyền vẫn kiểm trước mọi lỗi khác, trên dòng hiện tại.
+- **Cho sửa tự do**, kể cả lùi về năm đã đóng (quyết định nghiệp vụ). Hệ quả: chức vụ áp dụng, tỷ lệ giờ giảng và giảm
+  trừ của các năm mà khoảng ngày đi qua đều đổi theo. FE hiện cảnh báo trước khi lưu, backend không chặn.
+- **Không có bảng `lich_su_*` riêng.** `trg_audit_nhan_vien_chuc_vu` (§23, mức chi tiết) đã ghi `du_lieu_cu` /
+  `du_lieu_moi` mọi cột, gồm `tu_ngay`, trong **cùng** transaction với UPDATE. Thiếu danh tính thì không ghi được: SP trả
+  `FORBIDDEN`, `sp_audit_set_context` lỗi thì đóng connection. Script fail-closed: PHAN 0 dừng nếu trigger không gắn
+  bảng, đang tắt, hoặc không ghi `i.[tu_ngay]` / `d.[tu_ngay]` (vd cột lọt vào `cot_bo_qua`).
+- Bẫy giữ nguyên ngữ nghĩa cũ: `DenNgay` / `GhiChu` ghi đè trực tiếp, không gửi thì bị xoá về NULL. FE phải gửi lại cả
+  hai (`Docs/fe-ke-khai-chuc-vu-p-tchc.md` mục 6).
+- Test: `Tests/sua_tu_ngay_chuc_vu_test.sql` (gitignored).

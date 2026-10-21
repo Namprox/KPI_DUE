@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import SearchSelect from "../../components/Common/SearchSelect";
 import "../../css/Pages.css";
 
 const MOCK_DATA = [
@@ -25,19 +26,19 @@ const GhiNhanViPhamNhanVienMock = () => {
             <div className="cd-toolbar" style={{ display: "flex", gap: "15px", marginBottom: "20px" }}>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Năm đánh giá</label>
-                    <select className="form-select" style={{ width: "100%" }}><option>Năm học 2026</option></select>
+                    <SearchSelect ariaLabel="Năm đánh giá" value="2026" onChange={() => { }} options={[{ value: "2026", label: "Năm học 2026" }]} />
                 </div>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Đơn vị (Phòng/Ban)</label>
-                    <select className="form-select" style={{ width: "100%" }}><option>-- Tất cả Phòng/Ban --</option></select>
+                    <SearchSelect ariaLabel="Đơn vị (Phòng/Ban)" value="" onChange={() => { }} options={[{ value: "", label: "-- Tất cả Phòng/Ban --" }]} />
                 </div>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Nhân viên</label>
-                    <select className="form-select" style={{ width: "100%" }}><option>-- Tất cả nhân viên --</option></select>
+                    <SearchSelect ariaLabel="Nhân viên" value="" onChange={() => { }} options={[{ value: "", label: "-- Tất cả nhân viên --" }]} />
                 </div>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Nhóm vi phạm</label>
-                    <select className="form-select" style={{ width: "100%" }}><option>-- Tất cả nhóm --</option></select>
+                    <SearchSelect ariaLabel="Nhóm vi phạm" value="" onChange={() => { }} options={[{ value: "", label: "-- Tất cả nhóm --" }]} />
                 </div>
                 <div style={{ flex: 1 }}>
                     <label className="cd-label" style={{ fontSize: "14px", fontWeight: "bold" }}>Tìm kiếm từ khóa</label>

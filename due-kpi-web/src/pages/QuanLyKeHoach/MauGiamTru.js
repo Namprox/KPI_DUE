@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { confirmDialog } from "primereact/confirmdialog";
+import SearchSelect from "../../components/Common/SearchSelect";
 import useNamDanhGia from "../../hooks/useNamDanhGia";
 import { importGiamTru } from "../../utils/giamTruApi";
 import "../../css/Pages.css";
@@ -143,11 +144,11 @@ export default function MauGiamTru() {
       <h2>Mẫu giảm trừ</h2><span className="breadcrumb">Nhập dữ liệu giảm trừ định mức của cán bộ, viên chức theo từng năm</span>
     </div></div>
     <div className="hoc-vu-toolbar"><div className="hoc-vu-year-control">
-      <label htmlFor="giam-tru-nam"><i className="fa-solid fa-calendar" aria-hidden="true" /> Năm đánh giá</label>
-      <select id="giam-tru-nam" className="form-select" value={selectedNam} disabled={busy || dangTaiNam} onChange={(e) => setSelectedNam(e.target.value)}>
-        {!namList.length && <option value="">{dangTaiNam ? "Đang tải năm..." : "Chưa có năm đánh giá"}</option>}
-        {namList.map((nam) => <option key={nam.IdNam} value={nam.IdNam}>{nam.TenNam || nam.IdNam}</option>)}
-      </select>
+      <span className="hoc-vu-year-label"><i className="fa-solid fa-calendar" aria-hidden="true" /> Năm đánh giá</span>
+      <SearchSelect ariaLabel="Năm đánh giá" value={selectedNam} disabled={busy || dangTaiNam}
+        placeholder={dangTaiNam ? "Đang tải năm..." : "Chưa có năm đánh giá"}
+        onChange={(value) => setSelectedNam(value)}
+        options={namList.map((nam) => ({ value: nam.IdNam, label: String(nam.TenNam || nam.IdNam) }))} />
     </div><span className="status-pill pill-blue">Quản trị viên</span></div>
     {!dangTaiNam && !namList.length && <div className="hoc-vu-banner error" role="alert">Không có danh mục năm. Vui lòng kiểm tra năm đánh giá hoặc tải lại trang.</div>}
     <UploadForm key={selectedNam} idNam={selectedNam} busy={busy} setBusy={setBusy} />

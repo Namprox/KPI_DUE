@@ -22260,13 +22260,22 @@ components:
     NhanVienChucVuUpdateRequest:
       type: object
       description: >-
-        DenNgay/GhiChu là ghi đè trực tiếp. IdDonVi/LaChinh để NULL = giữ nguyên.
+        DenNgay/GhiChu là ghi đè trực tiếp (không gửi = xoá về NULL). TuNgay/IdDonVi/LaChinh để NULL = giữ nguyên.
       properties:
+        TuNgay:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            Ngày bắt đầu nhiệm kỳ. NULL = giữ nguyên (đợt 2026-10-20). Sửa tự do, kể cả lùi về quá khứ: làm đổi
+            chức vụ áp dụng / giảm trừ của các năm đã đánh giá → FE cảnh báo trước khi lưu. DenNgay (giá trị sẽ
+            ghi) phải ≥ TuNgay → 400 (BLL, khi gửi cả hai) / 409 (SP). Vết cũ / mới ở `GET api/nhat-ky/thao-tac`
+            (`tenBang=nhan_vien_chuc_vu`, `khoaBanGhi={id}`).
         DenNgay:
           type: string
           format: date
           nullable: true
-          description: Ngày kết thúc nhiệm kỳ. Phải ≥ TuNgay của bản ghi gốc.
+          description: Ngày kết thúc nhiệm kỳ. Phải ≥ TuNgay (giá trị mới nếu có gửi, không thì của bản ghi gốc).
         GhiChu:
           type: string
           nullable: true

@@ -10,6 +10,7 @@ import { useDiemTuDongPhieu } from "../../hooks/useDiemTuDongPhieu";
 import PhieuTuDongNotice from "../../components/DanhGia/PhieuTuDongNotice";
 import TienDoCham from "../../components/QuanLyChamDiem/TienDoCham";
 import TongDiemMeta from "../../components/QuanLyChamDiem/TongDiemMeta";
+import SearchSelect from "../../components/Common/SearchSelect";
 import {
   duyetPhieuQuy,
   downloadMinhChungQuy,
@@ -242,9 +243,9 @@ const DuyetPhieuQuy = () => {
       <header className="pq-header">
         <div><h2>DUYỆT KPI VIÊN CHỨC THEO QUÝ</h2><p>Hàng đợi tại đúng đơn vị bạn phụ trách</p></div>
         <div className="pq-filters">
-          <label>Năm<select className="form-select" value={selectedNam} disabled={dangTaiNam} onChange={(e) => setSelectedNam(e.target.value)}>{namList.map((n) => <option key={n.IdNam} value={n.IdNam}>{n.IdNam}</option>)}</select></label>
-          {donViList.length > 0 && <label>Đơn vị<select className="form-select" value={idDonVi} onChange={(e) => setIdDonVi(e.target.value)}>{donViList.map((d) => <option key={d.IdDonVi} value={d.IdDonVi}>{d.TenDonVi || d.MaDonVi}</option>)}</select></label>}
-          <label>Quý<select className="form-select" value={quy} onChange={(e) => setQuy(e.target.value)}><option value="">Tất cả</option>{[1, 2, 3, 4].map((q) => <option key={q} value={q}>Quý {q}</option>)}</select></label>
+          <label className="pq-filter-sm">Năm<SearchSelect ariaLabel="Năm" value={selectedNam} disabled={dangTaiNam} onChange={(v) => setSelectedNam(v)} options={namList.map((n) => ({ value: n.IdNam, label: String(n.IdNam) }))} /></label>
+          {donViList.length > 0 && <label>Đơn vị<SearchSelect ariaLabel="Đơn vị" searchable value={idDonVi} onChange={(v) => setIdDonVi(v)} options={donViList.map((d) => ({ value: d.IdDonVi, label: d.TenDonVi || d.MaDonVi }))} /></label>}
+          <label className="pq-filter-sm">Quý<SearchSelect ariaLabel="Quý" value={quy} onChange={(v) => setQuy(v)} options={[{ value: "", label: "Tất cả" }, ...[1, 2, 3, 4].map((q) => ({ value: q, label: `Quý ${q}` }))]} /></label>
         </div>
       </header>
 

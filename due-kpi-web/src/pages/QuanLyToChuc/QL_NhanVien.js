@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../css/Pages.css';
+import SearchSelect from '../../components/Common/SearchSelect';
 import UserListing from '../../components/QuanLyToChuc/QL_NhanVien/QL_NhanVienListing';
 import ResetPasswordModal from '../../components/QuanLyToChuc/QL_NhanVien/ResetPasswordModal';
 import { useConfirmDeleteDialog } from '../../hooks/useConfirmDeleteDialog';
@@ -141,9 +142,9 @@ const QL_NhanVien = () => {
 
     const handlePageChange = (event) => setFirst(event.first);
 
-    const handleDonViChange = (e) => {
+    const handleDonViChange = (value) => {
         setFirst(0);
-        setSelectedDonViId(e.target.value);
+        setSelectedDonViId(value);
     };
 
     const handleEdit = (item) => {
@@ -211,21 +212,17 @@ const QL_NhanVien = () => {
                                 <i className="fa-solid fa-building-user" style={{ color: '#0284c7', marginRight: '6px' }}></i>
                                 Đơn vị phụ trách:
                             </label>
-                            <select
-                                className="form-select"
-                                style={{ minWidth: '260px' }}
+                            <SearchSelect
+                                ariaLabel="Đơn vị phụ trách"
+                                searchable
+                                className="ql-nv-donvi-select"
                                 value={selectedDonViId}
                                 onChange={handleDonViChange}
-                            >
-                                {donViPhuTrach.map(d => {
-                                    const name = d.TenDonVi || getTenDonViFromList(allDonViList, d.IdDonVi);
-                                    return (
-                                        <option key={d.IdDonVi} value={String(d.IdDonVi)}>
-                                            {name}
-                                        </option>
-                                    );
-                                })}
-                            </select>
+                                options={donViPhuTrach.map(d => ({
+                                    value: String(d.IdDonVi),
+                                    label: d.TenDonVi || getTenDonViFromList(allDonViList, d.IdDonVi),
+                                }))}
+                            />
                         </div>
                     ) : donViPhuTrach.length === 1 ? (
                         <div style={{
@@ -264,23 +261,20 @@ const QL_NhanVien = () => {
                             <i className="fa-solid fa-filter" style={{ color: '#0284c7', marginRight: '6px' }}></i>
                             Lọc theo đơn vị:
                         </label>
-                        <select
-                            className="form-select"
-                            style={{ minWidth: '260px' }}
+                        <SearchSelect
+                            ariaLabel="Lọc theo đơn vị"
+                            searchable
+                            className="ql-nv-donvi-select"
                             value={selectedDonViId}
                             onChange={handleDonViChange}
-                        >
-                            <option value="">-- Toàn trường (Tất cả đơn vị) --</option>
-                            {allDonViList.map(d => {
-                                const id = d.IdDonVi || d.id_don_vi;
-                                const name = d.TenDonVi || d.ten_don_vi;
-                                return (
-                                    <option key={id} value={String(id)}>
-                                        {name}
-                                    </option>
-                                );
-                            })}
-                        </select>
+                            options={[
+                                { value: "", label: "-- Toàn trường (Tất cả đơn vị) --" },
+                                ...allDonViList.map(d => ({
+                                    value: String(d.IdDonVi || d.id_don_vi),
+                                    label: d.TenDonVi || d.ten_don_vi,
+                                })),
+                            ]}
+                        />
                     </div>
                 )}
             </div>

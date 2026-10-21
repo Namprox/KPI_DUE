@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import SearchSelect from "../../components/Common/SearchSelect";
 import "../../css/Pages.css";
 
 const MOCK_EMPLOYEES = [
@@ -68,19 +69,29 @@ const DeXuatTangXepLoaiMock = () => {
                         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
                             <div>
                                 <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", marginBottom: "5px", color: "#475569" }}>Chọn Nhân viên <span style={{ color: "red" }}>*</span></label>
-                                <select className="form-select" style={{ width: "100%" }} value={selectedEmp} onChange={e => setSelectedEmp(e.target.value)}>
-                                    <option value="">-- Chọn nhân viên đang đạt hạng B hoặc A --</option>
-                                    {MOCK_EMPLOYEES.map(emp => <option key={emp.id} value={emp.id}>{emp.name} ({emp.currentRank})</option>)}
-                                </select>
+                                <SearchSelect
+                                    ariaLabel="Chọn Nhân viên"
+                                    searchable
+                                    value={selectedEmp}
+                                    onChange={setSelectedEmp}
+                                    placeholder="-- Chọn nhân viên đang đạt hạng B hoặc A --"
+                                    options={MOCK_EMPLOYEES.map(emp => ({ value: emp.id, label: `${emp.name} (${emp.currentRank})` }))}
+                                />
                             </div>
 
                             <div>
                                 <label style={{ display: "block", fontSize: "14px", fontWeight: "bold", marginBottom: "5px", color: "#475569" }}>Hình thức tăng hạng <span style={{ color: "red" }}>*</span></label>
-                                <select className="form-select" style={{ width: "100%" }} value={proposalType} onChange={e => setProposalType(e.target.value)}>
-                                    <option value="">-- Chọn hình thức --</option>
-                                    <option value="B_to_A">Từ mức B (Hoàn thành NV) lên mức A (Hoàn thành Tốt NV)</option>
-                                    <option value="A_to_A_plus">Từ mức A (Hoàn thành Tốt NV) lên mức A+ (Hoàn thành Xuất sắc NV)</option>
-                                </select>
+                                <SearchSelect
+                                    ariaLabel="Hình thức tăng hạng"
+                                    className="select-multiline"
+                                    value={proposalType}
+                                    onChange={setProposalType}
+                                    placeholder="-- Chọn hình thức --"
+                                    options={[
+                                        { value: "B_to_A", label: "Từ mức B (Hoàn thành NV) lên mức A (Hoàn thành Tốt NV)" },
+                                        { value: "A_to_A_plus", label: "Từ mức A (Hoàn thành Tốt NV) lên mức A+ (Hoàn thành Xuất sắc NV)" },
+                                    ]}
+                                />
                             </div>
 
                             <div>

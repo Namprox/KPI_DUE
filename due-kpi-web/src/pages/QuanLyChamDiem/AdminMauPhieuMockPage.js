@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import SearchSelect from "../../components/Common/SearchSelect";
 import "../../css/Pages.css";
 
 const AdminMauPhieuMockPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loaiNhom, setLoaiNhom] = useState("1");
 
     return (
         <div className="page-container">
@@ -71,11 +73,17 @@ const AdminMauPhieuMockPage = () => {
 
                         <div style={{ marginBottom: "15px" }}>
                             <label style={{ display: "block", fontWeight: "bold", marginBottom: "5px", fontSize: "13px" }}>Loại nhóm nội bộ *</label>
-                            <select className="form-select" style={{ width: "100%" }}>
-                                <option>1 - Nhóm Tiêu chí Cơ bản</option>
-                                <option>2 - Nhóm Thành tích Vượt trội</option>
-                                <option>3 - Nhóm Điểm trừ (Vi phạm)</option>
-                            </select>
+                            <SearchSelect
+                                ariaLabel="Loại nhóm nội bộ"
+                                portal
+                                value={loaiNhom}
+                                onChange={setLoaiNhom}
+                                options={[
+                                    { value: "1", label: "1 - Nhóm Tiêu chí Cơ bản" },
+                                    { value: "2", label: "2 - Nhóm Thành tích Vượt trội" },
+                                    { value: "3", label: "3 - Nhóm Điểm trừ (Vi phạm)" },
+                                ]}
+                            />
                         </div>
 
                         <div style={{ backgroundColor: "#fef2f2", padding: "12px", border: "1px solid #fecaca", borderRadius: "6px", marginBottom: "20px" }}>

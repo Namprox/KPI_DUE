@@ -7,6 +7,8 @@ import { canAccessPath, visibleGroups } from "../../config/menuConfig";
 
 jest.mock("../../utils/api", () => ({ apiFetch: jest.fn() }));
 jest.mock("primereact/confirmdialog", () => ({ confirmDialog: jest.fn() }));
+jest.mock("../../components/Common/SearchSelect", () => ({ value, onChange, options, ariaLabel }) =>
+  <select aria-label={ariaLabel} value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>);
 const file = new File(["excel"], "Mau giam tru.xlsx");
 beforeEach(() => {
   jest.clearAllMocks();
