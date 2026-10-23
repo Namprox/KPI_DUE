@@ -30,6 +30,7 @@ const DU_LIEU_RONG = {
   chuaLienKet: false,
   hoSo: null,
   tongHop: null,
+  phanLoai: [],
   baiBao: RONG,
   deTai: RONG,
   sach: RONG,
@@ -264,6 +265,7 @@ const ThanhTichNckh = () => {
         chuaLienKet: chiTiet == null || chiTiet.HoSo == null,
         hoSo: chiTiet?.HoSo || null,
         tongHop: chiTiet?.TongHop || null,
+        phanLoai: chiTiet?.PhanLoai || [],
         baiBao,
         deTai,
         sach,
@@ -282,6 +284,33 @@ const ThanhTichNckh = () => {
   }, [dangTaiNam, taiDuLieu]);
 
   const soMocDat = useMemo(() => demMocDat(duLieu.tongHop), [duLieu.tongHop]);
+
+  // Hồ sơ NCKH ghép theo email, không phụ thuộc năm; còn TongHop là snapshot của
+  // riêng năm đang chọn. Có hồ sơ mà thiếu snapshot nghĩa là năm này chưa được
+  // đồng bộ - khác hẳn "đã đồng bộ nhưng không đạt mốc nào".
+  const chuaDongBoNam = !duLieu.tongHop;
+
+  // Server trả PhanLoai đã sắp theo Loai, nên gom liền kề là đủ giữ thứ tự.
+  const nhomPhanLoai = useMemo(() => {
+    const nhom = [];
+    duLieu.phanLoai.forEach((pl) => {
+      let muc = nhom.find((n) => n.loai === pl.Loai);
+      if (!muc) {
+        muc = { loai: pl.Loai, ten: pl.LoaiText || `Loại ${pl.Loai}`, danhSach: [] };
+        nhom.push(muc);
+      }
+      muc.danhSach.push(pl);
+    });
+    return nhom;
+  }, [duLieu.phanLoai]);
+
+  // Danh sách bị lọc theo khoảng ngày của năm đánh giá chứ không theo năm dương
+  // lịch, nên phải cho người xem thấy khoảng đó.
+  const khoangNam = useMemo(() => {
+    const nam = namList.find((n) => String(n.IdNam) === String(selectedNam));
+    if (!nam || !nam.NgayBatDau || !nam.NgayKetThuc) return "";
+    return `${formatNgay(nam.NgayBatDau)} – ${formatNgay(nam.NgayKetThuc)}`;
+  }, [namList, selectedNam]);
 
   const tongSoCongTrinh =
     duLieu.baiBao.tongSo +
@@ -394,10 +423,10 @@ const ThanhTichNckh = () => {
               Chưa liên kết với hệ thống NCKH
             </h3>
             <p style={{ margin: 0 }}>
-              Tài khoản của bạn chưa khớp được sang hệ thống NCKH (ghép theo
-              email), hoặc năm {selectedNam} chưa được đồng bộ. Khi chưa liên
-              kết, các tiêu chí NCKH tự động sẽ ra 0 điểm - hãy báo quản trị KPI
-              kiểm tra email trên hai hệ thống.
+              Tài khoản của bạn chưa khớp được sang hệ thống NCKH: hai hệ thống
+              ghép theo email trên hồ sơ nhân viên, và chưa tìm thấy hồ sơ NCKH
+              nào trùng email. Khi chưa liên kết, các tiêu chí NCKH tự động sẽ ra
+              0 điểm - hãy báo quản trị KPI kiểm tra email trên hai hệ thống.
             </p>
           </div>
         </div>
@@ -408,6 +437,31 @@ const ThanhTichNckh = () => {
             transition: "opacity 0.15s ease",
           }}
         >
+          <div className="nckh-thong-tin">
+            {khoangNam && (
+              <div className="nckh-thong-tin-muc">
+                <i className="fa-regular fa-calendar"></i>
+                <span>
+                  Khoảng thời gian năm đánh giá {selectedNam}: <b>{khoangNam}</b>
+                </span>
+              </div>
+            )}
+            {duLieu.hoSo && (
+              <div className="nckh-thong-tin-muc">
+                <i className="fa-solid fa-link"></i>
+                <span>
+                  Liên kết NCKH qua email <b>{duLieu.hoSo.Email || "-"}</b>
+                  {duLieu.hoSo.TenDonVi && (
+                    <>
+                      {" "}
+                      · Đơn vị bên NCKH: <b>{duLieu.hoSo.TenDonVi}</b>
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
+
           <div className="stat-card-grid">
             <div className="stat-card">
               <div className="stat-icon-box stat-icon-blue">
@@ -417,7 +471,7 @@ const ThanhTichNckh = () => {
                 <div className="stat-label">Bài báo</div>
                 <div className="stat-value">{duLieu.baiBao.tongSo}</div>
                 <div className="cd-hint" style={{ marginTop: 0 }}>
-                  công bố trong năm {selectedNam}
+                  ngày XB thuộc năm đánh giá
                 </div>
               </div>
             </div>
@@ -443,7 +497,7 @@ const ThanhTichNckh = () => {
                 <div className="stat-label">Sách</div>
                 <div className="stat-value">{duLieu.sach.tongSo}</div>
                 <div className="cd-hint" style={{ marginTop: 0 }}>
-                  xuất bản trong năm {selectedNam}
+                  ngày XB thuộc năm đánh giá
                 </div>
               </div>
             </div>
@@ -482,44 +536,87 @@ const ThanhTichNckh = () => {
               </div>
             </div>
 
-            <div>
-              {NHOM_MOC_NCKH.map((nhom) => (
-                <div className="nckh-moc-nhom" key={nhom.tenNhom}>
-                  <div className="nckh-moc-ten">{nhom.tenNhom}</div>
-                  <div
-                    className={`nckh-moc-grid${nhom.soCot === 2 ? " nckh-moc-grid-2" : ""}`}
-                  >
-                    {nhom.danhSach.map((moc) => {
-                      const dat = !!duLieu.tongHop?.[moc.key];
-                      return (
-                        <div
-                          key={moc.key}
-                          className={`nckh-moc${dat ? " nckh-moc-dat" : ""}`}
-                        >
-                          <i
-                            className={
-                              dat
-                                ? "fa-solid fa-circle-check"
-                                : "fa-solid fa-circle-minus"
-                            }
-                          ></i>
-                          {moc.nhan}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {soMocDat === 0 && (
+            {chuaDongBoNam ? (
               <div className="nckh-canh-bao">
                 <i className="fa-solid fa-triangle-exclamation"></i>
                 <div>
-                  Năm {selectedNam} chưa có NCKH nào được ghi nhận đạt điều kiện
-                  của những mốc trên.
+                  Năm {selectedNam} chưa có bản tổng hợp NCKH của bạn: năm này
+                  chưa được đồng bộ, hoặc hồ sơ NCKH của bạn được liên kết sau
+                  lần đồng bộ gần nhất. Khi chưa có bản tổng hợp, các tiêu chí
+                  NCKH tự động của năm {selectedNam} sẽ ra 0 điểm - hãy báo quản
+                  trị KPI đồng bộ lại năm này.
                 </div>
               </div>
+            ) : (
+              <>
+                <div>
+                  {NHOM_MOC_NCKH.map((nhom) => (
+                    <div className="nckh-moc-nhom" key={nhom.tenNhom}>
+                      <div className="nckh-moc-ten">{nhom.tenNhom}</div>
+                      <div
+                        className={`nckh-moc-grid${nhom.soCot === 2 ? " nckh-moc-grid-2" : ""}`}
+                      >
+                        {nhom.danhSach.map((moc) => {
+                          const dat = !!duLieu.tongHop?.[moc.key];
+                          return (
+                            <div
+                              key={moc.key}
+                              className={`nckh-moc${dat ? " nckh-moc-dat" : ""}`}
+                            >
+                              <i
+                                className={
+                                  dat
+                                    ? "fa-solid fa-circle-check"
+                                    : "fa-solid fa-circle-minus"
+                                }
+                              ></i>
+                              {moc.nhan}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {soMocDat === 0 && (
+                  <div className="nckh-canh-bao">
+                    <i className="fa-solid fa-triangle-exclamation"></i>
+                    <div>
+                      Năm {selectedNam} chưa có NCKH nào được ghi nhận đạt điều kiện
+                      của những mốc trên.
+                    </div>
+                  </div>
+                )}
+
+                {nhomPhanLoai.length > 0 && (
+                  <div className="nckh-phan-loai">
+                    <div className="nckh-moc-ten">
+                      Vai trò do hệ thống NCKH phân loại trong năm
+                    </div>
+                    {nhomPhanLoai.map((nhom) => (
+                      <div className="nckh-phan-loai-nhom" key={nhom.loai}>
+                        <span className="nckh-phan-loai-loai">{nhom.ten}</span>
+                        <div className="nckh-phan-loai-ds">
+                          {nhom.danhSach.map((pl) => (
+                            <span
+                              className="nckh-phan-loai-chip"
+                              key={pl.PhanLoaiText}
+                            >
+                              {pl.PhanLoaiText}
+                              <b>{pl.SoLuong}</b>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="cd-hint" style={{ marginTop: 0 }}>
+                      Số công trình theo từng vai trò, để đối chiếu với các mốc Chủ
+                      biên / Thành viên / Chủ nhiệm ở trên.
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -579,9 +676,11 @@ const ThanhTichNckh = () => {
           <div className="nckh-ghi-chu" style={{ marginTop: "16px" }}>
             <i className="fa-solid fa-circle-info"></i>
             <div>
-              Dữ liệu chỉ đọc, được đồng bộ từ hệ thống NCKH theo từng năm. Nếu
-              thiếu hoặc sai công trình, hãy cập nhật trên website NCKH rồi báo
-              quản trị KPI đồng bộ lại năm {selectedNam}.
+              Dữ liệu chỉ đọc, được đồng bộ từ hệ thống NCKH theo từng năm. Bài
+              báo, sách và kê khai khác được xếp vào năm theo ngày xuất bản /
+              ngày áp dụng, nên công trình thiếu ngày này sẽ không hiện ở năm
+              nào. Nếu thiếu hoặc sai công trình, hãy cập nhật trên website NCKH
+              rồi báo quản trị KPI đồng bộ lại năm {selectedNam}.
             </div>
           </div>
         </div>
