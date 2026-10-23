@@ -1025,6 +1025,18 @@ const ChotHoSoKhoa = () => {
                 {soDaChot} / {chiTietList.length}
               </b>
             </div>
+            {/* Chỉ để tham khảo: đợt này mức CBQL tự đề xuất chưa ràng buộc
+                mức Khoa chọn. Cờ do server tính theo chức vụ tại đơn vị phiếu. */}
+            {phieu.DuocTuDeXuatXepLoai === true && (
+              <div>
+                <span>Cá nhân đề xuất</span>
+                <b className="cd-rail-tu-de-xuat">
+                  {phieu.XepLoaiTuDeXuat != null
+                    ? phieu.XepLoaiTuDeXuatText || `Mức ${phieu.XepLoaiTuDeXuat}`
+                    : "Không đề xuất"}
+                </b>
+              </div>
+            )}
             <div>
               <span>Mức Khoa đã chọn</span>
               <XepLoaiKhoaBadge xepLoaiKhoa={phieu.XepLoaiKhoa} />

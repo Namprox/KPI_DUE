@@ -115,6 +115,8 @@ const DanhGiaPhuLuc2Form = ({
   autoScores = {},
   tongDiemCoBan,
   viTriTrongKhoa = null,
+  // Ô CBQL Khoa tự đề xuất mức xếp loại - trang cha dựng sẵn, dưới header.
+  deXuatXepLoai = null,
   lyDoTraVe,
   laDongMoNhap = () => false,
   thongTinDong = () => null,
@@ -256,6 +258,8 @@ const DanhGiaPhuLuc2Form = ({
 
         <div className="pl2-header-actions">{hanhDong}</div>
       </div>
+
+      {deXuatXepLoai}
 
       {lyDoTraVe && (
         <div className="pl2-return-note">

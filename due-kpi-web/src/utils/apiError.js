@@ -102,6 +102,8 @@ export const PHIEU_ERROR_MESSAGES = {
   CONCURRENCY_CONFLICT:
     "Phiếu vừa được người khác cập nhật. Dữ liệu sẽ được tải lại, vui lòng kiểm tra trước khi thao tác tiếp",
   INVALID_ROW_VERSION: "Phiên bản phiếu không hợp lệ, vui lòng tải lại dữ liệu",
+  KHONG_THUOC_DIEN_DE_XUAT:
+    "Phiếu này không còn thuộc diện tự đề xuất mức xếp loại (chủ phiếu không giữ chức vụ quản lý Khoa tại đơn vị của phiếu)",
 };
 
 const ERROR_MESSAGES = { ...VI_PHAM_ERROR_MESSAGES, ...PHIEU_ERROR_MESSAGES };

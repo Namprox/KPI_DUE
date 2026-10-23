@@ -140,6 +140,57 @@
   overflow-wrap: anywhere;
 }
 
+/* Ô CBQL Khoa tự đề xuất mức xếp loại, nằm ngay dưới khối tổng điểm. */
+.pl2-tu-de-xuat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #003399;
+  border-radius: 10px;
+  padding: 14px 20px;
+  margin: -10px 0 25px;
+}
+
+.pl2-tu-de-xuat-mo-ta {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.pl2-tu-de-xuat-dien {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: 6px;
+}
+
+.pl2-tu-de-xuat-mo-ta p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.pl2-tu-de-xuat-gia-tri {
+  flex: 0 1 300px;
+  min-width: 0;
+}
+
+.pl2-tu-de-xuat-xem {
+  font-size: 15px;
+  font-weight: 600;
+  color: #003399;
+  overflow-wrap: anywhere;
+}
+
+.pl2-tu-de-xuat-phu {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+  min-height: 16px;
+}
+
 .pl2-header-actions button {
   display: inline-flex;
   align-items: center;
@@ -1115,6 +1166,14 @@
 }
 
 @media screen and (max-width: 768px) {
+  .pl2-tu-de-xuat {
+    padding: 12px 16px;
+  }
+
+  .pl2-tu-de-xuat-gia-tri {
+    flex: 1 1 100%;
+  }
+
   .pl2-ranking {
     flex: none;
     width: 100%;

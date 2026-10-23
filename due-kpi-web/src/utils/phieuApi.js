@@ -1126,6 +1126,42 @@ export const huyNopPhieu = async (idPhieu, { lyDo, rowVersion } = {}) =>
     "Hủy nộp phiếu thất bại",
   );
 
+/**
+ * Mức xếp loại CBQL Khoa (TK/TKL/PTK/PTKL) tự đề xuất cho bản thân - đúng 4 nhãn
+ * cho DROPDOWN. Giá trị đang lưu luôn hiện bằng `XepLoaiTuDeXuatText` server trả,
+ * không tra bảng này. Khác `XEP_LOAI_KHOA_CHON`: người tự đề xuất được chọn mức 4.
+ */
+export const MUC_TU_DE_XUAT = [
+  { value: 1, label: "Không hoàn thành nhiệm vụ" },
+  { value: 2, label: "Hoàn thành nhiệm vụ" },
+  { value: 3, label: "Hoàn thành tốt nhiệm vụ" },
+  { value: 4, label: "Hoàn thành xuất sắc nhiệm vụ" },
+];
+
+/** Bốn field tự đề xuất trong Item của GET phieu/{id} và phieu/me/{idNam}. */
+export const docTuDeXuatXepLoai = (item) => ({
+  DuocTuDeXuatXepLoai: item?.DuocTuDeXuatXepLoai === true,
+  XepLoaiTuDeXuat: item?.XepLoaiTuDeXuat ?? null,
+  XepLoaiTuDeXuatText: item?.XepLoaiTuDeXuatText ?? null,
+  NgayTuDeXuat: item?.NgayTuDeXuat ?? null,
+});
+
+/**
+ * CHỦ PHIẾU lưu / xoá mức tự đề xuất (PUT phieu/{id}/tu-de-xuat-xep-loai).
+ *
+ * Đợt này CHỈ LƯU - không đụng XepLoaiKhoa, hạn ngạch xuất sắc hay báo cáo nào.
+ * Luôn gửi key `XepLoai`: thiếu key server hiểu là null, tức là XOÁ đề xuất.
+ * Ghi xong RowVersion phiếu đổi; response trả bản mới và bên gọi PHẢI thay vào
+ * bản đang giữ, nếu không Nộp phiếu ngay sau đó sẽ ăn 409.
+ */
+export const tuDeXuatXepLoai = async (idPhieu, { xepLoai, rowVersion }) =>
+  sendJson(
+    `phieu/${idPhieu}/tu-de-xuat-xep-loai`,
+    "PUT",
+    { XepLoai: xepLoai ?? null, RowVersion: rowVersion },
+    "Lưu đề xuất mức xếp loại thất bại",
+  );
+
 /* ------------------------------------------------------------------ */
 /* Dữ liệu phụ trợ của một tiêu chí                                    */
 /* ------------------------------------------------------------------ */

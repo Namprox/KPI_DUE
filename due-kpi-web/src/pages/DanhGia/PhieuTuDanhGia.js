@@ -11,7 +11,9 @@ import { confirmDialog } from "primereact/confirmdialog";
 import { apiFetch } from "../../utils/api";
 import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
 import { locFilePdf } from "../../utils/minhChungPhieuApi";
+import TuDeXuatXepLoai from "../../components/DanhGia/DanhGiaPhuLuc2/TuDeXuatXepLoai";
 import {
+  docTuDeXuatXepLoai,
   fetchKiemTraHopLe,
   fetchLichSuChamDiemPhieu,
   gomLichSuTheoChiTiet,
@@ -26,6 +28,7 @@ import {
   tinhCuaSoTuDanhGia,
   TRANG_THAI,
   TRANG_THAI_DONG,
+  tuDeXuatXepLoai,
 } from "../../utils/phieuApi";
 import SearchSelect from "../../components/Common/SearchSelect";
 import ThieuTieuChiChecklist from "../../components/DanhGia/ThieuTieuChiChecklist";
@@ -115,6 +118,12 @@ const docCoDongChot = (chiTiet = []) =>
  * @param {string} duongDan     route của chính trang này (dùng khi đổi năm)
  * @param {string} tieuDe       tiêu đề hiển thị
  */
+// Giữ IdNhanVien để so chủ phiếu theo đúng Item, không theo phiên đăng nhập.
+const docDeXuatCuaPhieu = (phieu) => ({
+  ...docTuDeXuatXepLoai(phieu),
+  IdNhanVien: phieu?.IdNhanVien ?? null,
+});
+
 const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   const [criteriaList, setCriteriaList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -155,6 +164,10 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   // vòng trước bị chấm bao nhiêu, ai chấm và nhận xét gì thì mới biết sửa gì.
   const [lichSuTheoChiTiet, setLichSuTheoChiTiet] = useState(new Map());
   const [dangTaiLichSu, setDangTaiLichSu] = useState(false);
+  // Bốn field tự đề xuất mức xếp loại của phiếu đang mở, kèm IdNhanVien chủ
+  // phiếu. null = chưa có phiếu, hoặc response tạo phiếu không mang các field này.
+  const [deXuat, setDeXuat] = useState(null);
+  const [dangLuuDeXuat, setDangLuuDeXuat] = useState(false);
 
   const toast = useRef(null);
 
@@ -351,6 +364,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
       setThieuTieuChi([]);
       setLocCanBoSung(false);
       setLichSuTheoChiTiet(new Map());
+      setDeXuat(null);
       setCriteriaList([]);
 
       try {
@@ -459,6 +473,7 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
         // 5. Hydrate the form state from an existing phieu
         if (phieu) {
           phieuRef.current = phieu;
+          setDeXuat(docDeXuatCuaPhieu(phieu));
           setPhieuXepHang({
             IdPhieu: phieu.IdPhieu,
             IdNam: selectedYear,
@@ -726,6 +741,9 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
   // tác sau (lưu nháp, tải minh chứng) cần để biết đính vào dòng chi tiết nào.
   const apDungPhieu = (item) => {
     phieuRef.current = item;
+    // Chỉ GET phieu/{id} và phieu/me mang cờ (luôn có); response tạo phiếu thì
+    // không, khi đó giữ nguyên thay vì ẩn ô vì một payload thiếu field.
+    if ("DuocTuDeXuatXepLoai" in item) setDeXuat(docDeXuatCuaPhieu(item));
     setPhieuXepHang({
       IdPhieu: item.IdPhieu,
       IdNam: selectedYearRef.current,
@@ -1315,6 +1333,94 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
     });
   };
 
+  // Màn này luôn mở phiếu của chính mình (phieu/me), nhưng vẫn so theo Item.
+  const laChuPhieu =
+    deXuat?.IdNhanVien == null ||
+    Number(deXuat.IdNhanVien) === Number(currentUser.IdNhanVien);
+
+  /**
+   * Lưu / xoá mức tự đề xuất ngay khi đổi lựa chọn (PUT tu-de-xuat-xep-loai).
+   *
+   * RowVersion lấy ngay trước khi gọi như hủy nộp: lưu nháp từng dòng không trả
+   * RowVersion phiếu về đây nên bản đang giữ có thể đã cũ. Ghi xong phải thay
+   * RowVersion MỚI vào phieuRef, nếu không nộp ngay sau đó sẽ ăn 409. Trong lúc
+   * chờ khóa cả ô lẫn các nút nộp (qua isSubmitting) để không có hai lệnh ghi
+   * cùng một RowVersion.
+   */
+  const luuDeXuat = async (muc) => {
+    setDangLuuDeXuat(true);
+    setIsSubmitting(true);
+    try {
+      const fresh = await refreshPhieu();
+      if (!fresh?.IdPhieu)
+        throw new Error("Không xác định được phiếu để lưu đề xuất");
+
+      const res = await tuDeXuatXepLoai(fresh.IdPhieu, {
+        xepLoai: muc,
+        rowVersion: fresh.RowVersion,
+      });
+      // Xoá thành công thì ba field giá trị vắng hẳn khỏi JSON → đọc ra null.
+      const moi = docTuDeXuatXepLoai({ ...res, DuocTuDeXuatXepLoai: true });
+      phieuRef.current = {
+        ...phieuRef.current,
+        ...moi,
+        RowVersion: res.RowVersion || phieuRef.current?.RowVersion,
+      };
+      setDeXuat((truoc) => ({ ...truoc, ...moi }));
+      toast.current?.show({
+        severity: "success",
+        summary: muc == null ? "Đã xoá đề xuất" : "Đã lưu đề xuất",
+        detail:
+          muc == null
+            ? "Đã xoá mức xếp loại bạn đề xuất"
+            : `Đã lưu mức đề xuất: ${moi.XepLoaiTuDeXuatText || `Mức ${muc}`}`,
+        life: 3000,
+      });
+    } catch (err) {
+      console.error("Lỗi lưu đề xuất mức xếp loại:", err);
+      const ma = err.errorCode;
+      // RowVersion cũ / phiếu đã qua trạng thái 2 / vừa thôi giữ chức vụ: tải lại
+      // để ô tự chuyển sang chỉ xem hoặc ẩn đúng theo server.
+      if (err.isConflict || ma === "KHONG_THUOC_DIEN_DE_XUAT") {
+        await dongBoTrangThai();
+      }
+      const detail =
+        ma === "CONCURRENCY_CONFLICT"
+          ? "Phiếu đã được cập nhật. Dữ liệu vừa được tải lại, vui lòng chọn lại mức đề xuất."
+          : ma === "INVALID_STATE"
+            ? "Phiếu đã qua bước thẩm định nên mức đề xuất giờ chỉ còn xem."
+            : err.status >= 500
+              ? "Lỗi hệ thống, chưa lưu được đề xuất. Vui lòng thử lại sau."
+              : err.message || "Không lưu được đề xuất mức xếp loại";
+      toast.current?.show({
+        severity: err.isConflict ? "warn" : "error",
+        summary: "Chưa lưu được đề xuất",
+        detail,
+        life: 6000,
+      });
+    } finally {
+      setDangLuuDeXuat(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChonDeXuat = (muc) => {
+    if (muc != null) {
+      luuDeXuat(muc);
+      return;
+    }
+    confirmDialog({
+      message: "Xoá mức xếp loại bạn đã đề xuất?",
+      header: "Xoá đề xuất?",
+      icon: "pi pi-info-circle",
+      acceptLabel: "Xoá đề xuất",
+      rejectLabel: "Giữ nguyên",
+      acceptClassName: "p-button-warning",
+      rejectClassName: "p-button-secondary p-button-outlined",
+      accept: () => luuDeXuat(null),
+    });
+  };
+
   // Best-effort save draft when leaving the page ("khi thoát")
   useEffect(() => {
     return () => {
@@ -1573,6 +1679,16 @@ const PhieuTuDanhGia = ({ loaiDoiTuong, duongDan, tieuDe }) => {
                 lanLamMoi={lanLamMoiXepHang}
               />
             )}
+            deXuatXepLoai={
+              <TuDeXuatXepLoai
+                deXuat={deXuat}
+                laChuPhieu={laChuPhieu}
+                trangThai={trangThaiPhieu}
+                dangLuu={dangLuuDeXuat}
+                khoa={isSubmitting}
+                onChon={handleChonDeXuat}
+              />
+            }
             lyDoTraVe={lyDoTraVe}
             laDongMoNhap={laDongMoNhap}
             thongTinDong={thongTinDong}

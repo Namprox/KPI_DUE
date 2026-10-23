@@ -1676,6 +1676,12 @@ button.cd-chip:hover {
   color: #b45309;
 }
 
+.cd-rail-list b.cd-rail-tu-de-xuat {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+
 .cd-diem-panel-nhan .cd-tam-tinh,
 .cd-rail-nhan .cd-tam-tinh {
   margin-left: 0;
