@@ -33,10 +33,11 @@ const QL_DanhGiaSinhVienChotModal = ({
     }
 
     setIsLoading(true);
+    const idNamSo = parseInt(idNam, 10);
     try {
       const response = await apiFetch("diem-tb-phan-hoi-sv/chot", {
         method: "POST",
-        body: JSON.stringify({ IdNam: parseInt(idNam, 10) }),
+        body: JSON.stringify({ IdNam: idNamSo }),
       });
 
       const result = await response.json();
@@ -53,7 +54,13 @@ const QL_DanhGiaSinhVienChotModal = ({
         }
         setMessage({ type: "success", text: msg });
         setTimeout(() => {
-          if (onSuccess) onSuccess();
+          // Trả SoMaKhongKhop lên trang gọi: nó mới là chỗ bày được cảnh báo
+          // kèm lối xem danh sách mã, modal này đóng ngay sau đây.
+          if (onSuccess)
+            onSuccess({
+              idNam: idNamSo,
+              soMaKhongKhop: Number(result.SoMaKhongKhop) || 0,
+            });
           onClose();
         }, 1800);
       } else {

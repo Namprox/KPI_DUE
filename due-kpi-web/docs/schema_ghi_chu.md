@@ -28,7 +28,7 @@ chỉ còn 2 tiền tố (không còn `TT_`, `V_`, `TO_`):
 
 Mã đơn vị duy nhất còn viết cứng trong SP: `N'P_DTBDCL'` (Phòng Đào tạo và Bảo đảm chất lượng, gộp từ
 `P_DT` + `P_QLCL`) - TP của đơn vị này được chốt / xem toàn trường điểm TB phản hồi SV
-(`sp_diem_tb_phan_hoi_sv_chot`, `_get_chi_tiet`). Đổi mã này phải sửa cả 2 SP.
+(`sp_diem_tb_phan_hoi_sv_chot`, `_get_chi_tiet`, và từ 2026-10-21 `_khong_khop`). Đổi mã này phải sửa cả 3 SP.
 Từ đợt "Hoạt động đào tạo" (§16) mã này còn viết cứng ở `fn_hoat_dong_dao_tao_thuoc_phong`,
 `fn_hoat_dong_dao_tao_quyen` và `sp_hoat_dong_dao_tao_nguoi_nhap_ung_vien` (module học vụ §14 cũng
 dùng qua `fn_hoc_vu_co_quyen_quan_ly`) - đổi mã phải sửa cả các chỗ này.
@@ -265,6 +265,21 @@ và mẫu đơn vị là các dòng `tieu_chi_danh_gia` khác nhau nên dùng ch
 Liên quan: cột "ai chấm" KHÔNG khai báo trong `tieu_chi_danh_gia` - cột
 `cap_danh_gia` cũ đã bị bỏ (xem update_database.sql).
 
+**Dòng trên tiêu chí TỰ ĐỘNG (`loai_nguon_diem = 2`) - phiếu cá nhân** (2026-10-23): không cho chấm
+(dòng tự động bỏ qua thẩm định, các SP chấm / thẩm định chặn `AUTO_SCORED`) mà mang nghĩa **đơn vị
+theo dõi**:
+- Trưởng đơn vị đó xem được phiếu năm có tiêu chí đó (cổng xem `sp_phieu_danh_gia_get_detail` /
+  `sp_phieu_tu_dong_chi_tiet` không lọc `loai_nguon_diem`).
+- Màn hình **đối chiếu điểm tự động** `GET api/doi-chieu-tu-dong` (`sp_doi_chieu_diem_tu_dong`, chỉ
+  đọc): mọi phiếu năm của một đơn vị, chỉ trên tiêu chí mình theo dõi; mỗi dòng điểm đã ghi vs điểm
+  tính lại từ nguồn hiện tại, trạng thái `LECH` / `KHOP` / `CHUA_CHAM` / `KHONG_HO_TRO`. HT / ADMIN
+  xem mọi tiêu chí tự động. **Không phải bước duyệt**: không ghi DB, không chặn trạng thái phiếu; sai
+  thì sửa ở module nguồn rồi chấm lại (`POST api/phieu/{id}/tong-hop-tu-dong`, phiếu 1/2).
+- Chỉ phiếu năm (`quy = 0`): cổng xem drill-down của phiếu quý chỉ dành cho lãnh đạo đơn vị của phiếu.
+- Điểm tính lại CHÉP RS2 `sp_phieu_tu_dong_chi_tiet` (mã snapshot, bản đối chiếu
+  `doi_chieu_nhiem_vu_khoa_cu`) và luật phiếu nhận điểm tự động của `sp_phieu_cham_tu_dong_apply` -
+  sửa một nơi phải sửa cả ba.
+
 ### 2.9. `gia_han_danh_gia` - Gia hạn tự đánh giá cá nhân
 Mỗi `(id_nam, id_nhan_vien)` có tối đa **1 dòng gia hạn hiệu lực** (`da_xoa = 0`,
 ép bằng filtered unique index `ux_ghdg_nam_nv`); cấp lại = UPDATE ghi đè `han_moi`,
@@ -434,6 +449,12 @@ thô cùng năm học **của các Khoa có trong file** rồi ghi lại; Khoa k
 1 dòng = điểm TB cả năm của 1 GV; mỗi năm giữ 1 lần chốt cuối cùng. Chốt lại một năm
 sẽ GHI ĐÈ (xoá kết quả cũ của năm đó rồi tính lại) - không lưu lịch sử nhiều đợt chốt.
 `id_nguoi_chot` / `ngay_chot` lặp trên mỗi dòng GV của cùng một năm (thay cho bảng header đã bỏ).
+
+Mã `ma_can_bo` không khớp `nhan_vien.ma_nhan_vien` bị bỏ qua khi chốt; hai SP chốt / xem chỉ trả **số lượng**
+(`so_ma_khong_khop`). Từ 2026-10-21 có `sp_diem_tb_phan_hoi_sv_khong_khop` (`GET api/diem-tb-phan-hoi-sv/khong-khop`)
+liệt kê từng mã: họ tên trong file, tổng số lượt, số lượt theo Khoa (`phan_hoi_sinh_vien.id_don_vi`). SP tính trên
+dữ liệu thô hiện tại nên dùng được trước khi chốt; quyền = ADMIN hoặc TP / QTP tại `P_DTBDCL`. Điều kiện "không khớp"
+lặp ở cả 3 SP (`_chot`, `_get_chi_tiet`, `_khong_khop`) - đổi luật khớp phải sửa cả 3.
 
 ### 3.6. Bộ bảng `nckh_*` - Dữ liệu NCKH đồng bộ từ API
 Bộ bảng này lấy từ HAI endpoint KHÁC NHAU của web NCKH, cơ chế đồng bộ ngược nhau -
@@ -932,6 +953,11 @@ Mỗi khoa có thể có bộ vai trò + điểm quy đổi riêng (`id_don_vi` 
 default). `id_nam` NULL = áp dụng mọi năm. App resolve theo thứ tự:
 `(don_vi, nam) > (don_vi, NULL) > (NULL, nam) > (NULL, NULL)`.
 
+**Người đọc hiện tại (đợt "Gỡ API thừa", 2026-10-22):** `fn_nhiem_vu_phuc_vu_vai_tro` (điểm CT / PHC / PH
+lúc chốt nhiệm vụ phục vụ, mục 25.6) và phần đọc NVCĐ năm cũ (`sp_phieu_danh_gia_get_detail`,
+`sp_nhiem_vu_cong_dong_get_by_chi_tiet`). `api/vaitropvcd` (6 SP `sp_danh_muc_vai_tro_pvcd_*`) **giữ lại** - đây là
+API duy nhất cấu hình điểm vai trò, dù FE chưa có màn hình. Người dùng cuối cùng của `resolve` (luồng ghi NVCĐ) đã gỡ.
+
 ### 4.1. `phieu_danh_gia` - Phiếu đánh giá (Header – 1 phiếu / người / ĐƠN VỊ / năm)
 Snapshot toàn bộ định mức ÁP DỤNG (sau giảm trừ chức vụ; ngoại lệ định mức không còn áp từ 2026-10-16) tại thời điểm chốt phiếu.
 Đảm bảo có thể truy vết kết luận xếp loại về sau ngay cả khi quy định / cấu hình thay đổi.
@@ -1347,6 +1373,13 @@ nay chặn cả mức máy đã gán → muốn sửa/xóa mức đó phải xó
 ### 4.4. `nhiem_vu_cong_dong` - Nhiệm vụ PVCĐ (KPI Nhóm III – nhiều dòng, cộng dồn, tối đa 20đ)
 LƯU Ý: trần 20đ enforce ở tầng API (SQL Server 2008 không enforce được cross-row sum
 constraint). Hỗ trợ soft-delete (`da_xoa` / `ngay_xoa`) tương tự bảng `minh_chung`.
+
+**CHỈ CÒN ĐỌC (đợt "Gỡ API thừa", 2026-10-22).** Luồng GV tự kê khai đã ngừng từ đợt nhiệm vụ phục vụ (mục 25;
+API ghi chỉ còn trả 409 `NVCD_DA_NGUNG`). Nay gỡ hẳn `POST api/chitiet/{idChiTiet}/nhiem-vu`,
+`PUT / DELETE api/nhiemvu/{idNhiemVu}` cùng 4 SP `sp_nhiem_vu_cong_dong_create / _update / _soft_delete / _get_by_id`
+(code C# cũ giữ để bật lại cũng xoá). Còn: `GET api/chitiet/{idChiTiet}/nhiem-vu`
+(`_get_phieu_context` + `_get_by_chi_tiet`) và mảng `ChiTiet[].NhiemVuCongDong` của `sp_phieu_danh_gia_get_detail` - FE
+hiển thị dữ liệu năm cũ ở 5 màn chấm / chốt phiếu. Bảng và dữ liệu giữ nguyên.
 
 ### 4.6. `phe_duyet` - Luồng phê duyệt
 `cap_duyet` TINYINT 1/2/3 (thay vì FK đến `chuc_vu` để workflow ổn định).

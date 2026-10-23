@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import "../../css/Pages.css";
 import QL_DiemTbDanhGiaSinhVienListing from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DiemTbDanhGiaSinhVienListing";
 import { apiFetch } from "../../utils/api";
 import SearchSelect from "../../components/Common/SearchSelect";
+import QL_MaCanBoKhongKhopModal from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_MaCanBoKhongKhopModal";
+import { canManagePhanHoiSinhVien } from "../../utils/roles";
 
 const QL_DiemTbDanhGiaSinhVien = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  // Chỉ ADMIN và TP/QTP tại P_DTBDCL mở được trang dữ liệu thô
+  // (canManagePhanHoiSinhVien). Cấp Khoa đọc được trang này nhưng bị chặn ở
+  // route đó, nên không bày nút dẫn tối đó cho họ.
+  const canManage = canManagePhanHoiSinhVien(user || {});
 
   const [namList, setNamList] = useState([]);
   const [selectedNam, setSelectedNam] = useState("");
@@ -16,6 +24,12 @@ const QL_DiemTbDanhGiaSinhVien = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Danh sách mã không khớp giải thích con số DotChot.SoMaKhongKhop. Chỉ người
+  // chốt được mới gọi được route đó (quyền trùng canManage); gặp 403 thì ẩn hẳn
+  // lối vào chứ không báo đỏ.
+  const [isKhongKhopModalOpen, setIsKhongKhopModalOpen] = useState(false);
+  const [coQuyenKhongKhop, setCoQuyenKhongKhop] = useState(true);
 
   useEffect(() => {
     fetchNamList();
@@ -120,13 +134,15 @@ const QL_DiemTbDanhGiaSinhVien = () => {
         <div className="header-title">
           <h2>ĐIỂM TRUNG BÌNH ĐÁNH GIÁ SINH VIÊN</h2>
         </div>
-        <button
-          className="btn-add-new"
-          onClick={() => navigate("/quan-ly-danh-gia-sinh-vien")}
-          style={{ margin: 0, backgroundColor: "#64748b", borderColor: "#64748b" }}
-        >
-          <i className="fa-solid fa-arrow-left"></i> Quản lý dữ liệu thô
-        </button>
+        {canManage && (
+          <button
+            className="btn-add-new"
+            onClick={() => navigate("/quan-ly-danh-gia-sinh-vien")}
+            style={{ margin: 0, backgroundColor: "#64748b", borderColor: "#64748b" }}
+          >
+            <i className="fa-solid fa-arrow-left"></i> Quản lý dữ liệu thô
+          </button>
+        )}
       </div>
 
       {/* Filter bar */}
@@ -249,8 +265,53 @@ const QL_DiemTbDanhGiaSinhVien = () => {
         </div>
       )}
 
+      {/* Mã trong file khảo sát không khớp nhân viên nào thì giảng viên đó
+          KHÔNG có điểm TB của năm - tiêu chí chấm tự động theo điểm này thành 0,
+          nên phải nói rõ chứ không để nguyên con số ở thẻ trên. */}
+      {dotChotInfo && dotChotInfo.SoMaKhongKhop > 0 && canManage && (
+        <div
+          role="alert"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "12px",
+            padding: "12px 16px",
+            marginBottom: "20px",
+            borderRadius: "8px",
+            backgroundColor: "#fffbeb",
+            border: "1px solid #fde68a",
+            color: "#92400e",
+            fontSize: "14px",
+          }}
+        >
+          <i className="fa-solid fa-triangle-exclamation"></i>
+          <span style={{ flex: "1 1 320px" }}>
+            {dotChotInfo.SoMaKhongKhop} mã cán bộ trong dữ liệu khảo sát không
+            khớp nhân viên nào và không được tính điểm.
+          </span>
+          {coQuyenKhongKhop && (
+            <button
+              type="button"
+              className="btn-cancel"
+              style={{ margin: 0 }}
+              onClick={() => setIsKhongKhopModalOpen(true)}
+            >
+              Xem danh sách
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Listing */}
       <QL_DiemTbDanhGiaSinhVienListing data={filteredData} isLoading={isLoading} />
+
+      <QL_MaCanBoKhongKhopModal
+        isOpen={canManage && coQuyenKhongKhop && isKhongKhopModalOpen}
+        onClose={() => setIsKhongKhopModalOpen(false)}
+        idNam={dotChotInfo?.IdNam || dotChotInfo?.idNam || selectedNam}
+        onForbidden={() => setCoQuyenKhongKhop(false)}
+      />
     </div>
   );
 };

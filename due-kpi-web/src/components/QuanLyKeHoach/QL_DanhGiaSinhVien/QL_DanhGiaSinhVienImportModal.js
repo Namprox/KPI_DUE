@@ -58,10 +58,23 @@ const QL_DanhGiaSinhVienImportModal = ({
       const isSuccess = res.ok && result.Success !== false;
 
       if (isSuccess) {
-        const infoMsg =
-          result.Message ||
-          `Import thành công! Đã xử lý ${result.ValidRows || result.GroupsProcessed || 0} bản ghi.`;
-        setMessage({ type: "success", text: infoMsg });
+        const soDongGhi = result.InsertedRows ?? result.ValidRows ?? 0;
+        const phan = [`Đã import ${soDongGhi} dòng.`];
+        // Message của server nêu số Khoa có trong file - thông tin FE không tự
+        // suy ra được vì Khoa nằm ở cột H của từng dòng.
+        if (result.Message) phan.push(result.Message);
+        if (result.SkippedRows > 0) {
+          phan.push(
+            `${result.SkippedRows} dòng bị bỏ qua do thiếu mã cán bộ / câu hỏi / điểm.`,
+          );
+        }
+        // Điểm chốt là ảnh chụp tại thời điểm chốt, KHÔNG tự cập nhật theo dữ
+        // liệu thô. Màn này không biết năm đã chốt hay chưa nên nhắc có điều
+        // kiện, rẻ hơn gọi thêm một route chỉ để biết điều đó.
+        phan.push(
+          "Nếu năm này đã chốt điểm trung bình, cần chốt lại để cập nhật.",
+        );
+        setMessage({ type: "success", text: phan.join(" ") });
         setTimeout(() => {
           onSuccess();
           onClose();
@@ -190,21 +203,47 @@ const QL_DanhGiaSinhVienImportModal = ({
                 border: "1px solid #fde68a",
               }}
             >
-              <p style={{ margin: "0 0 8px 0", fontWeight: "600" }}>
-                Chưa có dữ liệu nào bị thay đổi. Sửa cột H (ngành/khoa) của các
-                giá trị sau cho khớp tên Khoa trong hệ thống rồi nhập lại:
+              <p style={{ margin: "0 0 4px 0", fontWeight: "700" }}>
+                File chưa được import: {khoaKhongKhop.length} tên Khoa ở cột H
+                không khớp danh mục đơn vị.
               </p>
-              <ul style={{ margin: 0, paddingLeft: "20px" }}>
-                {khoaKhongKhop.map((item, index) => (
-                  <li key={`${item.GiaTriCotH || ""}-${index}`}>
-                    {item.GiaTriCotH ? `“${item.GiaTriCotH}”` : "(để trống)"} -{" "}
-                    {item.SoDong} dòng -{" "}
-                    {item.SoKhoaKhop > 1
-                      ? `trùng tên ${item.SoKhoaKhop} Khoa`
-                      : "không khớp Khoa nào"}
-                  </li>
-                ))}
-              </ul>
+              <p style={{ margin: "0 0 10px 0" }}>
+                Chưa có dữ liệu nào bị xoá hay ghi. Sửa cột H (ngành/khoa) trong
+                file rồi import lại.
+              </p>
+              <table
+                className="custom-table"
+                style={{ width: "100%", fontSize: "13px" }}
+              >
+                <thead>
+                  <tr>
+                    <th>GIÁ TRỊ CỘT H</th>
+                    <th style={{ textAlign: "center", width: "90px" }}>
+                      SỐ DÒNG
+                    </th>
+                    <th>LÝ DO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {khoaKhongKhop.map((item, index) => (
+                    <tr key={`${item.GiaTriCotH || ""}-${index}`}>
+                      {/* Bọc nháy để người dùng thấy cả khoảng trắng thừa khi
+                          dò lại ô trong Excel. */}
+                      <td>
+                        {item.GiaTriCotH
+                          ? `“${item.GiaTriCotH}”`
+                          : "(để trống)"}
+                      </td>
+                      <td style={{ textAlign: "center" }}>{item.SoDong}</td>
+                      <td>
+                        {item.SoKhoaKhop > 1
+                          ? `Trùng tên ${item.SoKhoaKhop} Khoa - liên hệ quản trị`
+                          : "Không có Khoa nào tên này"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -293,8 +332,16 @@ const QL_DanhGiaSinhVienImportModal = ({
                   color: "#64748b",
                 }}
               >
-                Khoa của từng dòng lấy từ cột H (ngành/khoa) và phải khớp tên
-                Khoa trong hệ thống - không cần chọn Khoa ở đây nữa.
+                Khoa của từng dòng lấy từ cột H (ngành/khoa) và phải là tên
+                đầy đủ của Khoa đúng như trong danh mục đơn vị - không cần chọn
+                Khoa ở đây nữa.
+                <br />
+                <strong>
+                  Mỗi file phải chứa đủ dữ liệu cả năm học của các Khoa có trong
+                  file
+                </strong>
+                : import xoá toàn bộ dữ liệu cả năm học (cả 3 kỳ) của từng Khoa
+                có trong file rồi ghi lại, nên không tách file theo học kỳ.
               </p>
             </div>
           </form>

@@ -94,12 +94,31 @@ test("KHOA_KHONG_KHOP: liệt kê giá trị cột H cần sửa và nói rõ ch
 
   expect(screen.getByText("Cot H co ten Khoa khong khop.")).toBeInTheDocument();
   const danhSach = screen.getByRole("alert");
-  expect(danhSach).toHaveTextContent("Chưa có dữ liệu nào bị thay đổi");
+  expect(danhSach).toHaveTextContent("3 tên Khoa ở cột H không khớp danh mục đơn vị");
+  expect(danhSach).toHaveTextContent("Chưa có dữ liệu nào bị xoá hay ghi");
   expect(danhSach).toHaveTextContent("Khoa Kinh te");
-  expect(danhSach).toHaveTextContent("42 dòng");
-  expect(danhSach).toHaveTextContent("không khớp Khoa nào");
-  expect(danhSach).toHaveTextContent("trùng tên 2 Khoa");
+  expect(danhSach).toHaveTextContent("42");
+  expect(danhSach).toHaveTextContent("Không có Khoa nào tên này");
+  expect(danhSach).toHaveTextContent("Trùng tên 2 Khoa - liên hệ quản trị");
   expect(danhSach).toHaveTextContent("(để trống)");
+});
+
+test("thành công: nêu số dòng ghi / bỏ qua và nhắc chốt lại", async () => {
+  apiFetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      Success: true, Message: "Import phan hoi sinh vien thanh cong (3 Khoa).",
+      ValidRows: 182300, SkippedRows: 150, InsertedRows: 182300,
+    }),
+  });
+  const { container } = show();
+  await guiFile(container);
+
+  expect(screen.getByText(/Đã import 182300 dòng/)).toBeInTheDocument();
+  expect(screen.getByText(/\(3 Khoa\)/)).toBeInTheDocument();
+  expect(screen.getByText(/150 dòng bị bỏ qua/)).toBeInTheDocument();
+  // Điểm chốt là ảnh chụp, không tự cập nhật theo dữ liệu thô vừa đổi.
+  expect(screen.getByText(/cần chốt lại/)).toBeInTheDocument();
 });
 
 test("lỗi khác chỉ hiện Message, không hiện khối sửa cột H", async () => {

@@ -108,7 +108,7 @@ export default function NhiemVuPhucVu({ mode = "mine", detailOnly = false }) {
     {configError && <p role="alert" className="nvpv-error">{configError} <button onClick={() => setConfigRevision((v) => v + 1)}>Thử lại</button></p>}
     {notice && <p role="status" className="nvpv-notice">{notice}</p>}
     {config?.LechCauHinh === true && <p className="nvpv-warning">Trần điểm nhiệm vụ ({config.TranDiem}) khác điểm tối đa tiêu chí ({config.DiemToiDaTieuChi}). Vui lòng báo quản trị để kiểm tra cấu hình.</p>}
-    {config && <p className="nvpv-muted">Trần điểm: {config.TranDiem} · Giờ máy chủ khi tải: {api.hienThiNgay(config.BayGio, true)} (Việt Nam). {api.HUONG_DAN_DIEM}</p>}
+    {/* {config && <p className="nvpv-muted">Trần điểm: {config.TranDiem} · Giờ máy chủ khi tải: {api.hienThiNgay(config.BayGio, true)} (Việt Nam). {api.HUONG_DAN_DIEM}</p>} */}
     {config && mode !== "mine" && !canManage && <p role="alert">Bạn không có quyền quản lý nhiệm vụ PVCĐ trong phạm vi này.</p>}
     {mode === "manage" && canManage && <>
       <div className="nvpv-actions nvpv-queues"><button aria-pressed={filter.trangThai === ""} onClick={() => setField("trangThai", "")}>Tất cả nhiệm vụ</button><button aria-pressed={filter.trangThai === "2"} onClick={() => setField("trangThai", "2")}>Chờ Khoa triển khai</button><button aria-pressed={filter.trangThai === "4"} onClick={() => setField("trangThai", "4")}>Chờ duyệt báo cáo</button></div>
@@ -126,7 +126,7 @@ export default function NhiemVuPhucVu({ mode = "mine", detailOnly = false }) {
     {(loading || (configLoading && selectedNam)) && <p role="status">Đang tải nhiệm vụ PVCĐ...</p>}
     {!loading && data && mode === "mine" && <>
       <div className="nvpv-stats">{[["TongDiemThucTe", "Điểm thực tế vào phiếu"], ["TongDiemQuyDoi", "Tổng điểm quy đổi"], ["SoNhiemVuHoanThanh", "Nhiệm vụ hoàn thành"], ["SoDangThamGia", "Đang tham gia"]].map(([key, label]) => <div key={key}><span>{label}</span><b>{data.Header?.[key] ?? "-"}</b></div>)}</div>
-      <h3>Nhiệm vụ của tôi</h3><TaskTable items={data.Items || []} onOpen={setDetailId} empty="Bạn chưa tham gia nhiệm vụ nào trong năm này." />
+      <h3>Nhiệm vụ PVCĐ</h3><TaskTable items={data.Items || []} onOpen={setDetailId} empty="Bạn chưa tham gia nhiệm vụ nào trong năm này." />
       <h3>Đang mở đăng ký tại Khoa của tôi</h3><TaskTable items={data.MoDangKy || []} onOpen={setDetailId} empty="Chưa có nhiệm vụ đang mở đăng ký." />
     </>}
     {!loading && data && mode === "manage" && <><TaskTable items={data.Items || []} onOpen={setDetailId} /><div className="nvpv-pagination"><span>{data.TotalCount ?? 0} nhiệm vụ · Trang {data.Page ?? page}/{Math.max(1, data.TotalPages || 1)}</span><button disabled={page <= 1} onClick={() => setPage((v) => v - 1)}>Trang trước</button><button disabled={page >= Number(data.TotalPages || 1)} onClick={() => setPage((v) => v + 1)}>Trang sau</button></div></>}

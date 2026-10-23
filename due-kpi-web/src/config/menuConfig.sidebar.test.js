@@ -7,7 +7,8 @@ import {
 
 const expectedGroups = [
   ["Cá nhân", "evaluation", "Phiếu KPI của tôi", "Đánh giá KPI Giảng viên|Đánh giá KPI Nhân viên|Lịch sử đánh giá|Kho minh chứng cá nhân"],
-  ["Cá nhân", "personalData", "Dữ liệu của tôi", "Giờ giảng của tôi|Kê khai thành tích|Thành tích NCKH|Phản hồi sinh viên|Vi phạm của tôi|Nhiệm vụ của tôi"],
+  ["Cá nhân", "personalData", "Dữ liệu của tôi", "Giờ giảng của tôi|Kê khai thành tích|Thành tích NCKH|Phản hồi sinh viên|Vi phạm của tôi"],
+  ["Cá nhân", "nhiemVuPhucVuCuaToi", "Nhiệm vụ PVCĐ của tôi", "Nhiệm vụ PVCĐ của tôi"],
   ["Cá nhân", "hoatDongThanhTich", "Hoạt động & thành tích", "Hoạt động đào tạo|Khen thưởng đột xuất|Phát triển đội ngũ|Sáng kiến|Thành tích đoàn thể"],
   ["Công việc đơn vị", "unitScoring", "Việc chờ tôi xử lý", "Hồ sơ chờ thẩm định|Chấm theo tiêu chí|Chờ tôi chấm KPI đơn vị|Duyệt KPI viên chức theo quý|Duyệt hồ sơ KPI|Chốt hồ sơ nhân viên|Tờ trình KPI đơn vị|Duyệt kê khai thành tích"],
   ["Công việc đơn vị", "unitKpi", "KPI đơn vị", "Đánh giá KPI Khoa|Lịch sử đánh giá KPI Khoa|Đánh giá KPI Phòng/Trung tâm|Lịch sử đánh giá KPI Phòng/Trung tâm|Kho minh chứng đơn vị|Phiếu toàn đơn vị|Báo cáo đơn vị"],

@@ -218,7 +218,19 @@ export const MENU_GROUPS = [
         roles: MOI_NGUOI,
         access: (user) => coLoaiDoiTuong(user, LOAI_DOI_TUONG_KPI.GIANG_VIEN),
       },
-      { name: "Nhiệm vụ của tôi", icon: "fa-solid fa-list-check", path: "/nhiem-vu-phuc-vu", serverPermissionSource: "nhiemVuPhucVu", serverPermission: "Xem" },
+    ],
+  },
+  {
+    // Lối vào của GIẢNG VIÊN (quyền Xem từ server). Để riêng một nhóm vì nhóm
+    // chỉ có một mục được sidebar hiện thẳng thành link: giảng viên thấy ngay
+    // chỗ đăng ký nhiệm vụ, không phải mở "Dữ liệu của tôi" mới thấy.
+    // Mục quản lý (quyền QuanLy) vẫn ở nhóm "Nhiệm vụ PVCĐ" khu Công việc đơn vị.
+    section: "Cá nhân",
+    key: "nhiemVuPhucVuCuaToi",
+    label: "Nhiệm vụ PVCĐ của tôi",
+    icon: "fa-hands-holding-circle",
+    items: [
+      { name: "Nhiệm vụ PVCĐ của tôi", icon: "fa-solid fa-list-check", path: "/nhiem-vu-phuc-vu", serverPermissionSource: "nhiemVuPhucVu", serverPermission: "Xem" },
     ],
   },
   {
@@ -865,14 +877,14 @@ export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu
       ? { ...item, name: "Hoạt động đào tạo của tôi" }
       : item.path === "/phat-trien-doi-ngu" &&
         quyenDoiNgu?.XemTatCa !== true && quyenDoiNgu?.XemTheoKhoa !== true
-      ? { ...item, name: "Phát triển đội ngũ của tôi" }
-      : item.path === "/thanh-tich-doan-the" &&
-        quyenDoanThe?.XemTatCa !== true && quyenDoanThe?.XemTheoKhoa !== true
-      ? { ...item, name: "Thành tích đoàn thể của tôi" }
-      : item.path === "/sang-kien" && quyenSangKien?.XemTatCa !== true && quyenSangKien?.XemTheoDonVi !== true
-      ? { ...item, name: "Sáng kiến của tôi" }
-      : item.path === "/khen-thuong-dot-xuat" && quyenKhenThuong?.XemTatCa !== true && quyenKhenThuong?.XemTheoDonVi !== true
-      ? { ...item, name: "Khen thưởng đột xuất của tôi" } : item);
+        ? { ...item, name: "Phát triển đội ngũ của tôi" }
+        : item.path === "/thanh-tich-doan-the" &&
+          quyenDoanThe?.XemTatCa !== true && quyenDoanThe?.XemTheoKhoa !== true
+          ? { ...item, name: "Thành tích đoàn thể của tôi" }
+          : item.path === "/sang-kien" && quyenSangKien?.XemTatCa !== true && quyenSangKien?.XemTheoDonVi !== true
+            ? { ...item, name: "Sáng kiến của tôi" }
+            : item.path === "/khen-thuong-dot-xuat" && quyenKhenThuong?.XemTatCa !== true && quyenKhenThuong?.XemTheoDonVi !== true
+              ? { ...item, name: "Khen thưởng đột xuất của tôi" } : item);
 
 export const visibleGroups = (user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu) =>
   MENU_GROUPS.map((group) => ({

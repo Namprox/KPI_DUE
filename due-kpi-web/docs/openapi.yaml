@@ -1639,18 +1639,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/MauDanhGiaDiemTuDongResponse"
   /api/chitietmaudanhgia:
-    get:
-      tags:
-        - ChiTietMauDanhGia
-      summary: Get all
-      operationId: chiTietMauDanhGiaGetAll
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChiTietMauDanhGiaResponse"
     post:
       tags:
         - ChiTietMauDanhGia
@@ -2474,72 +2462,6 @@ paths:
         "401":
           description: Thieu hoac sai token
   /api/chitiet/{idChiTiet}/nhiem-vu:
-    post:
-      tags:
-        - NhiemVuCongDong
-      summary: "[DA NGUNG] Add a community-service task (Group III) to a chi_tiet"
-      deprecated: true
-      description: |
-        LUONG TU KE KHAI DA NGUNG - endpoint nay LUON tra 409, khong con ghi duoc gi.
-        KPI Nhom III chuyen sang module phan cong va thuc hien nhiem vu: dung api/nhiem-vu-phuc-vu.
-        Ly do: vai tro chu tri / phoi hop la quan he tuong doi giua nhieu nguoi trong
-        cung mot nhiem vu, de GV tu ke khai thi nhieu nguoi cung khai "chu tri".
-
-        Cac ma phan hoi 201 / 400 / 403 / 404 / 422 duoi day GIU LAI cho muc dich lich
-        su - thuc te khong con duong nao cham toi chung.
-      operationId: nhiemVuCreate
-      parameters:
-        - name: idChiTiet
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NhiemVuCongDongCreateRequest"
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "400":
-          description: Bad Request (invalid fields, inactive nhom, or vai tro not in resolved set)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "403":
-          description: Forbidden (not the GV who owns the phieu)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "404":
-          description: chi_tiet not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "409":
-          description: >-
-            LUON TRA VE MA NAY. Luong tu ke khai da ngung -
-            "Luong tu ke khai da ngung. Nhiem vu nhom III nay do Khoa phan cong
-            (xem api/nhiem-vu-phuc-vu)."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "422":
-          description: Group-III 20-point cap would be exceeded
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PvcdCapExceededResponse"
     get:
       tags:
         - NhiemVuCongDong
@@ -2548,6 +2470,9 @@ paths:
         Returns all non-deleted tasks ordered by ngay_tao ASC.
         Response includes summary header - tongDiemSnapshot, soNhiemVu, conLai (= 20 - tongDiemSnapshot).
         GV sees only their own phieu; Khoa sees their scope; Truong sees all.
+        CHI DOC du lieu nam cu: luong tu ke khai NVCD da ngung; 3 endpoint ghi (POST nay,
+        PUT / DELETE api/nhiemvu/{idNhiemVu}) da go 2026-10-22. Cung du lieu da nhung san
+        trong ChiTiet[].NhiemVuCongDong cua GET api/phieu/{id}.
       operationId: nhiemVuGetByChiTiet
       parameters:
         - name: idChiTiet
@@ -2570,111 +2495,6 @@ paths:
                 $ref: "#/components/schemas/NhiemVuCongDongResponse"
         "404":
           description: chi_tiet not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-  /api/nhiemvu/{idNhiemVu}:
-    put:
-      tags:
-        - NhiemVuCongDong
-      summary: "[DA NGUNG] Update a community-service task"
-      deprecated: true
-      description: |
-        LUONG TU KE KHAI DA NGUNG - endpoint nay LUON tra 409, khong con ghi duoc gi.
-        Dung api/nhiem-vu-phuc-vu thay the.
-      operationId: nhiemVuUpdate
-      parameters:
-        - name: idNhiemVu
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NhiemVuCongDongUpdateRequest"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "400":
-          description: Bad Request (invalid fields, inactive nhom, or vai tro not in resolved set)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "403":
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "404":
-          description: nhiem_vu not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "409":
-          description: >-
-            LUON TRA VE MA NAY. Luong tu ke khai da ngung -
-            "Luong tu ke khai da ngung. Nhiem vu nhom III nay do Khoa phan cong
-            (xem api/nhiem-vu-phuc-vu)."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "422":
-          description: Group-III 20-point cap would be exceeded
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PvcdCapExceededResponse"
-    delete:
-      tags:
-        - NhiemVuCongDong
-      summary: "[DA NGUNG] Soft-delete a community-service task"
-      deprecated: true
-      description: |
-        LUONG TU KE KHAI DA NGUNG - endpoint nay LUON tra 409, khong con ghi duoc gi.
-        Dung api/nhiem-vu-phuc-vu thay the.
-      operationId: nhiemVuDelete
-      parameters:
-        - name: idNhiemVu
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "403":
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "404":
-          description: nhiem_vu not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NhiemVuCongDongResponse"
-        "409":
-          description: >-
-            LUON TRA VE MA NAY. Luong tu ke khai da ngung -
-            "Luong tu ke khai da ngung. Nhiem vu nhom III nay do Khoa phan cong
-            (xem api/nhiem-vu-phuc-vu)."
           content:
             application/json:
               schema:
@@ -3206,7 +3026,8 @@ paths:
         Gop du lieu tho phan_hoi_sinh_vien theo nam (idNam, vd 2026 -> nam_hoc=26 ->
         gop ky_hoc 261/262/263), tinh AVG(danh_gia) cho tung giang vien (JOIN mem qua
         ma_can_bo = nhan_vien.ma_nhan_vien; khong khop bi bo qua, so luong tra ve o
-        SoMaKhongKhop). Chi gop 1 diem tong hop ca nam (khong tach rieng tung ky). Moi
+        SoMaKhongKhop, danh sach o GET /api/diem-tb-phan-hoi-sv/khong-khop). Chi gop 1 diem
+        tong hop ca nam (khong tach rieng tung ky). Moi
         nam chi giu 1 lan chot cuoi cung: chot lai se GHI DE (xoa ket qua cu cua nam do).
         Quyen chot: chi ma_chuc_vu = 'TP' cua don vi ma_don_vi = 'P_DTBDCL' (Phong Dao tao va Bao dam chat luong), hoac ADMIN.
       operationId: diemTbPhanHoiSvChot
@@ -3291,6 +3112,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DiemTbChiTietResponse"
+  /api/diem-tb-phan-hoi-sv/khong-khop:
+    get:
+      tags:
+        - DiemTbPhanHoiSinhVien
+      summary: Danh sach ma can bo trong du lieu phan hoi sinh vien cua 1 nam khong khop nhan vien
+      description: >
+        Liet ke cac ma_can_bo trong du lieu tho phan_hoi_sinh_vien cua nam (idNam, vd 2026 ->
+        ky_hoc 261/262/263) KHONG khop nhan_vien.ma_nhan_vien - chinh la cac ma bi bo qua khi
+        chot (POST /api/diem-tb-phan-hoi-sv/chot chi tra so luong SoMaKhongKhop). Tinh truc
+        tiep tren du lieu tho hien tai, KHONG can nam da chot: dung de sua ma truoc khi chot
+        (sua ma nhan vien, hoac sua file roi import lai Khoa do), sau do chot lai.
+        Moi dong = 1 ma, kem ho ten ghi trong file, tong so luot danh gia va phan bo so luot
+        theo Khoa quan ly hoc phan (cot H; 1 ma co the nam o nhieu Khoa). Sap xep nhieu luot
+        nhat truoc, khong phan trang.
+        Quyen: ADMIN, hoac TP / QTP tai P_DTBDCL (nhu quyen xem toan truong cua GET
+        /api/diem-tb-phan-hoi-sv); nguoi khac nhan 403.
+      operationId: diemTbPhanHoiSvGetKhongKhop
+      parameters:
+        - name: idNam
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK (Items rong neu moi ma deu khop)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiemTbKhongKhopResponse"
+        "400":
+          description: Thieu / sai idNam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiemTbKhongKhopResponse"
+        "401":
+          description: Khong xac dinh duoc nguoi dang nhap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiemTbKhongKhopResponse"
+        "403":
+          description: Khong phai ADMIN hoac TP / QTP cua P_DTBDCL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiemTbKhongKhopResponse"
+        "404":
+          description: Nam danh gia (idNam) khong ton tai
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiemTbKhongKhopResponse"
   /api/giam-tru/import:
     post:
       tags:
@@ -8310,6 +8185,106 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TieuChiDanhGiaResponse"
+  /api/doi-chieu-tu-dong:
+    get:
+      tags:
+        - TieuChiDonViCham
+      summary: Đối chiếu điểm tự động theo đơn vị theo dõi (chỉ đọc)
+      description: >
+        sp_doi_chieu_diem_tu_dong. Đơn vị phụ trách dữ liệu nguồn xem điểm tự động của MỌI
+        phiếu năm trong một đơn vị, chỉ trên các tiêu chí mình theo dõi, để phát hiện điểm đã
+        ghi lệch với dữ liệu nguồn hiện tại. KHÔNG phải bước duyệt: không ghi DB, không chặn
+        trạng thái phiếu.
+
+        "Đơn vị theo dõi" = dòng tieu_chi_don_vi_cham trên tiêu chí loai_nguon_diem = 2
+        (cấu hình ở PUT /api/tieu-chi-don-vi-cham). Người xem: HT / ADMIN (mọi tiêu chí tự
+        động), hoặc trưởng (TK/TKL/TP/QTP/GD/VT) của đơn vị được giao ≥ 1 tiêu chí tự động.
+        Còn lại → 403 FORBIDDEN (FE dùng để ẩn menu).
+
+        Phạm vi dòng: phiếu NĂM (quy = 0) chưa xóa của idNam, đơn vị phiếu = idDonVi, là phiếu
+        nhận điểm tự động của người đó. Phiếu quý chưa hỗ trợ. Không truyền idDonVi → Items
+        rỗng, chỉ trả TieuChi + DonVi (rẻ) để FE dựng bộ lọc rồi gọi lại.
+
+        TrangThaiDoiChieu: LECH (điểm đã ghi ≠ điểm tính lại → cần chấm lại), KHOP, CHUA_CHAM
+        (engine chưa chạy, thường là phiếu nháp), KHONG_HO_TRO (mã công thức chưa hỗ trợ).
+        Items sắp LECH lên đầu. CoTheChamLai = phiếu ở trạng thái 1/2; người bấm
+        POST /api/phieu/{id}/tong-hop-tu-dong vẫn là ADMIN / trưởng đơn vị của phiếu.
+        Chi tiết + minh chứng 1 phiếu: GET /api/phieu/{id}/tu-dong (cổng xem đã cho đơn vị
+        theo dõi). Điểm tính lại cho mọi dòng của đơn vị trước khi phân trang → có thể chậm
+        với đơn vị lớn.
+      operationId: doiChieuTuDongGet
+      parameters:
+        - name: idNam
+          in: query
+          required: false
+          description: Bỏ trống = năm đang mở mới nhất.
+          schema:
+            type: integer
+        - name: idDonVi
+          in: query
+          required: false
+          description: Đơn vị của phiếu (Khoa / Phòng). Bỏ trống = chưa chọn, Items rỗng.
+          schema:
+            type: integer
+        - name: idDonViTheoDoi
+          in: query
+          required: false
+          description: Thu hẹp về các tiêu chí giao cho 1 đơn vị theo dõi (người kiêm nhiệm nhiều đơn vị / ADMIN).
+          schema:
+            type: integer
+        - name: idTieuChi
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: trangThai
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [LECH, KHOP, CHUA_CHAM, KHONG_HO_TRO]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoiChieuTuDongResponse"
+        "400":
+          description: Tham số không hợp lệ (VALIDATION_FAILED)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoiChieuTuDongResponse"
+        "401":
+          description: Thiếu hoặc sai token
+        "403":
+          description: >
+            FORBIDDEN - không theo dõi tiêu chí tự động nào; FORBIDDEN_DON_VI_THEO_DOI -
+            idDonViTheoDoi ngoài phạm vi người gọi.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoiChieuTuDongResponse"
+        "404":
+          description: NAM_NOT_FOUND - không có năm đánh giá
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoiChieuTuDongResponse"
   /api/tieu-chi-don-vi-cham:
     get:
       tags:
@@ -15815,7 +15790,9 @@ components:
           type: integer
         SoMaKhongKhop:
           type: integer
-          description: So ma_can_bo khong khop nhan_vien.ma_nhan_vien (bi bo qua khi chot)
+          description: >
+            So ma_can_bo khong khop nhan_vien.ma_nhan_vien (bi bo qua khi chot), tinh lai
+            tren du lieu hien tai; danh sach o GET /api/diem-tb-phan-hoi-sv/khong-khop
     DiemTbPhanHoiSinhVienDto:
       type: object
       description: Diem trung binh ca nam cua 1 giang vien
@@ -15871,6 +15848,56 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DiemTbPhanHoiSinhVienDto"
+    DiemTbKhongKhopResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        IdNam:
+          type: integer
+        SoMaKhongKhop:
+          type: integer
+          description: >
+            So ma khong khop - bang SoMaKhongKhop cua POST .../chot neu du lieu tho / nhan_vien
+            chua doi tu luc chot
+        SoLuotDanhGia:
+          type: integer
+          description: Tong so luot danh gia cua cac ma khong khop (so luot bi bo qua khi chot)
+        Items:
+          type: array
+          description: Rong khi loi hoac khi moi ma deu khop
+          items:
+            $ref: "#/components/schemas/DiemTbMaCanBoKhongKhopDto"
+    DiemTbMaCanBoKhongKhopDto:
+      type: object
+      properties:
+        MaCanBo:
+          type: string
+        HoTenGv:
+          type: string
+          nullable: true
+          description: Ho ten giang vien ghi trong file khao sat (MIN neu cac dong ghi khac nhau)
+        SoLuotDanhGia:
+          type: integer
+        DanhSachKhoa:
+          type: array
+          description: Phan bo so luot theo Khoa quan ly hoc phan (cot H), nhieu luot nhat truoc
+          items:
+            $ref: "#/components/schemas/DiemTbMaCanBoKhongKhopKhoaDto"
+    DiemTbMaCanBoKhongKhopKhoaDto:
+      type: object
+      properties:
+        IdDonVi:
+          type: integer
+          nullable: true
+          description: null = dong tho chua gan duoc Khoa
+        TenDonVi:
+          type: string
+          nullable: true
+        SoLuotDanhGia:
+          type: integer
     LoginRequest:
       type: object
       description: >-
@@ -21982,46 +22009,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TieuChiDanhGiaDto"
-    NhiemVuCongDongCreateRequest:
-      type: object
-      required:
-        - TenNhiemVu
-        - IdNhomNv
-        - IdVaiTro
-      properties:
-        TenNhiemVu:
-          type: string
-          maxLength: 500
-        IdNhomNv:
-          type: integer
-          description: Must reference an active danh_muc_nhom_nhiem_vu row
-        IdVaiTro:
-          type: integer
-          description: |
-            Must be present in the resolved vai tro set for the phieu's (don_vi, nam).
-            Resolution priority: (don_vi, nam) > (don_vi, NULL) > (NULL, nam) > (NULL, NULL).
-            The diem_quy_doi of the resolved row is snapshotted into nhiem_vu_cong_dong.diem_snapshot.
-        MoTa:
-          type: string
-          nullable: true
-    NhiemVuCongDongUpdateRequest:
-      type: object
-      required:
-        - TenNhiemVu
-        - IdNhomNv
-        - IdVaiTro
-      properties:
-        TenNhiemVu:
-          type: string
-          maxLength: 500
-        IdNhomNv:
-          type: integer
-        IdVaiTro:
-          type: integer
-          description: Changing IdVaiTro recomputes the snapshot and re-checks the 20-point cap.
-        MoTa:
-          type: string
-          nullable: true
     NhiemVuCongDongResponse:
       type: object
       properties:
@@ -22047,22 +22034,6 @@ components:
           type: number
           nullable: true
           description: Remaining Group-III quota (= 20 - TongDiemSnapshot). Present only on GET list.
-    PvcdCapExceededResponse:
-      type: object
-      description: Returned with HTTP 422 when a create/update would exceed the 20-point Group-III cap.
-      properties:
-        error:
-          type: string
-          example: PVCD_CAP_EXCEEDED
-        currentTotal:
-          type: number
-          description: Current sum of diem_snapshot for non-deleted tasks on this chi_tiet (before the attempted write).
-        attemptedAdd:
-          type: number
-          description: The diem_snapshot value that was about to be added or applied.
-        remaining:
-          type: number
-          description: Points still available (= 20 - currentTotal).
     NhanVienListItemDto:
       type: object
       description: >
@@ -22595,6 +22566,127 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/TieuChiDonViChamDto"
+    # ── Đối chiếu điểm tự động theo đơn vị theo dõi (2026-10-23) ─────────────────
+    DoiChieuTuDongDto:
+      type: object
+      properties:
+        IdChiTiet:
+          type: integer
+        IdPhieu:
+          type: integer
+        TrangThaiPhieu:
+          type: integer
+        CoTheChamLai:
+          type: boolean
+          description: Phiếu ở trạng thái 1/2 - ADMIN / trưởng đơn vị của phiếu chấm lại được.
+        IdNhanVien:
+          type: integer
+        MaNhanVien:
+          type: string
+        HoTen:
+          type: string
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+        CongThucTongHop:
+          type: string
+          description: Mã công thức snapshot của phiếu.
+        DiemToiDa:
+          type: number
+        DiemDaGhi:
+          type: number
+          nullable: true
+        NgayTuDong:
+          type: string
+          format: date-time
+          nullable: true
+        DiemTinhLai:
+          type: number
+          nullable: true
+        ChenhLech:
+          type: number
+          nullable: true
+          description: DiemTinhLai - DiemDaGhi; null khi một trong hai null.
+        TrangThaiDoiChieu:
+          type: string
+          enum: [LECH, KHOP, CHUA_CHAM, KHONG_HO_TRO]
+    DoiChieuTuDongTieuChiDto:
+      type: object
+      properties:
+        IdTieuChi:
+          type: integer
+        TenTieuChi:
+          type: string
+        CongThucTongHop:
+          type: string
+        DiemToiDa:
+          type: number
+        DonViTheoDoi:
+          type: string
+          description: Mã các đơn vị theo dõi, ngăn cách "; ". Rỗng = chưa giao.
+    DoiChieuTuDongDonViDto:
+      type: object
+      properties:
+        IdDonVi:
+          type: integer
+        MaDonVi:
+          type: string
+        TenDonVi:
+          type: string
+        SoPhieu:
+          type: integer
+    DoiChieuTuDongResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+        ErrorCode:
+          type: string
+          nullable: true
+        IdNam:
+          type: integer
+        IdDonVi:
+          type: integer
+          nullable: true
+        IdDonViTheoDoi:
+          type: integer
+          nullable: true
+        LaQuanTri:
+          type: boolean
+        SoDong:
+          type: integer
+          description: Số dòng của đơn vị (sau lọc tiêu chí, trước lọc trạng thái).
+        SoLech:
+          type: integer
+        SoKhop:
+          type: integer
+        SoChuaCham:
+          type: integer
+        SoKhongHoTro:
+          type: integer
+        Page:
+          type: integer
+        PageSize:
+          type: integer
+        TotalCount:
+          type: integer
+        TotalPages:
+          type: integer
+        Items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DoiChieuTuDongDto"
+        TieuChi:
+          type: array
+          items:
+            $ref: "#/components/schemas/DoiChieuTuDongTieuChiDto"
+        DonVi:
+          type: array
+          items:
+            $ref: "#/components/schemas/DoiChieuTuDongDonViDto"
     # ── Session 5a schemas: NgoaiLeDinhMuc ──────────────────────────────────────
     NgoaiLeDinhMucCreateRequest:
       type: object

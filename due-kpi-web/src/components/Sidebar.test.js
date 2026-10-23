@@ -102,9 +102,9 @@ test("accordion: mở nhóm này thì đóng nhóm đang mở", () => {
 });
 
 test.each([
-  ["/nhiem-vu-phuc-vu/quan-ly", "Nhiệm vụ PVCĐ", "Dữ liệu của tôi"],
-  ["/nhiem-vu-phuc-vu", "Dữ liệu của tôi", "Nhiệm vụ PVCĐ"],
-  ["/nhiem-vu-phuc-vu/42", "Dữ liệu của tôi", "Nhiệm vụ PVCĐ"],
+  ["/nhiem-vu-phuc-vu/quan-ly", "Nhiệm vụ PVCĐ", "Nhiệm vụ PVCĐ của tôi"],
+  ["/nhiem-vu-phuc-vu", "Nhiệm vụ PVCĐ của tôi", "Nhiệm vụ PVCĐ"],
+  ["/nhiem-vu-phuc-vu/42", "Nhiệm vụ PVCĐ của tôi", "Nhiệm vụ PVCĐ"],
 ])("%s chỉ tô sáng nhóm %s", (path, active, inactive) => {
   useAuth.mockReturnValue({ user: { MaChucVu: "TK", DonVi: [{ MaChucVu: "TK", LoaiDoiTuong: 1 }] } });
   useQuyenNhiemVuPhucVu.mockReturnValue({ quyen: { Xem: true, QuanLy: true } });

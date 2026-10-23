@@ -6,6 +6,7 @@ import "../../css/Pages.css";
 import QL_DanhGiaSinhVienListing from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DanhGiaSinhVienListing";
 import QL_DanhGiaSinhVienImportModal from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DanhGiaSinhVienImportModal";
 import QL_DanhGiaSinhVienChotModal from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_DanhGiaSinhVienChotModal";
+import QL_MaCanBoKhongKhopModal from "../../components/QuanLyKeHoach/QL_DanhGiaSinhVien/QL_MaCanBoKhongKhopModal";
 import { apiFetch } from "../../utils/api";
 import SearchSelect from "../../components/Common/SearchSelect";
 
@@ -70,6 +71,16 @@ const QL_DanhGiaSinhVien = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isChotModalOpen, setIsChotModalOpen] = useState(false);
+
+  // Mã cán bộ không khớp nhân viên: xem được cả khi năm CHƯA chốt, nên vừa là
+  // bước kiểm tra trước khi chốt vừa là phần giải thích cho con số
+  // SoMaKhongKhop mà lần chốt vừa rồi trả về.
+  const [namKhongKhop, setNamKhongKhop] = useState("");
+  const [isKhongKhopModalOpen, setIsKhongKhopModalOpen] = useState(false);
+  const [canhBaoChot, setCanhBaoChot] = useState(null);
+  // Quyền route khong-khop trùng canManage, nhưng backend không có route hỏi
+  // quyền riêng - nhận 403 thì ẩn hẳn lối vào thay vì báo đỏ mỗi lần bấm.
+  const [coQuyenKhongKhop, setCoQuyenKhongKhop] = useState(true);
 
   const { user } = useAuth();
   const currentUser = user || {};
@@ -201,6 +212,23 @@ const QL_DanhGiaSinhVien = () => {
 
   const namOptions = useMemo(() => buildNamOptions(namList), [namList]);
 
+  // Bộ lọc trang này dùng năm 2 chữ số (namHoc của dữ liệu thô) còn route
+  // khong-khop nhận idNam đầy đủ - tra ngược qua danh mục năm, đừng tự đoán
+  // thế kỷ.
+  const idNamDayDu = useMemo(() => {
+    const found = namList.find(
+      (item) =>
+        String(toTwoDigitYear(item.IdNam || item.idNam)) ===
+        String(searchNamHoc),
+    );
+    return found ? found.IdNam || found.idNam : "";
+  }, [namList, searchNamHoc]);
+
+  const moDanhSachKhongKhop = (idNam) => {
+    setNamKhongKhop(idNam);
+    setIsKhongKhopModalOpen(true);
+  };
+
   const handleNamHocChange = (v) => {
     setSearchNamHoc(v);
     if (!v) setSearchKyHoc("");
@@ -280,6 +308,25 @@ const QL_DanhGiaSinhVien = () => {
             >
               <i className="fa-solid fa-calculator"></i> Chốt điểm
             </button>
+            {coQuyenKhongKhop && (
+              <button
+                className="btn-add-new"
+                onClick={() => moDanhSachKhongKhop(idNamDayDu)}
+                disabled={!idNamDayDu}
+                title={
+                  idNamDayDu
+                    ? "Liệt kê mã cán bộ trong dữ liệu khảo sát không khớp nhân viên nào"
+                    : "Chọn Năm học ở bộ lọc bên dưới trước"
+                }
+                style={{
+                  margin: 0,
+                  backgroundColor: "#f59e0b",
+                  borderColor: "#f59e0b",
+                }}
+              >
+                <i className="fa-solid fa-user-xmark"></i> Kiểm tra mã không khớp
+              </button>
+            )}
             <button
               className="btn-add-new"
               onClick={() => setIsImportModalOpen(true)}
@@ -305,6 +352,58 @@ const QL_DanhGiaSinhVien = () => {
           </>
         )}
       </div>
+
+      {canhBaoChot && canhBaoChot.soMaKhongKhop > 0 && (
+        <div
+          role="alert"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "12px",
+            padding: "12px 16px",
+            marginBottom: "20px",
+            borderRadius: "8px",
+            backgroundColor: "#fffbeb",
+            border: "1px solid #fde68a",
+            color: "#92400e",
+            fontSize: "14px",
+          }}
+        >
+          <i className="fa-solid fa-triangle-exclamation"></i>
+          <span style={{ flex: "1 1 320px" }}>
+            {canhBaoChot.soMaKhongKhop} mã cán bộ trong dữ liệu khảo sát không
+            khớp nhân viên nào và không được tính điểm.
+          </span>
+          {coQuyenKhongKhop && (
+            <button
+              type="button"
+              className="btn-cancel"
+              style={{ margin: 0 }}
+              onClick={() => moDanhSachKhongKhop(canhBaoChot.idNam)}
+            >
+              Xem danh sách
+            </button>
+          )}
+          {/* .close-btn có color trắng (dùng trong modal-header tối) nên ở
+              dải cảnh báo nền vàng phải tự đặt màu. */}
+          <button
+            type="button"
+            aria-label="Đóng cảnh báo"
+            style={{
+              background: "none",
+              border: "none",
+              color: "#92400e",
+              fontSize: "20px",
+              lineHeight: 1,
+              cursor: "pointer",
+            }}
+            onClick={() => setCanhBaoChot(null)}
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       <div
         style={{
@@ -498,7 +597,12 @@ const QL_DanhGiaSinhVien = () => {
       <QL_DanhGiaSinhVienChotModal
         isOpen={canManage && isChotModalOpen}
         onClose={() => setIsChotModalOpen(false)}
-        onSuccess={() =>
+        onSuccess={(ketQua) => {
+          setCanhBaoChot(
+            ketQua?.soMaKhongKhop > 0
+              ? { idNam: ketQua.idNam, soMaKhongKhop: ketQua.soMaKhongKhop }
+              : null,
+          );
           fetchData(
             page,
             pageSize,
@@ -507,9 +611,16 @@ const QL_DanhGiaSinhVien = () => {
             searchMaHocPhan,
             searchNamHoc,
             searchKyHoc,
-          )
-        }
+          );
+        }}
         namList={namList}
+      />
+
+      <QL_MaCanBoKhongKhopModal
+        isOpen={canManage && coQuyenKhongKhop && isKhongKhopModalOpen}
+        onClose={() => setIsKhongKhopModalOpen(false)}
+        idNam={namKhongKhop}
+        onForbidden={() => setCoQuyenKhongKhop(false)}
       />
     </div>
   );

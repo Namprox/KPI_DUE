@@ -10,6 +10,9 @@ test.each(["ADMIN", "PK", "TLGVK", "TK", "TKL", "HT", "PHT"])("%s không tự c�
 test("giảng viên có nhóm riêng, không có menu và URL quản lý", () => {
   const user = { MaChucVu: "GV" }, q = quyenTuCauHinh({ Khoa: [{ IdDonVi: 7, LaGiangVienKhoa: true }] });
   expect(paths(user, q)).toContain("/nhiem-vu-phuc-vu");
+  // Nhóm một mục: sidebar hiện thẳng link cho giảng viên, không lẫn vào nhóm khác.
+  const rieng = visibleGroups(user, null, null, null, null, null, q).find((g) => g.key === "nhiemVuPhucVuCuaToi");
+  expect(rieng.items.map((i) => i.path)).toEqual(["/nhiem-vu-phuc-vu"]);
   expect(access("/nhiem-vu-phuc-vu/quan-ly", user, q)).toBe(false);
   expect(access("/nhiem-vu-phuc-vu/tong-hop", user, q)).toBe(false);
 });
