@@ -88,6 +88,8 @@ export const PHIEU_ERROR_MESSAGES = {
   DON_VI_KHONG_HOP_LE: "Đơn vị đánh giá không hợp lệ",
   NHAN_VIEN_KHONG_HOP_LE: "Nhân viên đánh giá không hợp lệ",
   FORBIDDEN: "Bạn không có quyền thực hiện thao tác này",
+  TU_THAM_DINH:
+    "Bạn được phân công thẩm định nên không được duyệt tiêu chí trên phiếu của chính mình",
   INVALID_STATE: "Phiếu đã đổi trạng thái, dữ liệu sẽ được tải lại",
   DONG_CHAM_TU_DONG: "Tiêu chí do hệ thống chấm không được gửi trong danh sách chấm tay",
   CHI_TIET_KHONG_THUOC_PHIEU: "Tiêu chí không thuộc phiếu đang xử lý",

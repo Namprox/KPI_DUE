@@ -19,6 +19,7 @@
 import {
   coQuyenTaiDonVi,
   donViTheoVaiTro,
+  ROLE,
   ROLE_SETS,
   VAI_TRO_TRUONG_PHONG,
   hasRole,
@@ -86,6 +87,50 @@ export const laTruongPhongCuaPhieu = (user, phieu) =>
   coQuyenTaiDonVi(VAI_TRO_TRUONG_PHONG, phieu?.IdDonVi, user);
 
 /**
+ * Phiếu đang mở có phải của chính người đăng nhập không.
+ *
+ * Người được PHÂN CÔNG thẩm định (phó / thư ký) không được thao tác trên phiếu
+ * của chính mình - server trả 403 TU_THAM_DINH. Trưởng đơn vị không bị luật này.
+ */
+export const laPhieuCuaToi = (user, phieu) =>
+  user?.IdNhanVien != null && phieu?.IdNhanVien != null &&
+  Number(user.IdNhanVien) === Number(phieu.IdNhanVien);
+
+export const THONG_BAO_TU_THAM_DINH =
+  "Bạn được phân công thẩm định nên không được duyệt tiêu chí trên phiếu của chính mình.";
+
+/**
+ * Phó / thư ký cấp KHOA được phân công thì nhìn cả phiếu như Trưởng khoa; phó
+ * phòng / thư ký phòng chỉ nhìn phần đơn vị mình được giao như Trưởng phòng.
+ * Phân biệt bằng chức vụ người đó giữ TẠI đơn vị được phân công.
+ */
+const VAI_TRO_PHO_THU_KY_KHOA = [ROLE.PHO_TRUONG_KHOA, ROLE.PHO_TRUONG_KHOA_LON, ROLE.THU_KY_KHOA];
+
+const coPhanCong = (ctx) => (ctx?.phanCong || []).length > 0;
+
+/**
+ * Các đơn vị mà tôi thẩm định THAY MẶT trên phiếu này: đơn vị đang làm trưởng,
+ * cộng đơn vị được phân công (`DuocGiao[]` của GET phan-cong-tham-dinh/quyen) -
+ * trừ khi đây là phiếu của chính tôi.
+ */
+const donViThamDinh = ({ user, phieu, phanCong } = {}) => {
+  const truong = laTruongDonVi(user) ? donViTheoVaiTro(ROLE_TRUONG_DON_VI, user) : [];
+  return laPhieuCuaToi(user, phieu) ? truong : [...truong, ...(phanCong || [])];
+};
+
+/**
+ * Danh sách tiêu chí có bị cắt còn đúng phần đơn vị tôi được giao không.
+ * Trưởng khoa và người được phân công ở Khoa nhìn cả phiếu; Trưởng phòng và
+ * người được phân công ở Phòng thì bị cắt (xem locTieuChiHienThi).
+ */
+export const chiThayPhanDuocGiao = (ctx) => {
+  const { user, phanCong } = ctx || {};
+  if (laTruongKhoa(user)) return false;
+  if ((phanCong || []).some((pc) => coQuyenTaiDonVi(VAI_TRO_PHO_THU_KY_KHOA, pc.IdDonVi, user))) return false;
+  return laTruongPhong(user) || coPhanCong(ctx);
+};
+
+/**
  * `idCha` có phải chính nó hoặc tổ tiên của `idCon` không (đi ngược IdDonViCha).
  * Giới hạn 6 bước để dữ liệu bẩn tạo vòng lặp không treo trình duyệt.
  */
@@ -132,13 +177,15 @@ export const buildPhanQuyenChamIndex = (rows = []) => {
  * @param {object} ctx.phieu      phiếu đang mở (cần IdDonVi = đơn vị chủ quản)
  * @param {Map}    ctx.phanQuyen  Map(idTieuChi → Set(idDonVi))
  * @param {Map}    ctx.donViIndex Map(idDonVi → DonViDto)
+ * @param {object[]} [ctx.phanCong] DuocGiao[] - đơn vị tôi được phân công thẩm định
  */
 export const duocChamTieuChi = (
   chiTiet,
-  { user, phieu, phanQuyen, donViIndex },
+  { user, phieu, phanQuyen, donViIndex, phanCong },
 ) => {
-  if (!chiTiet || !user || !laTruongDonVi(user)) return false;
-  const donViPhuTrach = donViTheoVaiTro(ROLE_TRUONG_DON_VI, user);
+  if (!chiTiet || !user) return false;
+  const donViPhuTrach = donViThamDinh({ user, phieu, phanCong });
+  if (donViPhuTrach.length === 0) return false;
 
   const daPhanQuyen = phanQuyen?.get(Number(chiTiet.IdTieuChi));
   if (daPhanQuyen && daPhanQuyen.size > 0) {
@@ -202,8 +249,11 @@ export const lyDoKhoaONhap = (chiTiet, ctx) => {
   if (trangThaiDong === TRANG_THAI_DONG.DA_CHOT) {
     return "Tiêu chí đã chốt điểm chính thức. Chỉ Trưởng khoa mới trả về thẩm định lại được.";
   }
-  if (!laTruongDonVi(ctx?.user)) {
-    return "Chỉ trưởng đơn vị mới được thẩm định tiêu chí.";
+  if (!laTruongDonVi(ctx?.user) && coPhanCong(ctx) && laPhieuCuaToi(ctx?.user, ctx?.phieu)) {
+    return THONG_BAO_TU_THAM_DINH;
+  }
+  if (!laTruongDonVi(ctx?.user) && !coPhanCong(ctx)) {
+    return "Chỉ trưởng đơn vị hoặc người được phân công mới được thẩm định tiêu chí.";
   }
   const tenDonVi = tenDonViDuocGiaoCham(chiTiet, ctx);
   return tenDonVi
@@ -252,9 +302,14 @@ export const phanLoaiDongCham = (chiTiet, ctx) => {
 /**
  * Trưởng khoa có trả được dòng này về đơn vị thẩm định không.
  * Chỉ dòng ĐÃ CHỐT mới trả lại được, và chỉ tiêu chí chấm tay.
+ *
+ * Giai đoạn 3 không bao giờ mở cho người được phân công. `laTruongDonViServer`
+ * (LaTruongDonVi của GET phan-cong-tham-dinh/quyen) = false thì ẩn luôn dù token
+ * còn ghi chức vụ trưởng - CSDL mới là nguồn đúng.
  */
 export const traThamDinhDuoc = (chiTiet, ctx) =>
   laTruongKhoa(ctx?.user) &&
+  ctx?.laTruongDonViServer !== false &&
   laTieuChiChamTay(chiTiet) &&
   Number(chiTiet?.TrangThaiDong) === TRANG_THAI_DONG.DA_CHOT;
 
@@ -270,21 +325,31 @@ export const traThamDinhDuoc = (chiTiet, ctx) =>
  * trong response của server.
  */
 export const locTieuChiHienThi = (chiTietList = [], ctx) => {
-  if (!laTruongPhong(ctx?.user) || laTruongKhoa(ctx?.user)) return chiTietList;
+  if (!chiThayPhanDuocGiao(ctx)) return chiTietList;
+  // Người được phân công mở phiếu của CHÍNH mình thì duocChamTieuChi luôn false;
+  // cắt theo nó sẽ ra trang trống - bày cả phiếu ở chế độ chỉ đọc.
+  if (!laTruongDonVi(ctx?.user) && laPhieuCuaToi(ctx?.user, ctx?.phieu)) return chiTietList;
   return chiTietList.filter((ct) => duocChamTieuChi(ct, ctx));
 };
 
-/** Dựng sẵn context dùng chung cho cả màn hình chấm. */
+/**
+ * Dựng sẵn context dùng chung cho cả màn hình chấm.
+ * `quyenThamDinh` là GET phan-cong-tham-dinh/quyen; null (chưa tải / lỗi) thì
+ * chỉ còn quyền theo chức vụ trưởng trong token như trước.
+ */
 export const buildChamContext = ({
   user,
   phieu,
   phanQuyenRows,
   donViList,
+  quyenThamDinh,
 }) => ({
   user,
   phieu,
   phanQuyen: buildPhanQuyenChamIndex(phanQuyenRows),
   donViIndex: buildDonViIndex(donViList),
+  phanCong: quyenThamDinh?.DuocGiao || [],
+  laTruongDonViServer: quyenThamDinh ? quyenThamDinh.LaTruongDonVi === true : null,
 });
 
 /**

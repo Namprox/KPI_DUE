@@ -10,10 +10,13 @@ import { Toast } from "primereact/toast";
 import "../../css/Pages.css";
 import "../../css/QuanLyChamDiem.css";
 import { useAuth } from "../../context/AuthContext";
+import { useQuyenThamDinh } from "../../context/PhanCongThamDinhContext";
+import { canAccessPath } from "../../config/menuConfig";
 import { apiFetch } from "../../utils/api";
 import {
   duyetThamDinh,
   fetchLichSuChamDiemPhieu,
+  fetchLichSuChamDiemQuaPhieu,
   fetchPhieuDetail,
   fetchTieuChiDonViCham,
   fetchTieuChiTheoMau,
@@ -30,7 +33,10 @@ import {
 } from "../../utils/phieuApi";
 import {
   buildChamContext,
+  chiThayPhanDuocGiao,
   duocChamTieuChi,
+  laPhieuCuaToi,
+  laTruongDonVi,
   laTruongKhoa,
   laTruongPhong,
   locTieuChiHienThi,
@@ -40,6 +46,7 @@ import {
   RO_VIEC,
   RO_VIEC_META,
   tenDonViDuocGiaoCham,
+  THONG_BAO_TU_THAM_DINH,
   tinhTienDoCham,
   traThamDinhDuoc,
 } from "../../utils/phieuChamPermissions";
@@ -95,6 +102,7 @@ const ChamDiemPhieu = () => {
   const navigate = useNavigate();
   const toast = useRef(null);
   const { user } = useAuth();
+  const { quyen: quyenThamDinh } = useQuyenThamDinh();
   const { nhanVienIndex } = useNhanVienIndex();
 
   const [phieu, setPhieu] = useState(null);
@@ -166,7 +174,14 @@ const ChamDiemPhieu = () => {
   const taiLichSu = useCallback(async () => {
     setDangTaiLichSu(true);
     try {
-      setLichSuItems(await fetchLichSuChamDiemPhieu(id));
+      try {
+        setLichSuItems(await fetchLichSuChamDiemPhieu(id));
+      } catch (error) {
+        // Endpoint lịch sử riêng chỉ mở cho trưởng đơn vị; người được phân công
+        // thẩm định đọc cùng dữ liệu qua phieu/{id}?kemLichSu=true.
+        if (error.status !== 403) throw error;
+        setLichSuItems(await fetchLichSuChamDiemQuaPhieu(id));
+      }
     } catch (error) {
       // Thiếu lịch sử không được chặn màn hình chấm - chỉ mất khối tham khảo.
       console.error("Lỗi tải lịch sử chấm điểm:", error);
@@ -237,8 +252,8 @@ const ChamDiemPhieu = () => {
   }, [phieu?.IdMau]);
 
   const chamCtx = useMemo(
-    () => buildChamContext({ user, phieu, phanQuyenRows, donViList }),
-    [user, phieu, phanQuyenRows, donViList],
+    () => buildChamContext({ user, phieu, phanQuyenRows, donViList, quyenThamDinh }),
+    [user, phieu, phanQuyenRows, donViList, quyenThamDinh],
   );
 
   const chiTietList = useMemo(() => phieu?.ChiTiet || [], [phieu]);
@@ -278,7 +293,7 @@ const ChamDiemPhieu = () => {
    * mọi thẻ đều là việc phải làm - thêm một lớp lọc nữa chỉ là bước thừa và có
    * nguy cơ giấu mất tiêu chí họ đang cần chấm.
    */
-  const dungBoLoc = !laTruongPhong(user);
+  const dungBoLoc = !laTruongPhong(user) && !chiThayPhanDuocGiao(chamCtx);
 
   /**
    * Rổ đang xem: ưu tiên lựa chọn tay, chưa chọn thì mở thẳng vào việc của mình.
@@ -374,7 +389,21 @@ const ChamDiemPhieu = () => {
   const nv = thongTinNhanVien(nhanVienIndex, phieu?.IdNhanVien);
 
   const dangOBuocThamDinh = phieu?.TrangThai === TRANG_THAI.THAM_DINH;
-  const vaiTro = laTruongKhoa(user) ? "truongKhoa" : "thamDinh";
+  // Giai đoạn 3 (trả dòng đã chốt, chốt hồ sơ) không bao giờ là của người được
+  // phân công; CSDL nói không còn là trưởng đơn vị thì ẩn dù token còn ghi TK.
+  const vaiTro =
+    laTruongKhoa(user) && quyenThamDinh?.LaTruongDonVi !== false
+      ? "truongKhoa"
+      : "thamDinh";
+  // Người được phân công không vào được hàng đợi theo hồ sơ (phieu/khoa/pending)
+  // - lối vào của họ là màn chấm theo tiêu chí.
+  const hangDoi = canAccessPath("/quan-ly/cho-cham", user)
+    ? { path: "/quan-ly/cho-cham", nhan: "Hồ sơ chờ thẩm định" }
+    : { path: "/quan-ly/tham-dinh", nhan: "Chấm theo tiêu chí" };
+  const xemPhieuCuaMinh =
+    !laTruongDonVi(user) &&
+    chamCtx.phanCong.length > 0 &&
+    laPhieuCuaToi(user, phieu);
 
   /**
    * Khung chạy chung cho mọi thao tác cấp dòng.
@@ -517,9 +546,9 @@ const ChamDiemPhieu = () => {
             <button
               className="btn-cancel"
               style={{ margin: "0 auto" }}
-              onClick={() => navigate("/quan-ly/cho-cham")}
+              onClick={() => navigate(hangDoi.path)}
             >
-              <i className="fa-solid fa-arrow-left"></i> Về hàng đợi chờ chấm
+              <i className="fa-solid fa-arrow-left"></i> Về {hangDoi.nhan.toLowerCase()}
             </button>
           </div>
         </div>
@@ -546,9 +575,9 @@ const ChamDiemPhieu = () => {
           <button
             className="cd-link-btn"
             style={{ marginBottom: "8px" }}
-            onClick={() => navigate("/quan-ly/cho-cham")}
+            onClick={() => navigate(hangDoi.path)}
           >
-            <i className="fa-solid fa-arrow-left"></i> Hồ sơ chờ thẩm định
+            <i className="fa-solid fa-arrow-left"></i> {hangDoi.nhan}
           </button>
           <h2
             style={{
@@ -574,16 +603,19 @@ const ChamDiemPhieu = () => {
             flexWrap: "wrap",
           }}
         >
-          <button
-            className="btn-cancel"
-            onClick={() =>
-              navigate(
-                `/quan-ly/giang-vien/${phieu.IdNhanVien}?idNam=${phieu.IdNam}`,
-              )
-            }
-          >
-            <i className="fa-solid fa-address-card"></i> Hồ sơ KPI giảng viên
-          </button>
+          {/* Hồ sơ xuyên năm vẫn chỉ của trưởng đơn vị - ẩn với người được phân công. */}
+          {canAccessPath(`/quan-ly/giang-vien/${phieu.IdNhanVien}`, user) && (
+            <button
+              className="btn-cancel"
+              onClick={() =>
+                navigate(
+                  `/quan-ly/giang-vien/${phieu.IdNhanVien}?idNam=${phieu.IdNam}`,
+                )
+              }
+            >
+              <i className="fa-solid fa-address-card"></i> Hồ sơ KPI giảng viên
+            </button>
+          )}
           {/* Hồ sơ đã đủ điều kiện chốt thì việc tiếp theo nằm ở màn hình của
               Trưởng khoa - dẫn thẳng sang thay vì bắt người dùng tự tìm. */}
           {vaiTro === "truongKhoa" &&
@@ -599,6 +631,13 @@ const ChamDiemPhieu = () => {
             )}
         </div>
       </div>
+
+      {xemPhieuCuaMinh && (
+        <div className="cd-canh-bao" role="status">
+          <i className="fa-solid fa-circle-info"></i>
+          <span>{THONG_BAO_TU_THAM_DINH} Các tiêu chí bên dưới chỉ để xem.</span>
+        </div>
+      )}
 
       <div className="cd-phieu-header">
         <div className="cd-phieu-top">

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import SearchSelect from "../../components/Common/SearchSelect";
 import FilePreviewModal from "../../components/Common/FilePreviewModal";
@@ -9,6 +10,8 @@ import { MinhChungRow } from "../../components/QuanLyChamDiem/TieuChiChamCard";
 import { useNamDanhGia } from "../../hooks/useNamDanhGia";
 import { useMinhChungPhieuPreview } from "../../hooks/useMinhChungPhieuPreview";
 import { chuCaiDau } from "../../hooks/useNhanVienIndex";
+import { useQuyenThamDinh } from "../../context/PhanCongThamDinhContext";
+import { PHIEU_ERROR_MESSAGES } from "../../utils/apiError";
 import {
   duyetThamDinh, duyetThamDinhHangLoat, fetchCaNhanThamDinhTieuChi,
   fetchMinhChung, fetchThamDinhTieuChi, fetchThangDiemTieuChi,
@@ -28,6 +31,7 @@ const GOI_Y_LOI = {
   AUTO_SCORED: "Tiêu chí chấm tự động. Vui lòng tải lại danh sách.",
   NOT_FOUND: "Dòng hoặc phiếu không còn. Vui lòng tải lại danh sách.",
   SQL_ERROR: "Có thể thử lại; báo quản trị nếu lỗi lặp lại.",
+  TU_THAM_DINH: "Dòng này để trưởng đơn vị thẩm định.",
 };
 const diemCanLuuY = (r) => r.DiemTuDanhGia == null || Number(r.DiemTuDanhGia) === 0;
 const thieuMinhChung = (r) => r.BatBuocMinhChung === true && Number(r.SoMinhChung ?? 0) === 0;
@@ -77,8 +81,31 @@ const MinhChungModal = ({ dong, onDong, onXem, onTai }) => {
   );
 };
 
+/**
+ * Người được phân công (không làm trưởng đơn vị nào) cần biết mình đang chấm
+ * thay cho đơn vị nào, và vì sao phiếu của chính mình không có trong danh sách.
+ */
+const BannerPhanCong = ({ quyen }) => {
+  if (!quyen || quyen.LaTruongDonVi === true || quyen.LaAdmin === true) return null;
+  const duocGiao = quyen.DuocGiao || [];
+  if (quyen.DuocPhanCong !== true || duocGiao.length === 0) return null;
+  return (
+    <div className="cd-canh-bao" role="status">
+      <i className="fa-solid fa-user-tag" />
+      <span>
+        Bạn được phân công thẩm định cho{" "}
+        {duocGiao.map((pc, i) => <React.Fragment key={pc.Id}>{i > 0 && ", "}<b>{pc.TenDonVi}</b>
+          {pc.TenNguoiCap && ` (${pc.TenNguoiCap} giao${pc.NgayCap ? ` ngày ${formatNgay(pc.NgayCap)}` : ""})`}</React.Fragment>)}
+        . Tiêu chí trên phiếu của chính bạn không có trong danh sách - trưởng đơn vị sẽ thẩm định.
+      </span>
+    </div>
+  );
+};
+
 const ChamTheoTieuChi = () => {
   const toast = useRef(null);
+  const navigate = useNavigate();
+  const { quyen: quyenThamDinh } = useQuyenThamDinh();
   const { namList, selectedNam, setSelectedNam, dangTaiNam } = useNamDanhGia();
   const [tieuChiList, setTieuChiList] = useState([]);
   const [tieuChi, setTieuChi] = useState(null);
@@ -226,7 +253,11 @@ const ChamTheoTieuChi = () => {
         const next = { ...prev };
         ds.forEach((r) => { delete next[r.IdChiTiet]; });
         thatBai.forEach((r) => {
-          next[r.IdChiTiet] = theoId.get(r.IdChiTiet) || { Message: "Chưa nhận được kết quả dòng này. Vui lòng tải lại danh sách." };
+          const kq = theoId.get(r.IdChiTiet);
+          // TU_THAM_DINH: Message của server không dấu, thay bằng câu đã Việt hóa.
+          next[r.IdChiTiet] = kq
+            ? (kq.ErrorCode === "TU_THAM_DINH" ? { ...kq, Message: PHIEU_ERROR_MESSAGES.TU_THAM_DINH } : kq)
+            : { Message: "Chưa nhận được kết quả dòng này. Vui lòng tải lại danh sách." };
         });
         return next;
       });
@@ -295,6 +326,7 @@ const ChamTheoTieuChi = () => {
           <i className="fa-solid fa-rotate" /> Tải lại danh sách
         </button>
       </div>
+      <BannerPhanCong quyen={quyenThamDinh} />
       {!dangTaiNam && !selectedNam && <div className="cd-canh-bao" role="alert">Chưa tải được năm đánh giá. Vui lòng tải lại trang.</div>}
       {loiTieuChi && <div className="cd-canh-bao" role="alert">{loiTieuChi}</div>}
 
@@ -347,7 +379,8 @@ const ChamTheoTieuChi = () => {
                 setSelectedIds((prev) => { const next = new Set(prev); if (checked) next.add(r.IdChiTiet); else next.delete(r.IdChiTiet); return next; });
               }} /></td>
               <td><div className="teacher-avatar-wrapper"><div className="teacher-avatar">{chuCaiDau(r.HoTen)}</div><div><b>{r.HoTen}</b>
-                {r.MaNhanVien && <div><span className="code-pill">{r.MaNhanVien}</span></div>}<div className="ctc-meta">{r.TenDonVi || "-"}</div></div></div>
+                {r.MaNhanVien && <div><span className="code-pill">{r.MaNhanVien}</span></div>}<div className="ctc-meta">{r.TenDonVi || "-"}</div>
+                {r.IdPhieu && <button className="cd-link-btn" disabled={khoa} onClick={() => navigate(`/quan-ly/phieu/${r.IdPhieu}`)}><i className="fa-solid fa-folder-open" /> Xem hồ sơ</button>}</div></div>
                 {Number(r.NguonTraVe) === 3 && <div className="ctc-warning"><b>Trưởng khoa yêu cầu thẩm định lại</b>{r.LyDoTraVe && <div className="ctc-noi-dung">{r.LyDoTraVe}</div>}</div>}
                 {r.NhanXetTuDanhGia && <div className="ctc-meta ctc-noi-dung">{r.NhanXetTuDanhGia}</div>}
                 {loiDong[r.IdChiTiet] && <div className="ctc-row-error" role="alert"><b>{loiDong[r.IdChiTiet].Message}</b><div>{GOI_Y_LOI[loiDong[r.IdChiTiet].ErrorCode] || "Vui lòng tải lại danh sách trước khi thao tác tiếp."}</div></div>}

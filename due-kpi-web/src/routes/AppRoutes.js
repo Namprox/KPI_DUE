@@ -66,6 +66,7 @@ import KeKhaiThanhTich from "../pages/CaNhan/KeKhaiThanhTich";
 import ChoCham from "../pages/QuanLyChamDiem/ChoCham";
 import DuyetPhieuQuy from "../pages/QuanLyChamDiem/DuyetPhieuQuy";
 import ChamTheoTieuChi from "../pages/QuanLyChamDiem/ChamTheoTieuChi";
+import PhanCongThamDinh from "../pages/QuanLyChamDiem/PhanCongThamDinh";
 import DanhSachPhieu from "../pages/QuanLyChamDiem/DanhSachPhieu";
 import ChamDiemPhieu from "../pages/QuanLyChamDiem/ChamDiemPhieu";
 import DuyetHoSoKhoa from "../pages/QuanLyChamDiem/DuyetHoSoKhoa";
@@ -236,6 +237,7 @@ const AppRoutes = ({ triggerNotification, setIsPassModalOpen }) => {
 
         <Route path="/quan-ly/cho-cham" element={<ChoCham />} />
         <Route path="/quan-ly/tham-dinh" element={<ChamTheoTieuChi />} />
+        <Route path="/quan-ly/phan-cong-tham-dinh" element={<PhanCongThamDinh />} />
         <Route path="/quan-ly/phieu-quy" element={<DuyetPhieuQuy />} />
         <Route path="/quan-ly/phieu" element={<DanhSachPhieu />} />
         <Route path="/quan-ly/phieu/:id" element={<ChamDiemPhieu />} />

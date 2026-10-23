@@ -1317,9 +1317,17 @@ Cán bộ quản lý (nhóm 3) dùng đúng bảng của **loại đối tượn
 | `nhom_xep_hang` | Hệ thống | Đóng gói tờ trình | 1/2/3 - snapshot, **không** suy lại về sau |
 | `xep_loai_quy` | Hệ thống (`fn_xep_loai_vien_chuc`) | TP chốt phiếu **quý** (2→5) | 1/2/3, chỉ phiếu quý - **không** phải xếp loại năm |
 | `xep_loai_tong_hop_quy` | Hệ thống (`fn_xep_loai_vien_chuc`) | Roll-up phiếu năm từ các quý | 1/2/3, chỉ phiếu năm `nguon_diem_co_ban = 2` - mức **theo điểm**, để đối chiếu |
+| `xep_loai_tu_de_xuat` | **Chính chủ phiếu** là CBQL Khoa (TK/TKL/PTK/PTKL) | Phiếu ở trạng thái 1/2 (`sp_phieu_tu_de_xuat_xep_loai`) | 1–4 hoặc NULL, chỉ phiếu năm giảng viên - **chỉ lưu** |
 
-Hai dòng cuối (đợt "Xếp loại theo quý") là **mức theo điểm**, không ai chọn tay và **không
-tham gia** chuỗi `xep_loai_khoa → xep_loai`. Xem mục 4.1 "Xếp loại theo quý".
+Hai dòng `xep_loai_quy` / `xep_loai_tong_hop_quy` (đợt "Xếp loại theo quý") là **mức theo
+điểm**, không ai chọn tay và **không tham gia** chuỗi `xep_loai_khoa → xep_loai`. Xem mục
+4.1 "Xếp loại theo quý".
+
+`xep_loai_tu_de_xuat` (đợt 2026-10-23) là "Đề xuất mức xếp loại" trên phiếu giảng viên của
+cán bộ quản lý Khoa. Khác `xep_loai_de_xuat` (hệ thống gợi ý). Diện được đề xuất =
+`fn_phieu_duoc_tu_de_xuat_xep_loai` (chức vụ trong `fn_chuc_vu_quan_ly_khoa` tại đơn vị của
+phiếu, cách xác định chép từ bước tính `can_ht_duyet`). Đợt này chưa SP nào đọc cột để tính
+xếp loại / hạn ngạch.
 
 Mức 4 KHÔNG ai chọn tay được: nó phụ thuộc thứ hạng trong nhóm của cả đơn vị nên chỉ tính
 được khi 100% hồ sơ của đơn vị đã chốt. `ly_do_xep_loai` bắt buộc khi
@@ -5284,3 +5292,57 @@ P_TCHC sửa được hệ số giảm trừ của chính chức vụ mình gi�
 - Bẫy giữ nguyên ngữ nghĩa cũ: `DenNgay` / `GhiChu` ghi đè trực tiếp, không gửi thì bị xoá về NULL. FE phải gửi lại cả
   hai (`Docs/fe-ke-khai-chuc-vu-p-tchc.md` mục 6).
 - Test: `Tests/sua_tu_ngay_chuc_vu_test.sql` (gitignored).
+
+## 27. PHÂN CÔNG THẨM ĐỊNH (2026-10-23) → `phan_cong_tham_dinh`
+
+Trưởng đơn vị (cấp trưởng tại đơn vị - `fn_co_quyen_don_vi` nhóm `DUYET`) hoặc ADMIN phân công cho **cấp phó**
+(PTK / PTKL / PTP / PGD / PVT) hoặc **thư ký** (TKK / TKP) **của chính đơn vị đó** thẩm định **toàn bộ** tiêu chí mà đơn vị
+được thẩm định. Ví dụ: Trưởng khoa giao Phó khoa hoặc Thư ký khoa duyệt điểm giảng viên.
+
+### 27.1. Phạm vi quyền
+
+| Thao tác | Trưởng đơn vị | Người được phân công |
+|---|---|---|
+| Hàng đợi / danh sách tiêu chí thẩm định (`api/tham-dinh/*`) | ✔ | ✔ |
+| Duyệt / sửa điểm / trả về từng dòng (giai đoạn 2), duyệt hàng loạt | ✔ | ✔ - **trừ phiếu của chính mình** (`TU_THAM_DINH`, hàng đợi lọc bỏ) |
+| Xem hồ sơ (`api/phieu/{id}`) + minh chứng của phiếu thuộc đơn vị | ✔ | ✔ |
+| Trả dòng về thẩm định lại, chốt hồ sơ, xếp loại, đóng gói tờ trình (giai đoạn 3-4) | ✔ | ✘ |
+| Quản lý phân công (`api/phan-cong-tham-dinh`) | ✔ (đơn vị mình) | ✘ |
+
+- Nguồn quyền duy nhất: `dbo.fn_don_vi_tham_dinh(@id_nguoi, @chuc_vu_jwt, @don_vi_jwt)` → (id_don_vi, la_chinh, la_goc,
+  **la_truong**). Nhánh `la_truong = 1` = tập cũ (`fn_pham_vi_don_vi` lọc `fn_chuc_vu_truong_don_vi`); nhánh `la_truong = 0`
+  = đơn vị được phân công. Cả hai bung cây con. 8 SP đọc hàm này: `sp_tieu_chi_don_vi_cham_check_quyen` / `_check_phieu`,
+  `sp_phieu_danh_gia_get_detail`, `sp_tham_dinh_get_pending` / `_get_tieu_chi`, `sp_chi_tiet_tham_dinh_duyet` / `_tra_ve`,
+  `sp_chi_tiet_danh_gia_update_diem_khoa`.
+- Hiệu lực: phân công chưa thu hồi **và** hôm nay người đó vẫn giữ chức vụ trong `fn_chuc_vu_duoc_phan_cong_tham_dinh()`
+  **tại** đơn vị, nhân viên đang hoạt động → rời chức vụ thì tự mất quyền. Quyền gắn với **đơn vị**, không gắn người cấp:
+  trưởng đơn vị mới thấy và thu hồi được phân công của người tiền nhiệm.
+- Tiêu chí đã phân quyền cho đơn vị khác (`tieu_chi_don_vi_cham`): người được phân công của đơn vị X thẩm định đúng những
+  tiêu chí trưởng X được thẩm định - không hơn.
+- `lich_su_cham_diem.id_nguoi_thuc_hien` / `chi_tiet_danh_gia.id_nguoi_dg_khoa` ghi đúng người được phân công.
+
+### 27.2. Bảng + nhật ký
+
+`phan_cong_tham_dinh(id, id_don_vi, id_nhan_vien, id_nguoi_cap, ngay_cap, ghi_chu, da_thu_hoi, id_nguoi_thu_hoi,
+ngay_thu_hoi)`. Tối đa một dòng chưa thu hồi / (đơn vị, người) - `ux_pctd_dv_nv`. Thu hồi = `da_thu_hoi = 1` (giữ lịch sử);
+phân công lại = dòng mới. Không có bảng `lich_su_*`: `trg_audit_phan_cong_tham_dinh` (§23) ghi trong cùng transaction.
+Thiếu danh tính → SP trả `FORBIDDEN`, không ghi.
+
+### 27.3. API
+
+| Method | Route | SP | Ghi chú |
+|---|---|---|---|
+| GET | `api/phan-cong-tham-dinh/quyen` | `sp_phan_cong_tham_dinh_quyen` | cờ `LaAdmin` / `LaTruongDonVi` / `DuocPhanCong` / `CoQuyenThamDinh` + `DonViQuanLy[]` + `DuocGiao[]` |
+| GET | `api/phan-cong-tham-dinh/ung-vien?idDonVi=` | `sp_phan_cong_tham_dinh_ung_vien` | cấp phó / thư ký đang giữ chức vụ tại đơn vị, trừ chính mình |
+| GET | `api/phan-cong-tham-dinh?idDonVi=&baoGomDaThuHoi=` | `sp_phan_cong_tham_dinh_list` | `ConHieuLuc = false`: chưa thu hồi nhưng đã rời chức vụ |
+| POST | `api/phan-cong-tham-dinh` `{IdDonVi, IdNhanVien, GhiChu}` | `sp_phan_cong_tham_dinh_cap` | 403 `FORBIDDEN`, 404 `NOT_FOUND`, 400 `TU_PHAN_CONG`, 422 `KHONG_DU_DIEU_KIEN`, 409 `DA_DUOC_PHAN_CONG` |
+| DELETE | `api/phan-cong-tham-dinh/{id}` | `sp_phan_cong_tham_dinh_thu_hoi` | 409 `DA_THU_HOI` |
+
+Cổng sớm C# của `api/tham-dinh/pending`, `/tieu-chi`, `/duyet-hang-loat` đổi từ "chức vụ chính trong JWT là cấp trưởng"
+sang `co_quyen_tham_dinh` của SP (đọc cả tập chức vụ) - người kiêm nhiệm trưởng đơn vị không còn bị chặn nhầm.
+
+### 27.4. Triển khai
+
+`update_database.sql` đợt này (bản sao `Tests/update_database_2026-10-23_phan_cong_tham_dinh.sql`). PHAN 5 kiểm: hàm / SP
+lưu ANSI_NULLS + QUOTED_IDENTIFIER, `fn_don_vi_tham_dinh(NULL, NULL, NULL)` rỗng, tập đơn vị `la_truong = 1` của **mọi**
+trưởng đơn vị đang tại chức trùng khớp tập cũ (hai chiều). Test hành vi: `Tests/test_phan_cong_tham_dinh.sql` (gitignored).

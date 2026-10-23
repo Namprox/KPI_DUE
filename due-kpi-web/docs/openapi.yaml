@@ -6512,6 +6512,71 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ToTrinhKhoaResponse"
+  /api/phieu/{id}/tu-de-xuat-xep-loai:
+    put:
+      tags:
+        - PhieuDanhGia
+      summary: CBQL Khoa tu de xuat muc xep loai tren phieu giang vien cua minh
+      description: |
+        "De xuat muc xep loai" cua can bo quan ly Khoa (TK / TKL / PTK / PTKL). CHINH chu
+        phieu ghi muc minh de xuat 1..4 (cung thang voi XepLoai); XepLoai = null de xoa.
+        KHAC XepLoaiDeXuat (he thong goi y luc TK chot ho so).
+
+        Dot nay CHI LUU - gia tri chua tham gia xep loai / han ngach.
+
+        DIEN DUOC DE XUAT: phieu NAM mau giang vien, chu phieu giu TK / TKL / PTK / PTKL
+        tai don vi cua phieu. FE doc DuocTuDeXuatXepLoai o GET /api/phieu/{id} de an /
+        hien o nhap - KHONG tu suy tu chuc vu cua user.
+
+        Chi sua khi phieu o trang thai 1 (Nhap) / 2 (Dang tham dinh).
+      operationId: phieuDanhGiaTuDeXuatXepLoai
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhieuTuDeXuatXepLoaiRequest"
+      responses:
+        "200":
+          description: OK - RowVersion la row version MOI cua phieu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTuDeXuatXepLoaiResponse"
+        "400":
+          description: Thieu / sai RowVersion, hoac XepLoai ngoai 1..4 (INVALID_VALUE)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTuDeXuatXepLoaiResponse"
+        "403":
+          description: >-
+            Khong phai chu phieu (FORBIDDEN) hoac phieu khong thuoc dien de xuat
+            (KHONG_THUOC_DIEN_DE_XUAT).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTuDeXuatXepLoaiResponse"
+        "404":
+          description: Khong tim thay phieu (NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTuDeXuatXepLoaiResponse"
+        "409":
+          description: >-
+            Phieu khong o trang thai 1 / 2 (INVALID_STATE), phieu quy (KHONG_PHAI_PHIEU_NAM),
+            hoac phieu da bi cap nhat (CONCURRENCY_CONFLICT).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhieuTuDeXuatXepLoaiResponse"
   /api/phieu/{id}/mo-lai:
     post:
       tags:
@@ -17904,6 +17969,55 @@ components:
         RowVersion:
           type: string
           format: byte
+    PhieuTuDeXuatXepLoaiRequest:
+      type: object
+      required:
+        - RowVersion
+      properties:
+        XepLoai:
+          type: integer
+          enum: [1, 2, 3, 4]
+          nullable: true
+          description: Muc de xuat (cung thang voi XepLoai). null = xoa de xuat.
+        RowVersion:
+          type: string
+          format: byte
+    PhieuTuDeXuatXepLoaiResponse:
+      type: object
+      properties:
+        Success:
+          type: boolean
+        Message:
+          type: string
+          nullable: true
+        ErrorCode:
+          type: string
+          nullable: true
+          description: >-
+            NOT_FOUND / FORBIDDEN / KHONG_PHAI_PHIEU_NAM / KHONG_THUOC_DIEN_DE_XUAT /
+            INVALID_VALUE / INVALID_STATE / CONCURRENCY_CONFLICT. null khi thanh cong.
+        IdPhieu:
+          type: integer
+          nullable: true
+        TrangThai:
+          type: integer
+          nullable: true
+        XepLoaiTuDeXuat:
+          type: integer
+          enum: [1, 2, 3, 4]
+          nullable: true
+        XepLoaiTuDeXuatText:
+          type: string
+          nullable: true
+          readOnly: true
+        NgayTuDeXuat:
+          type: string
+          format: date-time
+          nullable: true
+        RowVersion:
+          type: string
+          format: byte
+          nullable: true
     ChiTietThamDinhDuyetRequest:
       type: object
       required:
@@ -19540,6 +19654,28 @@ components:
             dong chuc vu NULL). Luon doc tu API.
             CHI co trong result set cua GET /api/phieu/{id} (MapHeaderDetail rieng) -
             cac endpoint tra header phieu khac dung chung MapHeader nen KHONG co truong nay.
+        DuocTuDeXuatXepLoai:
+          type: boolean
+          description: >-
+            true = phieu thuoc dien "De xuat muc xep loai" (phieu nam giang vien cua TK /
+            TKL / PTK / PTKL tai don vi cua phieu) - FE hien o nhap, ghi qua
+            PUT /api/phieu/{id}/tu-de-xuat-xep-loai. Tinh theo chuc vu hien hanh, khong phai
+            snapshot. Chi co o GET /api/phieu/{id}.
+        XepLoaiTuDeXuat:
+          type: integer
+          enum: [1, 2, 3, 4]
+          nullable: true
+          description: >-
+            Muc xep loai CHINH chu phieu (CBQL Khoa) de xuat. KHAC XepLoaiDeXuat (he thong
+            goi y). Dot nay chi luu. Chi co o GET /api/phieu/{id}.
+        XepLoaiTuDeXuatText:
+          type: string
+          nullable: true
+          readOnly: true
+        NgayTuDeXuat:
+          type: string
+          format: date-time
+          nullable: true
         IdNam:
           type: integer
         IdNhanVien:

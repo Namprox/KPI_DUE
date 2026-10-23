@@ -30,6 +30,7 @@ import { KhenThuongDotXuatProvider } from "./context/KhenThuongDotXuatContext";
 import { NhiemVuPhucVuProvider } from "./context/NhiemVuPhucVuContext";
 import { SangKienProvider } from "./context/SangKienContext";
 import { NhanVienChucVuProvider } from "./context/NhanVienChucVuContext";
+import { PhanCongThamDinhProvider } from "./context/PhanCongThamDinhContext";
 
 const FullScreenLoader = () => (
   <div
@@ -174,7 +175,7 @@ export default function App() {
         <Router
           future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
-          <HoatDongDaoTaoProvider><ThanhTichDoanTheProvider><PhatTrienDoiNguProvider><SangKienProvider><KhenThuongDotXuatProvider><NhiemVuPhucVuProvider><NhanVienChucVuProvider><AppContent /></NhanVienChucVuProvider></NhiemVuPhucVuProvider></KhenThuongDotXuatProvider></SangKienProvider></PhatTrienDoiNguProvider></ThanhTichDoanTheProvider></HoatDongDaoTaoProvider>
+          <HoatDongDaoTaoProvider><ThanhTichDoanTheProvider><PhatTrienDoiNguProvider><SangKienProvider><KhenThuongDotXuatProvider><NhiemVuPhucVuProvider><NhanVienChucVuProvider><PhanCongThamDinhProvider><AppContent /></PhanCongThamDinhProvider></NhanVienChucVuProvider></NhiemVuPhucVuProvider></KhenThuongDotXuatProvider></SangKienProvider></PhatTrienDoiNguProvider></ThanhTichDoanTheProvider></HoatDongDaoTaoProvider>
         </Router>
       </AuthProvider>
     </PrimeReactProvider>

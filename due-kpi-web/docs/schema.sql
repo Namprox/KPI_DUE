@@ -1112,7 +1112,15 @@ CREATE TABLE phieu_danh_gia (
                                                 -- ghi lúc roll-up (sp_phieu_nam_tong_hop_tu_quy),
                                                 -- thuộc nhóm vết roll-up ở trên - KHÔNG phải kết quả cuối
 
-    CONSTRAINT fk_phieu_nam        FOREIGN KEY (id_nam)             REFERENCES nam_danh_gia(id_nam),
+    -- ── ĐỀ XUẤT MỨC XẾP LOẠI CỦA CBQL KHOA (đợt 2026-10-23) ──────────────────
+    -- Chủ phiếu giữ chức vụ TK / TKL / PTK / PTKL (fn_phieu_duoc_tu_de_xuat_xep_loai) tự đề
+    -- xuất mức cho chính mình qua sp_phieu_tu_de_xuat_xep_loai, khi phiếu ở trạng thái 1 / 2.
+    -- KHÁC xep_loai_de_xuat (hệ thống gợi ý). Đợt này CHỈ LƯU, chưa tham gia xếp loại / hạn ngạch.
+    -- DB thật: hai cột nằm cuối bảng (thêm qua ALTER).
+    xep_loai_tu_de_xuat    TINYINT       NULL,  -- 1/2/3/4, cùng thang với xep_loai
+    ngay_tu_de_xuat        DATETIME      NULL,  -- lần lưu gần nhất; NULL khi chưa / đã xoá đề xuất
+
+    CONSTRAINT fk_phieu_nam       FOREIGN KEY (id_nam)             REFERENCES nam_danh_gia(id_nam),
     CONSTRAINT fk_phieu_nv         FOREIGN KEY (id_nhan_vien)       REFERENCES nhan_vien(id_nhan_vien),
     CONSTRAINT fk_phieu_don_vi     FOREIGN KEY (id_don_vi)          REFERENCES don_vi(id_don_vi),
     CONSTRAINT fk_phieu_mau        FOREIGN KEY (id_mau)             REFERENCES mau_danh_gia(id_mau),
@@ -1175,6 +1183,11 @@ CREATE TABLE phieu_danh_gia (
     CONSTRAINT chk_pdg_xep_loai_tong_hop_quy CHECK (xep_loai_tong_hop_quy IS NULL
                                                     OR (quy = 0 AND nguon_diem_co_ban = 2
                                                         AND xep_loai_tong_hop_quy IN (1, 2, 3))),
+
+    -- ── Ràng buộc của ĐỀ XUẤT MỨC XẾP LOẠI CBQL KHOA ────────────────────────
+    -- Chỉ phiếu NĂM; phiếu quý không có xếp loại.
+    CONSTRAINT chk_pdg_xep_loai_tu_de_xuat   CHECK (xep_loai_tu_de_xuat IS NULL
+                                                    OR (quy = 0 AND xep_loai_tu_de_xuat IN (1, 2, 3, 4))),
 
     -- 1 phiếu / người / ĐƠN VỊ / năm / QUÝ.
     -- Đợt 3 (kiêm nhiệm đa đơn vị) đổi UNIQUE (id_nam, id_nhan_vien)
@@ -1710,6 +1723,7 @@ INSERT INTO cau_hinh_audit (ten_bang, muc_ghi, dang_bat, dot_trien_khai, cot_bo_
     (N'nhan_vien_chuc_danh',           1, 1, 'A', NULL, N'Nhân sự'),
     (N'chuc_vu_giam_tru_nam',          1, 1, 'A', NULL, N'Nhân sự - giảm trừ giờ giảng theo năm (đợt 2026-10-14)'),
     (N'nhan_vien_chuc_vu_nguoi_nhap',  1, 1, 'A', NULL, N'Nhân sự - ủy quyền P_TCHC kê khai chức vụ (đợt 2026-10-20, §26)'),
+    (N'phan_cong_tham_dinh',           1, 1, 'A', NULL, N'Phiếu & điểm - trưởng đơn vị phân công thẩm định (đợt 2026-10-23, §27)'),
     -- Đợt A - import thô lớn: TÓM TẮT
     (N'phan_hoi_sinh_vien',            2, 1, 'A', NULL, N'Import thô lớn'),
     (N'sinh_vien_hoc_vu',              2, 1, 'A', NULL, N'Import thô lớn (MERGE: tối đa 3 dòng / câu lệnh)'),
@@ -4060,4 +4074,47 @@ GO
 --       (SP kiem tuong minh de tra DA_DUOC_CAP; index la lop chan cuoi).
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ux_nvcvnn_nv' AND object_id = OBJECT_ID(N'dbo.nhan_vien_chuc_vu_nguoi_nhap'))
     CREATE UNIQUE INDEX ux_nvcvnn_nv ON dbo.nhan_vien_chuc_vu_nguoi_nhap(id_nhan_vien) WHERE da_thu_hoi = 0;
+GO
+
+-- 27. PHAN CONG THAM DINH (dot 2026-10-23).
+--     Truong don vi (cap truong tai don vi - fn_co_quyen_don_vi nhom DUYET) hoac ADMIN phan cong cho
+--     cap pho / thu ky CUA DON VI DO (fn_chuc_vu_duoc_phan_cong_tham_dinh: PTK PTKL PTP PGD PVT TKK TKP)
+--     tham dinh toan bo tieu chi don vi duoc tham dinh (giai doan 2). Quyen: dbo.fn_don_vi_tham_dinh
+--     (procedure.sql). Chi co hieu luc khi HOM NAY nguoi duoc phan cong van giu chuc vu du dieu kien TAI
+--     don vi -> roi chuc vu thi tu mat quyen. Thu hoi = da_thu_hoi = 1 (giu dong lam lich su); phan cong
+--     lai = dong moi. Nhat ky: audit trigger (cau_hinh_audit muc 5.3). Nghiep vu: schema_ghi_chu.md muc 27.
+--     An toan khi chay lai: chi tao khi CHUA co.
+IF OBJECT_ID(N'dbo.phan_cong_tham_dinh', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.phan_cong_tham_dinh (
+        id               INT           IDENTITY(1,1) NOT NULL,
+        id_don_vi        INT           NOT NULL,
+        id_nhan_vien     INT           NOT NULL,
+        id_nguoi_cap     INT           NOT NULL,
+        ngay_cap         DATETIME      NOT NULL CONSTRAINT df_pctd_ngay_cap DEFAULT GETDATE(),
+        ghi_chu          NVARCHAR(500) NULL,
+        da_thu_hoi       BIT           NOT NULL CONSTRAINT df_pctd_thu_hoi  DEFAULT 0,
+        id_nguoi_thu_hoi INT           NULL,
+        ngay_thu_hoi     DATETIME      NULL,
+        CONSTRAINT pk_pctd            PRIMARY KEY (id),
+        CONSTRAINT fk_pctd_dv         FOREIGN KEY (id_don_vi)        REFERENCES dbo.don_vi(id_don_vi),
+        CONSTRAINT fk_pctd_nv         FOREIGN KEY (id_nhan_vien)     REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_pctd_nguoi_cap  FOREIGN KEY (id_nguoi_cap)     REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT fk_pctd_nguoi_th   FOREIGN KEY (id_nguoi_thu_hoi) REFERENCES dbo.nhan_vien(id_nhan_vien),
+        CONSTRAINT chk_pctd_tu_cap    CHECK (id_nhan_vien <> id_nguoi_cap),
+        CONSTRAINT chk_pctd_thu_hoi   CHECK ((da_thu_hoi = 0 AND ngay_thu_hoi IS NULL AND id_nguoi_thu_hoi IS NULL)
+                                          OR (da_thu_hoi = 1 AND ngay_thu_hoi IS NOT NULL AND id_nguoi_thu_hoi IS NOT NULL))
+    );
+    PRINT N'[TAO] dbo.phan_cong_tham_dinh';
+END
+GO
+
+-- 27.1. Index (filtered -> QUOTED_IDENTIFIER ON).
+--       ux_pctd_dv_nv: toi da MOT phan cong chua thu hoi / (don vi, nguoi) - SP kiem tuong minh de tra
+--       DA_DUOC_PHAN_CONG; index la lop chan cuoi. ix_pctd_nv: fn_don_vi_tham_dinh tim theo nguoi.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ux_pctd_dv_nv' AND object_id = OBJECT_ID(N'dbo.phan_cong_tham_dinh'))
+    CREATE UNIQUE INDEX ux_pctd_dv_nv ON dbo.phan_cong_tham_dinh(id_don_vi, id_nhan_vien) WHERE da_thu_hoi = 0;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_pctd_nv' AND object_id = OBJECT_ID(N'dbo.phan_cong_tham_dinh'))
+    CREATE INDEX ix_pctd_nv ON dbo.phan_cong_tham_dinh(id_nhan_vien) INCLUDE (id_don_vi) WHERE da_thu_hoi = 0;
 GO

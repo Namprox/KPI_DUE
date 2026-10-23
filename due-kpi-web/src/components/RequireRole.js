@@ -8,6 +8,7 @@ import { useQuyenDoiNgu } from "../context/PhatTrienDoiNguContext";
 import { useQuyenSangKien } from "../context/SangKienContext";
 import { useQuyenKhenThuong } from "../context/KhenThuongDotXuatContext";
 import { useQuyenChucVu } from "../context/NhanVienChucVuContext";
+import { useQuyenThamDinh } from "../context/PhanCongThamDinhContext";
 
 import { useQuyenNhiemVuPhucVu } from "../context/NhiemVuPhucVuContext";
 
@@ -65,15 +66,18 @@ const RequireRole = ({ children }) => {
   const khenThuong = useQuyenKhenThuong();
   const nhiemVuPhucVu = useQuyenNhiemVuPhucVu();
   const chucVu = useQuyenChucVu();
+  const thamDinh = useQuyenThamDinh();
   const rule = findRouteRule(location.pathname);
+  const coQuyen = () => canAccessPath(location.pathname, user, daoTao.quyen, doiNgu.quyen, sangKien.quyen, khenThuong.quyen, nhiemVuPhucVu.quyen, chucVu.quyen, thamDinh.quyen);
 
   if (loading) return <div className="page-container">Đang tải thông tin tài khoản...</div>;
   if (rule?.serverPermission) {
-    const permission = rule.serverPermissionSource === "nhiemVuPhucVu" ? nhiemVuPhucVu : rule.serverPermissionSource === "khenThuong" ? khenThuong : rule.serverPermissionSource === "sangKien" ? sangKien : rule.serverPermissionSource === "doiNgu" ? doiNgu : rule.serverPermissionSource === "chucVu" ? chucVu : daoTao;
+    const permission = rule.serverPermissionSource === "thamDinh" ? thamDinh : rule.serverPermissionSource === "nhiemVuPhucVu" ? nhiemVuPhucVu : rule.serverPermissionSource === "khenThuong" ? khenThuong : rule.serverPermissionSource === "sangKien" ? sangKien : rule.serverPermissionSource === "doiNgu" ? doiNgu : rule.serverPermissionSource === "chucVu" ? chucVu : daoTao;
     if (permission.loading) return <div className="page-container">Đang tải quyền truy cập...</div>;
-    if (permission.error) return <LoiTaiQuyen message={permission.error} onRetry={permission.refresh} />;
+    // Mục có vaiTroDuPhong: tải quyền lỗi thì vẫn cho người đúng chức vụ vào.
+    if (permission.error && !(rule.vaiTroDuPhong && coQuyen())) return <LoiTaiQuyen message={permission.error} onRetry={permission.refresh} />;
   }
-  if (!canAccessPath(location.pathname, user, daoTao.quyen, doiNgu.quyen, sangKien.quyen, khenThuong.quyen, nhiemVuPhucVu.quyen, chucVu.quyen)) {
+  if (!coQuyen()) {
     const khongDanhGia = findRouteRule(location.pathname)?.personalKpi &&
       Array.isArray(user?.DonVi) && user.DonVi.some((dv) => dv?.LoaiDoiTuong === 0) &&
       !coDanhGiaKpiCaNhan(user);

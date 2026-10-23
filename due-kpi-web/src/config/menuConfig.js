@@ -292,10 +292,24 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.TRUONG_DON_VI,
       },
       {
+        // Người được phân công (phó / thư ký) cũng vào được, nên quyền lấy từ
+        // GET phan-cong-tham-dinh/quyen; chức vụ trong token chỉ là đường lùi khi
+        // quyền đó chưa có (đang tải, lỗi, hoặc bên gọi không truyền vào).
         name: "Chấm theo tiêu chí",
         icon: "fa-solid fa-list-check",
         path: "/quan-ly/tham-dinh",
         roles: ROLE_SETS.THAM_DINH_TIEU_CHI,
+        serverPermission: "CoQuyenThamDinh",
+        serverPermissionSource: "thamDinh",
+        vaiTroDuPhong: true,
+      },
+      {
+        // Trưởng đơn vị giao phó / thư ký thẩm định thay; ADMIN quản lý mọi đơn vị.
+        name: "Phân công thẩm định",
+        icon: "fa-solid fa-user-tag",
+        path: "/quan-ly/phan-cong-tham-dinh",
+        serverPermission: ["LaTruongDonVi", "LaAdmin"],
+        serverPermissionSource: "thamDinh",
       },
       {
         name: "Chờ tôi chấm KPI đơn vị",
@@ -424,7 +438,9 @@ export const MENU_GROUPS = [
         roles: ROLE_SETS.TRUONG_DON_VI,
         // Màn hình chấm và hồ sơ tra cứu không có mục sidebar riêng nhưng phải
         // được khai ở đây, nếu không <RequireRole> sẽ chặn khi mở bằng URL.
-        childPaths: ["/quan-ly/phieu/:id", "/quan-ly/giang-vien/:idNv"],
+        // /quan-ly/phieu/:id khai riêng trong buildRouteRules vì mở cả cho người
+        // được phân công thẩm định.
+        childPaths: ["/quan-ly/giang-vien/:idNv"],
       },
       {
         name: "Báo cáo đơn vị",
@@ -766,6 +782,17 @@ const buildRouteRules = () => {
     { path: "/nhiem-vu-phuc-vu/:id", roles: MOI_NGUOI },
     // Trang hạng mục đã ẩn; chặn trước rule chi tiết /phat-trien-doi-ngu/:id.
     { path: "/phat-trien-doi-ngu/hang-muc", access: () => false },
+    // Màn chấm một hồ sơ: trưởng đơn vị như cũ, cộng người được phân công thẩm
+    // định (xem hồ sơ, minh chứng, chấm từng dòng). Cố ý KHÔNG dùng
+    // CoQuyenThamDinh - cờ đó gồm cả LaAdmin, còn ADMIN chưa bao giờ có lối vào
+    // màn này.
+    {
+      path: "/quan-ly/phieu/:id",
+      roles: ROLE_SETS.TRUONG_DON_VI,
+      serverPermission: ["LaTruongDonVi", "DuocPhanCong"],
+      serverPermissionSource: "thamDinh",
+      vaiTroDuPhong: true,
+    },
   ];
   MENU_GROUPS.forEach((group) => {
     group.items.forEach((item) => {
@@ -776,6 +803,7 @@ const buildRouteRules = () => {
         access: item.access,
         serverPermission: item.serverPermission,
         serverPermissionSource: item.serverPermissionSource,
+        vaiTroDuPhong: item.vaiTroDuPhong,
       };
       rules.push({ path: item.path, ...rule });
       (item.childPaths || []).forEach((child) => {
@@ -807,9 +835,18 @@ export const ROUTE_RULES = buildRouteRules();
 export const findRouteRule = (pathname) =>
   ROUTE_RULES.find((rule) => matchPath(rule.path, pathname)) || null;
 
-export const canAccessRule = (rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu) => {
+/**
+ * `serverPermission` là tên một cờ (hoặc mảng cờ - chỉ cần một cờ true) trong
+ * object quyền do server trả. `vaiTroDuPhong`: khi object quyền đã có thì nó
+ * quyết; chưa có (null) thì rơi về luật `roles` như mục thường - để nơi gọi
+ * canAccessPath(path, user) không truyền quyền vẫn ra kết quả theo chức vụ.
+ */
+export const canAccessRule = (rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu, quyenThamDinh) => {
   if (!user) return false;
-  if (rule.serverPermission) return (rule.serverPermissionSource === "nhiemVuPhucVu" ? quyenNhiemVuPhucVu : rule.serverPermissionSource === "khenThuong" ? quyenKhenThuong : rule.serverPermissionSource === "sangKien" ? quyenSangKien : rule.serverPermissionSource === "doiNgu" ? quyenDoiNgu : rule.serverPermissionSource === "chucVu" ? quyenChucVu : quyenDaoTao)?.[rule.serverPermission] === true;
+  if (rule.serverPermission) {
+    const quyen = rule.serverPermissionSource === "thamDinh" ? quyenThamDinh : rule.serverPermissionSource === "nhiemVuPhucVu" ? quyenNhiemVuPhucVu : rule.serverPermissionSource === "khenThuong" ? quyenKhenThuong : rule.serverPermissionSource === "sangKien" ? quyenSangKien : rule.serverPermissionSource === "doiNgu" ? quyenDoiNgu : rule.serverPermissionSource === "chucVu" ? quyenChucVu : quyenDaoTao;
+    if (!rule.vaiTroDuPhong || quyen) return [].concat(rule.serverPermission).some((co) => quyen?.[co] === true);
+  }
 
   if (rule.personalKpi && !coDanhGiaKpiCaNhan(user)) return false;
 
@@ -848,7 +885,7 @@ export const canAccessRule = (rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKie
   );
 };
 
-export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu) => {
+export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu, quyenThamDinh) => {
   const rule = findRouteRule(pathname);
   if (!rule) {
     if (process.env.NODE_ENV !== "production") {
@@ -859,7 +896,7 @@ export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu, quyenSan
     }
     return false;
   }
-  return canAccessRule(rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu);
+  return canAccessRule(rule, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu, quyenThamDinh);
 };
 
 /**
@@ -868,10 +905,10 @@ export const canAccessPath = (pathname, user, quyenDaoTao, quyenDoiNgu, quyenSan
  */
 const laMucMock = (item) => String(item?.name || "").startsWith("[Mock]");
 
-export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu) =>
+export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu, quyenThamDinh) =>
   group.items.filter((item) => !laMucMock(item) &&
     (!item.menuAccess || item.menuAccess(user, { chucVu: quyenChucVu })) &&
-    canAccessRule(item, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu))
+    canAccessRule(item, user, quyenDaoTao, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu, quyenThamDinh))
     .map((item) => item.path === "/hoat-dong-dao-tao" && quyenDaoTao &&
       quyenDaoTao.XemTatCa !== true && quyenDaoTao.XemTheoKhoa !== true
       ? { ...item, name: "Hoạt động đào tạo của tôi" }
@@ -886,8 +923,8 @@ export const visibleItems = (group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu
             : item.path === "/khen-thuong-dot-xuat" && quyenKhenThuong?.XemTatCa !== true && quyenKhenThuong?.XemTheoDonVi !== true
               ? { ...item, name: "Khen thưởng đột xuất của tôi" } : item);
 
-export const visibleGroups = (user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu) =>
+export const visibleGroups = (user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu, quyenThamDinh) =>
   MENU_GROUPS.map((group) => ({
     ...group,
-    items: visibleItems(group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu),
+    items: visibleItems(group, user, quyenDaoTao, quyenDoanThe, quyenDoiNgu, quyenSangKien, quyenKhenThuong, quyenNhiemVuPhucVu, quyenChucVu, quyenThamDinh),
   })).filter((group) => group.items.length > 0);

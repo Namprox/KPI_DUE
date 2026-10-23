@@ -1257,6 +1257,32 @@ export const fetchLichSuChamDiemPhieu = async (idPhieu) => {
 };
 
 /**
+ * Lịch sử chấm toàn phiếu cho người được PHÂN CÔNG thẩm định: endpoint lịch sử
+ * tách riêng ở trên chỉ mở cho trưởng đơn vị (403), nên lấy qua
+ * GET phieu/{id}?kemLichSu=true - mỗi ChiTiet[] mang LichSu[] phẳng của riêng nó
+ * - rồi gom lại đúng dạng nhóm (LanDanhGia, IdChiTiet, Cap) mà
+ * gomLichSuTheoChiTiet nhận.
+ */
+export const fetchLichSuChamDiemQuaPhieu = async (idPhieu) => {
+  const data = await getJson(
+    `phieu/${idPhieu}${buildQuery({ kemLichSu: true })}`,
+    "Không tải được lịch sử chấm điểm của phiếu",
+  );
+  const nhom = new Map();
+  (data.Item?.ChiTiet || []).forEach((ct) => {
+    (ct.LichSu || []).forEach((entry) => {
+      const idChiTiet = entry.IdChiTiet ?? ct.IdChiTiet;
+      const key = `${entry.LanDanhGia}|${idChiTiet}|${entry.Cap}`;
+      if (!nhom.has(key)) {
+        nhom.set(key, { LanDanhGia: entry.LanDanhGia, IdChiTiet: idChiTiet, Cap: entry.Cap, Entries: [] });
+      }
+      nhom.get(key).Entries.push(entry);
+    });
+  });
+  return [...nhom.values()];
+};
+
+/**
  * Nhật ký đổi trạng thái của cả hồ sơ, theo thứ tự thời gian.
  *
  * Tên field khác với lịch sử chấm điểm: `Id` (không phải IdLichSu),
