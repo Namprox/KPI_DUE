@@ -19,6 +19,12 @@ import "../../../css/DanhGia/TieuChiDanhGia.css";
  * @param {number}   [soMinhChung] số tệp minh chứng đang đính kèm
  * @param {boolean}  [hienBadgeMinhChung] tắt hẳn huy hiệu minh chứng (dòng tự
  *                                 tính, màn chỉ xem... không cần nhắc)
+ * @param {"tu-dong"|"ke-khai"} [nguonDiem] bật huy hiệu nguồn điểm để người chấm
+ *                                 phân biệt dòng máy tổng hợp với dòng tự kê khai.
+ *                                 Có truyền thì huy hiệu "ke-khai" thay cho lời
+ *                                 nhắc "Bắt buộc có minh chứng" cũ
+ * @param {string}   [nhanKeKhai]  chữ của huy hiệu "ke-khai", đổi theo đối tượng
+ *                                 của phiếu (giảng viên / nhân viên)
  * @param {number}   [diem]        điểm đã chấm, null/undefined nghĩa là chưa chấm
  * @param {string}   [diemText]    chuỗi điểm đã định dạng sẵn, ưu tiên hơn `diem`
  * @param {boolean}  [diemLaKhong] tô xám pill điểm (dòng tự tính bị 0 điểm)
@@ -34,6 +40,8 @@ const TieuChiCardHeader = ({
   batBuocMinhChung = false,
   soMinhChung = 0,
   hienBadgeMinhChung = true,
+  nguonDiem,
+  nhanKeKhai = "Giảng viên kê khai và nộp minh chứng",
   diem,
   diemText,
   diemLaKhong = false,
@@ -44,9 +52,37 @@ const TieuChiCardHeader = ({
   const coMinhChung = soMinhChung > 0;
   const coDiem = diemText != null || diem != null;
 
+  let badgeNguon = null;
+  if (nguonDiem === "tu-dong") {
+    badgeNguon = (
+      <span
+        className="pl2-nguon-badge tu-dong"
+        title="Điểm do hệ thống tổng hợp từ dữ liệu đã ghi nhận, không cần kê khai"
+      >
+        <i className="fa-solid fa-gears"></i>
+        Tiêu chí được tổng hợp điểm tự động
+      </span>
+    );
+  } else if (nguonDiem === "ke-khai") {
+    badgeNguon = (
+      <span
+        className="pl2-nguon-badge ke-khai"
+        title={
+          batBuocMinhChung
+            ? "Tự chọn mức điểm; mức có điểm phải đính kèm minh chứng"
+            : "Tự chọn mức điểm và đính kèm minh chứng nếu có"
+        }
+      >
+        <i className="fa-solid fa-pen-to-square"></i>
+        {nhanKeKhai}
+      </span>
+    );
+  }
+
   // Bắt buộc mà chưa có tệp thì nhắc bằng màu vàng; đã có thì báo số lượng.
+  // Huy hiệu nguồn "ke-khai" đã nói việc phải nộp minh chứng nên bỏ lời nhắc.
   let badgeMinhChung = null;
-  if (hienBadgeMinhChung && batBuocMinhChung) {
+  if (hienBadgeMinhChung && batBuocMinhChung && (coMinhChung || !nguonDiem)) {
     badgeMinhChung = (
       <span
         className={`pl2-mc-badge ${coMinhChung ? "du-mc" : "can-mc"}`}
@@ -78,7 +114,7 @@ const TieuChiCardHeader = ({
     </span>
   ) : null;
 
-  const coMeta = pillNhom || badgeMinhChung || metaPhu;
+  const coMeta = badgeNguon || pillNhom || badgeMinhChung || metaPhu;
 
   return (
     <div className="pl2-criteria-header">
@@ -89,6 +125,7 @@ const TieuChiCardHeader = ({
         {moTa ? <div className="pl2-criteria-desc">{moTa}</div> : null}
         {coMeta ? (
           <div className="pl2-criteria-meta">
+            {badgeNguon}
             {pillNhom}
             {badgeMinhChung}
             {metaPhu}

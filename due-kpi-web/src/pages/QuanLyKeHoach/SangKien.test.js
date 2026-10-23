@@ -295,7 +295,8 @@ test.each(["SK_DOI_MOI_GIANG_DAY", "TTVT_SANG_KIEN"])("%s giữ điểm phiếu 
   const chuaCham = { ...item, DiemDaGhi: undefined, DiemChinhThuc: undefined, DiemTuDong: undefined };
   expect(diemHienThiTuDong(ghepDiemTuDongPhieu({ Items: [chuaCham] }, [{ ...snapshot, DiemChinhThuc: null }], criteria)[1]).diem).toBeNull();
   show(<DanhGiaPhuLuc2Form criteriaList={criteria} formData={{}} autoScores={autoScores} tongDiemCoBan={0} laDongMoNhap={() => true} />);
-  expect(screen.getByText("Lý do backend trả")).toBeInTheDocument();
+  // Lý do điểm tự động đang tắt (HIEN_LY_DO_DIEM_TU_DONG).
+  expect(screen.queryByText("Lý do backend trả")).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: mc.TieuDe })).toHaveAttribute("href", "/sang-kien/12");
   expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
 });

@@ -15,6 +15,11 @@ export const diemSangKienDaLuu = (row) => row?.DiemTuDong !== undefined
 export const laKhenThuongDotXuat = (row) =>
   String(row?.CongThucSnapshot || row?.CongThucTongHop || "").toUpperCase() === "TTVT_KHEN_THUONG";
 
+// Câu giải thích vì sao tiêu chí tự động ra điểm đó (LyDoDiemTuDong của BE) dưới
+// thẻ tiêu chí, trên cả phiếu tự đánh giá lẫn màn chấm. Đang tắt theo yêu cầu;
+// đổi thành true để hiện lại.
+export const HIEN_LY_DO_DIEM_TU_DONG = false;
+
 // Hiện trên các màn ghi nhận nguồn: lưu nguồn không chấm lại phiếu đã có.
 export const HUONG_DAN_DIEM_NGUON =
   "Ghi nhận, sửa hoặc xoá không tự cập nhật điểm phiếu đã nộp. Phiếu còn ở trạng thái Nháp sẽ được chấm khi giảng viên nộp. Phiếu đang thẩm định cần trưởng đơn vị chạy “Tổng hợp tự động”.";

@@ -1,14 +1,12 @@
 import React from "react";
 import { formatDiem, formatNgayGio } from "../../utils/phieuApi";
-import { diemHienThiTuDong, thoiDiemGhiDiemTuDong } from "../../utils/diemTuDongPhieu";
+import { thoiDiemGhiDiemTuDong } from "../../utils/diemTuDongPhieu";
 import "../../css/DanhGia/PhieuTuDong.css";
 
 export default function DiemTuDongStatus({ info }) {
   if (!info?.TuDongTheoPhieu) return null;
-  const { duKien } = diemHienThiTuDong(info);
   const thoiDiem = thoiDiemGhiDiemTuDong(info);
   return <div className="phieu-auto-status">
-    {duKien && <p>Điểm dự kiến, chưa được ghi vào phiếu.{thoiDiem ? ` ${thoiDiem}` : ""}</p>}
     {info.NgayTuDong && <p>Đã tổng hợp: {formatNgayGio(info.NgayTuDong)}</p>}
     {info.CanChamLai === true && <div className="phieu-auto-warning" role="status">
       <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />

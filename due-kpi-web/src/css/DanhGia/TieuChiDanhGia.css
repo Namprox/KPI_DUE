@@ -34,6 +34,21 @@
 .pl2-criteria .pl2-mc-badge.da-co { background: var(--tc-soft); color: var(--tc-accent); border: 0; }
 .pl2-criteria .pl2-mc-badge.du-mc { background: #e8f6ed; color: #1d7a44; border: 0; }
 
+/* Nguồn điểm: hai màu cách xa nhau để nhìn lướt cũng biết dòng nào phải tự kê khai. */
+.pl2-nguon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.pl2-nguon-badge.tu-dong { background: #e8f3fb; border-color: #b9daf1; color: #0b5f94; }
+.pl2-nguon-badge.ke-khai { background: #fff4e5; border-color: #f5d29e; color: #9a4f0a; }
+
 .pl2-criteria-content { display: grid; gap: 18px; }
 .pl2-criteria-content-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
 .pl2-criteria-fields { display: flex; flex-direction: column; min-width: 0; }
@@ -124,9 +139,55 @@
 .pl2-criteria .btn-save-item:disabled { background: #c3c7d8; }
 .pl2-criteria button:focus-visible { outline: 2px solid var(--tc-accent); outline-offset: 3px; }
 
+/* Phần kê khai (diễn giải + minh chứng) của phiếu cá nhân: đóng thì mức điểm trải
+   hết thẻ, mở thì cột minh chứng giãn ra bên phải và ô diễn giải giãn xuống dưới.
+   Hai khối luôn có trong DOM; co bằng track 0fr nên chuyển động được cả hai chiều. */
+.pl2-ke-khai {
+  --kk-tg: 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
+  gap: 0;
+  transition: grid-template-columns var(--kk-tg), column-gap var(--kk-tg);
+}
+.pl2-ke-khai.mo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 22px; }
+.pl2-ke-khai .pl2-criteria-fields > .pl2-thang-diem-list,
+.pl2-ke-khai .pl2-criteria-fields > .pl2-score-wrap { margin-bottom: 0; }
+
+/* Lề âm + padding chừa chỗ cho vòng focus, vì khối phải overflow: hidden mới co được.
+   Khoảng cách với khối trên đặt bằng margin của con: padding không co theo track 0fr. */
+.pl2-ke-khai-gap {
+  display: grid;
+  grid-template-rows: 0fr;
+  min-width: 0;
+  margin: 0 -4px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition: grid-template-rows var(--kk-tg), opacity 0.15s ease, visibility 0s linear 0.32s;
+}
+.pl2-ke-khai.mo .pl2-ke-khai-gap {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition: grid-template-rows var(--kk-tg), opacity 0.22s ease 0.1s, visibility 0s;
+}
+.pl2-ke-khai-gap-trong { display: flex; flex-direction: column; min-height: 0; padding: 0 4px; }
+.pl2-criteria-fields .pl2-ke-khai-gap-trong > .pl2-textarea-wrap { margin-top: 16px; }
+.pl2-ke-khai.mo .pl2-ke-khai-gap-mc { margin-bottom: -4px; }
+.pl2-ke-khai.mo .pl2-ke-khai-gap-mc .pl2-ke-khai-gap-trong { padding-bottom: 4px; }
+.pl2-ke-khai-gap-mc .pl2-evidence { flex: 1; display: flex; flex-direction: column; }
+.pl2-ke-khai-gap-mc .pl2-evidence-content { flex: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .pl2-ke-khai,
+  .pl2-ke-khai-gap,
+  .pl2-ke-khai.mo .pl2-ke-khai-gap { transition: none; }
+}
+
 /* Theo chiều rộng thực của thẻ, kể cả khi sidebar đang mở. */
 @container (max-width: 680px) {
   .pl2-criteria-content-columns { grid-template-columns: minmax(0, 1fr); }
+  .pl2-ke-khai,
+  .pl2-ke-khai.mo { grid-template-columns: minmax(0, 1fr); }
+  .pl2-ke-khai-gap-mc .pl2-evidence { margin-top: 18px; }
   .pl2-criteria .pl2-criteria-header { flex-wrap: wrap; gap: 12px; }
   .pl2-criteria .pl2-criteria-header-main { flex: 1; }
   .pl2-criteria .pl2-criteria-header-side { width: 100%; max-width: none; justify-content: flex-start; }

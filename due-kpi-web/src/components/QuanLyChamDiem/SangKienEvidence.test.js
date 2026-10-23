@@ -22,7 +22,8 @@ test("màn xem/chấm phiếu nhận minh chứng Sáng kiến theo dòng và gi
   fetchDiemTuDongPhieu.mockResolvedValue(data);
   render(<View form={phieu} />);
   expect(await screen.findByRole("link", { name: "Sáng kiến NCKH" })).toHaveAttribute("href", "/sang-kien/12");
-  expect(screen.getByText("Thông báo nguyên văn của backend")).toBeInTheDocument();
+  // Lý do điểm tự động đang tắt (HIEN_LY_DO_DIEM_TU_DONG).
+  expect(screen.queryByText("Thông báo nguyên văn của backend")).not.toBeInTheDocument();
   expect(fetchDiemTuDongPhieu).toHaveBeenCalledWith(812, expect.anything());
   expect(screen.getAllByText("0.00")).toHaveLength(2);
 });

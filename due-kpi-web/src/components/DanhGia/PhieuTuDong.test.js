@@ -43,12 +43,15 @@ test("card đã chốt vẫn cảnh báo và hiển thị minh chứng nguồn l
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
   expect(screen.getByText(/điểm mới sẽ là 5/)).toBeInTheDocument();
 });
-test("draft nhận nhãn Dự kiến kể cả 0 và lý do backend nguyên văn", () => {
+test("draft nhận nhãn Dự kiến kể cả 0, ẩn lý do backend", () => {
   const reason = "Phòng Đào tạo chưa ghi nhận hoạt động.";
   const preview = { ...data, Items: [{ ...data.Items[0], DiemDaGhi: undefined, DiemTuDong: 0, CanChamLai: false, LyDoDiemTuDong: reason }] };
   show(<DanhGiaPhuLuc2Form criteriaList={[row]} formData={{}} autoScores={ghepDiemTuDongPhieu(preview, [row])} tongDiemCoBan={0} />);
   expect(screen.getByText("Dự kiến")).toBeInTheDocument();
-  expect(screen.getByText(reason)).toBeInTheDocument();
+  // Lý do điểm tự động đang tắt (HIEN_LY_DO_DIEM_TU_DONG).
+  expect(screen.queryByText(reason)).not.toBeInTheDocument();
+  // Nhãn "Dự kiến" đã đủ, không lặp thêm dòng ghi chú bên dưới thẻ.
+  expect(screen.queryByText(/Điểm dự kiến, chưa được ghi vào phiếu/)).not.toBeInTheDocument();
 });
 
 test.each(["ADMIN", "TK", "TKL", "TP", "QTP", "GD", "VT"])("%s đúng phạm vi được tổng hợp phiếu năm 1/2", (MaChucVu) => {

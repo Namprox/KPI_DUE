@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { laCongThucGioGiang } from "../../../utils/gioGiangTyLe";
-import { laThanhTichDoanThe, laSangKien, diemHienThiTuDong, thangDiemHienThiTuDong } from "../../../utils/diemTuDongPhieu";
+import { laThanhTichDoanThe, laSangKien, diemHienThiTuDong, thangDiemHienThiTuDong, HIEN_LY_DO_DIEM_TU_DONG } from "../../../utils/diemTuDongPhieu";
 import MinhChungNguonLink from "../MinhChungNguonLink";
 import DiemTuDongStatus from "../DiemTuDongStatus";
 import DuLieuNckhTuDong from "../DuLieuNckhTuDong";
@@ -336,6 +336,12 @@ const DanhGiaPhuLuc2Form = ({
                             batBuocMinhChung={!!tc.BatBuocMinhChung}
                             soMinhChung={soMinhChungDong}
                             hienBadgeMinhChung={!autoInfo}
+                            nguonDiem={autoInfo ? "tu-dong" : "ke-khai"}
+                            nhanKeKhai={
+                              Number(loaiDoiTuong) === 2
+                                ? "Nhân viên kê khai và nộp minh chứng"
+                                : "Giảng viên kê khai và nộp minh chứng"
+                            }
                             diemText={
                               hasScore ? `${formatDiem(currentScore)}đ` : null
                             }
@@ -482,7 +488,7 @@ const DanhGiaPhuLuc2Form = ({
                                 </div>
                               </div>
 
-                              {autoInfo.LyDoDiemTuDong && (
+                              {HIEN_LY_DO_DIEM_TU_DONG && autoInfo.LyDoDiemTuDong && (
                                 <p className="pl2-auto-note">{autoInfo.LyDoDiemTuDong}</p>
                               )}
                               <DiemTuDongStatus info={autoInfo} />
@@ -604,6 +610,18 @@ const DanhGiaPhuLuc2Form = ({
                         const disabledText = !moNhap;
                         const dong = thongTinDong(tc);
                         const biTraVe = dong?.nguonTraVe != null;
+                        // Diễn giải và minh chứng chỉ mở khi đã chọn mức có điểm:
+                        // mức 0đ không có gì để chứng minh. Dòng còn tệp hoặc chữ
+                        // cũ (vừa hạ về 0đ) vẫn mở để người dùng thấy mà gỡ bỏ.
+                        // Lúc đóng, danh sách mức điểm trải hết chiều ngang thẻ.
+                        // Hai khối luôn nằm trong DOM và co lại bằng CSS (`inert`
+                        // chặn focus khi đóng) để chuyển động mượt cả hai chiều.
+                        const moKeKhai =
+                          isActive ||
+                          isKhoaEvaluating ||
+                          fileList.length > 0 ||
+                          nckhList.length > 0 ||
+                          !!formData[tc.IdTieuChi]?.MoTaHoanThanh?.trim();
 
                         return (
                           <div
@@ -649,7 +667,7 @@ const DanhGiaPhuLuc2Form = ({
                             )}
 
                             <div
-                              className="pl2-criteria-content pl2-criteria-content-columns"
+                              className={`pl2-criteria-content pl2-ke-khai ${moKeKhai ? "mo" : ""}`}
                             >
                               <div className="pl2-criteria-fields">
                                 {tc.LoaiThangDiem === 2 ? (
@@ -780,148 +798,158 @@ const DanhGiaPhuLuc2Form = ({
                                   )
                                 )}
 
-                                <ODienGiai
-                                  giaTri={
-                                    formData[tc.IdTieuChi]?.MoTaHoanThanh || ""
-                                  }
-                                  onChange={(val) =>
-                                    onTextChange(tc.IdTieuChi, val)
-                                  }
-                                  doc={disabledText}
-                                  placeholder={
-                                    isKhoaEvaluating
-                                      ? "Nhập nhận xét của Khoa..."
-                                      : "Nhập diễn giải (nếu có)"
-                                  }
-                                />
-
-                              </div>
-                              <TieuChiMinhChung
-                                soMinhChung={fileList.length + nckhList.length}
-                              >
-                                <div className="pl2-file-upload">
-                                  {fileList.length > 0 && (
-                                    <div className="pl2-chip-list">
-                                      {fileList.map((fileItem, fileIndex) => {
-                                        const isSavedOnServer = !(
-                                          fileItem instanceof File
-                                        );
-                                        const fileNameDisplay = isSavedOnServer
-                                          ? fileItem.originalName ||
-                                            fileItem.fileName
-                                          : fileItem.name;
-
-                                        // Chỉ tệp đã lưu và có IdMinhChung mới xem trước được:
-                                        // endpoint api/minhchung/{id}/tai-ve khóa theo id, còn tệp
-                                        // vừa chọn thì chưa lên máy chủ.
-                                        const mc = isSavedOnServer
-                                          ? chuanHoaFileMinhChung(fileItem)
-                                          : null;
-                                        const xemDuoc = !!(
-                                          mc &&
-                                          mc.IdMinhChung &&
-                                          onXemMinhChung
-                                        );
-
-                                        return (
-                                          <div
-                                            key={fileIndex}
-                                            className="pl2-chip-row"
-                                          >
-                                            {xemDuoc ? (
-                                              <button
-                                                type="button"
-                                                className="pl2-chip pl2-chip-file pl2-chip-xem"
-                                                onClick={() => onXemMinhChung(mc)}
-                                                title={`Xem trước / tải về: ${fileNameDisplay}`}
-                                              >
-                                                <i className="fa-solid fa-file-circle-check"></i>
-                                                {fileNameDisplay}
-                                                <i className="fa-solid fa-eye pl2-chip-xem-icon"></i>
-                                              </button>
-                                            ) : (
-                                              <span
-                                                className="pl2-chip pl2-chip-file"
-                                                title={
-                                                  isSavedOnServer
-                                                    ? `${fileNameDisplay} - bản ghi cũ không có mã minh chứng nên không xem được`
-                                                    : `${fileNameDisplay} - tệp mới chọn, xem được sau khi lưu phiếu`
-                                                }
-                                              >
-                                                <i className="fa-solid fa-file-circle-check"></i>
-                                                {fileNameDisplay}
-                                              </span>
-                                            )}
-                                            {moNhap && !isKhoaEvaluating && (
-                                              <button
-                                                type="button"
-                                                className="pl2-chip-remove"
-                                                title="Xóa tệp"
-                                                onClick={() =>
-                                                  onRemoveFile(
-                                                    tc.IdTieuChi,
-                                                    fileIndex,
-                                                  )
-                                                }
-                                              >
-                                                <i className="fa-solid fa-xmark"></i>
-                                              </button>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-
-                                  {nckhList.length > 0 && (
-                                    <div className="pl2-chip-list">
-                                      {nckhList.map((nckhItem, nckhIndex) => (
-                                        <div
-                                          key={nckhIndex}
-                                          className="pl2-chip-row"
-                                        >
-                                          <span className="pl2-chip pl2-chip-nckh">
-                                            <i className="fa-solid fa-book-open"></i>
-                                            [{nckhItem.QRanking}] {nckhItem.MoTa}
-                                          </span>
-                                          {moNhap &&
-                                            !isKhoaEvaluating &&
-                                            onRemoveNckh && (
-                                              <button
-                                                type="button"
-                                                className="pl2-chip-remove"
-                                                title="Xóa"
-                                                onClick={() =>
-                                                  onRemoveNckh(
-                                                    tc.IdTieuChi,
-                                                    nckhIndex,
-                                                  )
-                                                }
-                                              >
-                                                <i className="fa-solid fa-xmark"></i>
-                                              </button>
-                                            )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  {moNhap && !isKhoaEvaluating && (
-                                    <MinhChungDropzone
-                                      coTep={
-                                        fileList.length > 0 || nckhList.length > 0
+                                <div className="pl2-ke-khai-gap" inert={!moKeKhai}>
+                                  <div className="pl2-ke-khai-gap-trong">
+                                    <ODienGiai
+                                      giaTri={
+                                        formData[tc.IdTieuChi]?.MoTaHoanThanh || ""
                                       }
-                                      accept={ACCEPT_PDF}
-                                      gioiHanText="Chỉ nhận tệp PDF"
-                                      onNhanTep={(tep) => {
-                                        const ds = Array.from(tep || []);
-                                        if (ds.length > 0 && onFileChange)
-                                          onFileChange(tc.IdTieuChi, ds);
-                                      }}
+                                      onChange={(val) =>
+                                        onTextChange(tc.IdTieuChi, val)
+                                      }
+                                      doc={disabledText}
+                                      placeholder={
+                                        isKhoaEvaluating
+                                          ? "Nhập nhận xét của Khoa..."
+                                          : "Nhập diễn giải (nếu có)"
+                                      }
                                     />
-                                  )}
+                                  </div>
                                 </div>
-                              </TieuChiMinhChung>
+                              </div>
+                              <div
+                                className="pl2-ke-khai-gap pl2-ke-khai-gap-mc"
+                                inert={!moKeKhai}
+                              >
+                                <div className="pl2-ke-khai-gap-trong">
+                                  <TieuChiMinhChung
+                                    soMinhChung={fileList.length + nckhList.length}
+                                  >
+                                    <div className="pl2-file-upload">
+                                      {fileList.length > 0 && (
+                                        <div className="pl2-chip-list">
+                                          {fileList.map((fileItem, fileIndex) => {
+                                            const isSavedOnServer = !(
+                                              fileItem instanceof File
+                                            );
+                                            const fileNameDisplay = isSavedOnServer
+                                              ? fileItem.originalName ||
+                                                fileItem.fileName
+                                              : fileItem.name;
+
+                                            // Chỉ tệp đã lưu và có IdMinhChung mới xem trước được:
+                                            // endpoint api/minhchung/{id}/tai-ve khóa theo id, còn tệp
+                                            // vừa chọn thì chưa lên máy chủ.
+                                            const mc = isSavedOnServer
+                                              ? chuanHoaFileMinhChung(fileItem)
+                                              : null;
+                                            const xemDuoc = !!(
+                                              mc &&
+                                              mc.IdMinhChung &&
+                                              onXemMinhChung
+                                            );
+
+                                            return (
+                                              <div
+                                                key={fileIndex}
+                                                className="pl2-chip-row"
+                                              >
+                                                {xemDuoc ? (
+                                                  <button
+                                                    type="button"
+                                                    className="pl2-chip pl2-chip-file pl2-chip-xem"
+                                                    onClick={() => onXemMinhChung(mc)}
+                                                    title={`Xem trước / tải về: ${fileNameDisplay}`}
+                                                  >
+                                                    <i className="fa-solid fa-file-circle-check"></i>
+                                                    {fileNameDisplay}
+                                                    <i className="fa-solid fa-eye pl2-chip-xem-icon"></i>
+                                                  </button>
+                                                ) : (
+                                                  <span
+                                                    className="pl2-chip pl2-chip-file"
+                                                    title={
+                                                      isSavedOnServer
+                                                        ? `${fileNameDisplay} - bản ghi cũ không có mã minh chứng nên không xem được`
+                                                        : `${fileNameDisplay} - tệp mới chọn, xem được sau khi lưu phiếu`
+                                                    }
+                                                  >
+                                                    <i className="fa-solid fa-file-circle-check"></i>
+                                                    {fileNameDisplay}
+                                                  </span>
+                                                )}
+                                                {moNhap && !isKhoaEvaluating && (
+                                                  <button
+                                                    type="button"
+                                                    className="pl2-chip-remove"
+                                                    title="Xóa tệp"
+                                                    onClick={() =>
+                                                      onRemoveFile(
+                                                        tc.IdTieuChi,
+                                                        fileIndex,
+                                                      )
+                                                    }
+                                                  >
+                                                    <i className="fa-solid fa-xmark"></i>
+                                                  </button>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+
+                                      {nckhList.length > 0 && (
+                                        <div className="pl2-chip-list">
+                                          {nckhList.map((nckhItem, nckhIndex) => (
+                                            <div
+                                              key={nckhIndex}
+                                              className="pl2-chip-row"
+                                            >
+                                              <span className="pl2-chip pl2-chip-nckh">
+                                                <i className="fa-solid fa-book-open"></i>
+                                                [{nckhItem.QRanking}] {nckhItem.MoTa}
+                                              </span>
+                                              {moNhap &&
+                                                !isKhoaEvaluating &&
+                                                onRemoveNckh && (
+                                                  <button
+                                                    type="button"
+                                                    className="pl2-chip-remove"
+                                                    title="Xóa"
+                                                    onClick={() =>
+                                                      onRemoveNckh(
+                                                        tc.IdTieuChi,
+                                                        nckhIndex,
+                                                      )
+                                                    }
+                                                  >
+                                                    <i className="fa-solid fa-xmark"></i>
+                                                  </button>
+                                                )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {moNhap && !isKhoaEvaluating && (
+                                        <MinhChungDropzone
+                                          coTep={
+                                            fileList.length > 0 || nckhList.length > 0
+                                          }
+                                          accept={ACCEPT_PDF}
+                                          gioiHanText="Chỉ nhận tệp PDF"
+                                          onNhanTep={(tep) => {
+                                            const ds = Array.from(tep || []);
+                                            if (ds.length > 0 && onFileChange)
+                                              onFileChange(tc.IdTieuChi, ds);
+                                          }}
+                                        />
+                                      )}
+                                    </div>
+                                  </TieuChiMinhChung>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         );

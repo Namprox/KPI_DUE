@@ -141,12 +141,13 @@ test("lỗi cấp file hiển thị Message và không mở xác nhận", async 
   expect(screen.getByRole("button", { name: "Xác nhận import" })).toBeDisabled();
 });
 
-test.each(["TTDT_HUY_CHUONG", "TTDT_GHI_NHAN_NGOAI"])("%s khoá điểm/minh chứng, link nguồn 10, hiện lý do nguyên văn", (code) => {
+test.each(["TTDT_HUY_CHUONG", "TTDT_GHI_NHAN_NGOAI"])("%s khoá điểm/minh chứng, link nguồn 10, ẩn lý do điểm tự động", (code) => {
   const reason = "To truong P_TCTD chua ghi nhan thanh tich trong nam.";
   show(<DanhGiaPhuLuc2Form criteriaList={[{ IdTieuChi: 1, TenTieuChi: "Thành tích đoàn thể", DiemToiDa: 5 }]}
     formData={{}} autoScores={{ 1: { CongThucTongHop: code, DiemTuDong: 0, LyDoDiemTuDong: reason, ApDungQuy: false,
       MinhChung: [{ LoaiNguon: 10, MaNguon: 8, TieuDe: "HC Đồng", MoTa: "Đại học Đà Nẵng" }] } }} tongDiemCoBan={0} laDongMoNhap={() => true} />);
-  expect(screen.getByText(reason)).toBeInTheDocument();
+  // Lý do điểm tự động đang tắt (HIEN_LY_DO_DIEM_TU_DONG).
+  expect(screen.queryByText(reason)).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "HC Đồng" })).toHaveAttribute("href", "/thanh-tich-doan-the/8");
   expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
   expect(document.querySelector('input[type="file"]')).toBeNull();

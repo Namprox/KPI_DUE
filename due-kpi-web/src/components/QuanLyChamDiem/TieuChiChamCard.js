@@ -3,7 +3,7 @@ import MinhChungNguonLink from "../DanhGia/MinhChungNguonLink";
 import DiemTuDongStatus from "../DanhGia/DiemTuDongStatus";
 import DuLieuNckhTuDong from "../DanhGia/DuLieuNckhTuDong";
 import { laCongThucGioGiang } from "../../utils/gioGiangTyLe";
-import { laThanhTichDoanThe, laPhatTrienDoiNgu, laSangKien, laKhenThuongDotXuat, diemSangKienDaLuu, diemHienThiTuDong } from "../../utils/diemTuDongPhieu";
+import { laThanhTichDoanThe, laPhatTrienDoiNgu, laSangKien, laKhenThuongDotXuat, diemSangKienDaLuu, diemHienThiTuDong, HIEN_LY_DO_DIEM_TU_DONG } from "../../utils/diemTuDongPhieu";
 import {
   fetchMinhChung,
   fetchNhiemVuCongDong,
@@ -603,7 +603,7 @@ const TieuChiChamCard = ({
             <i className="fa-solid fa-robot"></i> Hệ thống tự tính từ dữ liệu đã
             ghi nhận.
           </div>
-          {lyDoDiemTuDong && (
+          {HIEN_LY_DO_DIEM_TU_DONG && lyDoDiemTuDong && (
             <p className="cdm-tu-dong-chu-thich">{lyDoDiemTuDong}</p>
           )}
           <DuLieuNckhTuDong info={autoInfo} />
